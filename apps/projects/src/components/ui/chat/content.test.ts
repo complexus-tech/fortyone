@@ -9,10 +9,13 @@ const readSource = (path: string) =>
 describe("ChatContent", () => {
   it("keeps AI message limits scoped to non-internal users", () => {
     const source = readSource("src/components/ui/chat/content.tsx");
+    const availabilitySource = readSource(
+      "src/modules/maya/hooks/use-maya-message-availability.ts",
+    );
 
-    expect(source).toContain("useSession");
-    expect(source).toContain("session?.user.isInternal");
-    expect(source).toContain("shouldShowMayaMessageLimit");
+    expect(source).toContain("useMayaMessageAvailability");
+    expect(availabilitySource).toContain("session?.user.isInternal");
+    expect(availabilitySource).toContain("shouldShowMayaMessageLimit");
     expect(source).not.toContain("isLiveVoiceVisible");
     expect(source).toContain("liveVoiceDisabled={needsUpgrade}");
   });
@@ -27,7 +30,7 @@ describe("ChatContent", () => {
     expect(chatSource).toContain("<ChatButton");
     expect(chatSource).toContain("<ChatRail />");
     expect(layoutSource).not.toContain("ResizablePanel");
-    expect(popupSource).toContain("w-[min(460px,calc(100vw-36px))]");
+    expect(popupSource).toContain("w-[min(480px,calc(100vw-36px))]");
     expect(popupSource).toContain("h-[min(760px,calc(100dvh-64px))]");
     expect(popupSource).toContain("border-border/80 dark:border-border");
     expect(popupSource).toContain("border-[0.5px]");

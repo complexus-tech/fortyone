@@ -2,6 +2,7 @@
 
 import { fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
+import { walkthroughTargets } from "@/shared/walkthrough/targets";
 import { Teams } from "./teams";
 
 const mockReorderTeams = jest.fn();
@@ -23,16 +24,25 @@ jest.mock("ui", () => ({
   Button: ({
     children,
     leftIcon,
+    "data-walkthrough-target": walkthroughTarget,
   }: {
     children: ReactNode;
     leftIcon?: ReactNode;
+    "data-walkthrough-target"?: string;
   }) => (
-    <button type="button">
+    <button data-walkthrough-target={walkthroughTarget} type="button">
       {leftIcon}
       {children}
     </button>
   ),
-  Flex: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  Flex: ({
+    children,
+    "data-walkthrough-target": walkthroughTarget,
+  }: {
+    children: ReactNode;
+    "data-walkthrough-target"?: string;
+  }) => <div data-walkthrough-target={walkthroughTarget}>{children}</div>,
+  Divider: () => <hr />,
   Text: ({ children }: { children: ReactNode }) => <span>{children}</span>,
 }));
 
@@ -223,5 +233,19 @@ describe("Teams", () => {
     expect(mockReorderTeams).toHaveBeenCalledWith({
       teamIds: ["team-2", "team-3", "team-1", "team-6", "team-4", "team-5"],
     });
+  });
+
+  it("keeps walkthrough targets available in the collapsed sidebar", () => {
+    const { container } = render(<Teams isCollapsed />);
+
+    expect(
+      container.querySelector(
+        `[data-walkthrough-target="${walkthroughTargets.teams}"]`,
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /your teams/i })).toHaveAttribute(
+      "data-walkthrough-target",
+      walkthroughTargets.manageTeams,
+    );
   });
 });

@@ -44,6 +44,7 @@ var (
 	ErrVerificationDisabled  = usersdomain.ErrVerificationDisabled
 	ErrWorkspaceNotFound     = usersdomain.ErrWorkspaceNotFound
 	ErrMemoryNotFound        = usersdomain.ErrMemoryNotFound
+	ErrInvalidOnboardingTour = usersdomain.ErrInvalidOnboardingTour
 	ErrIdentityStoreMissing  = usersdomain.ErrIdentityStoreMissing
 )
 
@@ -537,6 +538,58 @@ func (s *Service) UpdateAutomationPreferences(ctx context.Context, userID, works
 	))
 
 	return nil
+}
+
+// GetOnboardingTourProgress retrieves (or creates) the versioned onboarding
+// progress for an active workspace member.
+func (s *Service) GetOnboardingTourProgress(
+	ctx context.Context,
+	userID, workspaceID uuid.UUID,
+	scope CoreOnboardingTourScope,
+) (CoreOnboardingTourProgress, error) {
+	s.log.Info(ctx, "business.core.users.GetOnboardingTourProgress")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.users.GetOnboardingTourProgress")
+	defer span.End()
+
+	if err := scope.NormalizeAndValidate(); err != nil {
+		return CoreOnboardingTourProgress{}, err
+	}
+	progress, err := s.repo.GetOnboardingTourProgress(ctx, userID, workspaceID, scope)
+	if err != nil {
+		span.RecordError(err)
+		return CoreOnboardingTourProgress{}, fmt.Errorf("get onboarding tour progress: %w", err)
+	}
+
+	span.AddEvent("onboarding tour progress retrieved", trace.WithAttributes(
+		attribute.String("workspace.id", workspaceID.String()),
+	))
+	return progress, nil
+}
+
+// UpdateOnboardingTourProgress merges newly resolved steps/actions into the
+// versioned progress record for an active workspace member.
+func (s *Service) UpdateOnboardingTourProgress(
+	ctx context.Context,
+	userID, workspaceID uuid.UUID,
+	updates CoreUpdateOnboardingTourProgress,
+) (CoreOnboardingTourProgress, error) {
+	s.log.Info(ctx, "business.core.users.UpdateOnboardingTourProgress")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.users.UpdateOnboardingTourProgress")
+	defer span.End()
+
+	if err := updates.NormalizeAndValidate(); err != nil {
+		return CoreOnboardingTourProgress{}, err
+	}
+	progress, err := s.repo.UpdateOnboardingTourProgress(ctx, userID, workspaceID, updates)
+	if err != nil {
+		span.RecordError(err)
+		return CoreOnboardingTourProgress{}, fmt.Errorf("update onboarding tour progress: %w", err)
+	}
+
+	span.AddEvent("onboarding tour progress updated", trace.WithAttributes(
+		attribute.String("workspace.id", workspaceID.String()),
+	))
+	return progress, nil
 }
 
 // UploadProfileImage uploads a new profile image for a user

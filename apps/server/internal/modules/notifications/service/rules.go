@@ -150,9 +150,10 @@ func (r *Rules) ProcessCommentCreated(ctx context.Context, payload events.Commen
 			continue
 		}
 		message := NotificationMessage{
-			Template: fmt.Sprintf("{actor} left a comment: %s", payload.Content),
+			Template: "{actor} left a comment: {content}",
 			Variables: map[string]Variable{
-				"actor": {Value: actorUsername, Type: "actor"},
+				"actor":   {Value: actorUsername, Type: "actor"},
+				"content": {Value: payload.Content, Type: "text"},
 			},
 		}
 
@@ -200,9 +201,10 @@ func (r *Rules) ProcessCommentReplied(ctx context.Context, payload events.Commen
 		}
 		seen[recipientID] = struct{}{}
 		message := NotificationMessage{
-			Template: fmt.Sprintf("{actor} replied: %s", payload.Content),
+			Template: "{actor} replied: {content}",
 			Variables: map[string]Variable{
-				"actor": {Value: actorUsername, Type: "actor"},
+				"actor":   {Value: actorUsername, Type: "actor"},
+				"content": {Value: payload.Content, Type: "text"},
 			},
 		}
 
@@ -367,9 +369,10 @@ func (r *Rules) ProcessUserMentioned(ctx context.Context, payload events.UserMen
 
 	if shouldNotify(payload.MentionedUser, actorID) {
 		message := NotificationMessage{
-			Template: fmt.Sprintf("{actor} mentioned you: %s", payload.Content),
+			Template: "{actor} mentioned you: {content}",
 			Variables: map[string]Variable{
-				"actor": {Value: actorUsername, Type: "actor"},
+				"actor":   {Value: actorUsername, Type: "actor"},
+				"content": {Value: payload.Content, Type: "text"},
 			},
 		}
 

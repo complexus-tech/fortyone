@@ -2,10 +2,13 @@
 
 import { fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
+import { walkthroughTargets } from "@/shared/walkthrough/targets";
 import { Navigation } from "./navigation";
 
+let mockPathname = "/acme/calendar";
+
 jest.mock("next/navigation", () => ({
-  usePathname: () => "/acme/calendar",
+  usePathname: () => mockPathname,
 }));
 
 jest.mock("icons", () => ({
@@ -73,15 +76,18 @@ jest.mock("@/components/ui", () => ({
     className,
     children,
     href,
+    "data-walkthrough-target": walkthroughTarget,
   }: {
     active?: boolean;
     className?: string;
     children: ReactNode;
     href: string;
+    "data-walkthrough-target"?: string;
   }) => (
     <a
       aria-current={active ? "page" : undefined}
       className={className}
+      data-walkthrough-target={walkthroughTarget}
       href={href}
     >
       {children}
@@ -115,6 +121,7 @@ jest.mock("@/modules/sprints/hooks/running-sprints", () => ({
 describe("Navigation", () => {
   beforeEach(() => {
     localStorage.clear();
+    mockPathname = "/acme/calendar";
   });
 
   it("groups shared destinations under an expanded Workspace section", () => {
@@ -152,6 +159,22 @@ describe("Navigation", () => {
       "href",
       "/acme/teams/team-1/sprints/sprint-1/stories",
     );
+    expect(screen.getByRole("link", { name: "AI Agent" })).toHaveAttribute(
+      "data-walkthrough-target",
+      walkthroughTargets.mayaNavigation,
+    );
+    expect(screen.getByRole("link", { name: "My work" })).toHaveAttribute(
+      "data-walkthrough-target",
+      walkthroughTargets.myWork,
+    );
+    expect(calendarLink).toHaveAttribute(
+      "data-walkthrough-target",
+      walkthroughTargets.calendar,
+    );
+    expect(screen.getByRole("link", { name: "Roadmap" })).toHaveAttribute(
+      "data-walkthrough-target",
+      walkthroughTargets.roadmap,
+    );
 
     fireEvent.click(workspaceTrigger);
 
@@ -180,6 +203,18 @@ describe("Navigation", () => {
     expect(screen.getByRole("link", { name: "Active Sprint" })).toBeVisible();
     expect(screen.queryByRole("link", { name: "Roadmap" })).toBeNull();
     expect(screen.getByRole("link", { name: "Calendar" })).toBeVisible();
+  });
+
+  it("opens Workspace when the current route belongs there", () => {
+    localStorage.setItem("sidebar:acme:workspace-expanded", "false");
+    mockPathname = "/acme/roadmap";
+
+    render(<Navigation />);
+
+    expect(
+      screen.getByRole("button", { name: "Workspace navigation" }),
+    ).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("link", { name: "Roadmap" })).toBeVisible();
   });
 
   it("keeps destination labels visible in the collapsed sidebar", () => {

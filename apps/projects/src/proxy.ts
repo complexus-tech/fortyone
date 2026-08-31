@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { getSessionFromRequest } from "auth";
+import { AuthSessionLookupError, getSessionFromRequest } from "auth";
 import {
   getCanonicalPublicPath,
   getInternalPublicPath,
@@ -53,6 +53,16 @@ const buildHostRedirect = (requestUrl: string, callbackUrl: string) => {
   url.searchParams.set("callbackUrl", callbackUrl);
   return NextResponse.redirect(url);
 };
+
+const authServiceUnavailable = () =>
+  new NextResponse("Authentication service is temporarily unavailable.", {
+    status: 503,
+    headers: {
+      "Cache-Control": "no-store",
+      "Content-Type": "text/plain; charset=utf-8",
+      "Retry-After": "5",
+    },
+  });
 
 const FEEDBACK_WIDGET_EMBED_PREFIX = "/embed/feedback/";
 const FEEDBACK_PORTAL_SLUG_PATTERN =
@@ -111,8 +121,6 @@ export default async function proxy(req: NextRequest) {
     return protectFeedbackWidgetEmbed(req);
   }
 
-  const user = await getSessionFromRequest(req);
-  const isAuthenticated = Boolean(user);
   const subdomain = getSubdomain(hostname);
   const isWorkspaceSubdomain =
     typeof subdomain === "string" && !RESERVED_SUBDOMAINS.has(subdomain);
@@ -136,6 +144,17 @@ export default async function proxy(req: NextRequest) {
   if (isPublicPath(pathname)) {
     return NextResponse.next();
   }
+
+  let user: Awaited<ReturnType<typeof getSessionFromRequest>>;
+  try {
+    user = await getSessionFromRequest(req);
+  } catch (error) {
+    if (error instanceof AuthSessionLookupError) {
+      return authServiceUnavailable();
+    }
+    throw error;
+  }
+  const isAuthenticated = Boolean(user);
 
   if (!isFortyOneHost(hostname)) {
     if (!isAuthenticated && !isAuthOnlyPath(pathname)) {

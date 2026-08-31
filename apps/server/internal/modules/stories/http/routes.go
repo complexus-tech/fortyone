@@ -37,6 +37,7 @@ func Routes(cfg Config, app *web.App) {
 	gzip := mid.Gzip(cfg.Log)
 	workspace := mid.Workspace(cfg.Log, cfg.WorkspaceResolver)
 	memberAndAdmin := mid.RequireMinimumRole(cfg.Log, mid.RoleMember)
+	adminOnly := mid.RequireMinimumRole(cfg.Log, mid.RoleAdmin)
 
 	h := New(storiesService, cfg.Users, linksService, attachmentsService, cfg.Cache, cfg.Log)
 
@@ -47,6 +48,7 @@ func Routes(cfg Config, app *web.App) {
 	app.Get("/workspaces/{workspaceSlug}/stories/by-category", h.ListByCategory, auth, workspace, gzip)
 	app.Get("/workspaces/{workspaceSlug}/stories/{id}", h.Get, auth, workspace, gzip)
 	app.Get("/workspaces/{workspaceSlug}/story-by-ref/{ref}", h.QueryByRef, auth, workspace, gzip)
+	app.Post("/workspaces/{workspaceSlug}/stories/import", h.Import, auth, workspace, adminOnly)
 	app.Post("/workspaces/{workspaceSlug}/stories", h.Create, auth, workspace)
 	app.Put("/workspaces/{workspaceSlug}/stories/{id}", h.Update, auth, workspace)
 	app.Put("/workspaces/{workspaceSlug}/stories", h.BulkUpdate, auth, workspace)

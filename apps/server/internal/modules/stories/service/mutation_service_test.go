@@ -2,6 +2,7 @@ package stories
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"log/slog"
@@ -93,6 +94,36 @@ func TestCreateUsesTypedAtomicMutationCommand(t *testing.T) {
 	}
 	if command.Activity == nil || command.Activity.ID == uuid.Nil || command.Activity.UserID != actorID {
 		t.Fatalf("create activity = %#v", command.Activity)
+	}
+}
+
+func TestCreateExternalMarksInternalOnlyMutationEventDelivery(t *testing.T) {
+	t.Parallel()
+
+	workspaceID, teamID, actorID := uuid.New(), uuid.New(), uuid.New()
+	repository := &typedStoryMutationRepositoryStub{
+		preconditions: storydomain.MutationPreconditions{EstimateScheme: DefaultEstimateScheme},
+	}
+	service := newTypedMutationService(repository)
+	ctx := storyMutationActorContext(t, workspaceID, actorID)
+	_, err := service.CreateExternal(ctx, actorID, CoreNewStory{
+		Title: "Imported story", Team: teamID, Reporter: &actorID, Priority: "High",
+		ExternalDelivery: storydomain.ExternalStoryDeliveryInternalOnly,
+	}, workspaceID)
+	if err != nil {
+		t.Fatalf("CreateExternal() error = %v", err)
+	}
+	if repository.createCommand == nil {
+		t.Fatal("typed create command was not recorded")
+	}
+	var payload struct {
+		Delivery string `json:"_delivery"`
+	}
+	if err := json.Unmarshal(repository.createCommand.Event.Payload, &payload); err != nil {
+		t.Fatalf("decode mutation event payload: %v", err)
+	}
+	if payload.Delivery != string(mutationEventDeliveryInternalOnly) {
+		t.Fatalf("delivery = %q, want %q", payload.Delivery, mutationEventDeliveryInternalOnly)
 	}
 }
 

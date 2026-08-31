@@ -32,12 +32,12 @@ func TestGosecG104ExceptionRemainsNarrowAndGoverned(t *testing.T) {
 		}
 	}
 
-	workflow, err := os.ReadFile(filepath.Join(root, "..", "..", ".github", "workflows", "server-quality.yml"))
+	workflow, err := os.ReadFile(filepath.Join(root, "..", "..", ".github", "workflows", "weekly-assurance.yml"))
 	if err != nil {
-		t.Fatalf("read server quality workflow: %v", err)
+		t.Fatalf("read weekly assurance workflow: %v", err)
 	}
 	if !strings.Contains(string(workflow), "run: make security-check") {
-		t.Fatal("server quality workflow does not execute the governed security gate")
+		t.Fatal("weekly assurance workflow does not execute the governed security gate")
 	}
 
 	documentation, err := os.ReadFile(filepath.Join(root, "docs", "security", "quality-gates.md"))

@@ -1,7 +1,15 @@
 /* global afterEach, beforeEach, describe, expect, it, jest -- Jest globals are provided by the projects test runner. */
 
 import type { RequestOptions } from "api-client";
-import { get, patch, post, put, remove, type WorkspaceCtx } from "./fetch";
+import {
+  ApiContractError,
+  get,
+  patch,
+  post,
+  put,
+  remove,
+  type WorkspaceCtx,
+} from "./fetch";
 import { installRequestOptionsScopeResolver } from "./request-options-scope";
 
 const clientMethods = {
@@ -155,5 +163,117 @@ describe("workspace HTTP request scoping", () => {
       "stories/story-1",
       expectedOptions,
     );
+  });
+});
+
+describe("workspace HTTP response contracts", () => {
+  it("preserves explicit no-content responses", async () => {
+    clientMethods.delete.mockResolvedValue({
+      status: 204,
+      text: jest.fn(),
+    } as unknown as Response);
+
+    await expect(remove("stories/story-1", ctx)).resolves.toEqual({
+      data: null,
+    });
+  });
+
+  it("applies runtime decoders to explicit no-content responses", async () => {
+    const decodeNoContent = jest.fn((value: unknown) => value);
+    clientMethods.delete.mockResolvedValue({
+      status: 204,
+      text: jest.fn(),
+    } as unknown as Response);
+
+    await expect(
+      remove("stories/story-1", ctx, undefined, decodeNoContent),
+    ).resolves.toEqual({ data: null });
+    expect(decodeNoContent).toHaveBeenCalledWith({ data: null });
+  });
+
+  it.each([
+    ["an empty successful body", ""],
+    ["a whitespace-only successful body", "  \n"],
+  ])("rejects %s", async (_name, body) => {
+    clientMethods.get.mockResolvedValue({
+      status: 200,
+      text: async () => body,
+    } as Response);
+
+    await expect(get("stories", ctx)).rejects.toMatchObject({
+      name: "ApiContractError",
+      status: 200,
+    });
+  });
+
+  it("rejects invalid JSON without exposing the response body", async () => {
+    clientMethods.get.mockResolvedValue({
+      status: 200,
+      text: async () => '<html data-secret="provider-token">broken</html>',
+    } as Response);
+
+    await expect(get("stories", ctx)).rejects.toEqual(
+      expect.objectContaining({
+        message: "API returned invalid JSON with status 200",
+        name: "ApiContractError",
+        status: 200,
+      }),
+    );
+
+    try {
+      await get("stories", ctx);
+    } catch (error) {
+      expect(String(error)).not.toContain("provider-token");
+      expect((error as Error).cause).toBeUndefined();
+    }
+  });
+
+  it("supports feature-owned runtime decoders", async () => {
+    const decodeStory = (value: unknown) => {
+      if (
+        typeof value !== "object" ||
+        value === null ||
+        !("data" in value) ||
+        typeof value.data !== "object" ||
+        value.data === null ||
+        !("id" in value.data) ||
+        typeof value.data.id !== "string"
+      ) {
+        throw new Error("Invalid story response");
+      }
+
+      return { data: { id: value.data.id } };
+    };
+
+    await expect(
+      get("stories/story-1", ctx, undefined, decodeStory),
+    ).resolves.toEqual({ data: { id: "result-1" } });
+
+    clientMethods.get.mockResolvedValue({
+      status: 200,
+      text: async () => '{"data":{"id":42}}',
+    } as Response);
+
+    await expect(
+      get("stories/story-1", ctx, undefined, decodeStory),
+    ).rejects.toBeInstanceOf(ApiContractError);
+  });
+
+  it("does not retain body values thrown by runtime decoders", async () => {
+    clientMethods.get.mockResolvedValue({
+      status: 200,
+      text: async () => '{"data":{"secret":"provider-token"}}',
+    } as unknown as Response);
+
+    try {
+      await get("stories/story-1", ctx, undefined, (value) => {
+        throw new Error(JSON.stringify(value));
+      });
+      throw new Error("Expected runtime decoding to fail");
+    } catch (error) {
+      expect(error).toBeInstanceOf(ApiContractError);
+      expect(String(error)).not.toContain("provider-token");
+      expect((error as Error).cause).toBeUndefined();
+    }
   });
 });

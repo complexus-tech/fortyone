@@ -143,9 +143,11 @@ type eventPublisher interface {
 }
 
 type createOptions struct {
-	publishEvents     bool
-	enqueueGitHubSync bool
-	actorKind         auth.PrincipalKind
+	publishEvents         bool
+	enqueueGitHubSync     bool
+	mutationEventDelivery mutationEventDelivery
+	traceStoryTitle       bool
+	actorKind             auth.PrincipalKind
 }
 
 type updateOptions struct {

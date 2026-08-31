@@ -41,9 +41,9 @@ func TestRepositoryHasNoPublicSelfHostDistributionBundle(t *testing.T) {
 		t.Fatalf("read repository README: %v", err)
 	}
 	content := strings.ToLower(string(readme))
-	for _, required := range []string{"private monorepo", "managed fortyone service", "no public installation or distribution bundle"} {
+	for _, required := range []string{"managed-service monorepo", "hosted project-management platform", "no public installation or distribution bundle"} {
 		if !strings.Contains(content, required) {
-			t.Errorf("repository README is missing private distribution contract %q", required)
+			t.Errorf("repository README is missing managed-service distribution contract %q", required)
 		}
 	}
 	for _, forbidden := range []string{"modern, open-source", "full-stack, open-source", "docker compose up"} {
@@ -67,7 +67,7 @@ func TestRepositoryHasNoPublicSelfHostDistributionBundle(t *testing.T) {
 		t.Fatalf("read landing structured data: %v", err)
 	}
 	if strings.Contains(strings.ToLower(string(structuredData)), "github.com/complexus-tech/fortyone") {
-		t.Error("public landing structured data must not advertise the private source repository")
+		t.Error("public landing structured data must not advertise the internal source repository")
 	}
 }
 
@@ -132,7 +132,7 @@ func TestProductionImagesUseExistingDockerHubRepositories(t *testing.T) {
 		"secrets.DOCKERHUB_USERNAME",
 		"secrets.DOCKERHUB_TOKEN",
 		"${{ github.sha }}",
-		"provenance: mode=max",
+		"provenance: mode=min",
 		"sbom: true",
 		"aquasec/trivy:0.74.0@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969",
 		"--severity HIGH,CRITICAL",
@@ -162,7 +162,41 @@ func TestProductionImagesUseExistingDockerHubRepositories(t *testing.T) {
 	}
 }
 
-func TestProductionReleaseSkipsMigrationsAndUsesPreviousDeploymentOrder(t *testing.T) {
+func TestProductionReleaseOnlyWatchesRuntimeInputs(t *testing.T) {
+	t.Parallel()
+
+	root := filepath.Clean(filepath.Join(serverDir(t), "..", ".."))
+	content, err := os.ReadFile(filepath.Join(root, ".github", "workflows", "ecs-fargate-release.yml"))
+	if err != nil {
+		t.Fatalf("read production release workflow: %v", err)
+	}
+	workflow := string(content)
+
+	for _, required := range []string{
+		`- "apps/server/cmd/api/**"`,
+		`- "apps/server/cmd/worker/**"`,
+		`- "apps/server/internal/**"`,
+		`- "apps/server/pkg/**"`,
+		`- "apps/server/templates/**"`,
+		`- "apps/server/go.mod"`,
+		`- "apps/server/go.sum"`,
+		`- "apps/server/Dockerfile"`,
+		`- "apps/server/.dockerignore"`,
+		`- "!apps/server/**/*_test.go"`,
+		`- "!apps/server/internal/bootstrap/architecture/**"`,
+		`- "!apps/server/internal/testkit/**"`,
+		`- "!apps/server/internal/tools/**"`,
+	} {
+		if !strings.Contains(workflow, required) {
+			t.Errorf("production release is missing runtime path contract %q", required)
+		}
+	}
+	if strings.Contains(workflow, `- "apps/server/**"`) {
+		t.Error("production release must not deploy for every Server documentation or QA change")
+	}
+}
+
+func TestProductionReleaseSkipsMigrationsAndPreservesDeploymentOrder(t *testing.T) {
 	t.Parallel()
 
 	root := filepath.Clean(filepath.Join(serverDir(t), "..", ".."))
@@ -173,17 +207,9 @@ func TestProductionReleaseSkipsMigrationsAndUsesPreviousDeploymentOrder(t *testi
 	}
 	workflow := string(content)
 
-	workerStart := strings.Index(workflow, "\n  deploy-worker:\n")
-	serverStart := strings.Index(workflow, "\n  deploy-server:\n")
-	if workerStart < 0 || serverStart < 0 {
-		t.Fatalf(
-			"release workflow must declare deploy-server and deploy-worker jobs; indexes = %d/%d",
-			serverStart,
-			workerStart,
-		)
-	}
-	if serverStart >= workerStart {
-		t.Fatal("release jobs are not ordered API -> worker")
+	deployStart := strings.Index(workflow, "\n  deploy:\n")
+	if deployStart < 0 {
+		t.Fatal("release workflow must declare the consolidated deploy job")
 	}
 	for _, forbidden := range []string{
 		"\n  migrate-database:\n",
@@ -196,13 +222,17 @@ func TestProductionReleaseSkipsMigrationsAndUsesPreviousDeploymentOrder(t *testi
 		}
 	}
 
-	serverJob := workflow[serverStart:workerStart]
-	if !strings.Contains(serverJob, "needs: build-and-push") {
-		t.Error("API deployment must depend on the image build")
+	deployJob := workflow[deployStart:]
+	if !strings.Contains(deployJob, "needs: build-and-push") {
+		t.Error("deployment must depend on the image build")
 	}
-	workerJob := workflow[workerStart:]
-	if !strings.Contains(workerJob, "- deploy-server") {
-		t.Error("worker deployment must depend on the API deployment")
+	serverRender := strings.Index(deployJob, "id: render-server")
+	workerRender := strings.Index(deployJob, "id: render-worker")
+	if serverRender < 0 || workerRender < 0 {
+		t.Fatalf("release workflow must render both task definitions; indexes = %d/%d", serverRender, workerRender)
+	}
+	if serverRender >= workerRender {
+		t.Fatal("release steps are not ordered API -> worker")
 	}
 }
 
@@ -211,8 +241,7 @@ func TestProductionImagesRunAsNonRootWithTLSRoots(t *testing.T) {
 
 	root := filepath.Clean(filepath.Join(serverDir(t), "..", ".."))
 	for _, relative := range []string{
-		filepath.Join("deployments", "docker", "dockerfile.server"),
-		filepath.Join("deployments", "docker", "dockerfile.worker"),
+		filepath.Join("apps", "server", "Dockerfile"),
 	} {
 		content, err := os.ReadFile(filepath.Join(root, relative))
 		if err != nil {
@@ -227,6 +256,10 @@ func TestProductionImagesRunAsNonRootWithTLSRoots(t *testing.T) {
 			"adduser -S -D -H -u 10001",
 			"--chown=fortyone:fortyone",
 			"org.opencontainers.image.revision=\"$BUILD_VERSION\"",
+			"FROM runtime AS server",
+			"FROM runtime AS worker",
+			"CMD [\"/app/api\"]",
+			"CMD [\"/app/worker\"]",
 			"USER fortyone",
 		} {
 			if !strings.Contains(dockerfile, required) {
@@ -240,7 +273,7 @@ func TestProductionBuildContextExcludesLocalToolsAndSecrets(t *testing.T) {
 	t.Parallel()
 
 	root := filepath.Clean(filepath.Join(serverDir(t), "..", ".."))
-	content, err := os.ReadFile(filepath.Join(root, ".dockerignore"))
+	content, err := os.ReadFile(filepath.Join(root, "apps", "server", ".dockerignore"))
 	if err != nil {
 		t.Fatalf("read production Docker ignore contract: %v", err)
 	}

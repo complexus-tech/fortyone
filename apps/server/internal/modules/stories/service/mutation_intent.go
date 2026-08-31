@@ -137,13 +137,18 @@ func newStoryMutationActivity(
 	return activity, nil
 }
 
+type mutationEventDelivery string
+
+const mutationEventDeliveryInternalOnly mutationEventDelivery = "internal_only"
+
 type storyCreatedIntegrationPayload struct {
-	StoryID     uuid.UUID  `json:"storyId"`
-	WorkspaceID uuid.UUID  `json:"workspaceId"`
-	TeamID      uuid.UUID  `json:"teamId"`
-	Title       string     `json:"title"`
-	AssigneeID  *uuid.UUID `json:"assigneeId"`
-	ReporterID  *uuid.UUID `json:"reporterId"`
+	StoryID     uuid.UUID             `json:"storyId"`
+	WorkspaceID uuid.UUID             `json:"workspaceId"`
+	TeamID      uuid.UUID             `json:"teamId"`
+	Title       string                `json:"title"`
+	AssigneeID  *uuid.UUID            `json:"assigneeId"`
+	ReporterID  *uuid.UUID            `json:"reporterId"`
+	Delivery    mutationEventDelivery `json:"_delivery,omitempty"`
 }
 
 type storyUpdatedIntegrationPayload struct {

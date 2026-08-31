@@ -239,7 +239,7 @@ environment or authority exists, in this order:
 - Migrations and rollout: `apps/server/internal/migrations/manifest.json` and
   `apps/server/docs/database/migration-operations.md`.
 - Gates: `apps/server/Makefile`, `.github/workflows/server-quality.yml`, and
-  `.github/workflows/server-sqlc.yml`.
+  `.github/workflows/weekly-assurance.yml`.
 
 ## 8. Status update rule
 

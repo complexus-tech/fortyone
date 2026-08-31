@@ -3,6 +3,7 @@ package stories
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -115,6 +116,60 @@ func TestStoryMutationEventDispatcherDurablySchedulesPublishFailure(t *testing.T
 	}
 	if publisher.publications[0].ID != event.ID {
 		t.Fatalf("published ID = %s, want stable %s", publisher.publications[0].ID, event.ID)
+	}
+}
+
+func TestStoryMutationEventDispatcherCompletesInternalOnlyEventWithoutPublishing(t *testing.T) {
+	t.Parallel()
+
+	now := time.Date(2026, time.August, 30, 12, 0, 0, 0, time.UTC)
+	event := dispatchableStoryMutationEvent(t, now, 1)
+	event.Payload = []byte(`{"storyId":"test","_delivery":"internal_only"}`)
+	repository := &mutationEventRepositoryStub{events: []storydomain.MutationEvent{event}}
+	publisher := &mutationEventPublisherStub{}
+	dispatcher, err := newStoryMutationEventDispatcher(
+		repository, publisher, testkit.NewFixedClock(now), 5,
+	)
+	if err != nil {
+		t.Fatalf("construct dispatcher: %v", err)
+	}
+
+	processed, err := dispatcher.DispatchBatch(t.Context())
+	if err != nil || processed != 1 {
+		t.Fatalf("DispatchBatch() processed=%d error=%v", processed, err)
+	}
+	if len(publisher.publications) != 0 {
+		t.Fatalf("internal-only event was published: %#v", publisher.publications)
+	}
+	if len(repository.completed) != 1 || repository.completed[0] != event.ID || len(repository.retried) != 0 {
+		t.Fatalf("completed=%#v retried=%#v", repository.completed, repository.retried)
+	}
+}
+
+func TestStoryMutationEventDispatcherFailsClosedForUnknownDelivery(t *testing.T) {
+	t.Parallel()
+
+	now := time.Date(2026, time.August, 30, 12, 0, 0, 0, time.UTC)
+	event := dispatchableStoryMutationEvent(t, now, 1)
+	event.Payload = []byte(`{"storyId":"test","_delivery":"unsupported"}`)
+	repository := &mutationEventRepositoryStub{events: []storydomain.MutationEvent{event}}
+	publisher := &mutationEventPublisherStub{}
+	dispatcher, err := newStoryMutationEventDispatcher(
+		repository, publisher, testkit.NewFixedClock(now), 5,
+	)
+	if err != nil {
+		t.Fatalf("construct dispatcher: %v", err)
+	}
+
+	processed, err := dispatcher.DispatchBatch(t.Context())
+	if err != nil || processed != 1 {
+		t.Fatalf("DispatchBatch() processed=%d error=%v", processed, err)
+	}
+	if len(publisher.publications) != 0 || len(repository.completed) != 0 || len(repository.retried) != 1 {
+		t.Fatalf("publications=%#v completed=%#v retried=%#v", publisher.publications, repository.completed, repository.retried)
+	}
+	if !strings.Contains(repository.lastError, "unsupported story mutation event delivery") {
+		t.Fatalf("retry error = %q", repository.lastError)
 	}
 }
 

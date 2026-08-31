@@ -4,10 +4,21 @@ on:
   push:
     branches:
       - main
-
-concurrency:
-  group: ecs-production-release
-  cancel-in-progress: false
+    paths:
+      - "apps/server/cmd/api/**"
+      - "apps/server/cmd/worker/**"
+      - "apps/server/internal/**"
+      - "apps/server/pkg/**"
+      - "apps/server/templates/**"
+      - "apps/server/go.mod"
+      - "apps/server/go.sum"
+      - "apps/server/Dockerfile"
+      - "apps/server/.dockerignore"
+      - ".github/workflows/ecs-fargate-release.yml"
+      - "!apps/server/**/*_test.go"
+      - "!apps/server/internal/bootstrap/architecture/**"
+      - "!apps/server/internal/testkit/**"
+      - "!apps/server/internal/tools/**"
 
 permissions:
   contents: read
@@ -18,22 +29,11 @@ env:
   IMAGE_TAG: ${{ github.sha }}
 
 jobs:
-  server-quality:
-    uses: ./.github/workflows/server-quality.yml
-
   build-and-push:
-    needs: server-quality
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        service:
-          - name: server
-            image: fortyoneapp/server
-            dockerfile: deployments/docker/dockerfile.server
-          - name: worker
-            image: fortyoneapp/worker
-            dockerfile: deployments/docker/dockerfile.worker
+    concurrency:
+      group: server-production-image-build
+      cancel-in-progress: true
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -47,40 +47,65 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push image
+      - name: Build and push server image
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
         with:
-          context: .
-          file: ${{ matrix.service.dockerfile }}
+          context: apps/server
+          file: apps/server/Dockerfile
+          target: server
           platforms: linux/amd64
           push: true
-          tags: ${{ matrix.service.image }}:${{ env.IMAGE_TAG }}
+          tags: ${{ env.DOCKERHUB_SERVER_IMAGE }}:${{ env.IMAGE_TAG }}
           build-args: |
             BUILD_VERSION=${{ github.sha }}
-          provenance: mode=max
+          provenance: mode=min
           sbom: true
-          cache-from: type=gha,scope=${{ matrix.service.name }}-image
-          cache-to: type=gha,mode=max,scope=${{ matrix.service.name }}-image
+          cache-from: type=gha,scope=server-production-images
+
+      - name: Build and push worker image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
+        with:
+          context: apps/server
+          file: apps/server/Dockerfile
+          target: worker
+          platforms: linux/amd64
+          push: true
+          tags: ${{ env.DOCKERHUB_WORKER_IMAGE }}:${{ env.IMAGE_TAG }}
+          build-args: |
+            BUILD_VERSION=${{ github.sha }}
+          provenance: mode=min
+          sbom: true
+          cache-from: type=gha,scope=server-production-images
+          cache-to: type=gha,mode=max,scope=server-production-images
 
       - name: Block high and critical runtime vulnerabilities
+        shell: bash
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/trivy-cache"
-          docker run --rm \
-            --volume "$RUNNER_TEMP/trivy-cache:/root/.cache/trivy" \
-            --volume "$HOME/.docker/config.json:/root/.docker/config.json:ro" \
-            aquasec/trivy:0.74.0@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969 \
-            image \
-            --cache-dir /root/.cache/trivy \
-            --scanners vuln \
-            --severity HIGH,CRITICAL \
-            --exit-code 1 \
-            --no-progress \
-            "${{ matrix.service.image }}:${{ env.IMAGE_TAG }}"
 
-  deploy-server:
+          for image in \
+            "$DOCKERHUB_SERVER_IMAGE:$IMAGE_TAG" \
+            "$DOCKERHUB_WORKER_IMAGE:$IMAGE_TAG"; do
+            docker run --rm \
+              --volume "$RUNNER_TEMP/trivy-cache:/root/.cache/trivy" \
+              --volume "$HOME/.docker/config.json:/root/.docker/config.json:ro" \
+              aquasec/trivy:0.74.0@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969 \
+              image \
+              --cache-dir /root/.cache/trivy \
+              --scanners vuln \
+              --severity HIGH,CRITICAL \
+              --exit-code 1 \
+              --no-progress \
+              "$image"
+          done
+
+  deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
+    concurrency:
+      group: ecs-production-deploy
+      cancel-in-progress: false
     steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # v5.1.1
@@ -103,26 +128,13 @@ jobs:
           container-name: ${{ vars.ECS_SERVER_CONTAINER }}
           image: ${{ env.DOCKERHUB_SERVER_IMAGE }}:${{ env.IMAGE_TAG }}
 
-      - name: Deploy server service
+      - name: Submit server rollout
         uses: aws-actions/amazon-ecs-deploy-task-definition@c465972ecbd160473f22e683363b422a5412a3de # v2.6.3
         with:
           task-definition: ${{ steps.render-server.outputs.task-definition }}
           service: ${{ vars.ECS_SERVER_SERVICE }}
           cluster: ${{ vars.ECS_CLUSTER }}
           wait-for-service-stability: false
-
-  deploy-worker:
-    needs:
-      - build-and-push
-      - deploy-server
-    runs-on: ubuntu-latest
-    steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # v5.1.1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ vars.AWS_REGION }}
 
       - name: Download worker task definition
         run: |
@@ -138,7 +150,7 @@ jobs:
           container-name: ${{ vars.ECS_WORKER_CONTAINER }}
           image: ${{ env.DOCKERHUB_WORKER_IMAGE }}:${{ env.IMAGE_TAG }}
 
-      - name: Deploy worker service
+      - name: Submit worker rollout
         uses: aws-actions/amazon-ecs-deploy-task-definition@c465972ecbd160473f22e683363b422a5412a3de # v2.6.3
         with:
           task-definition: ${{ steps.render-worker.outputs.task-definition }}

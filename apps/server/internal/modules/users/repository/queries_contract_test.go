@@ -45,6 +45,16 @@ func TestUserQueriesRetainIdentityAndTenantSecurityBoundaries(t *testing.T) {
 			},
 		},
 		{
+			name: "onboarding tour progress",
+			file: "queries/onboarding_tour_progress.sql",
+			required: []string{
+				"membership.user_id = sqlc.arg(user_id)",
+				"membership.workspace_id = sqlc.arg(workspace_id)",
+				"account.is_active = TRUE",
+				"ON CONFLICT (user_id, workspace_id, tour_key, tour_version)",
+			},
+		},
+		{
 			name: "verification token one-time use",
 			file: "queries/verification_tokens.sql",
 			required: []string{
@@ -82,6 +92,7 @@ func TestUserQueryFilesContainNoWildcardProjection(t *testing.T) {
 		"queries/automation_preferences.sql",
 		"queries/external_identities.sql",
 		"queries/memories.sql",
+		"queries/onboarding_tour_progress.sql",
 		"queries/verification_tokens.sql",
 	} {
 		source, err := os.ReadFile(file)

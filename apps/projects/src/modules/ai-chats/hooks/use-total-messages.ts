@@ -9,9 +9,9 @@ export const useTotalMessages = () => {
   const { workspaceSlug } = useWorkspacePath();
 
   return useQuery({
-    queryKey: aiChatKeys.totalMessages(),
+    queryKey: aiChatKeys.totalMessages(workspaceSlug),
     queryFn: () =>
       getTotalMessagesForTheMonth({ session: session!, workspaceSlug }),
-    enabled: Boolean(session),
+    enabled: Boolean(session && workspaceSlug),
   });
 };

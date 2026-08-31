@@ -2,7 +2,10 @@ package usersdomain
 
 import (
 	"errors"
+	"sort"
+	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/google/uuid"
 )
@@ -24,6 +27,7 @@ var (
 	ErrWorkspaceNotFound     = errors.New("workspace not found")
 	ErrMemoryNotFound        = errors.New("memory not found")
 	ErrIdentityStoreMissing  = errors.New("external identity storage is not configured")
+	ErrInvalidOnboardingTour = errors.New("invalid onboarding tour progress")
 )
 
 type VerificationToken struct {
@@ -176,6 +180,131 @@ type UpdateAutomationPreferences struct {
 	AssignSelfOnBranchCopy     *bool
 	MoveStoryToStartedOnBranch *bool
 	OpenStoryInDialog          *bool
+}
+
+const (
+	MaximumOnboardingTourKeyRunes        = 64
+	MaximumOnboardingTourVersionRunes    = 64
+	MaximumOnboardingTourProgressIDs     = 32
+	MaximumOnboardingTourProgressIDRunes = 96
+)
+
+type OnboardingTourStatus string
+
+const (
+	OnboardingTourStatusActive    OnboardingTourStatus = "active"
+	OnboardingTourStatusCompleted OnboardingTourStatus = "completed"
+	OnboardingTourStatusSkipped   OnboardingTourStatus = "skipped"
+)
+
+type OnboardingTourScope struct {
+	TourKey     string
+	TourVersion string
+}
+
+type OnboardingTourProgress struct {
+	UserID             uuid.UUID
+	WorkspaceID        uuid.UUID
+	TourKey            string
+	TourVersion        string
+	CompletedStepIDs   []string
+	CompletedActionIDs []string
+	Status             OnboardingTourStatus
+	CreatedAt          time.Time
+	UpdatedAt          time.Time
+}
+
+type UpdateOnboardingTourProgress struct {
+	OnboardingTourScope
+	CompletedStepIDs   []string
+	CompletedActionIDs []string
+	Status             *OnboardingTourStatus
+}
+
+func (scope *OnboardingTourScope) NormalizeAndValidate() error {
+	if scope == nil {
+		return ErrInvalidOnboardingTour
+	}
+
+	tourKey, err := normalizeOnboardingTourText(scope.TourKey, MaximumOnboardingTourKeyRunes)
+	if err != nil {
+		return err
+	}
+	tourVersion, err := normalizeOnboardingTourText(scope.TourVersion, MaximumOnboardingTourVersionRunes)
+	if err != nil {
+		return err
+	}
+
+	scope.TourKey = tourKey
+	scope.TourVersion = tourVersion
+	return nil
+}
+
+func (update *UpdateOnboardingTourProgress) NormalizeAndValidate() error {
+	if update == nil {
+		return ErrInvalidOnboardingTour
+	}
+	if err := update.OnboardingTourScope.NormalizeAndValidate(); err != nil {
+		return err
+	}
+
+	completedStepIDs, err := normalizeOnboardingTourProgressIDs(update.CompletedStepIDs)
+	if err != nil {
+		return err
+	}
+	completedActionIDs, err := normalizeOnboardingTourProgressIDs(update.CompletedActionIDs)
+	if err != nil {
+		return err
+	}
+
+	update.CompletedStepIDs = completedStepIDs
+	update.CompletedActionIDs = completedActionIDs
+
+	if update.Status == nil {
+		return nil
+	}
+	status := OnboardingTourStatus(strings.TrimSpace(string(*update.Status)))
+	if !status.valid() {
+		return ErrInvalidOnboardingTour
+	}
+	update.Status = &status
+	return nil
+}
+
+func (status OnboardingTourStatus) valid() bool {
+	return status == OnboardingTourStatusActive ||
+		status == OnboardingTourStatusCompleted ||
+		status == OnboardingTourStatusSkipped
+}
+
+func normalizeOnboardingTourText(value string, maximumRunes int) (string, error) {
+	value = strings.TrimSpace(value)
+	if value == "" || !utf8.ValidString(value) || strings.ContainsRune(value, '\x00') || utf8.RuneCountInString(value) > maximumRunes {
+		return "", ErrInvalidOnboardingTour
+	}
+	return value, nil
+}
+
+func normalizeOnboardingTourProgressIDs(values []string) ([]string, error) {
+	if len(values) > MaximumOnboardingTourProgressIDs {
+		return nil, ErrInvalidOnboardingTour
+	}
+
+	seen := make(map[string]struct{}, len(values))
+	normalized := make([]string, 0, len(values))
+	for _, value := range values {
+		identifier, err := normalizeOnboardingTourText(value, MaximumOnboardingTourProgressIDRunes)
+		if err != nil {
+			return nil, err
+		}
+		if _, exists := seen[identifier]; exists {
+			continue
+		}
+		seen[identifier] = struct{}{}
+		normalized = append(normalized, identifier)
+	}
+	sort.Strings(normalized)
+	return normalized, nil
 }
 
 type UserMemoryItem struct {

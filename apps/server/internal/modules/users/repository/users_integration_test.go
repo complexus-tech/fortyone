@@ -138,6 +138,53 @@ func TestUsersEnforceWorkspacePrivateDataAndActorSemantics(t *testing.T) {
 	if !preferences.AutoAssignSelf || preferences.AutoScheduling {
 		t.Fatalf("updated preferences = %#v", preferences)
 	}
+
+	tourScope := users.CoreOnboardingTourScope{TourKey: "workspace-getting-started", TourVersion: "v1"}
+	progress, err := repository.GetOnboardingTourProgress(ctx, activeA, workspaceA, tourScope)
+	if err != nil {
+		t.Fatalf("get default onboarding progress: %v", err)
+	}
+	if progress.Status != users.CoreOnboardingTourStatusActive || len(progress.CompletedStepIDs) != 0 || len(progress.CompletedActionIDs) != 0 {
+		t.Fatalf("default onboarding progress = %#v", progress)
+	}
+	if _, err := repository.GetOnboardingTourProgress(ctx, activeA, workspaceB, tourScope); !errors.Is(err, users.ErrNotFound) {
+		t.Fatalf("cross-workspace onboarding progress error = %v, want ErrNotFound", err)
+	}
+	if _, err := repository.GetOnboardingTourProgress(ctx, inactiveA, workspaceA, tourScope); !errors.Is(err, users.ErrNotFound) {
+		t.Fatalf("inactive onboarding progress error = %v, want ErrNotFound", err)
+	}
+
+	completed := users.CoreOnboardingTourStatusCompleted
+	progress, err = repository.UpdateOnboardingTourProgress(ctx, activeA, workspaceA, users.CoreUpdateOnboardingTourProgress{
+		OnboardingTourScope: tourScope,
+		CompletedStepIDs:    []string{"create-task"},
+		CompletedActionIDs:  []string{"create-task"},
+		Status:              &completed,
+	})
+	if err != nil {
+		t.Fatalf("complete onboarding task step: %v", err)
+	}
+	if progress.Status != users.CoreOnboardingTourStatusCompleted ||
+		len(progress.CompletedStepIDs) != 1 || progress.CompletedStepIDs[0] != "create-task" ||
+		len(progress.CompletedActionIDs) != 1 || progress.CompletedActionIDs[0] != "create-task" {
+		t.Fatalf("completed onboarding progress = %#v", progress)
+	}
+
+	active := users.CoreOnboardingTourStatusActive
+	progress, err = repository.UpdateOnboardingTourProgress(ctx, activeA, workspaceA, users.CoreUpdateOnboardingTourProgress{
+		OnboardingTourScope: tourScope,
+		CompletedStepIDs:    []string{"open-maya"},
+		CompletedActionIDs:  []string{"open-maya"},
+		Status:              &active,
+	})
+	if err != nil {
+		t.Fatalf("merge onboarding progress: %v", err)
+	}
+	if progress.Status != users.CoreOnboardingTourStatusCompleted ||
+		len(progress.CompletedStepIDs) != 2 || progress.CompletedStepIDs[0] != "create-task" || progress.CompletedStepIDs[1] != "open-maya" ||
+		len(progress.CompletedActionIDs) != 2 || progress.CompletedActionIDs[0] != "create-task" || progress.CompletedActionIDs[1] != "open-maya" {
+		t.Fatalf("merged onboarding progress = %#v", progress)
+	}
 }
 
 func TestUserMemoriesRejectRevokedOwnerMembership(t *testing.T) {

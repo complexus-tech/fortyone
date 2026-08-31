@@ -1,4 +1,4 @@
-import { getSessionFromRequest } from "auth";
+import { AuthSessionLookupError, getSessionFromRequest } from "auth";
 import { type NextRequest, NextResponse } from "next/server";
 
 const PROJECTS_URL =
@@ -20,12 +20,30 @@ const buildProjectsLoginRedirect = (requestUrl: string) => {
   return NextResponse.redirect(url);
 };
 
+const authServiceUnavailable = () =>
+  new NextResponse("Authentication service is temporarily unavailable.", {
+    status: 503,
+    headers: {
+      "Cache-Control": "no-store",
+      "Content-Type": "text/plain; charset=utf-8",
+      "Retry-After": "5",
+    },
+  });
+
 export default async function proxy(req: NextRequest) {
   if (isPublicPath(req.nextUrl.pathname)) {
     return NextResponse.next();
   }
 
-  const session = await getSessionFromRequest(req);
+  let session: Awaited<ReturnType<typeof getSessionFromRequest>>;
+  try {
+    session = await getSessionFromRequest(req);
+  } catch (error) {
+    if (error instanceof AuthSessionLookupError) {
+      return authServiceUnavailable();
+    }
+    throw error;
+  }
   if (!session) {
     return buildProjectsLoginRedirect(req.nextUrl.href);
   }

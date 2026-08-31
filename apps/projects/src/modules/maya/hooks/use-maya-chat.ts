@@ -70,6 +70,12 @@ export const useMayaChat = (config: MayaChatConfig) => {
   const { data: aiChatMessages = [] } = useAiChatMessages(currentChatId);
   const [input, setInput] = useState("");
   const isSendingRef = useRef(false);
+  const pendingUserSubmissionRef = useRef(false);
+  const onUserMessageCompletedRef = useRef(config.onUserMessageCompleted);
+
+  useEffect(() => {
+    onUserMessageCompletedRef.current = config.onUserMessageCompleted;
+  }, [config.onUserMessageCompleted]);
 
   const terminology = {
     stories: getTermDisplay("storyTerm", { variant: "plural" }),
@@ -139,7 +145,22 @@ export const useMayaChat = (config: MayaChatConfig) => {
     id: currentChatId,
     transport,
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithApprovalResponses,
-    onFinish: ({ message }) => {
+    onError: () => {
+      pendingUserSubmissionRef.current = false;
+    },
+    onFinish: ({ isAbort, isDisconnect, isError, message }) => {
+      const completedUserSubmission =
+        pendingUserSubmissionRef.current &&
+        !isAbort &&
+        !isDisconnect &&
+        !isError;
+
+      pendingUserSubmissionRef.current = false;
+
+      if (completedUserSubmission) {
+        onUserMessageCompletedRef.current?.();
+      }
+
       message.parts.forEach((part) => {
         // Handle side effects for navigation and theme
         if (part.type === "tool-navigation") {
@@ -165,7 +186,7 @@ export const useMayaChat = (config: MayaChatConfig) => {
         if (part.type === "text") {
           queryClient.invalidateQueries({ queryKey: aiChatKeys.lists() });
           queryClient.invalidateQueries({
-            queryKey: aiChatKeys.totalMessages(),
+            queryKey: aiChatKeys.totalMessages(workspaceSlug),
           });
           return;
         }
@@ -277,10 +298,16 @@ export const useMayaChat = (config: MayaChatConfig) => {
           ),
         );
 
-        await sendMessage({
-          text: content,
-          files: attachmentData,
-        });
+        pendingUserSubmissionRef.current = true;
+        try {
+          await sendMessage({
+            text: content,
+            files: attachmentData,
+          });
+        } catch (error) {
+          pendingUserSubmissionRef.current = false;
+          throw error;
+        }
       },
     });
   };
@@ -292,6 +319,11 @@ export const useMayaChat = (config: MayaChatConfig) => {
   const handleSend = () => {
     if (!input.trim() && attachments.length === 0) return;
     void handleSendMessage(input);
+  };
+
+  const stop = () => {
+    pendingUserSubmissionRef.current = false;
+    handleStop();
   };
 
   return {
@@ -308,7 +340,7 @@ export const useMayaChat = (config: MayaChatConfig) => {
     // Chat actions
     setInput,
     handleSend,
-    handleStop,
+    handleStop: stop,
     regenerate: handleRegenerate,
     handleNewChat,
     handleChatSelect,

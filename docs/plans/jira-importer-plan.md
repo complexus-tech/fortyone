@@ -65,6 +65,15 @@ That means the importer should be built as a proper module and job pipeline, not
 7. Prefer admin-controlled import with team-level routing.
 8. Support resumability for large imports.
 
+### Reviewed-Batch Idempotency Boundary
+
+The bounded synchronous story-import endpoint uses different idempotency scopes by source type:
+
+- `jira_csv` uses the destination FortyOne workspace, destination team, and canonical Jira issue key. It deliberately does not use the CSV file digest, so retrying an issue from a refreshed Jira export into the same team replays the existing story instead of creating a duplicate. Jira CSV source keys must be actual Jira Cloud issue keys: a project key of at least two characters that starts with an uppercase letter and otherwise contains only uppercase letters or numbers, followed by a hyphen and a positive numeric issue number (for example, `ABC-123`). Generic identifiers such as `row-1` must use the `file` provider instead.
+- `file` uses the destination workspace, destination team, file digest, and source row key. A changed generic file is treated as a distinct source because there is no provider-level identifier with Jira issue-key semantics.
+
+Jira CSV has an unavoidable identity limitation: an issue key such as `ABC-123` does not identify the Jira Cloud site it came from. Two different Jira sites can therefore produce the same issue key, and importing both CSVs into the same FortyOne team will treat them as the same source item. Changing the destination team intentionally creates a separate story. The future connected Jira importer must include `jira_cloud_id` in its idempotency scope; CSV cannot safely infer that identity from exported issue data. Atlassian documents the Cloud project-key constraints and the sequential-number composition of work item keys in its [Jira Cloud project and work item key guidance](https://support.atlassian.com/jira-service-management-cloud/docs/work-with-requests-and-issues-in-jira-cloud-products/).
+
 ## Target User Experience
 
 ### Workspace Admin

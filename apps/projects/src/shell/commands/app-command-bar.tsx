@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Badge, Button, Flex, Menu, Tooltip } from "ui";
+import { useRef, useState, type Dispatch, type SetStateAction } from "react";
+import { Badge, Box, Button, Flex, Menu, Tooltip } from "ui";
 import {
   CommandIcon,
   DocsIcon,
@@ -13,6 +13,7 @@ import {
 import { useParams, usePathname } from "next/navigation";
 import { useUnreadNotifications } from "@/modules/notifications/hooks/unread";
 import { useCurrentAppCommandAction } from "@/components/shared/app-command-action-context";
+import { useWalkthrough } from "@/components/walkthrough/walkthrough-provider";
 import { KeyboardShortcuts } from "@/components/shared/keyboard-shortcuts";
 import { ProfileMenu } from "@/components/shared/sidebar/profile-menu";
 import { WorkspacesMenu } from "@/components/shared/sidebar/workspaces-menu";
@@ -22,6 +23,7 @@ import { NewStoryDialog } from "@/components/ui/new-story-dialog";
 import { useUserRole } from "@/hooks/role";
 import { useTerminology } from "@/hooks/use-terminology-display";
 import { useWorkspacePath } from "@/hooks/use-workspace-path";
+import { walkthroughTargets } from "@/shared/walkthrough/targets";
 import { Commands } from "./commands";
 
 const isTeamObjectivesIndex = (pathname: string) =>
@@ -31,6 +33,8 @@ export const AppCommandBar = () => {
   const [isStoryOpen, setIsStoryOpen] = useState(false);
   const [isObjectiveOpen, setIsObjectiveOpen] = useState(false);
   const [isKeyboardShortcutsOpen, setIsKeyboardShortcutsOpen] = useState(false);
+  const hasCreatedStoryRef = useRef(false);
+  const isStoryOpenRef = useRef(false);
   const { isCollapsed } = useSidebar();
   const action = useCurrentAppCommandAction();
   const pathname = usePathname();
@@ -43,6 +47,7 @@ export const AppCommandBar = () => {
   const { getTermDisplay } = useTerminology();
   const { userRole } = useUserRole();
   const { withWorkspace } = useWorkspacePath();
+  const { completeWalkthroughAction } = useWalkthrough();
 
   const createsObjective =
     pathname === withWorkspace("/roadmap") || isTeamObjectivesIndex(pathname);
@@ -51,6 +56,34 @@ export const AppCommandBar = () => {
     : `Create ${getTermDisplay("storyTerm")}`;
   const label = action?.label ?? fallbackLabel;
   const isDisabled = action?.disabled ?? userRole === "guest";
+  const createsStory = !action && !createsObjective;
+
+  const completeCreatedStoryWalkthroughAction = () => {
+    if (isStoryOpenRef.current || !hasCreatedStoryRef.current) {
+      return;
+    }
+
+    hasCreatedStoryRef.current = false;
+    completeWalkthroughAction("story-created");
+  };
+  const setStoryDialogOpen: Dispatch<SetStateAction<boolean>> = (nextState) => {
+    const isOpen =
+      typeof nextState === "function"
+        ? nextState(isStoryOpenRef.current)
+        : nextState;
+
+    isStoryOpenRef.current = isOpen;
+    setIsStoryOpen(isOpen);
+
+    if (!isOpen) {
+      completeCreatedStoryWalkthroughAction();
+    }
+  };
+  const handleStoryCreated = () => {
+    hasCreatedStoryRef.current = true;
+
+    queueMicrotask(completeCreatedStoryWalkthroughAction);
+  };
 
   const handleCreate = () => {
     if (isDisabled) return;
@@ -62,7 +95,7 @@ export const AppCommandBar = () => {
       setIsObjectiveOpen(true);
       return;
     }
-    setIsStoryOpen(true);
+    setStoryDialogOpen(true);
   };
 
   return (
@@ -91,6 +124,7 @@ export const AppCommandBar = () => {
                 <Button
                   className="h-11 px-3"
                   color="tertiary"
+                  data-walkthrough-target={walkthroughTargets.help}
                   leftIcon={<HelpIcon className="h-5" />}
                   variant="naked"
                 >
@@ -135,28 +169,30 @@ export const AppCommandBar = () => {
               </Menu.Items>
             </Menu>
             <Tooltip title="Notifications">
-              <Button
-                aria-label="Notifications"
-                asIcon
-                className="group relative h-11 w-11"
-                color="tertiary"
-                href={withWorkspace("/notifications")}
-                leftIcon={
-                  <Notification02Icon className="h-[1.4rem] transition-transform group-hover:rotate-12" />
-                }
-                prefetch
-                variant="naked"
-              >
-                {unreadNotifications ? (
-                  <Badge
-                    className="absolute -top-0.5 -right-0.5 shrink-0"
-                    rounded="full"
-                    size="sm"
-                  >
-                    {unreadNotifications > 9 ? "9+" : unreadNotifications}
-                  </Badge>
-                ) : null}
-              </Button>
+              <Box data-walkthrough-target={walkthroughTargets.notifications}>
+                <Button
+                  asIcon
+                  className="group relative h-11 w-11"
+                  color="tertiary"
+                  href={withWorkspace("/notifications")}
+                  leftIcon={
+                    <Notification02Icon className="h-[1.4rem] transition-transform group-hover:rotate-12" />
+                  }
+                  prefetch
+                  variant="naked"
+                >
+                  <span className="sr-only">Notifications</span>
+                  {unreadNotifications ? (
+                    <Badge
+                      className="absolute -top-0.5 -right-0.5 shrink-0"
+                      rounded="full"
+                      size="sm"
+                    >
+                      {unreadNotifications > 9 ? "9+" : unreadNotifications}
+                    </Badge>
+                  ) : null}
+                </Button>
+              </Box>
             </Tooltip>
             <Tooltip title={label}>
               <Button
@@ -165,6 +201,10 @@ export const AppCommandBar = () => {
                 className="!size-9 !max-w-9 !min-w-9 shrink-0"
                 color="primary"
                 data-app-contextual-create-button
+                data-walkthrough-create-kind={
+                  createsStory ? "story" : undefined
+                }
+                data-walkthrough-target={walkthroughTargets.create}
                 disabled={isDisabled}
                 leftIcon={
                   <PlusIcon className="text-current dark:text-current" />
@@ -182,7 +222,8 @@ export const AppCommandBar = () => {
       <NewStoryDialog
         isOpen={isStoryOpen}
         objectiveId={params.objectiveId}
-        setIsOpen={setIsStoryOpen}
+        onCreated={handleStoryCreated}
+        setIsOpen={setStoryDialogOpen}
         sprintId={params.sprintId}
         teamId={params.teamId}
       />

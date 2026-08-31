@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
 import { Badge } from "./badge";
 import { cn } from "lib";
 
@@ -11,7 +11,7 @@ export const Kbd = ({
 }) => (
   <Badge
     className={cn(
-      "h-6 min-w-6 rounded-md px-1 uppercase tracking-wider dark:bg-surface-prominent/65",
+      "inline-flex h-6 min-w-6 whitespace-nowrap rounded-md px-1 uppercase tracking-wider dark:bg-surface-prominent/65",
       className,
     )}
     color="tertiary"

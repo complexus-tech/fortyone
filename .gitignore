@@ -8,6 +8,12 @@ node_modules
 # testing
 coverage
 
+# generated and local tooling artifacts
+*.tsbuildinfo
+/.playwright-cli/
+/output/
+/tmp/
+
 # next.js
 .next/
 out/
@@ -30,7 +36,6 @@ yarn-error.log*
 .env.development.local
 .env.test.local
 .env.production.local
-fortyone.env
 
 # turbo
 .turbo

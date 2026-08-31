@@ -1,24 +1,27 @@
-name: Server Quality and Security
+name: Server Fast Checks
 
 on:
   pull_request:
     paths:
       - "apps/server/**"
       - ".github/workflows/server-quality.yml"
+      - ".github/workflows/weekly-assurance.yml"
+      - ".github/workflows/codeql-weekly.yml"
       - ".github/workflows/ecs-fargate-release.yml"
-  workflow_call:
+
+concurrency:
+  group: server-fast-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
-  quality:
+  fast-checks:
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: apps/server
-    env:
-      GOTOOLCHAIN: local
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -31,73 +34,48 @@ jobs:
           go-version-file: apps/server/go.mod
           cache-dependency-path: apps/server/go.sum
 
-      - name: Reject incompatible public API changes
-        if: github.event_name == 'pull_request'
-        env:
-          OPENAPI_BASE_REF: ${{ github.event.pull_request.base.sha }}
-        run: make openapi-breaking-check
-
-      - name: Verify modules, formatting, vet, and static analysis
-        run: make quality-check
+      - name: Verify formatting, modules, and Go analysis
+        run: |
+          make format-check
+          go mod verify
+          go mod tidy -diff
+          go vet ./...
 
       - name: Run unit and architecture tests
         run: make test
 
-  security:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: apps/server
-    env:
-      GOTOOLCHAIN: local
-    steps:
-      - name: Checkout
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-
-      - name: Set up Go
-        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
-        with:
-          go-version-file: apps/server/go.mod
-          cache-dependency-path: apps/server/go.sum
-
-      - name: Run reachable-vulnerability and Go security scans
-        run: make security-check
-
-      - name: Install checksum-pinned secret scanner
-        run: make security-bootstrap
-
-      - name: Prove the pinned secret rules detect a known fixture
+      - name: Verify changed generated contracts
         shell: bash
         run: |
-          set -o pipefail
-          if printf 'api_key = "q3W8eR5tY9uI2oP6aS4dF7gH1jK8lZ0x"\n' \
-            | .tools/bin/gitleaks stdin --redact --no-banner --no-color; then
-            echo "gitleaks failed to detect its non-secret test fixture" >&2
-            exit 1
+          set -euo pipefail
+          base_sha="${{ github.event.pull_request.base.sha }}"
+
+          if ! git diff --quiet "$base_sha"...HEAD -- \
+            ':(top)apps/server/internal/modules/**/repository/queries/*.sql' \
+            ':(top)apps/server/sqlc.yaml' \
+            ':(top)apps/server/scripts/*sqlc*'; then
+            make sqlc-bootstrap sqlc-check
           fi
 
-      - name: Scan the API working tree for committed secrets
+          if ! git diff --quiet "$base_sha"...HEAD -- \
+            ':(top)apps/server/api/openapi/**' \
+            ':(top)apps/server/scripts/*openapi*'; then
+            make oapi-bootstrap openapi-check
+            OPENAPI_BASE_REF="$base_sha" make openapi-breaking-check
+          fi
+
+          if ! git diff --quiet "$base_sha"...HEAD -- \
+            ':(top)apps/server/internal/migrations/**'; then
+            make migration-check
+          fi
+
+          if ! git diff --quiet "$base_sha"...HEAD -- \
+            ':(top).github/workflows/server-quality.yml' \
+            ':(top).github/workflows/weekly-assurance.yml' \
+            ':(top).github/workflows/codeql-weekly.yml' \
+            ':(top).github/workflows/ecs-fargate-release.yml'; then
+            make workflow-check
+          fi
+
+      - name: Scan committed Server files for secrets
         run: make gitleaks-check
-
-  race-and-fuzz:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: apps/server
-    env:
-      GOTOOLCHAIN: local
-    steps:
-      - name: Checkout
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-
-      - name: Set up Go
-        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
-        with:
-          go-version-file: apps/server/go.mod
-          cache-dependency-path: apps/server/go.sum
-
-      - name: Run the hermetic race suite
-        run: make test-race
-
-      - name: Run the bounded fuzz smoke suite
-        run: make test-fuzz

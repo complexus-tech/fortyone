@@ -1,8 +1,11 @@
 package usersrepository
 
 import (
+	"time"
+
 	usersdomain "github.com/complexus-tech/projects-api/internal/modules/users/domain"
 	usersql "github.com/complexus-tech/projects-api/internal/modules/users/repository/sqlc"
+	"github.com/google/uuid"
 )
 
 func mapAutomationPreferences(
@@ -18,6 +21,26 @@ func mapAutomationPreferences(
 		OpenStoryInDialog:          row.OpenStoryInDialog,
 		CreatedAt:                  row.CreatedAt,
 		UpdatedAt:                  row.UpdatedAt,
+	}
+}
+
+func mapOnboardingTourProgress(
+	userID, workspaceID uuid.UUID,
+	tourKey, tourVersion string,
+	completedStepIDs, completedActionIDs []string,
+	status string,
+	createdAt, updatedAt time.Time,
+) usersdomain.OnboardingTourProgress {
+	return usersdomain.OnboardingTourProgress{
+		UserID:             userID,
+		WorkspaceID:        workspaceID,
+		TourKey:            tourKey,
+		TourVersion:        tourVersion,
+		CompletedStepIDs:   append([]string(nil), completedStepIDs...),
+		CompletedActionIDs: append([]string(nil), completedActionIDs...),
+		Status:             usersdomain.OnboardingTourStatus(status),
+		CreatedAt:          createdAt,
+		UpdatedAt:          updatedAt,
 	}
 }
 

@@ -17,6 +17,7 @@ import { useRemoveMemberMutation } from "@/modules/teams/hooks/remove-member-mut
 import { useAddMemberMutation } from "@/modules/teams/hooks/add-member-mutation";
 import { useReorderTeamsMutation } from "@/modules/teams/hooks/use-reorder-teams";
 import { useTeamFeedbackSummaries } from "@/modules/team-feedback/hooks/use-team-feedback-summaries";
+import { walkthroughTargets } from "@/shared/walkthrough/targets";
 import { ConfirmDialog } from "@/components/ui";
 import type { Team as TeamType } from "@/modules/teams/types";
 import { openDialogAfterMenuClose } from "@/utils/menu-dialog-state";
@@ -123,6 +124,7 @@ export const Teams = ({ isCollapsed = false }: { isCollapsed?: boolean }) => {
       <Flex
         align={isCollapsed ? "stretch" : "center"}
         className={cn("mb-2", isCollapsed && "w-full")}
+        data-walkthrough-target={walkthroughTargets.teams}
         direction={isCollapsed ? "column" : undefined}
         justify="between"
       >
@@ -138,6 +140,7 @@ export const Teams = ({ isCollapsed = false }: { isCollapsed?: boolean }) => {
                 <button
                   className="focus-visible:ring-primary/40 hover:bg-primary/5 hover:text-primary hover:[&_svg]:text-primary flex min-h-14 w-full flex-none flex-col items-center justify-center gap-1 self-stretch rounded-lg px-1 py-2 text-center transition outline-none focus-visible:ring-2"
                   data-manage-teams-button
+                  data-walkthrough-target={walkthroughTargets.manageTeams}
                   type="button"
                 >
                   <TeamIcon className="h-5.5 w-auto shrink-0" />
@@ -150,6 +153,7 @@ export const Teams = ({ isCollapsed = false }: { isCollapsed?: boolean }) => {
                   asIcon
                   color="tertiary"
                   data-manage-teams-button
+                  data-walkthrough-target={walkthroughTargets.manageTeams}
                   leftIcon={<MoreHorizontalIcon />}
                   size="sm"
                   variant="naked"

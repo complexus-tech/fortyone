@@ -22,6 +22,7 @@ import type { useMayaRealtimeVoice } from "@/modules/maya/hooks/use-maya-realtim
 import { isChatResponseInProgress } from "@/modules/maya/utils/chat-send-policy";
 import { useVoiceRecording } from "@/hooks/use-voice-recording";
 import { useTerminology } from "@/hooks";
+import { walkthroughTargets } from "@/shared/walkthrough/targets";
 
 type ChatInputProps = {
   value: string;
@@ -325,6 +326,7 @@ export const ChatInput = ({
         "px-3 pb-2.5": isPopup,
         "px-6 pb-3": !isPopup,
       })}
+      data-walkthrough-target={walkthroughTargets.mayaComposer}
     >
       {recordingState !== "idle" && (
         <Flex

@@ -9,10 +9,13 @@ const readSource = (path: string) =>
 describe("MayaChat", () => {
   it("keeps AI message limits scoped to non-internal users", () => {
     const source = readSource("src/modules/maya/components/index.tsx");
+    const availabilitySource = readSource(
+      "src/modules/maya/hooks/use-maya-message-availability.ts",
+    );
 
-    expect(source).toContain("useSession");
-    expect(source).toContain("session?.user.isInternal");
-    expect(source).toContain("shouldShowMayaMessageLimit");
+    expect(source).toContain("useMayaMessageAvailability");
+    expect(availabilitySource).toContain("session?.user.isInternal");
+    expect(availabilitySource).toContain("shouldShowMayaMessageLimit");
     expect(source).not.toContain("isLiveVoiceVisible");
     expect(source).toContain("liveVoiceDisabled={needsUpgrade}");
   });

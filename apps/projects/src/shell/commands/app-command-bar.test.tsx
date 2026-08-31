@@ -1,8 +1,11 @@
 /* global describe, expect, it, jest -- Jest globals are provided by the projects test runner. */
 
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
+import { walkthroughTargets } from "@/shared/walkthrough/targets";
 import { AppCommandBar } from "./app-command-bar";
+
+const mockCompleteWalkthroughAction = jest.fn();
 
 jest.mock("next/navigation", () => ({
   useParams: () => ({}),
@@ -17,6 +20,8 @@ jest.mock("ui", () => {
     leftIcon,
     onClick,
     "aria-label": ariaLabel,
+    "data-walkthrough-create-kind": walkthroughCreateKind,
+    "data-walkthrough-target": walkthroughTarget,
   }: {
     children?: ReactNode;
     disabled?: boolean;
@@ -24,15 +29,24 @@ jest.mock("ui", () => {
     leftIcon?: ReactNode;
     onClick?: () => void;
     "aria-label"?: string;
+    "data-walkthrough-create-kind"?: string;
+    "data-walkthrough-target"?: string;
   }) =>
     href ? (
-      <a aria-label={ariaLabel} href={href}>
+      <a
+        aria-label={ariaLabel}
+        data-walkthrough-create-kind={walkthroughCreateKind}
+        data-walkthrough-target={walkthroughTarget}
+        href={href}
+      >
         {leftIcon}
         {children}
       </a>
     ) : (
       <button
         aria-label={ariaLabel}
+        data-walkthrough-create-kind={walkthroughCreateKind}
+        data-walkthrough-target={walkthroughTarget}
         disabled={disabled}
         onClick={onClick}
         type="button"
@@ -41,9 +55,13 @@ jest.mock("ui", () => {
         {children}
       </button>
     );
-  const MockContainer = ({ children }: { children: ReactNode }) => (
-    <div>{children}</div>
-  );
+  const MockContainer = ({
+    children,
+    "data-walkthrough-target": walkthroughTarget,
+  }: {
+    children: ReactNode;
+    "data-walkthrough-target"?: string;
+  }) => <div data-walkthrough-target={walkthroughTarget}>{children}</div>;
   const MockMenuItem = ({
     children,
     onSelect,
@@ -65,6 +83,7 @@ jest.mock("ui", () => {
 
   return {
     Badge: MockContainer,
+    Box: MockContainer,
     Button: MockButton,
     Flex: MockContainer,
     Menu: MockMenu,
@@ -97,7 +116,45 @@ jest.mock("@/components/ui/new-objective", () => ({
 }));
 
 jest.mock("@/components/ui/new-story-dialog", () => ({
-  NewStoryDialog: () => null,
+  NewStoryDialog: ({
+    isOpen,
+    onCreated,
+    setIsOpen,
+  }: {
+    isOpen: boolean;
+    onCreated: () => void;
+    setIsOpen: (isOpen: boolean) => void;
+  }) =>
+    isOpen ? (
+      <div>
+        <button onClick={onCreated} type="button">
+          Simulate story created
+        </button>
+        <button
+          onClick={() => {
+            setIsOpen(false);
+            onCreated();
+          }}
+          type="button"
+        >
+          Simulate story saved
+        </button>
+        <button
+          onClick={() => {
+            setIsOpen(false);
+          }}
+          type="button"
+        >
+          Close task dialog
+        </button>
+      </div>
+    ) : null,
+}));
+
+jest.mock("@/components/walkthrough/walkthrough-provider", () => ({
+  useWalkthrough: () => ({
+    completeWalkthroughAction: mockCompleteWalkthroughAction,
+  }),
 }));
 
 jest.mock("@/components/shared/keyboard-shortcuts", () => ({
@@ -126,16 +183,32 @@ jest.mock("@/components/shared/app-command-action-context", () => ({
 }));
 
 describe("AppCommandBar", () => {
+  beforeEach(() => {
+    mockCompleteWalkthroughAction.mockClear();
+  });
+
   it("shows Help with the existing command controls", () => {
-    render(<AppCommandBar />);
+    const { container } = render(<AppCommandBar />);
 
     expect(screen.getByRole("button", { name: "Help" })).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: "Notifications" }),
+      screen.getByRole("link", { name: /^Notifications/ }),
+    ).toBeInTheDocument();
+    expect(
+      container.querySelector(
+        `[data-walkthrough-target="${walkthroughTargets.notifications}"]`,
+      ),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Create story" }),
-    ).toBeInTheDocument();
+    ).toHaveAttribute("data-walkthrough-target", walkthroughTargets.create);
+    expect(
+      screen.getByRole("button", { name: "Create story" }),
+    ).toHaveAttribute("data-walkthrough-create-kind", "story");
+    expect(screen.getByRole("button", { name: "Help" })).toHaveAttribute(
+      "data-walkthrough-target",
+      walkthroughTargets.help,
+    );
     expect(screen.getByText("Profile")).toBeInTheDocument();
   });
 
@@ -145,5 +218,35 @@ describe("AppCommandBar", () => {
     fireEvent.click(screen.getByRole("button", { name: "Keyboard shortcuts" }));
 
     expect(screen.getByText("Keyboard shortcuts dialog")).toBeInTheDocument();
+  });
+
+  it("completes the walkthrough task action after the task dialog closes", () => {
+    render(<AppCommandBar />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Create story" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Simulate story created" }),
+    );
+
+    expect(mockCompleteWalkthroughAction).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Close task dialog" }));
+
+    expect(mockCompleteWalkthroughAction).toHaveBeenCalledWith("story-created");
+  });
+
+  it("completes after a normally saved task closes its dialog", async () => {
+    render(<AppCommandBar />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Create story" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Simulate story saved" }),
+    );
+
+    await waitFor(() => {
+      expect(mockCompleteWalkthroughAction).toHaveBeenCalledWith(
+        "story-created",
+      );
+    });
   });
 });

@@ -134,6 +134,24 @@ type UpdateAutomationPreferencesRequest struct {
 	OpenStoryInDialog          *bool `json:"openStoryInDialog,omitempty"`
 }
 
+type AppOnboardingTourProgress struct {
+	TourKey            string    `json:"tourKey"`
+	TourVersion        string    `json:"tourVersion"`
+	CompletedStepIDs   []string  `json:"completedStepIds"`
+	CompletedActionIDs []string  `json:"completedActionIds"`
+	Status             string    `json:"status"`
+	CreatedAt          time.Time `json:"createdAt"`
+	UpdatedAt          time.Time `json:"updatedAt"`
+}
+
+type UpdateOnboardingTourProgressRequest struct {
+	TourKey            string                          `json:"tourKey"`
+	TourVersion        string                          `json:"tourVersion"`
+	CompletedStepIDs   []string                        `json:"completedStepIds"`
+	CompletedActionIDs []string                        `json:"completedActionIds"`
+	Status             *users.CoreOnboardingTourStatus `json:"status,omitempty"`
+}
+
 func toAppUser(user users.CoreUser) AppUser {
 	return AppUser{
 		ID:                            user.ID,
@@ -215,6 +233,30 @@ func toCoreUpdateAutomationPreferences(req UpdateAutomationPreferencesRequest) u
 		AssignSelfOnBranchCopy:     req.AssignSelfOnBranchCopy,
 		MoveStoryToStartedOnBranch: req.MoveStoryToStartedOnBranch,
 		OpenStoryInDialog:          req.OpenStoryInDialog,
+	}
+}
+
+func toAppOnboardingTourProgress(progress users.CoreOnboardingTourProgress) AppOnboardingTourProgress {
+	return AppOnboardingTourProgress{
+		TourKey:            progress.TourKey,
+		TourVersion:        progress.TourVersion,
+		CompletedStepIDs:   append([]string(nil), progress.CompletedStepIDs...),
+		CompletedActionIDs: append([]string(nil), progress.CompletedActionIDs...),
+		Status:             string(progress.Status),
+		CreatedAt:          progress.CreatedAt,
+		UpdatedAt:          progress.UpdatedAt,
+	}
+}
+
+func toCoreUpdateOnboardingTourProgress(req UpdateOnboardingTourProgressRequest) users.CoreUpdateOnboardingTourProgress {
+	return users.CoreUpdateOnboardingTourProgress{
+		OnboardingTourScope: users.CoreOnboardingTourScope{
+			TourKey:     req.TourKey,
+			TourVersion: req.TourVersion,
+		},
+		CompletedStepIDs:   append([]string(nil), req.CompletedStepIDs...),
+		CompletedActionIDs: append([]string(nil), req.CompletedActionIDs...),
+		Status:             req.Status,
 	}
 }
 

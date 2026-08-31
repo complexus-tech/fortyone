@@ -1,16 +1,22 @@
 package web
 
 import (
+	"bufio"
 	"context"
+	"errors"
 	"fmt"
+	"io"
+	"net"
 	"net/http"
 	"os"
 	"strings"
+	"sync/atomic"
 	"syscall"
 	"time"
 
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	apptracing "github.com/complexus-tech/projects-api/pkg/tracing"
+	"github.com/felixge/httpsnoop"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/codes"
 	oteltrace "go.opentelemetry.io/otel/trace"
@@ -18,6 +24,57 @@ import (
 
 // Handler is the signature used by all application handlers in this service.
 type Handler func(ctx context.Context, w http.ResponseWriter, r *http.Request) error
+
+var errRequestHandlerPanic = errors.New("request handler panicked")
+
+// responseState tracks whether a handler has committed a response while
+// preserving the exact optional interfaces supported by the original writer.
+// That is important for streaming handlers, which rely on http.Flusher.
+type responseState struct {
+	started atomic.Bool
+}
+
+func (s *responseState) wrap(w http.ResponseWriter) http.ResponseWriter {
+	return httpsnoop.Wrap(w, httpsnoop.Hooks{
+		WriteHeader: func(next httpsnoop.WriteHeaderFunc) httpsnoop.WriteHeaderFunc {
+			return func(statusCode int) {
+				// Informational responses other than Switching Protocols do not
+				// commit the final response and may still be followed by a 500.
+				if statusCode == http.StatusSwitchingProtocols || statusCode >= http.StatusOK {
+					s.started.Store(true)
+				}
+				next(statusCode)
+			}
+		},
+		Write: func(next httpsnoop.WriteFunc) httpsnoop.WriteFunc {
+			return func(body []byte) (int, error) {
+				s.started.Store(true)
+				return next(body)
+			}
+		},
+		Flush: func(next httpsnoop.FlushFunc) httpsnoop.FlushFunc {
+			return func() {
+				s.started.Store(true)
+				next()
+			}
+		},
+		Hijack: func(next httpsnoop.HijackFunc) httpsnoop.HijackFunc {
+			return func() (net.Conn, *bufio.ReadWriter, error) {
+				connection, readWriter, err := next()
+				if err == nil {
+					s.started.Store(true)
+				}
+				return connection, readWriter, err
+			}
+		},
+		ReadFrom: func(next httpsnoop.ReadFromFunc) httpsnoop.ReadFromFunc {
+			return func(source io.Reader) (int64, error) {
+				s.started.Store(true)
+				return next(source)
+			}
+		},
+	})
+}
 
 // App is the main application handler that manages routing, middleware, and shutdown.
 // It wraps the standard http.ServeMux with additional functionality for middleware
@@ -120,13 +177,53 @@ func (a *App) Handle(method string, pattern string, handler Handler, mw ...Middl
 		}
 
 		ctx = SetValues(ctx, v)
+		response := &responseState{}
+		responseWriter := response.wrap(w)
 
-		if err := handler(ctx, w, r); err != nil {
+		defer func() {
+			panicValue := recover()
+			if panicValue == nil {
+				return
+			}
+			if panicValue == http.ErrAbortHandler {
+				panic(panicValue)
+			}
+
+			span.RecordError(errRequestHandlerPanic)
+			span.SetStatus(codes.Error, "request handler panicked")
+			if a.log != nil {
+				a.log.Error(
+					ctx,
+					"request handler panicked",
+					"status_code", http.StatusInternalServerError,
+					"response_started", response.started.Load(),
+				)
+			}
+
+			// Once a response is committed, appending a JSON error would corrupt
+			// an otherwise valid partial response or event stream.
+			if response.started.Load() {
+				return
+			}
+			if err := RespondError(ctx, responseWriter, errRequestHandlerPanic, http.StatusInternalServerError); err != nil && a.log != nil {
+				a.log.Error(ctx, "failed to write panic response", "status_code", http.StatusInternalServerError)
+			}
+		}()
+
+		if err := handler(ctx, responseWriter, r); err != nil {
 			span.SetStatus(codes.Error, "request handler failed")
 			if a.log != nil {
-				a.log.Error(ctx, "request handler failed", "status_code", http.StatusInternalServerError)
+				a.log.Error(
+					ctx,
+					"request handler failed",
+					"status_code", http.StatusInternalServerError,
+					"response_started", response.started.Load(),
+				)
 			}
-			_ = RespondError(ctx, w, err, http.StatusInternalServerError)
+			if response.started.Load() {
+				return
+			}
+			_ = RespondError(ctx, responseWriter, err, http.StatusInternalServerError)
 			return
 		}
 

@@ -1,4 +1,4 @@
-name: Projects Quality
+name: Projects Fast Checks
 
 on:
   pull_request:
@@ -16,22 +16,25 @@ on:
       - "pnpm-workspace.yaml"
       - "turbo.json"
       - ".github/workflows/projects-quality.yml"
-  workflow_call:
+
+concurrency:
+  group: projects-fast-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
-  quality:
+  fast-checks:
     runs-on: ubuntu-latest
     env:
-      GOOGLE_GENERATIVE_AI_API_KEY: projects-quality-placeholder
       NEXT_PUBLIC_API_URL: http://127.0.0.1:8000
       NEXT_PUBLIC_DOMAIN: localhost
-      OPENAI_API_KEY: projects-quality-placeholder
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
 
       - name: Install pnpm
         uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
@@ -45,10 +48,10 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
-      - name: Install workspace dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Install Projects dependencies
+        run: pnpm --filter projects... install --frozen-lockfile
 
-      - name: Verify architecture scanner
+      - name: Verify Projects architecture
         run: |
           pnpm --filter projects architecture:test
           pnpm --filter projects architecture:check
@@ -56,8 +59,26 @@ jobs:
       - name: Type-check Projects
         run: pnpm --filter projects type-check
 
-      - name: Run Projects test suite
-        run: pnpm --filter projects test -- --runInBand
+      - name: Run affected Projects tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          base_sha="${{ github.event.pull_request.base.sha }}"
 
-      - name: Build Projects
-        run: pnpm --filter projects build
+          if ! git diff --quiet "$base_sha"...HEAD -- \
+            'apps/projects/jest.config.cjs' \
+            'apps/projects/jest.setup.ts' \
+            'apps/projects/package.json' \
+            'apps/projects/tsconfig.json' \
+            'packages/**' \
+            'package.json' \
+            'pnpm-lock.yaml' \
+            'pnpm-workspace.yaml' \
+            'turbo.json'; then
+            pnpm --filter projects test -- --maxWorkers=50%
+          else
+            pnpm --filter projects test -- \
+              --changedSince="$base_sha" \
+              --maxWorkers=50% \
+              --passWithNoTests
+          fi

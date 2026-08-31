@@ -142,6 +142,22 @@ func (emailVerificationRateLimitRepo) UpdateAutomationPreferences(ctx context.Co
 	return nil
 }
 
+func (emailVerificationRateLimitRepo) GetOnboardingTourProgress(
+	ctx context.Context,
+	userID, workspaceID uuid.UUID,
+	scope users.CoreOnboardingTourScope,
+) (users.CoreOnboardingTourProgress, error) {
+	return users.CoreOnboardingTourProgress{}, nil
+}
+
+func (emailVerificationRateLimitRepo) UpdateOnboardingTourProgress(
+	ctx context.Context,
+	userID, workspaceID uuid.UUID,
+	updates users.CoreUpdateOnboardingTourProgress,
+) (users.CoreOnboardingTourProgress, error) {
+	return users.CoreOnboardingTourProgress{}, nil
+}
+
 func (emailVerificationRateLimitRepo) AddUserMemory(ctx context.Context, memory users.NewUserMemoryItem) (users.CoreUserMemoryItem, error) {
 	return users.CoreUserMemoryItem{}, nil
 }

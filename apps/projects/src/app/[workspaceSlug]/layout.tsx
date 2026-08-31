@@ -15,11 +15,16 @@ import { objectiveKeys } from "@/modules/objectives/constants";
 import { getObjectiveStatuses } from "@/modules/objectives/queries/statuses";
 import { getStatuses } from "@/lib/queries/states/get-states";
 import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
-import { WalkthroughIntegration } from "@/components/walkthrough/walkthrough-integration";
 import { getRunningSprints } from "@/modules/sprints/queries/get-running-sprints";
 import { Chat } from "@/components/ui/chat";
+import { WalkthroughProvider } from "@/components/walkthrough/walkthrough-provider";
+import {
+  WORKSPACE_GETTING_STARTED_TOUR_KEY,
+  WORKSPACE_GETTING_STARTED_TOUR_VERSION,
+} from "@/components/walkthrough/walkthrough-tour";
 import { ChatProvider } from "@/context/chat-context";
 import { getProfile } from "@/lib/queries/users/profile";
+import { getOnboardingTourProgress } from "@/lib/queries/users/onboarding-tour-progress";
 import { getCookieHeader } from "@/lib/http/header";
 import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
 import { ServerSentEvents } from "../server-sent-events";
@@ -86,18 +91,35 @@ export default async function RootLayout({
         }),
       staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
     }),
+    queryClient.prefetchQuery({
+      queryKey: userKeys.onboardingTourProgress(
+        workspaceSlug,
+        WORKSPACE_GETTING_STARTED_TOUR_KEY,
+        WORKSPACE_GETTING_STARTED_TOUR_VERSION,
+      ),
+      queryFn: () =>
+        getOnboardingTourProgress(ctx, {
+          tourKey: WORKSPACE_GETTING_STARTED_TOUR_KEY,
+          tourVersion: WORKSPACE_GETTING_STARTED_TOUR_VERSION,
+        }),
+      staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
+    }),
     // switchWorkspace(workspace.id),
   ]);
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <ChatProvider>
-        {children}
-        <ServerSentEvents />
-        <IdentifyUser />
-        <WalkthroughIntegration />
-        <Chat />
-      </ChatProvider>
+      <WalkthroughProvider
+        autoStart
+        version={WORKSPACE_GETTING_STARTED_TOUR_VERSION}
+      >
+        <ChatProvider>
+          {children}
+          <ServerSentEvents />
+          <IdentifyUser />
+          <Chat />
+        </ChatProvider>
+      </WalkthroughProvider>
     </HydrationBoundary>
   );
 }

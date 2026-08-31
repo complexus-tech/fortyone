@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { cn } from "lib";
 import { Box, Collapsible, Flex } from "ui";
@@ -22,6 +23,10 @@ import {
   useWorkspacePath,
 } from "@/hooks";
 import { useRunningSprints } from "@/modules/sprints/hooks/running-sprints";
+import {
+  walkthroughTargets,
+  type WalkthroughTarget,
+} from "@/shared/walkthrough/targets";
 
 type MenuItem = {
   name: string;
@@ -119,6 +124,17 @@ export const Navigation = ({
       if (disabled) return null;
 
       const isActive = isLinkActive(href);
+      let walkthroughTarget: WalkthroughTarget | undefined;
+
+      if (href === withWorkspace("/maya")) {
+        walkthroughTarget = walkthroughTargets.mayaNavigation;
+      } else if (href === withWorkspace("/my-work")) {
+        walkthroughTarget = walkthroughTargets.myWork;
+      } else if (href === withWorkspace("/calendar")) {
+        walkthroughTarget = walkthroughTargets.calendar;
+      } else if (href === withWorkspace("/roadmap")) {
+        walkthroughTarget = walkthroughTargets.roadmap;
+      }
 
       return (
         <NavLink
@@ -145,6 +161,7 @@ export const Navigation = ({
           }
           data-nav-my-work={href === withWorkspace("/my-work") ? "" : undefined}
           data-nav-summary={href === withWorkspace("/summary") ? "" : undefined}
+          data-walkthrough-target={walkthroughTarget}
           href={href}
           key={name}
         >
@@ -166,6 +183,12 @@ export const Navigation = ({
   const workspaceIsActive = workspaceLinks.some(
     ({ disabled, href }) => !disabled && isLinkActive(href),
   );
+
+  useEffect(() => {
+    if (workspaceIsActive && !isWorkspaceOpen) {
+      setIsWorkspaceOpen(true);
+    }
+  }, [isWorkspaceOpen, setIsWorkspaceOpen, workspaceIsActive]);
 
   return (
     <Box>

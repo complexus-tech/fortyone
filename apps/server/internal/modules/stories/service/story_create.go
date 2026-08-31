@@ -25,6 +25,7 @@ func (s *Service) Create(ctx context.Context, ns CoreNewStory, workspaceId uuid.
 	return s.createWithOptions(ctx, ns, workspaceId, actorID, createOptions{
 		publishEvents:     true,
 		enqueueGitHubSync: true,
+		traceStoryTitle:   true,
 		actorKind:         auth.PrincipalHumanUser,
 	})
 }
@@ -33,7 +34,18 @@ func (s *Service) CreateExternal(ctx context.Context, actorID uuid.UUID, ns Core
 	if ns.Reporter == nil {
 		ns.Reporter = &actorID
 	}
-	return s.createWithOptions(ctx, ns, workspaceID, actorID, createOptions{actorKind: auth.PrincipalSystem})
+	var delivery mutationEventDelivery
+	switch ns.ExternalDelivery {
+	case storydomain.ExternalStoryDeliveryDefault:
+	case storydomain.ExternalStoryDeliveryInternalOnly:
+		delivery = mutationEventDeliveryInternalOnly
+	default:
+		return CoreSingleStory{}, fmt.Errorf("%w: unsupported external story delivery", ErrInvalidStoryMutation)
+	}
+	return s.createWithOptions(ctx, ns, workspaceID, actorID, createOptions{
+		mutationEventDelivery: delivery,
+		actorKind:             auth.PrincipalSystem,
+	})
 }
 
 // CreateExternalUserAction creates a story from a user-initiated external
@@ -47,6 +59,7 @@ func (s *Service) CreateExternalUserAction(ctx context.Context, actorID uuid.UUI
 	return s.createWithOptions(ctx, ns, workspaceID, actorID, createOptions{
 		publishEvents:     true,
 		enqueueGitHubSync: true,
+		traceStoryTitle:   true,
 		actorKind:         auth.PrincipalHumanUser,
 	})
 }
@@ -167,6 +180,7 @@ func (s *Service) createWithOptions(ctx context.Context, ns CoreNewStory, worksp
 			storyCreatedIntegrationPayload{
 				StoryID: story.ID, WorkspaceID: workspaceId, TeamID: story.Team,
 				Title: story.Title, AssigneeID: story.Assignee, ReporterID: story.Reporter,
+				Delivery: options.mutationEventDelivery,
 			},
 			mutationTime,
 		)
@@ -258,8 +272,12 @@ func (s *Service) createWithOptions(ctx context.Context, ns CoreNewStory, worksp
 	if cs.AutoSchedulingEnabled {
 		s.enqueueWorkspaceScheduleBatch(ctx, workspaceId)
 	}
-	span.AddEvent("story created.", trace.WithAttributes(
-		attribute.String("story.title", cs.Title),
-	))
+	if options.traceStoryTitle {
+		span.AddEvent("story created.", trace.WithAttributes(
+			attribute.String("story.title", cs.Title),
+		))
+	} else {
+		span.AddEvent("story created.")
+	}
 	return cs, nil
 }

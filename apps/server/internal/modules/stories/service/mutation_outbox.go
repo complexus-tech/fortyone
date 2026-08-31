@@ -2,6 +2,7 @@ package stories
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -106,7 +107,10 @@ func (dispatcher *StoryMutationEventDispatcher) DispatchBatch(ctx context.Contex
 			Type: string(event.Type), Actor: event.Actor,
 			Payload: append([]byte(nil), event.Payload...), OccurredAt: event.OccurredAt.UTC(),
 		}
-		publishErr := dispatcher.publisher.PublishStoryMutationEvent(ctx, publication)
+		shouldPublish, publishErr := shouldPublishStoryMutationEvent(event.Payload)
+		if publishErr == nil && shouldPublish {
+			publishErr = dispatcher.publisher.PublishStoryMutationEvent(ctx, publication)
+		}
 		completedAt := dispatcher.clock.Now().UTC()
 		if completedAt.Before(now) {
 			completedAt = now
@@ -135,6 +139,23 @@ func (dispatcher *StoryMutationEventDispatcher) DispatchBatch(ctx context.Contex
 		processed++
 	}
 	return processed, nil
+}
+
+func shouldPublishStoryMutationEvent(payload []byte) (bool, error) {
+	var metadata struct {
+		Delivery mutationEventDelivery `json:"_delivery"`
+	}
+	if err := json.Unmarshal(payload, &metadata); err != nil {
+		return false, fmt.Errorf("decode story mutation event delivery: %w", err)
+	}
+	switch metadata.Delivery {
+	case "":
+		return true, nil
+	case mutationEventDeliveryInternalOnly:
+		return false, nil
+	default:
+		return false, fmt.Errorf("unsupported story mutation event delivery %q", metadata.Delivery)
+	}
 }
 
 func storyMutationRetryDelay(attempt int) time.Duration {

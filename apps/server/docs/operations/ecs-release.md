@@ -7,18 +7,19 @@ contract, not a self-hosting distribution path.
 
 ## Release sequence
 
-Every release uses the triggering Git commit SHA for both images:
+Every release uses the triggering Git commit SHA for both images. Pull-request
+checks are the merge gate; the release does not repeat them after merge:
 
-1. run the required server quality and SQLC workflows;
-2. build and scan the API and worker images;
+1. build the API and worker targets through one shared Docker builder;
+2. scan both runtime images;
 3. publish `fortyoneapp/server:<commit-sha>` and
    `fortyoneapp/worker:<commit-sha>` to Docker Hub;
-4. deploy the API task definition and wait for service stability;
-5. deploy the worker task definition and wait for service stability.
+4. submit the API task definition rollout;
+5. submit the worker task definition rollout.
 
-The workflow does not run production database migrations. The typed-database
-workflow still applies the migration chain to its disposable PostgreSQL
-container so SQLC generation and queries are validated without changing
+The workflow does not run production database migrations. Weekly assurance
+applies the migration chain to disposable PostgreSQL, vets SQLC against that
+schema, and runs the tagged database and Redis suite without changing
 production data.
 
 Apply required production migrations separately before deploying code that
@@ -47,14 +48,18 @@ tag; task definitions receive the exact commit-tagged image.
 
 ## Failure and recovery
 
-- **Quality, SQLC, build, or scan fails:** no service changes.
-- **API deployment fails:** the worker is not deployed. Repair the API release
-  or restore a schema-compatible task definition.
-- **Worker deployment fails:** the stable API remains deployed. Repair the
-  worker using an image compatible with the deployed API and schema.
+- **Build or scan fails:** no service changes.
+- **API rollout submission fails:** the worker is not deployed. Repair the API
+  release or restore a schema-compatible task definition.
+- **Worker rollout submission fails:** the API rollout has already been
+  submitted. Repair the worker using an image compatible with the deployed API
+  and schema.
 
-The workflow uses `cancel-in-progress: false`, so two production releases do
-not interleave their ECS deployments.
+Superseded image builds are cancelled so only the latest commit reaches the
+deployment queue. The consolidated deployment job is never cancelled while it
+is submitting the ordered API and worker rollouts. A successful workflow means
+ECS accepted both rollouts; service stability and automatic rollback remain ECS
+operational responsibilities.
 
 ## Verification
 

@@ -13,8 +13,52 @@ describe("renderTemplate", () => {
     };
 
     expect(renderTemplate(message)).toEqual({
+      segments: [
+        {
+          emphasized: true,
+          key: "actor",
+          kind: "variable",
+          value: "Ava",
+        },
+        { kind: "text", value: " mentioned you in " },
+        { kind: "text", value: "{story}" },
+        { kind: "text", value: "." },
+      ],
       text: "Ava mentioned you in {story}.",
-      html: '<span class="font-semibold antialiased text-foreground/90">Ava</span> mentioned you in {story}.',
     });
+  });
+
+  it("keeps untrusted values as data rather than synthesizing HTML", () => {
+    const content =
+      '<script>alert("xss")</script><img src=x onerror="alert(1)">&lt;entity&gt;';
+    const message: AppNotification["message"] = {
+      template: "{actor} mentioned you: {content}",
+      variables: {
+        actor: { value: '<img src=x onerror="actor()">' },
+        content: { value: content, type: "text" },
+      },
+    };
+
+    const result = renderTemplate(message);
+
+    expect(result.text).toBe(
+      `<img src=x onerror="actor()"> mentioned you: ${content}`,
+    );
+    expect(result.segments).toEqual([
+      {
+        emphasized: true,
+        key: "actor",
+        kind: "variable",
+        value: '<img src=x onerror="actor()">',
+      },
+      { kind: "text", value: " mentioned you: " },
+      {
+        emphasized: false,
+        key: "content",
+        kind: "variable",
+        value: content,
+      },
+    ]);
+    expect(result).not.toHaveProperty("html");
   });
 });

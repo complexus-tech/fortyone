@@ -28,6 +28,8 @@ type Repository interface {
 	Create(ctx context.Context, user CoreUser) (CoreUser, error)
 	GetAutomationPreferences(ctx context.Context, userID, workspaceID uuid.UUID) (CoreAutomationPreferences, error)
 	UpdateAutomationPreferences(ctx context.Context, userID, workspaceID uuid.UUID, updates CoreUpdateAutomationPreferences) error
+	GetOnboardingTourProgress(ctx context.Context, userID, workspaceID uuid.UUID, scope CoreOnboardingTourScope) (CoreOnboardingTourProgress, error)
+	UpdateOnboardingTourProgress(ctx context.Context, userID, workspaceID uuid.UUID, updates CoreUpdateOnboardingTourProgress) (CoreOnboardingTourProgress, error)
 	AddUserMemory(ctx context.Context, memory NewUserMemoryItem) (CoreUserMemoryItem, error)
 	UpdateUserMemory(ctx context.Context, id uuid.UUID, scope UserMemoryScope, update UpdateUserMemoryItem) error
 	DeleteUserMemory(ctx context.Context, id uuid.UUID, scope UserMemoryScope) error

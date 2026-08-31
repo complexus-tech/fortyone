@@ -1,239 +1,361 @@
 import { useMemo } from "react";
 import { Box, Kbd, Text } from "ui";
-import confetti from "canvas-confetti";
-import { usePathname } from "next/navigation";
-import { useSession } from "@/lib/auth/client";
-import { useTerminology } from "@/hooks";
-import { type WalkthroughStep } from "./walkthrough-provider";
+import { usePathname, useRouter } from "next/navigation";
+import { useChatContext } from "@/context/chat-context";
+import {
+  useFeatures,
+  useTerminology,
+  useUserRole,
+  useWorkspacePath,
+} from "@/hooks";
+import {
+  getWalkthroughTargetSelector,
+  walkthroughTargetSelectors,
+  walkthroughTargets,
+} from "@/shared/walkthrough/targets";
+import { WalkthroughStartChoiceIllustration } from "./walkthrough-illustrations";
+import {
+  type WalkthroughStep,
+  type WalkthroughWelcomeChoice,
+} from "./walkthrough-provider";
+import { useMayaMessageAvailability } from "@/modules/maya/hooks/use-maya-message-availability";
 
 export const useWalkthroughSteps = (): WalkthroughStep[] => {
-  const { data: session } = useSession();
   const pathname = usePathname();
+  const router = useRouter();
+  const features = useFeatures();
   const { getTermDisplay } = useTerminology();
+  const { userRole } = useUserRole();
+  const { withWorkspace } = useWorkspacePath();
+  const { openChat } = useChatContext();
+  const {
+    isLimited: isMayaMessageLimitReached,
+    isPending: isMayaMessageAvailabilityPending,
+    isUnavailable: isMayaMessageAvailabilityUnavailable,
+  } = useMayaMessageAvailability();
   const storyTerm = getTermDisplay("storyTerm");
   const storyTermPlural = getTermDisplay("storyTerm", { variant: "plural" });
-  return useMemo(
-    () =>
-      [
-        {
-          id: "welcome",
-          target: "[data-workspace-switcher]",
-          title: `Welcome ${session?.user.name || "to FortyOne"}! 👋`,
-          content: (
-            <Box className="space-y-3">
-              <Text color="muted">
-                Welcome to your workspace! This is where you and your team
-                collaborate on objectives and {storyTermPlural}.
-              </Text>
-              <Text color="muted">
-                Click on your workspace name to switch between workspaces,
-                invite team members, or access settings.
-              </Text>
-            </Box>
-          ),
-          position: "bottom-start",
-        },
-        ...(!pathname.includes("/maya")
-          ? [
-              {
-                id: "ai-assistant-floating",
-                target: "[data-chat-button]",
-                title: "Meet Maya, Your AI Agent",
-                content: (
-                  <Box className="space-y-3">
-                    <Text color="muted">
-                      Maya is your always-on AI agent. She can plan and manage
-                      work, answer questions, and take action across your
-                      workspace with your confirmation.
-                    </Text>
-                    <Text color="muted">
-                      Click here internally or press <Kbd>Shift + M</Kbd>{" "}
-                      anytime to start chatting.
-                    </Text>
-                  </Box>
-                ),
-                position: "top-end",
-                highlight: true,
-              },
-            ]
-          : []),
-        {
-          id: "ai-assistant-nav",
-          target: "[data-nav-ai-assistant]",
-          title: pathname.includes("/maya")
-            ? "Meet Maya, Your AI Agent"
-            : "Dedicated AI Space",
-          content: pathname.includes("/maya") ? (
-            <Box className="space-y-3">
-              <Text color="muted">
-                Maya is your always-on AI agent. She can plan and manage work,
-                answer questions, and take action across your workspace with
-                your confirmation.
-              </Text>
-              <Text color="muted">
-                This contains your chat history and dedicated workspace for AI
-                interactions.
-              </Text>
-            </Box>
-          ) : (
-            <Box className="space-y-3">
-              <Text color="muted">
-                You can also access the full-page AI experience here. Perfect
-                for long conversations or complex planning.
-              </Text>
-            </Box>
-          ),
-          position: "right",
-          highlight: pathname.includes("/maya"),
-        },
-        {
-          id: "my-notifications",
-          target: "[data-sidebar-notifications-button]",
-          title: "Stay Updated",
-          content: (
-            <Box className="space-y-3">
-              <Text color="muted">
-                Never miss important updates! The notifications section shows
-                you mentions, assignments, and team activity.
-              </Text>
-              <Text color="muted">
-                The badge shows unread notifications so you can stay on top of
-                what needs your attention.
-              </Text>
-            </Box>
-          ),
-          position: "bottom-start",
-        },
-        {
-          id: "create-story",
-          target: "[data-sidebar-create-story-button]",
-          title: `Create Your First ${getTermDisplay("storyTerm", { capitalize: true })}`,
-          content: (
-            <Box className="space-y-3">
-              <Text color="muted">
-                {getTermDisplay("storyTerm", {
-                  capitalize: true,
-                  variant: "plural",
-                })}{" "}
-                are the building blocks of your work. They are used to track
-                progress and collaborate with your team.
-              </Text>
-              <Text color="muted">
-                Press <Kbd className="inline-flex">Shift + N</Kbd> to quickly
-                create a new {storyTerm} from anywhere!
-              </Text>
-            </Box>
-          ),
-          position: "bottom-start",
-        },
-        {
-          id: "navigation",
-          target: "[data-nav-my-work]",
-          title: "Navigate Your Work",
-          content: (
-            <Box className="space-y-3">
-              <Text color="muted">
-                The sidebar is your main navigation hub. Start with{" "}
-                <Kbd className="inline-flex capitalize">
-                  My {storyTermPlural}
-                </Kbd>{" "}
-                to see everything you created or assigned to you.
-              </Text>
-              <Text color="muted">
-                This is your personal workspace for tracking your tasks and
-                progress.
-              </Text>
-            </Box>
-          ),
-          position: "bottom-start",
-        },
+  const objectiveTerm = getTermDisplay("objectiveTerm");
+  const isMayaPage = pathname.includes("/maya");
+  const myWorkPath = withWorkspace("/my-work");
+  const roadmapPath = withWorkspace("/roadmap");
+  const isWalkthroughReady =
+    Boolean(userRole) &&
+    !features.isPending &&
+    !isMayaMessageAvailabilityPending;
 
-        {
-          id: "teams",
-          target: "[data-teams-heading]",
-          title: "Your Teams",
-          content: (
-            <Box className="space-y-3">
+  return useMemo(() => {
+    if (!isWalkthroughReady) {
+      return [];
+    }
+
+    const openRoadmap = () => {
+      if (!pathname.startsWith(roadmapPath)) {
+        router.push(roadmapPath);
+      }
+    };
+    const openMyWork = () => {
+      if (!pathname.startsWith(myWorkPath)) {
+        router.push(myWorkPath);
+      }
+    };
+    const revealTeams = () => {
+      if (typeof document === "undefined") {
+        return;
+      }
+
+      document
+        .querySelector(getWalkthroughTargetSelector(walkthroughTargets.teams))
+        ?.scrollIntoView({ block: "nearest" });
+    };
+    const calendarChoice: WalkthroughWelcomeChoice = {
+      description: "Give the work a real place in your week.",
+      id: "calendar",
+      illustration: (
+        <WalkthroughStartChoiceIllustration
+          choice="calendar"
+          className="h-full w-auto"
+        />
+      ),
+      targetStepId: "calendar",
+      title: "Plan my time",
+    };
+    const mayaChoice: WalkthroughWelcomeChoice = {
+      description: "Use Maya to shape a clear first move.",
+      id: "maya",
+      illustration: (
+        <WalkthroughStartChoiceIllustration
+          choice="maya"
+          className="h-full w-auto"
+        />
+      ),
+      targetStepId: "maya",
+      title: "Get help from Maya",
+    };
+    const memberChoices: WalkthroughWelcomeChoice[] = [
+      {
+        description: "Turn an idea into a visible next step.",
+        id: "create-story",
+        illustration: (
+          <WalkthroughStartChoiceIllustration
+            choice="task"
+            className="h-full w-auto"
+          />
+        ),
+        targetStepId: "create-story",
+        title: `Create my first ${storyTerm}`,
+      },
+      ...(features.objectiveEnabled
+        ? [
+            {
+              description: "Connect the work to a bigger outcome.",
+              id: "roadmap",
+              illustration: (
+                <WalkthroughStartChoiceIllustration
+                  choice="objective"
+                  className="h-full w-auto"
+                />
+              ),
+              targetStepId: "roadmap",
+              title: `Create my first ${objectiveTerm}`,
+            },
+          ]
+        : [calendarChoice]),
+      features.objectiveEnabled ? calendarChoice : mayaChoice,
+    ];
+    const guestChoices: WalkthroughWelcomeChoice[] = [
+      {
+        description: "See the work already shared with you.",
+        id: "my-work",
+        illustration: (
+          <WalkthroughStartChoiceIllustration
+            choice="task"
+            className="h-full w-auto"
+          />
+        ),
+        targetStepId: "my-work",
+        title: `See my ${storyTermPlural}`,
+      },
+      calendarChoice,
+      mayaChoice,
+    ];
+    const welcomeChoices = userRole === "guest" ? guestChoices : memberChoices;
+
+    const shouldDeferMayaStep =
+      isMayaMessageLimitReached || isMayaMessageAvailabilityUnavailable;
+
+    return [
+      {
+        id: "welcome",
+        target: "body",
+        title: "What would you like to do first?",
+        content: (
+          <Text className="text-lg leading-7" color="muted">
+            Choose a starting point and we’ll guide you to the next useful
+            action. You can always explore more later.
+          </Text>
+        ),
+        panelLayout: "welcome",
+        position: "center",
+        welcomeChoices,
+      },
+      ...(userRole !== "guest"
+        ? [
+            {
+              id: "create-story",
+              target: walkthroughTargetSelectors.createStory,
+              title: `Create your first ${getTermDisplay("storyTerm", {
+                capitalize: true,
+              })}`,
+              action: openMyWork,
+              content: (
+                <Box className="space-y-3">
+                  <Text color="muted">
+                    Click Create to add and save a real {storyTerm}. You can add
+                    people, dates, and context when they become useful.
+                  </Text>
+                  <Text color="muted">
+                    Start small. One clear {storyTerm} is enough to make the
+                    next piece of work visible and easier to move forward.
+                  </Text>
+                </Box>
+              ),
+              position: "bottom-start",
+              requiredAction: {
+                actionLabel: `Create my first ${storyTerm}`,
+                id: "story-created",
+              },
+            },
+          ]
+        : []),
+      ...(userRole === "guest"
+        ? [
+            {
+              id: "my-work",
+              target: getWalkthroughTargetSelector(walkthroughTargets.myWork),
+              title: `Keep your ${storyTermPlural} in view`,
+              content: (
+                <Box className="space-y-3">
+                  <Text color="muted">
+                    My work keeps what you created, own, and collaborate on
+                    within easy reach.
+                  </Text>
+                  <Text color="muted">
+                    Switch between list and board views whenever a different
+                    lens helps you move forward.
+                  </Text>
+                </Box>
+              ),
+              position: "right" as const,
+            },
+          ]
+        : []),
+      {
+        id: "calendar",
+        target: getWalkthroughTargetSelector(walkthroughTargets.calendar),
+        title: "Make room for the work",
+        content: (
+          <Box className="space-y-3">
+            <Text color="muted">
+              Calendar brings your planned work and schedule into the same view,
+              so priorities have time behind them.
+            </Text>
+            <Text color="muted">
+              Use it when a commitment needs a real place in your week.
+            </Text>
+          </Box>
+        ),
+        position: "right",
+      },
+      ...(userRole !== "guest" && features.objectiveEnabled
+        ? [
+            {
+              id: "roadmap",
+              target: getWalkthroughTargetSelector(walkthroughTargets.roadmap),
+              title: `Connect work to your ${objectiveTerm}`,
+              action: openRoadmap,
+              content: (
+                <Box className="space-y-3">
+                  <Text color="muted">
+                    Roadmap keeps individual pieces of work connected to the
+                    outcome they should move.
+                  </Text>
+                  <Text color="muted">
+                    Start here when you are ready to turn activity into a
+                    clearer direction.
+                  </Text>
+                </Box>
+              ),
+              position: "right",
+            },
+          ]
+        : []),
+      {
+        id: "maya",
+        target: shouldDeferMayaStep
+          ? "body"
+          : getWalkthroughTargetSelector(walkthroughTargets.mayaComposer),
+        title: "Try Maya with a real request",
+        action: shouldDeferMayaStep || isMayaPage ? undefined : openChat,
+        content: (
+          <Box className="space-y-3">
+            <Text color="muted">
+              Maya can help you plan, clarify, and prepare the next move. She
+              will ask before making a change in your workspace.
+            </Text>
+            {isMayaMessageLimitReached ? (
               <Text color="muted">
-                This is where you&apos;ll find all your teams. Each team has its
-                own space for collaboration and shared objectives.
+                You&apos;ve used the AI messages included with this month&apos;s
+                plan. You can complete setup now, then try Maya when messages
+                reset or your plan changes.
               </Text>
+            ) : isMayaMessageAvailabilityUnavailable ? (
               <Text color="muted">
-                Click on any team to see team-specific work, members, and
-                progress.
+                Maya isn&apos;t available to start right now. You can complete
+                setup and try her again when the connection is back.
               </Text>
-            </Box>
-          ),
-          position: "right",
-        },
-        {
-          id: "manage-teams",
-          target: "[data-manage-teams-button]",
-          title: "Manage Teams",
-          content: (
-            <Box className="space-y-3">
+            ) : userRole === "guest" ? (
               <Text color="muted">
-                Use this menu to join new teams, leave teams you&apos;re no
-                longer part of, or manage team settings.
+                I’ve opened Maya for you. Send a real message to see how she can
+                help with your next move.
               </Text>
+            ) : (
               <Text color="muted">
-                You can discover available teams to join or create new ones if
-                you&apos;re an admin. You can also right-click on a team to
-                manage it.
+                You can always reopen her from the lower-right corner with{" "}
+                <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                  <Kbd>Shift + M</Kbd>
+                </span>
+                . Send one real message to try her in context.
               </Text>
-            </Box>
-          ),
-          position: "bottom-start",
-        },
-        {
-          id: "keyboard-shortcuts",
-          target: "[data-help-button]",
-          title: "Master Keyboard Shortcuts",
-          content: (
-            <Box className="space-y-3">
-              <Text color="muted">
-                FortyOne is built for speed. Learn keyboard shortcuts to boost
-                your productivity.
-              </Text>
-              <Text color="muted">
-                Press <Kbd className="inline-flex">⌘ /</Kbd> to see all
-                available shortcuts, or check the help menu.
-              </Text>
-            </Box>
-          ),
-          position: "top-start",
-        },
-        {
-          id: "completion",
-          target: "body",
-          title: "You're All Set! 🎉",
-          content: (
-            <Box className="space-y-3">
-              <Text color="muted">
-                Press <Kbd className="inline-flex">⌘ + K</Kbd> (or{" "}
-                <Kbd className="inline-flex">Ctrl + K</Kbd>) anywhere to open
-                the command menu for quick actions.
-              </Text>
-              <Text color="muted">
-                You&apos;ve completed the walkthrough! Start by creating your
-                first {storyTerm} or setting up your team objectives. Happy
-                collaborating!
-              </Text>
-            </Box>
-          ),
-          position: "center",
-          showSkip: false,
-          action: () => {
-            // Trigger confetti celebration!
-            confetti({
-              particleCount: 1000,
-              spread: 150,
-              origin: { y: 0.6 },
-              colors: ["#f43f5e", "#06b6d4", "#22c55e", "#eab308", "#a855f7"],
-            });
-          },
-        },
-      ] as WalkthroughStep[],
-    [getTermDisplay, pathname, session?.user.name, storyTerm, storyTermPlural],
-  );
+            )}
+          </Box>
+        ),
+        highlight: !shouldDeferMayaStep,
+        nextActionLabel: shouldDeferMayaStep ? "Continue setup" : undefined,
+        position: shouldDeferMayaStep ? "center" : "top-end",
+        requiredAction: shouldDeferMayaStep
+          ? undefined
+          : {
+              actionLabel: "Write my first Maya message",
+              id: "maya-message-completed",
+            },
+      },
+      {
+        id: "help",
+        target: getWalkthroughTargetSelector(walkthroughTargets.help),
+        title: "Find help when you need it",
+        content: (
+          <Box className="space-y-3">
+            <Text color="muted">
+              Open Help for keyboard shortcuts, product guidance, and a direct
+              route to support when you get stuck.
+            </Text>
+            <Text color="muted">
+              <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                Open the command menu with <Kbd>⌘ + K</Kbd>
+              </span>{" "}
+              (or <Kbd>Ctrl + K</Kbd>) to find actions from anywhere.
+            </Text>
+          </Box>
+        ),
+        position: "bottom-end",
+      },
+      {
+        id: "teams",
+        target: getWalkthroughTargetSelector(walkthroughTargets.teams),
+        title: "Keep teams aligned",
+        content: (
+          <Box className="space-y-3">
+            <Text color="muted">
+              Your Teams keeps shared work and the people responsible for it
+              close to the work you are doing.
+            </Text>
+            <Text color="muted">
+              Use a team when you need a shared place to coordinate the next
+              outcome together.
+            </Text>
+          </Box>
+        ),
+        action: revealTeams,
+        position: "right",
+      },
+    ] as WalkthroughStep[];
+  }, [
+    features.objectiveEnabled,
+    getTermDisplay,
+    isMayaPage,
+    isMayaMessageAvailabilityUnavailable,
+    isMayaMessageAvailabilityPending,
+    isMayaMessageLimitReached,
+    isWalkthroughReady,
+    myWorkPath,
+    objectiveTerm,
+    openChat,
+    pathname,
+    roadmapPath,
+    router,
+    storyTerm,
+    storyTermPlural,
+    userRole,
+  ]);
 };

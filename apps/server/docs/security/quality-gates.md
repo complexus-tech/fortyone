@@ -1,23 +1,47 @@
 # API quality and security gates
 
-Every pull request that changes `apps/server` runs two required reusable
-workflows:
+Every pull request that changes `apps/server` runs one cancellable fast gate:
 
-- `server-quality.yml` checks module integrity, gofmt, `go vet`, Staticcheck,
-  unit tests, and the architecture debt gate;
-- its independent race-and-fuzz job runs the complete hermetic suite under the
-  race detector and every governed fuzz target for a fixed execution count;
-- `server-sqlc.yml` applies the real migration chain, checks clean SQLC
-  generation, prepares queries against PostgreSQL, and runs the tagged database
-  suite;
-- the security job runs reachable vulnerability analysis, Go source security
-  analysis, and secret detection.
+- `server-quality.yml` checks module integrity, gofmt, `go vet`, unit and
+  architecture tests, committed-secret detection, and changed generated
+  contracts;
+- SQLC, OpenAPI, migration, and workflow checks run on the pull request only
+  when their owning inputs change;
+- superseded pull-request runs are cancelled.
 
-The production release workflow calls both workflows before image publication.
-It emits BuildKit SBOM and provenance attestations, blocks high or critical
-runtime-image vulnerabilities with an immutable Trivy image, and deploys the
-commit-tagged Docker Hub images. A release cannot bypass the checks that
-protect pull requests.
+`weekly-assurance.yml` and its manual dispatch run Staticcheck, the governed
+Go security scan, reachable-vulnerability analysis, race and fuzz suites, full
+generated-contract checks, disposable PostgreSQL migrations, SQLC vet, tagged
+database and Redis tests, and the complete Projects quality suite.
+
+`codeql-weekly.yml` is the tracked weekly/manual advanced CodeQL configuration
+for Go and JavaScript/TypeScript. After this workflow is merged, a repository
+owner must switch **Settings → Advanced Security → Code Scanning** from Default
+Setup to Advanced Setup. Until that settings change, GitHub's dynamic Default
+Setup remains authoritative and can disable result uploads from the tracked
+workflow. GitHub Code Quality is a separate dynamic workflow; if it is enabled,
+review or disable its push and pull-request scans independently to preserve the
+weekly-only cost model.
+
+The production release relies on the protected pull-request gate rather than
+repeating it. It emits BuildKit SBOM and provenance attestations, blocks high or
+critical runtime-image vulnerabilities with an immutable Trivy image, and
+submits the commit-tagged Docker Hub images to ECS.
+
+## Required-check settings
+
+Repository branch-protection and ruleset settings are not stored in this tree.
+No always-on classifier is included. Before marking the new fast-check jobs as
+required, remove any stale contexts for `Server Quality and Security`, `Server
+SQLC`, or `Projects Quality`. GitHub leaves path-filtered required workflows
+pending when their paths do not match, so scope requirements to their owning
+paths when the ruleset supports it. Add a classifier only if the live settings
+cannot express that scope.
+
+Scheduled workflows execute from GitHub's default branch. Keep
+`weekly-assurance.yml` and `codeql-weekly.yml` on that branch (or change the
+default branch to the release branch) before relying on their cron schedules;
+manual dispatch remains available after the workflows are present there.
 
 ## Pinned tools
 

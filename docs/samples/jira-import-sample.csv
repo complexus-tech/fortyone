@@ -1,0 +1,12 @@
+Issue key,Summary,Description,Status,Priority,Assignee,Start date,Due date,Issue type,Project key
+ENG-101,Set up the migration workspace,"Create the destination team, workflow, and permissions for the launch group.",To Do,Highest,alex@example.com,2026-09-01,2026-09-03,Task,ENG
+ENG-102,"Import customer feedback, without duplicates",Bring the latest feedback into FortyOne and preserve the original issue keys.,In Progress,High,morgan@example.com,2026-09-02,2026-09-08,Story,ENG
+ENG-103,Map Jira statuses to the new workflow,"Confirm the mapping for Backlog, To Do, In Progress, and Done before import.",In Progress,Medium,sam@example.com,2026-09-03,2026-09-10,Task,ENG
+ENG-104,Validate quoted and multiline descriptions,"First line of the acceptance criteria.
+Second line includes a ""must-have"" phrase and a comma, so CSV quoting is exercised.",To Do,Low,,2026-09-04,2026-09-11,Bug,ENG
+ENG-105,Review imported assignees,Verify exact email matches and leave unknown people unassigned.,Backlog,Medium,unknown.person@example.com,,2026-09-12,Task,ENG
+ENG-106,Confirm urgent priority mapping,Jira Highest should become FortyOne Urgent in the import preview.,Blocked,Highest,alex@example.com,2026-09-05,2026-09-06,Bug,ENG
+ENG-107,Check an issue without a due date,The issue should import normally with an empty due date.,To Do,Lowest,morgan@example.com,2026-09-06,,Task,ENG
+ENG-108,Prepare the launch checklist,Create a concise checklist for the final migration review.,Done,High,sam@example.com,2026-09-07,2026-09-14,Story,ENG
+ENG-109,Document the rollback plan,Explain how to safely rerun the import if a batch is interrupted.,In Progress,Medium,,2026-09-08,2026-09-15,Task,ENG
+ENG-110,Close the migration project,"Confirm the imported backlog, ownership, statuses, priorities, and dates.",Done,Low,alex@example.com,2026-09-16,2026-09-18,Task,ENG

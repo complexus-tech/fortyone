@@ -22,7 +22,7 @@ export const ActionCard = ({
           <Box className="mt-1">{icon}</Box>
           <Box>
             <Text>{title}</Text>
-            <Text className="mt-1 text-[0.9rem]" color="muted">
+            <Text className="mt-1 text-base" color="muted">
               {description}
             </Text>
           </Box>

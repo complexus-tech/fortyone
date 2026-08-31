@@ -1,28 +1,10 @@
 "use client";
 import { Badge, Box, Button, Container, Text } from "ui";
-import { CommandIcon, SettingsIcon, TeamIcon } from "icons";
+import { CommandIcon, DownloadIcon, SettingsIcon } from "icons";
 import { Logo } from "@/components/ui";
 import type { User, Workspace } from "@/types";
-import {
-  getOnboardingWorkspaceUrl,
-  withOnboardingCallbackUrl,
-} from "@/modules/onboarding/routing";
 import { ActionCard } from "./components/action-card";
-
-const getRedirectUrl = (
-  workspaces: Workspace[],
-  lastUsedWorkspaceId?: string,
-  callbackUrl?: string,
-) => {
-  const activeWorkspace =
-    workspaces.find((workspace) => workspace.id === lastUsedWorkspaceId) ??
-    workspaces.at(0);
-  if (!activeWorkspace) {
-    return withOnboardingCallbackUrl("/onboarding/create", callbackUrl);
-  }
-
-  return getOnboardingWorkspaceUrl(activeWorkspace.slug, callbackUrl);
-};
+import { getWelcomeDestinations } from "./destinations";
 
 export const Welcome = ({
   callbackUrl,
@@ -33,7 +15,7 @@ export const Welcome = ({
   workspaces: Workspace[];
   profile: User;
 }) => {
-  const redirectUrl = getRedirectUrl(
+  const { importUrl, redirectUrl } = getWelcomeDestinations(
     workspaces,
     profile.lastUsedWorkspaceId,
     callbackUrl,
@@ -56,12 +38,14 @@ export const Welcome = ({
         or explore the features below.
       </Text>
       <Box className="grid gap-4">
-        <ActionCard
-          description="Collaborate better by inviting your teammates to join your workspace."
-          href={redirectUrl}
-          icon={<TeamIcon />}
-          title="Build your team"
-        />
+        {importUrl ? (
+          <ActionCard
+            description="Bring work from Jira or upload an export. You'll review everything before anything is created."
+            href={importUrl}
+            icon={<DownloadIcon />}
+            title="Import existing work"
+          />
+        ) : null}
         <ActionCard
           description="Connect your GitHub repositories and Slack channels for seamless integration."
           href={redirectUrl}

@@ -104,13 +104,23 @@ func storyMutationStatus(err error) int {
 
 // Handlers provides HTTP handlers for story operations.
 type Handlers struct {
-	stories     *stories.Service
-	users       storyUserReader
-	links       *links.Service
-	attachments *attachments.Service
-	storyMedia  storyMediaService
-	cache       *storyCache
-	log         *logger.Logger
+	stories       *stories.Service
+	storyImporter storyImportService
+	users         storyUserReader
+	links         *links.Service
+	attachments   *attachments.Service
+	storyMedia    storyMediaService
+	cache         storyCacheInvalidator
+	log           *logger.Logger
+}
+
+type storyImportService interface {
+	CreateExternal(context.Context, uuid.UUID, stories.CoreNewStory, uuid.UUID) (stories.CoreSingleStory, error)
+}
+
+type storyCacheInvalidator interface {
+	Delete(context.Context, string)
+	DeleteByPattern(context.Context, string)
 }
 
 // storyCache preserves the mutation handlers' best-effort cache semantics
@@ -147,15 +157,21 @@ type storyUserReader interface {
 
 // New creates a new Handlers instance with the required dependencies.
 func New(stories *stories.Service, users *users.Service, links *links.Service, attachments *attachments.Service, cacheService *cache.Service, log *logger.Logger) *Handlers {
-	return &Handlers{
+	handlers := &Handlers{
 		stories:     stories,
 		users:       users,
 		links:       links,
 		attachments: attachments,
 		storyMedia:  attachments,
-		cache:       newStoryCache(cacheService, log),
 		log:         log,
 	}
+	if stories != nil {
+		handlers.storyImporter = stories
+	}
+	if storyCache := newStoryCache(cacheService, log); storyCache != nil {
+		handlers.cache = storyCache
+	}
+	return handlers
 }
 
 func (h *Handlers) resolveUserAvatarURL(ctx context.Context, avatar string) string {

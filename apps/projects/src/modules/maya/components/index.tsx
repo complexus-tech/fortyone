@@ -1,4 +1,5 @@
 "use client";
+import { useCallback } from "react";
 import { Box, Button, Text } from "ui";
 import { ReloadIcon } from "icons";
 import { NewStoryDialog, NewObjectiveDialog } from "@/components/ui";
@@ -8,22 +9,25 @@ import { ChatInput } from "@/components/ui/chat/chat-input";
 import { SuggestedPrompts } from "@/components/ui/chat/suggested-prompts";
 import { LimitReached } from "@/components/ui/chat/limit-reached";
 import { BodyContainer } from "@/components/shared";
-import { useSession } from "@/lib/auth/client";
-import { useTotalMessages } from "@/modules/ai-chats/hooks/use-total-messages";
-import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
+import { useWalkthrough } from "@/components/walkthrough/walkthrough-provider";
 import { useMayaChat } from "../hooks/use-maya-chat";
 import { useMayaNavigation } from "../hooks/use-maya-navigation";
+import { useMayaMessageAvailability } from "../hooks/use-maya-message-availability";
 import type { MayaChatConfig } from "../types";
-import { shouldShowMayaMessageLimit } from "../utils/message-limit";
 import { Header } from "./header";
 
 export const MayaChat = () => {
   const { chatRef, getInitialChatId, isNewChat, updateChatRef, clearChatRef } =
     useMayaNavigation();
+  const { completeWalkthroughAction } = useWalkthrough();
+  const handleUserMessageCompleted = useCallback(() => {
+    completeWalkthroughAction("maya-message-completed");
+  }, [completeWalkthroughAction]);
   const config: MayaChatConfig = {
     currentChatId: getInitialChatId(),
     hasSelectedChat: Boolean(chatRef),
     isNewChat: isNewChat(),
+    onUserMessageCompleted: handleUserMessageCompleted,
     updateChatRef,
     clearChatRef,
   };
@@ -57,15 +61,7 @@ export const MayaChat = () => {
     setIsSprintOpen,
   } = useMayaChat(config);
 
-  const { data: totalMessages = 0 } = useTotalMessages();
-  const { data: session } = useSession();
-  const { getLimit } = useSubscriptionFeatures();
-  const isInternalUser = session?.user.isInternal === true;
-  const needsUpgrade = shouldShowMayaMessageLimit({
-    isInternalUser,
-    limit: getLimit("maxAiMessages"),
-    totalMessages,
-  });
+  const { isLimited: needsUpgrade } = useMayaMessageAvailability();
 
   return (
     <Box className="flex h-full min-h-0 flex-col overflow-hidden">

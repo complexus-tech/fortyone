@@ -21,14 +21,14 @@ const Trigger = forwardRef<
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      "flex h-[2.1rem] w-full items-center justify-between whitespace-nowrap rounded-lg border border-border bg-white px-3 py-1 text-sm text-foreground outline-none ring-ring focus-visible:ring-2 dark:bg-surface-elevated",
+      "relative flex h-[2.1rem] w-full items-center whitespace-nowrap rounded-lg border border-border bg-white py-1 pr-8 pl-3 text-sm text-foreground outline-none ring-ring focus-visible:ring-2 dark:bg-surface-elevated",
       className,
     )}
     {...props}
   >
-    {children}
+    <span className="min-w-0 flex-1 truncate pr-6 text-left">{children}</span>
     <SelectPrimitive.Icon asChild>
-      <ArrowDownIcon className="ml-1 h-3.5" />
+      <ArrowDownIcon className="pointer-events-none absolute top-1/2 right-3.5 h-3.5 w-auto shrink-0 -translate-y-1/2" />
     </SelectPrimitive.Icon>
   </SelectPrimitive.Trigger>
 ));

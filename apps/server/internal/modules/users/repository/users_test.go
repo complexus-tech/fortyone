@@ -15,19 +15,27 @@ import (
 
 type fakeUserQueries struct {
 	usersql.Querier
-	getActiveByID     func(context.Context, usersql.GetActiveUserByIDParams) (usersql.GetActiveUserByIDRow, error)
-	resolveSession    func(context.Context, usersql.GetActiveBrowserSessionVersionParams) (int64, error)
-	listWorkspace     func(context.Context, usersql.ListWorkspaceUsersParams) ([]usersql.ListWorkspaceUsersRow, error)
-	createUser        func(context.Context, usersql.CreateUserParams) (usersql.CreateUserRow, error)
-	updateUser        func(context.Context, usersql.UpdateActiveUserParams) (usersql.UpdateActiveUserRow, error)
-	updateWorkspace   func(context.Context, usersql.UpdateLastUsedWorkspaceForMemberParams) (int64, error)
-	updateMemory      func(context.Context, usersql.UpdateUserMemoryForOwnerParams) (int64, error)
-	upsertPreferences func(context.Context, usersql.UpsertAutomationPreferencesForMemberParams) (int64, error)
-	verificationLock  func(context.Context, usersql.AcquireVerificationTokenIssueLockParams) error
-	countIssues       func(context.Context, usersql.CountRecentVerificationTokenIssuesParams) (int32, error)
-	createToken       func(context.Context, usersql.CreateVerificationTokenParams) (usersql.CreateVerificationTokenRow, error)
-	reactivateUser    func(context.Context, usersql.ReactivateUserForVerifiedSignInParams) (usersql.ReactivateUserForVerifiedSignInRow, error)
-	deactivateUser    func(context.Context, usersql.DeactivateUserParams) (int64, error)
+	getActiveByID             func(context.Context, usersql.GetActiveUserByIDParams) (usersql.GetActiveUserByIDRow, error)
+	resolveSession            func(context.Context, usersql.GetActiveBrowserSessionVersionParams) (int64, error)
+	listWorkspace             func(context.Context, usersql.ListWorkspaceUsersParams) ([]usersql.ListWorkspaceUsersRow, error)
+	createUser                func(context.Context, usersql.CreateUserParams) (usersql.CreateUserRow, error)
+	updateUser                func(context.Context, usersql.UpdateActiveUserParams) (usersql.UpdateActiveUserRow, error)
+	updateWorkspace           func(context.Context, usersql.UpdateLastUsedWorkspaceForMemberParams) (int64, error)
+	updateMemory              func(context.Context, usersql.UpdateUserMemoryForOwnerParams) (int64, error)
+	upsertPreferences         func(context.Context, usersql.UpsertAutomationPreferencesForMemberParams) (int64, error)
+	getOnboardingTourProgress func(
+		context.Context,
+		usersql.GetOrCreateOnboardingTourProgressForMemberParams,
+	) (usersql.UserOnboardingTourProgress, error)
+	upsertOnboardingTourProgress func(
+		context.Context,
+		usersql.UpsertOnboardingTourProgressForMemberParams,
+	) (usersql.UserOnboardingTourProgress, error)
+	verificationLock func(context.Context, usersql.AcquireVerificationTokenIssueLockParams) error
+	countIssues      func(context.Context, usersql.CountRecentVerificationTokenIssuesParams) (int32, error)
+	createToken      func(context.Context, usersql.CreateVerificationTokenParams) (usersql.CreateVerificationTokenRow, error)
+	reactivateUser   func(context.Context, usersql.ReactivateUserForVerifiedSignInParams) (usersql.ReactivateUserForVerifiedSignInRow, error)
+	deactivateUser   func(context.Context, usersql.DeactivateUserParams) (int64, error)
 }
 
 func (fake fakeUserQueries) GetActiveUserByID(
@@ -133,6 +141,20 @@ func (fake fakeUserQueries) UpsertAutomationPreferencesForMember(
 	params usersql.UpsertAutomationPreferencesForMemberParams,
 ) (int64, error) {
 	return fake.upsertPreferences(ctx, params)
+}
+
+func (fake fakeUserQueries) GetOrCreateOnboardingTourProgressForMember(
+	ctx context.Context,
+	params usersql.GetOrCreateOnboardingTourProgressForMemberParams,
+) (usersql.UserOnboardingTourProgress, error) {
+	return fake.getOnboardingTourProgress(ctx, params)
+}
+
+func (fake fakeUserQueries) UpsertOnboardingTourProgressForMember(
+	ctx context.Context,
+	params usersql.UpsertOnboardingTourProgressForMemberParams,
+) (usersql.UserOnboardingTourProgress, error) {
+	return fake.upsertOnboardingTourProgress(ctx, params)
 }
 
 func (fake fakeUserQueries) AcquireVerificationTokenIssueLock(
@@ -412,6 +434,91 @@ func TestAutomationPreferencesUseTypedPatchPresence(t *testing.T) {
 		users.CoreUpdateAutomationPreferences{AutoScheduling: &disabled},
 	); err != nil {
 		t.Fatalf("update preferences: %v", err)
+	}
+}
+
+func TestOnboardingTourProgressUsesTypedScopedUpsert(t *testing.T) {
+	t.Parallel()
+
+	userID := uuid.New()
+	workspaceID := uuid.New()
+	status := users.CoreOnboardingTourStatusCompleted
+	writtenAt := time.Date(2026, time.August, 31, 7, 30, 0, 0, time.UTC)
+	storedStepIDs := []string{"create-task"}
+	storedActionIDs := []string{"create-task"}
+	repository := newWithQueries(fakeUserQueries{
+		upsertOnboardingTourProgress: func(
+			_ context.Context,
+			params usersql.UpsertOnboardingTourProgressForMemberParams,
+		) (usersql.UserOnboardingTourProgress, error) {
+			if params.UserID != userID || params.WorkspaceID != workspaceID ||
+				params.TourKey != "workspace-getting-started" || params.TourVersion != "v1" {
+				t.Fatalf("onboarding scope = %#v", params)
+			}
+			if !params.SetStatus || params.Status != string(status) {
+				t.Fatalf("onboarding status patch = %#v", params)
+			}
+			if len(params.CompletedStepIds) != 1 || params.CompletedStepIds[0] != "create-task" ||
+				len(params.CompletedActionIds) != 1 || params.CompletedActionIds[0] != "create-task" {
+				t.Fatalf("onboarding completion patch = %#v", params)
+			}
+			return usersql.UserOnboardingTourProgress{
+				UserID:             userID,
+				WorkspaceID:        workspaceID,
+				TourKey:            params.TourKey,
+				TourVersion:        params.TourVersion,
+				CompletedStepIds:   storedStepIDs,
+				CompletedActionIds: storedActionIDs,
+				Status:             params.Status,
+				CreatedAt:          writtenAt,
+				UpdatedAt:          writtenAt,
+			}, nil
+		},
+	})
+
+	progress, err := repository.UpdateOnboardingTourProgress(context.Background(), userID, workspaceID, users.CoreUpdateOnboardingTourProgress{
+		OnboardingTourScope: users.CoreOnboardingTourScope{
+			TourKey:     "workspace-getting-started",
+			TourVersion: "v1",
+		},
+		CompletedStepIDs:   []string{"create-task"},
+		CompletedActionIDs: []string{"create-task"},
+		Status:             &status,
+	})
+	if err != nil {
+		t.Fatalf("update onboarding progress: %v", err)
+	}
+	if progress.UserID != userID || progress.WorkspaceID != workspaceID ||
+		progress.Status != status || !progress.UpdatedAt.Equal(writtenAt) {
+		t.Fatalf("mapped onboarding progress = %#v", progress)
+	}
+
+	progress.CompletedStepIDs[0] = "mutated"
+	if storedStepIDs[0] != "create-task" {
+		t.Fatalf("mapped progress aliases SQLC row: %#v", storedStepIDs)
+	}
+}
+
+func TestOnboardingTourProgressHidesMissingMembership(t *testing.T) {
+	t.Parallel()
+
+	repository := newWithQueries(fakeUserQueries{
+		getOnboardingTourProgress: func(
+			context.Context,
+			usersql.GetOrCreateOnboardingTourProgressForMemberParams,
+		) (usersql.UserOnboardingTourProgress, error) {
+			return usersql.UserOnboardingTourProgress{}, pgx.ErrNoRows
+		},
+	})
+
+	_, err := repository.GetOnboardingTourProgress(
+		context.Background(),
+		uuid.New(),
+		uuid.New(),
+		users.CoreOnboardingTourScope{TourKey: "workspace-getting-started", TourVersion: "v1"},
+	)
+	if !errors.Is(err, users.ErrNotFound) {
+		t.Fatalf("get onboarding progress error = %v, want ErrNotFound", err)
 	}
 }
 

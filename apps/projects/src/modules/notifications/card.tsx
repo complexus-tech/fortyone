@@ -19,6 +19,7 @@ import type { AppNotification } from "./types";
 import { useReadNotificationMutation } from "./hooks/read-mutation";
 import { useMarkUnreadMutation } from "./hooks/mark-unread-mutation";
 import { useDeleteMutation } from "./hooks/delete-mutation";
+import { NotificationMessageContent } from "./notification-message-content";
 import { renderTemplate } from "./utils/render-template";
 import { getNotificationDetailsPath } from "./utils/notification-destination";
 
@@ -71,13 +72,13 @@ export const NotificationCard = ({
           },
         }
       : message;
-  const html = renderTemplate(messageWithActor).html.replace(
-    "story",
-    storyTerm,
-  );
-  const text = renderTemplate(messageWithActor).text.replace(
-    "story",
-    storyTerm,
+  const renderedMessage = renderTemplate(messageWithActor);
+  const text = renderedMessage.text.replace("story", storyTerm);
+  const messageContent = (
+    <NotificationMessageContent
+      segments={renderedMessage.segments}
+      storyTerm={storyTerm}
+    />
   );
 
   return (
@@ -138,20 +139,10 @@ export const NotificationCard = ({
 
                   <Tooltip
                     className="max-w-[200px]"
-                    title={
-                      <span
-                        dangerouslySetInnerHTML={{
-                          __html: html,
-                        }}
-                      />
-                    }
+                    title={<span>{messageContent}</span>}
                   >
                     <Text className="line-clamp-1" color="muted">
-                      <span
-                        dangerouslySetInnerHTML={{
-                          __html: html,
-                        }}
-                      />
+                      <span>{messageContent}</span>
                     </Text>
                   </Tooltip>
                 </Flex>

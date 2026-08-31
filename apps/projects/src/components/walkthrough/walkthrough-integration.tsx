@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { WalkthroughProvider, useWalkthrough } from "./walkthrough-provider";
+import { useWalkthrough } from "./walkthrough-provider";
 import { WalkthroughOverlay } from "./walkthrough-overlay";
 import { useWalkthroughSteps } from "./use-walkthrough-steps";
 
@@ -16,10 +16,4 @@ const WalkthroughManager = () => {
   return <WalkthroughOverlay />;
 };
 
-export const WalkthroughIntegration = () => {
-  return (
-    <WalkthroughProvider autoStart version="1.0.0">
-      <WalkthroughManager />
-    </WalkthroughProvider>
-  );
-};
+export const WalkthroughIntegration = () => <WalkthroughManager />;

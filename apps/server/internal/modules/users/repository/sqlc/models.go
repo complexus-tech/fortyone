@@ -7,6 +7,9 @@ package usersql
 import (
 	"database/sql/driver"
 	"fmt"
+	"time"
+
+	"github.com/google/uuid"
 )
 
 type TokenType string
@@ -58,4 +61,16 @@ func (e TokenType) Valid() bool {
 		return true
 	}
 	return false
+}
+
+type UserOnboardingTourProgress struct {
+	UserID             uuid.UUID
+	WorkspaceID        uuid.UUID
+	TourKey            string
+	TourVersion        string
+	CompletedStepIds   []string
+	CompletedActionIds []string
+	Status             string
+	CreatedAt          time.Time
+	UpdatedAt          time.Time
 }

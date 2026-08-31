@@ -40,6 +40,7 @@ The machine-readable source of truth is [`internal/migrations/manifest.json`](..
 | `000173` | `maintenance_keyset_indexes` | `reversible` | `schema-first` | Unaffected. Old and replacement APIs remain schema-compatible because migration 000173 changes only planner-visible indexes. | Both old and replacement workers remain compatible. Replacement bounded SQLC jobs benefit immediately after PostgreSQL completes and analyzes the indexes. |
 | `000174` | `login_reactivation_policy` | `reversible` | `coordinated-cutover` | Replacement authentication reactivates only verified_sign_in accounts after a verified email or OAuth identity, while administrator state mutations atomically set admin_only or clear the gate and advance the browser-session epoch on both disable and re-enable transitions. | Replacement inactivity maintenance explicitly preserves verified_sign_in eligibility while deactivating and fencing an account. Old workers leave the additive default unchanged, which has the same automated-inactivity behavior. |
 | `000175` | `automation_keyset_indexes` | `reversible` | `schema-first` | Unaffected. Migration 000175 adds planner-visible indexes only and changes no API schema, response, authorization, or mutation behavior. | Old and replacement workers remain schema-compatible. Replacement story and sprint automation jobs can use the indexes immediately after PostgreSQL builds and analyzes them. |
+| `000176` | `user_onboarding_tour_progress` | `forward-only` | `schema-first` | Replacement onboarding-progress endpoints require schema 000176 and enforce an active user plus workspace membership on every read or upsert. Existing APIs ignore the additive table and remain schema-compatible. | Unaffected. Walkthrough progress is synchronous user API state; no worker claims, mutates, or interprets these rows. |
 
 ## `000152_harden_verification_tokens`
 
@@ -727,6 +728,35 @@ Operational notes:
 - The enabled sprint-settings index follows the workspace_id, team_id keyset and includes updated_at for the inactivity grace predicate without widening the index key.
 - The global ended-sprint index begins with end_date because sprint-story migration scans the scheduled day across tenants; tenant-scoped sprint navigation retains its existing workspace-prefixed indexes.
 - Migration presence is not query-plan evidence. Database-backed EXPLAIN, workload, and soak evidence remain required before the scalability acceptance gate can close.
+
+## `000176_user_onboarding_tour_progress`
+
+- **Classification:** `forward-only`
+- **Files:** `000176_user_onboarding_tour_progress.up.sql`, `000176_user_onboarding_tour_progress.down.sql`
+- **Schema:** Additive per-user, per-workspace, versioned tour-progress storage and workspace lookup index. No backfill is performed because existing local or account-global walkthrough flags are not equivalent to scoped progress.
+- **API:** Replacement onboarding-progress endpoints require schema 000176 and enforce an active user plus workspace membership on every read or upsert. Existing APIs ignore the additive table and remain schema-compatible.
+- **Worker:** Unaffected. Walkthrough progress is synchronous user API state; no worker claims, mutates, or interprets these rows.
+- **Mixed versions:** The schema may be applied while old API instances run because they ignore the table. Deploy the complete replacement API fleet before enabling frontend persistence: an old instance does not serve the new endpoint and would return 404, though it cannot corrupt stored rows.
+- **Rollout mode:** `schema-first`
+
+Rollout:
+
+1. Back up PostgreSQL, apply migration 000176, and verify the composite primary key, user and workspace cascade foreign keys, status check, empty-array defaults, and workspace lookup index.
+2. Deploy the replacement API fleet before enabling the client persistence path, then verify an active workspace member can read and upsert only their own versioned tour state while non-members and inactive accounts receive no state.
+3. Exercise concurrent or repeated progress updates to confirm step and action IDs merge without loss, terminal status does not regress, and a browser reload resumes the stored state.
+4. Enable the frontend after every API instance serves the new route, and verify a quota-limited Maya step resolves only its step ID rather than claiming its action was completed.
+
+Recovery (`forward-fix`):
+
+1. Disable new client writes or the onboarding entry point while preserving existing progress rows if the replacement route or state semantics are unhealthy.
+2. Deploy a forward-compatible API or reviewed data repair against schema 000176, retaining active-user and workspace-membership checks before resuming writes.
+3. Do not use the down migration after adoption: it drops user progress and restarts affected users at the beginning of their tour. Keep the schema and recover forward instead.
+
+Operational notes:
+
+- The composite key scopes progress to one user, workspace, tour key, and tour version; a new tour version intentionally starts with independent state.
+- Completed step IDs and completed action IDs are bounded opaque identifiers. Record an action ID only after the corresponding real product action succeeds; a skipped or quota-limited step may resolve its step ID without asserting action completion.
+- Terminal completed and skipped states are monotonic, and progress is onboarding convenience state only: it must not authorize access or serve as activation, billing, or audit evidence.
 
 ## Adding the next migration
 

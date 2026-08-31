@@ -14,18 +14,67 @@ export type WorkspaceCtx = {
   cookieHeader?: string;
 };
 
-const parseResponse = async <T>(response: Response) => {
+export type ResponseDecoder<T> = (value: unknown) => T;
+
+export class ApiContractError extends Error {
+  readonly status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ApiContractError";
+    this.status = status;
+  }
+}
+
+const decodeResponseValue = <T>(
+  value: unknown,
+  status: number,
+  decode?: ResponseDecoder<T>,
+) => {
+  if (!decode) return value as T;
+
+  try {
+    return decode(value);
+  } catch (cause) {
+    if (cause instanceof ApiContractError) throw cause;
+
+    // Runtime decoders may include response values in their errors. Do not
+    // retain that cause at this transport boundary where monitoring captures it.
+    throw new ApiContractError(
+      `API response did not match its runtime contract (${status})`,
+      status,
+    );
+  }
+};
+
+const parseResponse = async <T>(
+  response: Response,
+  decode?: ResponseDecoder<T>,
+) => {
   if (response.status === 204 || response.status === 205) {
-    return { data: null } as T;
+    return decodeResponseValue({ data: null }, response.status, decode);
   }
 
   const text = await response.text();
 
   if (!text.trim()) {
-    return { data: null } as T;
+    throw new ApiContractError(
+      `API returned an empty ${response.status} response`,
+      response.status,
+    );
   }
 
-  return JSON.parse(text) as T;
+  let value: unknown;
+  try {
+    value = JSON.parse(text) as unknown;
+  } catch {
+    throw new ApiContractError(
+      `API returned invalid JSON with status ${response.status}`,
+      response.status,
+    );
+  }
+
+  return decodeResponseValue(value, response.status, decode);
 };
 
 const createWorkspaceClient = (ctx: WorkspaceCtx) =>
@@ -102,12 +151,13 @@ export const get = async <T>(
   url: string,
   ctx: WorkspaceCtx,
   options?: RequestOptions,
+  decode?: ResponseDecoder<T>,
 ) => {
   const response = await createWorkspaceClient(ctx).get(
     url,
     getScopedRequestOptions(options),
   );
-  return parseResponse<T>(response);
+  return parseResponse(response, decode);
 };
 
 export const post = async <T, U>(
@@ -115,6 +165,7 @@ export const post = async <T, U>(
   json: T,
   ctx: WorkspaceCtx,
   options?: RequestOptions,
+  decode?: ResponseDecoder<U>,
 ) => {
   const client = createWorkspaceClient(ctx);
   const requestOptions = getScopedRequestOptions(options);
@@ -123,7 +174,7 @@ export const post = async <T, U>(
       ? await client.post(url, { body: json, ...requestOptions })
       : await client.post(url, { json, ...requestOptions });
 
-  return parseResponse<U>(response);
+  return parseResponse(response, decode);
 };
 
 export const put = async <T, U>(
@@ -131,6 +182,7 @@ export const put = async <T, U>(
   json: T,
   ctx: WorkspaceCtx,
   options?: RequestOptions,
+  decode?: ResponseDecoder<U>,
 ) => {
   const client = createWorkspaceClient(ctx);
   const requestOptions = getScopedRequestOptions(options);
@@ -139,7 +191,7 @@ export const put = async <T, U>(
       ? await client.put(url, { body: json, ...requestOptions })
       : await client.put(url, { json, ...requestOptions });
 
-  return parseResponse<U>(response);
+  return parseResponse(response, decode);
 };
 
 export const patch = async <T, U>(
@@ -147,6 +199,7 @@ export const patch = async <T, U>(
   json: T,
   ctx: WorkspaceCtx,
   options?: RequestOptions,
+  decode?: ResponseDecoder<U>,
 ) => {
   const client = createWorkspaceClient(ctx);
   const requestOptions = getScopedRequestOptions(options);
@@ -155,17 +208,18 @@ export const patch = async <T, U>(
       ? await client.patch(url, { body: json, ...requestOptions })
       : await client.patch(url, { json, ...requestOptions });
 
-  return parseResponse<U>(response);
+  return parseResponse(response, decode);
 };
 
 export const remove = async <T>(
   url: string,
   ctx: WorkspaceCtx,
   options?: RequestOptions,
+  decode?: ResponseDecoder<T>,
 ) => {
   const response = await createWorkspaceClient(ctx).delete(
     url,
     getScopedRequestOptions(options),
   );
-  return parseResponse<T>(response);
+  return parseResponse(response, decode);
 };

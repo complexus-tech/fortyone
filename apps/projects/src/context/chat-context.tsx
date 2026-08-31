@@ -3,12 +3,14 @@
 import { generateId } from "ai";
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useRef,
   useState,
   type ReactNode,
 } from "react";
+import { useWalkthrough } from "@/components/walkthrough/walkthrough-provider";
 import { useMayaChat } from "@/modules/maya";
 
 type ChatContextType = {
@@ -24,8 +26,13 @@ const ChatContext = createContext<ChatContextType | null>(null);
 
 export const ChatProvider = ({ children }: { children: ReactNode }) => {
   const [chatId, setChatId] = useState(() => generateId());
+  const { completeWalkthroughAction } = useWalkthrough();
+  const handleUserMessageCompleted = useCallback(() => {
+    completeWalkthroughAction("maya-message-completed");
+  }, [completeWalkthroughAction]);
   const chat = useMayaChat({
     currentChatId: chatId,
+    onUserMessageCompleted: handleUserMessageCompleted,
     updateChatRef: setChatId,
     clearChatRef: (nextChatId = generateId()) => {
       setChatId(nextChatId);
@@ -34,6 +41,16 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
   const { handleSuggestedPrompt } = chat;
   const [isOpen, setIsOpen] = useState(false);
   const pendingInitialMessageRef = useRef<string | null>(null);
+  const handleSuggestedPromptRef = useRef(handleSuggestedPrompt);
+  const isOpenRef = useRef(isOpen);
+
+  useEffect(() => {
+    handleSuggestedPromptRef.current = handleSuggestedPrompt;
+  }, [handleSuggestedPrompt]);
+
+  useEffect(() => {
+    isOpenRef.current = isOpen;
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen || !pendingInitialMessageRef.current) {
@@ -45,16 +62,16 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     handleSuggestedPrompt(message);
   }, [handleSuggestedPrompt, isOpen]);
 
-  const openChat = (message?: string) => {
+  const openChat = useCallback((message?: string) => {
     if (message) {
-      if (isOpen) {
-        handleSuggestedPrompt(message);
+      if (isOpenRef.current) {
+        handleSuggestedPromptRef.current(message);
       } else {
         pendingInitialMessageRef.current = message;
       }
     }
     setIsOpen(true);
-  };
+  }, []);
 
   const openChatWithDraft = (draft: string) => {
     pendingInitialMessageRef.current = null;

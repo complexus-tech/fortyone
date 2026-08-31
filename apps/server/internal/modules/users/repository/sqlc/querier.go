@@ -25,6 +25,7 @@ type Querier interface {
 	GetActiveUserByID(ctx context.Context, arg GetActiveUserByIDParams) (GetActiveUserByIDRow, error)
 	GetEligibleUserInactivityWarningCandidate(ctx context.Context, arg GetEligibleUserInactivityWarningCandidateParams) (GetEligibleUserInactivityWarningCandidateRow, error)
 	GetOrCreateAutomationPreferencesForMember(ctx context.Context, arg GetOrCreateAutomationPreferencesForMemberParams) (GetOrCreateAutomationPreferencesForMemberRow, error)
+	GetOrCreateOnboardingTourProgressForMember(ctx context.Context, arg GetOrCreateOnboardingTourProgressForMemberParams) (UserOnboardingTourProgress, error)
 	GetUserByEmailAnyStatus(ctx context.Context, arg GetUserByEmailAnyStatusParams) (GetUserByEmailAnyStatusRow, error)
 	GetUserByExternalIdentity(ctx context.Context, arg GetUserByExternalIdentityParams) (GetUserByExternalIdentityRow, error)
 	InvalidateVerificationTokens(ctx context.Context, arg InvalidateVerificationTokensParams) (int64, error)
@@ -41,6 +42,7 @@ type Querier interface {
 	UpdateLastUsedWorkspaceForMember(ctx context.Context, arg UpdateLastUsedWorkspaceForMemberParams) (int64, error)
 	UpdateUserMemoryForOwner(ctx context.Context, arg UpdateUserMemoryForOwnerParams) (int64, error)
 	UpsertAutomationPreferencesForMember(ctx context.Context, arg UpsertAutomationPreferencesForMemberParams) (int64, error)
+	UpsertOnboardingTourProgressForMember(ctx context.Context, arg UpsertOnboardingTourProgressForMemberParams) (UserOnboardingTourProgress, error)
 }
 
 var _ Querier = (*Queries)(nil)

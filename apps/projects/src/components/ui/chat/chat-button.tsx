@@ -4,6 +4,7 @@ import { AiIcon } from "icons";
 import { cn } from "lib";
 import { usePathname } from "next/navigation";
 import { Button, Box } from "ui";
+import { walkthroughTargets } from "@/shared/walkthrough/targets";
 
 type ChatButtonProps = {
   onOpen: () => void;
@@ -28,6 +29,7 @@ export const ChatButton = ({ onOpen, isOpen }: ChatButtonProps) => {
         className="border-0 px-4 shadow-xl shadow-gray-200 md:h-12 dark:shadow-none"
         color="invert"
         data-chat-button
+        data-walkthrough-target={walkthroughTargets.mayaFloatingAction}
         leftIcon={<AiIcon className="h-5 text-current dark:text-current" />}
         onClick={onOpen}
         rounded="md"

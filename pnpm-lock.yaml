@@ -833,6 +833,8 @@ importers:
         specifier: 7.0.2
         version: 7.0.2
 
+  apps/server: {}
+
   packages/api-client:
     dependencies:
       ky:

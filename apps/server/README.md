@@ -4,6 +4,10 @@ The backend API for FortyOne — a Go service that powers the web and mobile app
 
 Use the [`API engineering guide`](docs/README.md) as the documentation index.
 
+The private `package.json` is workspace metadata only. It makes the Go service
+an explicit pnpm workspace boundary so managed monorepo deployments can ignore
+Server-only changes; the API has no Node.js runtime dependency.
+
 ## Running the project locally
 
 New to the API? Start with the internal

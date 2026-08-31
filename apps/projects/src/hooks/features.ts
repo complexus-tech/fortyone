@@ -6,9 +6,11 @@ export const useFeatures = () => {
       objectiveEnabled: true,
       keyResultEnabled: true,
     },
+    isPending,
   } = useWorkspaceSettings();
 
   return {
+    isPending,
     objectiveEnabled: settings.objectiveEnabled,
     keyResultEnabled: settings.keyResultEnabled,
   };

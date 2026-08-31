@@ -15,6 +15,7 @@ import { cn, getReadableTextColor } from "lib";
 import { useAnalytics, useLocalStorage, useWorkspacePath } from "@/hooks";
 import { useUserRole } from "@/hooks/role";
 import { useCurrentWorkspace, useWorkspaces } from "@/lib/hooks/workspaces";
+import { walkthroughTargets } from "@/shared/walkthrough/targets";
 import { changeWorkspace, logOut } from "@/components/shared/sidebar/actions";
 import { clearAllStorage } from "@/components/shared/sidebar/utils";
 
@@ -79,6 +80,7 @@ export const WorkspacesMenu = ({
               isCollapsed && "bg-state-hover h-12 w-12 justify-center px-0",
             )}
             color="tertiary"
+            data-walkthrough-target={walkthroughTargets.workspaceSwitcher}
             data-workspace-switcher
             leftIcon={
               <Avatar

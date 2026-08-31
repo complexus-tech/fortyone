@@ -72,6 +72,6 @@ without reversing the package dependency.
   [`operations/developer-credential-rotation.md`](operations/developer-credential-rotation.md)
 
 The repository intentionally does not provide a public self-hosting bundle,
-Compose stack, or community support contract. The retained Dockerfiles,
-release workflow, generation scripts, and migration tooling serve the managed
-internal application and its documented developer platform.
+Compose stack, or community support contract. The retained multi-target
+Dockerfile, release workflow, generation scripts, and migration tooling serve
+the managed internal application and its documented developer platform.

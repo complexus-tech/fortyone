@@ -2,6 +2,7 @@
 import { type ReactNode } from "react";
 import { Box } from "ui";
 import { WorkspaceChatLayout } from "@/components/ui/chat";
+import { WalkthroughIntegration } from "@/components/walkthrough/walkthrough-integration";
 import { AppCommandBar } from "@/shell/commands/app-command-bar";
 import { AppCommandActionProvider } from "../shared/app-command-action-context";
 import { SidebarProvider } from "../shared/sidebar/sidebar-context";
@@ -29,6 +30,7 @@ export const ApplicationLayout = ({ children }: { children: ReactNode }) => {
             </Box>
           </Box>
         </Box>
+        <WalkthroughIntegration />
       </AppCommandActionProvider>
     </SidebarProvider>
   );

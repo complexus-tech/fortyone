@@ -1,8 +1,8 @@
 # FortyOne
 
-FortyOne is Complexus's hosted project-management platform. This repository is
-the private monorepo for the web, mobile, documentation, administration, API,
-and worker applications that power the managed FortyOne service.
+FortyOne is Complexus's hosted project-management platform. This is the
+managed-service monorepo for the web, mobile, documentation, administration,
+API, and worker applications that power FortyOne.
 
 This repository contains no public installation or distribution bundle.
 Production infrastructure, secrets, release access, and operational procedures
@@ -10,18 +10,18 @@ are managed internally.
 
 ## Repository structure
 
-| Path                 | Purpose                                     |
-| -------------------- | ------------------------------------------- |
-| `apps/projects`      | Main Next.js application                    |
-| `apps/landing`       | Marketing site                              |
-| `apps/docs`          | Customer documentation site                 |
-| `apps/admin`         | Internal administration application         |
-| `apps/mobile`        | Expo mobile application                     |
-| `apps/server`        | Go API and background worker                |
-| `packages/ui`        | Shared React components and styles          |
-| `packages/lib`       | Shared TypeScript utilities                 |
-| `packages/icons`     | Shared icon library                         |
-| `deployments/docker` | Production API and worker image definitions |
+| Path                     | Purpose                                     |
+| ------------------------ | ------------------------------------------- |
+| `apps/projects`          | Main Next.js application                    |
+| `apps/landing`           | Marketing site                              |
+| `apps/docs`              | Customer documentation site                 |
+| `apps/admin`             | Internal administration application         |
+| `apps/mobile`            | Expo mobile application                     |
+| `apps/server`            | Go API and background worker                |
+| `packages/ui`            | Shared React components and styles          |
+| `packages/lib`           | Shared TypeScript utilities                 |
+| `packages/icons`         | Shared icon library                         |
+| `apps/server/Dockerfile` | Production API and worker image targets     |
 
 The JavaScript workspaces are managed with pnpm and Turborepo. The API is a Go
 module with domain packages under `apps/server/internal/modules`.
@@ -100,10 +100,9 @@ go vet ./...
 ## Production delivery
 
 The Projects, landing, docs, and admin applications are deployed through their
-managed hosting projects. The API and worker are built from
-`deployments/docker/dockerfile.server` and
-`deployments/docker/dockerfile.worker`, then deployed to the internal ECS
-services by `.github/workflows/ecs-fargate-release.yml`.
+managed hosting projects. The API and worker use the `server` and `worker`
+targets in `apps/server/Dockerfile`, then deploy to the internal ECS services
+through `.github/workflows/ecs-fargate-release.yml`.
 
 The release workflow publishes commit-SHA images to the existing
 `fortyoneapp/server` and `fortyoneapp/worker` Docker Hub repositories. It uses

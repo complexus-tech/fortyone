@@ -82,6 +82,117 @@ func TestAppDoesNotLogUnexpectedHandlerErrorContents(t *testing.T) {
 	require.Contains(t, logs.String(), recorder.Header().Get("X-Request-ID"))
 }
 
+func TestAppRecoversHandlerPanicWithoutLeakingItsValue(t *testing.T) {
+	t.Parallel()
+
+	const secret = "fortyone-sensitive-panic-value"
+	var logs bytes.Buffer
+	log := logger.NewWithJSON(&logs, slog.LevelDebug, "web-test")
+	app := New(make(chan os.Signal, 1), noop.NewTracerProvider().Tracer("test"))
+	app.SetLogger(log)
+	app.Get("/panic", func(context.Context, http.ResponseWriter, *http.Request) error {
+		panic(secret)
+	})
+	app.Get("/healthy", func(ctx context.Context, w http.ResponseWriter, _ *http.Request) error {
+		return Respond(ctx, w, "ok", http.StatusOK)
+	})
+
+	recorder := httptest.NewRecorder()
+	app.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/panic", nil))
+
+	require.Equal(t, http.StatusInternalServerError, recorder.Code)
+	requestID := recorder.Header().Get("X-Request-ID")
+	require.NotEmpty(t, requestID)
+	var response Response
+	require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &response))
+	require.NotNil(t, response.Error)
+	require.Equal(t, "internal_error", response.Error.Code)
+	require.Equal(t, "internal server error", response.Error.Message)
+	require.Equal(t, requestID, response.Error.RequestID)
+	require.NotContains(t, recorder.Body.String(), secret)
+	require.NotContains(t, logs.String(), secret)
+	require.Contains(t, logs.String(), `"msg":"request handler panicked"`)
+	require.Contains(t, logs.String(), requestID)
+
+	healthyRecorder := httptest.NewRecorder()
+	app.ServeHTTP(healthyRecorder, httptest.NewRequest(http.MethodGet, "/healthy", nil))
+	require.Equal(t, http.StatusOK, healthyRecorder.Code)
+	require.Contains(t, healthyRecorder.Body.String(), `"ok"`)
+}
+
+func TestAppDoesNotAppendErrorAfterPanickingHandlerCommitsResponse(t *testing.T) {
+	t.Parallel()
+
+	const secret = "fortyone-sensitive-partial-response-panic"
+	var logs bytes.Buffer
+	log := logger.NewWithJSON(&logs, slog.LevelDebug, "web-test")
+	app := New(make(chan os.Signal, 1), noop.NewTracerProvider().Tracer("test"))
+	app.SetLogger(log)
+	app.Get("/partial", func(_ context.Context, w http.ResponseWriter, _ *http.Request) error {
+		w.WriteHeader(http.StatusAccepted)
+		_, _ = w.Write([]byte("partial response"))
+		panic(secret)
+	})
+
+	recorder := httptest.NewRecorder()
+	app.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/partial", nil))
+
+	require.Equal(t, http.StatusAccepted, recorder.Code)
+	require.Equal(t, "partial response", recorder.Body.String())
+	require.NotContains(t, logs.String(), secret)
+	require.Contains(t, logs.String(), `"msg":"request handler panicked"`)
+	require.Contains(t, logs.String(), `"response_started":true`)
+}
+
+func TestAppDoesNotAppendErrorAfterHandlerReturnsErrorFromCommittedResponse(t *testing.T) {
+	t.Parallel()
+
+	const secret = "fortyone-sensitive-partial-response-error"
+	var logs bytes.Buffer
+	log := logger.NewWithJSON(&logs, slog.LevelDebug, "web-test")
+	app := New(make(chan os.Signal, 1), noop.NewTracerProvider().Tracer("test"))
+	app.SetLogger(log)
+	app.Get("/partial-error", func(_ context.Context, w http.ResponseWriter, _ *http.Request) error {
+		w.WriteHeader(http.StatusAccepted)
+		_, _ = w.Write([]byte("partial response"))
+		return sensitiveHandlerError{secret: secret}
+	})
+
+	recorder := httptest.NewRecorder()
+	app.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/partial-error", nil))
+
+	require.Equal(t, http.StatusAccepted, recorder.Code)
+	require.Equal(t, "partial response", recorder.Body.String())
+	require.NotContains(t, logs.String(), secret)
+	require.Contains(t, logs.String(), `"msg":"request handler failed"`)
+	require.Contains(t, logs.String(), `"response_started":true`)
+}
+
+func TestAppPanicBoundaryPreservesStreamingSupport(t *testing.T) {
+	t.Parallel()
+
+	app := New(make(chan os.Signal, 1), noop.NewTracerProvider().Tracer("test"))
+	app.Get("/stream", func(_ context.Context, w http.ResponseWriter, _ *http.Request) error {
+		flusher, ok := w.(http.Flusher)
+		if !ok {
+			return errors.New("wrapped response writer does not support flushing")
+		}
+		_, err := w.Write([]byte("data: ready\n\n"))
+		if err != nil {
+			return err
+		}
+		flusher.Flush()
+		return nil
+	})
+
+	recorder := httptest.NewRecorder()
+	app.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/stream", nil))
+
+	require.Equal(t, http.StatusOK, recorder.Code)
+	require.Equal(t, "data: ready\n\n", recorder.Body.String())
+	require.True(t, recorder.Flushed)
+}
+
 func TestAppAppliesCredentialedSubdomainOriginPolicy(t *testing.T) {
 	t.Parallel()
 

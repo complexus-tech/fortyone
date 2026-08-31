@@ -912,6 +912,44 @@
         "The global ended-sprint index begins with end_date because sprint-story migration scans the scheduled day across tenants; tenant-scoped sprint navigation retains its existing workspace-prefixed indexes.",
         "Migration presence is not query-plan evidence. Database-backed EXPLAIN, workload, and soak evidence remain required before the scalability acceptance gate can close."
       ]
+    },
+    {
+      "version": 176,
+      "slug": "user_onboarding_tour_progress",
+      "classification": "forward-only",
+      "files": {
+        "up": "000176_user_onboarding_tour_progress.up.sql",
+        "down": "000176_user_onboarding_tour_progress.down.sql"
+      },
+      "compatibility": {
+        "schema": "Additive per-user, per-workspace, versioned tour-progress storage and workspace lookup index. No backfill is performed because existing local or account-global walkthrough flags are not equivalent to scoped progress.",
+        "api": "Replacement onboarding-progress endpoints require schema 000176 and enforce an active user plus workspace membership on every read or upsert. Existing APIs ignore the additive table and remain schema-compatible.",
+        "worker": "Unaffected. Walkthrough progress is synchronous user API state; no worker claims, mutates, or interprets these rows.",
+        "mixed_versions": "The schema may be applied while old API instances run because they ignore the table. Deploy the complete replacement API fleet before enabling frontend persistence: an old instance does not serve the new endpoint and would return 404, though it cannot corrupt stored rows."
+      },
+      "rollout": {
+        "sequence": 25,
+        "mode": "schema-first",
+        "steps": [
+          "Back up PostgreSQL, apply migration 000176, and verify the composite primary key, user and workspace cascade foreign keys, status check, empty-array defaults, and workspace lookup index.",
+          "Deploy the replacement API fleet before enabling the client persistence path, then verify an active workspace member can read and upsert only their own versioned tour state while non-members and inactive accounts receive no state.",
+          "Exercise concurrent or repeated progress updates to confirm step and action IDs merge without loss, terminal status does not regress, and a browser reload resumes the stored state.",
+          "Enable the frontend after every API instance serves the new route, and verify a quota-limited Maya step resolves only its step ID rather than claiming its action was completed."
+        ]
+      },
+      "recovery": {
+        "strategy": "forward-fix",
+        "procedure": [
+          "Disable new client writes or the onboarding entry point while preserving existing progress rows if the replacement route or state semantics are unhealthy.",
+          "Deploy a forward-compatible API or reviewed data repair against schema 000176, retaining active-user and workspace-membership checks before resuming writes.",
+          "Do not use the down migration after adoption: it drops user progress and restarts affected users at the beginning of their tour. Keep the schema and recover forward instead."
+        ]
+      },
+      "operational_notes": [
+        "The composite key scopes progress to one user, workspace, tour key, and tour version; a new tour version intentionally starts with independent state.",
+        "Completed step IDs and completed action IDs are bounded opaque identifiers. Record an action ID only after the corresponding real product action succeeds; a skipped or quota-limited step may resolve its step ID without asserting action completion.",
+        "Terminal completed and skipped states are monotonic, and progress is onboarding convenience state only: it must not authorize access or serve as activation, billing, or audit evidence."
+      ]
     }
   ]
 }

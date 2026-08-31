@@ -7578,13 +7578,6 @@
       },
       {
         "count": 1,
-        "key": "src/modules/analytics/components/timeline-trends.tsx -> src/hooks/index.ts [@/hooks]",
-        "destination": "src/hooks/index.ts",
-        "source": "src/modules/analytics/components/timeline-trends.tsx",
-        "specifier": "@/hooks"
-      },
-      {
-        "count": 1,
         "key": "src/modules/analytics/hooks/objective-progress.ts -> src/hooks/index.ts [@/hooks]",
         "destination": "src/hooks/index.ts",
         "source": "src/modules/analytics/hooks/objective-progress.ts",
@@ -7616,13 +7609,6 @@
         "key": "src/modules/analytics/hooks/team-performance.ts -> src/hooks/index.ts [@/hooks]",
         "destination": "src/hooks/index.ts",
         "source": "src/modules/analytics/hooks/team-performance.ts",
-        "specifier": "@/hooks"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/analytics/hooks/timeline-trends.ts -> src/hooks/index.ts [@/hooks]",
-        "destination": "src/hooks/index.ts",
-        "source": "src/modules/analytics/hooks/timeline-trends.ts",
         "specifier": "@/hooks"
       },
       {

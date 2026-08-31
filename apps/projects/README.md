@@ -172,6 +172,15 @@ The Projects app is deployed through its internally managed hosting project.
 Environment variables, domains, and release access are controlled in the
 deployment platform. Do not publish a standalone build or container image.
 
+Vercel is the production build authority, so the pull-request workflow does
+not repeat `next build`. In **Build and Deployment → Root Directory**, keep
+**Skip deployment** enabled for this monorepo project. The private
+`apps/server/package.json` makes Server an explicit pnpm workspace boundary,
+allowing Vercel to skip Projects deployments for Server-only commits instead
+of treating those changes as global inputs. Prefer this setting over an
+Ignored Build Step because skipped unaffected projects do not occupy a build
+slot.
+
 ## 🔧 Configuration
 
 ### Workspace Routing

@@ -2,9 +2,10 @@
 
 import { StrictMode, type ReactNode } from "react";
 import { act, renderHook, waitFor } from "@testing-library/react";
-import { useMediaQuery, useLocalStorage } from "@/hooks";
+import { useLocalStorage, useMediaQuery, useWorkspacePath } from "@/hooks";
 import { useProfile } from "@/lib/hooks/profile";
-import { useUpdateProfileMutation } from "@/lib/hooks/update-profile-mutation";
+import { useOnboardingTourProgress } from "@/lib/hooks/users/onboarding-tour-progress";
+import { useUpdateOnboardingTourProgressMutation } from "@/lib/hooks/users/update-onboarding-tour-progress";
 import {
   type WalkthroughStep,
   WalkthroughProvider,
@@ -14,21 +15,30 @@ import {
 jest.mock("@/hooks", () => ({
   useLocalStorage: jest.fn(),
   useMediaQuery: jest.fn(),
+  useWorkspacePath: jest.fn(),
 }));
 
 jest.mock("@/lib/hooks/profile", () => ({
   useProfile: jest.fn(),
 }));
 
-jest.mock("@/lib/hooks/update-profile-mutation", () => ({
-  useUpdateProfileMutation: jest.fn(),
+jest.mock("@/lib/hooks/users/onboarding-tour-progress", () => ({
+  useOnboardingTourProgress: jest.fn(),
+}));
+
+jest.mock("@/lib/hooks/users/update-onboarding-tour-progress", () => ({
+  useUpdateOnboardingTourProgressMutation: jest.fn(),
 }));
 
 const useMediaQueryMock = jest.mocked(useMediaQuery);
 const useLocalStorageMock = jest.mocked(useLocalStorage);
+const useWorkspacePathMock = jest.mocked(useWorkspacePath);
 const useProfileMock = jest.mocked(useProfile);
-const useUpdateProfileMutationMock = jest.mocked(useUpdateProfileMutation);
-const updateProfileMock = jest.fn();
+const useOnboardingTourProgressMock = jest.mocked(useOnboardingTourProgress);
+const useUpdateOnboardingTourProgressMutationMock = jest.mocked(
+  useUpdateOnboardingTourProgressMutation,
+);
+const updateOnboardingTourProgressMock = jest.fn();
 
 const walkthroughSteps: WalkthroughStep[] = [
   {
@@ -45,6 +55,25 @@ const walkthroughSteps: WalkthroughStep[] = [
   },
 ];
 
+const actionGatedWalkthroughSteps: WalkthroughStep[] = [
+  {
+    content: "Create a task.",
+    id: "create-story",
+    requiredAction: {
+      actionLabel: "Create my first task",
+      id: "story-created",
+    },
+    target: "body",
+    title: "Create your first task",
+  },
+  {
+    content: "Next step",
+    id: "next",
+    target: "body",
+    title: "Next",
+  },
+];
+
 const WalkthroughTestProvider = ({ children }: { children: ReactNode }) => (
   <StrictMode>
     <WalkthroughProvider>{children}</WalkthroughProvider>
@@ -55,13 +84,31 @@ describe("WalkthroughProvider", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     useMediaQueryMock.mockReturnValue(false);
-    useLocalStorageMock.mockReturnValue([null, jest.fn()]);
+    useLocalStorageMock.mockImplementation((key) =>
+      key === "fortyone:walkthrough-action-progress"
+        ? ([{}, jest.fn()] as never)
+        : ([null, jest.fn()] as never),
+    );
+    useWorkspacePathMock.mockReturnValue({
+      withWorkspace: (path: string) => `/acme${path}`,
+      workspaceSlug: "acme",
+    } as ReturnType<typeof useWorkspacePath>);
     useProfileMock.mockReturnValue({ data: undefined } as ReturnType<
       typeof useProfile
     >);
-    useUpdateProfileMutationMock.mockReturnValue({
-      mutate: updateProfileMock,
-    } as unknown as ReturnType<typeof useUpdateProfileMutation>);
+    useOnboardingTourProgressMock.mockReturnValue({
+      data: {
+        completedActionIds: [],
+        completedStepIds: [],
+        status: "active",
+        tourKey: "workspace-getting-started",
+        tourVersion: "1.0.0",
+      },
+      isPending: false,
+    } as unknown as ReturnType<typeof useOnboardingTourProgress>);
+    useUpdateOnboardingTourProgressMutationMock.mockReturnValue({
+      mutate: updateOnboardingTourProgressMock,
+    } as unknown as ReturnType<typeof useUpdateOnboardingTourProgressMutation>);
   });
 
   it("syncs a completed walkthrough once after the final state commits", async () => {
@@ -87,17 +134,18 @@ describe("WalkthroughProvider", () => {
       isActive: true,
       totalSteps: 2,
     });
-    expect(updateProfileMock).not.toHaveBeenCalled();
-
     act(() => {
       result.current.nextStep();
     });
 
     await waitFor(() => {
-      expect(updateProfileMock).toHaveBeenCalledTimes(1);
+      expect(updateOnboardingTourProgressMock).toHaveBeenCalledTimes(2);
     });
-    expect(updateProfileMock).toHaveBeenCalledWith({
-      hasSeenWalkthrough: true,
+    expect(updateOnboardingTourProgressMock).toHaveBeenCalledWith({
+      completedStepIds: ["last"],
+      status: "completed",
+      tourKey: "workspace-getting-started",
+      tourVersion: "1.0.0",
     });
     expect(result.current.state).toMatchObject({
       currentStep: 1,
@@ -106,5 +154,109 @@ describe("WalkthroughProvider", () => {
       totalSteps: 2,
     });
     expect(result.current.state).not.toHaveProperty("completionVersion");
+  });
+
+  it("does not advance a gated step until the real action completes", () => {
+    const { result } = renderHook(() => useWalkthrough(), {
+      wrapper: WalkthroughTestProvider,
+    });
+
+    act(() => {
+      result.current.setSteps(actionGatedWalkthroughSteps);
+    });
+
+    act(() => {
+      result.current.startWalkthrough();
+    });
+
+    act(() => {
+      result.current.nextStep();
+    });
+
+    expect(result.current.state.currentStep).toBe(0);
+
+    act(() => {
+      result.current.completeWalkthroughAction("story-created");
+    });
+
+    expect(result.current.state.currentStep).toBe(1);
+    expect(updateOnboardingTourProgressMock).toHaveBeenCalledWith({
+      completedActionIds: ["story-created"],
+      completedStepIds: ["welcome", "create-story"],
+      tourKey: "workspace-getting-started",
+      tourVersion: "1.0.0",
+    });
+  });
+
+  it("persists a real action completed outside the visible tour as its resolved step", () => {
+    const { result } = renderHook(() => useWalkthrough(), {
+      wrapper: WalkthroughTestProvider,
+    });
+
+    act(() => {
+      result.current.setSteps(actionGatedWalkthroughSteps);
+      result.current.completeWalkthroughAction("story-created");
+    });
+
+    expect(updateOnboardingTourProgressMock).toHaveBeenCalledWith({
+      completedActionIds: ["story-created"],
+      completedStepIds: ["welcome", "create-story"],
+      tourKey: "workspace-getting-started",
+      tourVersion: "1.0.0",
+    });
+  });
+
+  it("does not let the legacy global completion flag hide active scoped progress", () => {
+    useProfileMock.mockReturnValue({
+      data: { hasSeenWalkthrough: true },
+      isPending: false,
+    } as ReturnType<typeof useProfile>);
+
+    const { result } = renderHook(() => useWalkthrough(), {
+      wrapper: WalkthroughTestProvider,
+    });
+
+    act(() => {
+      result.current.setSteps(walkthroughSteps);
+    });
+
+    act(() => {
+      result.current.startWalkthrough();
+    });
+
+    expect(result.current.state).toMatchObject({
+      currentStep: 0,
+      isActive: true,
+    });
+  });
+
+  it("maps a persisted real action to its resolved step before resuming", () => {
+    useOnboardingTourProgressMock.mockReturnValue({
+      data: {
+        completedActionIds: ["story-created"],
+        completedStepIds: [],
+        status: "active",
+        tourKey: "workspace-getting-started",
+        tourVersion: "1.0.0",
+      },
+      isPending: false,
+    } as unknown as ReturnType<typeof useOnboardingTourProgress>);
+
+    const { result } = renderHook(() => useWalkthrough(), {
+      wrapper: WalkthroughTestProvider,
+    });
+
+    act(() => {
+      result.current.setSteps(actionGatedWalkthroughSteps);
+    });
+
+    act(() => {
+      result.current.startWalkthrough();
+    });
+
+    expect(result.current.state).toMatchObject({
+      currentStep: 1,
+      isActive: true,
+    });
   });
 });

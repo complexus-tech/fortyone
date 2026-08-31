@@ -99,6 +99,18 @@ export const userKeys = {
   profile: () => [...userKeys.all, "profile"] as const,
   automationPreferences: (workspaceSlug: string) =>
     [...userKeys.all, "automation-preferences", workspaceSlug] as const,
+  onboardingTourProgress: (
+    workspaceSlug: string,
+    tourKey: string,
+    tourVersion: string,
+  ) =>
+    [
+      ...userKeys.all,
+      "onboarding-tour-progress",
+      workspaceSlug,
+      tourKey,
+      tourVersion,
+    ] as const,
 };
 
 export const notificationKeys = {
