@@ -26,7 +26,7 @@ import { getUserContext } from "./user-context";
 import { beginChatWrite, saveChat } from "./save-chat";
 import { normalizeInlineFileData } from "./normalize-file-data";
 import { resolveJoinedTeams } from "./resolve-joined-teams";
-import { selectActiveTools } from "./active-tools";
+import { selectActiveToolPlan } from "./active-tools";
 import {
   assertLatestUserTextWithinContextBudget,
   compactChatToolOutputs,
@@ -138,11 +138,12 @@ const handleChatRequest = async (
   );
   const contextStartIndex = getChatContextStartIndex(compactMessages);
   const contextMessages = compactMessages.slice(contextStartIndex);
-  const activeTools = selectActiveTools({
+  const activeToolPlan = selectActiveToolPlan({
     currentPath,
     messages: contextMessages,
     storyTerminology: terminology.stories,
   });
+  const { activeTools } = activeToolPlan;
   // Compact copies determine the byte-bounded suffix and tool routing. Convert
   // the aligned raw suffix so each registered toModelOutput projector runs
   // exactly once; double-projecting would corrupt stateful tool receipts.
@@ -214,9 +215,11 @@ const handleChatRequest = async (
     posthogPrivacyMode: true,
     posthogProperties: {
       active_tool_count: activeTools.length,
+      action_lease_active: Boolean(activeToolPlan.actionLease),
       chat_context_message_count: contextMessages.length,
       conversation_id: id,
       paid: subscription?.status === "active",
+      tool_selection_source: activeToolPlan.source,
     },
   });
 
@@ -282,6 +285,10 @@ const handleChatRequest = async (
     // is provided; the same ID is emitted to the browser and passed to
     // onFinish for the durable transcript write.
     generateMessageId: generateId,
+    messageMetadata: () =>
+      activeToolPlan.actionLease
+        ? { actionLease: activeToolPlan.actionLease }
+        : undefined,
     sendReasoning: false,
     sendSources: false,
     originalMessages: canonicalUiMessages,

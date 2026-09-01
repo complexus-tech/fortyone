@@ -2,7 +2,16 @@ import "server-only";
 
 import type { UIMessage } from "ai";
 import {
+  MAYA_ACTION_LEASE_MAX_TURNS,
+  MAYA_ACTION_LEASE_VERSION,
+  type MayaActionLease,
+} from "@/lib/ai/action-lease";
+import type { MayaToolDomain } from "@/lib/ai/tool-routing";
+import {
+  getMutationRoute,
   isMutationCapableToolName,
+  isMutationToolCall,
+  MUTATION_TOOL_NAME_SET,
   type MayaToolName,
 } from "@/lib/ai/tool-policy";
 import {
@@ -24,10 +33,8 @@ import {
   FOLLOW_THROUGH_ACTION_PATTERN,
   GITHUB_PATTERN,
   GITHUB_READ_TOOLS,
-  GITHUB_WRITE_TOOLS,
   INTEGRATION_REQUEST_PATTERN,
   INTEGRATION_REQUEST_READ_TOOLS,
-  INTEGRATION_REQUEST_WRITE_TOOLS,
   LABEL_PATTERN,
   LINK_PATTERN,
   MEMORY_PATTERN,
@@ -36,7 +43,6 @@ import {
   NOTIFICATION_PATTERN,
   OBJECTIVE_PATTERN,
   OBJECTIVE_READ_TOOLS,
-  OBJECTIVE_WRITE_TOOLS,
   PLANNING_PATTERN,
   SEARCH_PATTERN,
   SPRINT_PATTERN,
@@ -123,6 +129,45 @@ const STORY_INTAKE_CORRECTION_CUE_PATTERN =
 const STORY_INTAKE_REFERENCE_CORRECTION_ACTION_PATTERN =
   /\b(?:make|schedule|link)\b/;
 const MAX_MARKED_SLOT_VALUE_LENGTH = 256;
+const EXACT_ACTION_LEASE_CANCELLATION_PATTERN =
+  /^\s*(?:cancel(?: it| that)?|never\s*mind|nevermind|forget (?:it|that)|stop)\s*[.!]?\s*$/;
+const ACTION_LEASE_REPLACEMENT_CUE_PATTERN =
+  /\b(?:actually|instead|rather than|switch(?:ing)? to|new request|forget that)\b/;
+const ACTION_LEASE_DISCOVERY_CUE_PATTERN =
+  /\b(?:show me|list|find|search|open|read|get|check|review|analy[sz]e|compare|what should|help me focus)\b/;
+const ACTION_SCOPED_MUTATION_PATTERN = /\breply\b/;
+const NEGATED_ACTION_PATTERN =
+  /\b(?:do not|don['’]t|never)\s+(?:want to\s+)?(?:create|add|update|edit|change|delete|remove|restore|duplicate|join|leave|accept|decline|post|reply|mark|set|resync|install|connect|apply|make|schedule|plan)\b/;
+const COORDINATED_NEGATED_ACTION_PATTERN =
+  /\b(?:or|and)\s+(?:create|add|update|edit|change|delete|remove|restore|duplicate|join|leave|accept|decline|post|reply|mark|set|resync|install|connect|apply|make|schedule|plan)\b/g;
+const ACTION_LEASE_CANCELLATION_CUE_PATTERN =
+  /\b(?:cancel|never\s*mind|nevermind|forget that)\b/;
+const ACTION_LEASE_METADATA_RELATION_PATTERN =
+  /\b(?:assign|set|change)\b[^\n]{0,48}\b(?:team|status|sprint|objective|label)\b[^\n]{0,32}\b(?:to|as)\b|\b(?:assign|link|schedule|mark)\s+(?:it|this|that|the (?:story|objective))\b|\buse\b[^\n]{0,48}\b(?:team|status|sprint|objective|label)\b|\b(?:do not|don['’]t|never)\s+(?:set|schedule|assign|link)\b/;
+const ACTION_LEASE_METADATA_RESOURCE_MUTATION_PATTERN =
+  /\b(?:team|label|status|objective|key result|sprint)\s+(?:name|title|code|privacy|color|category|description)\b|\bdefault\s+(?:label|status)\b|\b(?:work plan|plan my work)\b|\b(?:create|delete|remove)\b/;
+
+const ACTION_LEASE_METADATA_DOMAINS: Partial<
+  Record<MayaToolDomain, ReadonlySet<MayaToolDomain>>
+> = {
+  objective: new Set<MayaToolDomain>(["status", "team"]),
+  planning: new Set<MayaToolDomain>(["sprint", "story", "team"]),
+  story: new Set<MayaToolDomain>([
+    "label",
+    "link",
+    "objective",
+    "planning",
+    "sprint",
+    "status",
+    "team",
+  ]),
+};
+const ACTION_LEASE_COMBINED_RESOLVER_TOOLS: Partial<
+  Record<MayaToolDomain, readonly MayaToolName[]>
+> = {
+  objective: ["objectiveStatuses"],
+  story: ["statuses", "labels"],
+};
 
 const NON_STORY_TEXT_DOMAIN_PATTERNS = [
   { domain: "planning", pattern: PLANNING_PATTERN },
@@ -168,6 +213,314 @@ const getMessageText = (message: UIMessage) =>
     .flatMap((part) => (part.type === "text" ? [part.text] : []))
     .join(" ")
     .toLowerCase();
+
+const getActionLease = (message: UIMessage): MayaActionLease | undefined => {
+  const lease = (message.metadata as { actionLease?: unknown } | undefined)
+    ?.actionLease;
+  if (!lease || typeof lease !== "object" || Array.isArray(lease)) {
+    return undefined;
+  }
+
+  const candidate = lease as Partial<MayaActionLease>;
+  const mutationRoutes = Array.isArray(candidate.toolNames)
+    ? candidate.toolNames.flatMap((toolName) => {
+        if (typeof toolName !== "string") return [];
+        const route = getMutationRoute(toolName);
+        return route ? [route] : [];
+      })
+    : [];
+  if (
+    candidate.version !== MAYA_ACTION_LEASE_VERSION ||
+    candidate.phase !== "collecting" ||
+    !Number.isInteger(candidate.remainingTurns) ||
+    (candidate.remainingTurns ?? 0) < 1 ||
+    (candidate.remainingTurns ?? 0) > MAYA_ACTION_LEASE_MAX_TURNS ||
+    typeof candidate.domain !== "string" ||
+    !Array.isArray(candidate.operations) ||
+    candidate.operations.length === 0 ||
+    !candidate.operations.every((operation) => typeof operation === "string") ||
+    new Set(candidate.operations).size !== candidate.operations.length ||
+    !Array.isArray(candidate.toolNames) ||
+    candidate.toolNames.length === 0 ||
+    !candidate.toolNames.every(
+      (toolName) =>
+        typeof toolName === "string" && isMutationCapableToolName(toolName),
+    ) ||
+    new Set(candidate.toolNames).size !== candidate.toolNames.length ||
+    mutationRoutes.length !== candidate.toolNames.length ||
+    mutationRoutes.some(({ domain }) => domain !== candidate.domain) ||
+    mutationRoutes.some(
+      ({ operations }) =>
+        !operations.some((operation) =>
+          candidate.operations?.includes(operation),
+        ),
+    ) ||
+    candidate.operations.some(
+      (operation) =>
+        !mutationRoutes.some(({ operations }) =>
+          (operations as readonly string[]).includes(operation),
+        ),
+    )
+  ) {
+    return undefined;
+  }
+
+  return candidate as MayaActionLease;
+};
+
+const hasTerminalMutationPart = (message: UIMessage) =>
+  message.parts.some((part) => {
+    if (!part.type.startsWith("tool-")) return false;
+
+    const toolName = part.type.slice("tool-".length);
+    if (
+      !("input" in part) ||
+      !isMutationToolCall(toolName, part.input) ||
+      !("state" in part)
+    ) {
+      return false;
+    }
+
+    return part.state === "output-available" || part.state === "output-denied";
+  });
+
+const getExplicitTextDomains = (
+  text: string,
+  configuredStoryTerms: string[],
+) => {
+  const domains = new Set<MayaToolDomain>();
+  if (
+    STORY_PATTERN.test(text) ||
+    configuredStoryTerms.some((term) => includesWholePhrase(text, term))
+  ) {
+    domains.add("story");
+  }
+  NON_STORY_TEXT_DOMAIN_PATTERNS.forEach(({ domain, pattern }) => {
+    if (pattern.test(text)) domains.add(domain);
+  });
+  return domains;
+};
+
+const getPositiveActionIntent = (intent: string) => {
+  const hasNegatedAction = NEGATED_ACTION_PATTERN.test(intent);
+  let positiveIntent = intent.replace(NEGATED_ACTION_PATTERN, "");
+  if (hasNegatedAction) {
+    positiveIntent = positiveIntent.replace(
+      COORDINATED_NEGATED_ACTION_PATTERN,
+      "",
+    );
+  }
+  return positiveIntent.replace(
+    /\b(?:never\s*mind|nevermind|forget that)\b/g,
+    "",
+  );
+};
+
+const getMutationFamilies = (intent: string) => {
+  const families = new Set<string>();
+  if (/\b(?:create|add|new)\b/.test(intent)) families.add("create");
+  if (
+    /\b(?:update|edit|change|rename|move|assign|set|mark|complete|close|finish|reopen)\b/.test(
+      intent,
+    )
+  ) {
+    families.add("update");
+  }
+  if (/\b(?:delete|remove|decline|leave|unlink)\b/.test(intent)) {
+    families.add("delete");
+  }
+  [
+    "accept",
+    "apply",
+    "connect",
+    "duplicate",
+    "install",
+    "join",
+    "post",
+    "reply",
+    "restore",
+    "resync",
+  ].forEach((family) => {
+    if (new RegExp(`\\b${family}\\b`).test(intent)) families.add(family);
+  });
+  return families;
+};
+
+const getOperationFamily = (operation: string) => {
+  const family = operation.split("-")[0];
+  if (family === "add") return "create";
+  if (family === "remove" || family === "decline" || family === "leave") {
+    return "delete";
+  }
+  return family;
+};
+
+const hasSameDomainOperationReplacement = ({
+  explicitDomains,
+  intent,
+  lease,
+}: {
+  explicitDomains: ReadonlySet<MayaToolDomain>;
+  intent: string;
+  lease: MayaActionLease;
+}) => {
+  if (!explicitDomains.has(lease.domain)) return false;
+
+  const requestedFamilies = getMutationFamilies(
+    getPositiveActionIntent(intent),
+  );
+  const leasedFamilies = new Set(lease.operations.map(getOperationFamily));
+  if (requestedFamilies.size === 0) return false;
+  const hasExplicitSwitchCue =
+    ACTION_LEASE_REPLACEMENT_CUE_PATTERN.test(intent) ||
+    ACTION_LEASE_CANCELLATION_CUE_PATTERN.test(intent) ||
+    NEGATED_ACTION_PATTERN.test(intent);
+  const isDraftPropertyCorrection =
+    !hasExplicitSwitchCue &&
+    lease.operations.some((operation) => operation.startsWith("create")) &&
+    !STORY_REFERENCE_PATTERN.test(intent) &&
+    ((lease.domain === "story" &&
+      /\b(?:title|description|priority|estimate)\b[^\n]{0,48}\b(?:to|as)\b/.test(
+        intent,
+      )) ||
+      (lease.domain === "objective" &&
+        /\b(?:name|description|target date|due date)\b[^\n]{0,48}\b(?:to|as)\b/.test(
+          intent,
+        )));
+  if (isDraftPropertyCorrection) return false;
+
+  if (
+    lease.domain === "objective" &&
+    /\b(?:objectives?|okrs?|goals?|key results?)\b/.test(intent)
+  ) {
+    const requestsKeyResult = /\bkey results?\b/.test(intent);
+    const leasesKeyResult = lease.operations.some((operation) =>
+      operation.includes("key-result"),
+    );
+    if (requestsKeyResult !== leasesKeyResult) return true;
+  }
+
+  if (lease.domain === "integration-request") {
+    const requestsAll = /\b(?:all|every)\b/.test(intent);
+    let requestedTool: MayaToolName | undefined;
+    if (/\baccept\b/.test(intent)) {
+      requestedTool = requestsAll
+        ? "acceptAllIntegrationRequestsTool"
+        : "acceptIntegrationRequestTool";
+    } else if (/\bdecline\b/.test(intent)) {
+      requestedTool = requestsAll
+        ? "declineAllIntegrationRequestsTool"
+        : "declineIntegrationRequestTool";
+    }
+    if (requestedTool && !lease.toolNames.includes(requestedTool)) return true;
+  }
+
+  if (
+    lease.domain === "github" &&
+    requestedFamilies.has("update") &&
+    /\bsettings?\b/.test(intent)
+  ) {
+    let requestedTool: MayaToolName | undefined;
+    if (TEAM_PATTERN.test(intent)) {
+      requestedTool = "updateGitHubTeamSettingsTool";
+    } else if (/\b(?:workspace|organization)\b/.test(intent)) {
+      requestedTool = "updateGitHubWorkspaceSettingsTool";
+    }
+    if (requestedTool && !lease.toolNames.includes(requestedTool)) return true;
+  }
+
+  return Array.from(requestedFamilies).some(
+    (family) => !leasedFamilies.has(family),
+  );
+};
+
+const isLeaseMetadataIntent = ({
+  configuredStoryTerms,
+  intent,
+  lease,
+}: {
+  configuredStoryTerms: string[];
+  intent: string;
+  lease: MayaActionLease;
+}) => {
+  const explicitDomains = getExplicitTextDomains(intent, configuredStoryTerms);
+  const differentDomains = Array.from(explicitDomains).filter(
+    (domain) => domain !== lease.domain,
+  );
+  const allowedMetadataDomains = ACTION_LEASE_METADATA_DOMAINS[lease.domain];
+
+  return Boolean(
+    allowedMetadataDomains &&
+      differentDomains.length > 0 &&
+      ACTION_LEASE_METADATA_RELATION_PATTERN.test(intent) &&
+      !ACTION_LEASE_METADATA_RESOURCE_MUTATION_PATTERN.test(intent) &&
+      !/\b(?:settings?|configuration)\b/.test(intent) &&
+      differentDomains.every((domain) => allowedMetadataDomains.has(domain)),
+  );
+};
+
+const isActionLeaseCancellationIntent = (intent: string) => {
+  const hasNegatedAction = NEGATED_ACTION_PATTERN.test(intent);
+  const positiveActionIntent = getPositiveActionIntent(intent);
+  const hasReplacementAction =
+    MUTATION_PATTERN.test(positiveActionIntent) ||
+    EXPLICIT_DIFFERENT_DOMAIN_ACTION_PATTERN.test(positiveActionIntent);
+
+  return (
+    EXACT_ACTION_LEASE_CANCELLATION_PATTERN.test(intent) ||
+    (!hasReplacementAction &&
+      (ACTION_LEASE_CANCELLATION_CUE_PATTERN.test(intent) || hasNegatedAction))
+  );
+};
+
+const shouldContinueActionLease = ({
+  configuredStoryTerms,
+  intent,
+  lease,
+}: {
+  configuredStoryTerms: string[];
+  intent: string;
+  lease: MayaActionLease;
+}) => {
+  const explicitDomains = getExplicitTextDomains(intent, configuredStoryTerms);
+  const differentDomains = Array.from(explicitDomains).filter(
+    (domain) => domain !== lease.domain,
+  );
+  const isMetadataIntent = isLeaseMetadataIntent({
+    configuredStoryTerms,
+    intent,
+    lease,
+  });
+  const negatesMetadata =
+    NEGATED_ACTION_PATTERN.test(intent) && isMetadataIntent;
+  if (isActionLeaseCancellationIntent(intent) && !negatesMetadata) return false;
+
+  if (differentDomains.length === 0) {
+    if (
+      ACTION_LEASE_REPLACEMENT_CUE_PATTERN.test(intent) &&
+      ACTION_LEASE_DISCOVERY_CUE_PATTERN.test(intent)
+    ) {
+      return false;
+    }
+    if (hasSameDomainOperationReplacement({ explicitDomains, intent, lease })) {
+      return false;
+    }
+    return !(
+      (FOCUS_PATTERN.test(intent) || ANALYTICS_PATTERN.test(intent)) &&
+      !explicitDomains.has(lease.domain)
+    );
+  }
+
+  if (isMetadataIntent) return true;
+
+  return !(
+    ACTION_LEASE_REPLACEMENT_CUE_PATTERN.test(intent) ||
+    ACTION_LEASE_DISCOVERY_CUE_PATTERN.test(intent) ||
+    NON_STORY_CREATION_REQUEST_PATTERN.test(intent) ||
+    MUTATION_PATTERN.test(intent) ||
+    EXPLICIT_DIFFERENT_DOMAIN_ACTION_PATTERN.test(intent)
+  );
+};
 
 const hasStoryCreationCorrectionIntent = (text: string) =>
   STORY_PLANNING_VALUE_PATTERN.test(text) ||
@@ -311,12 +664,22 @@ const getLatestAssistantContext = (messages: UIMessage[]) => {
     (message) => message.role === "user",
   );
   if (latestUserMessageIndex <= 0) {
-    return { precedingUserText: "", text: "", toolNames: [] };
+    return {
+      actionLease: undefined,
+      precedingUserText: "",
+      text: "",
+      toolNames: [],
+    };
   }
 
   const latestAssistantMessage = messages[latestUserMessageIndex - 1];
   if (latestAssistantMessage.role !== "assistant") {
-    return { precedingUserText: "", text: "", toolNames: [] };
+    return {
+      actionLease: undefined,
+      precedingUserText: "",
+      text: "",
+      toolNames: [],
+    };
   }
 
   const precedingUserMessage = messages
@@ -324,6 +687,9 @@ const getLatestAssistantContext = (messages: UIMessage[]) => {
     .findLast((message) => message.role === "user");
 
   return {
+    actionLease: hasTerminalMutationPart(latestAssistantMessage)
+      ? undefined
+      : getActionLease(latestAssistantMessage),
     precedingUserText: precedingUserMessage
       ? getMessageText(precedingUserMessage)
       : "",
@@ -492,6 +858,9 @@ const inferFollowUpDomain = ({
   if (!isFollowUp) return undefined;
 
   for (const toolName of assistantToolNames.toReversed()) {
+    const mutationRoute = getMutationRoute(toolName);
+    if (mutationRoute) return mutationRoute.domain;
+
     const matchedGroup = TOOL_DOMAIN_PROVENANCE.find(({ tools: toolNames }) =>
       toolNames.has(toolName),
     );
@@ -585,7 +954,95 @@ const addAnalyticsTools = (
   }
 };
 
-export const selectActiveTools = ({
+const createActionLease = ({
+  continuedLease,
+  intent,
+  selectedTools,
+}: {
+  continuedLease?: MayaActionLease;
+  intent: string;
+  selectedTools: Set<MayaToolName>;
+}): MayaActionLease | undefined => {
+  if (continuedLease) return continuedLease;
+
+  const standaloneMutations = Array.from(selectedTools).filter((toolName) =>
+    MUTATION_TOOL_NAME_SET.has(toolName),
+  );
+  const hasStoryContext =
+    STORY_PATTERN.test(intent) || STORY_REFERENCE_PATTERN.test(intent);
+  const isRequestedActionMutation = (toolName: MayaToolName) => {
+    const route = getMutationRoute(toolName);
+    if (!route || route.operationSource !== "input-action") return false;
+
+    switch (toolName) {
+      case "comments":
+        return (
+          COMMENT_PATTERN.test(intent) && /\b(?:add|post|reply)\b/.test(intent)
+        );
+      case "labels":
+        return LABEL_PATTERN.test(intent) && !hasStoryContext;
+      case "links":
+        return LINK_PATTERN.test(intent) && !GITHUB_PATTERN.test(intent);
+      case "notifications":
+        return NOTIFICATION_PATTERN.test(intent);
+      case "objectiveStatuses":
+        return OBJECTIVE_PATTERN.test(intent) && STATUS_PATTERN.test(intent);
+      case "statuses":
+        return (
+          STATUS_PATTERN.test(intent) &&
+          !OBJECTIVE_PATTERN.test(intent) &&
+          !hasStoryContext
+        );
+      case "storyLabels":
+        return LABEL_PATTERN.test(intent) && hasStoryContext;
+      default:
+        return false;
+    }
+  };
+  const actionMutations =
+    standaloneMutations.length === 0 &&
+    (MUTATION_PATTERN.test(intent) ||
+      UPDATE_PATTERN.test(intent) ||
+      ACTION_SCOPED_MUTATION_PATTERN.test(intent))
+      ? Array.from(selectedTools).filter(isRequestedActionMutation)
+      : [];
+  const toolNames = [...standaloneMutations, ...actionMutations];
+  if (toolNames.length === 0) return undefined;
+
+  const mutationRoutes = toolNames.flatMap((toolName) => {
+    const route = getMutationRoute(toolName);
+    return route ? [route] : [];
+  });
+  if (mutationRoutes.length !== toolNames.length) return undefined;
+  if (new Set(mutationRoutes.map(({ domain }) => domain)).size !== 1) {
+    return undefined;
+  }
+  const firstRoute = mutationRoutes[0];
+
+  return {
+    domain: firstRoute.domain,
+    operations: Array.from(
+      new Set(mutationRoutes.flatMap(({ operations }) => [...operations])),
+    ),
+    phase: "collecting",
+    remainingTurns: MAYA_ACTION_LEASE_MAX_TURNS,
+    toolNames,
+    version: MAYA_ACTION_LEASE_VERSION,
+  };
+};
+
+export type ActiveToolPlan = {
+  actionLease?: MayaActionLease;
+  activeTools: MayaToolName[];
+  source:
+    | "action-lease"
+    | "discovery"
+    | "explicit-intent"
+    | "path"
+    | "pending-mutation";
+};
+
+export const selectActiveToolPlan = ({
   currentPath = "",
   messages,
   storyTerminology,
@@ -593,7 +1050,7 @@ export const selectActiveTools = ({
   currentPath?: string;
   messages: UIMessage[];
   storyTerminology?: string;
-}): MayaToolName[] => {
+}): ActiveToolPlan => {
   const intent = getLatestUserText(messages);
   const configuredStoryTerms = normalizeCustomStoryTerm(storyTerminology);
   const hasConfiguredStoryTerm = configuredStoryTerms.some((term) =>
@@ -617,18 +1074,52 @@ export const selectActiveTools = ({
   // Legacy confirmation turns must keep the model constrained to the exact
   // prepared mutation. Native AI SDK approvals bypass this model-selection
   // path and are validated separately against persisted chat state.
-  if (pendingTools.size > 0) return Array.from(selectedTools);
+  if (pendingTools.size > 0) {
+    return {
+      activeTools: Array.from(selectedTools),
+      source: "pending-mutation",
+    };
+  }
+
+  const cancelsActionLease = Boolean(
+    latestAssistantContext.actionLease &&
+      isActionLeaseCancellationIntent(intent) &&
+      !isLeaseMetadataIntent({
+        configuredStoryTerms,
+        intent,
+        lease: latestAssistantContext.actionLease,
+      }),
+  );
+
+  const continuedActionLease =
+    latestAssistantContext.actionLease &&
+    latestAssistantContext.actionLease.remainingTurns > 1 &&
+    shouldContinueActionLease({
+      configuredStoryTerms,
+      intent,
+      lease: latestAssistantContext.actionLease,
+    })
+      ? {
+          ...latestAssistantContext.actionLease,
+          remainingTurns: latestAssistantContext.actionLease.remainingTurns - 1,
+        }
+      : undefined;
+  if (continuedActionLease) {
+    addTools(selectedTools, continuedActionLease.toolNames);
+  }
 
   let matchedDomain = false;
   const isFollowUp =
     CONVERSATIONAL_REFERENCE_PATTERN.test(intent) ||
     FOLLOW_THROUGH_ACTION_PATTERN.test(intent);
-  const inferredDomain = inferFollowUpDomain({
-    assistantText: latestAssistantContext.text,
-    assistantToolNames: latestAssistantContext.toolNames,
-    configuredStoryTerms,
-    isFollowUp,
-  });
+  const inferredDomain =
+    continuedActionLease?.domain ??
+    inferFollowUpDomain({
+      assistantText: latestAssistantContext.text,
+      assistantToolNames: latestAssistantContext.toolNames,
+      configuredStoryTerms,
+      isFollowUp,
+    });
   const isGenericFollowThrough = FOLLOW_THROUGH_ACTION_PATTERN.test(intent);
   const hasRecentCreationRequest = hasRecentStoryCreationRequest({
     configuredStoryTerms,
@@ -644,8 +1135,14 @@ export const selectActiveTools = ({
   const actionIntent = isGenericFollowThrough
     ? `${intent} ${latestAssistantContext.text}`
     : intent;
+  const mutationIntent = getPositiveActionIntent(actionIntent);
   const actionHasConfiguredStoryTerm = configuredStoryTerms.some((term) =>
-    includesWholePhrase(actionIntent, term),
+    includesWholePhrase(mutationIntent, term),
+  );
+  const isFreshNegatedMutation = Boolean(
+    !latestAssistantContext.actionLease &&
+      NEGATED_ACTION_PATTERN.test(intent) &&
+      getMutationFamilies(mutationIntent).size === 0,
   );
   const isStoryIntent =
     STORY_PATTERN.test(intent) ||
@@ -658,10 +1155,17 @@ export const selectActiveTools = ({
     pendingTools.size === 0 &&
     inferredDomain === "story" &&
     isGenericFollowThrough;
+  const hasStorySubresourceIntent =
+    COMMENT_PATTERN.test(mutationIntent) ||
+    LABEL_PATTERN.test(mutationIntent) ||
+    LINK_PATTERN.test(mutationIntent) ||
+    ATTACHMENT_PATTERN.test(mutationIntent) ||
+    /\bassociation|associate\b/.test(mutationIntent) ||
+    GITHUB_PATTERN.test(mutationIntent);
   const isStoryAction =
     isStoryIntent &&
-    (STORY_CREATE_PATTERN.test(actionIntent) ||
-      MUTATION_PATTERN.test(actionIntent) ||
+    (STORY_CREATE_PATTERN.test(mutationIntent) ||
+      MUTATION_PATTERN.test(mutationIntent) ||
       isStoryCreationIntake ||
       isStoryFollowThroughAction);
 
@@ -673,30 +1177,33 @@ export const selectActiveTools = ({
       addTools(selectedTools, STORY_CREATE_TOOLS);
     } else {
       if (
-        !DELETE_PATTERN.test(actionIntent) &&
-        (STORY_CREATE_PATTERN.test(actionIntent) ||
-          (actionHasConfiguredStoryTerm && CREATE_PATTERN.test(actionIntent)))
+        !hasStorySubresourceIntent &&
+        !DELETE_PATTERN.test(mutationIntent) &&
+        (STORY_CREATE_PATTERN.test(mutationIntent) ||
+          (actionHasConfiguredStoryTerm && CREATE_PATTERN.test(mutationIntent)))
       )
         addTools(selectedTools, STORY_CREATE_TOOLS);
-      if (UPDATE_PATTERN.test(actionIntent))
+      if (UPDATE_PATTERN.test(mutationIntent) && !hasStorySubresourceIntent)
         addTools(selectedTools, STORY_UPDATE_TOOLS);
-      if (DELETE_PATTERN.test(actionIntent))
+      if (DELETE_PATTERN.test(mutationIntent) && !hasStorySubresourceIntent)
         addTools(selectedTools, STORY_DELETE_TOOLS);
-      if (/\bduplicate\b/.test(actionIntent))
+      if (/\bduplicate\b/.test(mutationIntent))
         selectedTools.add("duplicateStory");
-      if (/\brestore\b/.test(actionIntent)) selectedTools.add("restoreStory");
-      if (/\bassociation|associate\b/.test(actionIntent)) {
+      if (/\brestore\b/.test(mutationIntent)) selectedTools.add("restoreStory");
+      if (/\bassociation|associate\b/.test(mutationIntent)) {
         selectedTools.add("addStoryAssociation");
         selectedTools.add("removeStoryAssociation");
       }
-      if (/\bcomment|reply\b/.test(actionIntent)) selectedTools.add("comments");
-      if (/\blabel|tag\b/.test(actionIntent)) selectedTools.add("storyLabels");
-      if (ACTIVITY_PATTERN.test(actionIntent))
+      if (/\bcomment|reply\b/.test(mutationIntent))
+        selectedTools.add("comments");
+      if (/\blabel|tag\b/.test(mutationIntent))
+        selectedTools.add("storyLabels");
+      if (ACTIVITY_PATTERN.test(mutationIntent))
         selectedTools.add("storyActivities");
-      if (/\blink|url\b/.test(actionIntent)) selectedTools.add("links");
-      if (/\battachment|file\b/.test(actionIntent)) {
+      if (/\blink|url\b/.test(mutationIntent)) selectedTools.add("links");
+      if (/\battachment|file\b/.test(mutationIntent)) {
         selectedTools.add("listAttachments");
-        if (DELETE_PATTERN.test(actionIntent))
+        if (DELETE_PATTERN.test(mutationIntent))
           selectedTools.add("deleteAttachment");
       }
     }
@@ -708,15 +1215,27 @@ export const selectActiveTools = ({
   ) {
     matchedDomain = true;
     addTools(selectedTools, TEAM_READ_TOOLS);
-    const isTeamStatusIntent = STATUS_PATTERN.test(actionIntent);
-    if (CREATE_PATTERN.test(actionIntent) && !isTeamStatusIntent) {
+    const isTeamStatusIntent = STATUS_PATTERN.test(mutationIntent);
+    const requestsTeamLeave =
+      /\bleave\b/.test(mutationIntent) ||
+      /\bremove\s+(?:me|myself)\b/.test(mutationIntent);
+    const requestsTeamDelete =
+      /\bdelete\b/.test(mutationIntent) ||
+      (/\bremove\b/.test(mutationIntent) &&
+        /\bteams?\b/.test(mutationIntent) &&
+        !/\b(?:member|members|person|people|me|myself)\b/.test(mutationIntent));
+    if (/\b(?:create|add|new)\b/.test(mutationIntent) && !isTeamStatusIntent) {
       selectedTools.add("createTeamTool");
+    }
+    if (/\bjoin\b/.test(mutationIntent) && !isTeamStatusIntent) {
       selectedTools.add("joinTeam");
     }
-    if (UPDATE_PATTERN.test(actionIntent) && !isTeamStatusIntent)
+    if (UPDATE_PATTERN.test(mutationIntent) && !isTeamStatusIntent)
       selectedTools.add("updateTeam");
-    if (DELETE_PATTERN.test(actionIntent) && !isTeamStatusIntent) {
+    if (requestsTeamDelete && !isTeamStatusIntent) {
       selectedTools.add("deleteTeam");
+    }
+    if (requestsTeamLeave && !isTeamStatusIntent) {
       selectedTools.add("leaveTeam");
     }
   }
@@ -737,7 +1256,7 @@ export const selectActiveTools = ({
   ) {
     matchedDomain = true;
     addTools(selectedTools, SPRINT_READ_TOOLS);
-    if (MUTATION_PATTERN.test(actionIntent))
+    if (MUTATION_PATTERN.test(mutationIntent))
       selectedTools.add("updateSprintSettings");
   }
 
@@ -747,8 +1266,23 @@ export const selectActiveTools = ({
   ) {
     matchedDomain = true;
     addTools(selectedTools, OBJECTIVE_READ_TOOLS);
-    if (MUTATION_PATTERN.test(actionIntent))
-      addTools(selectedTools, OBJECTIVE_WRITE_TOOLS);
+    const targetsKeyResult = /\bkey results?\b/.test(mutationIntent);
+    const targetsObjectiveStatus = STATUS_PATTERN.test(mutationIntent);
+    if (CREATE_PATTERN.test(mutationIntent) && !targetsObjectiveStatus) {
+      selectedTools.add(
+        targetsKeyResult ? "createKeyResultTool" : "createObjectiveTool",
+      );
+    }
+    if (UPDATE_PATTERN.test(mutationIntent) && !targetsObjectiveStatus) {
+      selectedTools.add(
+        targetsKeyResult ? "updateKeyResultTool" : "updateObjectiveTool",
+      );
+    }
+    if (DELETE_PATTERN.test(mutationIntent) && !targetsObjectiveStatus) {
+      selectedTools.add(
+        targetsKeyResult ? "deleteKeyResultTool" : "deleteObjectiveTool",
+      );
+    }
   }
 
   if (FOCUS_PATTERN.test(intent)) {
@@ -767,20 +1301,70 @@ export const selectActiveTools = ({
     matchedDomain = true;
     addTools(selectedTools, [
       "mayaWorkPlanTool",
-      "applyMayaWorkPlanTool",
       "workloadPlanningTool",
       "focusBrief",
       "listTeamStories",
       "listTeamMembers",
       "resolveMember",
     ]);
+    if (
+      /\b(?:apply|assign|create|make|schedule|protect|reserve|time block|plan my work)\b/.test(
+        mutationIntent,
+      )
+    ) {
+      selectedTools.add("applyMayaWorkPlanTool");
+    }
   }
 
   if (GITHUB_PATTERN.test(intent) || inferredDomain === "github") {
     matchedDomain = true;
     addTools(selectedTools, GITHUB_READ_TOOLS);
-    if (MUTATION_PATTERN.test(actionIntent))
-      addTools(selectedTools, GITHUB_WRITE_TOOLS);
+    if (/\b(?:connect|install|set up)\b/.test(mutationIntent)) {
+      selectedTools.add("createGitHubInstallSessionTool");
+    }
+    if (/\bresync\b/.test(mutationIntent)) {
+      selectedTools.add("resyncGitHubRepositoriesTool");
+    }
+    if (
+      CREATE_PATTERN.test(mutationIntent) &&
+      /\bsync link\b/.test(mutationIntent)
+    ) {
+      selectedTools.add("createGitHubIssueSyncLinkTool");
+    }
+    if (
+      DELETE_PATTERN.test(mutationIntent) &&
+      /\bsync link\b/.test(mutationIntent)
+    ) {
+      selectedTools.add("deleteGitHubIssueSyncLinkTool");
+    }
+    if (
+      UPDATE_PATTERN.test(mutationIntent) &&
+      /\b(?:workspace|organization)\b/.test(mutationIntent) &&
+      /\bsettings?\b/.test(mutationIntent)
+    ) {
+      selectedTools.add("updateGitHubWorkspaceSettingsTool");
+    }
+    if (
+      UPDATE_PATTERN.test(mutationIntent) &&
+      TEAM_PATTERN.test(mutationIntent) &&
+      /\bsettings?\b/.test(mutationIntent)
+    ) {
+      selectedTools.add("updateGitHubTeamSettingsTool");
+    }
+    if (
+      /\b(?:post|reply)\b/.test(mutationIntent) &&
+      COMMENT_PATTERN.test(mutationIntent)
+    ) {
+      selectedTools.add("postStoryGitHubCommentTool");
+    }
+    if (
+      DELETE_PATTERN.test(mutationIntent) &&
+      STORY_PATTERN.test(mutationIntent) &&
+      LINK_PATTERN.test(mutationIntent) &&
+      !/\bsync link\b/.test(mutationIntent)
+    ) {
+      selectedTools.add("deleteStoryGitHubLinkTool");
+    }
   }
 
   if (
@@ -789,8 +1373,28 @@ export const selectActiveTools = ({
   ) {
     matchedDomain = true;
     addTools(selectedTools, INTEGRATION_REQUEST_READ_TOOLS);
-    if (MUTATION_PATTERN.test(actionIntent)) {
-      addTools(selectedTools, INTEGRATION_REQUEST_WRITE_TOOLS);
+    if (/\b(?:update|edit|change)\b/.test(mutationIntent)) {
+      selectedTools.add("updateIntegrationRequestTool");
+    }
+    if (/\baccept\b/.test(mutationIntent)) {
+      selectedTools.add(
+        /\b(?:all|every)\b/.test(mutationIntent)
+          ? "acceptAllIntegrationRequestsTool"
+          : "acceptIntegrationRequestTool",
+      );
+    }
+    if (/\bdecline\b/.test(mutationIntent)) {
+      selectedTools.add(
+        /\b(?:all|every)\b/.test(mutationIntent)
+          ? "declineAllIntegrationRequestsTool"
+          : "declineIntegrationRequestTool",
+      );
+    }
+    if (
+      /\b(?:post|reply)\b/.test(mutationIntent) &&
+      COMMENT_PATTERN.test(mutationIntent)
+    ) {
+      selectedTools.add("postRequestGitHubCommentTool");
     }
   }
 
@@ -807,14 +1411,19 @@ export const selectActiveTools = ({
     addTools(selectedTools, ["listDocumentsTool", "getDocumentDetailsTool"]);
   }
 
-  if (MEMORY_PATTERN.test(intent) || inferredDomain === "memory") {
+  if (
+    (MEMORY_PATTERN.test(intent) &&
+      (!/\bforget that\b/.test(intent) ||
+        /\b(?:memory|memories|remember)\b/.test(intent))) ||
+    inferredDomain === "memory"
+  ) {
     matchedDomain = true;
     selectedTools.add("listMemories");
-    if (/\bremember|create|save|add\b/.test(actionIntent))
+    if (/\bremember|create|save|add\b/.test(mutationIntent))
       selectedTools.add("createMemory");
-    if (/\bupdate|edit|change\b/.test(actionIntent))
+    if (/\bupdate|edit|change\b/.test(mutationIntent))
       selectedTools.add("updateMemory");
-    if (/\bforget|delete|remove\b/.test(actionIntent))
+    if (/\bforget|delete|remove\b/.test(mutationIntent))
       selectedTools.add("deleteMemory");
   }
 
@@ -862,7 +1471,7 @@ export const selectActiveTools = ({
   ) {
     matchedDomain = true;
     selectedTools.add("listAttachments");
-    if (DELETE_PATTERN.test(actionIntent))
+    if (DELETE_PATTERN.test(mutationIntent))
       selectedTools.add("deleteAttachment");
   }
 
@@ -870,12 +1479,55 @@ export const selectActiveTools = ({
   if (THEME_PATTERN.test(intent)) selectedTools.add("theme");
   if (SEARCH_PATTERN.test(intent)) selectedTools.add("search");
 
+  let source: ActiveToolPlan["source"] = continuedActionLease
+    ? "action-lease"
+    : "explicit-intent";
   if (!matchedDomain) {
     const path = currentPath.toLowerCase();
     const pathDomain = PATH_DOMAINS.find(({ pattern }) => pattern.test(path));
-    if (pathDomain) addTools(selectedTools, pathDomain.tools);
-    else addTools(selectedTools, DEFAULT_DISCOVERY_TOOLS);
+    if (pathDomain) {
+      addTools(selectedTools, pathDomain.tools);
+      source = "path";
+    } else {
+      addTools(selectedTools, DEFAULT_DISCOVERY_TOOLS);
+      source = "discovery";
+    }
   }
 
-  return Array.from(selectedTools);
+  if (continuedActionLease) {
+    const leasedMutationTools = new Set<MayaToolName>([
+      ...continuedActionLease.toolNames,
+      ...(ACTION_LEASE_COMBINED_RESOLVER_TOOLS[continuedActionLease.domain] ??
+        []),
+    ]);
+    selectedTools.forEach((toolName) => {
+      if (
+        isMutationCapableToolName(toolName) &&
+        !leasedMutationTools.has(toolName)
+      ) {
+        selectedTools.delete(toolName);
+      }
+    });
+  } else if (cancelsActionLease || isFreshNegatedMutation) {
+    selectedTools.forEach((toolName) => {
+      if (isMutationCapableToolName(toolName)) selectedTools.delete(toolName);
+    });
+  }
+
+  const actionLease = cancelsActionLease
+    ? undefined
+    : createActionLease({
+        continuedLease: continuedActionLease,
+        intent: mutationIntent,
+        selectedTools,
+      });
+  return {
+    ...(actionLease ? { actionLease } : {}),
+    activeTools: Array.from(selectedTools),
+    source,
+  };
 };
+
+export const selectActiveTools = (
+  input: Parameters<typeof selectActiveToolPlan>[0],
+) => selectActiveToolPlan(input).activeTools;

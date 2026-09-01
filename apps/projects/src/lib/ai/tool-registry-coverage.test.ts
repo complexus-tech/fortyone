@@ -6,6 +6,12 @@ import { selectActiveTools } from "@/app/api/chat/active-tools";
 import { MAYA_TOOL_ACTIONS } from "./tool-actions";
 import { MAYA_TOOL_NAMES } from "./tool-names";
 import {
+  getMutationRoute,
+  getMutationRoutesByDomainOperation,
+  isMutationOperation,
+  MUTATION_ROUTING_MANIFEST,
+} from "./mutation-routing-manifest";
+import {
   isMutationCapableToolName,
   MUTATING_ACTION_TOOL_NAMES,
   MUTATING_TOOL_ACTIONS,
@@ -157,35 +163,71 @@ const REACHABILITY_CASES = [
     toolNames: ["activitySummaryTool"],
   },
   {
-    intent: "Connect and update our GitHub repository integration.",
+    intent: "Connect our GitHub repository integration.",
     toolNames: [
       "getGitHubIntegrationTool",
       "createGitHubInstallSessionTool",
-      "resyncGitHubRepositoriesTool",
-      "createGitHubIssueSyncLinkTool",
-      "deleteGitHubIssueSyncLinkTool",
-      "updateGitHubWorkspaceSettingsTool",
       "getGitHubTeamSettingsTool",
-      "updateGitHubTeamSettingsTool",
       "getStoryGitHubLinksTool",
       "getStoryGitHubCommentsTool",
-      "postStoryGitHubCommentTool",
-      "deleteStoryGitHubLinkTool",
     ],
   },
   {
-    intent: "Accept and update our integration requests.",
+    intent: "Resync our GitHub repositories.",
+    toolNames: ["resyncGitHubRepositoriesTool"],
+  },
+  {
+    intent: "Create a GitHub issue sync link.",
+    toolNames: ["createGitHubIssueSyncLinkTool"],
+  },
+  {
+    intent: "Delete the GitHub issue sync link.",
+    toolNames: ["deleteGitHubIssueSyncLinkTool"],
+  },
+  {
+    intent: "Update our GitHub workspace settings.",
+    toolNames: ["updateGitHubWorkspaceSettingsTool"],
+  },
+  {
+    intent: "Update our GitHub team settings.",
+    toolNames: ["updateGitHubTeamSettingsTool"],
+  },
+  {
+    intent: "Post a GitHub comment on story PRO-142.",
+    toolNames: ["postStoryGitHubCommentTool"],
+  },
+  {
+    intent: "Remove the GitHub link from story PRO-142.",
+    toolNames: ["deleteStoryGitHubLinkTool"],
+  },
+  {
+    intent: "Update an integration request.",
     toolNames: [
       "listIntegrationRequestsTool",
       "getIntegrationRequestTool",
       "updateIntegrationRequestTool",
-      "acceptIntegrationRequestTool",
-      "declineIntegrationRequestTool",
-      "acceptAllIntegrationRequestsTool",
-      "declineAllIntegrationRequestsTool",
       "getRequestGitHubCommentsTool",
-      "postRequestGitHubCommentTool",
     ],
+  },
+  {
+    intent: "Accept this integration request.",
+    toolNames: ["acceptIntegrationRequestTool"],
+  },
+  {
+    intent: "Decline this integration request.",
+    toolNames: ["declineIntegrationRequestTool"],
+  },
+  {
+    intent: "Accept all integration requests.",
+    toolNames: ["acceptAllIntegrationRequestsTool"],
+  },
+  {
+    intent: "Decline all integration requests.",
+    toolNames: ["declineAllIntegrationRequestsTool"],
+  },
+  {
+    intent: "Post a comment on this integration request.",
+    toolNames: ["postRequestGitHubCommentTool"],
   },
   {
     intent: "Show customer feedback.",
@@ -253,23 +295,39 @@ const REACHABILITY_CASES = [
     ],
   },
   {
-    intent: "Create a key result for an objective.",
+    intent:
+      "Show objective details, analytics, activities, statuses, and key results.",
     toolNames: [
       "objectiveStatuses",
       "listKeyResultsTool",
-      "createKeyResultTool",
-      "updateKeyResultTool",
-      "deleteKeyResultTool",
       "getKeyResultActivitiesTool",
       "listObjectivesTool",
       "listTeamObjectivesTool",
-      "createObjectiveTool",
-      "updateObjectiveTool",
-      "deleteObjectiveTool",
       "objectiveAnalyticsTool",
       "getObjectiveDetailsTool",
       "getObjectiveActivitiesTool",
     ],
+  },
+  { intent: "Create an objective.", toolNames: ["createObjectiveTool"] },
+  {
+    intent: "Update the launch objective.",
+    toolNames: ["updateObjectiveTool"],
+  },
+  {
+    intent: "Delete the launch objective.",
+    toolNames: ["deleteObjectiveTool"],
+  },
+  {
+    intent: "Create a key result for the launch objective.",
+    toolNames: ["createKeyResultTool"],
+  },
+  {
+    intent: "Update the launch objective key result.",
+    toolNames: ["updateKeyResultTool"],
+  },
+  {
+    intent: "Delete the launch objective key result.",
+    toolNames: ["deleteKeyResultTool"],
   },
   {
     intent: "Remember this launch rule.",
@@ -287,6 +345,45 @@ const userMessage = (text: string): UIMessage => ({
 });
 
 describe("Maya tool registry coverage", () => {
+  it("routes every mutation-capable tool through one canonical manifest entry", () => {
+    const mutationCapableToolNames = [
+      ...MUTATION_TOOL_NAMES,
+      ...MUTATING_ACTION_TOOL_NAMES,
+    ];
+    const manifestToolNames = MUTATION_ROUTING_MANIFEST.map(
+      ({ toolName }) => toolName,
+    );
+
+    expect(new Set(manifestToolNames).size).toBe(manifestToolNames.length);
+    expect([...manifestToolNames].sort()).toEqual(
+      [...mutationCapableToolNames].sort(),
+    );
+    mutationCapableToolNames.forEach((toolName) => {
+      expect(
+        manifestToolNames.filter((name) => name === toolName),
+      ).toHaveLength(1);
+    });
+
+    for (const entry of MUTATION_ROUTING_MANIFEST) {
+      expect(getMutationRoute(entry.toolName)).toBe(entry);
+      expect(entry.operations.length).toBeGreaterThan(0);
+      expect(new Set(entry.operations).size).toBe(entry.operations.length);
+    }
+
+    expect(
+      getMutationRoutesByDomainOperation("story", "create").map(
+        ({ toolName }) => toolName,
+      ),
+    ).toEqual(["createStory", "bulkCreateStories"]);
+    expect(
+      getMutationRoutesByDomainOperation("comment", "add-comment").map(
+        ({ toolName }) => toolName,
+      ),
+    ).toEqual(["comments"]);
+    expect(isMutationOperation("add-comment")).toBe(true);
+    expect(isMutationOperation("list-comments")).toBe(false);
+  });
+
   it("routes every registered tool from at least one clear natural-language intent", () => {
     const coveredToolNames = new Set(
       REACHABILITY_CASES.flatMap(({ toolNames }) => toolNames),

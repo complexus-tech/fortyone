@@ -1,7 +1,17 @@
 /* global describe, expect, it, jest -- Jest globals are provided by the projects test runner. */
 
 import type { UIMessage } from "ai";
-import { selectActiveTools } from "./active-tools";
+import type { MayaActionLease } from "@/lib/ai/action-lease";
+import type { MayaToolName } from "@/lib/ai/tool-policy";
+import {
+  MAYA_ACTION_LEASE_MAX_TURNS,
+  MAYA_ACTION_LEASE_VERSION,
+} from "@/lib/ai/action-lease";
+import {
+  isMutationCapableToolName,
+  MUTATION_TOOL_NAMES,
+} from "@/lib/ai/tool-policy";
+import { selectActiveToolPlan, selectActiveTools } from "./active-tools";
 
 jest.mock("server-only", () => ({}));
 
@@ -41,7 +51,926 @@ const assistantTextMessage = (text: string, id = "assistant-message") =>
     role: "assistant",
   }) as UIMessage;
 
+const assistantActionLeaseMessage = ({
+  domain,
+  id = "assistant-lease-message",
+  operations,
+  parts,
+  text = "",
+  toolNames,
+}: {
+  domain: MayaActionLease["domain"];
+  id?: string;
+  operations: string[];
+  parts?: unknown[];
+  text?: string;
+  toolNames: MayaToolName[];
+}) =>
+  ({
+    id,
+    metadata: {
+      actionLease: {
+        domain,
+        operations,
+        phase: "collecting",
+        remainingTurns: MAYA_ACTION_LEASE_MAX_TURNS,
+        toolNames,
+        version: MAYA_ACTION_LEASE_VERSION,
+      },
+    },
+    parts: parts ?? [{ text, type: "text" }],
+    role: "assistant",
+  }) as unknown as UIMessage;
+
+const directMutationToolNames = new Set<string>(MUTATION_TOOL_NAMES);
+
+const expectOnlyDirectMutations = (
+  activeTools: MayaToolName[],
+  expectedToolNames: MayaToolName[],
+) => {
+  const selectedMutationTools = activeTools.filter((toolName) =>
+    directMutationToolNames.has(toolName),
+  );
+
+  expect(selectedMutationTools).toHaveLength(expectedToolNames.length);
+  expect(selectedMutationTools).toEqual(
+    expect.arrayContaining(expectedToolNames),
+  );
+};
+
+const expectOnlyMutationCapableTools = (
+  activeTools: MayaToolName[],
+  expectedToolNames: MayaToolName[],
+) => {
+  const selectedMutationTools = activeTools.filter((toolName) =>
+    isMutationCapableToolName(toolName),
+  );
+
+  expect(selectedMutationTools).toHaveLength(expectedToolNames.length);
+  expect(selectedMutationTools).toEqual(
+    expect.arrayContaining(expectedToolNames),
+  );
+};
+
 describe("selectActiveTools", () => {
+  describe("persisted action leases", () => {
+    it("emits the exact objective lease for an explicit creation request", () => {
+      const plan = selectActiveToolPlan({
+        currentPath: "/acme/maya",
+        messages: [userMessage("Create an objective.", "objective-request")],
+      });
+
+      expect(plan).toMatchObject({
+        actionLease: {
+          domain: "objective",
+          operations: ["create-objective"],
+          phase: "collecting",
+          toolNames: ["createObjectiveTool"],
+          version: MAYA_ACTION_LEASE_VERSION,
+        },
+        source: "explicit-intent",
+      });
+      expectOnlyDirectMutations(plan.activeTools, ["createObjectiveTool"]);
+    });
+
+    it("does not emit an action lease for a read-only objective request", () => {
+      const plan = selectActiveToolPlan({
+        currentPath: "/acme/maya",
+        messages: [
+          userMessage("Show me the launch objective.", "objective-request"),
+        ],
+      });
+
+      expect(plan.actionLease).toBeUndefined();
+      expect(plan.activeTools).toContain("listObjectivesTool");
+      expectOnlyDirectMutations(plan.activeTools, []);
+    });
+
+    it.each([
+      ["Create a Product team.", ["createTeamTool"]],
+      [
+        "Create a key result for the launch objective.",
+        ["createKeyResultTool"],
+      ],
+      ["Resync our GitHub repositories.", ["resyncGitHubRepositoriesTool"]],
+      [
+        "Remove the GitHub link from story PRO-142.",
+        ["deleteStoryGitHubLinkTool"],
+      ],
+      [
+        "Accept all integration requests.",
+        ["acceptAllIntegrationRequestsTool"],
+      ],
+      ["Delete the attachment from story PRO-142.", ["deleteAttachment"]],
+    ] as const)(
+      "leases only the requested mutation for: %s",
+      (prompt, expectedToolNames) => {
+        const plan = selectActiveToolPlan({
+          currentPath: "/acme/maya",
+          messages: [userMessage(prompt, "mutation-request")],
+        });
+
+        expect(plan.actionLease?.toolNames).toEqual(expectedToolNames);
+        expectOnlyDirectMutations(plan.activeTools, [...expectedToolNames]);
+      },
+    );
+
+    it.each([
+      {
+        domain: "objective",
+        expectedTools: ["updateObjectiveTool"],
+        operations: ["create-objective"],
+        request: "Actually update the Launch objective instead.",
+        toolNames: ["createObjectiveTool"],
+      },
+      {
+        domain: "objective",
+        expectedTools: ["updateObjectiveTool"],
+        operations: ["create-objective"],
+        request: "Don't create this objective; update the existing one.",
+        toolNames: ["createObjectiveTool"],
+      },
+      {
+        domain: "story",
+        expectedTools: ["deleteStory", "bulkDeleteStories"],
+        operations: ["create"],
+        request: "Actually delete this story instead.",
+        toolNames: ["createStory"],
+      },
+      {
+        domain: "team",
+        expectedTools: ["leaveTeam"],
+        operations: ["create"],
+        request: "Actually leave this team instead.",
+        toolNames: ["createTeamTool"],
+      },
+      {
+        domain: "objective",
+        expectedTools: ["createKeyResultTool"],
+        operations: ["create-objective"],
+        request: "Actually create a key result for Launch instead.",
+        toolNames: ["createObjectiveTool"],
+      },
+      {
+        domain: "objective",
+        expectedTools: ["createObjectiveTool"],
+        operations: ["create-key-result"],
+        request: "Actually create an objective instead.",
+        toolNames: ["createKeyResultTool"],
+      },
+      {
+        domain: "integration-request",
+        expectedTools: ["acceptAllIntegrationRequestsTool"],
+        operations: ["accept"],
+        request: "Actually accept all integration requests instead.",
+        toolNames: ["acceptIntegrationRequestTool"],
+      },
+      {
+        domain: "story",
+        expectedTools: ["deleteStory", "bulkDeleteStories"],
+        operations: ["create"],
+        request: "Delete story PRO-142.",
+        toolNames: ["createStory"],
+      },
+      {
+        domain: "objective",
+        expectedTools: ["updateObjectiveTool"],
+        operations: ["create-objective"],
+        request: "Update the Launch objective.",
+        toolNames: ["createObjectiveTool"],
+      },
+    ] as const)(
+      "replaces a collecting $domain lease for: $request",
+      ({ domain, expectedTools, operations, request, toolNames }) => {
+        const plan = selectActiveToolPlan({
+          currentPath: "/acme/maya",
+          messages: [
+            assistantActionLeaseMessage({
+              domain,
+              operations: [...operations],
+              text: "Which value should I use?",
+              toolNames: [...toolNames],
+            }),
+            userMessage(request, "same-domain-replacement"),
+          ],
+        });
+
+        expect(plan.actionLease?.toolNames).toEqual(expectedTools);
+        expectOnlyDirectMutations(plan.activeTools, [...expectedTools]);
+      },
+    );
+
+    it("switches from objective creation to modifying a team resource", () => {
+      const plan = selectActiveToolPlan({
+        currentPath: "/acme/maya",
+        messages: [
+          assistantActionLeaseMessage({
+            domain: "objective",
+            operations: ["create-objective"],
+            text: "Which team should own it?",
+            toolNames: ["createObjectiveTool"],
+          }),
+          userMessage(
+            "Change the Product team name to Growth.",
+            "resource-mutation",
+          ),
+        ],
+      });
+
+      expect(plan.actionLease?.toolNames).toEqual(["updateTeam"]);
+      expectOnlyDirectMutations(plan.activeTools, ["updateTeam"]);
+      expect(plan.activeTools).not.toContain("createObjectiveTool");
+    });
+
+    it("switches story creation to modifying an objective resource", () => {
+      const plan = selectActiveToolPlan({
+        currentPath: "/acme/maya",
+        messages: [
+          assistantActionLeaseMessage({
+            domain: "story",
+            operations: ["create"],
+            text: "Which objective should I link?",
+            toolNames: ["createStory"],
+          }),
+          userMessage(
+            "Change the Launch objective name to Growth.",
+            "resource-mutation",
+          ),
+        ],
+      });
+
+      expect(plan.actionLease?.toolNames).toEqual(["updateObjectiveTool"]);
+      expectOnlyDirectMutations(plan.activeTools, ["updateObjectiveTool"]);
+      expect(plan.activeTools).not.toContain("createStory");
+    });
+
+    it("terminates a story lease for a same-domain read replacement", () => {
+      const plan = selectActiveToolPlan({
+        currentPath: "/acme/maya",
+        messages: [
+          assistantActionLeaseMessage({
+            domain: "story",
+            operations: ["create"],
+            text: "What should the story be called?",
+            toolNames: ["createStory"],
+          }),
+          userMessage("Instead, show me my stories.", "read-replacement"),
+        ],
+      });
+
+      expect(plan.actionLease).toBeUndefined();
+      expect(plan.activeTools).not.toContain("createStory");
+      expect(plan.activeTools).toContain("listTeamStories");
+    });
+
+    it("switches story creation to an explicit work-plan action", () => {
+      const plan = selectActiveToolPlan({
+        currentPath: "/acme/maya",
+        messages: [
+          assistantActionLeaseMessage({
+            domain: "story",
+            operations: ["create"],
+            text: "When should I schedule the story?",
+            toolNames: ["createStory"],
+          }),
+          userMessage("Schedule a work plan.", "planning-switch"),
+        ],
+      });
+
+      expect(plan.actionLease?.toolNames).toEqual(["applyMayaWorkPlanTool"]);
+      expect(plan.activeTools).not.toContain("createStory");
+    });
+
+    it.each([
+      {
+        domain: "story",
+        operations: ["create"],
+        reply: "Don't schedule it.",
+        toolName: "createStory",
+      },
+      {
+        domain: "objective",
+        operations: ["create-objective"],
+        reply: "Don't set a status.",
+        toolName: "createObjectiveTool",
+      },
+    ] as const)(
+      "keeps the $domain lease when negating optional metadata",
+      ({ domain, operations, reply, toolName }) => {
+        const plan = selectActiveToolPlan({
+          currentPath: "/acme/maya",
+          messages: [
+            assistantActionLeaseMessage({
+              domain,
+              operations: [...operations],
+              text: "Which optional value should I use?",
+              toolNames: [toolName],
+            }),
+            userMessage(reply, "metadata-negation"),
+          ],
+        });
+
+        expect(plan.actionLease?.toolNames).toEqual([toolName]);
+        expect(plan.activeTools).toContain(toolName);
+      },
+    );
+
+    it.each([
+      "Don't create a story.",
+      "Don't delete these stories.",
+      "Don't create or delete a story.",
+      "Don’t create a story.",
+      "Don't post a comment.",
+      "Don't create a label.",
+      "Don't mark the notification.",
+    ])("does not start a fresh mutation lease for negation: %s", (request) => {
+      const plan = selectActiveToolPlan({
+        currentPath: "/acme/maya",
+        messages: [userMessage(request, "fresh-negation")],
+      });
+
+      expect(plan.actionLease).toBeUndefined();
+      expectOnlyDirectMutations(plan.activeTools, []);
+      expectOnlyMutationCapableTools(plan.activeTools, []);
+    });
+
+    it("does not lease application of a read-only work-plan preview", () => {
+      const plan = selectActiveToolPlan({
+        currentPath: "/acme/maya",
+        messages: [userMessage("Show me a work plan.", "planning-request")],
+      });
+
+      expect(plan.actionLease).toBeUndefined();
+      expect(plan.activeTools).toContain("mayaWorkPlanTool");
+      expect(plan.activeTools).not.toContain("applyMayaWorkPlanTool");
+      expectOnlyDirectMutations(plan.activeTools, []);
+    });
+
+    it.each([
+      {
+        actionLease: {
+          domain: "team",
+          operations: ["create-objective"],
+          phase: "collecting",
+          remainingTurns: MAYA_ACTION_LEASE_MAX_TURNS,
+          toolNames: ["createObjectiveTool"],
+          version: MAYA_ACTION_LEASE_VERSION,
+        },
+        label: "mismatched domain",
+      },
+      {
+        actionLease: {
+          domain: "objective",
+          operations: ["arbitrary-operation"],
+          phase: "collecting",
+          remainingTurns: MAYA_ACTION_LEASE_MAX_TURNS,
+          toolNames: ["createObjectiveTool"],
+          version: MAYA_ACTION_LEASE_VERSION,
+        },
+        label: "unknown operation",
+      },
+      {
+        actionLease: {
+          domain: "objective",
+          operations: ["create-objective"],
+          phase: "collecting",
+          remainingTurns: 0,
+          toolNames: ["createObjectiveTool"],
+          version: MAYA_ACTION_LEASE_VERSION,
+        },
+        label: "expired lease",
+      },
+    ])("rejects a persisted $label", ({ actionLease }) => {
+      const activeTools = selectActiveTools({
+        currentPath: "/acme/maya",
+        messages: [
+          {
+            id: "invalid-lease",
+            metadata: { actionLease },
+            parts: [{ text: "Objective draft", type: "text" }],
+            role: "assistant",
+          } as unknown as UIMessage,
+          userMessage("create", "create-reply"),
+        ],
+      });
+
+      expect(activeTools).not.toContain("createObjectiveTool");
+      expectOnlyDirectMutations(activeTools, []);
+    });
+
+    it("does not reintroduce mutation-capable path tools after cancellation", () => {
+      const activeTools = selectActiveTools({
+        currentPath: "/acme/teams/product/stories",
+        messages: [
+          assistantActionLeaseMessage({
+            domain: "objective",
+            operations: ["create-objective"],
+            text: "Which team should own the objective?",
+            toolNames: ["createObjectiveTool"],
+          }),
+          userMessage("Stop.", "cancellation"),
+        ],
+      });
+
+      expectOnlyMutationCapableTools(activeTools, []);
+    });
+
+    it("continues an objective draft when the user replies with bare create", () => {
+      const activeTools = selectActiveTools({
+        currentPath: "/acme/maya",
+        messages: [
+          userMessage(
+            "Draft an objective for improving onboarding activation.",
+            "draft-request",
+          ),
+          assistantActionLeaseMessage({
+            domain: "objective",
+            operations: ["create-objective"],
+            text: "The objective draft is ready. Say create when you want me to submit it.",
+            toolNames: ["createObjectiveTool"],
+          }),
+          userMessage("create", "create-reply"),
+        ],
+      });
+
+      expect(activeTools).toContain("createObjectiveTool");
+      expect(activeTools).toContain("listObjectivesTool");
+      expectOnlyDirectMutations(activeTools, ["createObjectiveTool"]);
+    });
+
+    it.each([
+      ["What should it be called?", "Increase onboarding activation"],
+      ["Which team should own it?", "Product"],
+      ["What target date should I use?", "End of Q4"],
+    ])(
+      "keeps the objective creation schema for a slot-only reply: %s -> %s",
+      (clarification, reply) => {
+        const activeTools = selectActiveTools({
+          currentPath: "/acme/maya",
+          messages: [
+            userMessage("Create an objective.", "objective-request"),
+            assistantActionLeaseMessage({
+              domain: "objective",
+              operations: ["create-objective"],
+              text: clarification,
+              toolNames: ["createObjectiveTool"],
+            }),
+            userMessage(reply, "slot-reply"),
+          ],
+        });
+
+        expect(activeTools).toContain("createObjectiveTool");
+        expectOnlyDirectMutations(activeTools, ["createObjectiveTool"]);
+      },
+    );
+
+    it("keeps a story creation lease through one-result-at-a-time resolver turns", () => {
+      const activeTools = selectActiveTools({
+        currentPath: "/acme/maya",
+        messages: [
+          userMessage(
+            "Create a story in Product and assign it to Alex.",
+            "story-request",
+          ),
+          assistantActionLeaseMessage({
+            domain: "story",
+            id: "team-resolution",
+            operations: ["create"],
+            parts: [
+              {
+                input: { query: "Product" },
+                output: { teams: [{ id: "team-1", name: "Product" }] },
+                state: "output-available",
+                toolCallId: "team-call",
+                type: "tool-listTeams",
+              },
+              {
+                text: "I found Product. Which Alex should be assigned?",
+                type: "text",
+              },
+            ],
+            toolNames: ["createStory"],
+          }),
+          userMessage("Alex", "assignee-query"),
+          assistantActionLeaseMessage({
+            domain: "story",
+            id: "member-resolution",
+            operations: ["create"],
+            parts: [
+              {
+                input: { query: "Alex", teamId: "team-1" },
+                output: {
+                  members: [
+                    { id: "member-1", name: "Alex Chen" },
+                    { id: "member-2", name: "Alex Morgan" },
+                  ],
+                },
+                state: "output-available",
+                toolCallId: "member-call",
+                type: "tool-resolveMember",
+              },
+              { text: "Which one?", type: "text" },
+            ],
+            toolNames: ["createStory"],
+          }),
+          userMessage("Alex Chen", "member-selection"),
+        ],
+      });
+
+      expect(activeTools).toEqual(
+        expect.arrayContaining(["createStory", "listTeams", "resolveMember"]),
+      );
+      expectOnlyDirectMutations(activeTools, ["createStory"]);
+    });
+
+    it("terminates a collecting lease when the user cancels", () => {
+      const activeTools = selectActiveTools({
+        currentPath: "/acme/maya",
+        messages: [
+          assistantActionLeaseMessage({
+            domain: "objective",
+            operations: ["create-objective"],
+            text: "Which team should own the objective?",
+            toolNames: ["createObjectiveTool"],
+          }),
+          userMessage("Never mind.", "cancellation"),
+        ],
+      });
+
+      expect(activeTools).not.toContain("createObjectiveTool");
+      expectOnlyDirectMutations(activeTools, []);
+      expectOnlyMutationCapableTools(activeTools, []);
+    });
+
+    it("terminates the old lease when the user explicitly switches domains", () => {
+      const activeTools = selectActiveTools({
+        currentPath: "/acme/maya",
+        messages: [
+          userMessage("Create an objective.", "objective-request"),
+          assistantActionLeaseMessage({
+            domain: "objective",
+            operations: ["create-objective"],
+            text: "What should the objective be called?",
+            toolNames: ["createObjectiveTool"],
+          }),
+          userMessage("Actually, create a team instead.", "domain-switch"),
+        ],
+      });
+
+      expect(activeTools).toContain("createTeamTool");
+      expect(activeTools).not.toContain("createObjectiveTool");
+      expectOnlyDirectMutations(activeTools, ["createTeamTool"]);
+    });
+
+    it("terminates the old lease for a direct different-domain creation request", () => {
+      const plan = selectActiveToolPlan({
+        currentPath: "/acme/maya",
+        messages: [
+          assistantActionLeaseMessage({
+            domain: "objective",
+            operations: ["create-objective"],
+            text: "What should the objective be called?",
+            toolNames: ["createObjectiveTool"],
+          }),
+          userMessage("Create a story.", "domain-switch"),
+        ],
+      });
+
+      expect(plan.actionLease).toMatchObject({
+        domain: "story",
+        operations: ["create"],
+      });
+      expectOnlyDirectMutations(plan.activeTools, [
+        "createStory",
+        "bulkCreateStories",
+      ]);
+      expect(plan.activeTools).not.toContain("createObjectiveTool");
+    });
+
+    it.each(["Cancel the objective.", "Never mind, don't create it."])(
+      "terminates a collecting lease for natural cancellation: %s",
+      (cancellation) => {
+        const plan = selectActiveToolPlan({
+          currentPath: "/acme/maya",
+          messages: [
+            assistantActionLeaseMessage({
+              domain: "objective",
+              operations: ["create-objective"],
+              text: "What should the objective be called?",
+              toolNames: ["createObjectiveTool"],
+            }),
+            userMessage(cancellation, "cancellation"),
+          ],
+        });
+
+        expect(plan.actionLease).toBeUndefined();
+        expect(plan.activeTools).not.toContain("createObjectiveTool");
+        expectOnlyDirectMutations(plan.activeTools, []);
+      },
+    );
+
+    it("keeps the replacement action when cancellation language redirects the request", () => {
+      const plan = selectActiveToolPlan({
+        currentPath: "/acme/maya",
+        messages: [
+          assistantActionLeaseMessage({
+            domain: "planning",
+            operations: ["apply"],
+            text: "Should I apply this work plan?",
+            toolNames: ["applyMayaWorkPlanTool"],
+          }),
+          userMessage(
+            "Never mind planning; just create a story called Test AI.",
+            "replacement-request",
+          ),
+        ],
+      });
+
+      expect(plan.actionLease).toMatchObject({
+        domain: "story",
+        operations: ["create"],
+      });
+      expectOnlyDirectMutations(plan.activeTools, [
+        "createStory",
+        "bulkCreateStories",
+      ]);
+      expect(plan.activeTools).not.toContain("applyMayaWorkPlanTool");
+    });
+
+    it.each([
+      "Never mind—create a story instead.",
+      "Forget that and create a story.",
+      "Cancel that and create a story.",
+    ])(
+      "keeps a replacement action regardless of phrase order: %s",
+      (request) => {
+        const plan = selectActiveToolPlan({
+          currentPath: "/acme/maya",
+          messages: [
+            assistantActionLeaseMessage({
+              domain: "objective",
+              operations: ["create-objective"],
+              text: "What should the objective be called?",
+              toolNames: ["createObjectiveTool"],
+            }),
+            userMessage(request, "replacement-request"),
+          ],
+        });
+
+        expect(plan.actionLease).toMatchObject({
+          domain: "story",
+          operations: ["create"],
+        });
+        expectOnlyDirectMutations(plan.activeTools, [
+          "createStory",
+          "bulkCreateStories",
+        ]);
+        expect(plan.activeTools).not.toContain("createObjectiveTool");
+      },
+    );
+
+    it.each([
+      {
+        expectedDomain: "comment",
+        expectedTool: "comments",
+        request: "Post a comment.",
+      },
+      {
+        expectedDomain: "planning",
+        expectedTool: "applyMayaWorkPlanTool",
+        request: "Make a work plan.",
+      },
+    ] as const)(
+      "switches an objective lease to a direct $expectedDomain action",
+      ({ expectedDomain, expectedTool, request }) => {
+        const plan = selectActiveToolPlan({
+          currentPath: "/acme/maya",
+          messages: [
+            assistantActionLeaseMessage({
+              domain: "objective",
+              operations: ["create-objective"],
+              text: "What should the objective be called?",
+              toolNames: ["createObjectiveTool"],
+            }),
+            userMessage(request, "domain-switch"),
+          ],
+        });
+
+        expect(plan.actionLease).toMatchObject({ domain: expectedDomain });
+        expect(plan.actionLease?.toolNames).toContain(expectedTool);
+        expect(plan.activeTools).not.toContain("createObjectiveTool");
+      },
+    );
+
+    it("keeps an objective lease through a read-only status resolution", () => {
+      const activeTools = selectActiveTools({
+        currentPath: "/acme/maya",
+        messages: [
+          assistantActionLeaseMessage({
+            domain: "objective",
+            operations: ["create-objective"],
+            parts: [
+              {
+                input: { action: "list-objective-statuses" },
+                output: { statuses: [{ id: "status-1", name: "To Do" }] },
+                state: "output-available",
+                toolCallId: "status-call",
+                type: "tool-objectiveStatuses",
+              },
+              { text: "Which status should I use?", type: "text" },
+            ],
+            toolNames: ["createObjectiveTool"],
+          }),
+          userMessage("To Do", "status-selection"),
+        ],
+      });
+
+      expect(activeTools).toContain("createObjectiveTool");
+      expectOnlyDirectMutations(activeTools, ["createObjectiveTool"]);
+    });
+
+    it.each([
+      {
+        domain: "objective",
+        operations: ["create-objective"],
+        reply: "Set the team to Product.",
+        toolName: "createObjectiveTool",
+      },
+      {
+        domain: "story",
+        operations: ["create"],
+        reply: "Link it to the Launch objective.",
+        toolName: "createStory",
+      },
+      {
+        domain: "story",
+        operations: ["create"],
+        reply: "Schedule it for Friday.",
+        toolName: "createStory",
+      },
+      {
+        domain: "story",
+        operations: ["create"],
+        reply: "Set status to Backlog.",
+        toolName: "createStory",
+      },
+    ] as const)(
+      "keeps the $domain lease for metadata reply: $reply",
+      ({ domain, operations, reply, toolName }) => {
+        const plan = selectActiveToolPlan({
+          currentPath: "/acme/maya",
+          messages: [
+            assistantActionLeaseMessage({
+              domain,
+              operations: [...operations],
+              text: "Which value should I use?",
+              toolNames: [toolName],
+            }),
+            userMessage(reply, "metadata-reply"),
+          ],
+        });
+
+        expect(plan.actionLease).toMatchObject({
+          domain,
+          toolNames: [toolName],
+        });
+        expect(plan.activeTools).toContain(toolName);
+        expectOnlyDirectMutations(plan.activeTools, [toolName]);
+        expectOnlyMutationCapableTools(
+          plan.activeTools,
+          domain === "objective"
+            ? [toolName, "objectiveStatuses"]
+            : [toolName, "statuses", "labels"],
+        );
+      },
+    );
+
+    it("leases only the comment action for a story comment reply", () => {
+      const plan = selectActiveToolPlan({
+        currentPath: "/acme/maya",
+        messages: [
+          userMessage(
+            "Reply to the comment on story PRO-142.",
+            "comment-reply",
+          ),
+        ],
+      });
+
+      expect(plan.actionLease).toMatchObject({
+        domain: "comment",
+        toolNames: ["comments"],
+      });
+      expect(plan.actionLease?.operations).toEqual([
+        "add-comment",
+        "reply-to-comment",
+      ]);
+      expectOnlyDirectMutations(plan.activeTools, []);
+    });
+
+    it("cancels an action-scoped comment lease with natural negation", () => {
+      const plan = selectActiveToolPlan({
+        currentPath: "/acme/maya",
+        messages: [
+          assistantActionLeaseMessage({
+            domain: "comment",
+            operations: ["add-comment", "reply-to-comment"],
+            text: "What should the comment say?",
+            toolNames: ["comments"],
+          }),
+          userMessage("Don't post it.", "comment-cancellation"),
+        ],
+      });
+
+      expect(plan.actionLease).toBeUndefined();
+      expect(plan.activeTools).not.toContain("comments");
+      expectOnlyMutationCapableTools(plan.activeTools, []);
+    });
+
+    it("does not issue a single-domain lease for a mixed mutation request", () => {
+      const plan = selectActiveToolPlan({
+        currentPath: "/acme/maya",
+        messages: [
+          userMessage(
+            "Create an objective and a team.",
+            "mixed-domain-request",
+          ),
+        ],
+      });
+
+      expect(plan.actionLease).toBeUndefined();
+      expectOnlyDirectMutations(plan.activeTools, [
+        "createObjectiveTool",
+        "createTeamTool",
+      ]);
+    });
+
+    it("restores routing from persisted lease metadata without the original request", () => {
+      const persistedTranscript = JSON.parse(
+        JSON.stringify([
+          assistantActionLeaseMessage({
+            domain: "objective",
+            operations: ["create-objective"],
+            text: "Which team should own it?",
+            toolNames: ["createObjectiveTool"],
+          }),
+          userMessage("Product", "reply-after-reload"),
+        ]),
+      ) as UIMessage[];
+      const activeTools = selectActiveTools({
+        currentPath: "/acme/maya",
+        messages: persistedTranscript,
+      });
+
+      expect(activeTools).toContain("createObjectiveTool");
+      expectOnlyDirectMutations(activeTools, ["createObjectiveTool"]);
+    });
+
+    it.each([
+      {
+        part: {
+          input: {
+            name: "Increase onboarding activation",
+            teamId: "team-1",
+          },
+          output: { objective: { id: "objective-1" }, success: true },
+          state: "output-available",
+          toolCallId: "objective-call",
+          type: "tool-createObjectiveTool",
+        },
+        state: "completed",
+      },
+      {
+        part: {
+          input: {
+            name: "Increase onboarding activation",
+            teamId: "team-1",
+          },
+          state: "output-denied",
+          toolCallId: "objective-call",
+          type: "tool-createObjectiveTool",
+        },
+        state: "denied",
+      },
+    ])("does not revive a $state objective lease", ({ part }) => {
+      const activeTools = selectActiveTools({
+        currentPath: "/acme/maya",
+        messages: [
+          assistantActionLeaseMessage({
+            domain: "objective",
+            operations: ["create-objective"],
+            parts: [part],
+            toolNames: ["createObjectiveTool"],
+          }),
+          userMessage("Okay.", "neutral-follow-up"),
+        ],
+      });
+
+      expect(activeTools).toContain("focusBrief");
+      expect(activeTools).not.toContain("createObjectiveTool");
+      expectOnlyDirectMutations(activeTools, []);
+    });
+  });
+
   it("uses a bounded story-creation tool set for bulk story requests", () => {
     const activeTools = selectActiveTools({
       currentPath: "/acme/teams/product/stories",
@@ -79,6 +1008,19 @@ describe("selectActiveTools", () => {
       expect(activeTools).not.toContain("createTeamTool");
     },
   );
+
+  it.each([
+    ["Add a Product team.", "createTeamTool"],
+    ["Remove the Product team.", "deleteTeam"],
+    ["Remove me from the Product team.", "leaveTeam"],
+  ] as const)("routes team action %s to %s", (request, expectedTool) => {
+    const activeTools = selectActiveTools({
+      currentPath: "/acme/maya",
+      messages: [userMessage(request)],
+    });
+
+    expect(activeTools).toContain(expectedTool);
+  });
 
   it("recognizes approval-recovery wording as story creation", () => {
     const activeTools = selectActiveTools({

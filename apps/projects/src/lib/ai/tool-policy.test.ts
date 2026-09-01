@@ -1,6 +1,8 @@
 /* global describe, expect, it -- Jest globals are provided by the projects test runner. */
 
 import {
+  isMutationCapableToolName,
+  isMutationToolCall,
   requiresMutationApproval,
   toApprovedMutationInput,
 } from "./tool-policy";
@@ -38,4 +40,14 @@ describe("Maya tool policy", () => {
       requiresMutationApproval("applyMayaWorkPlanTool", { runId: "run-1" }),
     ).toBe(true);
   });
+
+  it.each(["constructor", "toString", "valueOf"])(
+    "does not treat inherited object property %s as a mutation tool",
+    (toolName) => {
+      expect(isMutationCapableToolName(toolName)).toBe(false);
+      expect(isMutationToolCall(toolName, { action: "add-comment" })).toBe(
+        false,
+      );
+    },
+  );
 });

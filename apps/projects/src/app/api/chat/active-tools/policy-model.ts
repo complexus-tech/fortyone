@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { MayaToolName } from "@/lib/ai/tool-policy";
+import type { MayaToolDomain } from "@/lib/ai/tool-routing";
 
 export const BASE_TOOLS = [
   "suggestions",
@@ -43,18 +44,9 @@ const STORY_PROVENANCE_TOOLS = new Set<MayaToolName>([
   "searchStories",
   "getStoryDetails",
   "storyActivities",
-  ...STORY_CREATE_TOOLS,
-  ...STORY_UPDATE_TOOLS,
-  ...STORY_DELETE_TOOLS,
-  "duplicateStory",
-  "restoreStory",
-  "addStoryAssociation",
-  "removeStoryAssociation",
   "storyLabels",
   "getStoryGitHubLinksTool",
   "getStoryGitHubCommentsTool",
-  "postStoryGitHubCommentTool",
-  "deleteStoryGitHubLinkTool",
 ]);
 
 export const TEAM_READ_TOOLS = [
@@ -85,15 +77,6 @@ export const OBJECTIVE_READ_TOOLS = [
   "getKeyResultActivitiesTool",
 ] as const satisfies readonly MayaToolName[];
 
-export const OBJECTIVE_WRITE_TOOLS = [
-  "createObjectiveTool",
-  "updateObjectiveTool",
-  "deleteObjectiveTool",
-  "createKeyResultTool",
-  "updateKeyResultTool",
-  "deleteKeyResultTool",
-] as const satisfies readonly MayaToolName[];
-
 export const ANALYTICS_SUPPORT_TOOLS = [
   "listTeams",
   "listTeamMembers",
@@ -110,74 +93,30 @@ export const GITHUB_READ_TOOLS = [
   "getStoryGitHubCommentsTool",
 ] as const satisfies readonly MayaToolName[];
 
-export const GITHUB_WRITE_TOOLS = [
-  "createGitHubInstallSessionTool",
-  "resyncGitHubRepositoriesTool",
-  "createGitHubIssueSyncLinkTool",
-  "deleteGitHubIssueSyncLinkTool",
-  "updateGitHubWorkspaceSettingsTool",
-  "updateGitHubTeamSettingsTool",
-  "postStoryGitHubCommentTool",
-  "deleteStoryGitHubLinkTool",
-] as const satisfies readonly MayaToolName[];
-
 export const INTEGRATION_REQUEST_READ_TOOLS = [
   "listIntegrationRequestsTool",
   "getIntegrationRequestTool",
   "getRequestGitHubCommentsTool",
 ] as const satisfies readonly MayaToolName[];
 
-export const INTEGRATION_REQUEST_WRITE_TOOLS = [
-  "updateIntegrationRequestTool",
-  "acceptIntegrationRequestTool",
-  "declineIntegrationRequestTool",
-  "acceptAllIntegrationRequestsTool",
-  "declineAllIntegrationRequestsTool",
-  "postRequestGitHubCommentTool",
-] as const satisfies readonly MayaToolName[];
-
-export type ToolDomain =
-  | "attachment"
-  | "comment"
-  | "document"
-  | "feedback"
-  | "github"
-  | "integration-request"
-  | "label"
-  | "link"
-  | "memory"
-  | "notification"
-  | "objective"
-  | "planning"
-  | "sprint"
-  | "status"
-  | "story"
-  | "team";
+export type ToolDomain = MayaToolDomain;
 
 export const TOOL_DOMAIN_PROVENANCE = [
   {
     domain: "integration-request",
-    tools: new Set<MayaToolName>([
-      ...INTEGRATION_REQUEST_READ_TOOLS,
-      ...INTEGRATION_REQUEST_WRITE_TOOLS,
-    ]),
+    tools: new Set<MayaToolName>(INTEGRATION_REQUEST_READ_TOOLS),
   },
   {
     domain: "github",
-    tools: new Set<MayaToolName>([...GITHUB_READ_TOOLS, ...GITHUB_WRITE_TOOLS]),
+    tools: new Set<MayaToolName>(GITHUB_READ_TOOLS),
   },
   {
     domain: "planning",
-    tools: new Set<MayaToolName>(["mayaWorkPlanTool", "applyMayaWorkPlanTool"]),
+    tools: new Set<MayaToolName>(["mayaWorkPlanTool"]),
   },
   {
     domain: "memory",
-    tools: new Set<MayaToolName>([
-      "listMemories",
-      "createMemory",
-      "updateMemory",
-      "deleteMemory",
-    ]),
+    tools: new Set<MayaToolName>(["listMemories"]),
   },
   {
     domain: "notification",
@@ -197,21 +136,15 @@ export const TOOL_DOMAIN_PROVENANCE = [
   },
   {
     domain: "attachment",
-    tools: new Set<MayaToolName>(["listAttachments", "deleteAttachment"]),
+    tools: new Set<MayaToolName>(["listAttachments"]),
   },
   {
     domain: "objective",
-    tools: new Set<MayaToolName>([
-      ...OBJECTIVE_READ_TOOLS,
-      ...OBJECTIVE_WRITE_TOOLS,
-    ]),
+    tools: new Set<MayaToolName>(OBJECTIVE_READ_TOOLS),
   },
   {
     domain: "sprint",
-    tools: new Set<MayaToolName>([
-      ...SPRINT_READ_TOOLS,
-      "updateSprintSettings",
-    ]),
+    tools: new Set<MayaToolName>(SPRINT_READ_TOOLS),
   },
   {
     domain: "status",
@@ -227,11 +160,6 @@ export const TOOL_DOMAIN_PROVENANCE = [
       "getTeamDetails",
       "listTeamMembers",
       "getTeamSettingsTool",
-      "createTeamTool",
-      "updateTeam",
-      "joinTeam",
-      "deleteTeam",
-      "leaveTeam",
     ]),
   },
   {
