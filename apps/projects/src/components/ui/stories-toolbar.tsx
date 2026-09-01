@@ -163,7 +163,7 @@ export const StoriesToolbar = () => {
                   leftIcon={
                     <StoryStatusIcon
                       category="started"
-                      className="text-warning dark:text-warning h-[1.15rem]"
+                      className="text-warning dark:text-warning size-4"
                     />
                   }
                   variant="naked"
