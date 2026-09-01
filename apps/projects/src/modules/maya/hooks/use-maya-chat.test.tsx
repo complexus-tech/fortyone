@@ -2,6 +2,7 @@
 
 import { useChat } from "@ai-sdk/react";
 import { act, renderHook, waitFor } from "@testing-library/react";
+import { useAiChatMessages } from "@/modules/ai-chats/hooks/use-ai-chat-messages";
 import { useMayaChat } from "./use-maya-chat";
 
 jest.mock("next/navigation", () => ({
@@ -47,7 +48,7 @@ jest.mock("@/lib/hooks/subscriptions/subscription", () => ({
 jest.mock("@/lib/utils/files", () => ({ fileToBase64: jest.fn() }));
 
 jest.mock("@/modules/ai-chats/hooks/use-ai-chat-messages", () => ({
-  useAiChatMessages: () => ({ data: [] }),
+  useAiChatMessages: jest.fn(() => ({ data: [] })),
 }));
 
 jest.mock("@/modules/ai-chats/queries/get-ai-chat-messages", () => ({
@@ -137,13 +138,18 @@ let mockTotalMessages = 0;
 const sendMessage = jest.fn(() => Promise.resolve());
 const regenerate = jest.fn(() => Promise.resolve());
 const mockedUseChat = jest.mocked(useChat);
+const mockedUseAiChatMessages = jest.mocked(useAiChatMessages);
 let onFinish: ChatFinishHandler | undefined;
 
-const renderMayaChat = (onUserMessageSubmitted = jest.fn()) => {
+const renderMayaChat = (
+  onUserMessageSubmitted = jest.fn(),
+  hasSelectedChat = false,
+) => {
   const hook = renderHook(() =>
     useMayaChat({
       clearChatRef: jest.fn(),
       currentChatId: "chat-1",
+      hasSelectedChat,
       onUserMessageSubmitted,
       updateChatRef: jest.fn(),
     }),
@@ -218,6 +224,20 @@ describe("useMayaChat onboarding completion", () => {
       } as unknown as ReturnType<typeof useChat>;
     });
   });
+
+  it.each([
+    ["draft", false],
+    ["selected", true],
+  ] as const)(
+    "loads history only for a %s persisted chat",
+    (_, hasSelectedChat) => {
+      renderMayaChat(jest.fn(), hasSelectedChat);
+
+      expect(mockedUseAiChatMessages).toHaveBeenLastCalledWith("chat-1", {
+        enabled: hasSelectedChat,
+      });
+    },
+  );
 
   it("completes onboarding as soon as a valid user prompt is submitted", async () => {
     const { onUserMessageSubmitted, result } = renderMayaChat();

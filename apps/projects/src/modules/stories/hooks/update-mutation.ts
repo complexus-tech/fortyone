@@ -12,6 +12,33 @@ import type {
   Story,
 } from "../types";
 import { bulkUpdateAction } from "../actions/bulk-update-stories";
+import {
+  assertBulkStoryUpdateSucceeded,
+  BulkStoryUpdateFailure,
+} from "./bulk-update-result";
+
+type BulkUpdateVariables = {
+  storyIds: string[];
+  payload: Partial<DetailedStory>;
+};
+
+type BulkUpdateContext = {
+  previousQueryStates: Map<string, unknown>;
+};
+
+const restorePreviousQueryStates = (
+  queryClient: ReturnType<typeof useQueryClient>,
+  context?: BulkUpdateContext,
+) => {
+  context?.previousQueryStates.forEach((data, queryKey) => {
+    try {
+      queryClient.setQueryData(JSON.parse(queryKey), data);
+    } catch {
+      // Query keys are JSON-serializable in this cache. Ignore stale entries
+      // if a custom key violates that contract instead of masking the mutation.
+    }
+  });
+};
 
 const updateDetailQuery = (
   queryClient: ReturnType<typeof useQueryClient>,
@@ -123,13 +150,21 @@ export const useBulkUpdateStoriesMutation = () => {
   const { getTermDisplay } = useTerminology();
 
   const mutation = useMutation({
-    mutationFn: ({
-      storyIds,
-      payload,
-    }: {
-      storyIds: string[];
-      payload: Partial<DetailedStory>;
-    }) => bulkUpdateAction({ storyIds, updates: payload }, workspaceSlug),
+    mutationFn: async ({ storyIds, payload }: BulkUpdateVariables) => {
+      const response = await bulkUpdateAction(
+        { storyIds, updates: payload },
+        workspaceSlug,
+      );
+
+      if (response.error?.message) {
+        throw new Error(response.error.message);
+      }
+      if (!response.data) {
+        throw new Error("The bulk update returned no result");
+      }
+
+      return assertBulkStoryUpdateSucceeded(response.data);
+    },
 
     onMutate: ({ storyIds, payload }) => {
       const previousQueryStates = new Map<string, unknown>();
@@ -142,7 +177,9 @@ export const useBulkUpdateStoriesMutation = () => {
           queryClient.cancelQueries({ queryKey: query.queryKey });
 
           const previousData = queryClient.getQueryData(query.queryKey);
-          previousQueryStates.set(queryKey, previousData);
+          if (!previousQueryStates.has(queryKey)) {
+            previousQueryStates.set(queryKey, previousData);
+          }
 
           if (queryKey.toLowerCase().includes("detail")) {
             updateDetailQuery(queryClient, query.queryKey, storyIds, payload);
@@ -153,24 +190,15 @@ export const useBulkUpdateStoriesMutation = () => {
       });
 
       if (storyId) {
-        const parentStory = queryClient.getQueryData<DetailedStory>(
-          storyKeys.detail(workspaceSlug, storyId),
-        );
-        if (parentStory) {
-          const previousParentData = queryClient.getQueryData(
-            storyKeys.detail(workspaceSlug, storyId),
-          );
-          previousQueryStates.set(
-            JSON.stringify(storyKeys.detail(workspaceSlug, storyId)),
-            previousParentData,
-          );
+        const parentStoryKey = storyKeys.detail(workspaceSlug, storyId);
+        const serializedParentStoryKey = JSON.stringify(parentStoryKey);
+        const parentStory =
+          queryClient.getQueryData<DetailedStory>(parentStoryKey);
+        if (parentStory && !previousQueryStates.has(serializedParentStoryKey)) {
+          const previousParentData = queryClient.getQueryData(parentStoryKey);
+          previousQueryStates.set(serializedParentStoryKey, previousParentData);
 
-          updateDetailQuery(
-            queryClient,
-            storyKeys.detail(workspaceSlug, storyId),
-            storyIds,
-            payload,
-          );
+          updateDetailQuery(queryClient, parentStoryKey, storyIds, payload);
         }
       }
 
@@ -178,41 +206,44 @@ export const useBulkUpdateStoriesMutation = () => {
     },
 
     onError: (error, variables, context) => {
-      if (context?.previousQueryStates) {
-        context.previousQueryStates.forEach((data, queryKey) => {
-          try {
-            const parsedQueryKey = JSON.parse(queryKey);
-            queryClient.setQueryData(parsedQueryKey, data);
-          } catch {
-            // Skip invalid query keys
-          }
-        });
-      }
+      restorePreviousQueryStates(queryClient, context);
 
       queryClient.invalidateQueries({ queryKey: storyKeys.all(workspaceSlug) });
       queryClient.invalidateQueries({
         queryKey: objectiveKeys.list(workspaceSlug),
       });
 
-      toast.error(
-        `Failed to update ${getTermDisplay("storyTerm", { variant: "plural" })}`,
-        {
-          description: error.message || "Your changes were not saved",
-          action: {
-            label: "Retry",
-            onClick: () => {
-              mutation.mutate(variables);
+      const itemFailure =
+        error instanceof BulkStoryUpdateFailure ? error : null;
+      const retryStoryIds =
+        itemFailure &&
+        itemFailure.failedStoryIds.length === itemFailure.failedCount
+          ? itemFailure.failedStoryIds
+          : variables.storyIds;
+      const failureTitle = itemFailure
+        ? `Failed to update ${itemFailure.failedCount} of ${itemFailure.totalCount} ${getTermDisplay(
+            "storyTerm",
+            {
+              variant: itemFailure.totalCount === 1 ? "singular" : "plural",
             },
+          )}`
+        : `Failed to update ${getTermDisplay("storyTerm", { variant: "plural" })}`;
+
+      toast.error(failureTitle, {
+        description: error.message || "Your changes were not saved",
+        action: {
+          label: "Retry",
+          onClick: () => {
+            mutation.mutate({
+              ...variables,
+              storyIds: retryStoryIds,
+            });
           },
         },
-      );
+      });
     },
 
-    onSuccess: (res, { storyIds, payload }) => {
-      if (res.error?.message) {
-        throw new Error(res.error.message);
-      }
-
+    onSuccess: (_result, { storyIds, payload }) => {
       analytics.track("stories_bulk_updated", {
         storyIds,
         count: storyIds.length,

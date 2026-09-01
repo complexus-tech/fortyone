@@ -319,7 +319,9 @@ export const CONVERSATIONAL_REFERENCE_PATTERN =
 export const FOLLOW_THROUGH_ACTION_PATTERN =
   /\b(?:yes|yeah|yep|approve|approved|confirm|confirmed|proceed|go ahead|do it|do everything|make it so)\b/;
 export const STORY_PLANNING_CLARIFICATION_PATTERN =
-  /\b(?:delivery|deliver|due|start date|work date|time needed|how (?:long|much time)|duration|calendar|auto[- ]?schedul|focus (?:time|block)|reserve(?:d|s|ing)?(?: calendar)? time)\b/;
+  /\b(?:delivery|deliver|due|start date|work date|time needed|how (?:long|much time)|duration|calendar|schedul(?:e|ed|ing)|auto[- ]?schedul|focus (?:time|block)|reserve(?:d|s|ing)?(?: calendar)? time)\b/;
+export const STORY_CREATION_INTAKE_CLARIFICATION_PATTERN =
+  /\b(?:called|named|title|description|team|status|assignee|assign(?:ed)?|owner|owned|member|sprint|objective|label|priority)\b/;
 export const CLARIFICATION_LANGUAGE_PATTERN =
   /\?|\b(?:when|what|how|whether|would you|do you want|should|please (?:choose|provide|tell)|let me know)\b/;
 export const STORY_PLANNING_VALUE_PATTERN =

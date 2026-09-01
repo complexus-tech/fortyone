@@ -67,7 +67,9 @@ export const useMayaChat = (config: MayaChatConfig) => {
   const [attachments, setAttachments] = useState<File[]>([]);
   const { getTermDisplay } = useTerminology();
   const currentChatId = config.currentChatId;
-  const { data: aiChatMessages = [] } = useAiChatMessages(currentChatId);
+  const { data: aiChatMessages = [] } = useAiChatMessages(currentChatId, {
+    enabled: config.hasSelectedChat,
+  });
   const [input, setInput] = useState("");
   const isSendingRef = useRef(false);
   const onUserMessageSubmittedRef = useRef(config.onUserMessageSubmitted);

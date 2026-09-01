@@ -15,6 +15,11 @@ import {
 } from "@/modules/objectives/hooks/use-objectives";
 import { useTerminology } from "@/hooks";
 import { MenuLoadingSkeleton } from "../menu-loading-skeleton";
+import {
+  isPropertySelectionActive,
+  shouldApplyPropertySelection,
+  type PropertyMenuSelectionMode,
+} from "./property-menu-selection";
 
 const ObjectivesContext = createContext<{
   open: boolean;
@@ -55,6 +60,7 @@ const Trigger = ({ children }: { children: ReactNode }) => (
 const Items = ({
   align = "center",
   objectiveId,
+  selectionMode = "single",
   setObjectiveId,
   teamId,
 }: {
@@ -62,6 +68,7 @@ const Items = ({
   setObjectiveId: (objectiveId: string | null) => void;
   align?: "center" | "start" | "end" | undefined;
   teamId?: string;
+  selectionMode?: PropertyMenuSelectionMode;
 }) => {
   const { getTermDisplay } = useTerminology();
   const [query, setQuery] = useState("");
@@ -125,10 +132,20 @@ const Items = ({
         >
           {!isLoadingObjectives && (
             <Command.Item
-              active={!objectiveId}
+              active={isPropertySelectionActive(
+                selectionMode,
+                objectiveId ?? null,
+                null,
+              )}
               className="justify-between gap-4 opacity-70"
               onSelect={() => {
-                if (objectiveId) {
+                if (
+                  shouldApplyPropertySelection(
+                    selectionMode,
+                    objectiveId ?? null,
+                    null,
+                  )
+                ) {
                   setObjectiveId(null);
                 }
                 setOpen(false);
@@ -139,9 +156,11 @@ const Items = ({
                 <Text>No {getTermDisplay("objectiveTerm")}</Text>
               </Box>
               <Flex align="center" gap={1}>
-                {!objectiveId && (
-                  <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
-                )}
+                {isPropertySelectionActive(
+                  selectionMode,
+                  objectiveId ?? null,
+                  null,
+                ) && <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />}
                 <Text color="muted">0</Text>
               </Flex>
             </Command.Item>
@@ -154,11 +173,21 @@ const Items = ({
           ) : null}
           {objectives.map(({ id, name }, idx) => (
             <Command.Item
-              active={id === objectiveId}
+              active={isPropertySelectionActive(
+                selectionMode,
+                objectiveId ?? null,
+                id,
+              )}
               className="justify-between gap-4"
               key={id}
               onSelect={() => {
-                if (id !== objectiveId) {
+                if (
+                  shouldApplyPropertySelection(
+                    selectionMode,
+                    objectiveId ?? null,
+                    id,
+                  )
+                ) {
                   setObjectiveId(id);
                 }
                 setOpen(false);
@@ -170,9 +199,11 @@ const Items = ({
                 <Text>{name}</Text>
               </Box>
               <Flex align="center" gap={1}>
-                {id === objectiveId && (
-                  <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
-                )}
+                {isPropertySelectionActive(
+                  selectionMode,
+                  objectiveId ?? null,
+                  id,
+                ) && <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />}
                 <Text color="muted">{idx + 1}</Text>
               </Flex>
             </Command.Item>

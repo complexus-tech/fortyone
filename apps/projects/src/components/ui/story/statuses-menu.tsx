@@ -4,6 +4,12 @@ import { Box, Command, Divider, Flex, Popover, Text } from "ui";
 import { CheckIcon } from "icons";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { StoryStatusIcon } from "../story-status-icon";
+import {
+  getNumberedMenuItem,
+  isPropertySelectionActive,
+  shouldApplyPropertySelection,
+  type PropertyMenuSelectionMode,
+} from "./property-menu-selection";
 
 const StatusContext = createContext<{
   open: boolean;
@@ -41,10 +47,12 @@ const Trigger = ({ children }: { children: ReactNode }) => (
 );
 
 const Items = ({
+  selectionMode = "single",
   statusId,
   setStatusId,
   teamId,
 }: {
+  selectionMode?: PropertyMenuSelectionMode;
   statusId?: string;
   setStatusId: (statusId: string) => void;
   teamId: string;
@@ -53,10 +61,8 @@ const Items = ({
   const [query, setQuery] = useState("");
   const filteredStatuses = statuses.filter((state) => state.teamId === teamId);
 
-  const state =
-    filteredStatuses.find((state) => state.id === statusId) ||
-    filteredStatuses.at(0);
-  const defaultStateId = state?.id;
+  const selectedStatusId =
+    selectionMode === "single" ? statusId ?? filteredStatuses.at(0)?.id : null;
   const { setOpen } = useStatusMenu();
   if (!filteredStatuses.length) return null;
 
@@ -66,8 +72,17 @@ const Items = ({
         <Command.Input
           autoFocus
           onValueChange={(value) => {
-            if (Number.parseInt(value) < statuses.length) {
-              setStatusId(statuses[Number.parseInt(value)].id);
+            const selectedStatus = getNumberedMenuItem(filteredStatuses, value);
+            if (selectedStatus) {
+              if (
+                shouldApplyPropertySelection(
+                  selectionMode,
+                  selectedStatusId,
+                  selectedStatus.id,
+                )
+              ) {
+                setStatusId(selectedStatus.id);
+              }
               setOpen(false);
               setQuery("");
               return;
@@ -84,11 +99,21 @@ const Items = ({
         <Command.Group>
           {filteredStatuses.map(({ id, name }, idx) => (
             <Command.Item
-              active={id === defaultStateId}
+              active={isPropertySelectionActive(
+                selectionMode,
+                selectedStatusId,
+                id,
+              )}
               className="justify-between"
               key={id}
               onSelect={() => {
-                if (id !== defaultStateId) {
+                if (
+                  shouldApplyPropertySelection(
+                    selectionMode,
+                    selectedStatusId,
+                    id,
+                  )
+                ) {
                   setStatusId(id);
                 }
                 setOpen(false);
@@ -100,9 +125,11 @@ const Items = ({
                 <Text className="max-w-[22ch] truncate">{name}</Text>
               </Box>
               <Flex align="center" gap={2}>
-                {id === defaultStateId && (
-                  <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
-                )}
+                {isPropertySelectionActive(
+                  selectionMode,
+                  selectedStatusId,
+                  id,
+                ) && <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />}
                 <Text color="muted">{idx}</Text>
               </Flex>
             </Command.Item>

@@ -33,15 +33,32 @@ func TestUpdateHandlerRejectsUnknownSystemOwnedAndAmbiguousFields(t *testing.T) 
 	t.Parallel()
 
 	tests := []struct {
-		name string
-		body string
+		name        string
+		body        string
+		wantMessage string
 	}{
-		{name: "unknown field", body: `{"reporterId":"` + uuid.NewString() + `"}`},
-		{name: "system owned field", body: `{"autoSchedulingStatus":"planning"}`},
-		{name: "null required field", body: `{"title":null}`},
-		{name: "fractional duration", body: `{"estimatedDurationMinutes":12.5}`},
-		{name: "empty patch", body: `{}`},
-		{name: "trailing JSON", body: `{"title":"valid"}{"title":"second"}`},
+		{
+			name:        "unknown field",
+			body:        `{"reporterId":"` + uuid.NewString() + `"}`,
+			wantMessage: `unknown story update field \"reporterId\"`,
+		},
+		{
+			name:        "system owned field",
+			body:        `{"autoSchedulingStatus":"planning"}`,
+			wantMessage: `unknown story update field \"autoSchedulingStatus\"`,
+		},
+		{name: "null required field", body: `{"title":null}`, wantMessage: "title cannot be null"},
+		{
+			name:        "fractional duration",
+			body:        `{"estimatedDurationMinutes":12.5}`,
+			wantMessage: "invalid estimatedDurationMinutes",
+		},
+		{name: "empty patch", body: `{}`, wantMessage: "at least one field is required"},
+		{
+			name:        "trailing JSON",
+			body:        `{"title":"valid"}{"title":"second"}`,
+			wantMessage: "request body must contain exactly one JSON value",
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -49,6 +66,9 @@ func TestUpdateHandlerRejectsUnknownSystemOwnedAndAmbiguousFields(t *testing.T) 
 			recorder := invokeStoryMutationHandler(t, (&Handlers{}).Update, test.body)
 			if recorder.Code != http.StatusBadRequest {
 				t.Fatalf("status = %d, want %d; body=%s", recorder.Code, http.StatusBadRequest, recorder.Body.String())
+			}
+			if !strings.Contains(recorder.Body.String(), test.wantMessage) {
+				t.Fatalf("body = %s, want message containing %q", recorder.Body.String(), test.wantMessage)
 			}
 		})
 	}
@@ -59,28 +79,39 @@ func TestBulkUpdateHandlerRejectsUnknownOuterAndMalformedTypedPatch(t *testing.T
 
 	storyID := uuid.NewString()
 	tests := []struct {
-		name string
-		body string
+		name        string
+		body        string
+		wantMessage string
 	}{
 		{
-			name: "unknown outer field",
-			body: `{"storyIds":["` + storyID + `"],"updates":{"title":"valid"},"atomic":true}`,
+			name:        "unknown outer field",
+			body:        `{"storyIds":["` + storyID + `"],"updates":{"title":"valid"},"atomic":true}`,
+			wantMessage: `unknown bulk story update field \"atomic\"`,
 		},
 		{
-			name: "missing updates",
-			body: `{"storyIds":["` + storyID + `"]}`,
+			name:        "missing updates",
+			body:        `{"storyIds":["` + storyID + `"]}`,
+			wantMessage: "updates is required",
 		},
 		{
-			name: "null updates",
-			body: `{"storyIds":["` + storyID + `"],"updates":null}`,
+			name:        "null updates",
+			body:        `{"storyIds":["` + storyID + `"],"updates":null}`,
+			wantMessage: "updates is required",
 		},
 		{
-			name: "unknown patch field",
-			body: `{"storyIds":["` + storyID + `"],"updates":{"workspaceId":"` + uuid.NewString() + `"}}`,
+			name:        "unknown patch field",
+			body:        `{"storyIds":["` + storyID + `"],"updates":{"workspaceId":"` + uuid.NewString() + `"}}`,
+			wantMessage: `unknown story update field \"workspaceId\"`,
 		},
 		{
-			name: "malformed story ids",
-			body: `{"storyIds":["not-a-uuid"],"updates":{"title":"valid"}}`,
+			name:        "malformed story ids",
+			body:        `{"storyIds":["not-a-uuid"],"updates":{"title":"valid"}}`,
+			wantMessage: "invalid storyIds",
+		},
+		{
+			name:        "empty patch",
+			body:        `{"storyIds":["` + storyID + `"],"updates":{}}`,
+			wantMessage: "at least one field is required",
 		},
 	}
 	for _, test := range tests {
@@ -89,6 +120,9 @@ func TestBulkUpdateHandlerRejectsUnknownOuterAndMalformedTypedPatch(t *testing.T
 			recorder := invokeStoryMutationHandler(t, (&Handlers{}).BulkUpdate, test.body)
 			if recorder.Code != http.StatusBadRequest {
 				t.Fatalf("status = %d, want %d; body=%s", recorder.Code, http.StatusBadRequest, recorder.Body.String())
+			}
+			if !strings.Contains(recorder.Body.String(), test.wantMessage) {
+				t.Fatalf("body = %s, want message containing %q", recorder.Body.String(), test.wantMessage)
 			}
 		})
 	}

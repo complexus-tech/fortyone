@@ -21,6 +21,11 @@ import { useSession } from "@/lib/auth/client";
 import { MEMBER_MENU_PAGE_SIZE, useMembersInfinite } from "@/lib/hooks/members";
 import { useTeamMembersInfinite } from "@/lib/hooks/team-members";
 import { MenuLoadingSkeleton } from "../menu-loading-skeleton";
+import {
+  isPropertySelectionActive,
+  shouldApplyPropertySelection,
+  type PropertyMenuSelectionMode,
+} from "./property-menu-selection";
 
 const AssigneesContext = createContext<{
   open: boolean;
@@ -65,6 +70,7 @@ type AssigneePickerProps = {
   excludeUsers?: string[];
   onAssigneeSelected: (assigneeId: string | null) => void;
   placeholder?: string;
+  selectionMode?: PropertyMenuSelectionMode;
   teamId?: string;
 };
 
@@ -75,6 +81,7 @@ const AssigneePickerContent = ({
   disallowEmptySelection = false,
   excludeUsers = EMPTY_EXCLUDED_USERS,
   open,
+  selectionMode = "single",
   setOpen,
   teamId,
 }: AssigneePickerProps & {
@@ -150,10 +157,20 @@ const AssigneePickerContent = ({
           <>
             {!disallowEmptySelection ? (
               <Command.Item
-                active={!assigneeId}
+                active={isPropertySelectionActive(
+                  selectionMode,
+                  assigneeId ?? null,
+                  null,
+                )}
                 className="justify-between opacity-70"
                 onSelect={() => {
-                  if (assigneeId) {
+                  if (
+                    shouldApplyPropertySelection(
+                      selectionMode,
+                      assigneeId ?? null,
+                      null,
+                    )
+                  ) {
                     onAssigneeSelected(null);
                   }
                   setOpen(false);
@@ -168,19 +185,31 @@ const AssigneePickerContent = ({
                   <Text className="max-w-40 truncate">Unassigned</Text>
                 </Flex>
                 <Flex align="center" gap={1}>
-                  {!assigneeId && (
-                    <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
-                  )}
+                  {isPropertySelectionActive(
+                    selectionMode,
+                    assigneeId ?? null,
+                    null,
+                  ) && <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />}
                   <Text color="muted">0</Text>
                 </Flex>
               </Command.Item>
             ) : null}
             {self ? (
               <Command.Item
-                active={self.id === assigneeId}
+                active={isPropertySelectionActive(
+                  selectionMode,
+                  assigneeId ?? null,
+                  self.id,
+                )}
                 className="justify-between"
                 onSelect={() => {
-                  if (self.id !== assigneeId) {
+                  if (
+                    shouldApplyPropertySelection(
+                      selectionMode,
+                      assigneeId ?? null,
+                      self.id,
+                    )
+                  ) {
                     onAssigneeSelected(self.id);
                   }
                   setOpen(false);
@@ -202,9 +231,11 @@ const AssigneePickerContent = ({
                   </Text>
                 </Flex>
                 <Flex align="center" gap={1}>
-                  {self.id === assigneeId && (
-                    <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
-                  )}
+                  {isPropertySelectionActive(
+                    selectionMode,
+                    assigneeId ?? null,
+                    self.id,
+                  ) && <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />}
                   <Text color="muted">{disallowEmptySelection ? 0 : 1}</Text>
                 </Flex>
               </Command.Item>
@@ -213,11 +244,21 @@ const AssigneePickerContent = ({
         )}
         {visibleMembers.map(({ id, fullName, username, avatarUrl }, idx) => (
           <Command.Item
-            active={id === assigneeId}
+            active={isPropertySelectionActive(
+              selectionMode,
+              assigneeId ?? null,
+              id,
+            )}
             className="justify-between"
             key={id}
             onSelect={() => {
-              if (id !== assigneeId) {
+              if (
+                shouldApplyPropertySelection(
+                  selectionMode,
+                  assigneeId ?? null,
+                  id,
+                )
+              ) {
                 onAssigneeSelected(id);
               }
               setOpen(false);
@@ -234,9 +275,11 @@ const AssigneePickerContent = ({
               <Text className="max-w-48 truncate">{fullName || username}</Text>
             </Flex>
             <Flex align="center" gap={1}>
-              {id === assigneeId && (
-                <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
-              )}
+              {isPropertySelectionActive(
+                selectionMode,
+                assigneeId ?? null,
+                id,
+              ) && <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />}
               <Text color="muted">{idx + indexOffset}</Text>
             </Flex>
           </Command.Item>

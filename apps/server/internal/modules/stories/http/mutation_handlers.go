@@ -134,7 +134,7 @@ func (h *Handlers) BulkUpdate(ctx context.Context, w http.ResponseWriter, r *htt
 	}
 
 	var requestData map[string]json.RawMessage
-	if err := web.Decode(r, &requestData); err != nil {
+	if err := web.DecodeJSON(r, &requestData); err != nil {
 		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
 	}
@@ -270,7 +270,7 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 	}
 
 	var requestData map[string]json.RawMessage
-	if err := web.Decode(r, &requestData); err != nil {
+	if err := web.DecodeJSON(r, &requestData); err != nil {
 		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
 	}

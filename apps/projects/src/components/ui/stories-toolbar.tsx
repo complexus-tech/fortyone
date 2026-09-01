@@ -12,7 +12,6 @@ import {
 } from "icons";
 import { useState } from "react";
 import { useParams, usePathname } from "next/navigation";
-import { formatISO } from "date-fns";
 import { useBulkDeleteStoryMutation } from "@/modules/stories/hooks/delete-mutation";
 import { useBulkArchiveStoryMutation } from "@/modules/stories/hooks/archive-mutation";
 import { useBulkUnarchiveStoryMutation } from "@/modules/stories/hooks/unarchive-mutation";
@@ -29,6 +28,7 @@ import { ObjectivesMenu } from "./story/objectives-menu";
 import { StatusesMenu } from "./story/statuses-menu";
 import { PrioritiesMenu } from "./story/priorities-menu";
 import { AssigneesMenu } from "./story/assignees-menu";
+import { formatBulkStoryDeadline } from "./stories-toolbar-utils";
 
 export const StoriesToolbar = () => {
   const pathname = usePathname();
@@ -131,6 +131,7 @@ export const StoriesToolbar = () => {
                 </Button>
               </SprintsMenu.Trigger>
               <SprintsMenu.Items
+                selectionMode="bulk"
                 setSprintId={(sprintId) => {
                   handleBulkUpdate({ sprintId });
                 }}
@@ -148,6 +149,7 @@ export const StoriesToolbar = () => {
                 </Button>
               </ObjectivesMenu.Trigger>
               <ObjectivesMenu.Items
+                selectionMode="bulk"
                 setObjectiveId={(objectiveId) => {
                   handleBulkUpdate({ objectiveId });
                 }}
@@ -170,6 +172,7 @@ export const StoriesToolbar = () => {
                 </Button>
               </StatusesMenu.Trigger>
               <StatusesMenu.Items
+                selectionMode="bulk"
                 setStatusId={(statusId) => {
                   handleBulkUpdate({ statusId });
                 }}
@@ -196,6 +199,7 @@ export const StoriesToolbar = () => {
               </Button>
             </PrioritiesMenu.Trigger>
             <PrioritiesMenu.Items
+              selectionMode="bulk"
               setPriority={(priority) => {
                 handleBulkUpdate({ priority });
               }}
@@ -218,7 +222,9 @@ export const StoriesToolbar = () => {
             </DatePicker.Trigger>
             <DatePicker.Calendar
               onDayClick={(day) => {
-                handleBulkUpdate({ endDate: formatISO(day) });
+                handleBulkUpdate({
+                  endDate: formatBulkStoryDeadline(day),
+                });
               }}
             />
           </DatePicker>
@@ -239,6 +245,7 @@ export const StoriesToolbar = () => {
               onAssigneeSelected={(assigneeId) => {
                 handleBulkUpdate({ assigneeId });
               }}
+              selectionMode="bulk"
               teamId={finalTeamId}
             />
           </AssigneesMenu>

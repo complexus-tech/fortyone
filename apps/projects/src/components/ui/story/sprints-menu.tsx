@@ -16,6 +16,11 @@ import {
 } from "@/modules/sprints/hooks/team-sprints";
 import { useTerminology } from "@/hooks";
 import { MenuLoadingSkeleton } from "../menu-loading-skeleton";
+import {
+  isPropertySelectionActive,
+  shouldApplyPropertySelection,
+  type PropertyMenuSelectionMode,
+} from "./property-menu-selection";
 
 const SprintsContext = createContext<{
   open: boolean;
@@ -54,6 +59,7 @@ const Trigger = ({ children }: { children: ReactNode }) => (
 
 const Items = ({
   align = "center",
+  selectionMode = "single",
   sprintId,
   setSprintId,
   teamId,
@@ -63,6 +69,7 @@ const Items = ({
   align?: "center" | "start" | "end" | undefined;
   teamId?: string;
   objectiveId?: string;
+  selectionMode?: PropertyMenuSelectionMode;
 }) => {
   const { getTermDisplay } = useTerminology();
   const [query, setQuery] = useState("");
@@ -125,10 +132,20 @@ const Items = ({
         >
           {!isLoadingSprints ? (
             <Command.Item
-              active={!sprintId}
+              active={isPropertySelectionActive(
+                selectionMode,
+                sprintId ?? null,
+                null,
+              )}
               className="justify-between gap-4 opacity-70"
               onSelect={() => {
-                if (sprintId) {
+                if (
+                  shouldApplyPropertySelection(
+                    selectionMode,
+                    sprintId ?? null,
+                    null,
+                  )
+                ) {
                   setSprintId(null);
                 }
                 setOpen(false);
@@ -139,9 +156,11 @@ const Items = ({
                 <Text>No {getTermDisplay("sprintTerm")}</Text>
               </Box>
               <Flex align="center" gap={1}>
-                {!sprintId && (
-                  <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
-                )}
+                {isPropertySelectionActive(
+                  selectionMode,
+                  sprintId ?? null,
+                  null,
+                ) && <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />}
                 <Text color="muted">0</Text>
               </Flex>
             </Command.Item>
@@ -154,11 +173,21 @@ const Items = ({
           ) : null}
           {sprints.map(({ id, name, startDate, endDate }, idx) => (
             <Command.Item
-              active={id === sprintId}
+              active={isPropertySelectionActive(
+                selectionMode,
+                sprintId ?? null,
+                id,
+              )}
               className="justify-between gap-4"
               key={id}
               onSelect={() => {
-                if (id !== sprintId) {
+                if (
+                  shouldApplyPropertySelection(
+                    selectionMode,
+                    sprintId ?? null,
+                    id,
+                  )
+                ) {
                   setSprintId(id, endDate);
                 }
                 setOpen(false);
@@ -176,9 +205,11 @@ const Items = ({
                 </Text>
               </Box>
               <Flex align="center" gap={1}>
-                {id === sprintId && (
-                  <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
-                )}
+                {isPropertySelectionActive(
+                  selectionMode,
+                  sprintId ?? null,
+                  id,
+                ) && <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />}
                 <Text color="muted">{idx + 1}</Text>
               </Flex>
             </Command.Item>

@@ -17,7 +17,7 @@ import type { MayaChatConfig } from "../types";
 import { Header } from "./header";
 
 export const MayaChat = () => {
-  const { chatRef, getInitialChatId, isNewChat, updateChatRef, clearChatRef } =
+  const { chatRef, getInitialChatId, updateChatRef, clearChatRef } =
     useMayaNavigation();
   const { completeWalkthroughAction } = useWalkthrough();
   const handleUserMessageSubmitted = useCallback(() => {
@@ -26,7 +26,6 @@ export const MayaChat = () => {
   const config: MayaChatConfig = {
     currentChatId: getInitialChatId(),
     hasSelectedChat: Boolean(chatRef),
-    isNewChat: isNewChat(),
     onUserMessageSubmitted: handleUserMessageSubmitted,
     updateChatRef,
     clearChatRef,

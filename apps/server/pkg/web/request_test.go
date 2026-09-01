@@ -1,12 +1,55 @@
 package web
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 )
+
+func TestDecodeJSONAcceptsDynamicObjectWithoutStructValidation(t *testing.T) {
+	t.Parallel()
+
+	request := httptest.NewRequest(
+		http.MethodPatch,
+		"/stories/bulk",
+		strings.NewReader(`{"storyIds":["story-1"],"updates":{"priority":"high"}}`),
+	)
+	request.Header.Set("Content-Type", "application/json")
+	var input map[string]json.RawMessage
+
+	err := DecodeJSON(request, &input)
+
+	if err != nil {
+		t.Fatalf("DecodeJSON() error = %v", err)
+	}
+	if got := string(input["storyIds"]); got != `["story-1"]` {
+		t.Fatalf("storyIds = %s, want %s", got, `["story-1"]`)
+	}
+	if got := string(input["updates"]); got != `{"priority":"high"}` {
+		t.Fatalf("updates = %s, want %s", got, `{"priority":"high"}`)
+	}
+}
+
+func TestDecodeJSONStillEnforcesSingleJSONValue(t *testing.T) {
+	t.Parallel()
+
+	request := httptest.NewRequest(
+		http.MethodPatch,
+		"/stories/bulk",
+		strings.NewReader(`{"updates":{"priority":"high"}} {"updates":{}}`),
+	)
+	request.Header.Set("Content-Type", "application/json")
+	var input map[string]json.RawMessage
+
+	err := DecodeJSON(request, &input)
+
+	if !errors.Is(err, ErrMultipleJSONValues) {
+		t.Fatalf("DecodeJSON() error = %v, want ErrMultipleJSONValues", err)
+	}
+}
 
 func TestDecodePreservesRequestBodyTooLargeError(t *testing.T) {
 	recorder := httptest.NewRecorder()

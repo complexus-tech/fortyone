@@ -24,18 +24,29 @@ type ChatContextType = {
 
 const ChatContext = createContext<ChatContextType | null>(null);
 
+type ActiveChat = {
+  id: string;
+  hasSelectedChat: boolean;
+};
+
 export const ChatProvider = ({ children }: { children: ReactNode }) => {
-  const [chatId, setChatId] = useState(() => generateId());
+  const [activeChat, setActiveChat] = useState<ActiveChat>(() => ({
+    id: generateId(),
+    hasSelectedChat: false,
+  }));
   const { completeWalkthroughAction } = useWalkthrough();
   const handleUserMessageSubmitted = useCallback(() => {
     completeWalkthroughAction("maya-message-completed");
   }, [completeWalkthroughAction]);
   const chat = useMayaChat({
-    currentChatId: chatId,
+    currentChatId: activeChat.id,
+    hasSelectedChat: activeChat.hasSelectedChat,
     onUserMessageSubmitted: handleUserMessageSubmitted,
-    updateChatRef: setChatId,
+    updateChatRef: (chatId) => {
+      setActiveChat({ hasSelectedChat: true, id: chatId });
+    },
     clearChatRef: (nextChatId = generateId()) => {
-      setChatId(nextChatId);
+      setActiveChat({ hasSelectedChat: false, id: nextChatId });
     },
   });
   const { handleSuggestedPrompt } = chat;

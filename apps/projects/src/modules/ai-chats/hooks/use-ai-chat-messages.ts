@@ -4,14 +4,17 @@ import { useWorkspacePath } from "@/hooks";
 import { aiChatKeys } from "../constants";
 import { getAiChatMessages } from "../queries/get-ai-chat-messages";
 
-export const useAiChatMessages = (id: string) => {
+export const useAiChatMessages = (
+  id: string,
+  { enabled }: { enabled: boolean },
+) => {
   const { data: session } = useSession();
   const { workspaceSlug } = useWorkspacePath();
 
   return useQuery({
     queryKey: aiChatKeys.messages(workspaceSlug, id),
     queryFn: () => getAiChatMessages({ session: session!, workspaceSlug }, id),
-    enabled: Boolean(session && id),
+    enabled: Boolean(enabled && session && id),
     staleTime: 1000 * 60 * 2, // 2 minutes
   });
 };

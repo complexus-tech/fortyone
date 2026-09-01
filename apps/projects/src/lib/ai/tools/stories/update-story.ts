@@ -78,10 +78,6 @@ export const updateStory = tool({
         .describe(
           "Lock or unlock the current Maya calendar blocks. Lock only after blocks have been scheduled.",
         ),
-      labelIds: z
-        .array(z.string())
-        .optional()
-        .describe("Replace story labels with these label IDs."),
       sprintId: z.string().optional().describe("Updated sprint ID"),
       objectiveId: z.string().optional().describe("Updated objective ID"),
       startDate: z.string().optional().describe("Updated start date"),
@@ -101,7 +97,6 @@ export const updateStory = tool({
           input.minimumFocusBlockMinutes,
           input.autoSchedulingEnabled,
           input.autoSchedulingLocked,
-          input.labelIds,
           input.sprintId,
           input.objectiveId,
           input.startDate,
@@ -125,7 +120,6 @@ export const updateStory = tool({
       minimumFocusBlockMinutes,
       autoSchedulingEnabled,
       autoSchedulingLocked,
-      labelIds,
       sprintId,
       objectiveId,
       startDate,
@@ -177,7 +171,6 @@ export const updateStory = tool({
         ...timeNeededPatch,
         autoSchedulingEnabled,
         autoSchedulingLocked,
-        labelIds,
         sprintId: normalizeOptionalString(sprintId),
         objectiveId: normalizeOptionalString(objectiveId),
         startDate: normalizeOptionalString(startDate),

@@ -5,6 +5,11 @@ import { createContext, useContext, useState } from "react";
 import { CheckIcon } from "icons";
 import type { StoryPriority } from "@/modules/stories/types";
 import { PriorityIcon } from "../priority-icon";
+import {
+  isPropertySelectionActive,
+  shouldApplyPropertySelection,
+  type PropertyMenuSelectionMode,
+} from "./property-menu-selection";
 
 const PriorityContext = createContext<{
   open: boolean;
@@ -38,10 +43,12 @@ export const PrioritiesMenu = ({ children }: { children: ReactNode }) => {
 };
 
 const Items = ({
-  priority = "No Priority",
+  priority,
+  selectionMode = "single",
   setPriority,
 }: {
   priority?: StoryPriority;
+  selectionMode?: PropertyMenuSelectionMode;
   setPriority: (priority: StoryPriority) => void;
 }) => {
   const priorities: StoryPriority[] = [
@@ -52,6 +59,8 @@ const Items = ({
     "Urgent",
   ];
   const { setOpen } = usePriorityMenu();
+  const selectedPriority =
+    selectionMode === "single" ? priority ?? "No Priority" : null;
   return (
     <Popover.Content align="center" className="w-64">
       <Command>
@@ -63,11 +72,21 @@ const Items = ({
         <Command.Group>
           {priorities.map((pr, idx) => (
             <Command.Item
-              active={pr === priority}
+              active={isPropertySelectionActive(
+                selectionMode,
+                selectedPriority,
+                pr,
+              )}
               className="justify-between"
               key={pr}
               onSelect={() => {
-                if (pr !== priority) {
+                if (
+                  shouldApplyPropertySelection(
+                    selectionMode,
+                    selectedPriority,
+                    pr,
+                  )
+                ) {
                   setPriority(pr);
                 }
                 setOpen(false);
@@ -79,9 +98,11 @@ const Items = ({
                 <Text>{pr}</Text>
               </Box>
               <Flex align="center" gap={2}>
-                {pr === priority && (
-                  <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
-                )}
+                {isPropertySelectionActive(
+                  selectionMode,
+                  selectedPriority,
+                  pr,
+                ) && <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />}
                 <Text color="muted">{idx}</Text>
               </Flex>
             </Command.Item>

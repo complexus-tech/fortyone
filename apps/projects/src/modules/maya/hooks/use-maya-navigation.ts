@@ -14,10 +14,6 @@ export const useMayaNavigation = () => {
     return currentChatId;
   };
 
-  const isNewChat = (): boolean => {
-    return !chatRef;
-  };
-
   const updateChatRef = (chatId: string) => {
     const params = new URLSearchParams(searchParams);
     params.set("chatRef", chatId);
@@ -34,7 +30,6 @@ export const useMayaNavigation = () => {
   return {
     chatRef,
     getInitialChatId,
-    isNewChat,
     updateChatRef,
     clearChatRef,
   };

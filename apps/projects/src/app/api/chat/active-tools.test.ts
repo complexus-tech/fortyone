@@ -120,6 +120,388 @@ describe("selectActiveTools", () => {
     );
   });
 
+  it("keeps story creation available throughout a multi-turn intake", () => {
+    const messages = [
+      userMessage("create a story", "create-request"),
+      assistantTextMessage(
+        "What should the story be called? I’ll create it in the Product team. Also provide a due/work date and time needed, or say skip planning; no calendar time will be reserved unless you explicitly request it.",
+        "title-clarification",
+      ),
+      userMessage("test ai", "title-reply"),
+      assistantTextMessage(
+        "I’ll create “Test AI” in the Product team. What due/work date and time needed should I use, or should I skip planning?",
+        "planning-clarification",
+      ),
+      userMessage("skip planning assign to me", "planning-reply"),
+    ];
+
+    const afterTitleReply = selectActiveTools({
+      currentPath: "/acme/maya",
+      messages: messages.slice(0, 3),
+    });
+    const afterPlanningReply = selectActiveTools({
+      currentPath: "/acme/maya",
+      messages,
+    });
+
+    for (const activeTools of [afterTitleReply, afterPlanningReply]) {
+      expect(activeTools).toEqual(
+        expect.arrayContaining(["createStory", "bulkCreateStories"]),
+      );
+      expect(activeTools).not.toContain("bulkDeleteStories");
+      expect(activeTools).not.toContain("mayaWorkPlanTool");
+    }
+  });
+
+  it("carries story creation through consecutive team and title clarifications", () => {
+    const activeTools = selectActiveTools({
+      currentPath: "/acme/maya",
+      messages: [
+        userMessage("Create a task.", "create-request"),
+        assistantTextMessage(
+          "Which team should I create the task in?",
+          "team-clarification",
+        ),
+        userMessage("Product", "team-reply"),
+        assistantTextMessage(
+          "What should the task be called?",
+          "title-clarification",
+        ),
+        userMessage("Retire the legacy API", "title-reply"),
+      ],
+    });
+
+    expect(activeTools).toEqual(
+      expect.arrayContaining(["createStory", "bulkCreateStories"]),
+    );
+    expect(activeTools).not.toContain("bulkDeleteStories");
+  });
+
+  it.each([
+    "I’ll create “Create a team dashboard” in the Product team. What due/work date and time needed should I use?",
+    "I’ll create 'Create a team dashboard' in the Product team. What due/work date and time needed should I use?",
+    "I’ll create **Create a team dashboard** in the Product team. What due/work date and time needed should I use?",
+  ])(
+    "treats a command-shaped title as an intake value when planning continues: %s",
+    (planningClarification) => {
+      const activeTools = selectActiveTools({
+        currentPath: "/acme/maya",
+        messages: [
+          userMessage("Create a story.", "create-request"),
+          assistantTextMessage(
+            "What should the story be called?",
+            "title-clarification",
+          ),
+          userMessage("Create a team dashboard", "title-reply"),
+          assistantTextMessage(planningClarification, "planning-clarification"),
+          userMessage("skip planning", "planning-reply"),
+        ],
+      });
+
+      expect(activeTools).toEqual(
+        expect.arrayContaining(["createStory", "bulkCreateStories"]),
+      );
+      expect(activeTools).not.toContain("bulkDeleteStories");
+      expect(activeTools).not.toContain("mayaWorkPlanTool");
+    },
+  );
+
+  it("carries story creation through consecutive generic slot prompts", () => {
+    const activeTools = selectActiveTools({
+      currentPath: "/acme/maya",
+      messages: [
+        userMessage("Create a story.", "create-request"),
+        assistantTextMessage(
+          "What should it be called?",
+          "title-clarification",
+        ),
+        userMessage("Launch dashboard", "title-reply"),
+        assistantTextMessage("Which team?", "team-clarification"),
+        userMessage("Product", "team-reply"),
+        assistantTextMessage("Which status?", "status-clarification"),
+        userMessage("Backlog", "status-reply"),
+      ],
+    });
+
+    expect(activeTools).toEqual(
+      expect.arrayContaining(["createStory", "bulkCreateStories"]),
+    );
+    expect(activeTools).not.toContain("createTeamTool");
+  });
+
+  it("keeps story creation available through a long intake chain", () => {
+    const activeTools = selectActiveTools({
+      currentPath: "/acme/maya",
+      messages: [
+        userMessage("Create a story.", "create-request"),
+        assistantTextMessage(
+          "Which team should I create the story in?",
+          "team-clarification",
+        ),
+        userMessage("Product", "team-reply"),
+        assistantTextMessage(
+          "What should the story be called?",
+          "title-clarification",
+        ),
+        userMessage("Launch dashboard", "title-reply"),
+        assistantTextMessage(
+          "Which status should the story use?",
+          "status-clarification",
+        ),
+        userMessage("Backlog", "status-reply"),
+        assistantTextMessage(
+          "Who should be assigned to the story?",
+          "assignee-clarification",
+        ),
+        userMessage("Assign it to me", "assignee-reply"),
+        assistantTextMessage(
+          "What priority should the story use?",
+          "priority-clarification",
+        ),
+        userMessage("High priority", "priority-reply"),
+        assistantTextMessage(
+          "What due/work date and time needed should I use for the story?",
+          "planning-clarification",
+        ),
+        userMessage("Skip planning", "planning-reply"),
+      ],
+    });
+
+    expect(activeTools).toEqual(
+      expect.arrayContaining(["createStory", "bulkCreateStories"]),
+    );
+    expect(activeTools).not.toContain("bulkUpdateStories");
+    expect(activeTools).not.toContain("mayaWorkPlanTool");
+  });
+
+  it("does not treat a generic naming clarification as story creation", () => {
+    const activeTools = selectActiveTools({
+      currentPath: "/acme/maya",
+      messages: [
+        userMessage("Help me configure the integration.", "request"),
+        assistantTextMessage(
+          "What should the connection be called?",
+          "clarification",
+        ),
+        userMessage("Test AI", "reply"),
+      ],
+    });
+
+    expect(activeTools).not.toContain("createStory");
+    expect(activeTools).not.toContain("bulkCreateStories");
+  });
+
+  it("does not carry an older story intake across a generic domain flow", () => {
+    const activeTools = selectActiveTools({
+      currentPath: "/acme/maya",
+      messages: [
+        userMessage("Create a story.", "story-request"),
+        assistantTextMessage(
+          "What should the story be called?",
+          "story-clarification",
+        ),
+        userMessage(
+          "Help me configure the integration.",
+          "integration-request",
+        ),
+        assistantTextMessage(
+          "What should it be called?",
+          "integration-clarification",
+        ),
+        userMessage("Linear", "integration-name"),
+      ],
+    });
+
+    expect(activeTools).not.toContain("createStory");
+    expect(activeTools).not.toContain("bulkCreateStories");
+  });
+
+  it("does not revive an earlier story intake after a creation redirection", () => {
+    const activeTools = selectActiveTools({
+      currentPath: "/acme/maya",
+      messages: [
+        userMessage("Create a story.", "story-request"),
+        assistantTextMessage(
+          "What should the story be called?",
+          "story-clarification",
+        ),
+        userMessage("Actually, create a team instead.", "creation-redirection"),
+        assistantTextMessage(
+          "I’ll create the team. What should it be called?",
+          "team-clarification",
+        ),
+        userMessage("Platform", "team-name"),
+      ],
+    });
+
+    expect(activeTools).not.toContain("createStory");
+    expect(activeTools).not.toContain("bulkCreateStories");
+  });
+
+  it("honors a direct creation redirection from a story clarification", () => {
+    const activeTools = selectActiveTools({
+      currentPath: "/acme/maya",
+      messages: [
+        userMessage("Create a story.", "story-request"),
+        assistantTextMessage(
+          "What should the story be called?",
+          "story-clarification",
+        ),
+        userMessage("Actually, create a team instead.", "creation-redirection"),
+      ],
+    });
+
+    expect(activeTools).toContain("createTeamTool");
+    expect(activeTools).not.toContain("createStory");
+    expect(activeTools).not.toContain("bulkCreateStories");
+  });
+
+  it.each([
+    ["Actually add a comment instead", ["comments"]],
+    ["Actually add a link instead", ["links"]],
+    [
+      "Actually make a work plan instead",
+      ["mayaWorkPlanTool", "applyMayaWorkPlanTool"],
+    ],
+  ] as const)(
+    "routes an explicit non-story redirection: %s",
+    (redirection, expectedTools) => {
+      const activeTools = selectActiveTools({
+        currentPath: "/acme/maya",
+        messages: [
+          userMessage("Create a story.", "story-request"),
+          assistantTextMessage(
+            "What should the story be called?",
+            "story-clarification",
+          ),
+          userMessage(redirection, "domain-redirection"),
+        ],
+      });
+
+      expect(activeTools).toEqual(expect.arrayContaining(expectedTools));
+      expect(activeTools).not.toContain("createStory");
+      expect(activeTools).not.toContain("bulkCreateStories");
+    },
+  );
+
+  it.each([
+    ["Create a team", ["createTeamTool"]],
+    ["Help me configure the integration", []],
+    ["Add a comment", ["comments"]],
+    ["Add a link", ["links"]],
+    ["Make a work plan", ["mayaWorkPlanTool", "applyMayaWorkPlanTool"]],
+  ] as const)(
+    "honors a decisive non-story request without a redirection cue: %s",
+    (request, expectedTools) => {
+      const activeTools = selectActiveTools({
+        currentPath: "/acme/maya",
+        messages: [
+          userMessage("Create a story.", "story-request"),
+          assistantTextMessage(
+            "What should the story be called?",
+            "story-clarification",
+          ),
+          userMessage(request, "domain-request"),
+        ],
+      });
+
+      expect(activeTools).toEqual(expect.arrayContaining(expectedTools));
+      expect(activeTools).not.toContain("createStory");
+      expect(activeTools).not.toContain("bulkCreateStories");
+    },
+  );
+
+  it.each([
+    ["Who should be assigned?", "Actually assign it to me instead"],
+    ["Which status?", "Actually set the status to Done instead"],
+    ["Which team?", "Actually change the team to Product instead"],
+    ["When should the story be scheduled?", "Schedule it"],
+    ["Which objective should it link to?", "Link it to Launch objective"],
+  ])(
+    "keeps metadata corrections inside story creation: %s → %s",
+    (clarification, correction) => {
+      const activeTools = selectActiveTools({
+        currentPath: "/acme/maya",
+        messages: [
+          userMessage("Create a story.", "story-request"),
+          assistantTextMessage(clarification, "metadata-clarification"),
+          userMessage(correction, "metadata-correction"),
+        ],
+      });
+
+      expect(activeTools).toEqual(
+        expect.arrayContaining(["createStory", "bulkCreateStories"]),
+      );
+      expect(activeTools).not.toContain("updateStory");
+      expect(activeTools).not.toContain("bulkUpdateStories");
+    },
+  );
+
+  it.each([
+    [
+      "What due/work date and time needed should I use for the story?",
+      "Never mind the planning; just create it and assign it to me",
+    ],
+    [
+      "What should the story title be?",
+      "Forget that title; call it Launch v2 instead",
+    ],
+  ])(
+    "treats cancellation wording with a replacement as an intake correction: %s → %s",
+    (clarification, correction) => {
+      const activeTools = selectActiveTools({
+        currentPath: "/acme/maya",
+        messages: [
+          userMessage("Create a story.", "story-request"),
+          assistantTextMessage(clarification, "intake-clarification"),
+          userMessage(correction, "intake-correction"),
+        ],
+      });
+
+      expect(activeTools).toEqual(
+        expect.arrayContaining(["createStory", "bulkCreateStories"]),
+      );
+      expect(activeTools).not.toContain("updateStory");
+      expect(activeTools).not.toContain("bulkUpdateStories");
+    },
+  );
+
+  it("ends story intake for a bare cancellation", () => {
+    const activeTools = selectActiveTools({
+      currentPath: "/acme/maya",
+      messages: [
+        userMessage("Create a story.", "story-request"),
+        assistantTextMessage(
+          "What due/work date and time needed should I use for the story?",
+          "planning-clarification",
+        ),
+        userMessage("Never mind", "cancellation"),
+      ],
+    });
+
+    expect(activeTools).not.toContain("createStory");
+    expect(activeTools).not.toContain("bulkCreateStories");
+  });
+
+  it("stops at a newer non-story creation request without explicit redirection", () => {
+    const activeTools = selectActiveTools({
+      currentPath: "/acme/maya",
+      messages: [
+        userMessage("Create a story.", "story-request"),
+        assistantTextMessage(
+          "What should the story be called?",
+          "story-clarification",
+        ),
+        userMessage("Create a team.", "team-request"),
+        assistantTextMessage("What should it be called?", "team-clarification"),
+        userMessage("Platform", "team-name"),
+      ],
+    });
+
+    expect(activeTools).not.toContain("createStory");
+    expect(activeTools).not.toContain("bulkCreateStories");
+  });
+
   it("keeps story creation tools available for a duration-only planning reply", () => {
     const activeTools = selectActiveTools({
       currentPath: "/acme/maya",

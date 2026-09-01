@@ -97,12 +97,6 @@ export const bulkUpdateStories = tool({
           .describe(
             "Enable or pause continuous Maya calendar scheduling for every selected story.",
           ),
-        labelIds: z
-          .array(z.string())
-          .optional()
-          .describe(
-            "Replace labels for all selected stories with these label IDs.",
-          ),
       })
       .refine(
         (updateData) => Object.keys(updateData).length > 0,
@@ -159,7 +153,6 @@ export const bulkUpdateStories = tool({
         estimateValue: updateData.estimateValue,
         ...timeNeededPatch,
         autoSchedulingEnabled: updateData.autoSchedulingEnabled,
-        labelIds: updateData.labelIds,
       };
 
       const result = await bulkUpdateAction(

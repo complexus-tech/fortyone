@@ -33,10 +33,33 @@ func Decode(r *http.Request, v any) error {
 	return DecodeWithLimit(r, v, DefaultMaxJSONBodyBytes)
 }
 
+// DecodeJSON reads one bounded JSON value without applying struct or explicit
+// request validation. It is reserved for dynamic JSON objects whose handler
+// immediately enforces an explicit field allowlist and domain validation.
+func DecodeJSON(r *http.Request, v any) error {
+	return decodeJSONWithLimit(r, v, DefaultMaxJSONBodyBytes)
+}
+
 // DecodeWithLimit applies a route-specific maximum body size. Use Decode for
 // the platform default and this function only when a smaller contract is
 // appropriate. Raw signed webhooks must use their provider verifier instead.
 func DecodeWithLimit(r *http.Request, v any, maxBodyBytes int64) error {
+	if err := decodeJSONWithLimit(r, v, maxBodyBytes); err != nil {
+		return err
+	}
+
+	if err := ValidateStruct(v); err != nil {
+		return err
+	}
+	if val, ok := v.(validator); ok {
+		if err := val.Validate(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func decodeJSONWithLimit(r *http.Request, v any, maxBodyBytes int64) error {
 	if maxBodyBytes <= 0 {
 		return errors.New("maximum JSON body size must be positive")
 	}
@@ -59,14 +82,6 @@ func DecodeWithLimit(r *http.Request, v any, maxBodyBytes int64) error {
 		return fmt.Errorf("%w: %v", ErrMultipleJSONValues, HumanizeJSONDecodeError(err))
 	}
 
-	if err := ValidateStruct(v); err != nil {
-		return err
-	}
-	if val, ok := v.(validator); ok {
-		if err := val.Validate(); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
