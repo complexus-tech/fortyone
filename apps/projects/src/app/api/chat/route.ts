@@ -19,6 +19,8 @@ import {
 } from "@/lib/ai/models";
 import { tools } from "@/lib/ai/tools";
 import { withCompactModelOutputs } from "@/lib/ai/model-tools";
+import { getMayaPromptCacheKey } from "@/lib/ai/prompt-cache-key";
+import { withOpenAIToolDiscovery } from "@/lib/ai/tool-discovery";
 import { auth } from "@/auth";
 import posthogServer from "@/app/posthog-server";
 import { systemPrompt } from "./system";
@@ -65,8 +67,14 @@ const CHAT_TIMEOUT = {
   totalMs: 250_000,
 } as const;
 const MAX_TOOL_STEPS = 12;
-const MAYA_PROMPT_CACHE_NAMESPACE = "maya-projects-v3-universal-tools";
 const modelTools = withMayaHttpRequestContext(withCompactModelOutputs(tools));
+
+const getChatResponseErrorMessage = (error: unknown) => {
+  const message = getChatStreamErrorMessage(error);
+  if (process.env.NODE_ENV !== "development") return message;
+
+  return `${message}\n\nDevelopment diagnostic: ${formatChatErrorDiagnostic(error)}`;
+};
 
 const handleChatRequest = async (
   req: NextRequest,
@@ -141,10 +149,13 @@ const handleChatRequest = async (
   const googleClient = createGoogleGenerativeAI({
     apiKey: process.env.GOOGLE_API_KEY,
   });
-  // Every capability is available on every turn. The model resolves intent
-  // semantically, so tool availability is independent of language, phrasing,
-  // the current route, and whichever domain was discussed previously.
-  const runtimeTools = modelTools;
+  const runtimeTools =
+    provider === "openai"
+      ? withOpenAIToolDiscovery(
+          modelTools,
+          openaiClient.tools.toolSearch({ execution: "server" }),
+        )
+      : modelTools;
   const runtimeToolNames = new Set(Object.keys(runtimeTools));
   // Compact copies determine the byte-bounded suffix and tool routing. Convert
   // the aligned raw suffix so each registered toModelOutput projector runs
@@ -230,7 +241,7 @@ const handleChatRequest = async (
     },
     providerOptions: {
       openai: {
-        promptCacheKey: `${MAYA_PROMPT_CACHE_NAMESPACE}:${workspace.id}`,
+        promptCacheKey: getMayaPromptCacheKey(workspace.id),
         reasoningEffort: OPENAI_DEFAULT_REASONING_EFFORT,
         textVerbosity: "low",
       } satisfies OpenAIResponsesProviderOptions,
@@ -282,7 +293,7 @@ const handleChatRequest = async (
         workspaceSlug: workspace.slug,
       });
     },
-    onError: getChatStreamErrorMessage,
+    onError: getChatResponseErrorMessage,
   });
 };
 
@@ -301,6 +312,6 @@ export async function POST(req: NextRequest) {
         requestOrigin: req.headers.get("origin") ?? "missing",
       }),
     );
-    return new Response(getChatStreamErrorMessage(error), { status: 500 });
+    return new Response(getChatResponseErrorMessage(error), { status: 500 });
   }
 }
