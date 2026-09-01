@@ -8,6 +8,7 @@ describe("work import JSON parsing", () => {
       fileHash: "trello-hash",
       fileName: "product-board.json",
       text: JSON.stringify({
+        id: " board/65 ",
         actions: [{ type: "commentCard" }],
         cards: [
           {
@@ -36,10 +37,12 @@ describe("work import JSON parsing", () => {
         lists: [{ id: "list-doing", name: "In progress" }],
         members: [{ email: "owner@example.com", id: "member-1" }],
         name: "Product",
+        prefs: { permissionLevel: "private" },
       }),
     });
 
     expect(draft.sourceType).toBe("json");
+    expect(draft.sourceNamespace).toBe("trello:board:board%2F65");
     expect(draft.summary).toContain("Semantic mapping");
     expect(draft.tasks).toEqual([
       expect.objectContaining({
@@ -55,6 +58,29 @@ describe("work import JSON parsing", () => {
     expect(draft.tasks[0]?.description).toContain("Keep the migration safe.");
     expect(draft.rows[0]?.idMembers).toBe('["member-1"]');
     expect(draft.rows[0]?.labels).toBe('[{"name":"P1 High"}]');
+    expect(draft).toMatchObject({
+      teams: [],
+      people: [],
+      labels: [],
+      strategicPillars: [],
+      objectives: [],
+      keyResults: [],
+      sprints: [],
+    });
+    expect(draft.tasks[0]).toMatchObject({
+      statusCategory: null,
+      assigneeName: null,
+      assigneePersonSourceId: null,
+      collaboratorPersonSourceIds: [],
+      teamSourceId: null,
+      parentSourceId: null,
+      objectiveSourceId: null,
+      keyResultSourceId: null,
+      sprintSourceId: null,
+      labelSourceIds: [],
+      associations: [],
+      links: [],
+    });
   });
 
   it("maps a generic JSON task collection and keeps nested values reviewable", () => {
@@ -75,6 +101,7 @@ describe("work import JSON parsing", () => {
     });
 
     expect(draft.sourceType).toBe("json");
+    expect(draft.sourceNamespace).toBeNull();
     expect(draft.tasks[0]).toEqual(
       expect.objectContaining({
         priority: "Urgent",
@@ -85,6 +112,87 @@ describe("work import JSON parsing", () => {
     expect(draft.rows[0]?.metadata).toBe('{"source":"legacy"}');
   });
 
+  it("keeps a non-task JSON graph available for semantic analysis", () => {
+    const draft = createJsonImportDraft({
+      fileHash: "portfolio-hash",
+      fileName: "portfolio.json",
+      text: JSON.stringify({
+        id: 42,
+        projects: [{ id: "project-1", name: "Improve activation" }],
+        teams: [{ id: "team-1", name: "Growth" }],
+      }),
+    });
+
+    expect(draft).toMatchObject({
+      sourceType: "json",
+      sourceNamespace: null,
+      teams: [],
+      strategicPillars: [],
+      objectives: [],
+      tasks: [],
+      columns: [],
+      rows: [],
+    });
+    expect(draft.summary).toContain("teams, people, strategic pillars");
+    expect(draft.warnings).toContain(
+      "No standard task collection was found for the initial preview. AI analysis can still map supported objects from the complete JSON document.",
+    );
+  });
+
+  it("keeps derived namespaces control-free and within the UTF-8 byte limit", () => {
+    const controlDraft = createJsonImportDraft({
+      fileHash: "control-hash",
+      fileName: "control.json",
+      text: JSON.stringify({
+        cards: [{ idList: "list-1" }],
+        id: "board\u0000id",
+        lists: [{ id: "list-1" }],
+        prefs: {},
+      }),
+    });
+    const longUnicodeDraft = createJsonImportDraft({
+      fileHash: "unicode-hash",
+      fileName: "unicode.json",
+      text: JSON.stringify({
+        cards: [{ idList: "list-1" }],
+        id: "界".repeat(100),
+        lists: [{ id: "list-1" }],
+        prefs: {},
+      }),
+    });
+
+    expect(controlDraft.sourceNamespace).toBe("trello:board:board%00id");
+    expect(
+      [...(controlDraft.sourceNamespace ?? "")].some((character) => {
+        const code = character.charCodeAt(0);
+        return code <= 31 || code === 127;
+      }),
+    ).toBe(false);
+    expect(
+      Buffer.byteLength(controlDraft.sourceNamespace ?? "", "utf8"),
+    ).toBeLessThanOrEqual(300);
+    expect(longUnicodeDraft.sourceNamespace).toMatch(
+      /^trello:board:.+~[0-9a-f]{16}$/u,
+    );
+    expect(
+      Buffer.byteLength(longUnicodeDraft.sourceNamespace ?? "", "utf8"),
+    ).toBeLessThanOrEqual(300);
+  });
+
+  it("does not assign Trello identity to a generic cards-and-lists graph", () => {
+    const draft = createJsonImportDraft({
+      fileHash: "kanban-hash",
+      fileName: "kanban.json",
+      text: JSON.stringify({
+        cards: [{ id: "card-1", idList: "list-1", name: "Generic card" }],
+        id: "generic-board",
+        lists: [{ id: "list-1", name: "Doing" }],
+      }),
+    });
+
+    expect(draft.sourceNamespace).toBeNull();
+  });
+
   it("rejects malformed JSON with an actionable error", () => {
     expect(() =>
       createJsonImportDraft({
@@ -93,5 +201,15 @@ describe("work import JSON parsing", () => {
         text: "{not-json}",
       }),
     ).toThrow("The JSON file is not valid JSON.");
+  });
+
+  it("rejects primitive JSON values", () => {
+    expect(() =>
+      createJsonImportDraft({
+        fileHash: "json-hash",
+        fileName: "value.json",
+        text: '"not an export"',
+      }),
+    ).toThrow("The JSON file must contain an object or array.");
   });
 });

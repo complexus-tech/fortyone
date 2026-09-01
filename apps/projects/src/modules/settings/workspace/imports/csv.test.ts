@@ -7,6 +7,7 @@ import {
   inferImportMapping,
   mapRowsToImportTasks,
   parseDelimitedText,
+  sanitizeAIImportMapping,
 } from "./csv";
 
 describe("work import CSV parsing", () => {
@@ -22,6 +23,7 @@ describe("work import CSV parsing", () => {
     });
 
     expect(draft.sourceType).toBe("jira_csv");
+    expect(draft.sourceNamespace).toBeNull();
     expect(draft.tasks).toHaveLength(10);
     expect(draft.tasks[0]).toEqual(
       expect.objectContaining({
@@ -35,6 +37,29 @@ describe("work import CSV parsing", () => {
     expect(draft.tasks[3]?.description).toContain(
       'Second line includes a "must-have" phrase and a comma',
     );
+    expect(draft).toMatchObject({
+      teams: [],
+      people: [],
+      labels: [],
+      strategicPillars: [],
+      objectives: [],
+      keyResults: [],
+      sprints: [],
+    });
+    expect(draft.tasks[0]).toMatchObject({
+      statusCategory: null,
+      assigneeName: null,
+      assigneePersonSourceId: null,
+      collaboratorPersonSourceIds: [],
+      teamSourceId: null,
+      parentSourceId: null,
+      objectiveSourceId: null,
+      keyResultSourceId: null,
+      sprintSourceId: null,
+      labelSourceIds: [],
+      associations: [],
+      links: [],
+    });
     expect(draft.warnings).toEqual([]);
   });
 
@@ -89,6 +114,54 @@ describe("work import CSV parsing", () => {
         assigneeEmail: "person@example.com",
       }),
     ]);
+  });
+
+  it("accepts only exact source headers from an AI mapping", () => {
+    const mapping = sanitizeAIImportMapping(
+      {
+        title: "Summary",
+        description: "description",
+        status: "Status ",
+        priority: "Priority",
+        assigneeEmail: "Owner",
+        startDate: null,
+        endDate: "Invented due date",
+        sourceId: "Issue key",
+      },
+      ["Issue key", "Summary", "Description", "Status", "Priority", "Owner"],
+    );
+
+    expect(mapping).toEqual({
+      title: "Summary",
+      description: null,
+      status: null,
+      priority: "Priority",
+      assigneeEmail: "Owner",
+      startDate: null,
+      endDate: null,
+      sourceId: "Issue key",
+    });
+  });
+
+  it("uses the deterministic title when the AI title is absent or invalid", () => {
+    const columns = ["Issue key", "Summary", "Priority"];
+
+    expect(sanitizeAIImportMapping(null, columns).title).toBe("Summary");
+    expect(
+      sanitizeAIImportMapping(
+        {
+          title: "Task title",
+          description: null,
+          status: null,
+          priority: null,
+          assigneeEmail: null,
+          startDate: null,
+          endDate: null,
+          sourceId: null,
+        },
+        columns,
+      ).title,
+    ).toBe("Summary");
   });
 
   it("does not grant Jira-wide idempotency without a real issue-key column", () => {

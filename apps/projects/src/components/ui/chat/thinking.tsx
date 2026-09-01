@@ -24,13 +24,13 @@ export const Thinking = ({
       ) : null}
       {message}
       <Flex className="gap-0.5">
-        <Box className="size-[2.5px] animate-bounce rounded-full bg-current" />
+        <Box className="size-[2.5px] animate-bounce rounded-full bg-current motion-reduce:animate-none" />
         <Box
-          className="size-[2.5px] animate-bounce rounded-full bg-current"
+          className="size-[2.5px] animate-bounce rounded-full bg-current motion-reduce:animate-none"
           style={{ animationDelay: "0.1s" }}
         />
         <Box
-          className="size-[2.5px] animate-bounce rounded-full bg-current"
+          className="size-[2.5px] animate-bounce rounded-full bg-current motion-reduce:animate-none"
           style={{ animationDelay: "0.2s" }}
         />
       </Flex>

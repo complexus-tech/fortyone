@@ -121,8 +121,78 @@ func TestImportHandlerUsesAdminIndependentIdempotencyAndReportsReplay(t *testing
 	if service.calls[0].Reporter == nil || service.calls[1].Reporter == nil || *service.calls[0].Reporter == *service.calls[1].Reporter {
 		t.Fatalf("expected distinct admin attribution without changing idempotency: %#v", service.calls)
 	}
-	if storyImportCreationKey(uuid.New(), teamID, request.Provider, request.SourceDigest, request.Items[0].SourceKey) == *service.calls[0].CreationKey {
+	if storyImportCreationKey(uuid.New(), teamID, request.Provider, request.SourceDigest, nil, request.Items[0].SourceKey) == *service.calls[0].CreationKey {
 		t.Fatal("creation key is not workspace-scoped")
+	}
+}
+
+func TestImportHandlerUsesSourceNamespaceAcrossChangedFileDigests(t *testing.T) {
+	t.Parallel()
+
+	workspaceID, teamID := uuid.New(), uuid.New()
+	service := &storyImportServiceStub{}
+	handler := &Handlers{storyImporter: service}
+	firstExport := validStoryImportRequest(teamID, "card-42", "Imported Trello card")
+	firstExport.Provider = storyImportProviderFile
+	firstExport.SourceNamespace = stringPointer("trello:board:marketing")
+	refreshedExport := firstExport
+	refreshedExport.SourceDigest = strings.Repeat("b", sha256DigestHexLength)
+
+	first := invokeStoryImportHandler(t, handler, workspaceID, uuid.New(), firstExport)
+	second := invokeStoryImportHandler(t, handler, workspaceID, uuid.New(), refreshedExport)
+
+	if first.Counts.Created != 1 || second.Counts.Replayed != 1 ||
+		first.Items[0].StoryID == nil || second.Items[0].StoryID == nil {
+		t.Fatalf("first=%#v second=%#v", first, second)
+	}
+	if *first.Items[0].StoryID != *second.Items[0].StoryID {
+		t.Fatal("same source namespace and key did not replay across changed file digests")
+	}
+	if len(service.calls) != 2 || service.calls[0].CreationKey == nil || service.calls[1].CreationKey == nil ||
+		*service.calls[0].CreationKey != *service.calls[1].CreationKey {
+		t.Fatalf("source namespace did not provide a stable creation key: %#v", service.calls)
+	}
+}
+
+func TestImportHandlerScopesSourceKeysToSourceNamespace(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name      string
+		provider  string
+		sourceKey string
+	}{
+		{name: "generic file", provider: storyImportProviderFile, sourceKey: "card-42"},
+		{name: "Jira CSV", provider: storyImportProviderJiraCSV, sourceKey: "JIRA-42"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			workspaceID, teamID := uuid.New(), uuid.New()
+			service := &storyImportServiceStub{}
+			handler := &Handlers{storyImporter: service}
+			firstSource := validStoryImportRequest(teamID, test.sourceKey, "First imported story")
+			firstSource.Provider = test.provider
+			firstSource.SourceNamespace = stringPointer("source:first")
+			secondSource := firstSource
+			secondSource.SourceNamespace = stringPointer("source:second")
+
+			first := invokeStoryImportHandler(t, handler, workspaceID, uuid.New(), firstSource)
+			second := invokeStoryImportHandler(t, handler, workspaceID, uuid.New(), secondSource)
+
+			if first.Counts.Created != 1 || second.Counts.Created != 1 ||
+				first.Items[0].StoryID == nil || second.Items[0].StoryID == nil {
+				t.Fatalf("first=%#v second=%#v", first, second)
+			}
+			if *first.Items[0].StoryID == *second.Items[0].StoryID {
+				t.Fatal("different source namespaces were deduplicated")
+			}
+			if len(service.calls) != 2 || service.calls[0].CreationKey == nil || service.calls[1].CreationKey == nil ||
+				*service.calls[0].CreationKey == *service.calls[1].CreationKey {
+				t.Fatalf("creation keys collided across source namespaces: %#v", service.calls)
+			}
+		})
 	}
 }
 
@@ -236,6 +306,40 @@ func TestStoryImportRequestRequiresCanonicalJiraIssueSourceKeys(t *testing.T) {
 	}
 }
 
+func TestStoryImportRequestRejectsInvalidSourceNamespaces(t *testing.T) {
+	t.Parallel()
+
+	invalidUTF8 := string([]byte{0xff})
+	tests := []struct {
+		name            string
+		sourceNamespace string
+	}{
+		{name: "empty", sourceNamespace: ""},
+		{name: "leading whitespace", sourceNamespace: " trello:board:marketing"},
+		{name: "trailing whitespace", sourceNamespace: "trello:board:marketing "},
+		{name: "invalid UTF-8", sourceNamespace: invalidUTF8},
+		{name: "control character", sourceNamespace: "trello:board:\nmarketing"},
+		{name: "over byte limit", sourceNamespace: strings.Repeat("n", maximumImportSourceNamespaceBytes+1)},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			request := validStoryImportRequest(uuid.New(), "JIRA-1", "Imported story")
+			request.SourceNamespace = &test.sourceNamespace
+			if err := request.Validate(); err == nil {
+				t.Fatalf("Validate() accepted source namespace %q", test.sourceNamespace)
+			}
+		})
+	}
+
+	request := validStoryImportRequest(uuid.New(), "JIRA-1", "Imported story")
+	request.SourceNamespace = stringPointer(strings.Repeat("n", maximumImportSourceNamespaceBytes))
+	if err := request.Validate(); err != nil {
+		t.Fatalf("Validate() rejected maximum-length source namespace: %v", err)
+	}
+}
+
 func TestImportHandlerReturnsBoundedPerItemFailuresWithoutEchoingStoryContent(t *testing.T) {
 	t.Parallel()
 
@@ -326,6 +430,22 @@ func TestImportHandlerInvokesCustomRequestValidation(t *testing.T) {
 	}
 }
 
+func TestImportHandlerRejectsInvalidSourceNamespace(t *testing.T) {
+	t.Parallel()
+
+	workspaceID, teamID := uuid.New(), uuid.New()
+	service := &storyImportServiceStub{}
+	handler := &Handlers{storyImporter: service}
+	request := validStoryImportRequest(teamID, "JIRA-1", "Imported story")
+	request.SourceNamespace = stringPointer(" source:with-leading-space")
+
+	recorder := recordStoryImportHandler(t, handler, workspaceID, uuid.New(), request)
+
+	if recorder.Code != http.StatusBadRequest || len(service.calls) != 0 {
+		t.Fatalf("status=%d calls=%d body=%s", recorder.Code, len(service.calls), recorder.Body.String())
+	}
+}
+
 func TestImportHandlerRejectsGenericSourceKeyForJiraCSV(t *testing.T) {
 	t.Parallel()
 
@@ -380,6 +500,10 @@ func validStoryImportRequest(teamID uuid.UUID, sourceKey, title string) AppStory
 			},
 		}},
 	}
+}
+
+func stringPointer(value string) *string {
+	return &value
 }
 
 func invokeStoryImportHandler(

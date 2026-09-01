@@ -49,7 +49,14 @@ func (h *Handlers) Import(ctx context.Context, w http.ResponseWriter, r *http.Re
 	}
 	for _, item := range request.Items {
 		newStory := toCoreNewStory(item.Story, actorID)
-		creationKey := storyImportCreationKey(workspace.ID, newStory.Team, provider, sourceDigest, item.SourceKey)
+		creationKey := storyImportCreationKey(
+			workspace.ID,
+			newStory.Team,
+			provider,
+			sourceDigest,
+			request.SourceNamespace,
+			item.SourceKey,
+		)
 		newStory.CreationKey = &creationKey
 		newStory.ExternalDelivery = storydomain.ExternalStoryDeliveryInternalOnly
 
@@ -81,7 +88,12 @@ func (h *Handlers) Import(ctx context.Context, w http.ResponseWriter, r *http.Re
 	return web.Respond(ctx, w, response, http.StatusOK)
 }
 
-func storyImportCreationKey(workspaceID, teamID uuid.UUID, provider, sourceDigest, sourceKey string) string {
+func storyImportCreationKey(
+	workspaceID, teamID uuid.UUID,
+	provider, sourceDigest string,
+	sourceNamespace *string,
+	sourceKey string,
+) string {
 	provider = strings.ToLower(provider)
 	sourceDigest = strings.ToLower(sourceDigest)
 	digest := sha256.New()
@@ -89,7 +101,10 @@ func storyImportCreationKey(workspaceID, teamID uuid.UUID, provider, sourceDiges
 	writeImportCreationKeyPart(digest, workspaceID.String())
 	writeImportCreationKeyPart(digest, teamID.String())
 	writeImportCreationKeyPart(digest, provider)
-	if provider == storyImportProviderJiraCSV {
+	if sourceNamespace != nil {
+		writeImportCreationKeyPart(digest, "source-namespace")
+		writeImportCreationKeyPart(digest, *sourceNamespace)
+	} else if provider == storyImportProviderJiraCSV {
 		// Jira issue keys are stable across refreshed exports, while the file
 		// digest is not. CSV does not carry a trustworthy Jira Cloud/site ID,
 		// so this intentionally scopes the normalized issue key only to the

@@ -7,7 +7,7 @@ import type {
   ImportSourceType,
   ImportTask,
 } from "./schema";
-import { IMPORT_MAX_TASKS } from "./schema";
+import { createEmptyImportEntityCollections, IMPORT_MAX_TASKS } from "./schema";
 
 const MAX_COLUMNS = 75;
 const MAX_CELL_CHARACTERS = 20_000;
@@ -231,6 +231,32 @@ export const inferImportMapping = (columns: string[]): ImportMapping => {
   return mapping;
 };
 
+/**
+ * Restricts an AI-proposed mapping to headers that exist verbatim in the
+ * parsed source. A deterministic title fallback keeps the preview usable when
+ * the model omits or hallucinates the required title column.
+ */
+export const sanitizeAIImportMapping = (
+  mapping: ImportMapping | null,
+  columns: string[],
+): ImportMapping => {
+  const exactHeaders = new Set(columns);
+  const exactHeader = (value: string | null | undefined) =>
+    value && exactHeaders.has(value) ? value : null;
+  const deterministicTitle = inferImportMapping(columns).title;
+
+  return {
+    title: exactHeader(mapping?.title) ?? deterministicTitle,
+    description: exactHeader(mapping?.description),
+    status: exactHeader(mapping?.status),
+    priority: exactHeader(mapping?.priority),
+    assigneeEmail: exactHeader(mapping?.assigneeEmail),
+    startDate: exactHeader(mapping?.startDate),
+    endDate: exactHeader(mapping?.endDate),
+    sourceId: exactHeader(mapping?.sourceId),
+  };
+};
+
 const normalizePriority = (value: string): ImportPriority => {
   const normalized = value.trim().toLowerCase();
   if (["urgent", "highest", "blocker", "critical", "p0"].includes(normalized)) {
@@ -284,8 +310,23 @@ export const mapRowsToImportTasks = (
         title: title.slice(0, 255),
         description: getMappedValue(row, mapping.description).slice(0, 20_000),
         status: status || null,
+        statusCategory: null,
         priority: normalizePriority(getMappedValue(row, mapping.priority)),
+        estimateValue: null,
+        estimatedDurationMinutes: null,
+        minimumFocusBlockMinutes: null,
         assigneeEmail: assignee || null,
+        assigneeName: null,
+        assigneePersonSourceId: null,
+        collaboratorPersonSourceIds: [],
+        teamSourceId: null,
+        parentSourceId: null,
+        objectiveSourceId: null,
+        keyResultSourceId: null,
+        sprintSourceId: null,
+        labelSourceIds: [],
+        associations: [],
+        links: [],
         startDate: normalizeDate(getMappedValue(row, mapping.startDate)),
         endDate: normalizeDate(getMappedValue(row, mapping.endDate)),
       },
@@ -347,12 +388,14 @@ export const createDelimitedImportDraft = ({
 
   const analysis: ImportAnalysis = {
     sourceType,
+    sourceNamespace: null,
     summary:
       sourceType === "jira_csv"
         ? `Recognized a Jira export with ${tasks.length} importable issues.`
         : `Found ${tasks.length} importable tasks across ${parsed.columns.length} columns.`,
     warnings,
     mapping,
+    ...createEmptyImportEntityCollections(),
     tasks,
   };
 

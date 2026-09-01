@@ -1,5 +1,5 @@
 import type { ImportAnalysis, ImportDraft } from "./schema";
-import { IMPORT_MAX_TASKS } from "./schema";
+import { createEmptyImportEntityCollections, IMPORT_MAX_TASKS } from "./schema";
 import { inferImportMapping, mapRowsToImportTasks } from "./csv";
 
 const MAX_COLUMNS = 75;
@@ -12,6 +12,7 @@ const GENERIC_COLLECTION_KEYS = [
   "records",
   "data",
 ] as const;
+const TRELLO_BOARD_ID_KEYS = ["boardId", "_id", "id"] as const;
 
 type JsonRecord = Record<string, unknown>;
 
@@ -50,6 +51,73 @@ const findTaskRecords = (value: unknown): JsonRecord[] => {
   return [];
 };
 
+const stableTextHash = (value: string) => {
+  let first = 0x811c9dc5;
+  let second = 0x9e3779b9;
+  for (let index = 0; index < value.length; index += 1) {
+    const code = value.charCodeAt(index);
+    first = (first * 33 + code) % 0x1_0000_0000;
+    second = (second * 65_599 + code) % 0x1_0000_0000;
+  }
+  return `${first.toString(16).padStart(8, "0")}${second.toString(16).padStart(8, "0")}`;
+};
+
+const sanitizeContainerId = (value: unknown, prefix: string) => {
+  let explicitId = "";
+  if (typeof value === "string") {
+    explicitId = value.normalize("NFKC").trim();
+  } else if (typeof value === "number" && Number.isSafeInteger(value)) {
+    explicitId = String(value);
+  }
+  if (!explicitId) return null;
+
+  try {
+    const encodedId = encodeURIComponent(explicitId);
+    const namespace = `${prefix}${encodedId}`;
+    if (namespace.length <= 300) return namespace;
+
+    const suffix = `~${stableTextHash(encodedId)}`;
+    const availableIdLength = 300 - prefix.length - suffix.length;
+    const truncatedId = encodedId
+      .slice(0, availableIdLength)
+      .replace(/%(?:[0-9A-F])?$/u, "");
+    return `${prefix}${truncatedId}${suffix}`;
+  } catch {
+    return null;
+  }
+};
+
+const findSourceNamespace = (value: unknown) => {
+  if (!isRecord(value)) return null;
+  if (!Array.isArray(value.cards) || !Array.isArray(value.lists)) return null;
+  const listIds = new Set(
+    value.lists.filter(isRecord).flatMap((list) => {
+      const id = list.id;
+      return typeof id === "string" || typeof id === "number"
+        ? [String(id)]
+        : [];
+    }),
+  );
+  const hasTrelloListRelationship = value.cards
+    .filter(isRecord)
+    .some((card) => {
+      const listId = card.idList;
+      return (
+        (typeof listId === "string" || typeof listId === "number") &&
+        listIds.has(String(listId))
+      );
+    });
+  const hasTrelloBoardMarker =
+    isRecord(value.prefs) || "idOrganization" in value || "labelNames" in value;
+  if (!hasTrelloListRelationship || !hasTrelloBoardMarker) return null;
+
+  for (const key of TRELLO_BOARD_ID_KEYS) {
+    const sourceNamespace = sanitizeContainerId(value[key], "trello:board:");
+    if (sourceNamespace) return sourceNamespace;
+  }
+  return null;
+};
+
 export const createJsonImportDraft = ({
   fileHash,
   fileName,
@@ -60,13 +128,10 @@ export const createJsonImportDraft = ({
   text: string;
 }): ImportDraft => {
   const value = parseJson(text);
-  const records = findTaskRecords(value);
-  if (records.length === 0) {
-    throw new Error(
-      "The JSON file must contain a task array or a tasks, items, issues, cards, records, or data collection.",
-    );
+  if (!Array.isArray(value) && !isRecord(value)) {
+    throw new Error("The JSON file must contain an object or array.");
   }
-
+  const records = findTaskRecords(value);
   const sourceRecords = records.slice(0, IMPORT_MAX_TASKS);
   const columns = Array.from(
     sourceRecords.reduce<Set<string>>((result, record) => {
@@ -85,6 +150,11 @@ export const createJsonImportDraft = ({
   const mapping = inferImportMapping(columns);
   const tasks = mapRowsToImportTasks(rows, mapping);
   const warnings = [
+    ...(records.length === 0
+      ? [
+          "No standard task collection was found for the initial preview. AI analysis can still map supported objects from the complete JSON document.",
+        ]
+      : []),
     ...(records.length > IMPORT_MAX_TASKS
       ? [
           `Only the first ${IMPORT_MAX_TASKS} records are included in this import.`,
@@ -99,9 +169,14 @@ export const createJsonImportDraft = ({
 
   const analysis: ImportAnalysis = {
     sourceType: "json",
-    summary: `Found ${tasks.length} importable tasks across ${columns.length} JSON fields. Semantic mapping is prepared from the complete JSON document when AI analysis is available.`,
+    sourceNamespace: findSourceNamespace(value),
+    summary:
+      records.length > 0
+        ? `Found ${tasks.length} importable tasks across ${columns.length} JSON fields. Semantic mapping is prepared from the complete JSON document when AI analysis is available.`
+        : "No standard task collection was found. Semantic mapping will inspect the complete JSON document for teams, people, strategic pillars, objectives, key results, sprints, labels, and work items.",
     warnings,
     mapping,
+    ...createEmptyImportEntityCollections(),
     tasks,
   };
 

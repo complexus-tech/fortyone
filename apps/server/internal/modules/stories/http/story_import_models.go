@@ -14,17 +14,19 @@ import (
 var jiraCSVSourceKeyPattern = regexp.MustCompile(`^[A-Z][A-Z0-9]+-[1-9][0-9]*$`)
 
 const (
-	maximumStoryImportItems     = 50
-	maximumImportSourceKeyBytes = 256
-	sha256DigestHexLength       = 64
-	storyImportProviderJiraCSV  = "jira_csv"
-	storyImportProviderFile     = "file"
+	maximumStoryImportItems           = 50
+	maximumImportSourceKeyBytes       = 256
+	maximumImportSourceNamespaceBytes = 300
+	sha256DigestHexLength             = 64
+	storyImportProviderJiraCSV        = "jira_csv"
+	storyImportProviderFile           = "file"
 )
 
 type AppStoryImportRequest struct {
-	Provider     string               `json:"provider" validate:"required,oneof=jira_csv file"`
-	SourceDigest string               `json:"sourceDigest" validate:"required,len=64"`
-	Items        []AppStoryImportItem `json:"items" validate:"required,min=1,max=50,dive"`
+	Provider        string               `json:"provider" validate:"required,oneof=jira_csv file"`
+	SourceDigest    string               `json:"sourceDigest" validate:"required,len=64"`
+	SourceNamespace *string              `json:"sourceNamespace,omitempty"`
+	Items           []AppStoryImportItem `json:"items" validate:"required,min=1,max=50,dive"`
 }
 
 type AppStoryImportItem struct {
@@ -45,6 +47,11 @@ func (request AppStoryImportRequest) Validate() error {
 	if _, err := hex.DecodeString(request.SourceDigest); err != nil {
 		return errors.New("sourceDigest must be a SHA-256 hexadecimal digest")
 	}
+	if request.SourceNamespace != nil {
+		if err := validateImportSourceNamespace(*request.SourceNamespace); err != nil {
+			return err
+		}
+	}
 
 	seenSourceKeys := make(map[string]struct{}, len(request.Items))
 	for _, item := range request.Items {
@@ -60,6 +67,19 @@ func (request AppStoryImportRequest) Validate() error {
 		seenSourceKeys[item.SourceKey] = struct{}{}
 		if item.Story.IdempotencyKey != nil {
 			return errors.New("story import items cannot provide idempotencyKey")
+		}
+	}
+	return nil
+}
+
+func validateImportSourceNamespace(sourceNamespace string) error {
+	if sourceNamespace == "" || strings.TrimSpace(sourceNamespace) != sourceNamespace ||
+		!utf8.ValidString(sourceNamespace) || len(sourceNamespace) > maximumImportSourceNamespaceBytes {
+		return errors.New("story import contains an invalid source namespace")
+	}
+	for _, character := range sourceNamespace {
+		if unicode.IsControl(character) {
+			return errors.New("story import contains an invalid source namespace")
 		}
 	}
 	return nil

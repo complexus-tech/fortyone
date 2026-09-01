@@ -1,6 +1,7 @@
 /* global beforeEach, describe, expect, it, jest -- Jest globals are provided by the projects test runner. */
 /* eslint-disable turbo/no-undeclared-env-vars -- the route reads its server-only OpenAI configuration */
 
+import { createHash } from "node:crypto";
 import OpenAI from "openai";
 import { auth } from "@/auth";
 import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
@@ -155,6 +156,14 @@ describe("/api/imports/analyze", () => {
     expect(body).toMatchObject({
       analysis: {
         sourceType: "jira_csv",
+        sourceNamespace: null,
+        teams: [],
+        people: [],
+        labels: [],
+        strategicPillars: [],
+        objectives: [],
+        keyResults: [],
+        sprints: [],
         tasks: [{ sourceId: "PROJ-42" }],
       },
       status: "completed",
@@ -181,10 +190,17 @@ describe("/api/imports/analyze", () => {
         background: true,
         metadata: expect.objectContaining({
           fortyone_kind: "work_import_analysis",
+          source_type: "jira_csv",
           workspace_id: "workspace-1",
         }),
         store: true,
       }),
+    );
+    expect(
+      JSON.stringify(mockResponsesCreate.mock.calls[0]?.[0]?.input),
+    ).toContain("the first data record is row-2");
+    expect(mockResponsesCreate.mock.calls[0]?.[0]?.metadata).not.toHaveProperty(
+      "source_namespace",
     );
   });
 
@@ -194,6 +210,7 @@ describe("/api/imports/analyze", () => {
     const response = await POST(
       createPostRequest({
         contents: JSON.stringify({
+          id: "board-1",
           cards: [
             {
               desc: "Move this card",
@@ -204,6 +221,7 @@ describe("/api/imports/analyze", () => {
           ],
           lists: [{ id: "list-1", name: "Doing" }],
           name: "Migration board",
+          prefs: {},
         }),
         fileName: "trello.json",
         mimeType: "application/json",
@@ -213,6 +231,7 @@ describe("/api/imports/analyze", () => {
     await expect(response.json()).resolves.toMatchObject({
       analysis: {
         sourceType: "json",
+        sourceNamespace: "trello:board:board-1",
         tasks: [
           {
             sourceId: "65a1234567890abcdef12345",
@@ -228,38 +247,483 @@ describe("/api/imports/analyze", () => {
     expect(mockResponsesCreate).not.toHaveBeenCalled();
   });
 
-  it("queues the complete JSON document for vendor-neutral AI mapping", async () => {
+  it("queues an entity-only JSON document for vendor-neutral AI mapping", async () => {
     mockResponsesCreate.mockResolvedValue({ id: "resp_json_import_1" });
 
     const response = await POST(
       createPostRequest({
         contents: JSON.stringify({
-          cards: [
-            {
-              id: "card-1",
-              idList: "list-1",
-              idMembers: ["member-1"],
-              name: "Map this task",
-            },
-          ],
-          lists: [{ id: "list-1", name: "Doing" }],
+          containerId: "portfolio-1",
+          projects: [{ id: "project-1", name: "Improve activation" }],
+          teams: [{ id: "team-1", name: "Growth" }],
           members: [{ email: "owner@example.com", id: "member-1" }],
         }),
-        fileName: "board.json",
+        fileName: "portfolio.json",
         mimeType: "application/json",
       }),
     );
 
     await expect(response.json()).resolves.toMatchObject({
-      analysis: { sourceType: "json" },
+      analysis: { sourceNamespace: null, sourceType: "json" },
       responseId: "resp_json_import_1",
       status: "queued",
     });
     const request = mockResponsesCreate.mock.calls[0]?.[0];
-    expect(JSON.stringify(request?.input)).toContain('"filename":"board.json"');
+    expect(JSON.stringify(request?.input)).toContain(
+      '"filename":"portfolio.json"',
+    );
+    expect(request?.metadata).toEqual(
+      expect.objectContaining({
+        source_type: "json",
+      }),
+    );
+    expect(request?.metadata).not.toHaveProperty("source_namespace");
     expect(JSON.stringify(request?.input)).toContain(
       "The source format and product are unknown",
     );
+    expect(JSON.stringify(request?.input)).toContain(
+      "source projects, initiatives, epics, or goals as objectives",
+    );
+    expect(JSON.stringify(request?.input)).toContain(
+      "source workspaces or teams may be teams",
+    );
+    expect(JSON.stringify(request?.input)).toContain(
+      "source portfolios, programs, strategic themes, or equivalent groupings as strategic pillars",
+    );
+    expect(JSON.stringify(request?.input)).toContain(
+      "set pillarSourceId to that pillar's sourceId",
+    );
+    expect(JSON.stringify(request?.input)).toContain(
+      "include only explicit measurable outcomes",
+    );
+    expect(JSON.stringify(request?.input)).toContain(
+      "include only true timeboxes",
+    );
+    expect(JSON.stringify(request?.input)).toContain(
+      "Never derive or invent an email from a name",
+    );
+    expect(JSON.stringify(request?.input)).toContain(
+      "Durable source namespaces are assigned only from trusted server-side parser metadata",
+    );
+    expect(JSON.stringify(request?.input)).toContain(
+      "sourceNamespace: always return null",
+    );
+    expect(JSON.stringify(request?.input)).toContain(
+      "first person in stable source order as the primary assignee",
+    );
+    expect(JSON.stringify(request?.input)).toContain(
+      "Never repeat the primary assignee in collaborators",
+    );
+    expect(JSON.stringify(request?.input)).toContain(
+      "explicit shortSummary (at most 500 characters)",
+    );
+    expect(JSON.stringify(request?.input)).toContain(
+      "preserve explicit checklists, acceptance criteria, useful custom fields",
+    );
+    expect(JSON.stringify(request?.input)).toContain(
+      "Never fetch attachment content",
+    );
+    expect(JSON.stringify(request?.input)).toContain(
+      "canonical source card, issue, or task URL",
+    );
+    expect(JSON.stringify(request?.input)).toContain(
+      "explicit remote attachment URLs as task links",
+    );
+    expect(JSON.stringify(request?.input)).toContain(
+      "Never fetch attachment content or download any linked content",
+    );
+    expect(JSON.stringify(request?.input)).toContain(
+      "relative, data, file, or javascript URLs",
+    );
+    expect(JSON.stringify(request?.input)).toContain(
+      "source comments, activity, attachment bodies, estimates",
+    );
+    expect(JSON.stringify(request?.input)).toContain(
+      "map only explicit source issue or card relationships",
+    );
+    expect(JSON.stringify(request?.input)).toContain(
+      "Never infer a reciprocal relationship, invent an association, or create a self-link",
+    );
+    expect(JSON.stringify(request?.input)).toContain(
+      "extract it as a child task whose parentSourceId references the returned parent task",
+    );
+    expect(JSON.stringify(request?.input)).toContain(
+      "checklist items without stable IDs, in the parent task description",
+    );
+    expect(JSON.stringify(request?.input)).toContain(
+      "only preserve effort values explicitly represented by the source",
+    );
+    expect(JSON.stringify(request?.input)).toContain(
+      "never infer a unit for a bare or ambiguous number",
+    );
+    expect(JSON.stringify(request?.input)).toContain(
+      "minimumFocusBlockMinutes requires estimatedDurationMinutes and cannot exceed it",
+    );
+  });
+
+  it("normalizes every entity collection and source relationship", async () => {
+    const fileHash = "a".repeat(64);
+    const actorHash = createHash("sha256")
+      .update(session.user.id)
+      .digest("hex")
+      .slice(0, 48);
+    mockResponsesRetrieve.mockResolvedValue({
+      metadata: {
+        actor_hash: actorHash,
+        file_hash: fileHash,
+        fortyone_kind: "work_import_analysis",
+        source_namespace: "trello:board:board-1",
+        source_type: "json",
+        workspace_id: "workspace-1",
+      },
+      output_text: JSON.stringify({
+        sourceType: "jira_csv",
+        sourceNamespace: " ai:container:wrong ",
+        summary: " Structured work graph ",
+        warnings: [" Review an ambiguous owner. "],
+        mapping: null,
+        teams: [
+          {
+            sourceId: " team-1 ",
+            name: " Product ",
+            code: " PROD ",
+            color: " #3366FF ",
+            description: " Delivery team ",
+            isPrivate: false,
+          },
+        ],
+        people: [
+          {
+            sourceId: " person-1 ",
+            name: " Owner ",
+            email: " OWNER@EXAMPLE.COM ",
+            teamSourceIds: [" team-1 ", "team-1"],
+          },
+          {
+            sourceId: " person-2 ",
+            name: " Collaborator ",
+            email: null,
+            teamSourceIds: [" team-1 "],
+          },
+        ],
+        labels: [
+          {
+            sourceId: " label-1 ",
+            name: " Migration ",
+            color: " blue ",
+            teamSourceId: " team-1 ",
+          },
+          {
+            sourceId: " duplicate-label ",
+            name: " Duplicate one ",
+            color: null,
+            teamSourceId: null,
+          },
+          {
+            sourceId: "duplicate-label",
+            name: "Duplicate two",
+            color: null,
+            teamSourceId: null,
+          },
+        ],
+        strategicPillars: [
+          {
+            sourceId: " pillar-1 ",
+            name: " Customer growth ",
+            description: " Grow active customers ",
+            orderIndex: 0,
+          },
+        ],
+        objectives: [
+          {
+            sourceId: " objective-1 ",
+            name: " Complete migration ",
+            description: " Move active work ",
+            shortSummary: " Move safely ",
+            color: " #112233 ",
+            isPrivate: false,
+            status: " In progress ",
+            statusCategory: "started",
+            priority: "High",
+            leadPersonSourceId: " person-1 ",
+            teamSourceId: " team-1 ",
+            pillarSourceId: " pillar-1 ",
+            startDate: "2026-02-31",
+            endDate: "2026-09-30",
+          },
+          {
+            sourceId: " objective-2 ",
+            name: " Improve reliability ",
+            description: null,
+            shortSummary: null,
+            color: null,
+            isPrivate: true,
+            status: null,
+            statusCategory: null,
+            priority: "No Priority",
+            leadPersonSourceId: null,
+            teamSourceId: " team-1 ",
+            pillarSourceId: null,
+            startDate: null,
+            endDate: null,
+          },
+        ],
+        keyResults: [
+          {
+            sourceId: " kr-1 ",
+            name: " Move every card ",
+            objectiveSourceId: " objective-2 ",
+            measurementType: "percentage",
+            startValue: 0,
+            currentValue: 25,
+            targetValue: 100,
+            leadPersonSourceId: " person-1 ",
+            contributorPersonSourceIds: [" person-1 ", "person-1"],
+            startDate: "2026-09-01",
+            endDate: "2026-09-30",
+          },
+        ],
+        sprints: [
+          {
+            sourceId: " sprint-1 ",
+            name: " Migration week ",
+            goal: " Move active work ",
+            teamSourceId: " team-1 ",
+            objectiveSourceId: " objective-1 ",
+            startDate: "2026-09-01",
+            endDate: "2026-13-01",
+          },
+        ],
+        tasks: [
+          {
+            sourceId: " story-1 ",
+            title: " Move the backlog ",
+            description: " Preserve this task. ",
+            status: " Doing ",
+            statusCategory: "started",
+            priority: "High",
+            estimateValue: 5,
+            estimatedDurationMinutes: 90,
+            minimumFocusBlockMinutes: 30,
+            assigneeEmail: " OWNER@EXAMPLE.COM ",
+            assigneeName: " Owner ",
+            assigneePersonSourceId: " person-1 ",
+            collaboratorPersonSourceIds: [
+              " person-1 ",
+              " person-2 ",
+              "person-2",
+            ],
+            teamSourceId: " team-1 ",
+            parentSourceId: " missing-parent ",
+            objectiveSourceId: " objective-1 ",
+            keyResultSourceId: " kr-1 ",
+            sprintSourceId: " sprint-1 ",
+            labelSourceIds: [" label-1 ", "label-1"],
+            associations: [
+              { type: "related", targetSourceId: " story-2 " },
+              { type: "related", targetSourceId: "story-2" },
+              { type: "blocks", targetSourceId: " story-1 " },
+              { type: "blocked_by", targetSourceId: " missing-story " },
+            ],
+            links: [
+              {
+                title: " Original Trello card ",
+                url: "HTTPS://EXAMPLE.COM:443/card/1",
+              },
+              {
+                title: "Duplicate card",
+                url: "https://example.com/card/1",
+              },
+              {
+                title: " Attachment ",
+                url: "https://cdn.example.com/export.pdf",
+              },
+              {
+                title: "Unsafe script",
+                url: ["javascript", "alert(1)"].join(":"),
+              },
+              { title: "Unsafe data", url: "data:text/plain,unsafe" },
+              { title: "Relative", url: "/cards/1" },
+            ],
+            startDate: "2026-09-01",
+            endDate: "2026-02-31",
+          },
+          {
+            sourceId: " story-2 ",
+            title: " Verify the migration ",
+            description: " Confirm imported work. ",
+            status: null,
+            statusCategory: "unstarted",
+            priority: "Medium",
+            estimateValue: "medium",
+            estimatedDurationMinutes: 60,
+            minimumFocusBlockMinutes: 90,
+            assigneeEmail: null,
+            assigneeName: " Collaborator ",
+            assigneePersonSourceId: " person-2 ",
+            collaboratorPersonSourceIds: [],
+            teamSourceId: " team-1 ",
+            parentSourceId: null,
+            objectiveSourceId: " objective-2 ",
+            keyResultSourceId: " kr-1 ",
+            sprintSourceId: null,
+            labelSourceIds: [],
+            associations: [],
+            links: [],
+            startDate: null,
+            endDate: null,
+          },
+        ],
+      }),
+      status: "completed",
+    });
+
+    const response = await GET({
+      url: `http://localhost/api/imports/analyze?workspaceSlug=acme&responseId=resp_import_1&fileHash=${fileHash}`,
+    } as Request);
+
+    const body = (await response.json()) as {
+      analysis: { warnings: string[] };
+    };
+
+    expect(body).toMatchObject({
+      analysis: {
+        sourceType: "json",
+        sourceNamespace: "trello:board:board-1",
+        teams: [
+          {
+            sourceId: "team-1",
+            name: "Product",
+            code: "PROD",
+            color: "#3366FF",
+            description: "Delivery team",
+            isPrivate: false,
+          },
+        ],
+        people: [
+          {
+            email: "owner@example.com",
+            teamSourceIds: ["team-1"],
+          },
+          {
+            sourceId: "person-2",
+            name: "Collaborator",
+            teamSourceIds: ["team-1"],
+          },
+        ],
+        labels: [{ teamSourceId: "team-1" }],
+        strategicPillars: [
+          {
+            sourceId: "pillar-1",
+            name: "Customer growth",
+            description: "Grow active customers",
+            orderIndex: 0,
+          },
+        ],
+        objectives: [
+          {
+            shortSummary: "Move safely",
+            color: "#112233",
+            isPrivate: false,
+            leadPersonSourceId: "person-1",
+            pillarSourceId: "pillar-1",
+            startDate: null,
+            endDate: "2026-09-30",
+          },
+          {
+            sourceId: "objective-2",
+            isPrivate: true,
+          },
+        ],
+        keyResults: [
+          {
+            objectiveSourceId: "objective-2",
+            contributorPersonSourceIds: ["person-1"],
+          },
+        ],
+        sprints: [{ objectiveSourceId: "objective-1", endDate: null }],
+        tasks: [
+          {
+            assigneeEmail: "owner@example.com",
+            assigneeName: "Owner",
+            assigneePersonSourceId: "person-1",
+            collaboratorPersonSourceIds: ["person-2"],
+            estimateValue: 5,
+            estimatedDurationMinutes: 90,
+            minimumFocusBlockMinutes: 30,
+            labelSourceIds: ["label-1"],
+            associations: [{ type: "related", targetSourceId: "story-2" }],
+            links: [
+              {
+                title: "Original Trello card",
+                url: "https://example.com/card/1",
+              },
+              {
+                title: "Attachment",
+                url: "https://cdn.example.com/export.pdf",
+              },
+            ],
+            endDate: null,
+          },
+          {
+            sourceId: "story-2",
+            assigneePersonSourceId: "person-2",
+            associations: [],
+            links: [],
+            estimateValue: null,
+            estimatedDurationMinutes: 60,
+            minimumFocusBlockMinutes: null,
+          },
+        ],
+      },
+      status: "completed",
+    });
+    expect(body.analysis.warnings).toEqual(
+      expect.arrayContaining([
+        "2 source objects were omitted because 1 source ID was duplicated and could not be related safely.",
+        "1 duplicate task association was deduplicated.",
+        "1 self-referential task association was removed.",
+        "1 task association targeting an unreturned task was removed.",
+        "1 source relationship points to objects that were not returned and will use safe fallbacks.",
+        "1 task relationship has conflicting objective and key-result references and needs review.",
+        "1 source team description remains visible for review but cannot be applied by FortyOne's team creation contract.",
+        "3 unsafe or malformed task links were omitted; only absolute HTTP or HTTPS URLs are supported.",
+        "1 duplicate task link was deduplicated by canonical URL.",
+        "1 invalid or ambiguous task complexity estimate was omitted; FortyOne accepts only explicit values 1, 2, 3, 5, 8.",
+        "1 task minimum focus block was omitted because it exceeded the estimated duration.",
+        "3 invalid calendar dates were omitted instead of being guessed.",
+      ]),
+    );
+
+    const originalOpenAIResponse = (await mockResponsesRetrieve.mock.results[0]
+      ?.value) as { output_text: string; [key: string]: unknown };
+    const analysisWithoutAuthoritativeNamespace = JSON.parse(
+      originalOpenAIResponse.output_text,
+    ) as Record<string, unknown>;
+    mockResponsesRetrieve.mockResolvedValue({
+      ...originalOpenAIResponse,
+      metadata: {
+        actor_hash: actorHash,
+        file_hash: fileHash,
+        fortyone_kind: "work_import_analysis",
+        source_type: "json",
+        workspace_id: "workspace-1",
+      },
+      output_text: JSON.stringify({
+        ...analysisWithoutAuthoritativeNamespace,
+        sourceNamespace: " jira:site:site-1 ",
+      }),
+    });
+
+    const responseWithoutAuthoritativeNamespace = await GET({
+      url: `http://localhost/api/imports/analyze?workspaceSlug=acme&responseId=resp_import_2&fileHash=${fileHash}`,
+    } as Request);
+    await expect(
+      responseWithoutAuthoritativeNamespace.json(),
+    ).resolves.toMatchObject({
+      analysis: { sourceNamespace: null },
+      status: "completed",
+    });
   });
 
   it("does not reveal another workspace's background analysis", async () => {
