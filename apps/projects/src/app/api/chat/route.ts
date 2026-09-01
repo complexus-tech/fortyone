@@ -19,6 +19,7 @@ import {
 } from "@/lib/ai/models";
 import { tools } from "@/lib/ai/tools";
 import { withCompactModelOutputs } from "@/lib/ai/model-tools";
+import { withOpenAIToolDiscovery } from "@/lib/ai/tool-discovery";
 import { auth } from "@/auth";
 import posthogServer from "@/app/posthog-server";
 import { systemPrompt } from "./system";
@@ -65,16 +66,8 @@ const CHAT_TIMEOUT = {
   totalMs: 250_000,
 } as const;
 const MAX_TOOL_STEPS = 12;
-const MAYA_PROMPT_CACHE_NAMESPACE = "maya-projects-v2";
+const MAYA_PROMPT_CACHE_NAMESPACE = "maya-projects-v3-tool-search";
 const modelTools = withMayaHttpRequestContext(withCompactModelOutputs(tools));
-const modelToolNames = new Set(Object.keys(modelTools));
-const ANALYTICAL_TOOL_NAME_PATTERN =
-  /(?:AnalyticsTool|ReportTool|focusBrief|workloadPlanningTool|activitySummaryTool)$/;
-
-const getChatReasoningEffort = (activeTools: readonly string[]) =>
-  activeTools.some((toolName) => ANALYTICAL_TOOL_NAME_PATTERN.test(toolName))
-    ? OPENAI_DEFAULT_REASONING_EFFORT
-    : ("low" as const);
 
 const handleChatRequest = async (
   req: NextRequest,
@@ -143,16 +136,29 @@ const handleChatRequest = async (
     messages: contextMessages,
     storyTerminology: terminology.stories,
   });
-  const { activeTools } = activeToolPlan;
+  const openaiClient = createOpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+  const googleClient = createGoogleGenerativeAI({
+    apiKey: process.env.GOOGLE_API_KEY,
+  });
+  const runtimeTools =
+    provider === "openai"
+      ? withOpenAIToolDiscovery(
+          modelTools,
+          openaiClient.tools.toolSearch({ execution: "server" }),
+        )
+      : modelTools;
+  const runtimeToolNames = new Set(Object.keys(runtimeTools));
   // Compact copies determine the byte-bounded suffix and tool routing. Convert
   // the aligned raw suffix so each registered toModelOutput projector runs
   // exactly once; double-projecting would corrupt stateful tool receipts.
   const convertedMessages = await convertToModelMessages(
     compactUnknownChatToolOutputs(
       messagesWithoutHistoricalAttachments.slice(contextStartIndex),
-      modelToolNames,
+      runtimeToolNames,
     ),
-    { tools: modelTools },
+    { tools: runtimeTools },
   );
 
   const modelMessages = normalizeInlineFileData(
@@ -191,13 +197,6 @@ const handleChatRequest = async (
 
   const phClient = posthogServer();
 
-  const openaiClient = createOpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-  });
-  const googleClient = createGoogleGenerativeAI({
-    apiKey: process.env.GOOGLE_API_KEY,
-  });
-
   let client =
     provider === "openai"
       ? openaiClient(OPENAI_TEXT_MODEL)
@@ -214,8 +213,7 @@ const handleChatRequest = async (
     posthogDistinctId: session.user.id,
     posthogPrivacyMode: true,
     posthogProperties: {
-      active_tool_count: activeTools.length,
-      action_lease_active: Boolean(activeToolPlan.actionLease),
+      active_tool_count: runtimeToolNames.size,
       chat_context_message_count: contextMessages.length,
       conversation_id: id,
       paid: subscription?.status === "active",
@@ -227,16 +225,8 @@ const handleChatRequest = async (
     abortSignal: req.signal,
     model,
     messages: modelMessages,
-    activeTools,
     stopWhen: [hasTerminalMutationResult, stepCountIs(MAX_TOOL_STEPS)],
-    tools: {
-      ...modelTools,
-      // ...(webSearchEnabled
-      //   ? {
-      //       google_search: google.tools.googleSearch({}) as Tool,
-      //     }
-      //   : {}),
-    },
+    tools: runtimeTools,
     system: systemPrompt + userContext,
     experimental_context: {
       chatId: id,
@@ -245,7 +235,7 @@ const handleChatRequest = async (
     providerOptions: {
       openai: {
         promptCacheKey: `${MAYA_PROMPT_CACHE_NAMESPACE}:${workspace.id}`,
-        reasoningEffort: getChatReasoningEffort(activeTools),
+        reasoningEffort: OPENAI_DEFAULT_REASONING_EFFORT,
         textVerbosity: "low",
       } satisfies OpenAIResponsesProviderOptions,
       google: {
@@ -285,10 +275,6 @@ const handleChatRequest = async (
     // is provided; the same ID is emitted to the browser and passed to
     // onFinish for the durable transcript write.
     generateMessageId: generateId,
-    messageMetadata: () =>
-      activeToolPlan.actionLease
-        ? { actionLease: activeToolPlan.actionLease }
-        : undefined,
     sendReasoning: false,
     sendSources: false,
     originalMessages: canonicalUiMessages,

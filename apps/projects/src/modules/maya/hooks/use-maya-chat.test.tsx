@@ -137,6 +137,7 @@ let mockMessageLimit = Infinity;
 let mockTotalMessages = 0;
 const sendMessage = jest.fn(() => Promise.resolve());
 const regenerate = jest.fn(() => Promise.resolve());
+const setMessages = jest.fn();
 const mockedUseChat = jest.mocked(useChat);
 const mockedUseAiChatMessages = jest.mocked(useAiChatMessages);
 let onFinish: ChatFinishHandler | undefined;
@@ -205,7 +206,12 @@ describe("useMayaChat onboarding completion", () => {
     mockTotalMessages = 0;
     sendMessage.mockResolvedValue(undefined);
     regenerate.mockResolvedValue(undefined);
+    setMessages.mockReset();
     onFinish = undefined;
+    mockedUseAiChatMessages.mockReturnValue({
+      data: [],
+      isSuccess: false,
+    } as unknown as ReturnType<typeof useAiChatMessages>);
     mockedUseChat.mockImplementation((options) => {
       const chatOptions = options as unknown as {
         onFinish?: ChatFinishHandler;
@@ -218,7 +224,7 @@ describe("useMayaChat onboarding completion", () => {
         messages: [],
         regenerate,
         sendMessage,
-        setMessages: jest.fn(),
+        setMessages,
         status: mockChatStatus,
         stop: jest.fn(),
       } as unknown as ReturnType<typeof useChat>;
@@ -238,6 +244,61 @@ describe("useMayaChat onboarding completion", () => {
       });
     },
   );
+
+  it("hydrates a selected chat when persisted messages arrive after initialization", async () => {
+    const persistedMessages = [
+      {
+        id: "assistant-created-story",
+        parts: [
+          {
+            input: { teamId: "team-1", title: "Test AI" },
+            output: {
+              story: { id: "story-1", title: "Test AI" },
+              success: true,
+            },
+            state: "output-available",
+            toolCallId: "call-create-story",
+            type: "tool-createStory",
+          },
+        ],
+        role: "assistant",
+      },
+    ];
+    const hook = renderMayaChat(jest.fn(), true);
+
+    mockedUseAiChatMessages.mockReturnValue({
+      data: persistedMessages,
+      isSuccess: true,
+    } as unknown as ReturnType<typeof useAiChatMessages>);
+    hook.rerender();
+
+    await waitFor(() => {
+      expect(setMessages).toHaveBeenCalledWith(persistedMessages);
+    });
+  });
+
+  it("does not overwrite a locally modified chat with late history", async () => {
+    const hook = renderMayaChat(jest.fn(), true);
+    await submitUserMessage(hook.result.current.handleSuggestedPrompt);
+    setMessages.mockClear();
+
+    mockedUseAiChatMessages.mockReturnValue({
+      data: [
+        {
+          id: "stale-assistant-message",
+          parts: [{ text: "Stale history", type: "text" }],
+          role: "assistant",
+        },
+      ],
+      isSuccess: true,
+    } as unknown as ReturnType<typeof useAiChatMessages>);
+    hook.rerender();
+
+    await waitFor(() => {
+      expect(mockedUseAiChatMessages).toHaveBeenCalled();
+    });
+    expect(setMessages).not.toHaveBeenCalled();
+  });
 
   it("completes onboarding as soon as a valid user prompt is submitted", async () => {
     const { onUserMessageSubmitted, result } = renderMayaChat();

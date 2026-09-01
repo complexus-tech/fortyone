@@ -67,11 +67,14 @@ export const useMayaChat = (config: MayaChatConfig) => {
   const [attachments, setAttachments] = useState<File[]>([]);
   const { getTermDisplay } = useTerminology();
   const currentChatId = config.currentChatId;
-  const { data: aiChatMessages = [] } = useAiChatMessages(currentChatId, {
-    enabled: config.hasSelectedChat,
-  });
+  const { data: aiChatMessages = [], isSuccess: isChatHistoryLoaded } =
+    useAiChatMessages(currentChatId, {
+      enabled: config.hasSelectedChat,
+    });
   const [input, setInput] = useState("");
   const isSendingRef = useRef(false);
+  const hydratedChatIdRef = useRef<string | null>(null);
+  const locallyModifiedChatIdRef = useRef<string | null>(null);
   const onUserMessageSubmittedRef = useRef(config.onUserMessageSubmitted);
 
   useEffect(() => {
@@ -113,6 +116,8 @@ export const useMayaChat = (config: MayaChatConfig) => {
     realtimeVoice.disconnect();
     realtimeVoice.clearMessages();
     config.clearChatRef(newChatId);
+    hydratedChatIdRef.current = null;
+    locallyModifiedChatIdRef.current = null;
     setMessages([]);
     setInput("");
     setAttachments([]);
@@ -128,6 +133,8 @@ export const useMayaChat = (config: MayaChatConfig) => {
         getAiChatMessages({ session: session!, workspaceSlug }, chatId),
     });
     setMessages(newMessages);
+    hydratedChatIdRef.current = chatId;
+    locallyModifiedChatIdRef.current = null;
     setInput("");
     setAttachments([]);
     config.updateChatRef(chatId);
@@ -198,6 +205,25 @@ export const useMayaChat = (config: MayaChatConfig) => {
     },
     messages: aiChatMessages,
   });
+  useEffect(() => {
+    if (
+      !config.hasSelectedChat ||
+      !isChatHistoryLoaded ||
+      hydratedChatIdRef.current === currentChatId ||
+      locallyModifiedChatIdRef.current === currentChatId
+    ) {
+      return;
+    }
+
+    setMessages(aiChatMessages);
+    hydratedChatIdRef.current = currentChatId;
+  }, [
+    aiChatMessages,
+    config.hasSelectedChat,
+    currentChatId,
+    isChatHistoryLoaded,
+    setMessages,
+  ]);
   const navigateFromVoice = useCallback(
     (path: string) => {
       router.push(withWorkspace(path));
@@ -230,6 +256,7 @@ export const useMayaChat = (config: MayaChatConfig) => {
       sendGuard: isSendingRef,
       status,
       task: async () => {
+        locallyModifiedChatIdRef.current = currentChatId;
         await regenerate({ messageId });
       },
     });
@@ -290,6 +317,7 @@ export const useMayaChat = (config: MayaChatConfig) => {
           ),
         );
 
+        locallyModifiedChatIdRef.current = currentChatId;
         await sendMessage({
           text: content,
           files: attachmentData,
