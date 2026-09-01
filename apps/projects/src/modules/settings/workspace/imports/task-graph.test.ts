@@ -67,6 +67,50 @@ describe("analyzed task graph merge", () => {
     expect(merged.title).toBe("Keep deterministic content");
   });
 
+  it("treats a sparse AI result as enrichment without erasing deterministic source values", () => {
+    const [merged] = mergeAnalyzedTaskGraph(
+      [
+        task("card-1", "Keep deterministic content", {
+          assigneeName: "Source owner",
+          assigneePersonSourceId: "person-1",
+          collaboratorPersonSourceIds: ["person-2"],
+          labelSourceIds: ["label-1"],
+          links: [{ title: "Trello card", url: "https://trello.com/c/card-1" }],
+          teamSourceId: "team-1",
+        }),
+      ],
+      [
+        task("card-1", "Schema-required title", {
+          objectiveSourceId: "objective-1",
+          priority: "High",
+        }),
+      ],
+      { enrichmentOnly: true },
+    );
+
+    expect(merged).toMatchObject({
+      assigneeName: "Source owner",
+      assigneePersonSourceId: "person-1",
+      collaboratorPersonSourceIds: ["person-2"],
+      labelSourceIds: ["label-1"],
+      links: [{ title: "Trello card", url: "https://trello.com/c/card-1" }],
+      objectiveSourceId: "objective-1",
+      priority: "High",
+      teamSourceId: "team-1",
+      title: "Keep deterministic content",
+    });
+  });
+
+  it("requires an exact source ID for enrichment-only task patches", () => {
+    const [merged] = mergeAnalyzedTaskGraph(
+      [task("card-1", "Same title")],
+      [task("hallucinated-card", "Same title", { priority: "Urgent" })],
+      { enrichmentOnly: true },
+    );
+
+    expect(merged.priority).toBe("No Priority");
+  });
+
   it("merges only explicit analyzed story effort values", () => {
     const [merged] = mergeAnalyzedTaskGraph(
       [task("row-1", "Keep deterministic content")],

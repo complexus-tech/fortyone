@@ -193,6 +193,8 @@ describe("/api/imports/analyze", () => {
           source_type: "jira_csv",
           workspace_id: "workspace-1",
         }),
+        max_output_tokens: 64_000,
+        model: "gpt-5.6-terra",
         store: true,
       }),
     );
@@ -235,7 +237,7 @@ describe("/api/imports/analyze", () => {
         tasks: [
           {
             sourceId: "65a1234567890abcdef12345",
-            status: null,
+            status: "Doing",
             title: "Imported Trello card",
           },
         ],
@@ -245,6 +247,110 @@ describe("/api/imports/analyze", () => {
     });
     expect(mockedOpenAI).not.toHaveBeenCalled();
     expect(mockResponsesCreate).not.toHaveBeenCalled();
+  });
+
+  it("sends a compact normalized Trello graph instead of the raw export", async () => {
+    mockResponsesCreate.mockResolvedValue({ id: "resp_trello_import_1" });
+
+    const response = await POST(
+      createPostRequest({
+        contents: JSON.stringify({
+          actions: [
+            {
+              data: {
+                text: "raw-action-history-must-not-be-sent",
+              },
+            },
+          ],
+          cards: [
+            {
+              closed: false,
+              desc: "Move this card",
+              id: "card-1",
+              idList: "list-1",
+              name: "Imported Trello card",
+            },
+          ],
+          id: "board-1",
+          lists: [{ closed: false, id: "list-1", name: "Doing" }],
+          name: "Migration board",
+          prefs: {},
+        }),
+        fileName: "trello-export.json",
+        mimeType: "application/json",
+      }),
+    );
+
+    await expect(response.json()).resolves.toMatchObject({
+      responseId: "resp_trello_import_1",
+      status: "queued",
+    });
+    const request = mockResponsesCreate.mock.calls[0]?.[0];
+    expect(request).toEqual(
+      expect.objectContaining({ model: "gpt-5.6-terra" }),
+    );
+    const serializedInput = JSON.stringify(request?.input);
+    expect(serializedInput).toContain(
+      '"filename":"trello-export.normalized.json"',
+    );
+    expect(serializedInput).not.toContain(
+      "raw-action-history-must-not-be-sent",
+    );
+    expect(serializedInput).toContain(
+      "return a task record only when you can add a credible semantic enrichment",
+    );
+    expect(serializedInput).toContain("Do not echo unchanged tasks");
+
+    const content = request?.input?.[0]?.content as
+      | { file_data?: string; type: string }[]
+      | undefined;
+    const fileData = content?.find(
+      (item) => item.type === "input_file",
+    )?.file_data;
+    expect(fileData).toMatch(/^data:application\/json;base64,/u);
+    const normalizedGraph = JSON.parse(
+      Buffer.from(fileData?.split(",")[1] ?? "", "base64").toString("utf8"),
+    ) as Record<string, unknown>;
+    expect(normalizedGraph).toMatchObject({
+      authoritativeTaskGraph: true,
+      format: "fortyone-normalized-import-graph-v1",
+      sourceKind: "trello",
+      tasks: [{ sourceId: "card-1", title: "Imported Trello card" }],
+    });
+    expect(normalizedGraph).not.toHaveProperty("actions");
+  });
+
+  it("reports a context-limit queue failure while preserving the deterministic preview", async () => {
+    mockResponsesCreate.mockRejectedValue(
+      Object.assign(new Error("maximum context window"), {
+        code: "context_length_exceeded",
+        status: 400,
+      }),
+    );
+
+    const response = await POST(
+      createPostRequest({
+        contents: JSON.stringify({
+          cards: [{ id: "card-1", idList: "list-1", name: "Keep me" }],
+          id: "board-1",
+          lists: [{ id: "list-1", name: "Doing" }],
+          prefs: {},
+        }),
+        fileName: "trello.json",
+        mimeType: "application/json",
+      }),
+    );
+
+    await expect(response.json()).resolves.toMatchObject({
+      analysis: {
+        tasks: [{ sourceId: "card-1", title: "Keep me" }],
+        warnings: expect.arrayContaining([
+          "The source exceeded the AI analysis context limit. The deterministic import preview is still available.",
+        ]),
+      },
+      responseId: null,
+      status: "completed",
+    });
   });
 
   it("queues an entity-only JSON document for vendor-neutral AI mapping", async () => {
@@ -280,6 +386,9 @@ describe("/api/imports/analyze", () => {
     expect(request?.metadata).not.toHaveProperty("source_namespace");
     expect(JSON.stringify(request?.input)).toContain(
       "The source format and product are unknown",
+    );
+    expect(JSON.stringify(request?.input)).not.toContain(
+      "Do not echo unchanged tasks",
     );
     expect(JSON.stringify(request?.input)).toContain(
       "source projects, initiatives, epics, or goals as objectives",
@@ -345,10 +454,10 @@ describe("/api/imports/analyze", () => {
       "Never infer a reciprocal relationship, invent an association, or create a self-link",
     );
     expect(JSON.stringify(request?.input)).toContain(
-      "extract it as a child task whose parentSourceId references the returned parent task",
+      "keep checklist items inside their parent task description by default",
     );
     expect(JSON.stringify(request?.input)).toContain(
-      "checklist items without stable IDs, in the parent task description",
+      "A stable checklist-item ID alone does not make it a separate task",
     );
     expect(JSON.stringify(request?.input)).toContain(
       "only preserve effort values explicitly represented by the source",
@@ -744,5 +853,33 @@ describe("/api/imports/analyze", () => {
 
     expect(response.status).toBe(404);
     expect(response.headers.get("Cache-Control")).toBe("private, no-store");
+  });
+
+  it("surfaces an incomplete background analysis reason", async () => {
+    const fileHash = "a".repeat(64);
+    const actorHash = createHash("sha256")
+      .update(session.user.id)
+      .digest("hex")
+      .slice(0, 48);
+    mockResponsesRetrieve.mockResolvedValue({
+      incomplete_details: { reason: "max_output_tokens" },
+      metadata: {
+        actor_hash: actorHash,
+        file_hash: fileHash,
+        fortyone_kind: "work_import_analysis",
+        source_type: "json",
+        workspace_id: "workspace-1",
+      },
+      status: "incomplete",
+    });
+
+    const response = await GET({
+      url: `http://localhost/api/imports/analyze?workspaceSlug=acme&responseId=resp_import_1&fileHash=${fileHash}`,
+    } as Request);
+
+    expect(response.status).toBe(502);
+    await expect(response.text()).resolves.toBe(
+      "AI analysis reached its output limit before finishing. The deterministic import preview is still available.",
+    );
   });
 });

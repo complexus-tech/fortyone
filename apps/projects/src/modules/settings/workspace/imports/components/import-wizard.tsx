@@ -123,8 +123,13 @@ const WIZARD_STEP = {
 } as const;
 const STEPS = ["Upload", "Teams", "Members", "Review", "Import"] as const;
 const REVIEW_PAGE_SIZE = 50;
-const MAX_ANALYSIS_POLLS = 80;
+const IMPORT_ANALYSIS_POLL_TIMEOUT_MS = 7 * 60 * 1000;
+const IMPORT_ANALYSIS_INITIAL_POLL_DELAY_MS = 700;
+const IMPORT_ANALYSIS_MIN_POLL_DELAY_MS = 1_500;
+const IMPORT_ANALYSIS_MAX_POLL_DELAY_MS = 10_000;
+const IMPORT_ANALYSIS_POLL_ERROR_RETRIES = 3;
 const DO_NOT_IMPORT_VALUE = "__do_not_import__";
+const TRELLO_SOURCE_NAMESPACE_PREFIX = "trello:board:";
 const EMPTY_IMPORT_SOURCE_IDS = new Set<string>();
 const EMPTY_IMPORT_STRATEGY_MAP: StrategyMap = {
   description: null,
@@ -134,6 +139,91 @@ const EMPTY_IMPORT_STRATEGY_MAP: StrategyMap = {
 
 const normalizeImportReviewName = (value: string) =>
   value.normalize("NFKC").trim().toLocaleLowerCase().replace(/\s+/g, " ");
+
+const normalizeImportColumnName = (value: string) =>
+  value.trim().toLocaleLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ");
+
+const getImportAnalysisPollDelay = (
+  pollAttempts: number,
+  consecutiveErrors: number,
+) => {
+  const regularDelay = Math.min(
+    IMPORT_ANALYSIS_MAX_POLL_DELAY_MS,
+    IMPORT_ANALYSIS_MIN_POLL_DELAY_MS * 1.35 ** Math.min(pollAttempts, 8),
+  );
+  const errorDelay = IMPORT_ANALYSIS_MIN_POLL_DELAY_MS * 2 ** consecutiveErrors;
+  return Math.min(
+    IMPORT_ANALYSIS_MAX_POLL_DELAY_MS,
+    Math.max(regularDelay, errorDelay),
+  );
+};
+
+const isDeterministicTrelloDraft = (draft: ImportDraft | null) =>
+  Boolean(
+    draft?.sourceType === "json" &&
+      (draft.sourceMetadata?.platform === "trello" ||
+        draft.sourceNamespace?.startsWith(TRELLO_SOURCE_NAMESPACE_PREFIX)),
+  );
+
+const getTrelloArchivedTaskSourceIds = (draft: ImportDraft | null) => {
+  if (!isDeterministicTrelloDraft(draft) || !draft) return new Set<string>();
+  if (draft.sourceMetadata?.platform === "trello") {
+    return new Set(
+      draft.sourceMetadata.archivedTaskSourceIds.flatMap((sourceId) => {
+        const normalizedSourceId = sourceId.trim();
+        return normalizedSourceId ? [normalizedSourceId] : [];
+      }),
+    );
+  }
+  const sourceIdColumn =
+    draft.mapping?.sourceId ??
+    draft.columns.find((column) => normalizeImportColumnName(column) === "id");
+  const closedColumn = draft.columns.find(
+    (column) => normalizeImportColumnName(column) === "closed",
+  );
+  if (!sourceIdColumn || !closedColumn) return new Set<string>();
+
+  return new Set(
+    draft.rows.flatMap((row) => {
+      const sourceId = (row[sourceIdColumn] ?? "").trim();
+      const closed =
+        (row[closedColumn] ?? "").trim().toLocaleLowerCase() === "true";
+      return sourceId && closed ? [sourceId] : [];
+    }),
+  );
+};
+
+const getTaskIndexesBySourceId = (
+  draft: ImportDraft | null,
+  sourceIds: ReadonlySet<string>,
+) =>
+  new Set(
+    draft?.tasks.flatMap((task, index) =>
+      sourceIds.has(task.sourceId) ? [index] : [],
+    ) ?? [],
+  );
+
+const mergeDeterministicImportEntities = <T extends { sourceId: string }>(
+  deterministicEntities: readonly T[],
+  analyzedEntities: readonly T[],
+) => {
+  const analyzedBySourceId = new Map(
+    analyzedEntities.map((entity) => [entity.sourceId, entity]),
+  );
+  const merged = deterministicEntities.map((entity) => {
+    const analyzedEntity = analyzedBySourceId.get(entity.sourceId);
+    return analyzedEntity ? { ...analyzedEntity, ...entity } : entity;
+  });
+  const sourceIds = new Set(
+    deterministicEntities.map((entity) => entity.sourceId),
+  );
+  for (const entity of analyzedEntities) {
+    if (sourceIds.has(entity.sourceId)) continue;
+    sourceIds.add(entity.sourceId);
+    merged.push(entity);
+  }
+  return merged;
+};
 
 const getNewTeamImportSignature = (
   fileHash: string,
@@ -838,6 +928,10 @@ export const ImportWizard = ({ onOpenChange, open }: ImportWizardProps) => {
   const mappingOverrideFields = useRef(new Set<keyof ImportMapping>());
   const draftRef = useRef<ImportDraft | null>(null);
   const analysisGeneration = useRef(0);
+  const analysisPollingSession = useRef<{
+    responseId: string;
+    startedAt: number;
+  } | null>(null);
   const createdSourceTeamIds = useRef(new Map<string, string>());
   const sourceObjectiveCache = useRef(
     new Map<string, { id: string; teamId: string }>(),
@@ -864,6 +958,8 @@ export const ImportWizard = ({ onOpenChange, open }: ImportWizardProps) => {
   const [lockedMemberIdsByIdentityKey, setLockedMemberIdsByIdentityKey] =
     useState<Map<string, string | null> | null>(null);
   const [excludedRows, setExcludedRows] = useState<Set<number>>(new Set());
+  const [includeArchivedTrelloCards, setIncludeArchivedTrelloCards] =
+    useState(false);
   const [excludedObjectives, setExcludedObjectives] = useState<Set<string>>(
     new Set(),
   );
@@ -1318,6 +1414,7 @@ export const ImportWizard = ({ onOpenChange, open }: ImportWizardProps) => {
 
   const reset = () => {
     analysisGeneration.current += 1;
+    analysisPollingSession.current = null;
     mappingEdited.current = false;
     mappingOverrideFields.current.clear();
     createdSourceTeamIds.current.clear();
@@ -1342,6 +1439,7 @@ export const ImportWizard = ({ onOpenChange, open }: ImportWizardProps) => {
     setSelectedMemberIdsByIdentityKey(new Map());
     setLockedMemberIdsByIdentityKey(null);
     setExcludedRows(new Set());
+    setIncludeArchivedTrelloCards(false);
     setExcludedObjectives(new Set());
     setExcludedStrategicPillars(new Set());
     setObjectivesByTeamId(new Map());
@@ -1510,14 +1608,34 @@ export const ImportWizard = ({ onOpenChange, open }: ImportWizardProps) => {
   // react-doctor-disable-next-line react-doctor/effect-needs-cleanup -- Cleanup clears the active timer, and the cancellation guard prevents an in-flight poll from scheduling another one after unmount.
   useEffect(() => {
     if (!responseId || !fileHash || !analysisPending) return;
+    const generation = analysisGeneration.current;
+    const pollingSession =
+      analysisPollingSession.current?.responseId === responseId
+        ? analysisPollingSession.current
+        : { responseId, startedAt: Date.now() };
+    analysisPollingSession.current = pollingSession;
+    const deadline = pollingSession.startedAt + IMPORT_ANALYSIS_POLL_TIMEOUT_MS;
     let cancelled = false;
     let pollAttempts = 0;
-    let timer: ReturnType<typeof setTimeout> | undefined;
+    let consecutivePollErrors = 0;
+    let pollTimer: ReturnType<typeof setTimeout> | undefined;
+
+    const isCurrentPollingSession = () =>
+      !cancelled &&
+      generation === analysisGeneration.current &&
+      analysisPollingSession.current?.responseId === responseId;
+    const clearPollingSession = () => {
+      if (analysisPollingSession.current?.responseId === responseId) {
+        analysisPollingSession.current = null;
+      }
+      clearTimeout(deadlineTimer);
+    };
 
     const handlePollFailure = (error: unknown) => {
-      if (cancelled) return;
+      if (!isCurrentPollingSession()) return;
       const message =
         error instanceof Error ? error.message : "AI analysis failed";
+      clearPollingSession();
       setAnalysisPending(false);
       setResponseId(null);
       setDraft((current) =>
@@ -1528,105 +1646,185 @@ export const ImportWizard = ({ onOpenChange, open }: ImportWizardProps) => {
       if (draftRef.current) setAnalysisNotice(message);
       else setAnalysisError(message);
     };
+    const handlePollTimeout = () => {
+      handlePollFailure(
+        new Error(
+          "AI analysis is taking longer than expected. You can continue with the deterministic preview or upload the file again.",
+        ),
+      );
+    };
+    const schedulePoll = (delay: number) => {
+      if (!isCurrentPollingSession()) return;
+      const remainingTime = deadline - Date.now();
+      if (remainingTime <= 0) {
+        handlePollTimeout();
+        return;
+      }
+      pollTimer = setTimeout(poll, Math.min(delay, remainingTime));
+    };
     const poll = () => {
+      if (!isCurrentPollingSession()) return;
+      if (Date.now() >= deadline) {
+        handlePollTimeout();
+        return;
+      }
       pollAttempts += 1;
       void pollImportAnalysis({
         fileHash,
         responseId,
         workspaceSlug,
-      }).then((response) => {
-        if (cancelled) return;
-        if (response.status !== "completed") {
-          if (pollAttempts >= MAX_ANALYSIS_POLLS) {
+      }).then(
+        (response) => {
+          if (!isCurrentPollingSession()) return;
+          consecutivePollErrors = 0;
+          if (response.status !== "completed") {
+            schedulePoll(getImportAnalysisPollDelay(pollAttempts, 0));
+            return;
+          }
+          const completedAnalysis = prepareCompletedAIImportAnalysis(
+            response.analysis,
+          );
+
+          clearPollingSession();
+          setDraft((current) => {
+            const usesDeterministicRowMapping =
+              current?.sourceType === "csv" ||
+              current?.sourceType === "jira_csv";
+            const preservesDeterministicTrelloGraph =
+              isDeterministicTrelloDraft(current);
+            const preservesDeterministicTaskSet =
+              usesDeterministicRowMapping || preservesDeterministicTrelloGraph;
+            const canMergeDeterministicAnalysis = Boolean(
+              current &&
+                preservesDeterministicTaskSet &&
+                (current.rows.length > 0 || preservesDeterministicTrelloGraph),
+            );
+            if (current && canMergeDeterministicAnalysis) {
+              let mapping = completedAnalysis.mapping;
+              if (usesDeterministicRowMapping) {
+                mapping =
+                  !mappingEdited.current && completedAnalysis.mapping
+                    ? sanitizeAIImportMapping(
+                        completedAnalysis.mapping,
+                        current.columns,
+                      )
+                    : current.mapping;
+              }
+              const mappedTasks =
+                usesDeterministicRowMapping && mapping
+                  ? mapRowsToImportTasks(current.rows, mapping)
+                  : current.tasks;
+              return {
+                ...current,
+                teams: preservesDeterministicTrelloGraph
+                  ? mergeDeterministicImportEntities(
+                      current.teams,
+                      completedAnalysis.teams,
+                    )
+                  : completedAnalysis.teams,
+                people: preservesDeterministicTrelloGraph
+                  ? mergeDeterministicImportEntities(
+                      current.people,
+                      completedAnalysis.people,
+                    )
+                  : completedAnalysis.people,
+                labels: preservesDeterministicTrelloGraph
+                  ? mergeDeterministicImportEntities(
+                      current.labels,
+                      completedAnalysis.labels,
+                    )
+                  : completedAnalysis.labels,
+                strategicPillars: completedAnalysis.strategicPillars,
+                objectives: completedAnalysis.objectives,
+                keyResults: completedAnalysis.keyResults,
+                sprints: completedAnalysis.sprints,
+                mapping,
+                sourceNamespace:
+                  current.sourceNamespace ?? completedAnalysis.sourceNamespace,
+                summary: preservesDeterministicTrelloGraph
+                  ? current.summary
+                  : completedAnalysis.summary,
+                tasks: mergeAnalyzedTaskGraph(
+                  mappedTasks,
+                  completedAnalysis.tasks,
+                  {
+                    authoritativeFields: mappingOverrideFields.current,
+                    enrichmentOnly: preservesDeterministicTrelloGraph,
+                  },
+                ),
+                warnings: preservesDeterministicTrelloGraph
+                  ? [
+                      ...new Set([
+                        ...current.warnings,
+                        ...completedAnalysis.warnings,
+                      ]),
+                    ].slice(0, 50)
+                  : completedAnalysis.warnings,
+              };
+            }
+            if (current) {
+              return {
+                ...current,
+                ...completedAnalysis,
+                sourceNamespace:
+                  current.sourceNamespace ?? completedAnalysis.sourceNamespace,
+              };
+            }
+            return {
+              ...completedAnalysis,
+              columns: [],
+              fileHash,
+              fileName,
+              rows: [],
+            };
+          });
+          setAnalysisPending(false);
+          setAnalysisNotice("");
+          setResponseId(null);
+          setReviewPage(0);
+          if (completedAnalysis.teams.length > 0) {
+            setStructureMode("preserve");
+            const sourceTeam = completedAnalysis.teams[0];
+            if (teams.length === 0) {
+              const sourceDestination =
+                getImportSourceTeamDestination(sourceTeam);
+              setDestination((current) =>
+                current.kind === "new"
+                  ? { kind: "new", ...sourceDestination }
+                  : current,
+              );
+            }
+          }
+        },
+        (error: unknown) => {
+          if (!isCurrentPollingSession()) return;
+          consecutivePollErrors += 1;
+          if (consecutivePollErrors > IMPORT_ANALYSIS_POLL_ERROR_RETRIES) {
             handlePollFailure(
-              new Error(
-                "AI analysis is taking longer than expected. You can continue with the deterministic preview or upload the file again.",
-              ),
+              error instanceof Error && error.message.trim()
+                ? error
+                : new Error(
+                    "AI analysis could not be checked after several attempts. You can continue with the deterministic preview or upload the file again.",
+                  ),
             );
             return;
           }
-          timer = setTimeout(poll, 1_500);
-          return;
-        }
-        const completedAnalysis = prepareCompletedAIImportAnalysis(
-          response.analysis,
-        );
-
-        setDraft((current) => {
-          const usesDeterministicRowMapping =
-            current?.sourceType === "csv" || current?.sourceType === "jira_csv";
-          if (current?.rows.length && usesDeterministicRowMapping) {
-            const mapping =
-              !mappingEdited.current && completedAnalysis.mapping
-                ? sanitizeAIImportMapping(
-                    completedAnalysis.mapping,
-                    current.columns,
-                  )
-                : current.mapping;
-            const mappedTasks = mapping
-              ? mapRowsToImportTasks(current.rows, mapping)
-              : current.tasks;
-            return {
-              ...current,
-              teams: completedAnalysis.teams,
-              people: completedAnalysis.people,
-              labels: completedAnalysis.labels,
-              strategicPillars: completedAnalysis.strategicPillars,
-              objectives: completedAnalysis.objectives,
-              keyResults: completedAnalysis.keyResults,
-              sprints: completedAnalysis.sprints,
-              mapping,
-              sourceNamespace:
-                current.sourceNamespace ?? completedAnalysis.sourceNamespace,
-              summary: completedAnalysis.summary,
-              tasks: mergeAnalyzedTaskGraph(
-                mappedTasks,
-                completedAnalysis.tasks,
-                { authoritativeFields: mappingOverrideFields.current },
-              ),
-              warnings: completedAnalysis.warnings,
-            };
-          }
-          if (current) {
-            return {
-              ...current,
-              ...completedAnalysis,
-              sourceNamespace:
-                current.sourceNamespace ?? completedAnalysis.sourceNamespace,
-            };
-          }
-          return {
-            ...completedAnalysis,
-            columns: [],
-            fileHash,
-            fileName,
-            rows: [],
-          };
-        });
-        setAnalysisPending(false);
-        setAnalysisNotice("");
-        setResponseId(null);
-        setReviewPage(0);
-        if (completedAnalysis.teams.length > 0) {
-          setStructureMode("preserve");
-          const sourceTeam = completedAnalysis.teams[0];
-          if (teams.length === 0) {
-            const sourceDestination =
-              getImportSourceTeamDestination(sourceTeam);
-            setDestination((current) =>
-              current.kind === "new"
-                ? { kind: "new", ...sourceDestination }
-                : current,
-            );
-          }
-        }
-      }, handlePollFailure);
+          schedulePoll(
+            getImportAnalysisPollDelay(pollAttempts, consecutivePollErrors),
+          );
+        },
+      );
     };
 
-    timer = setTimeout(poll, 700);
+    const deadlineTimer = setTimeout(
+      handlePollTimeout,
+      Math.max(0, deadline - Date.now()),
+    );
+    schedulePoll(IMPORT_ANALYSIS_INITIAL_POLL_DELAY_MS);
     return () => {
       cancelled = true;
-      if (timer) clearTimeout(timer);
+      clearTimeout(deadlineTimer);
+      if (pollTimer) clearTimeout(pollTimer);
     };
   }, [
     analysisPending,
@@ -1640,6 +1838,7 @@ export const ImportWizard = ({ onOpenChange, open }: ImportWizardProps) => {
   const handleFile = (file: File) => {
     const generation = analysisGeneration.current + 1;
     analysisGeneration.current = generation;
+    analysisPollingSession.current = null;
     setUploadPending(true);
     setHasAttemptedImport(false);
     setAnalysisError("");
@@ -1650,6 +1849,7 @@ export const ImportWizard = ({ onOpenChange, open }: ImportWizardProps) => {
     setFileName(file.name);
     setReviewPage(0);
     setExcludedRows(new Set());
+    setIncludeArchivedTrelloCards(false);
     setExcludedObjectives(new Set());
     setExcludedStrategicPillars(new Set());
     createdSourceTeamIds.current.clear();
@@ -1682,6 +1882,12 @@ export const ImportWizard = ({ onOpenChange, open }: ImportWizardProps) => {
         if (generation !== analysisGeneration.current) return;
         setFileHash(response.fileHash);
         setDraft(response.analysis);
+        const archivedTaskSourceIds = getTrelloArchivedTaskSourceIds(
+          response.analysis,
+        );
+        setExcludedRows(
+          getTaskIndexesBySourceId(response.analysis, archivedTaskSourceIds),
+        );
         setResponseId(response.responseId);
         setAnalysisPending(response.status === "queued");
 
@@ -1744,6 +1950,14 @@ export const ImportWizard = ({ onOpenChange, open }: ImportWizardProps) => {
   const selectedTasks = useMemo(
     () => draft?.tasks.filter((_, index) => !excludedRows.has(index)) ?? [],
     [draft?.tasks, excludedRows],
+  );
+  const archivedTrelloTaskSourceIds = useMemo(
+    () => getTrelloArchivedTaskSourceIds(draft),
+    [draft],
+  );
+  const archivedTrelloTaskIndexes = useMemo(
+    () => getTaskIndexesBySourceId(draft, archivedTrelloTaskSourceIds),
+    [archivedTrelloTaskSourceIds, draft],
   );
   const selectedStrategicPillars = useMemo(
     () =>
@@ -1963,6 +2177,19 @@ export const ImportWizard = ({ onOpenChange, open }: ImportWizardProps) => {
     });
   };
 
+  const toggleArchivedTrelloCards = (included: boolean) => {
+    setIncludeArchivedTrelloCards(included);
+    setExcludedRows((current) => {
+      const next = new Set(current);
+      for (const index of archivedTrelloTaskIndexes) {
+        if (included) next.delete(index);
+        else next.add(index);
+      }
+      return next;
+    });
+    setReviewPage(0);
+  };
+
   const toggleObjective = (sourceId: string, checked: boolean) => {
     setExcludedObjectives((current) => {
       const next = new Set(current);
@@ -2169,14 +2396,21 @@ export const ImportWizard = ({ onOpenChange, open }: ImportWizardProps) => {
   if (uploadPending) uploadLabel = "Reading your file…";
   else if (dropzone.isDragActive) uploadLabel = "Drop it here";
 
+  const reviewTasks =
+    draft?.tasks.flatMap((task, taskIndex) =>
+      !includeArchivedTrelloCards && archivedTrelloTaskIndexes.has(taskIndex)
+        ? []
+        : [{ task, taskIndex }],
+    ) ?? [];
   const reviewPageCount = Math.max(
     1,
-    Math.ceil((draft?.tasks.length ?? 0) / REVIEW_PAGE_SIZE),
+    Math.ceil(reviewTasks.length / REVIEW_PAGE_SIZE),
   );
   const reviewPageStart = reviewPage * REVIEW_PAGE_SIZE;
-  const visibleReviewTasks =
-    draft?.tasks.slice(reviewPageStart, reviewPageStart + REVIEW_PAGE_SIZE) ??
-    [];
+  const visibleReviewTasks = reviewTasks.slice(
+    reviewPageStart,
+    reviewPageStart + REVIEW_PAGE_SIZE,
+  );
   const relationshipReview = useMemo(() => {
     if (!draft) return { crossTeam: 0, unresolved: 0 };
     const taskCounts = new Map<string, number>();
@@ -3179,11 +3413,34 @@ export const ImportWizard = ({ onOpenChange, open }: ImportWizardProps) => {
                     <Text className="font-medium">
                       {storyTermCapitalized} review
                     </Text>
-                    <Text color="muted">{selectedTasks.length} selected</Text>
+                    <Flex
+                      align="center"
+                      className="flex-wrap justify-end"
+                      gap={4}
+                    >
+                      {archivedTrelloTaskIndexes.size > 0 ? (
+                        <Flex align="center" gap={2}>
+                          <Checkbox
+                            aria-label={`Include ${archivedTrelloTaskIndexes.size} archived cards`}
+                            checked={includeArchivedTrelloCards}
+                            id="include-archived-trello-cards"
+                            onCheckedChange={(checked) => {
+                              toggleArchivedTrelloCards(checked === true);
+                            }}
+                          />
+                          <label
+                            className="cursor-pointer whitespace-nowrap"
+                            htmlFor="include-archived-trello-cards"
+                          >
+                            Include archived ({archivedTrelloTaskIndexes.size})
+                          </label>
+                        </Flex>
+                      ) : null}
+                      <Text color="muted">{selectedTasks.length} selected</Text>
+                    </Flex>
                   </Flex>
                   <Box className="divide-border max-h-96 divide-y overflow-y-auto">
-                    {visibleReviewTasks.map((task, index) => {
-                      const taskIndex = reviewPageStart + index;
+                    {visibleReviewTasks.map(({ task, taskIndex }) => {
                       const isExcluded = excludedRows.has(taskIndex);
                       const titleMissing =
                         !isExcluded && task.title.trim().length === 0;
@@ -3233,12 +3490,12 @@ export const ImportWizard = ({ onOpenChange, open }: ImportWizardProps) => {
                     justify="between"
                   >
                     <Text color="muted">
-                      Showing {reviewPageStart + 1}–
-                      {Math.min(
-                        reviewPageStart + REVIEW_PAGE_SIZE,
-                        draft.tasks.length,
-                      )}{" "}
-                      of {draft.tasks.length}
+                      {reviewTasks.length > 0
+                        ? `Showing ${reviewPageStart + 1}–${Math.min(
+                            reviewPageStart + REVIEW_PAGE_SIZE,
+                            reviewTasks.length,
+                          )} of ${reviewTasks.length}`
+                        : "No active cards to review"}
                     </Text>
                     {reviewPageCount > 1 ? (
                       <Flex className="justify-end" gap={2}>

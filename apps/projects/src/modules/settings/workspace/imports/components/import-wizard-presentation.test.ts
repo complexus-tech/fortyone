@@ -63,6 +63,28 @@ describe("ImportWizard presentation", () => {
     expect(source).not.toContain("hideClose");
   });
 
+  it("polls long-running analysis with a bounded retry window", () => {
+    expect(source).toContain(
+      "const IMPORT_ANALYSIS_POLL_TIMEOUT_MS = 7 * 60 * 1000",
+    );
+    expect(source).toContain(
+      "const IMPORT_ANALYSIS_MAX_POLL_DELAY_MS = 10_000",
+    );
+    expect(source).toContain("const IMPORT_ANALYSIS_POLL_ERROR_RETRIES = 3");
+    expect(source).toContain("getImportAnalysisPollDelay");
+    expect(source).toContain("consecutivePollErrors = 0");
+    expect(source).toContain(
+      "consecutivePollErrors > IMPORT_ANALYSIS_POLL_ERROR_RETRIES",
+    );
+    expect(source).toContain("generation === analysisGeneration.current");
+    expect(source).toContain(
+      "analysisPollingSession.current?.responseId === responseId",
+    );
+    expect(source).toContain("deadlineTimer = setTimeout(");
+    expect(source).not.toContain("MAX_ANALYSIS_POLLS");
+    expect(source).not.toContain("timer = setTimeout(poll, 1_500)");
+  });
+
   it("uses the segmented Art Circles analysis treatment without a spinner", () => {
     expect(source).not.toContain("LoadingIcon");
     expect(source).not.toContain("animate-spin");
@@ -222,6 +244,46 @@ describe("ImportWizard presentation", () => {
     expect(source).not.toContain("Assignee:");
     expect(source).not.toContain("getImportTaskRelationshipPreview");
     expect(source).not.toContain("relationshipPreview.map");
+  });
+
+  it("keeps deterministic Trello cards stable and archives opt-in", () => {
+    expect(source).toContain(
+      'const TRELLO_SOURCE_NAMESPACE_PREFIX = "trello:board:"',
+    );
+    expect(source).toContain("getTrelloArchivedTaskSourceIds");
+    expect(source).toContain('draft.sourceMetadata?.platform === "trello"');
+    expect(source).toContain("sourceMetadata.archivedTaskSourceIds");
+    expect(source).toContain(
+      "usesDeterministicRowMapping || preservesDeterministicTrelloGraph",
+    );
+    expect(source).toContain("mergeDeterministicImportEntities");
+    expect(source).toContain(
+      "return analyzedEntity ? { ...analyzedEntity, ...entity } : entity",
+    );
+    expect(source).toContain("merged.push(entity)");
+    expect(source).toContain(
+      "current.people,\n                      completedAnalysis.people",
+    );
+    expect(source).toContain(
+      "current.teams,\n                      completedAnalysis.teams",
+    );
+    expect(source).toContain(
+      "current.labels,\n                      completedAnalysis.labels",
+    );
+    expect(source).toMatch(
+      /usesDeterministicRowMapping && mapping\s*\? mapRowsToImportTasks\(current\.rows, mapping\)\s*:\s*current\.tasks/,
+    );
+    expect(source).toContain(
+      "enrichmentOnly: preservesDeterministicTrelloGraph",
+    );
+    expect(source).toContain("getTaskIndexesBySourceId(response.analysis");
+    expect(source).toContain('id="include-archived-trello-cards"');
+    expect(source).toMatch(
+      /Include archived \(\{archivedTrelloTaskIndexes\.size\}\)/,
+    );
+    expect(source).toContain(
+      "!includeArchivedTrelloCards && archivedTrelloTaskIndexes.has(taskIndex)",
+    );
   });
 
   it("uses icon-free inverted primary actions", () => {

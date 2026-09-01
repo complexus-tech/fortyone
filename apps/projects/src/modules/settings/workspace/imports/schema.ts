@@ -388,11 +388,18 @@ export const createEmptyImportEntityCollections = (): Pick<
   sprints: [],
 });
 
+export type ImportDraftSourceMetadata = {
+  archivedTaskSourceIds: string[];
+  nestedChecklistItemCount: number;
+  platform: "trello";
+};
+
 export type ImportDraft = ImportAnalysis & {
   columns: string[];
   fileHash: string;
   fileName: string;
   rows: Record<string, string>[];
+  sourceMetadata?: ImportDraftSourceMetadata;
 };
 
 export type ImportAnalysisStartResponse = {

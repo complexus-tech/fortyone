@@ -10,7 +10,14 @@ export type MergeAnalyzedTaskGraphOptions = {
    * authoritative. AI can still enrich untouched semantics and relationships.
    */
   authoritativeFields?: ReadonlySet<keyof ImportMapping>;
+  /**
+   * Treats analyzed tasks as sparse semantic patches. Required null and empty
+   * schema values cannot erase exact values retained by a deterministic parser.
+   */
+  enrichmentOnly?: boolean;
 };
+
+const IMPORT_TASK_REFERENCE_LIMIT = 100;
 
 const normalizeImportTitle = (value: string) =>
   value.normalize("NFKC").trim().toLocaleLowerCase().replace(/\s+/g, " ");
@@ -35,45 +42,139 @@ const indexUniqueBy = <T>(items: T[], getKey: (item: T) => string) => {
   return index;
 };
 
+const mergeUniqueStrings = (first: string[], second: string[]) =>
+  [...new Set([...first, ...second])].slice(0, IMPORT_TASK_REFERENCE_LIMIT);
+
+const mergeTaskAssociations = (
+  first: ImportTask["associations"],
+  second: ImportTask["associations"],
+) => {
+  const seen = new Set<string>();
+  return [...first, ...second]
+    .filter((association) => {
+      const key = `${association.type}\u0000${association.targetSourceId}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, IMPORT_TASK_REFERENCE_LIMIT);
+};
+
+const preferAnalyzedValue = <T>(
+  sourceValue: T | null,
+  analyzedValue: T | null,
+  enrichmentOnly: boolean,
+) => (enrichmentOnly ? analyzedValue ?? sourceValue : analyzedValue);
+
 const mergeAnalyzedTask = (
   task: ImportTask,
   analyzedTask: ImportTask | undefined,
   options: MergeAnalyzedTaskGraphOptions,
 ): ImportTask => {
   if (!analyzedTask) return task;
-  const statusCategory = options.authoritativeFields?.has("status")
-    ? task.statusCategory
-    : analyzedTask.statusCategory;
-  const priority = options.authoritativeFields?.has("priority")
-    ? task.priority
-    : analyzedTask.priority;
-  const assigneeName = options.authoritativeFields?.has("assigneeEmail")
-    ? task.assigneeName
-    : analyzedTask.assigneeName;
-  const assigneePersonSourceId = options.authoritativeFields?.has(
-    "assigneeEmail",
-  )
-    ? task.assigneePersonSourceId
-    : analyzedTask.assigneePersonSourceId;
+  const enrichmentOnly = options.enrichmentOnly === true;
+  let statusCategory = preferAnalyzedValue(
+    task.statusCategory,
+    analyzedTask.statusCategory,
+    enrichmentOnly,
+  );
+  if (options.authoritativeFields?.has("status")) {
+    statusCategory = task.statusCategory;
+  }
+  let priority = analyzedTask.priority;
+  if (
+    options.authoritativeFields?.has("priority") ||
+    (enrichmentOnly && analyzedTask.priority === "No Priority")
+  ) {
+    priority = task.priority;
+  }
+  let assigneeName = preferAnalyzedValue(
+    task.assigneeName,
+    analyzedTask.assigneeName,
+    enrichmentOnly,
+  );
+  let assigneePersonSourceId = preferAnalyzedValue(
+    task.assigneePersonSourceId,
+    analyzedTask.assigneePersonSourceId,
+    enrichmentOnly,
+  );
+  if (options.authoritativeFields?.has("assigneeEmail")) {
+    assigneeName = task.assigneeName;
+    assigneePersonSourceId = task.assigneePersonSourceId;
+  }
+  const collaboratorPersonSourceIds = (
+    enrichmentOnly
+      ? mergeUniqueStrings(
+          task.collaboratorPersonSourceIds,
+          analyzedTask.collaboratorPersonSourceIds,
+        )
+      : analyzedTask.collaboratorPersonSourceIds
+  ).filter((sourceId) => sourceId !== assigneePersonSourceId);
   const taskReferencesAreSafe = !options.authoritativeFields?.has("sourceId");
+  let parentSourceId: string | null = null;
+  let associations: ImportTask["associations"] = [];
+  if (taskReferencesAreSafe) {
+    parentSourceId = preferAnalyzedValue(
+      task.parentSourceId,
+      analyzedTask.parentSourceId,
+      enrichmentOnly,
+    );
+    associations = enrichmentOnly
+      ? mergeTaskAssociations(task.associations, analyzedTask.associations)
+      : analyzedTask.associations;
+  }
   return {
     ...task,
     statusCategory,
     priority,
-    estimateValue: analyzedTask.estimateValue,
-    estimatedDurationMinutes: analyzedTask.estimatedDurationMinutes,
-    minimumFocusBlockMinutes: analyzedTask.minimumFocusBlockMinutes,
+    estimateValue: preferAnalyzedValue(
+      task.estimateValue,
+      analyzedTask.estimateValue,
+      enrichmentOnly,
+    ),
+    estimatedDurationMinutes: preferAnalyzedValue(
+      task.estimatedDurationMinutes,
+      analyzedTask.estimatedDurationMinutes,
+      enrichmentOnly,
+    ),
+    minimumFocusBlockMinutes: preferAnalyzedValue(
+      task.minimumFocusBlockMinutes,
+      analyzedTask.minimumFocusBlockMinutes,
+      enrichmentOnly,
+    ),
     assigneeName,
     assigneePersonSourceId,
-    collaboratorPersonSourceIds: analyzedTask.collaboratorPersonSourceIds,
-    teamSourceId: analyzedTask.teamSourceId,
-    parentSourceId: taskReferencesAreSafe ? analyzedTask.parentSourceId : null,
-    objectiveSourceId: analyzedTask.objectiveSourceId,
-    keyResultSourceId: analyzedTask.keyResultSourceId,
-    sprintSourceId: analyzedTask.sprintSourceId,
-    labelSourceIds: analyzedTask.labelSourceIds,
-    associations: taskReferencesAreSafe ? analyzedTask.associations : [],
-    links: normalizeImportTaskLinks(analyzedTask.links),
+    collaboratorPersonSourceIds,
+    teamSourceId: preferAnalyzedValue(
+      task.teamSourceId,
+      analyzedTask.teamSourceId,
+      enrichmentOnly,
+    ),
+    parentSourceId,
+    objectiveSourceId: preferAnalyzedValue(
+      task.objectiveSourceId,
+      analyzedTask.objectiveSourceId,
+      enrichmentOnly,
+    ),
+    keyResultSourceId: preferAnalyzedValue(
+      task.keyResultSourceId,
+      analyzedTask.keyResultSourceId,
+      enrichmentOnly,
+    ),
+    sprintSourceId: preferAnalyzedValue(
+      task.sprintSourceId,
+      analyzedTask.sprintSourceId,
+      enrichmentOnly,
+    ),
+    labelSourceIds: enrichmentOnly
+      ? mergeUniqueStrings(task.labelSourceIds, analyzedTask.labelSourceIds)
+      : analyzedTask.labelSourceIds,
+    associations,
+    links: normalizeImportTaskLinks(
+      enrichmentOnly
+        ? [...task.links, ...analyzedTask.links]
+        : analyzedTask.links,
+    ),
   };
 };
 
@@ -100,6 +201,7 @@ export const mergeAnalyzedTaskGraph = (
         ? analyzedBySourceId.get(task.sourceId)
         : undefined;
     if (exactMatch) return mergeAnalyzedTask(task, exactMatch, options);
+    if (options.enrichmentOnly) return task;
 
     const normalizedTitle = normalizeImportTitle(task.title);
     const titleMatch =

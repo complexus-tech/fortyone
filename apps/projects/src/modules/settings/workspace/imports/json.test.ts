@@ -3,7 +3,7 @@
 import { createJsonImportDraft } from "./json";
 
 describe("work import JSON parsing", () => {
-  it("creates a vendor-neutral preview from a nested board export", () => {
+  it("normalizes a Trello board into one task per card", () => {
     const draft = createJsonImportDraft({
       fileHash: "trello-hash",
       fileName: "product-board.json",
@@ -12,30 +12,84 @@ describe("work import JSON parsing", () => {
         actions: [{ type: "commentCard" }],
         cards: [
           {
-            attachments: [{ id: "attachment-1" }],
+            attachments: [
+              {
+                id: "attachment-1",
+                name: "Migration plan",
+                url: "https://example.com/migration-plan.pdf",
+              },
+              {
+                id: "attachment-unsafe",
+                name: "Unsafe attachment",
+                url: "ftp://example.com/unsafe-attachment",
+              },
+              {
+                id: "attachment-duplicate",
+                name: "Duplicate card link",
+                url: "https://trello.com/c/card-1/migrate-the-product-board",
+              },
+            ],
             closed: true,
             desc: "Keep the migration safe.",
             due: "2026-09-15T12:00:00.000Z",
+            dueComplete: false,
             id: "65a1234567890abcdef12345",
+            idLabels: ["label-high"],
             idList: "list-doing",
-            idMembers: ["member-1"],
-            labels: [{ name: "P1 High" }],
+            idMembers: ["member-1", "member-2"],
+            labels: [{ color: "red", id: "label-high", name: "P1 High" }],
             name: "Migrate the product board",
+            shortUrl: "https://trello.com/c/card-1",
             start: "2026-09-10T09:00:00.000Z",
+            url: "https://trello.com/c/card-1/migrate-the-product-board",
           },
         ],
         checklists: [
           {
             checkItems: [
-              { name: "Export cards", state: "complete" },
-              { name: "Verify owners", state: "incomplete" },
+              {
+                id: "check-item-1",
+                name: "Export cards",
+                state: "complete",
+              },
+              {
+                id: "check-item-2",
+                name: "Verify owners",
+                state: "incomplete",
+              },
             ],
+            id: "checklist-1",
             idCard: "65a1234567890abcdef12345",
             name: "Migration",
           },
         ],
         lists: [{ id: "list-doing", name: "In progress" }],
-        members: [{ email: "owner@example.com", id: "member-1" }],
+        members: [
+          {
+            email: " Owner@Example.COM ",
+            fullName: "Owner One",
+            id: "member-1",
+            username: "owner-one",
+          },
+          {
+            email: "owner-two",
+            fullName: "Owner Two",
+            id: "member-2",
+            username: "owner-two",
+          },
+        ],
+        memberships: [
+          {
+            deactivated: false,
+            idMember: "member-1",
+            unconfirmed: false,
+          },
+          {
+            deactivated: false,
+            idMember: "member-2",
+            unconfirmed: false,
+          },
+        ],
         name: "Product",
         prefs: { permissionLevel: "private" },
       }),
@@ -43,44 +97,96 @@ describe("work import JSON parsing", () => {
 
     expect(draft.sourceType).toBe("json");
     expect(draft.sourceNamespace).toBe("trello:board:board%2F65");
-    expect(draft.summary).toContain("Semantic mapping");
+    expect(draft.summary).toBe(
+      "Found 1 Trello card, 2 members, 1 label, and 2 checklist items. Checklist items stay with their parent cards.",
+    );
+    expect(draft.mapping).toBeNull();
     expect(draft.tasks).toEqual([
-      expect.objectContaining({
+      {
         assigneeEmail: null,
+        assigneeName: "Owner One",
+        assigneePersonSourceId: "member-1",
+        associations: [],
+        collaboratorPersonSourceIds: ["member-2"],
+        description:
+          "Keep the migration safe.\n\n### Migration\n- [x] Export cards\n- [ ] Verify owners",
         endDate: "2026-09-15",
+        estimateValue: null,
+        estimatedDurationMinutes: null,
+        keyResultSourceId: null,
+        labelSourceIds: ["label-high"],
+        links: [
+          {
+            title: "Trello card",
+            url: "https://trello.com/c/card-1/migrate-the-product-board",
+          },
+          {
+            title: "Migration plan",
+            url: "https://example.com/migration-plan.pdf",
+          },
+        ],
+        minimumFocusBlockMinutes: null,
+        objectiveSourceId: null,
+        parentSourceId: null,
         priority: "No Priority",
         sourceId: "65a1234567890abcdef12345",
+        sprintSourceId: null,
         startDate: "2026-09-10",
-        status: null,
+        status: "In progress",
+        statusCategory: "started",
+        teamSourceId: "board/65",
         title: "Migrate the product board",
-      }),
+      },
     ]);
-    expect(draft.tasks[0]?.description).toContain("Keep the migration safe.");
-    expect(draft.rows[0]?.idMembers).toBe('["member-1"]');
-    expect(draft.rows[0]?.labels).toBe('[{"name":"P1 High"}]');
+    expect(draft.tasks).toHaveLength(1);
+    expect(draft.rows[0]?.idMembers).toBe('["member-1","member-2"]');
+    expect(draft.rows[0]?.labels).toBe(
+      '[{"color":"red","id":"label-high","name":"P1 High"}]',
+    );
     expect(draft).toMatchObject({
-      teams: [],
-      people: [],
-      labels: [],
+      teams: [
+        {
+          sourceId: "board/65",
+          name: "Product",
+          description: null,
+          isPrivate: true,
+        },
+      ],
+      people: [
+        {
+          sourceId: "member-1",
+          name: "Owner One",
+          email: "owner@example.com",
+          teamSourceIds: ["board/65"],
+        },
+        {
+          sourceId: "member-2",
+          name: "Owner Two",
+          email: null,
+          teamSourceIds: ["board/65"],
+        },
+      ],
+      labels: [
+        {
+          sourceId: "label-high",
+          name: "P1 High",
+          color: "red",
+          teamSourceId: "board/65",
+        },
+      ],
       strategicPillars: [],
       objectives: [],
       keyResults: [],
       sprints: [],
+      sourceMetadata: {
+        archivedTaskSourceIds: ["65a1234567890abcdef12345"],
+        nestedChecklistItemCount: 2,
+        platform: "trello",
+      },
     });
-    expect(draft.tasks[0]).toMatchObject({
-      statusCategory: null,
-      assigneeName: null,
-      assigneePersonSourceId: null,
-      collaboratorPersonSourceIds: [],
-      teamSourceId: null,
-      parentSourceId: null,
-      objectiveSourceId: null,
-      keyResultSourceId: null,
-      sprintSourceId: null,
-      labelSourceIds: [],
-      associations: [],
-      links: [],
-    });
+    expect(draft.warnings).toEqual([
+      "1 Trello card comment cannot be imported because comment activity is not supported yet.",
+    ]);
   });
 
   it("maps a generic JSON task collection and keeps nested values reviewable", () => {
@@ -191,6 +297,32 @@ describe("work import JSON parsing", () => {
     });
 
     expect(draft.sourceNamespace).toBeNull();
+    expect(draft.sourceMetadata).toBeUndefined();
+  });
+
+  it("treats cards in closed Trello lists as archived", () => {
+    const draft = createJsonImportDraft({
+      fileHash: "archived-list-hash",
+      fileName: "archived-board.json",
+      text: JSON.stringify({
+        cards: [
+          {
+            closed: false,
+            id: "card-on-closed-list",
+            idList: "closed-list",
+            name: "Archived through its list",
+          },
+        ],
+        id: "archived-board",
+        lists: [{ closed: true, id: "closed-list", name: "Archive" }],
+        prefs: {},
+      }),
+    });
+
+    expect(draft.tasks).toHaveLength(1);
+    expect(draft.sourceMetadata?.archivedTaskSourceIds).toEqual([
+      "card-on-closed-list",
+    ]);
   });
 
   it("rejects malformed JSON with an actionable error", () => {
