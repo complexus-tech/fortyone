@@ -1,9 +1,12 @@
 /** @jest-environment node */ // eslint-disable-line tsdoc/syntax -- Jest requires this docblock.
 
-import { tool, type ToolSet } from "ai";
+import type { ToolSet, UIMessage } from "ai";
+import { createOpenAI } from "@ai-sdk/openai";
+import { convertToModelMessages, generateText, tool } from "ai";
 import { z } from "zod";
 import {
   MAYA_TOOL_SEARCH_NAME,
+  omitMayaToolSearchHistory,
   withOpenAIToolDiscovery,
 } from "./tool-discovery";
 
@@ -56,5 +59,126 @@ describe("withOpenAIToolDiscovery", () => {
       other: { value: 1 },
     });
     expect(originalTools).not.toHaveProperty(MAYA_TOOL_SEARCH_NAME);
+  });
+
+  it("removes only hosted search parts from replayed UI history", () => {
+    const messages = [
+      {
+        id: "assistant-1",
+        role: "assistant",
+        parts: [
+          {
+            type: "tool-mayaToolSearch",
+            toolCallId: "tsc_duplicate",
+            state: "output-available",
+            input: { arguments: { search_query: "team members" } },
+            output: { tools: [] },
+          },
+          {
+            type: "tool-listTeamMembers",
+            toolCallId: "call_members",
+            state: "output-available",
+            input: {},
+            output: { members: [] },
+          },
+          { type: "text", text: "You are the only member." },
+        ],
+      },
+    ] satisfies UIMessage[];
+
+    const sanitized = omitMayaToolSearchHistory(messages);
+
+    expect(sanitized[0].parts).toEqual([
+      expect.objectContaining({ type: "tool-listTeamMembers" }),
+      { type: "text", text: "You are the only member." },
+    ]);
+    expect(messages[0].parts).toHaveLength(3);
+  });
+
+  it("omits duplicate search items while retaining the real OpenAI tool pair", async () => {
+    let requestBody: { input?: Record<string, unknown>[] } | undefined;
+    const fetch = jest.fn(
+      async (_input: RequestInfo | URL, init?: RequestInit) => {
+        requestBody = JSON.parse(String(init?.body)) as {
+          input?: Record<string, unknown>[];
+        };
+        return new Response(
+          JSON.stringify({ error: { message: "test stop" } }),
+          {
+            headers: { "content-type": "application/json" },
+            status: 400,
+          },
+        );
+      },
+    );
+    const openai = createOpenAI({ apiKey: "test", fetch });
+    const runtimeTools = withOpenAIToolDiscovery(
+      { listTeamMembers: registeredTool() },
+      openai.tools.toolSearch({ execution: "server" }),
+    );
+    const messages = [
+      {
+        id: "assistant-1",
+        role: "assistant",
+        parts: [
+          {
+            type: "tool-mayaToolSearch",
+            toolCallId: "tsc_duplicate",
+            state: "output-available",
+            input: { arguments: { search_query: "team members" } },
+            output: { tools: [] },
+          },
+          {
+            type: "tool-listTeamMembers",
+            toolCallId: "call_members",
+            state: "output-available",
+            input: {},
+            output: { success: true },
+          },
+          { type: "text", text: "You are the only member." },
+        ],
+      },
+      {
+        id: "user-2",
+        role: "user",
+        parts: [{ type: "text", text: "Continue" }],
+      },
+    ] satisfies UIMessage[];
+
+    const modelMessages = await convertToModelMessages(
+      omitMayaToolSearchHistory(messages),
+      { tools: runtimeTools },
+    );
+    await expect(
+      generateText({
+        messages: modelMessages,
+        model: openai("gpt-5.6-luna"),
+        tools: runtimeTools,
+      }),
+    ).rejects.toThrow("test stop");
+
+    expect(requestBody?.input).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ type: "tool_search_call" }),
+      ]),
+    );
+    expect(requestBody?.input).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ type: "tool_search_output" }),
+      ]),
+    );
+    expect(requestBody?.input).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          call_id: "call_members",
+          name: "listTeamMembers",
+          type: "function_call",
+        }),
+        expect.objectContaining({
+          call_id: "call_members",
+          type: "function_call_output",
+        }),
+      ]),
+    );
   });
 });

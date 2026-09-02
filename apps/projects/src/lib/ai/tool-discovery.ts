@@ -1,4 +1,4 @@
-import type { ToolSet } from "ai";
+import type { ToolSet, UIMessage } from "ai";
 import type { MayaToolName } from "./tool-names";
 
 const EAGER_OPENAI_TOOL_NAMES = new Set<string>(
@@ -6,6 +6,28 @@ const EAGER_OPENAI_TOOL_NAMES = new Set<string>(
 );
 
 export const MAYA_TOOL_SEARCH_NAME = "mayaToolSearch" as const;
+const MAYA_TOOL_SEARCH_UI_PART_TYPE = `tool-${MAYA_TOOL_SEARCH_NAME}`;
+
+/**
+ * Hosted tool-search calls are orchestration details, not conversational
+ * evidence. AI SDK currently folds the hosted call and output into one UI part
+ * and loses their distinct provider item IDs; replaying that part reconstructs
+ * two OpenAI items with the same `tsc_` ID. Remove only this historical part
+ * before model conversion while retaining the discovered tool calls, their
+ * outputs, and the user-visible answer.
+ */
+export const omitMayaToolSearchHistory = (
+  messages: UIMessage[],
+): UIMessage[] =>
+  messages.map((message) => {
+    const parts = message.parts.filter(
+      (part) => part.type !== MAYA_TOOL_SEARCH_UI_PART_TYPE,
+    );
+
+    return parts.length === message.parts.length
+      ? message
+      : { ...message, parts };
+  });
 
 /**
  * Keep Maya's entire capability catalog discoverable without loading every

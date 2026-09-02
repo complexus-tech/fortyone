@@ -20,7 +20,10 @@ import {
 import { tools } from "@/lib/ai/tools";
 import { withCompactModelOutputs } from "@/lib/ai/model-tools";
 import { getMayaPromptCacheKey } from "@/lib/ai/prompt-cache-key";
-import { withOpenAIToolDiscovery } from "@/lib/ai/tool-discovery";
+import {
+  omitMayaToolSearchHistory,
+  withOpenAIToolDiscovery,
+} from "@/lib/ai/tool-discovery";
 import { auth } from "@/auth";
 import posthogServer from "@/app/posthog-server";
 import { systemPrompt } from "./system";
@@ -133,8 +136,11 @@ const handleChatRequest = async (
 
   const messagesWithoutHistoricalAttachments =
     omitHistoricalChatAttachments(canonicalUiMessages);
-  const compactMessages = compactChatToolOutputs(
+  const messagesWithoutToolSearchHistory = omitMayaToolSearchHistory(
     messagesWithoutHistoricalAttachments,
+  );
+  const compactMessages = compactChatToolOutputs(
+    messagesWithoutToolSearchHistory,
   );
   const contextStartIndex = getChatContextStartIndex(compactMessages);
   const contextMessages = compactMessages.slice(contextStartIndex);
@@ -162,7 +168,7 @@ const handleChatRequest = async (
   // exactly once; double-projecting would corrupt stateful tool receipts.
   const convertedMessages = await convertToModelMessages(
     compactUnknownChatToolOutputs(
-      messagesWithoutHistoricalAttachments.slice(contextStartIndex),
+      messagesWithoutToolSearchHistory.slice(contextStartIndex),
       runtimeToolNames,
     ),
     { tools: runtimeTools },
