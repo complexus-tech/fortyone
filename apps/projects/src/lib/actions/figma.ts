@@ -60,40 +60,30 @@ export const linkFigmaStoryAction = async (
   title?: string,
 ): Promise<ApiResponse<LinkFigmaStoryResult>> => {
   try {
-    const requestContext = await context(workspaceSlug);
     const response = await post<{ url: string }, ApiResponse<StoryFigmaLink>>(
       `stories/${storyId}/figma-links`,
       { url },
-      requestContext,
+      await context(workspaceSlug),
     );
-    const rateLimited =
-      response.error?.code === "rate_limited" ||
-      response.error?.message.startsWith("Figma rate limit reached");
-    if (!rateLimited) {
-      return response.data
-        ? ({
-            data: { kind: "figma", link: response.data },
-          } satisfies ApiResponse<LinkFigmaStoryResult>)
-        : ({ data: null, error: response.error } satisfies ApiResponse<null>);
+    if (!response.data) {
+      return { data: null, error: response.error } satisfies ApiResponse<null>;
     }
-
-    const fallback = await post<
-      { storyId: string; title: string; url: string },
-      ApiResponse<Link>
-    >(
-      "links",
-      {
-        storyId,
-        title: title?.trim() || "Figma design",
-        url,
-      },
-      requestContext,
-    );
-    return fallback.data
-      ? ({
-          data: { kind: "generic", link: fallback.data },
-        } satisfies ApiResponse<LinkFigmaStoryResult>)
-      : ({ data: null, error: fallback.error } satisfies ApiResponse<null>);
+    if (response.data.unavailableAt) {
+      const link: Link = {
+        id: response.data.storyLinkId ?? response.data.id,
+        storyId: response.data.storyId,
+        url: response.data.artifact.canonicalUrl,
+        title:
+          title?.trim() ||
+          response.data.artifact.nodeName ||
+          response.data.artifact.fileName ||
+          "Figma design",
+        createdAt: response.data.createdAt,
+        updatedAt: response.data.updatedAt,
+      };
+      return { data: { kind: "generic", link } };
+    }
+    return { data: { kind: "figma", link: response.data } };
   } catch (error) {
     const failure = getApiError(error);
     return { data: null, error: failure.error };

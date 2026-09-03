@@ -48,9 +48,8 @@ func TestEventProcessorLoadsAndDecryptsCanonicalInboxPayload(t *testing.T) {
 	assertSingleInboundStatus(t, store, "ignored")
 }
 
-func TestEventProcessorQueuedLinkSharedPublishesWorkObjectUnfurl(t *testing.T) {
+func TestEventProcessorQueuedLinkSharedPublishesWorkObjectUnfurlWithoutLinkedUser(t *testing.T) {
 	repo := newEventRepositoryStub()
-	repo.linkedUserID = uuidPointer(testLinkedUserID)
 	store := newEventStoreStub()
 	storyID := uuid.MustParse("99999999-9999-4999-8999-999999999999")
 	createdAt := time.Date(2026, time.August, 9, 7, 0, 0, 0, time.UTC)
@@ -150,6 +149,9 @@ func TestEventProcessorQueuedLinkSharedPublishesWorkObjectUnfurl(t *testing.T) {
 	require.Equal(t, updatedAt.Unix(), entity.EntityPayload.Attributes.MetadataLastModified)
 	require.Equal(t, "High", entity.EntityPayload.Fields["priority"].Value)
 	require.Equal(t, []uuid.UUID{testWorkspaceID}, storyReader.workspaceIDs)
+	require.Empty(t, storyReader.userIDs)
+	require.Equal(t, []uuid.UUID{testSlackWorkspaceID}, storyReader.installationIDs)
+	require.Equal(t, [][]uuid.UUID{{testAllowedTeamID}}, storyReader.allowedTeamIDs)
 	require.Equal(t, []string{"WEB-123"}, storyReader.references)
 	assertSingleInboundStatus(t, store, "completed")
 }

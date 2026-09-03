@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	githubshared "github.com/complexus-tech/projects-api/internal/modules/github/shared"
+	platformauth "github.com/complexus-tech/projects-api/internal/platform/auth"
 	"github.com/complexus-tech/projects-api/internal/platform/webhooks"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/google/uuid"
@@ -162,6 +163,52 @@ func TestGitHubWebhookDispatcherCarriesOnlyDurableIdentity(t *testing.T) {
 	}
 	if len(queue.payloads) != 1 || queue.payloads[0].InboxID != inboxID {
 		t.Fatalf("queued payloads = %#v", queue.payloads)
+	}
+}
+
+func TestGitHubWebhookWorkerRuntimeDoesNotRequireIngressSigningSecret(t *testing.T) {
+	t.Parallel()
+	queue := &githubWebhookQueueStub{}
+	runtime, err := NewWebhookWorkerRuntime(queue, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+	if err != nil {
+		t.Fatalf("NewWebhookWorkerRuntime() error = %v", err)
+	}
+	if runtime.Payloads == nil || runtime.Dispatcher == nil {
+		t.Fatalf("NewWebhookWorkerRuntime() = %#v", runtime)
+	}
+	if err := runtime.Dispatcher.Enqueue(t.Context(), webhooks.Task{
+		Provider: githubWebhookProvider,
+		InboxID:  uuid.New(),
+	}); err != nil {
+		t.Fatalf("worker dispatcher enqueue error = %v", err)
+	}
+	if len(queue.payloads) != 1 {
+		t.Fatalf("queued payloads = %#v", queue.payloads)
+	}
+}
+
+func TestGitHubWebhookActorIsWorkspaceAndInstallationBound(t *testing.T) {
+	t.Parallel()
+	workspaceID := uuid.New()
+	installationID := uuid.New()
+	actorID := uuid.New()
+	service := &Service{cfg: Config{GitHubUserID: actorID}}
+
+	ctx, err := service.webhookActorContext(t.Context(), webhooks.Record{Envelope: webhooks.Envelope{
+		WorkspaceID:    workspaceID,
+		InstallationID: installationID,
+	}})
+	if err != nil {
+		t.Fatalf("webhookActorContext() error = %v", err)
+	}
+	actor, err := platformauth.GetActor(ctx)
+	if err != nil {
+		t.Fatalf("GetActor() error = %v", err)
+	}
+	if actor.PrincipalID != actorID || actor.Kind != platformauth.PrincipalSystem ||
+		actor.CredentialID != installationID || actor.WorkspaceID != workspaceID ||
+		!actor.Scopes.ContainsAll(platformauth.ScopeStoriesRead, platformauth.ScopeStoriesWrite) {
+		t.Fatalf("webhook actor = %#v", actor)
 	}
 }
 

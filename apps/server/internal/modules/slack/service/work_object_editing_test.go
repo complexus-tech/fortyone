@@ -30,11 +30,24 @@ type workObjectStoryServiceStub struct {
 	expectedAt    time.Time
 }
 
-func (s *workObjectStoryServiceStub) QueryByRef(_ context.Context, _ uuid.UUID, _ string) (singleStory, error) {
+func (s *workObjectStoryServiceStub) QueryByRef(_ context.Context, _, _ uuid.UUID, _ string) (singleStory, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.queryCalls++
 	return s.story, nil
+}
+
+func (s *workObjectStoryServiceStub) QueryByRefForUser(ctx context.Context, workspaceID, userID uuid.UUID, reference string) (singleStory, error) {
+	return s.QueryByRef(ctx, workspaceID, userID, reference)
+}
+
+func (s *workObjectStoryServiceStub) QueryByRefForInstallation(
+	ctx context.Context,
+	workspaceID, installationID uuid.UUID,
+	_ []uuid.UUID,
+	reference string,
+) (singleStory, error) {
+	return s.QueryByRef(ctx, workspaceID, installationID, reference)
 }
 
 func (s *workObjectStoryServiceStub) UpdateExternalUserActionIfUnchanged(

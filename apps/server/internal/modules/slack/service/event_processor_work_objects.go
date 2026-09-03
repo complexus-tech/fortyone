@@ -7,10 +7,17 @@ import (
 	"github.com/google/uuid"
 )
 
-// SlackStoryReader is deliberately read-only. Work Object events never mutate
-// a story and never bypass the actor/channel authorization checks below.
+// SlackStoryReader is deliberately actor-aware and read-only. Posted channel
+// previews use an installation actor restricted to the channel's public team
+// audience; personal surfaces use the linked human actor.
 type SlackStoryReader interface {
-	QueryByRef(ctx context.Context, workspaceID uuid.UUID, storyRef string) (singleStory, error)
+	QueryByRefForUser(ctx context.Context, workspaceID, userID uuid.UUID, storyRef string) (singleStory, error)
+	QueryByRefForInstallation(
+		ctx context.Context,
+		workspaceID, installationID uuid.UUID,
+		allowedTeamIDs []uuid.UUID,
+		storyRef string,
+	) (singleStory, error)
 }
 
 // SlackRequestReader is deliberately permission-aware and read-only. Its
@@ -38,6 +45,11 @@ type slackWorkObjectRepository interface {
 		workspaceID, slackWorkspaceID uuid.UUID,
 		slackChannelID string,
 		userID uuid.UUID,
+	) ([]uuid.UUID, error)
+	ListInstallationAuthorizedChannelTeamIDs(
+		ctx context.Context,
+		workspaceID, slackWorkspaceID uuid.UUID,
+		slackChannelID string,
 	) ([]uuid.UUID, error)
 	ListTeamStatuses(ctx context.Context, teamID uuid.UUID) ([]slackStatusRecord, error)
 	ListTeamMembers(ctx context.Context, teamID uuid.UUID) ([]slackTeamMemberRecord, error)

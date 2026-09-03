@@ -185,6 +185,10 @@ func (s *Service) ResolveLink(ctx context.Context, workspaceID uuid.UUID, rawURL
 	if err != nil {
 		return Artifact{}, err
 	}
+	return s.resolveParsedLink(ctx, workspaceID, artifact)
+}
+
+func (s *Service) resolveParsedLink(ctx context.Context, workspaceID uuid.UUID, artifact Artifact) (Artifact, error) {
 	_, token, err := s.connectionToken(ctx, workspaceID)
 	if err != nil {
 		return Artifact{}, err
@@ -217,29 +221,61 @@ func (s *Service) LinkStory(ctx context.Context, workspaceID, actorID, storyID u
 	if err != nil {
 		return StoryLink{}, err
 	}
-	artifact, err := s.ResolveLink(ctx, workspaceID, rawURL)
+	artifact, err := ParseURL(rawURL)
 	if err != nil {
 		return StoryLink{}, err
 	}
-	link, err := s.repo.UpsertStoryLink(ctx, StoryLink{WorkspaceID: workspaceID, StoryID: storyID, CreatedByUserID: actorID, Artifact: artifact})
-	if err != nil {
-		return StoryLink{}, err
-	}
-	connection, token, err := s.connectionToken(ctx, workspaceID)
-	if err == nil {
-		storyURL := s.storyURL(workspaceSlug, story)
-		if resourceID, resourceErr := s.client.createDevResource(ctx, token.AccessToken, link, storyURL); resourceErr != nil {
-			s.log.Warn(ctx, "failed to create Figma Dev Resource", "error", resourceErr, "story_id", storyID)
-		} else if resourceID != nil {
-			link.DevResourceID = resourceID
-			if updateErr := s.repo.UpdateStoryLink(ctx, link); updateErr != nil {
-				s.log.Warn(ctx, "failed to store Figma Dev Resource", "error", updateErr, "story_id", storyID)
-			}
+	resolved, resolveErr := s.resolveParsedLink(ctx, workspaceID, artifact)
+	var unavailableAt *time.Time
+	if resolveErr != nil {
+		now := s.now().UTC()
+		unavailableAt = &now
+		artifact.FileName = "Figma design"
+		if s.log != nil {
+			s.log.Warn(ctx, "failed resolving Figma link metadata; storing degraded link", "error", resolveErr, "story_id", storyID)
 		}
-		s.ensureWebhooks(ctx, connection, token, artifact.FileKey)
+	} else {
+		artifact = resolved
+	}
+	return s.persistStoryLink(ctx, workspaceID, actorID, story, workspaceSlug, artifact, unavailableAt)
+}
+
+func (s *Service) persistStoryLink(
+	ctx context.Context,
+	workspaceID, actorID uuid.UUID,
+	story Story,
+	workspaceSlug string,
+	artifact Artifact,
+	unavailableAt *time.Time,
+) (StoryLink, error) {
+	link, err := s.repo.UpsertStoryLink(ctx, StoryLink{
+		WorkspaceID: workspaceID, StoryID: story.ID, CreatedByUserID: actorID,
+		Artifact: artifact, UnavailableAt: unavailableAt,
+	})
+	if err != nil {
+		return StoryLink{}, err
+	}
+	if unavailableAt == nil {
+		connection, token, connectionErr := s.connectionToken(ctx, workspaceID)
+		if connectionErr == nil {
+			storyURL := s.storyURL(workspaceSlug, story)
+			if resourceID, resourceErr := s.client.createDevResource(ctx, token.AccessToken, link, storyURL); resourceErr != nil {
+				if s.log != nil {
+					s.log.Warn(ctx, "failed to create Figma Dev Resource", "error", resourceErr, "story_id", story.ID)
+				}
+			} else if resourceID != nil {
+				link.DevResourceID = resourceID
+				if updateErr := s.repo.UpdateStoryLink(ctx, link); updateErr != nil {
+					if s.log != nil {
+						s.log.Warn(ctx, "failed to store Figma Dev Resource", "error", updateErr, "story_id", story.ID)
+					}
+				}
+			}
+			s.ensureWebhooks(ctx, connection, token, artifact.FileKey)
+		}
 	}
 	_ = s.stories.RecordActivity(ctx, StoryActivity{
-		StoryID: storyID, ActorID: actorID, Type: "link", Field: "figma",
+		StoryID: story.ID, ActorID: actorID, Type: "link", Field: "figma",
 		Previous: deref(artifact.NodeName, artifact.FileName),
 		Current:  artifact.CanonicalURL, WorkspaceID: workspaceID,
 	})
@@ -247,9 +283,21 @@ func (s *Service) LinkStory(ctx context.Context, workspaceID, actorID, storyID u
 }
 
 func (s *Service) CreateStoryFromLink(ctx context.Context, workspaceID, actorID uuid.UUID, input CreateStoryInput) (Story, StoryLink, error) {
-	artifact, err := s.ResolveLink(ctx, workspaceID, input.URL)
+	artifact, err := ParseURL(input.URL)
 	if err != nil {
 		return Story{}, StoryLink{}, err
+	}
+	resolved, resolveErr := s.resolveParsedLink(ctx, workspaceID, artifact)
+	var unavailableAt *time.Time
+	if resolveErr != nil {
+		now := s.now().UTC()
+		unavailableAt = &now
+		artifact.FileName = "Figma design"
+		if s.log != nil {
+			s.log.Warn(ctx, "failed resolving Figma link metadata while creating story", "error", resolveErr, "workspace_id", workspaceID)
+		}
+	} else {
+		artifact = resolved
 	}
 	title := deref(artifact.NodeName, artifact.FileName)
 	if input.Title != nil && strings.TrimSpace(*input.Title) != "" {
@@ -268,7 +316,7 @@ func (s *Service) CreateStoryFromLink(ctx context.Context, workspaceID, actorID 
 	if err != nil {
 		return Story{}, StoryLink{}, err
 	}
-	link, err := s.LinkStory(ctx, workspaceID, actorID, story.ID, input.WorkspaceSlug, input.URL)
+	link, err := s.persistStoryLink(ctx, workspaceID, actorID, story, input.WorkspaceSlug, artifact, unavailableAt)
 	return story, link, err
 }
 

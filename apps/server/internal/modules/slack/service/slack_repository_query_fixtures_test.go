@@ -98,6 +98,23 @@ func (m *mockRepo) ListAuthorizedChannelTeamIDs(_ context.Context, _, _ uuid.UUI
 	return result, nil
 }
 
+func (m *mockRepo) ListInstallationAuthorizedChannelTeamIDs(
+	_ context.Context,
+	_, _ uuid.UUID,
+	_ string,
+) ([]uuid.UUID, error) {
+	if m.authorizedTeamIDs != nil {
+		return append([]uuid.UUID(nil), m.authorizedTeamIDs...), nil
+	}
+	result := make([]uuid.UUID, 0, len(m.teams)+1)
+	for _, team := range append(append([]slackrepository.TeamRecord(nil), m.teams...), m.team) {
+		if team.ID != uuid.Nil {
+			result = append(result, team.ID)
+		}
+	}
+	return result, nil
+}
+
 type blockingSlackWorkspaceRepo struct {
 	*mockRepo
 	started chan struct{}

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	githubshared "github.com/complexus-tech/projects-api/internal/modules/github/shared"
+	platformauth "github.com/complexus-tech/projects-api/internal/platform/auth"
 	"github.com/complexus-tech/projects-api/internal/platform/integrations"
 	"github.com/complexus-tech/projects-api/internal/platform/webhooks"
 	"github.com/google/uuid"
@@ -81,10 +82,35 @@ func (s *Service) ProcessWebhook(ctx context.Context, provider integrations.Prov
 	if !current {
 		return complete(webhooks.StatusCancelled, "github.stale_installation")
 	}
-	if err := s.processWebhook(ctx, record.EventType, payload); err != nil {
+	processingContext, err := s.webhookActorContext(ctx, record)
+	if err != nil {
+		return fail(err, "github.actor_context_failed")
+	}
+	if err := s.processWebhook(processingContext, record.EventType, payload); err != nil {
 		return fail(err, "github.processing_failed")
 	}
 	return complete(webhooks.StatusCompleted, "github.processed")
+}
+
+func (s *Service) webhookActorContext(ctx context.Context, record webhooks.Record) (context.Context, error) {
+	if s == nil || s.cfg.GitHubUserID == uuid.Nil || record.WorkspaceID == uuid.Nil || record.InstallationID == uuid.Nil {
+		return nil, errors.New("github webhook actor identity is incomplete")
+	}
+	actor, err := platformauth.NewActor(
+		s.cfg.GitHubUserID,
+		platformauth.PrincipalSystem,
+		record.InstallationID,
+		platformauth.MustScopeSet(platformauth.ScopeStoriesRead, platformauth.ScopeStoriesWrite),
+		platformauth.UnrestrictedTeamAccess(),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("construct GitHub installation actor: %w", err)
+	}
+	actor, err = actor.WithWorkspace(record.WorkspaceID)
+	if err != nil {
+		return nil, fmt.Errorf("bind GitHub installation actor: %w", err)
+	}
+	return platformauth.SetActor(ctx, actor)
 }
 
 func (s *Service) currentWebhookGrant(ctx context.Context, record webhooks.Record, payload webhookEnvelope) (bool, error) {
@@ -112,10 +138,17 @@ func (s *Service) currentWebhookGrant(ctx context.Context, record webhooks.Recor
 }
 
 func (s *Service) RecoverPendingWebhooks(ctx context.Context) (int, error) {
-	if s == nil || s.webhookGateway == nil {
+	if s == nil || s.webhookInbox == nil || s.webhookDispatcher == nil {
 		return 0, webhooks.ErrNotConfigured
 	}
-	report, err := s.webhookGateway.Recover(ctx, githubWebhookProvider, webhooks.DefaultRecoveryPolicy())
+	report, err := webhooks.RecoverDeliveries(
+		ctx,
+		s.webhookInbox,
+		githubWebhookProvider,
+		s.webhookDispatcher,
+		webhooks.DefaultRecoveryPolicy(),
+		s.now().UTC(),
+	)
 	if err != nil {
 		return report.Dispatched, fmt.Errorf("recover GitHub webhook deliveries: %w", err)
 	}

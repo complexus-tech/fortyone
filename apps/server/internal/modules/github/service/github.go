@@ -90,6 +90,7 @@ type Service struct {
 	webhookGateway       *webhooks.Gateway
 	webhookInbox         webhooks.Inbox
 	webhookPayloads      WebhookPayloadOpener
+	webhookDispatcher    webhooks.Dispatcher
 	webhookInstallations WebhookInstallationRepository
 	now                  func() time.Time
 }
@@ -135,6 +136,7 @@ func New(log *logger.Logger, repo Repository, storyService StoryService, request
 		webhookGateway:       cfg.WebhookGateway,
 		webhookInbox:         cfg.WebhookInbox,
 		webhookPayloads:      cfg.WebhookPayloads,
+		webhookDispatcher:    cfg.WebhookDispatcher,
 		webhookInstallations: repo,
 		now:                  time.Now,
 	}, nil
@@ -231,8 +233,7 @@ func (s *Service) ValidateWorkerConfiguration() error {
 		return nil
 	}
 	if s.canUseAppAPI() {
-		if strings.TrimSpace(s.cfg.WebhookSecret) != "" &&
-			(s.webhookGateway == nil || s.webhookInbox == nil || s.webhookPayloads == nil) {
+		if s.webhookInbox == nil || s.webhookPayloads == nil || s.webhookDispatcher == nil {
 			return errors.New("github worker webhook runtime is not configured")
 		}
 		return nil

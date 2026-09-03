@@ -41,6 +41,14 @@ type WebhookRuntime struct {
 	Payloads     WebhookPayloadOpener
 }
 
+// WebhookWorkerRuntime contains only the capabilities needed after ingress has
+// authenticated and durably recorded a GitHub delivery. It intentionally does
+// not require the provider signing secret.
+type WebhookWorkerRuntime struct {
+	Dispatcher webhooks.Dispatcher
+	Payloads   WebhookPayloadOpener
+}
+
 func NewWebhookRuntime(repo WebhookInstallationRepository, queue WebhookQueue, cfg Config) (WebhookRuntime, error) {
 	if repo == nil || queue == nil || strings.TrimSpace(cfg.WebhookSecret) == "" || strings.TrimSpace(cfg.WebhookPayloadSecret) == "" {
 		return WebhookRuntime{}, webhooks.ErrNotConfigured
@@ -60,6 +68,24 @@ func NewWebhookRuntime(repo WebhookInstallationRepository, queue WebhookQueue, c
 			Dispatcher: githubWebhookDispatcher{queue: queue},
 		},
 		Payloads: codec,
+	}, nil
+}
+
+func NewWebhookWorkerRuntime(queue WebhookQueue, payloadSecret string) (WebhookWorkerRuntime, error) {
+	if queue == nil || strings.TrimSpace(payloadSecret) == "" {
+		return WebhookWorkerRuntime{}, webhooks.ErrNotConfigured
+	}
+	codec, err := webhooks.NewBoundPayloadCodec(
+		githubWebhookProvider,
+		githubWebhookPayloadPrefix,
+		payloadSecret,
+	)
+	if err != nil {
+		return WebhookWorkerRuntime{}, err
+	}
+	return WebhookWorkerRuntime{
+		Dispatcher: githubWebhookDispatcher{queue: queue},
+		Payloads:   codec,
 	}, nil
 }
 

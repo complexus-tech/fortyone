@@ -164,13 +164,13 @@ FROM stories AS story
 INNER JOIN teams AS team
     ON team.team_id = story.team_id
    AND team.workspace_id = story.workspace_id
-INNER JOIN users AS actor
+LEFT JOIN users AS actor
     ON actor.user_id = $1
    AND actor.is_active = TRUE
-INNER JOIN workspace_members AS workspace_member
+LEFT JOIN workspace_members AS workspace_member
     ON workspace_member.workspace_id = story.workspace_id
    AND workspace_member.user_id = actor.user_id
-INNER JOIN team_members AS team_member
+LEFT JOIN team_members AS team_member
     ON team_member.team_id = story.team_id
    AND team_member.user_id = actor.user_id
 LEFT JOIN objectives AS objective
@@ -186,7 +186,15 @@ WHERE story.id = $2
   AND story.workspace_id = $3
   AND (
       CAST($4 AS boolean)
-      OR story.team_id = ANY(CAST($5 AS uuid[]))
+      OR (
+          actor.user_id IS NOT NULL
+          AND workspace_member.user_id IS NOT NULL
+          AND team_member.user_id IS NOT NULL
+      )
+  )
+  AND (
+      CAST($5 AS boolean)
+      OR story.team_id = ANY(CAST($6 AS uuid[]))
   )
 `
 
@@ -194,6 +202,7 @@ type GetVisibleStoryParams struct {
 	ActorID                uuid.UUID
 	StoryID                uuid.UUID
 	WorkspaceID            uuid.UUID
+	BypassActorMembership  bool
 	UnrestrictedTeamAccess bool
 	AllowedTeamIds         []uuid.UUID
 }
@@ -250,14 +259,16 @@ type GetVisibleStoryRow struct {
 	WatchingReason           string
 }
 
-// Every user-facing story read starts from this authorization shape:
-// an active actor must be a current member of both the workspace and the
-// story's team. Credential-level team restrictions can only narrow that set.
+// Ordinary user-facing story reads require an active actor who is a current
+// member of both the workspace and the story's team. The integration-only
+// repository method can replace membership with a pre-authorized, restricted
+// credential team scope; it never permits unrestricted credential reads.
 func (q *Queries) GetVisibleStory(ctx context.Context, arg GetVisibleStoryParams) (GetVisibleStoryRow, error) {
 	row := q.db.QueryRow(ctx, getVisibleStory,
 		arg.ActorID,
 		arg.StoryID,
 		arg.WorkspaceID,
+		arg.BypassActorMembership,
 		arg.UnrestrictedTeamAccess,
 		arg.AllowedTeamIds,
 	)
@@ -322,13 +333,13 @@ FROM stories AS story
 INNER JOIN teams AS team
     ON team.team_id = story.team_id
    AND team.workspace_id = story.workspace_id
-INNER JOIN users AS actor
+LEFT JOIN users AS actor
     ON actor.user_id = $1
    AND actor.is_active = TRUE
-INNER JOIN workspace_members AS workspace_member
+LEFT JOIN workspace_members AS workspace_member
     ON workspace_member.workspace_id = story.workspace_id
    AND workspace_member.user_id = actor.user_id
-INNER JOIN team_members AS team_member
+LEFT JOIN team_members AS team_member
     ON team_member.team_id = story.team_id
    AND team_member.user_id = actor.user_id
 WHERE story.workspace_id = $2
@@ -337,7 +348,15 @@ WHERE story.workspace_id = $2
   AND story.deleted_at IS NULL
   AND (
       CAST($5 AS boolean)
-      OR story.team_id = ANY(CAST($6 AS uuid[]))
+      OR (
+          actor.user_id IS NOT NULL
+          AND workspace_member.user_id IS NOT NULL
+          AND team_member.user_id IS NOT NULL
+      )
+  )
+  AND (
+      CAST($6 AS boolean)
+      OR story.team_id = ANY(CAST($7 AS uuid[]))
   )
 ORDER BY story.id
 LIMIT 1
@@ -348,6 +367,7 @@ type GetVisibleStoryIDByRefParams struct {
 	WorkspaceID            uuid.UUID
 	TeamCode               string
 	SequenceID             *int32
+	BypassActorMembership  bool
 	UnrestrictedTeamAccess bool
 	AllowedTeamIds         []uuid.UUID
 }
@@ -358,6 +378,7 @@ func (q *Queries) GetVisibleStoryIDByRef(ctx context.Context, arg GetVisibleStor
 		arg.WorkspaceID,
 		arg.TeamCode,
 		arg.SequenceID,
+		arg.BypassActorMembership,
 		arg.UnrestrictedTeamAccess,
 		arg.AllowedTeamIds,
 	)

@@ -129,7 +129,7 @@ func (s *Service) processSlackEntityDetailsEvent(
 	if !ok {
 		return errors.New("slack Work Object story reader is not configured")
 	}
-	story, err := storyReader.QueryByRef(ctx, workspace.ID, storyLink.StoryReference)
+	story, err := storyReader.QueryByRefForUser(ctx, workspace.ID, *linkedUserID, storyLink.StoryReference)
 	if err != nil {
 		if errors.Is(err, ErrStoryNotFound) || errors.Is(err, ErrInvalidStoryReference) || isSlackRepositoryNotFound(err) {
 			return nil

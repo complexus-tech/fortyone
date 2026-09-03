@@ -21,7 +21,7 @@ var (
 )
 
 type slackWorkObjectStoryService interface {
-	QueryByRef(ctx context.Context, workspaceID uuid.UUID, storyRef string) (Story, error)
+	QueryByRef(ctx context.Context, workspaceID, actorID uuid.UUID, storyRef string) (Story, error)
 	UpdateExternalUserActionIfUnchanged(
 		ctx context.Context,
 		actorID, storyID, workspaceID uuid.UUID,
@@ -116,7 +116,7 @@ func (s *Service) processSlackWorkObjectEdit(ctx context.Context, payload intera
 	if !ok {
 		return errors.New("slack Work Object story editing is not configured")
 	}
-	story, err := storyService.QueryByRef(ctx, installation.WorkspaceID, link.StoryReference)
+	story, err := storyService.QueryByRef(ctx, installation.WorkspaceID, actorID, link.StoryReference)
 	if err != nil {
 		return fmt.Errorf("load Work Object story: %w", err)
 	}
@@ -153,7 +153,7 @@ func (s *Service) processSlackWorkObjectEdit(ctx context.Context, payload intera
 		}
 	}
 
-	refreshed, err := storyService.QueryByRef(ctx, installation.WorkspaceID, link.StoryReference)
+	refreshed, err := storyService.QueryByRef(ctx, installation.WorkspaceID, actorID, link.StoryReference)
 	if err != nil {
 		return fmt.Errorf("reload Work Object story: %w", err)
 	}

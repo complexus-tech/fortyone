@@ -161,3 +161,52 @@ WHERE team.workspace_id = CAST(sqlc.arg(workspace_id) AS uuid)
       OR (NOT configuration.is_configured AND team.is_private = FALSE)
   )
 ORDER BY LOWER(team.name), team.name, team.team_id;
+
+-- name: ListInstallationAuthorizedChannelTeamIDs :many
+WITH active_installation AS (
+    SELECT installation.id
+    FROM public.slack_workspaces AS installation
+    WHERE installation.id = CAST(sqlc.arg(slack_workspace_id) AS uuid)
+      AND installation.workspace_id = CAST(sqlc.arg(workspace_id) AS uuid)
+      AND installation.is_active = TRUE
+), channel_configuration AS (
+    SELECT channel.is_assistant_configured
+    FROM public.slack_channels AS channel
+    JOIN active_installation AS installation
+      ON installation.id = channel.slack_workspace_id
+    WHERE channel.workspace_id = CAST(sqlc.arg(workspace_id) AS uuid)
+      AND channel.slack_channel_id = CAST(sqlc.arg(slack_channel_id) AS text)
+      AND channel.is_active = TRUE
+), configured_teams AS (
+    SELECT access.team_id
+    FROM public.slack_channel_team_access AS access
+    JOIN active_installation AS installation
+      ON installation.id = access.slack_workspace_id
+    JOIN public.teams AS mapped_team
+      ON mapped_team.team_id = access.team_id
+     AND mapped_team.workspace_id = access.workspace_id
+     AND mapped_team.is_private = FALSE
+    WHERE access.workspace_id = CAST(sqlc.arg(workspace_id) AS uuid)
+      AND access.slack_channel_id = CAST(sqlc.arg(slack_channel_id) AS text)
+), configuration AS (
+    SELECT
+        EXISTS (SELECT 1 FROM active_installation) AS installation_is_active,
+        COALESCE(
+            (SELECT is_assistant_configured FROM channel_configuration),
+            FALSE
+        ) AS is_configured
+)
+SELECT team.team_id
+FROM public.teams AS team
+JOIN public.workspaces AS workspace
+  ON workspace.workspace_id = team.workspace_id
+ AND workspace.deleted_at IS NULL
+CROSS JOIN configuration
+WHERE team.workspace_id = CAST(sqlc.arg(workspace_id) AS uuid)
+  AND team.is_private = FALSE
+  AND configuration.installation_is_active
+  AND (
+      (configuration.is_configured AND team.team_id IN (SELECT team_id FROM configured_teams))
+      OR NOT configuration.is_configured
+  )
+ORDER BY LOWER(team.name), team.name, team.team_id;

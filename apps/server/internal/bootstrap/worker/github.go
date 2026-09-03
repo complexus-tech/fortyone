@@ -80,13 +80,13 @@ func buildGitHubWorkerService(
 		GitHubUserID:         githubActorID,
 		CredentialVault:      vault,
 	}
-	gateway, inbox, payloads, err := buildGitHubWebhookRuntime(pool, repository, queue, config)
+	inbox, webhookRuntime, err := buildGitHubWebhookRuntime(pool, queue, config)
 	if err != nil {
 		return nil, err
 	}
-	config.WebhookGateway = gateway
 	config.WebhookInbox = inbox
-	config.WebhookPayloads = payloads
+	config.WebhookPayloads = webhookRuntime.Payloads
+	config.WebhookDispatcher = webhookRuntime.Dispatcher
 
 	storyService := stories.New(
 		log,

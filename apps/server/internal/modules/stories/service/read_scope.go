@@ -37,6 +37,10 @@ type legacyCategoryStoriesRepository interface {
 	ListByCategory(context.Context, uuid.UUID, uuid.UUID, uuid.UUID, string, int, int, bool) ([]CoreStoryList, bool, error)
 }
 
+type credentialStoryReferenceRepository interface {
+	QueryCredentialVisibleStoryByRef(context.Context, StoryReadScope, string, int) (CoreSingleStory, error)
+}
+
 func readScopeFromContext(ctx context.Context, workspaceID uuid.UUID) (StoryReadScope, error) {
 	actor, err := auth.GetActor(ctx)
 	if err != nil {

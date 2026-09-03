@@ -80,6 +80,15 @@ func (r *channelAudienceRepoStub) ListAuthorizedChannelTeamIDs(
 	return append([]uuid.UUID(nil), r.authorized...), nil
 }
 
+func (r *channelAudienceRepoStub) ListInstallationAuthorizedChannelTeamIDs(
+	context.Context,
+	uuid.UUID,
+	uuid.UUID,
+	string,
+) ([]uuid.UUID, error) {
+	return append([]uuid.UUID(nil), r.authorized...), nil
+}
+
 func (r *channelAudienceRepoStub) GetAuthorizedAssistantChannelTeamScope(
 	context.Context,
 	uuid.UUID,

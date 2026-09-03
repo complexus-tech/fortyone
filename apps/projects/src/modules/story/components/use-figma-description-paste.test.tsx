@@ -99,7 +99,7 @@ describe("useFigmaDescriptionPaste", () => {
     editor.destroy();
   });
 
-  it("confirms when a rate-limited design is saved as a normal link", async () => {
+  it("confirms when unavailable Figma metadata is saved as a normal link", async () => {
     const linkFigmaStory = jest.fn().mockResolvedValue({
       kind: "generic",
       link: { id: "link-1", storyId: "story-1", url: RAW_URL },

@@ -209,6 +209,36 @@ func (s *Service) QueryByRef(ctx context.Context, workspaceId uuid.UUID, storyRe
 	return story, nil
 }
 
+// QueryByRefForIntegration reads one story through a restricted integration
+// credential. Human membership checks remain mandatory on ordinary reads.
+func (s *Service) QueryByRefForIntegration(ctx context.Context, workspaceID uuid.UUID, storyRef string) (CoreSingleStory, error) {
+	actor, err := auth.GetActor(ctx)
+	if err != nil || actor.Kind != auth.PrincipalServiceAccount {
+		return CoreSingleStory{}, fmt.Errorf("%w: service account actor is required", ErrStoryReadForbidden)
+	}
+	scope, err := readScopeFromContext(ctx, workspaceID)
+	if err != nil {
+		return CoreSingleStory{}, err
+	}
+	if scope.UnrestrictedTeamAccess {
+		return CoreSingleStory{}, fmt.Errorf("%w: restricted team access is required", ErrStoryReadForbidden)
+	}
+	teamCode, sequenceID, err := s.parseStoryRef(storyRef)
+	if err != nil {
+		return CoreSingleStory{}, err
+	}
+	repository, ok := s.repo.(credentialStoryReferenceRepository)
+	if !ok {
+		return CoreSingleStory{}, errors.New("story repository does not support integration reference reads")
+	}
+	story, err := repository.QueryCredentialVisibleStoryByRef(ctx, scope, teamCode, sequenceID)
+	if err != nil {
+		return CoreSingleStory{}, err
+	}
+	applySingleStoryEstimateLabels(&story)
+	return story, nil
+}
+
 // parseStoryRef parses a story reference into team code and sequence ID.
 func (s *Service) parseStoryRef(storyRef string) (string, int, error) {
 	storyRef = strings.ToUpper(strings.ReplaceAll(storyRef, " ", ""))

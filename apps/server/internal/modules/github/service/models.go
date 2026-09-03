@@ -159,4 +159,5 @@ type Config struct {
 	WebhookGateway       *webhooks.Gateway
 	WebhookInbox         webhooks.Inbox
 	WebhookPayloads      WebhookPayloadOpener
+	WebhookDispatcher    webhooks.Dispatcher
 }

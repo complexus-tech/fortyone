@@ -31,6 +31,7 @@ func (r *repo) GetVisibleStory(
 		ActorID:                scope.ActorID,
 		StoryID:                storyID,
 		WorkspaceID:            scope.WorkspaceID,
+		BypassActorMembership:  false,
 		UnrestrictedTeamAccess: scope.UnrestrictedTeamAccess,
 		AllowedTeamIds:         cloneUUIDs(scope.AllowedTeamIDs),
 	})
@@ -61,6 +62,55 @@ func (r *repo) QueryVisibleStoryByRef(
 	return r.GetVisibleStory(ctx, scope, storyID)
 }
 
+// QueryCredentialVisibleStoryByRef serves a pre-authorized integration
+// credential. The caller supplies a restricted team scope; this path never
+// grants unrestricted access and does not rely on a human membership row.
+func (r *repo) QueryCredentialVisibleStoryByRef(
+	ctx context.Context,
+	scope storydomain.ReadScope,
+	teamCode string,
+	sequenceID int,
+) (storydomain.Story, error) {
+	if r.reads == nil {
+		return storydomain.Story{}, errReadRepositoryNotConfigured
+	}
+	if err := validateReadScope(scope); err != nil {
+		return storydomain.Story{}, err
+	}
+	if scope.UnrestrictedTeamAccess {
+		return storydomain.Story{}, fmt.Errorf("%w: integration story reads require restricted team access", errInvalidReadQuery)
+	}
+	teamCode = strings.ToUpper(strings.TrimSpace(teamCode))
+	if teamCode == "" || sequenceID < 1 || sequenceID > int(^uint32(0)>>1) {
+		return storydomain.Story{}, fmt.Errorf("%w: valid team code and sequence are required", errInvalidReadQuery)
+	}
+	sequence := int32(sequenceID)
+	storyID, err := r.reads.GetVisibleStoryIDByRef(ctx, storyreadsql.GetVisibleStoryIDByRefParams{
+		ActorID:                scope.ActorID,
+		WorkspaceID:            scope.WorkspaceID,
+		TeamCode:               teamCode,
+		SequenceID:             &sequence,
+		BypassActorMembership:  true,
+		UnrestrictedTeamAccess: false,
+		AllowedTeamIds:         cloneUUIDs(scope.AllowedTeamIDs),
+	})
+	if err != nil {
+		return storydomain.Story{}, visibleStoryReadError(err)
+	}
+	row, err := r.reads.GetVisibleStory(ctx, storyreadsql.GetVisibleStoryParams{
+		ActorID:                scope.ActorID,
+		StoryID:                storyID,
+		WorkspaceID:            scope.WorkspaceID,
+		BypassActorMembership:  true,
+		UnrestrictedTeamAccess: false,
+		AllowedTeamIds:         cloneUUIDs(scope.AllowedTeamIDs),
+	})
+	if err != nil {
+		return storydomain.Story{}, visibleStoryReadError(err)
+	}
+	return mapVisibleStory(row)
+}
+
 func (r *repo) GetVisibleStoryIDByRef(
 	ctx context.Context,
 	scope storydomain.ReadScope,
@@ -84,6 +134,7 @@ func (r *repo) GetVisibleStoryIDByRef(
 		WorkspaceID:            scope.WorkspaceID,
 		TeamCode:               teamCode,
 		SequenceID:             &sequence,
+		BypassActorMembership:  false,
 		UnrestrictedTeamAccess: scope.UnrestrictedTeamAccess,
 		AllowedTeamIds:         cloneUUIDs(scope.AllowedTeamIDs),
 	})

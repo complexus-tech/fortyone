@@ -52,9 +52,10 @@ type Querier interface {
 	// Credentials only narrow current product membership; they never replace it.
 	GetStoryMutationSnapshot(ctx context.Context, arg GetStoryMutationSnapshotParams) (GetStoryMutationSnapshotRow, error)
 	GetStoryWatchStateForUpdate(ctx context.Context, arg GetStoryWatchStateForUpdateParams) (GetStoryWatchStateForUpdateRow, error)
-	// Every user-facing story read starts from this authorization shape:
-	// an active actor must be a current member of both the workspace and the
-	// story's team. Credential-level team restrictions can only narrow that set.
+	// Ordinary user-facing story reads require an active actor who is a current
+	// member of both the workspace and the story's team. The integration-only
+	// repository method can replace membership with a pre-authorized, restricted
+	// credential team scope; it never permits unrestricted credential reads.
 	GetVisibleStory(ctx context.Context, arg GetVisibleStoryParams) (GetVisibleStoryRow, error)
 	GetVisibleStoryComment(ctx context.Context, arg GetVisibleStoryCommentParams) (GetVisibleStoryCommentRow, error)
 	GetVisibleStoryIDByRef(ctx context.Context, arg GetVisibleStoryIDByRefParams) (uuid.UUID, error)

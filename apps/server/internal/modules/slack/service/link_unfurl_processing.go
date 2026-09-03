@@ -112,7 +112,8 @@ func (p *EventProcessor) processSlackLinkShared(
 		}
 		return nil
 	}
-	if linkedUserID == nil || *linkedUserID == uuid.Nil {
+	linkedUser := linkedUserID != nil && *linkedUserID != uuid.Nil
+	if !linkedUser && len(storyLinks) == 0 {
 		if p.log != nil {
 			p.log.Info(ctx, "Slack work item preview requires account link",
 				"event_id", event.EventID,
@@ -143,8 +144,34 @@ func (p *EventProcessor) processSlackLinkShared(
 		// the final channel audience is authorized independently.
 		accessChannelID = ""
 	}
+	var channelTeamIDs []uuid.UUID
+	if len(storyLinks) > 0 {
+		repository, ok := p.repo.(installationAuthorizedChannelAudienceRepository)
+		if !ok {
+			return errors.New("slack installation channel audience repository is not configured")
+		}
+		teamIDs, audienceErr := repository.ListInstallationAuthorizedChannelTeamIDs(
+			ctx,
+			workspace.ID,
+			installation.ID,
+			event.ChannelID,
+		)
+		if audienceErr != nil {
+			return audienceErr
+		}
+		channelTeamIDs = teamIDs
+	}
 	for _, link := range storyLinks {
-		story, err := p.storyReader.QueryByRef(ctx, workspace.ID, link.StoryReference)
+		if len(channelTeamIDs) == 0 {
+			continue
+		}
+		story, err := p.storyReader.QueryByRefForInstallation(
+			ctx,
+			workspace.ID,
+			installation.ID,
+			channelTeamIDs,
+			link.StoryReference,
+		)
 		if err != nil {
 			if errors.Is(err, errStoryNotFound) || errors.Is(err, errInvalidStoryReference) || isSlackRepositoryNotFound(err) {
 				if p.log != nil {
@@ -158,27 +185,11 @@ func (p *EventProcessor) processSlackLinkShared(
 			}
 			return err
 		}
-		accessGranted, err := p.slackStoryAccessGranted(ctx, workspace.ID, installation, *linkedUserID, accessChannelID, story.Team)
-		if err != nil {
-			return err
+		displayActorID := installation.ID
+		if linkedUser {
+			displayActorID = *linkedUserID
 		}
-		if !accessGranted {
-			if p.log != nil {
-				p.log.Warn(ctx, "Slack story preview access denied",
-					"event_id", event.EventID,
-					"workspace_id", workspace.ID,
-					"user_id", *linkedUserID,
-					"story_reference", link.StoryReference,
-					"story_team_id", story.Team,
-					"slack_channel_id", event.ChannelID,
-					"unfurl_source", slackStoryPreviewSource(event),
-				)
-			}
-			// A linked but unauthorized actor gets no card and no indication that
-			// the reference exists.
-			continue
-		}
-		input, err := p.slackStoryWorkObjectInput(ctx, *linkedUserID, event.UserID, link.PostedURL, story, false)
+		input, err := p.slackStoryWorkObjectInput(ctx, displayActorID, event.UserID, link.PostedURL, story, false)
 		if err != nil {
 			return err
 		}
@@ -188,82 +199,84 @@ func (p *EventProcessor) processSlackLinkShared(
 		}
 		metadata.Entities = append(metadata.Entities, request.Metadata.Entities...)
 	}
-	for _, link := range requestLinks {
-		request, err := p.requestReader.GetForUser(ctx, workspace.ID, link.RequestID, *linkedUserID)
-		if err != nil {
-			if isSlackRepositoryNotFound(err) {
+	if linkedUser {
+		for _, link := range requestLinks {
+			request, err := p.requestReader.GetForUser(ctx, workspace.ID, link.RequestID, *linkedUserID)
+			if err != nil {
+				if isSlackRepositoryNotFound(err) {
+					continue
+				}
+				return err
+			}
+			if request.WorkspaceID != workspace.ID || request.TeamID != link.TeamID || request.ID != link.RequestID {
 				continue
 			}
-			return err
+			accessGranted, err := p.slackStoryAccessGranted(ctx, workspace.ID, installation, *linkedUserID, accessChannelID, request.TeamID)
+			if err != nil {
+				return err
+			}
+			if !accessGranted {
+				continue
+			}
+			input, err := p.slackRequestWorkObjectInput(ctx, *linkedUserID, event.UserID, link.PostedURL, request)
+			if err != nil {
+				return err
+			}
+			unfurl, err := BuildSlackRequestUnfurlRequest(event.ChannelID, event.MessageTS, input)
+			if err != nil {
+				return err
+			}
+			metadata.Entities = append(metadata.Entities, unfurl.Metadata.Entities...)
 		}
-		if request.WorkspaceID != workspace.ID || request.TeamID != link.TeamID || request.ID != link.RequestID {
-			continue
+		for _, link := range objectiveLinks {
+			objective, found, err := p.slackObjectiveForUser(ctx, workspace.ID, *linkedUserID, link)
+			if err != nil {
+				return err
+			}
+			if !found {
+				continue
+			}
+			accessGranted, err := p.slackStoryAccessGranted(ctx, workspace.ID, installation, *linkedUserID, accessChannelID, objective.Team)
+			if err != nil {
+				return err
+			}
+			if !accessGranted {
+				continue
+			}
+			input, err := p.slackObjectiveWorkObjectInput(ctx, *linkedUserID, event.UserID, link.PostedURL, objective)
+			if err != nil {
+				return err
+			}
+			unfurl, err := BuildSlackObjectiveUnfurlRequest(event.ChannelID, event.MessageTS, input)
+			if err != nil {
+				return err
+			}
+			applySlackUnfurlEventDestination(&unfurl, event)
+			metadata.Entities = append(metadata.Entities, unfurl.Metadata.Entities...)
 		}
-		accessGranted, err := p.slackStoryAccessGranted(ctx, workspace.ID, installation, *linkedUserID, accessChannelID, request.TeamID)
-		if err != nil {
-			return err
+		for _, link := range sprintLinks {
+			sprint, found, err := p.slackSprintForUser(ctx, workspace.ID, *linkedUserID, link)
+			if err != nil {
+				return err
+			}
+			if !found {
+				continue
+			}
+			accessGranted, err := p.slackStoryAccessGranted(ctx, workspace.ID, installation, *linkedUserID, accessChannelID, sprint.TeamID)
+			if err != nil {
+				return err
+			}
+			if !accessGranted {
+				continue
+			}
+			input := slackSprintWorkObjectInput(link.PostedURL, sprint)
+			unfurl, err := BuildSlackSprintUnfurlRequest(event.ChannelID, event.MessageTS, input)
+			if err != nil {
+				return err
+			}
+			applySlackUnfurlEventDestination(&unfurl, event)
+			metadata.Entities = append(metadata.Entities, unfurl.Metadata.Entities...)
 		}
-		if !accessGranted {
-			continue
-		}
-		input, err := p.slackRequestWorkObjectInput(ctx, *linkedUserID, event.UserID, link.PostedURL, request)
-		if err != nil {
-			return err
-		}
-		unfurl, err := BuildSlackRequestUnfurlRequest(event.ChannelID, event.MessageTS, input)
-		if err != nil {
-			return err
-		}
-		metadata.Entities = append(metadata.Entities, unfurl.Metadata.Entities...)
-	}
-	for _, link := range objectiveLinks {
-		objective, found, err := p.slackObjectiveForUser(ctx, workspace.ID, *linkedUserID, link)
-		if err != nil {
-			return err
-		}
-		if !found {
-			continue
-		}
-		accessGranted, err := p.slackStoryAccessGranted(ctx, workspace.ID, installation, *linkedUserID, accessChannelID, objective.Team)
-		if err != nil {
-			return err
-		}
-		if !accessGranted {
-			continue
-		}
-		input, err := p.slackObjectiveWorkObjectInput(ctx, *linkedUserID, event.UserID, link.PostedURL, objective)
-		if err != nil {
-			return err
-		}
-		unfurl, err := BuildSlackObjectiveUnfurlRequest(event.ChannelID, event.MessageTS, input)
-		if err != nil {
-			return err
-		}
-		applySlackUnfurlEventDestination(&unfurl, event)
-		metadata.Entities = append(metadata.Entities, unfurl.Metadata.Entities...)
-	}
-	for _, link := range sprintLinks {
-		sprint, found, err := p.slackSprintForUser(ctx, workspace.ID, *linkedUserID, link)
-		if err != nil {
-			return err
-		}
-		if !found {
-			continue
-		}
-		accessGranted, err := p.slackStoryAccessGranted(ctx, workspace.ID, installation, *linkedUserID, accessChannelID, sprint.TeamID)
-		if err != nil {
-			return err
-		}
-		if !accessGranted {
-			continue
-		}
-		input := slackSprintWorkObjectInput(link.PostedURL, sprint)
-		unfurl, err := BuildSlackSprintUnfurlRequest(event.ChannelID, event.MessageTS, input)
-		if err != nil {
-			return err
-		}
-		applySlackUnfurlEventDestination(&unfurl, event)
-		metadata.Entities = append(metadata.Entities, unfurl.Metadata.Entities...)
 	}
 	if len(metadata.Entities) == 0 {
 		if p.log != nil {

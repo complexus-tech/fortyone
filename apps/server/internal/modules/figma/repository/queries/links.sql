@@ -65,7 +65,8 @@ RETURNING link_id;
 INSERT INTO public.story_figma_links (
     workspace_id, story_id, created_by_user_id, story_link_id,
     file_key, node_id, original_url, canonical_url, file_name,
-    node_name, node_type, thumbnail_url, version, last_modified, metadata
+    node_name, node_type, thumbnail_url, version, last_modified, metadata,
+    unavailable_at
 )
 SELECT
     story.workspace_id,
@@ -82,7 +83,8 @@ SELECT
     CAST(sqlc.narg(thumbnail_url) AS text),
     CAST(sqlc.narg(version) AS text),
     CAST(sqlc.narg(last_modified) AS timestamptz),
-    sqlc.arg(metadata)
+    sqlc.arg(metadata),
+    CAST(sqlc.narg(unavailable_at) AS timestamptz)
 FROM public.stories AS story
 INNER JOIN public.workspace_members AS member
     ON member.workspace_id = story.workspace_id
@@ -105,7 +107,7 @@ ON CONFLICT (story_id, file_key, COALESCE(node_id, '')) DO UPDATE SET
     last_modified = EXCLUDED.last_modified,
     metadata = EXCLUDED.metadata,
     last_synced_at = sqlc.arg(updated_at),
-    unavailable_at = NULL,
+    unavailable_at = EXCLUDED.unavailable_at,
     updated_at = sqlc.arg(updated_at)
 RETURNING *;
 

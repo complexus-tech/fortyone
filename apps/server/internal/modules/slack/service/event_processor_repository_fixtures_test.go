@@ -59,6 +59,14 @@ func (r *eventRepositoryStub) ListAuthorizedChannelTeamIDs(_ context.Context, _,
 	return append([]uuid.UUID(nil), r.authorizedTeamIDs...), nil
 }
 
+func (r *eventRepositoryStub) ListInstallationAuthorizedChannelTeamIDs(
+	_ context.Context,
+	_, _ uuid.UUID,
+	_ string,
+) ([]uuid.UUID, error) {
+	return append([]uuid.UUID(nil), r.authorizedTeamIDs...), nil
+}
+
 func (r *eventRepositoryStub) GetAuthorizedAssistantChannelTeamScope(
 	_ context.Context,
 	_, _ uuid.UUID,
@@ -190,9 +198,12 @@ func (r *eventRepositoryStub) FailSlackUninstall(_ context.Context, id uuid.UUID
 }
 
 type eventStoryReaderStub struct {
-	story        singleStory
-	workspaceIDs []uuid.UUID
-	references   []string
+	story           singleStory
+	workspaceIDs    []uuid.UUID
+	userIDs         []uuid.UUID
+	installationIDs []uuid.UUID
+	allowedTeamIDs  [][]uuid.UUID
+	references      []string
 }
 
 type eventRequestReaderStub struct {
@@ -209,8 +220,22 @@ func (s *eventRequestReaderStub) GetForUser(_ context.Context, workspaceID, requ
 	return s.request, nil
 }
 
-func (s *eventStoryReaderStub) QueryByRef(_ context.Context, workspaceID uuid.UUID, reference string) (singleStory, error) {
+func (s *eventStoryReaderStub) QueryByRefForUser(_ context.Context, workspaceID, userID uuid.UUID, reference string) (singleStory, error) {
 	s.workspaceIDs = append(s.workspaceIDs, workspaceID)
+	s.userIDs = append(s.userIDs, userID)
+	s.references = append(s.references, reference)
+	return s.story, nil
+}
+
+func (s *eventStoryReaderStub) QueryByRefForInstallation(
+	_ context.Context,
+	workspaceID, installationID uuid.UUID,
+	allowedTeamIDs []uuid.UUID,
+	reference string,
+) (singleStory, error) {
+	s.workspaceIDs = append(s.workspaceIDs, workspaceID)
+	s.installationIDs = append(s.installationIDs, installationID)
+	s.allowedTeamIDs = append(s.allowedTeamIDs, append([]uuid.UUID(nil), allowedTeamIDs...))
 	s.references = append(s.references, reference)
 	return s.story, nil
 }

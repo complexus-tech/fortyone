@@ -55,6 +55,7 @@ type Querier interface {
 	ListAuthorizedChannelTeamIDs(ctx context.Context, arg ListAuthorizedChannelTeamIDsParams) ([]uuid.UUID, error)
 	ListChannels(ctx context.Context, arg ListChannelsParams) ([]ListChannelsRow, error)
 	ListChannelsForMember(ctx context.Context, arg ListChannelsForMemberParams) ([]ListChannelsForMemberRow, error)
+	ListInstallationAuthorizedChannelTeamIDs(ctx context.Context, arg ListInstallationAuthorizedChannelTeamIDsParams) ([]uuid.UUID, error)
 	ListLegacySlackCredentials(ctx context.Context, arg ListLegacySlackCredentialsParams) ([]ListLegacySlackCredentialsRow, error)
 	ListLegacySlackUninstallCredentials(ctx context.Context, arg ListLegacySlackUninstallCredentialsParams) ([]ListLegacySlackUninstallCredentialsRow, error)
 	ListLegacySlackWebhookPayloads(ctx context.Context, arg ListLegacySlackWebhookPayloadsParams) ([]ListLegacySlackWebhookPayloadsRow, error)

@@ -33,6 +33,14 @@ type authorizedChannelAudienceRepository interface {
 	) ([]uuid.UUID, error)
 }
 
+type installationAuthorizedChannelAudienceRepository interface {
+	ListInstallationAuthorizedChannelTeamIDs(
+		ctx context.Context,
+		workspaceID, slackWorkspaceID uuid.UUID,
+		slackChannelID string,
+	) ([]uuid.UUID, error)
+}
+
 type authorizedAssistantChannelAudienceRepository interface {
 	GetAuthorizedAssistantChannelTeamScope(
 		ctx context.Context,

@@ -344,7 +344,8 @@ const upsertFigmaStoryLink = `-- name: UpsertFigmaStoryLink :one
 INSERT INTO public.story_figma_links (
     workspace_id, story_id, created_by_user_id, story_link_id,
     file_key, node_id, original_url, canonical_url, file_name,
-    node_name, node_type, thumbnail_url, version, last_modified, metadata
+    node_name, node_type, thumbnail_url, version, last_modified, metadata,
+    unavailable_at
 )
 SELECT
     story.workspace_id,
@@ -361,16 +362,17 @@ SELECT
     CAST($9 AS text),
     CAST($10 AS text),
     CAST($11 AS timestamptz),
-    $12
+    $12,
+    CAST($13 AS timestamptz)
 FROM public.stories AS story
 INNER JOIN public.workspace_members AS member
     ON member.workspace_id = story.workspace_id
-   AND member.user_id = $13
+   AND member.user_id = $14
 INNER JOIN public.users AS actor
     ON actor.user_id = member.user_id
    AND actor.is_active = TRUE
-WHERE story.id = $14
-  AND story.workspace_id = $15
+WHERE story.id = $15
+  AND story.workspace_id = $16
   AND story.deleted_at IS NULL
 ON CONFLICT (story_id, file_key, COALESCE(node_id, '')) DO UPDATE SET
     story_link_id = EXCLUDED.story_link_id,
@@ -383,29 +385,30 @@ ON CONFLICT (story_id, file_key, COALESCE(node_id, '')) DO UPDATE SET
     version = EXCLUDED.version,
     last_modified = EXCLUDED.last_modified,
     metadata = EXCLUDED.metadata,
-    last_synced_at = $16,
-    unavailable_at = NULL,
-    updated_at = $16
+    last_synced_at = $17,
+    unavailable_at = EXCLUDED.unavailable_at,
+    updated_at = $17
 RETURNING id, workspace_id, story_id, created_by_user_id, story_link_id, file_key, node_id, original_url, canonical_url, file_name, node_name, node_type, thumbnail_url, version, last_modified, dev_status, dev_resource_id, metadata, last_synced_at, unavailable_at, created_at, updated_at
 `
 
 type UpsertFigmaStoryLinkParams struct {
-	StoryLinkID  *uuid.UUID
-	FileKey      string
-	NodeID       *string
-	OriginalURL  string
-	CanonicalURL string
-	FileName     string
-	NodeName     *string
-	NodeType     *string
-	ThumbnailURL *string
-	Version      *string
-	LastModified *time.Time
-	Metadata     []byte
-	ActorID      uuid.UUID
-	StoryID      uuid.UUID
-	WorkspaceID  uuid.UUID
-	UpdatedAt    time.Time
+	StoryLinkID   *uuid.UUID
+	FileKey       string
+	NodeID        *string
+	OriginalURL   string
+	CanonicalURL  string
+	FileName      string
+	NodeName      *string
+	NodeType      *string
+	ThumbnailURL  *string
+	Version       *string
+	LastModified  *time.Time
+	Metadata      []byte
+	UnavailableAt *time.Time
+	ActorID       uuid.UUID
+	StoryID       uuid.UUID
+	WorkspaceID   uuid.UUID
+	UpdatedAt     time.Time
 }
 
 func (q *Queries) UpsertFigmaStoryLink(ctx context.Context, arg UpsertFigmaStoryLinkParams) (StoryFigmaLink, error) {
@@ -422,6 +425,7 @@ func (q *Queries) UpsertFigmaStoryLink(ctx context.Context, arg UpsertFigmaStory
 		arg.Version,
 		arg.LastModified,
 		arg.Metadata,
+		arg.UnavailableAt,
 		arg.ActorID,
 		arg.StoryID,
 		arg.WorkspaceID,

@@ -3,6 +3,7 @@ package figmarepository
 import (
 	"context"
 	"encoding/json"
+	"strings"
 
 	figmadomain "github.com/complexus-tech/projects-api/internal/modules/figma/domain"
 	figmasql "github.com/complexus-tech/projects-api/internal/modules/figma/repository/sqlc"
@@ -72,7 +73,7 @@ func (repository *Repository) UpsertStoryLink(
 		genericLinkID, err := queries.UpsertGenericStoryLink(
 			ctx,
 			figmasql.UpsertGenericStoryLinkParams{
-				Title: link.Artifact.NodeName, URL: link.Artifact.CanonicalURL,
+				Title: storyLinkTitle(link.Artifact), URL: link.Artifact.CanonicalURL,
 				ExternalSourceKey: &externalKey, ActorID: link.CreatedByUserID,
 				StoryID: link.StoryID, WorkspaceID: link.WorkspaceID,
 				UpdatedAt: now,
@@ -89,7 +90,8 @@ func (repository *Repository) UpsertStoryLink(
 			ThumbnailURL: link.Artifact.ThumbnailURL, Version: link.Artifact.Version,
 			LastModified: link.Artifact.LastModified, Metadata: metadata,
 			ActorID: link.CreatedByUserID, StoryID: link.StoryID,
-			WorkspaceID: link.WorkspaceID, UpdatedAt: now,
+			WorkspaceID: link.WorkspaceID, UnavailableAt: link.UnavailableAt,
+			UpdatedAt: now,
 		})
 		if err != nil {
 			return err
@@ -98,6 +100,17 @@ func (repository *Repository) UpsertStoryLink(
 		return nil
 	})
 	return result, err
+}
+
+func storyLinkTitle(artifact figmadomain.Artifact) *string {
+	if artifact.NodeName != nil && strings.TrimSpace(*artifact.NodeName) != "" {
+		value := strings.TrimSpace(*artifact.NodeName)
+		return &value
+	}
+	if value := strings.TrimSpace(artifact.FileName); value != "" {
+		return &value
+	}
+	return nil
 }
 
 func (repository *Repository) UpdateStoryLink(

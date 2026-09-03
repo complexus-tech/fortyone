@@ -79,6 +79,33 @@ func TestStoryReadRepositoryEnforcesActorTenantAndTeamVisibility(t *testing.T) {
 	}
 }
 
+func TestCredentialStoryReadUsesOnlyWorkspaceAndRestrictedTeamScope(t *testing.T) {
+	t.Parallel()
+	postgres := testkit.NewPostgres(t)
+	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
+	defer cancel()
+	assertStoryReadPostgres18(t, ctx, postgres.Pool)
+	fixture := seedStoryReadFixture(t, ctx, postgres.Pool)
+	repository := New(nil, postgres.Pool)
+	credentialID := uuid.New()
+	scope := storydomain.ReadScope{
+		ActorID: credentialID, WorkspaceID: fixture.workspaceA,
+		AllowedTeamIDs: []uuid.UUID{fixture.teamA},
+	}
+
+	story, err := repository.QueryCredentialVisibleStoryByRef(ctx, scope, "a", 1)
+	if err != nil || story.ID != fixture.visible {
+		t.Fatalf("credential story by reference = %#v, error %v", story, err)
+	}
+	if _, err := repository.QueryCredentialVisibleStoryByRef(ctx, scope, "hidden", 1); !errors.Is(err, storydomain.ErrNotFound) {
+		t.Fatalf("credential escaped restricted team scope: %v", err)
+	}
+	scope.WorkspaceID = fixture.workspaceB
+	if _, err := repository.QueryCredentialVisibleStoryByRef(ctx, scope, "b", 1); !errors.Is(err, storydomain.ErrNotFound) {
+		t.Fatalf("credential escaped workspace scope: %v", err)
+	}
+}
+
 func TestStoryCategoryReadHasStableBoundedPagesAndRestrictions(t *testing.T) {
 	t.Parallel()
 	postgres := testkit.NewPostgres(t)

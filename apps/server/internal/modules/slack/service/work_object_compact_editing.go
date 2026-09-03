@@ -115,7 +115,7 @@ func (s *Service) handleSlackStoryCompactEditAction(ctx context.Context, payload
 	if !ok {
 		return InteractionResponse{}, errors.New("slack Work Object story editing is not configured")
 	}
-	story, err := storyService.QueryByRef(ctx, installation.WorkspaceID, link.StoryReference)
+	story, err := storyService.QueryByRef(ctx, installation.WorkspaceID, actorID, link.StoryReference)
 	if err != nil {
 		return InteractionResponse{}, fmt.Errorf("load compact Work Object story: %w", err)
 	}
@@ -259,7 +259,7 @@ func (s *Service) handleSlackStoryCompactEditSubmission(ctx context.Context, pay
 	if !ok {
 		return InteractionResponse{}, errors.New("slack Work Object story editing is not configured")
 	}
-	story, err := storyService.QueryByRef(ctx, installation.WorkspaceID, link.StoryReference)
+	story, err := storyService.QueryByRef(ctx, installation.WorkspaceID, actorID, link.StoryReference)
 	if err != nil {
 		return InteractionResponse{}, err
 	}
@@ -309,7 +309,7 @@ func (s *Service) handleSlackStoryCompactEditSubmission(ctx context.Context, pay
 		return InteractionResponse{}, fmt.Errorf("apply compact Slack Work Object edit: %w", err)
 	}
 
-	refreshed, err := storyService.QueryByRef(ctx, installation.WorkspaceID, link.StoryReference)
+	refreshed, err := storyService.QueryByRef(ctx, installation.WorkspaceID, actorID, link.StoryReference)
 	if err != nil {
 		return InteractionResponse{}, err
 	}

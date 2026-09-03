@@ -7,12 +7,14 @@ import (
 
 	slack "github.com/complexus-tech/projects-api/internal/modules/slack/service"
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
+	platformauth "github.com/complexus-tech/projects-api/internal/platform/auth"
 	"github.com/google/uuid"
 )
 
 type StoryBackend interface {
 	Create(context.Context, stories.CoreNewStory, uuid.UUID) (stories.CoreSingleStory, error)
 	QueryByRef(context.Context, uuid.UUID, string) (stories.CoreSingleStory, error)
+	QueryByRefForIntegration(context.Context, uuid.UUID, string) (stories.CoreSingleStory, error)
 	UpdateExternalUserActionIfUnchanged(context.Context, uuid.UUID, uuid.UUID, uuid.UUID, time.Time, map[string]any) error
 }
 
@@ -42,8 +44,68 @@ func (adapter *StoryService) Create(ctx context.Context, input slack.NewStory, w
 	return mapStory(story), mapStoryError(err)
 }
 
-func (adapter *StoryService) QueryByRef(ctx context.Context, workspaceID uuid.UUID, reference string) (slack.Story, error) {
+func (adapter *StoryService) QueryByRef(
+	ctx context.Context,
+	workspaceID, actorID uuid.UUID,
+	reference string,
+) (slack.Story, error) {
+	return adapter.QueryByRefForUser(ctx, workspaceID, actorID, reference)
+}
+
+func (adapter *StoryService) QueryByRefForUser(
+	ctx context.Context,
+	workspaceID, actorID uuid.UUID,
+	reference string,
+) (slack.Story, error) {
+	if actorID == uuid.Nil {
+		return slack.Story{}, errors.New("slack story actor is required")
+	}
+
+	actor, err := platformauth.NewHumanActor(actorID).WithWorkspace(workspaceID)
+	if err != nil {
+		return slack.Story{}, err
+	}
+	ctx, err = platformauth.SetActor(ctx, actor)
+	if err != nil {
+		return slack.Story{}, err
+	}
+
 	story, err := adapter.backend.QueryByRef(ctx, workspaceID, reference)
+	return mapStory(story), mapStoryError(err)
+}
+
+func (adapter *StoryService) QueryByRefForInstallation(
+	ctx context.Context,
+	workspaceID, installationID uuid.UUID,
+	allowedTeamIDs []uuid.UUID,
+	reference string,
+) (slack.Story, error) {
+	if workspaceID == uuid.Nil || installationID == uuid.Nil || len(allowedTeamIDs) == 0 {
+		return slack.Story{}, errors.New("slack installation story scope is required")
+	}
+	teamAccess, err := platformauth.RestrictedTeamAccess(allowedTeamIDs...)
+	if err != nil {
+		return slack.Story{}, err
+	}
+	actor, err := platformauth.NewActor(
+		installationID,
+		platformauth.PrincipalServiceAccount,
+		installationID,
+		platformauth.MustScopeSet(platformauth.ScopeStoriesRead),
+		teamAccess,
+	)
+	if err != nil {
+		return slack.Story{}, err
+	}
+	actor, err = actor.WithWorkspace(workspaceID)
+	if err != nil {
+		return slack.Story{}, err
+	}
+	ctx, err = platformauth.SetActor(ctx, actor)
+	if err != nil {
+		return slack.Story{}, err
+	}
+	story, err := adapter.backend.QueryByRefForIntegration(ctx, workspaceID, reference)
 	return mapStory(story), mapStoryError(err)
 }
 

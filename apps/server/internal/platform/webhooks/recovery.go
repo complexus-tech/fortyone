@@ -65,30 +65,54 @@ func (gateway *Gateway) Recover(
 	if gateway == nil || gateway.inbox == nil {
 		return RecoveryReport{}, ErrNotConfigured
 	}
-	if err := policy.Validate(); err != nil {
-		return RecoveryReport{}, err
-	}
 	runtime, err := gateway.runtimes.require(provider)
 	if err != nil {
 		return RecoveryReport{}, err
 	}
-	now := gateway.config.Now().UTC()
-	records, err := gateway.inbox.ClaimRecoverable(ctx, provider, policy, now)
+	return RecoverDeliveries(
+		ctx,
+		gateway.inbox,
+		provider,
+		runtime.Dispatcher,
+		policy,
+		gateway.config.Now().UTC(),
+	)
+}
+
+// RecoverDeliveries re-dispatches durable webhook receipts without requiring
+// an ingress verifier. Workers consume payloads that were already authenticated
+// and sealed by the API, so provider signing credentials stay at ingress.
+func RecoverDeliveries(
+	ctx context.Context,
+	inbox Inbox,
+	provider integrations.ProviderKey,
+	dispatcher Dispatcher,
+	policy RecoveryPolicy,
+	now time.Time,
+) (RecoveryReport, error) {
+	if inbox == nil || dispatcher == nil || provider == "" || now.IsZero() {
+		return RecoveryReport{}, ErrNotConfigured
+	}
+	if err := policy.Validate(); err != nil {
+		return RecoveryReport{}, err
+	}
+	now = now.UTC()
+	records, err := inbox.ClaimRecoverable(ctx, provider, policy, now)
 	if err != nil {
 		return RecoveryReport{}, fmt.Errorf("claim recoverable webhook deliveries: %w", err)
 	}
 	report := RecoveryReport{Claimed: len(records)}
 	var dispatchFailed bool
 	for _, record := range records {
-		if err := runtime.Dispatcher.Enqueue(ctx, Task{InboxID: record.ID, Provider: provider}); err == nil {
-			if markErr := gateway.inbox.MarkQueued(ctx, record.ID, now); markErr != nil {
+		if err := dispatcher.Enqueue(ctx, Task{InboxID: record.ID, Provider: provider}); err == nil {
+			if markErr := inbox.MarkQueued(ctx, record.ID, now); markErr != nil {
 				return report, fmt.Errorf("record recovered webhook queue handoff: %w", markErr)
 			}
 			report.Dispatched++
 			continue
 		}
 		dispatchFailed = true
-		if releaseErr := gateway.inbox.ReleaseRecovery(ctx, record.ID, record.RecoveryGeneration, now); releaseErr != nil {
+		if releaseErr := inbox.ReleaseRecovery(ctx, record.ID, record.RecoveryGeneration, now); releaseErr != nil {
 			return report, fmt.Errorf("release webhook recovery claim: %w", releaseErr)
 		}
 		report.Released++

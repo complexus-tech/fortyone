@@ -138,6 +138,24 @@ func (repository *Repo) ListAuthorizedChannelTeamIDs(
 	return teamIDs, nil
 }
 
+func (repository *Repo) ListInstallationAuthorizedChannelTeamIDs(
+	ctx context.Context,
+	workspaceID, slackWorkspaceID uuid.UUID,
+	slackChannelID string,
+) ([]uuid.UUID, error) {
+	teamIDs, err := repository.queries.ListInstallationAuthorizedChannelTeamIDs(
+		ctx,
+		slacksql.ListInstallationAuthorizedChannelTeamIDsParams{
+			WorkspaceID: workspaceID, SlackWorkspaceID: slackWorkspaceID,
+			SlackChannelID: strings.TrimSpace(slackChannelID),
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("list installation-authorized Slack channel teams: %w", mapDatabaseError(err))
+	}
+	return teamIDs, nil
+}
+
 func uniqueUUIDs(values []uuid.UUID) []uuid.UUID {
 	seen := make(map[uuid.UUID]struct{}, len(values))
 	result := make([]uuid.UUID, 0, len(values))

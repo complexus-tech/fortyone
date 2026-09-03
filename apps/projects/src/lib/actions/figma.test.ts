@@ -38,55 +38,72 @@ describe("linkFigmaStoryAction", () => {
     expect(postMock).toHaveBeenCalledTimes(1);
   });
 
-  it("saves a generic story link when Figma is rate limited", async () => {
+  it("returns the server-persisted generic link when Figma metadata is unavailable", async () => {
     const url = "https://www.figma.com/design/file-key/file-name";
-    const genericLink = { id: "link-1", storyId: "story-1", url };
-    postMock
-      .mockResolvedValueOnce({
-        data: null,
-        error: {
-          code: "rate_limited",
-          message: "Figma rate limit reached; try again later",
+    postMock.mockResolvedValueOnce({
+      data: {
+        id: "figma-link-1",
+        storyId: "story-1",
+        storyLinkId: "link-1",
+        artifact: {
+          canonicalUrl: url,
+          fileName: "Figma design",
+          nodeName: null,
         },
-      })
-      .mockResolvedValueOnce({ data: genericLink });
+        unavailableAt: "2026-09-03T08:00:00Z",
+        createdAt: "2026-09-03T08:00:00Z",
+        updatedAt: "2026-09-03T08:00:00Z",
+      },
+    });
 
     await expect(
       linkFigmaStoryAction("workspace", "story-1", url, "Checkout flow"),
     ).resolves.toEqual({
-      data: { kind: "generic", link: genericLink },
+      data: {
+        kind: "generic",
+        link: {
+          id: "link-1",
+          storyId: "story-1",
+          title: "Checkout flow",
+          url,
+          createdAt: "2026-09-03T08:00:00Z",
+          updatedAt: "2026-09-03T08:00:00Z",
+        },
+      },
     });
-    expect(postMock).toHaveBeenNthCalledWith(
-      2,
-      "links",
-      { storyId: "story-1", title: "Checkout flow", url },
+    expect(postMock).toHaveBeenCalledTimes(1);
+    expect(postMock).toHaveBeenCalledWith(
+      "stories/story-1/figma-links",
+      { url },
       expect.objectContaining({ workspaceSlug: "workspace" }),
     );
   });
 
-  it("supports the currently deployed bad-request rate-limit payload", async () => {
+  it("uses the degraded Figma link title when no title is provided", async () => {
     const url = "https://www.figma.com/design/file-key/file-name";
-    postMock
-      .mockResolvedValueOnce({
-        data: null,
-        error: {
-          code: "bad_request",
-          message: "Figma rate limit reached; try again in 108h49m39s",
+    postMock.mockResolvedValueOnce({
+      data: {
+        id: "figma-link-1",
+        storyId: "story-1",
+        storyLinkId: "link-1",
+        artifact: {
+          canonicalUrl: url,
+          fileName: "Figma design",
+          nodeName: null,
         },
-      })
-      .mockResolvedValueOnce({
-        data: { id: "link-1", storyId: "story-1", url },
-      });
+        unavailableAt: "2026-09-03T08:00:00Z",
+        createdAt: "2026-09-03T08:00:00Z",
+        updatedAt: "2026-09-03T08:00:00Z",
+      },
+    });
 
     const result = await linkFigmaStoryAction("workspace", "story-1", url);
 
     expect(result.data?.kind).toBe("generic");
-    expect(postMock).toHaveBeenNthCalledWith(
-      2,
-      "links",
-      { storyId: "story-1", title: "Figma design", url },
-      expect.any(Object),
-    );
+    if (result.data?.kind === "generic") {
+      expect(result.data.link.title).toBe("Figma design");
+    }
+    expect(postMock).toHaveBeenCalledTimes(1);
   });
 
   it("does not downgrade non-rate-limit Figma failures", async () => {
