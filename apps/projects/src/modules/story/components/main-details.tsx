@@ -13,6 +13,7 @@ import { useDebouncedCallback } from "@/hooks/debounce";
 import { BodyContainer } from "@/components/shared";
 import { useLinks } from "@/lib/hooks/links";
 import { createRichTextExtensions } from "@/lib/tiptap/rich-text-extensions";
+import { getRichTextContentType } from "@/lib/tiptap/markdown";
 import {
   getPersistableRichTextContent,
   hasPendingRichTextMedia,
@@ -113,7 +114,27 @@ export const MainDetails = ({
       placeholder: "Enter description or type / for commands...",
     }),
     content: descriptionHTML || description,
+    contentType: getRichTextContentType(description, descriptionHTML),
     editable: !isDeleted && userRole !== "guest",
+    onCreate: ({ editor }) => {
+      if (
+        getRichTextContentType(description, descriptionHTML) !== "markdown" ||
+        isDeleted ||
+        userRole === "guest"
+      ) {
+        return;
+      }
+
+      const content = getPersistableRichTextContent(editor);
+      handleUpdate({
+        payload: {
+          descriptionHTML: content.contentHtml,
+          description: content.contentText,
+          reconcileDescriptionMedia: true,
+        },
+        storyId,
+      });
+    },
     onUpdate: ({ editor }) => {
       const content = getPersistableRichTextContent(editor);
       debouncedDescriptionUpdate({

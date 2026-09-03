@@ -14,6 +14,8 @@ describe("rich-text editor extensions", () => {
       expect.arrayContaining([
         "documentVideo",
         "image",
+        "markdown",
+        "richTextMarkdownPaste",
         "slashCommand",
         "starterKit",
         "table",

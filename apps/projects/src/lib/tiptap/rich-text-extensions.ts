@@ -9,6 +9,7 @@ import TableRow from "@tiptap/extension-table-row";
 import Underline from "@tiptap/extension-underline";
 import { createRichTextStarterKit } from "./starter-kit";
 import { SlashCommand } from "./slash-command";
+import { RichTextMarkdown, RichTextMarkdownPaste } from "./markdown";
 import {
   RichTextImage,
   RichTextMediaDrop,
@@ -30,6 +31,8 @@ export const createRichTextExtensions = ({
   Underline,
   TaskList,
   TaskItem.configure({ nested: true }),
+  RichTextMarkdown,
+  RichTextMarkdownPaste,
   Link.configure({ autolink: true }),
   RichTextImage.configure({
     allowBase64: false,

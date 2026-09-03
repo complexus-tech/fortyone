@@ -1,7 +1,11 @@
 import type { Member } from "@/types";
 import type { State, StateCategory } from "@/types/states";
-import type { ImportPerson, ImportTask, ImportTeam } from "./schema";
+import {
+  looksLikeMarkdown,
+  markdownToRichTextHTML,
+} from "@/lib/tiptap/markdown";
 import type { ImportStoryPayload } from "./api";
+import type { ImportPerson, ImportTask, ImportTeam } from "./schema";
 import { isValidImportTaskEffort } from "./schema";
 
 const STATUS_CATEGORY_ALIASES: {
@@ -625,10 +629,15 @@ export const toImportStoryPayload = ({
   const resolvedLabelIds = labelIds
     ? [...new Set(labelIds.filter(Boolean))]
     : undefined;
+  const description = task.description.trim();
+  const descriptionHTML = looksLikeMarkdown(description)
+    ? markdownToRichTextHTML(description)
+    : undefined;
 
   return {
     title: task.title.trim(),
-    description: task.description.trim(),
+    description,
+    ...(descriptionHTML ? { descriptionHTML } : {}),
     teamId,
     ...(status ? { statusId: status.id } : {}),
     ...(resolvedAssigneeId ? { assigneeId: resolvedAssigneeId } : {}),

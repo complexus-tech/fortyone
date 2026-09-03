@@ -33,6 +33,7 @@ import type {
 export type ImportStoryPayload = {
   title: string;
   description: string;
+  descriptionHTML?: string;
   teamId: string;
   statusId?: string;
   assigneeId?: string;

@@ -505,6 +505,34 @@ describe("work import execution mapping", () => {
     });
   });
 
+  it("includes rich HTML for imported Markdown descriptions", () => {
+    const task = {
+      sourceId: "task-with-markdown",
+      title: "Imported checklist",
+      description: "### Checklist\n\n- [ ] Upload proof\n- [x] Link proof",
+      status: null,
+      statusCategory: null,
+      priority: "No Priority",
+      assigneeEmail: null,
+      assigneeName: null,
+      startDate: null,
+      endDate: null,
+    } as ImportTask;
+
+    expect(
+      toImportStoryPayload({
+        members: [],
+        statuses: [],
+        task,
+        teamId: "team-1",
+      }),
+    ).toMatchObject({
+      description: task.description,
+      descriptionHTML:
+        '<h3>Checklist</h3><ul data-type="taskList"><li data-checked="false" data-type="taskItem"><label><input type="checkbox"><span></span></label><div><p>Upload proof</p></div></li><li data-checked="true" data-type="taskItem"><label><input type="checkbox" checked="checked"><span></span></label><div><p>Link proof</p></div></li></ul>',
+    });
+  });
+
   it("rejects an invalid task date range before constructing a payload", () => {
     const task = {
       sourceId: "task-1",
