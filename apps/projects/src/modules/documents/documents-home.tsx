@@ -71,6 +71,15 @@ const templateIcons: Record<
   update: CalendarIcon,
 };
 
+const templateIconStyles: Record<DocumentTemplateIcon, string> = {
+  blank:
+    "border-border/70 bg-surface-elevated text-foreground dark:border-border-strong/80",
+  meeting: "border-info/25 bg-info/10 text-info",
+  project: "border-secondary/25 bg-secondary/10 text-secondary",
+  "one-to-one": "border-success/25 bg-success/10 text-success",
+  update: "border-primary/25 bg-primary/10 text-primary",
+};
+
 const isDocumentScope = (value: string | null): value is DocumentScope =>
   value === "all" ||
   value === "mine" ||
@@ -111,7 +120,10 @@ const TemplateCard = ({
     >
       <Flex
         align="center"
-        className="border-border/70 bg-surface-elevated text-foreground dark:border-border-strong/80 size-12 shrink-0 rounded-xl border-[0.5px]"
+        className={cn(
+          "size-12 shrink-0 rounded-xl border-[0.5px] [&_svg]:!text-current",
+          templateIconStyles[template.icon],
+        )}
         justify="center"
       >
         <Icon className="size-8" />

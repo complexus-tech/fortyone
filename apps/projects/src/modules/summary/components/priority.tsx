@@ -4,6 +4,7 @@ import type { TooltipProps } from "recharts";
 import {
   BarChart,
   Bar,
+  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -21,7 +22,7 @@ import { PrioritySkeleton } from "./priority-skeleton";
 import {
   SUMMARY_CHART_CURSOR,
   SUMMARY_CHART_GRID,
-  SUMMARY_CHART_PRIMARY,
+  getSummaryPriorityColor,
 } from "./chart-colors";
 
 const CustomTooltip = ({
@@ -98,10 +99,16 @@ export const Priority = () => {
           <Bar
             barSize={35}
             dataKey="count"
-            fill={SUMMARY_CHART_PRIMARY}
             fillOpacity={0.72}
             radius={[6, 6, 0, 0]}
-          />
+          >
+            {chartData.map((entry) => (
+              <Cell
+                fill={getSummaryPriorityColor(entry.priority)}
+                key={entry.priority}
+              />
+            ))}
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
     </Wrapper>
