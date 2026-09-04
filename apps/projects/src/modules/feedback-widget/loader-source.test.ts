@@ -198,6 +198,19 @@ describe("feedback widget loader", () => {
     expect(FEEDBACK_WIDGET_LOADER_SOURCE).toContain("border-radius:.825rem");
     expect(FEEDBACK_WIDGET_LOADER_SOURCE).toContain("--widget-border:#292824");
     expect(FEEDBACK_WIDGET_LOADER_SOURCE).toContain(
+      "--widget-launcher-background:oklch(0.19 0.028 40/.1)",
+    );
+    expect(FEEDBACK_WIDGET_LOADER_SOURCE).toContain(
+      "--widget-launcher-background:oklch(0.94 0.014 55/.2)",
+    );
+    expect(FEEDBACK_WIDGET_LOADER_SOURCE).toContain(
+      "background:var(--widget-launcher-background)",
+    );
+    expect(FEEDBACK_WIDGET_LOADER_SOURCE).toContain(
+      "color:var(--widget-launcher-foreground)",
+    );
+    expect(FEEDBACK_WIDGET_LOADER_SOURCE).not.toContain("background:#171717");
+    expect(FEEDBACK_WIDGET_LOADER_SOURCE).toContain(
       "background:var(--widget-background)",
     );
     expect(FEEDBACK_WIDGET_LOADER_SOURCE).toContain(

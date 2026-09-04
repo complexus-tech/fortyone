@@ -94,11 +94,11 @@ export const FEEDBACK_WIDGET_LOADER_SOURCE = String.raw`(function (window, docum
     var style = document.createElement("style");
     style.textContent = [
       ":host{all:initial;color-scheme:light dark}",
-      ".root{--widget-background:#fff;--widget-border:rgba(127,127,127,.26);color-scheme:light;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;position:relative;z-index:2147483000}",
-      ".root[data-theme=dark]{--widget-background:oklch(0.1821 0.0139 94);--widget-border:#292824;color-scheme:dark}",
-      ".launcher{position:fixed;bottom:20px;width:46px;height:46px;border:0;border-radius:999px;display:grid;place-items:center;background:#171717;color:#fff;box-shadow:0 12px 32px rgba(0,0,0,.22),inset 0 0 0 1px rgba(255,255,255,.14);cursor:pointer;transition:transform .2s ease,box-shadow .2s ease;z-index:2}",
-      ".launcher:hover{transform:translateY(-2px);box-shadow:0 16px 38px rgba(0,0,0,.28),inset 0 0 0 1px rgba(255,255,255,.18)}",
-      ".launcher:focus-visible{outline:3px solid rgba(59,130,246,.55);outline-offset:3px}",
+      ".root{--widget-background:#fff;--widget-border:rgba(127,127,127,.26);--widget-launcher-background:oklch(0.19 0.028 40/.1);--widget-launcher-background-hover:oklch(0.19 0.028 40/.14);--widget-launcher-border:oklch(0.19 0.028 40/.16);--widget-launcher-foreground:oklch(0.19 0.028 40);color-scheme:light;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;position:relative;z-index:2147483000}",
+      ".root[data-theme=dark]{--widget-background:oklch(0.1821 0.0139 94);--widget-border:#292824;--widget-launcher-background:oklch(0.94 0.014 55/.2);--widget-launcher-background-hover:oklch(0.94 0.014 55/.26);--widget-launcher-border:oklch(0.94 0.014 55/.18);--widget-launcher-foreground:oklch(0.94 0.014 55);color-scheme:dark}",
+      ".launcher{position:fixed;bottom:20px;width:46px;height:46px;border:1px solid var(--widget-launcher-border);border-radius:999px;display:grid;place-items:center;background:var(--widget-launcher-background);color:var(--widget-launcher-foreground);box-shadow:0 12px 32px rgba(0,0,0,.18);backdrop-filter:blur(12px);cursor:pointer;transition:background-color .2s ease,border-color .2s ease,transform .2s ease,box-shadow .2s ease;z-index:2}",
+      ".launcher:hover{background:var(--widget-launcher-background-hover);transform:translateY(-2px);box-shadow:0 16px 38px rgba(0,0,0,.24)}",
+      ".launcher:focus-visible{outline:3px solid oklch(0.6522 0.2135 38/.55);outline-offset:3px}",
       ".launcher svg{width:18px;height:18px;transition:transform .2s ease}",
       ".root[data-open=true] .launcher svg{transform:scale(.9) rotate(3deg)}",
       ".right .launcher{right:20px}.left .launcher{left:20px}",
