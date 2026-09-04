@@ -275,12 +275,19 @@ const RoadmapTab = ({
                             {request.description}
                           </Text>
                         ) : null}
-                        <Text
-                          className="mt-2 text-[12px] font-medium"
-                          color="muted"
-                        >
-                          {request.authorName}
-                        </Text>
+                        <Flex align="center" className="mt-2 min-w-0 gap-1.5">
+                          <Avatar
+                            name={request.authorName || "Anonymous"}
+                            size="xs"
+                            src={request.authorAvatar}
+                          />
+                          <Text
+                            className="truncate text-[12px] font-medium"
+                            color="muted"
+                          >
+                            {request.authorName || "Anonymous"}
+                          </Text>
+                        </Flex>
                       </Box>
                     </button>
                     <VoteButton

@@ -61,7 +61,7 @@ const FeedbackSearch = ({
       }}
     >
       <Input
-        className="h-10"
+        className="bg-foreground/10 dark:bg-foreground/15 h-10"
         leftIcon={<SearchIcon className="h-4" />}
         onChange={(event) => {
           setValue(event.target.value);
@@ -208,7 +208,7 @@ export const PublicFeedbackList = ({
         >
           <button
             className={cn(
-              "text-text-muted hover:text-foreground flex h-full min-w-max flex-1 items-center justify-center rounded-xl border border-transparent px-3.5 transition",
+              "text-text-muted hover:text-foreground flex h-full min-w-max flex-1 items-center justify-center rounded-xl border border-transparent px-3 transition",
               {
                 "border-border bg-surface-elevated text-foreground":
                   filters.status === "active",
@@ -226,7 +226,7 @@ export const PublicFeedbackList = ({
             return (
               <button
                 className={cn(
-                  "text-text-muted hover:text-foreground flex h-full min-w-max flex-1 shrink-0 items-center justify-center gap-2 rounded-xl border border-transparent px-3.5 transition",
+                  "text-text-muted hover:text-foreground flex h-full min-w-max flex-1 shrink-0 items-center justify-center gap-2 rounded-xl border border-transparent px-3 transition",
                   {
                     "border-border bg-surface-elevated text-foreground":
                       filters.status === filter,

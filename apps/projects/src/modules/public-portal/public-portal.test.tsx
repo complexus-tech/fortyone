@@ -979,6 +979,7 @@ describe("Public portal UI", () => {
     render(<PublicPortalRequestsPage portal={publicPortalFixture} />);
 
     const search = screen.getByPlaceholderText("Search feedback...");
+    expect(search).toHaveClass("bg-foreground/10", "dark:bg-foreground/15");
     fireEvent.change(search, { target: { value: "storm drain" } });
 
     expect(global.fetch).not.toHaveBeenCalled();
@@ -1017,6 +1018,10 @@ describe("Public portal UI", () => {
       expect(params.get("sort")).toBe("top");
     });
     fireEvent.click(screen.getByRole("button", { name: "Reviewing" }));
+    expect(screen.getByRole("button", { name: "Active" })).toHaveClass("px-3");
+    expect(screen.getByRole("button", { name: "Reviewing" })).toHaveClass(
+      "px-3",
+    );
     await waitFor(() => {
       expect(new URLSearchParams(window.location.search).get("status")).toBe(
         "reviewing",

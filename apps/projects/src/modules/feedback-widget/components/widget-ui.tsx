@@ -11,7 +11,7 @@ import {
   ThumbsDownIcon,
   ThumbsUpIcon,
 } from "icons";
-import { Avatar, Box, Flex, Text } from "ui";
+import { Avatar, Badge, Box, Button, Flex, Text } from "ui";
 import { cn } from "lib";
 import type {
   PublicFeedbackListStatus,
@@ -67,10 +67,14 @@ export const UnreadBadge = ({ count }: { count: number }) => {
 export const StatusBadge = ({ status }: { status: PublicRequestStatus }) => {
   const meta = requestStatusMeta[status];
   return (
-    <span className="border-border/80 text-text-muted inline-flex h-9 items-center gap-2 rounded-lg border px-3 text-[12px] font-medium">
+    <Badge
+      className="border-border/80 text-text-muted h-9 gap-2 px-3 text-[12px]"
+      color="tertiary"
+      size="lg"
+    >
       <span className={cn("size-2 rounded-sm", statusAccent(status))} />
       {meta.label}
-    </span>
+    </Badge>
   );
 };
 
@@ -81,15 +85,25 @@ export const CompactStatusPill = ({
 }) => {
   const meta = requestStatusMeta[status];
   return (
-    <span
+    <Badge
       className={cn(
-        "inline-flex h-6 shrink-0 items-center gap-1.5 rounded-lg border px-2 text-[11px] font-medium",
+        "h-[1.625rem] shrink-0 gap-1.5 px-2 text-[12px]",
         meta.badgeClassName,
+        {
+          "dark:bg-warning/10": status === "pending",
+          "dark:bg-info/10": status === "reviewing",
+          "dark:bg-primary/10": status === "planned",
+          "dark:bg-secondary/10": status === "in_progress",
+          "dark:bg-success/10": status === "completed",
+          "dark:bg-surface-muted/40": status === "closed",
+        },
       )}
+      color="tertiary"
+      size="sm"
     >
       <span className={cn("size-2 rounded-sm", meta.dotClassName)} />
       {meta.label}
-    </span>
+    </Badge>
   );
 };
 
@@ -106,23 +120,26 @@ export const VoteButton = ({
 }) => {
   const voted = request.viewerVote === 1;
   return (
-    <button
+    <Button
+      align="center"
       aria-label={voted ? "Remove upvote" : "Upvote feedback"}
       aria-pressed={voted}
       className={cn(
-        "border-border/80 bg-background text-text-muted hover:border-foreground/25 hover:text-foreground focus-visible:ring-ring inline-flex h-8 min-w-14 shrink-0 items-center justify-center gap-1.5 rounded-lg border px-2.5 text-[12px] font-semibold tabular-nums transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:cursor-wait disabled:opacity-60",
+        "border-border/80 text-text-muted hover:border-foreground/25 hover:text-foreground focus-visible:ring-ring h-[1.875rem] min-w-[3.375rem] shrink-0 gap-1.5 rounded-lg px-[9px] text-[12px] font-semibold tabular-nums focus-visible:ring-2 disabled:cursor-wait disabled:opacity-60",
         { "border-foreground/20 text-foreground": voted },
       )}
+      color="tertiary"
       disabled={disabled || isPending}
       onClick={(event) => {
         event.stopPropagation();
         onClick();
       }}
-      type="button"
+      size="xs"
+      variant="outline"
     >
-      <ThumbsUpIcon className="h-3.5" />
+      <ThumbsUpIcon className="h-3.5 text-current" strokeWidth={2} />
       {request.voteCount}
-    </button>
+    </Button>
   );
 };
 
@@ -418,13 +435,13 @@ export const FeedbackRow = ({
         </Text>
         {request.description ? (
           <Text
-            className="mt-1 line-clamp-2 text-[12px] leading-5"
+            className="mt-1 line-clamp-2 text-[13px] leading-5"
             color="muted"
           >
             {request.description}
           </Text>
         ) : null}
-        <Flex align="center" className="mt-2 min-w-0 gap-1.5 text-[11px]">
+        <Flex align="center" className="mt-2 min-w-0 gap-1.5 text-[12px]">
           <Text className="truncate" fontWeight="medium">
             {request.authorName || "Anonymous"}
           </Text>

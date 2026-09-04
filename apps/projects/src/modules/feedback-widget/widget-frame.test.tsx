@@ -86,9 +86,23 @@ jest.mock("ui", () => {
       children,
       rightIcon,
     );
+  const Badge = ({
+    children,
+    color: _color,
+    rounded: _rounded,
+    size: _size,
+    variant: _variant,
+    ...props
+  }: ComponentPropsWithoutRef<"span"> & {
+    color?: string;
+    rounded?: string;
+    size?: string;
+    variant?: string;
+  }) => React.createElement("span", props, children);
   return {
     Avatar: ({ name, ...props }: { name: string }) =>
       React.createElement("div", { ...props, "aria-label": name }),
+    Badge,
     Box,
     Button,
     Flex,
@@ -689,8 +703,8 @@ describe("FeedbackWidgetFrame identity and guest participation", () => {
     expect(screen.getByText("Repair the crossing")).toBeInTheDocument();
     expect(screen.queryByText("Product")).not.toBeInTheDocument();
     expect(screen.getByText("Pending")).toHaveClass(
-      "h-6",
-      "text-[11px]",
+      "h-[1.625rem]",
+      "text-[12px]",
       "border-warning/30",
       "bg-warning/10",
       "text-warning",
@@ -715,15 +729,9 @@ describe("FeedbackWidgetFrame identity and guest participation", () => {
     const homeRoadmapDescription = Array.from(
       homeRoadmapButton.querySelectorAll("span"),
     ).find((element) => element.textContent === plannedRequest.description);
-    const homeRoadmapStatus = Array.from(
-      homeRoadmapButton.querySelectorAll("span"),
-    ).find((element) => element.textContent === "Planned");
     const homeRoadmapAuthor = Array.from(
       homeRoadmapButton.querySelectorAll("span"),
     ).find((element) => element.textContent === request.authorName);
-    const homeRoadmapSeparator = Array.from(
-      homeRoadmapButton.querySelectorAll("span"),
-    ).find((element) => element.textContent === "•");
 
     expect(popularFeedbackHeading.compareDocumentPosition(feedbackPrompt)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING,
@@ -739,11 +747,32 @@ describe("FeedbackWidgetFrame identity and guest participation", () => {
       "uppercase",
     );
     expect(feedbackPrompt).toHaveClass("bg-state-hover/40");
+    expect(screen.getByText(request.description)).toHaveClass(
+      "text-[13px]",
+      "leading-5",
+    );
+    expect(screen.getByText(request.createdAtLabel).parentElement).toHaveClass(
+      "text-[12px]",
+    );
+    screen
+      .getAllByRole("button", { name: "Upvote feedback" })
+      .forEach((button) => {
+        expect(button).toHaveClass(
+          "h-[1.875rem]",
+          "min-w-[3.375rem]",
+          "px-[9px]",
+        );
+      });
     expect(homeRoadmapDescription).toHaveClass("text-[12px]", "leading-5");
-    expect(homeRoadmapSeparator).toBeInTheDocument();
-    expect(homeRoadmapStatus?.parentElement).toHaveClass("text-[12px]");
-    expect(homeRoadmapStatus).toHaveClass("font-medium");
-    expect(homeRoadmapAuthor).toHaveClass("font-medium");
+    expect(
+      Array.from(homeRoadmapButton.querySelectorAll("span")).some(
+        (element) => element.textContent === "Planned",
+      ),
+    ).toBe(false);
+    expect(homeRoadmapAuthor).toHaveClass("text-[12px]", "font-medium");
+    expect(
+      homeRoadmapButton.querySelector('[aria-label="Amina"]'),
+    ).toBeInTheDocument();
     expect(homeRoadmapButton.closest(".border-dashed")).toHaveClass(
       "border-dashed",
     );
@@ -837,6 +866,22 @@ describe("FeedbackWidgetFrame identity and guest participation", () => {
       "text-[12px]",
       "leading-5",
     );
+    const plannedRequestButton = screen.getByRole("button", {
+      name: /Planned request 1/,
+    });
+    expect(
+      Array.from(plannedRequestButton.querySelectorAll("span")).some(
+        (element) => element.textContent === "Planned",
+      ),
+    ).toBe(false);
+    expect(
+      plannedRequestButton.querySelector('[aria-label="Amina"]'),
+    ).toBeInTheDocument();
+    expect(
+      Array.from(plannedRequestButton.querySelectorAll("span")).find(
+        (element) => element.textContent === request.authorName,
+      ),
+    ).toHaveClass("text-[12px]", "font-medium");
 
     fireEvent.click(showMoreButton);
     expect(screen.getByText("Planned request 4")).toBeInTheDocument();

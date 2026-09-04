@@ -1,12 +1,11 @@
 import { EditIcon, RequestsIcon, RoadmapIcon } from "icons";
-import { Box, Flex, Text } from "ui";
+import { Avatar, Box, Flex, Text } from "ui";
 import { cn } from "lib";
 import type {
   PublicPortalUpdate,
   PublicRequest,
   PublicRequestStatus,
 } from "@/shared/feedback-widget/types";
-import { feedbackRequestStatusMeta as requestStatusMeta } from "@/shared/feedback-widget/status";
 import type { WidgetRoadmap } from "./types";
 import { roadmapSections, statusAccent } from "./utils";
 import { FeedbackRow, VoteButton } from "./widget-ui";
@@ -80,7 +79,6 @@ const HomeRoadmapRow = ({
   onVote: () => void;
   request: PublicRequest;
 }) => {
-  const status = requestStatusMeta[request.status];
   return (
     <div className="hover:bg-state-hover/35 relative grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 py-3 pr-1 pl-6 transition-colors">
       <span
@@ -109,12 +107,13 @@ const HomeRoadmapRow = ({
               {request.description}
             </Text>
           ) : null}
-          <Flex align="center" className="mt-2 gap-2 text-[12px]">
-            <Text className="font-medium" color="muted">
-              {status.label}
-            </Text>
-            <span className="text-text-muted">&bull;</span>
-            <Text className="truncate font-medium" color="muted">
+          <Flex align="center" className="mt-2 min-w-0 gap-1.5">
+            <Avatar
+              name={request.authorName || "Anonymous"}
+              size="xs"
+              src={request.authorAvatar}
+            />
+            <Text className="truncate text-[12px] font-medium" color="muted">
               {request.authorName || "Anonymous"}
             </Text>
           </Flex>
