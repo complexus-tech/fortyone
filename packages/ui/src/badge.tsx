@@ -25,7 +25,8 @@ const badge = cva(
         danger: "text-danger-foreground bg-danger border-danger",
         info: "text-info-foreground bg-info border-info",
         warning: "text-warning-foreground bg-warning border-warning",
-        tertiary: "text-text-primary bg-surface border-border",
+        tertiary:
+          "text-text-primary bg-surface border-border dark:bg-state-hover/60",
         secondary: "text-secondary-foreground bg-secondary border-secondary",
         invert: "bg-background-inverse text-foreground-inverse",
       },
