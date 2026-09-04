@@ -84,10 +84,11 @@ describe("MayaChat", () => {
     expect(composerStyles).toContain("corner-shape: squircle");
     expect(composerStyles).not.toContain("box-shadow");
     expect(composerStyles).not.toContain("backdrop-filter");
+    expect(composerSource).toContain('color="tertiary"');
+    expect(composerSource).toContain("isHighlighted");
     expect(composerSource).toContain(
-      'color={isEmptyState ? "tertiary" : "invert"}',
+      'className="bg-state-hover dark:bg-state-hover gap-1"',
     );
-    expect(composerSource).toContain("isHighlighted={isEmptyState}");
     expect(composerSource).toContain(
       "[styles.dockedFrame]: isOnPage && !isEmptyState",
     );

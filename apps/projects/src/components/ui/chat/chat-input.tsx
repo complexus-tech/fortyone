@@ -484,9 +484,7 @@ export const ChatInput = ({
               >
                 <Button
                   aria-label={isEmptyState ? "Attach files" : undefined}
-                  className={cn("gap-1", {
-                    "bg-state-hover dark:bg-state-hover": isEmptyState,
-                  })}
+                  className="bg-state-hover dark:bg-state-hover gap-1"
                   color="tertiary"
                   disabled={
                     isLiveVoiceActive ||
@@ -508,9 +506,7 @@ export const ChatInput = ({
             <Flex align="center" gap={2}>
               <Button
                 aria-label={isEmptyState ? "Record a voice message" : undefined}
-                className={cn("gap-1", {
-                  "bg-state-hover dark:bg-state-hover": isEmptyState,
-                })}
+                className="bg-state-hover dark:bg-state-hover gap-1"
                 color="tertiary"
                 disabled={isLiveVoiceActive}
                 leftIcon={
@@ -542,9 +538,9 @@ export const ChatInput = ({
                 </span>
               </Button>
               <RealtimeVoiceControl
-                color={isEmptyState ? "tertiary" : "invert"}
+                color="tertiary"
                 disabled={liveVoiceDisabled}
-                isHighlighted={isEmptyState}
+                isHighlighted
                 voice={realtimeVoice}
               />
               <Button

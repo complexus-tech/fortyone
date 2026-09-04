@@ -39,6 +39,7 @@ No actionable P0, P1, or P2 visual differences remain for the approved interpret
 10. Prompt-card density refinement: increased prompt icons from 18 to 19 pixels while reducing vertical padding and minimum height for a more compact row.
 11. Composer density refinement: reduced the empty-state input and surface height by eight pixels without changing its width, controls, frame thickness, or corner geometry.
 12. Supporting-copy refinement: changed the empty-state line to `Plan what's next, find what matters, or move work forward.` for a clearer default-homepage proposition.
+13. Persistent composer-control treatment: applied the highlighted Attach, Record, and Live Voice surfaces to both empty and active conversation states while preserving functional disabled and recording states.
 
 ## Verification limits
 
