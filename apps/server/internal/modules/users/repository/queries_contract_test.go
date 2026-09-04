@@ -48,10 +48,9 @@ func TestUserQueriesRetainIdentityAndTenantSecurityBoundaries(t *testing.T) {
 			name: "onboarding tour progress",
 			file: "queries/onboarding_tour_progress.sql",
 			required: []string{
-				"membership.user_id = sqlc.arg(user_id)",
-				"membership.workspace_id = sqlc.arg(workspace_id)",
+				"account.user_id = sqlc.arg(user_id)",
 				"account.is_active = TRUE",
-				"ON CONFLICT (user_id, workspace_id, tour_key, tour_version)",
+				"ON CONFLICT (user_id, tour_key, tour_version)",
 			},
 		},
 		{

@@ -93,7 +93,7 @@ export default async function RootLayout({
     }),
     queryClient.prefetchQuery({
       queryKey: userKeys.onboardingTourProgress(
-        workspaceSlug,
+        session?.user.id ?? "anonymous",
         WORKSPACE_GETTING_STARTED_TOUR_KEY,
         WORKSPACE_GETTING_STARTED_TOUR_VERSION,
       ),

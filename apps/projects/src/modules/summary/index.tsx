@@ -5,6 +5,7 @@ import { BodyContainer } from "@/components/shared/body";
 import { useTerminology } from "@/hooks";
 import { ErrorBoundary } from "@/components/shared";
 import { DateRangeFilter } from "@/modules/analytics/components/filters/date-range-filter";
+import { walkthroughTargets } from "@/shared/walkthrough/targets";
 import { Overview } from "./components/overview";
 import { Activities } from "./components/activities";
 import { MyStories } from "./components/my-stories";
@@ -40,10 +41,17 @@ export const SummaryPage = () => {
               {getTermDisplay("storyTerm", { variant: "plural" })}.
             </Text>
           </Box>
-          <DateRangeFilter showLabel={false} />
+          <Box data-walkthrough-target={walkthroughTargets.summaryDateRange}>
+            <DateRangeFilter showLabel={false} />
+          </Box>
         </Flex>
-        <Overview />
-        <Box className="my-4 grid grid-cols-1 gap-4 @3xl:grid-cols-2 @7xl:grid-cols-3">
+        <Box data-walkthrough-target={walkthroughTargets.summaryOverview}>
+          <Overview />
+        </Box>
+        <Box
+          className="my-4 grid grid-cols-1 gap-4 @3xl:grid-cols-2 @7xl:grid-cols-3"
+          data-walkthrough-target={walkthroughTargets.summaryHealth}
+        >
           <ErrorBoundary fallback={<div>Error loading priority</div>}>
             <Priority />
           </ErrorBoundary>
@@ -55,21 +63,25 @@ export const SummaryPage = () => {
           </ErrorBoundary>
         </Box>
         <Box className="my-4 grid grid-cols-1 gap-4 @5xl:grid-cols-2">
-          <ErrorBoundary
-            fallback={
-              <div>
-                Error loading{" "}
-                {getTermDisplay("storyTerm", {
-                  variant: "plural",
-                })}
-              </div>
-            }
-          >
-            <MyStories />
-          </ErrorBoundary>
-          <ErrorBoundary fallback={<div>Error loading activities</div>}>
-            <Activities />
-          </ErrorBoundary>
+          <Box data-walkthrough-target={walkthroughTargets.summaryMyWork}>
+            <ErrorBoundary
+              fallback={
+                <div>
+                  Error loading{" "}
+                  {getTermDisplay("storyTerm", {
+                    variant: "plural",
+                  })}
+                </div>
+              }
+            >
+              <MyStories />
+            </ErrorBoundary>
+          </Box>
+          <Box data-walkthrough-target={walkthroughTargets.summaryActivityFeed}>
+            <ErrorBoundary fallback={<div>Error loading activities</div>}>
+              <Activities />
+            </ErrorBoundary>
+          </Box>
         </Box>
       </Container>
     </BodyContainer>

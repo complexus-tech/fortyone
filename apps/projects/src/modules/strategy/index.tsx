@@ -7,6 +7,7 @@ import { HeaderContainer, MobileMenuButton } from "@/components/shared";
 import { useUserRole } from "@/hooks";
 import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
 import { useStrategyMap } from "@/shared/strategy-map/hooks";
+import { walkthroughTargets } from "@/shared/walkthrough/targets";
 import { StrategyEditorDialog } from "./strategy-editor-dialog";
 import { StrategyMapCanvas } from "./strategy-map-canvas";
 import {
@@ -89,6 +90,7 @@ export const WorkspaceStrategyMapPage = () => {
           <Flex
             align="center"
             className="border-border bg-surface/80 dark:bg-surface/70 overflow-hidden rounded-lg border backdrop-blur"
+            data-walkthrough-target={walkthroughTargets.strategyZoom}
           >
             <button
               aria-label="Zoom out"
@@ -130,6 +132,7 @@ export const WorkspaceStrategyMapPage = () => {
           </Flex>
           <Button
             color="primary"
+            data-walkthrough-target={walkthroughTargets.strategyAddPillar}
             disabled={isGuest}
             leftIcon={<PlusIcon className="h-[1.1rem] text-current" />}
             onClick={() => {
@@ -142,7 +145,10 @@ export const WorkspaceStrategyMapPage = () => {
         </Flex>
       </HeaderContainer>
 
-      <Box className="relative h-[calc(100%-3.6rem)]">
+      <Box
+        className="relative h-[calc(100%-3.6rem)]"
+        data-walkthrough-target={walkthroughTargets.strategyCanvas}
+      >
         {isStrategyPending || areObjectivesPending || !strategy ? (
           <StrategyMapSkeleton />
         ) : (

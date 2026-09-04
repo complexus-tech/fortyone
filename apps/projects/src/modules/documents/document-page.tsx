@@ -54,6 +54,7 @@ import {
   uploadRichTextMediaFiles,
 } from "@/lib/tiptap/rich-text-media";
 import { RichTextTableMenu } from "@/lib/tiptap/rich-text-table-menu";
+import { GoogleDriveFileSection } from "@/modules/google-drive";
 import { DocumentAccessMenu } from "./document-access-menu";
 import {
   deleteDocumentMediaAction,
@@ -276,6 +277,9 @@ export const DocumentPage = ({ documentId }: { documentId: string }) => {
     document.visibility === "private" ? LockKeyholeIcon : UserMultiple02Icon;
   const canCreateWork =
     document.canEdit && userRole !== undefined && userRole !== "guest";
+  const canEditGoogleDriveFiles = Boolean(
+    document.canEdit && userRole !== "guest",
+  );
   const bubbleMenuCreateActions: BubbleMenuCreateAction[] = canCreateWork
     ? [
         {
@@ -524,6 +528,12 @@ export const DocumentPage = ({ documentId }: { documentId: string }) => {
                   <RichTextTableMenu
                     editor={editor}
                     scrollTarget={scrollContainer}
+                  />
+                  <GoogleDriveFileSection
+                    canEdit={canEditGoogleDriveFiles}
+                    className="mt-10"
+                    suggestedTitle={title}
+                    target={{ id: documentId, type: "document" }}
                   />
                 </Box>
               </div>

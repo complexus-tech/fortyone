@@ -4,6 +4,7 @@ export type MayaToolDomain =
   | "comment"
   | "document"
   | "feedback"
+  | "google-drive"
   | "github"
   | "integration-request"
   | "label"

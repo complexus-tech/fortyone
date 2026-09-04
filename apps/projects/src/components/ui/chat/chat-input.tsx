@@ -23,6 +23,8 @@ import { isChatResponseInProgress } from "@/modules/maya/utils/chat-send-policy"
 import { useVoiceRecording } from "@/hooks/use-voice-recording";
 import { useTerminology } from "@/hooks";
 import { walkthroughTargets } from "@/shared/walkthrough/targets";
+import type { GoogleDriveFileContext } from "@/lib/ai/google-drive-context";
+import { GoogleDriveContextChips } from "./google-drive-context-chips";
 
 type ChatInputProps = {
   value: string;
@@ -32,6 +34,8 @@ type ChatInputProps = {
   status: ChatStatus;
   attachments: File[];
   onAttachmentsChange: (files: File[]) => void;
+  googleDriveFiles: GoogleDriveFileContext[];
+  onGoogleDriveFileRemove: (referenceId: string) => void;
   isOnPage?: boolean;
   isPopup?: boolean;
   messagesCount: number;
@@ -113,6 +117,8 @@ export const ChatInput = ({
   onStop,
   attachments,
   onAttachmentsChange,
+  googleDriveFiles,
+  onGoogleDriveFileRemove,
   isOnPage,
   isPopup = false,
   messagesCount,
@@ -360,6 +366,11 @@ export const ChatInput = ({
           "border-border rounded-2xl border": !isPopup,
         })}
       >
+        <GoogleDriveContextChips
+          className="px-4 py-3"
+          files={googleDriveFiles}
+          onRemove={onGoogleDriveFileRemove}
+        />
         {images.length > 0 && (
           <Box className="mt-2.5 grid grid-cols-3 gap-3 px-4">
             {images.map((attachment) => (

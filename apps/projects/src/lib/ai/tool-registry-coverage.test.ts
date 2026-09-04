@@ -49,6 +49,8 @@ const NON_MATERIAL_TOOL_NAMES = [
   "getCustomerFeedbackTool",
   "listDocumentsTool",
   "getDocumentDetailsTool",
+  "listLinkedGoogleFilesTool",
+  "getLinkedGoogleFileContentTool",
   "listTeams",
   "listPublicTeams",
   "getTeamDetails",
@@ -236,6 +238,10 @@ const REACHABILITY_CASES = [
   {
     intent: "Show our documents and document details.",
     toolNames: ["listDocumentsTool", "getDocumentDetailsTool"],
+  },
+  {
+    intent: "Read the Google Drive files I explicitly selected for Maya.",
+    toolNames: ["listLinkedGoogleFilesTool", "getLinkedGoogleFileContentTool"],
   },
   {
     intent: "Create or join a new Product team.",

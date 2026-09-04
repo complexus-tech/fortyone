@@ -13,14 +13,13 @@ import (
 
 func (r *repo) GetOnboardingTourProgress(
 	ctx context.Context,
-	userID, workspaceID uuid.UUID,
+	userID uuid.UUID,
 	scope usersdomain.OnboardingTourScope,
 ) (usersdomain.OnboardingTourProgress, error) {
-	row, err := r.queries.GetOrCreateOnboardingTourProgressForMember(
+	row, err := r.queries.GetOrCreateOnboardingTourProgressForUser(
 		ctx,
-		usersql.GetOrCreateOnboardingTourProgressForMemberParams{
+		usersql.GetOrCreateOnboardingTourProgressForUserParams{
 			UserID:      userID,
-			WorkspaceID: workspaceID,
 			TourKey:     scope.TourKey,
 			TourVersion: scope.TourVersion,
 		},
@@ -33,7 +32,6 @@ func (r *repo) GetOnboardingTourProgress(
 	}
 	return mapOnboardingTourProgress(
 		row.UserID,
-		row.WorkspaceID,
 		row.TourKey,
 		row.TourVersion,
 		row.CompletedStepIds,
@@ -46,7 +44,7 @@ func (r *repo) GetOnboardingTourProgress(
 
 func (r *repo) UpdateOnboardingTourProgress(
 	ctx context.Context,
-	userID, workspaceID uuid.UUID,
+	userID uuid.UUID,
 	updates usersdomain.UpdateOnboardingTourProgress,
 ) (usersdomain.OnboardingTourProgress, error) {
 	status := ""
@@ -54,11 +52,10 @@ func (r *repo) UpdateOnboardingTourProgress(
 	if setStatus {
 		status = string(*updates.Status)
 	}
-	row, err := r.queries.UpsertOnboardingTourProgressForMember(
+	row, err := r.queries.UpsertOnboardingTourProgressForUser(
 		ctx,
-		usersql.UpsertOnboardingTourProgressForMemberParams{
+		usersql.UpsertOnboardingTourProgressForUserParams{
 			UserID:             userID,
-			WorkspaceID:        workspaceID,
 			TourKey:            updates.TourKey,
 			TourVersion:        updates.TourVersion,
 			CompletedStepIds:   updates.CompletedStepIDs,
@@ -75,7 +72,6 @@ func (r *repo) UpdateOnboardingTourProgress(
 	}
 	return mapOnboardingTourProgress(
 		row.UserID,
-		row.WorkspaceID,
 		row.TourKey,
 		row.TourVersion,
 		row.CompletedStepIds,

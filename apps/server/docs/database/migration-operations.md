@@ -42,6 +42,11 @@ The machine-readable source of truth is [`internal/migrations/manifest.json`](..
 | `000175` | `automation_keyset_indexes` | `reversible` | `schema-first` | Unaffected. Migration 000175 adds planner-visible indexes only and changes no API schema, response, authorization, or mutation behavior. | Old and replacement workers remain schema-compatible. Replacement story and sprint automation jobs can use the indexes immediately after PostgreSQL builds and analyzes them. |
 | `000176` | `user_onboarding_tour_progress` | `forward-only` | `schema-first` | Replacement onboarding-progress endpoints require schema 000176 and enforce an active user plus workspace membership on every read or upsert. Existing APIs ignore the additive table and remain schema-compatible. | Unaffected. Walkthrough progress is synchronous user API state; no worker claims, mutates, or interprets these rows. |
 | `000177` | `user_ai_usage_resets` | `forward-only` | `schema-first` | Replacement chat message counts subtract the current period reset baseline, and the internal-admin endpoint atomically updates every current workspace membership plus its immutable audit entry. Old APIs ignore the additive table. | Unaffected. Maya web-chat allowance counts and administrator resets are synchronous API operations; no worker reads or mutates the reset offsets. |
+| `000178` | `google_drive_integration` | `forward-only` | `schema-first` | Old API instances ignore the additive tables. Replacement instances require schema 000178 before Google Drive routes are enabled. | Unaffected for the initial drive.file release; file access, creation, and one-way imports are synchronous API operations. |
+| `000179` | `google_drive_revocation_saga` | `forward-only` | `coordinated-cutover` | Replacement Google Drive lifecycle code requires schema 000179 for provider session gates, subject ownership conflicts, atomic revocation staging, and reconnect generation supersession. | The replacement worker requires schema 000179 and the API credential-vault keyring to decrypt staged envelopes in memory and perform remote revocation outside database transactions. |
+| `000180` | `google_drive_atomic_document_imports` | `forward-only` | `schema-first` | Replacement import endpoints require schema 000180 and require an Idempotency-Key. Old API instances ignore the additive operation table. | Unaffected. Provider reads and atomic native-document finalization remain synchronous API operations. |
+| `000181` | `google_drive_user_deactivation_cleanup` | `forward-only` | `schema-first` | Existing user deactivation updates automatically delete that user's Drive workspace bindings; no API contract changes. | The Google Drive revocation dispatcher introduced with schema 000179 processes any encrypted tombstones staged by deactivation or backfill. |
+| `000182` | `global_user_onboarding_tour_progress` | `forward-only` | `schema-first` | The existing workspace-prefixed onboarding routes and JSON contract remain compatible. Replacement APIs use the workspace only to authorize route access and persist one account-global record. | Unaffected. Walkthrough progress remains synchronous user API state. |
 
 ## `000152_harden_verification_tokens`
 
@@ -788,6 +793,161 @@ Operational notes:
 - The reset covers every workspace membership held by the target user at reset time. A later membership starts with its normal current-month count because no reset row was created for that workspace.
 - The allowance count excludes soft-deleted sessions and clamps subtraction at zero. Calendar boundaries use the shared application clock location in both the ordinary count and administrator reset service.
 - The audit records aggregate prior message and workspace counts without copying prompts, responses, or other conversation content.
+
+## `000178_google_drive_integration`
+
+- **Classification:** `forward-only`
+- **Files:** `000178_google_drive_integration.up.sql`, `000178_google_drive_integration.down.sql`
+- **Schema:** Additive Google Drive accounts, membership-bound workspace connections, single-use OAuth states, provider-file metadata, actor grants, typed references, lifecycle cleanup triggers, create operations, and document-import provenance.
+- **API:** Old API instances ignore the additive tables. Replacement instances require schema 000178 before Google Drive routes are enabled.
+- **Worker:** Unaffected for the initial drive.file release; file access, creation, and one-way imports are synchronous API operations.
+- **Mixed versions:** Apply schema first. Old and replacement APIs may overlap while the Google Drive feature remains disabled on old instances.
+- **Rollout mode:** `schema-first`
+
+Rollout:
+
+1. Back up PostgreSQL, apply migration 000178, and verify account, membership, target, and provenance foreign keys plus active-account and reference uniqueness indexes and cleanup triggers.
+2. Provision the dedicated Drive-only Google Cloud project and OAuth client, exact callback, restricted Picker key, project number, and the same credential-vault keyring on every API instance.
+3. Deploy the replacement API fleet before enabling Google Drive in the client, then exercise connect, reconnect, Picker attachment, access loss, file creation, bounded reads, import, and disconnect with test accounts.
+4. Confirm one user's Google token never serves another actor, target access is enforced before metadata or content is returned, concurrent disconnects revoke exactly the final binding, membership removal destroys an otherwise orphaned local credential, and target cascades remove orphaned file metadata and grants.
+
+Recovery (`forward-fix`):
+
+1. Disable Google Drive entry points while preserving reference and import provenance rows if provider behavior is unhealthy.
+2. Revoke affected grants and deploy a forward-compatible API or data repair against schema 000178.
+3. Do not run the down migration after adoption because it removes linked-file references and import provenance; recover forward instead.
+
+Operational notes:
+
+- OAuth credentials use the shared context-bound credential vault and never appear in API responses or logs.
+- drive.file only grants access to files selected through Picker or created by FortyOne; whole-Drive search and organization indexing remain outside this migration.
+- A linked file does not grant Google access to teammates. Content reads resolve the requesting actor's own account and revalidate provider access.
+- Workspace membership deletion cascades that user's Drive binding. User-scoped lifecycle locks serialize reconnect and disconnect, and the final binding destroys the local credential even outside the HTTP endpoint.
+- Deleting a story, objective, document, or comment cascades its references. The final reference deletes cached provider metadata and its actor grants.
+- Imported documents are explicit snapshots and do not imply two-way synchronization.
+
+## `000179_google_drive_revocation_saga`
+
+- **Classification:** `forward-only`
+- **Files:** `000179_google_drive_revocation_saga.up.sql`, `000179_google_drive_revocation_saga.down.sql`
+- **Schema:** Adds an encrypted Google Drive revocation outbox, exclusive active ownership per Google subject, and idempotent final-binding/account-delete staging before local credential destruction.
+- **API:** Replacement Google Drive lifecycle code requires schema 000179 for provider session gates, subject ownership conflicts, atomic revocation staging, and reconnect generation supersession.
+- **Worker:** The replacement worker requires schema 000179 and the API credential-vault keyring to decrypt staged envelopes in memory and perform remote revocation outside database transactions.
+- **Mixed versions:** Do not serve Google Drive connect or disconnect traffic with mixed old and replacement API instances. Pause those entry points, drain callbacks, apply 000179, then replace API and worker fleets together so every lifecycle participant observes the same user/subject gates and tombstones.
+- **Rollout mode:** `coordinated-cutover`
+
+Rollout:
+
+1. Provision the identical credential-vault keyring on replacement API and worker instances, pause Google Drive connect/disconnect entry points, and drain in-flight OAuth callbacks and revocations.
+2. Check for duplicate active google_subject values and resolve ownership explicitly before applying migration 000179; the migration fails closed rather than selecting an owner.
+3. Apply 000179, deploy the replacement worker and API fleet together, confirm the revocation dispatcher is scheduled, and only then reopen Google Drive lifecycle traffic.
+4. Exercise multi-workspace final-binding disconnect, requires-reauthorization disconnect, reconnect generation supersession, cross-user subject conflict, membership removal, and user deletion while verifying provider calls occur outside transactions and outbox rows contain only vault envelopes.
+
+Recovery (`forward-fix`):
+
+1. Pause Google Drive lifecycle entry points and revocation claims while preserving every outbox row and credential-vault key generation referenced by pending or failed encrypted envelopes.
+2. Repair the API, worker, ownership data, or keyring against schema 000179, then resume claims and verify stale generations are superseded before any provider revoke.
+3. Do not run the down migration after revocation records exist: it refuses to discard durable cleanup work. Recover forward and manually reconcile dead-lettered encrypted tombstones without logging credential material.
+
+Operational notes:
+
+- Google revocation is grant-wide for one Google subject across every OAuth client and scope in the Cloud project, so each environment uses a dedicated Drive-only Google Cloud project that is never shared with sign-in or Calendar.
+- The outbox stores only the existing vault envelope plus its user, Google subject, and immutable installation generation AAD; raw access and refresh tokens exist only in bounded worker memory.
+- Session advisory gates serialize provider calls by FortyOne user and Google subject without keeping a database transaction open across network I/O. Transaction-scoped locks still protect local account and binding mutations.
+- A final workspace binding or account/user cascade stages the same idempotent generation before clearing local credentials. A reconnect supersedes every older revocation for that subject before the provider gate is released.
+- Failed terminal revocations retain their encrypted envelope for operator reconciliation; completed or superseded rows clear it. Monitor ready age, stale claims, failures, subject conflicts, and vault-open errors.
+
+## `000180_google_drive_atomic_document_imports`
+
+- **Classification:** `forward-only`
+- **Files:** `000180_google_drive_atomic_document_imports.up.sql`, `000180_google_drive_atomic_document_imports.down.sql`
+- **Schema:** Adds durable idempotency operations with preallocated document identities for atomic Google Drive snapshot imports.
+- **API:** Replacement import endpoints require schema 000180 and require an Idempotency-Key. Old API instances ignore the additive operation table.
+- **Worker:** Unaffected. Provider reads and atomic native-document finalization remain synchronous API operations.
+- **Mixed versions:** Apply schema 000180 before any replacement API instance. Old APIs remain safe with the additive table but must be drained before the updated client sends the required Idempotency-Key contract.
+- **Rollout mode:** `schema-first`
+
+Rollout:
+
+1. Apply migrations 000178 through 000180 in order and verify the import operation request-hash, attempt-generation, status, and workspace-user idempotency constraints.
+2. Deploy the replacement API fleet before the updated client and confirm every import request supplies one stable Idempotency-Key across transport retries.
+3. Import a Google Doc, retry the same key after a simulated lost response, and verify both responses identify one native document with one provenance row.
+4. Force cancellation and provenance-write failures and verify document creation, provenance, and operation completion roll back together; then retry the same key and confirm it succeeds without a duplicate document.
+
+Recovery (`forward-fix`):
+
+1. Disable Google Doc imports while preserving import operation and provenance rows if atomic finalization or replay is unhealthy.
+2. Deploy a forward-compatible API or reviewed data repair that retains every completed operation-to-document identity before re-enabling imports.
+3. Do not run the down migration after any operation exists: it refuses to discard durable idempotency records. Recover forward instead.
+
+Operational notes:
+
+- A document identifier is allocated before provider I/O, but the native document, Google provenance, and completed operation are committed in one PostgreSQL transaction.
+- Attempt generations fence stale requests after a lease takeover so an older canceled request cannot fail or finalize the newer attempt.
+- Completed operation identities intentionally survive source-reference or native-document deletion; reusing the same key never creates another snapshot.
+- Provider content is not stored in the operation table. Failed retries fetch a fresh bounded snapshot, while completed retries replay the original document identity without provider I/O.
+
+## `000181_google_drive_user_deactivation_cleanup`
+
+- **Classification:** `forward-only`
+- **Files:** `000181_google_drive_user_deactivation_cleanup.up.sql`, `000181_google_drive_user_deactivation_cleanup.down.sql`
+- **Schema:** Adds atomic Google Drive binding cleanup when an active user is soft-deactivated and backfills bindings left behind by earlier deactivations.
+- **API:** Existing user deactivation updates automatically delete that user's Drive workspace bindings; no API contract changes.
+- **Worker:** The Google Drive revocation dispatcher introduced with schema 000179 processes any encrypted tombstones staged by deactivation or backfill.
+- **Mixed versions:** Apply schema 000181 after the 000179 lifecycle worker is available. Old API instances remain data-compatible, but pause Drive lifecycle and user-deactivation traffic during the backfill.
+- **Rollout mode:** `schema-first`
+
+Rollout:
+
+1. Pause Google Drive connect/disconnect callbacks and user deactivation jobs, then confirm the 000179 revocation worker and credential-vault keyring are available.
+2. Apply 000181; it serializes and removes every Drive binding belonging to already-inactive users, causing existing final-binding triggers to stage encrypted revocation tombstones and scrub local credentials.
+3. Resume the worker, verify the new tombstones drain or remain safely encrypted for operator resolution, then resume user deactivation and Drive lifecycle traffic.
+4. Exercise soft deactivation for a user with multiple workspace bindings, verify one final-generation tombstone per account, then reactivate the user and confirm no Drive binding or credential is restored without a new OAuth connection.
+
+Recovery (`forward-fix`):
+
+1. If deactivation fails with SQLSTATE 40001, let the in-flight Drive lifecycle operation finish and retry the complete deactivation transaction.
+2. Preserve every staged revocation row and its vault key generation while repairing trigger, worker, or provider failures.
+3. The down migration removes only the future deactivation hook; it intentionally does not recreate deleted bindings or restore scrubbed credentials. Prefer a forward repair once cleanup has run.
+
+Operational notes:
+
+- The trigger fires only for an active-to-inactive transition, deletes connections without provider I/O, and relies on the existing connection trigger for grant purge, final-binding staging, and credential scrubbing.
+- Non-blocking provider-user and local lifecycle locks prevent row-lock inversion: a concurrent OAuth, disconnect, worker, or direct connection mutation makes the whole deactivation retry instead of allowing stale state.
+- The historical backfill locks and rechecks each inactive user after acquiring its lifecycle gates, so a verified sign-in that reactivates a candidate cannot lose a Drive binding selected from the backfill's earlier snapshot.
+- Reactivation does not recreate Drive bindings, unsupersede tombstones, or restore credentials. The user must explicitly reconnect Google Drive.
+- The trigger does not update users and therefore cannot recurse; repeated writes of is_active=false are inert.
+
+## `000182_global_user_onboarding_tour_progress`
+
+- **Classification:** `forward-only`
+- **Files:** `000182_global_user_onboarding_tour_progress.up.sql`, `000182_global_user_onboarding_tour_progress.down.sql`
+- **Schema:** Adds canonical per-user, per-tour, per-version onboarding progress; merges workspace-scoped state; preserves the original user-level completion flag and former shared Teams/Sprints key; and mirrors legacy writes during the rolling API replacement.
+- **API:** The existing workspace-prefixed onboarding routes and JSON contract remain compatible. Replacement APIs use the workspace only to authorize route access and persist one account-global record.
+- **Worker:** Unaffected. Walkthrough progress remains synchronous user API state.
+- **Mixed versions:** Apply schema 000182 before the replacement API. The mirror trigger captures workspace-scoped writes from old API instances until the complete API fleet reads and writes the global table.
+- **Rollout mode:** `schema-first`
+
+Rollout:
+
+1. Back up PostgreSQL, apply migration 000182, and verify global rows contain the union of every workspace-scoped step and action, preserve users.has_seen_walkthrough as completed getting-started state, and alias the former shared Teams/Sprints tour state.
+2. Deploy the replacement API fleet behind the unchanged workspace-prefixed routes, then verify old-instance writes are mirrored while replacement instances return the same progress through two authorized workspaces.
+3. Deploy the frontend global cache and browser fallback scopes only after every API instance reads and writes the global table.
+4. Exercise concurrent and repeated updates, workspace switching, account switching in one browser, and terminal-status precedence before removing the legacy mirror in a later forward migration.
+
+Recovery (`forward-fix`):
+
+1. Keep the legacy mirror and workspace-scoped table intact while disabling the frontend onboarding entry point if global persistence is unhealthy.
+2. Repair the replacement API or global rows forward; completed actions written by old instances remain mirrored during recovery.
+3. Do not run the down migration after global rows exist because replacement instances may have written progress that has no workspace-scoped source row.
+
+Operational notes:
+
+- Global status precedence is completed, then skipped, then active; completed and skipped state therefore cannot be hidden by an active row from another workspace.
+- The backfill preserves the earliest creation time, latest update time, and sorted distinct unions of step and action identifiers.
+- The legacy users.has_seen_walkthrough boolean maps only to completed workspace-getting-started version 1.0.0 state; it does not suppress contextual module tours.
+- The legacy workspace-module-team version 1.0.0 state seeds workspace-module-sprints version 1.0.0 once during migration so splitting the routes does not replay an already completed or dismissed tour.
+- The workspace-prefixed route remains membership-protected for compatibility, but workspace identity is not part of the persisted onboarding key.
 
 ## Adding the next migration
 

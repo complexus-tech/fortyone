@@ -112,6 +112,10 @@ import {
 } from "./integration-requests";
 import { getCustomerFeedbackTool, listCustomerFeedbackTool } from "./feedback";
 import { getDocumentDetailsTool, listDocumentsTool } from "./documents";
+import {
+  getLinkedGoogleFileContentTool,
+  listLinkedGoogleFilesTool,
+} from "./google-drive";
 
 export { navigation } from "./navigation";
 export { membersTool, resolveMemberTool } from "./members";
@@ -172,6 +176,10 @@ export {
 } from "./integration-requests";
 export { getCustomerFeedbackTool, listCustomerFeedbackTool } from "./feedback";
 export { getDocumentDetailsTool, listDocumentsTool } from "./documents";
+export {
+  getLinkedGoogleFileContentTool,
+  listLinkedGoogleFilesTool,
+} from "./google-drive";
 
 export const tools = {
   navigation,
@@ -224,6 +232,9 @@ export const tools = {
   // Documents
   listDocumentsTool,
   getDocumentDetailsTool,
+  // Google Drive selected context
+  listLinkedGoogleFilesTool,
+  getLinkedGoogleFileContentTool,
   // Teams
   listTeams,
   listPublicTeams,

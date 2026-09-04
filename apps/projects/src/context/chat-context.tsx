@@ -12,11 +12,16 @@ import {
 } from "react";
 import { useWalkthrough } from "@/components/walkthrough/walkthrough-provider";
 import { useMayaChat } from "@/modules/maya";
+import type { GoogleDriveFileReference } from "@/modules/google-drive/types";
 
 type ChatContextType = {
   chat: ReturnType<typeof useMayaChat>;
   openChat: (message?: string) => void;
   openChatWithDraft: (draft: string) => void;
+  openChatWithGoogleDriveFile: (
+    file: Pick<GoogleDriveFileReference, "id" | "mimeType" | "name">,
+    draft?: string,
+  ) => void;
   closeChat: () => void;
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
@@ -89,6 +94,21 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     chat.setInput(draft);
     setIsOpen(true);
   };
+  const { addGoogleDriveFile, setInput } = chat;
+
+  const openChatWithGoogleDriveFile = (
+    file: Pick<GoogleDriveFileReference, "id" | "mimeType" | "name">,
+    draft?: string,
+  ) => {
+    pendingInitialMessageRef.current = null;
+    addGoogleDriveFile({
+      referenceId: file.id,
+      mimeType: file.mimeType,
+      name: file.name.slice(0, 500),
+    });
+    if (draft) setInput(draft);
+    setIsOpen(true);
+  };
 
   const closeChat = () => {
     setIsOpen(false);
@@ -103,6 +123,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         isOpen,
         openChat,
         openChatWithDraft,
+        openChatWithGoogleDriveFile,
         setIsOpen,
       }}
     >

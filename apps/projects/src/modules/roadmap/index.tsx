@@ -15,6 +15,7 @@ import { RoadmapLayoutSwitcher } from "@/components/ui/roadmap-layout-switcher";
 import { RoadmapEmptyIllustration } from "@/components/ui/illustrations/empty-state-illustrations";
 import type { ZoomLevel } from "@/components/ui/base-gantt";
 import { isObjectiveForecastAtRisk } from "@/modules/objectives/components/objective-forecast-risk-utils";
+import { walkthroughTargets } from "@/shared/walkthrough/targets";
 import { ObjectiveViews } from "./components/objective-views";
 import { ObjectiveViewOptionsButton } from "./components/objective-view-options-button";
 import {
@@ -92,7 +93,10 @@ export const RoadmapPage = () => {
   return (
     <>
       <HeaderContainer className="justify-between">
-        <Flex gap={2}>
+        <Flex
+          data-walkthrough-target={walkthroughTargets.roadmapHeader}
+          gap={2}
+        >
           <MobileMenuButton />
           <BreadCrumbs
             breadCrumbs={[
@@ -136,12 +140,18 @@ export const RoadmapPage = () => {
             </Button>
           ) : null}
         </Flex>
-        <Flex align="center" gap={2}>
-          <RoadmapLayoutSwitcher
-            className="hidden md:flex"
-            layout={layout}
-            setLayout={setLayout}
-          />
+        <Flex
+          align="center"
+          data-walkthrough-target={walkthroughTargets.roadmapViewOptions}
+          gap={2}
+        >
+          <Box data-walkthrough-target={walkthroughTargets.roadmapLayout}>
+            <RoadmapLayoutSwitcher
+              className="hidden md:flex"
+              layout={layout}
+              setLayout={setLayout}
+            />
+          </Box>
           {layout !== "gantt" ? (
             <ObjectiveViewOptionsButton
               setViewOptions={setViewOptions}
@@ -167,7 +177,10 @@ export const RoadmapPage = () => {
         </Flex>
       </HeaderContainer>
 
-      <Box className="h-[calc(100%-3.6rem)] min-w-0">
+      <Box
+        className="h-[calc(100%-3.6rem)] min-w-0"
+        data-walkthrough-target={walkthroughTargets.roadmapObjectives}
+      >
         <ObjectiveViews
           emptyState={emptyState}
           isPending={isPending}

@@ -14,8 +14,8 @@ func TestBuiltInRegistryDeclaresProviderCapabilities(t *testing.T) {
 		t.Fatalf("build provider registry: %v", err)
 	}
 
-	if providers := registry.List(); len(providers) != 6 {
-		t.Fatalf("provider count = %d, want 6", len(providers))
+	if providers := registry.List(); len(providers) != 7 {
+		t.Fatalf("provider count = %d, want 7", len(providers))
 	}
 	tests := []struct {
 		provider   integrations.ProviderKey
@@ -25,6 +25,7 @@ func TestBuiltInRegistryDeclaresProviderCapabilities(t *testing.T) {
 		{provider: "gitlab", capability: integrations.CapabilityCodeHostCommentWriter},
 		{provider: "slack", capability: integrations.CapabilityMessagingDelivery},
 		{provider: "figma", capability: integrations.CapabilityDesignFileContext},
+		{provider: "google-drive", capability: integrations.CapabilityCloudFileContext},
 		{provider: "google-calendar", capability: integrations.CapabilityCalendarWatch},
 		{provider: "microsoft-calendar", capability: integrations.CapabilityCalendarWatch},
 	}

@@ -50,6 +50,8 @@ export const MAYA_TOOL_NAMES = [
   "getCustomerFeedbackTool",
   "listDocumentsTool",
   "getDocumentDetailsTool",
+  "listLinkedGoogleFilesTool",
+  "getLinkedGoogleFileContentTool",
   "listTeams",
   "listPublicTeams",
   "getTeamDetails",

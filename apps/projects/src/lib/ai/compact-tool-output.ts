@@ -1,4 +1,5 @@
 import type { JSONValue } from "ai";
+import { getGoogleDriveContentReceipt } from "./google-drive-tool-output";
 
 const DEFAULT_LIMITS = {
   arrayItems: 20,
@@ -17,6 +18,7 @@ const MAX_BULK_STORY_RECEIPTS = 50;
 const MAX_RECEIPT_TITLE_CHARACTERS = 240;
 const MAX_DOCUMENT_CONTENT_CHARACTERS = 20_000;
 const GITHUB_INSTALL_SESSION_TOOL = "createGitHubInstallSessionTool";
+const GOOGLE_DRIVE_CONTENT_TOOL = "getLinkedGoogleFileContentTool";
 
 const ANALYTICS_PAYLOAD_KEYS: Readonly<Record<string, string>> = {
   objectiveProgressReportTool: "progress",
@@ -522,6 +524,10 @@ export const compactToolOutput = (
   value: unknown,
   { toolName }: CompactToolOutputOptions = {},
 ): JSONValue => {
+  if (toolName === GOOGLE_DRIVE_CONTENT_TOOL) {
+    return getGoogleDriveContentReceipt(value);
+  }
+
   const secureToolOutput = getGitHubInstallSessionModelOutput(value, toolName);
   if (secureToolOutput) return secureToolOutput;
 

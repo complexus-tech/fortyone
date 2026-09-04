@@ -21,6 +21,11 @@ import { tools } from "@/lib/ai/tools";
 import { withCompactModelOutputs } from "@/lib/ai/model-tools";
 import { getMayaPromptCacheKey } from "@/lib/ai/prompt-cache-key";
 import {
+  getGoogleDriveSelectionRuntimeContext,
+  getLatestGoogleDriveFileContexts,
+} from "@/lib/ai/google-drive-context";
+import { redactGoogleDriveContentFromMessages } from "@/lib/ai/google-drive-tool-output";
+import {
   omitMayaToolSearchHistory,
   withOpenAIToolDiscovery,
 } from "@/lib/ai/tool-discovery";
@@ -105,7 +110,7 @@ const handleChatRequest = async (
     return new Response("Unauthorized", { status: 401 });
   }
 
-  const uiMessages = messagesFromRequest;
+  const uiMessages = redactGoogleDriveContentFromMessages(messagesFromRequest);
   const mutationApprovalResponse = createMutationToolApprovalResponse({
     abortSignal: req.signal,
     chatId: id,
@@ -132,7 +137,12 @@ const handleChatRequest = async (
     operation: trigger === "regenerate-message" ? "regenerate" : "append",
     workspaceSlug: workspace.slug,
   });
-  const canonicalUiMessages = writeReservation.messages ?? uiMessages;
+  const canonicalUiMessages = redactGoogleDriveContentFromMessages(
+    writeReservation.messages ?? uiMessages,
+  );
+  const selectedGoogleDriveFiles =
+    getLatestGoogleDriveFileContexts(canonicalUiMessages);
+  const containsGoogleDriveContent = selectedGoogleDriveFiles.length > 0;
 
   const messagesWithoutHistoricalAttachments =
     omitHistoricalChatAttachments(canonicalUiMessages);
@@ -155,8 +165,11 @@ const handleChatRequest = async (
   const googleClient = createGoogleGenerativeAI({
     apiKey: process.env.GOOGLE_API_KEY,
   });
+  // OpenAI hosted tool-search requires stored Responses. Drive-bearing turns
+  // instead send the local tool catalog and disable provider-side Response
+  // storage so extracted source content exists only for the active model run.
   const runtimeTools =
-    provider === "openai"
+    provider === "openai" && !containsGoogleDriveContent
       ? withOpenAIToolDiscovery(
           modelTools,
           openaiClient.tools.toolSearch({ execution: "server" }),
@@ -193,20 +206,21 @@ const handleChatRequest = async (
     );
 
   // Get user context for "me" resolution
-  const userContext = getUserContext({
-    user: session.user,
-    currentPath,
-    currentTheme,
-    resolvedTheme,
-    subscription,
-    memories,
-    joinedTeams,
-    storyCreationDefaults,
-    username: username ?? subscription?.username,
-    terminology,
-    workspace,
-    totalMessages,
-  });
+  const userContext =
+    getUserContext({
+      user: session.user,
+      currentPath,
+      currentTheme,
+      resolvedTheme,
+      subscription,
+      memories,
+      joinedTeams,
+      storyCreationDefaults,
+      username: username ?? subscription?.username,
+      terminology,
+      workspace,
+      totalMessages,
+    }) + getGoogleDriveSelectionRuntimeContext(selectedGoogleDriveFiles);
 
   const phClient = posthogServer();
 
@@ -215,7 +229,10 @@ const handleChatRequest = async (
       ? openaiClient(OPENAI_TEXT_MODEL)
       : googleClient("gemini-3-flash-preview");
 
-  if (process.env.NODE_ENV === "development") {
+  // The AI SDK devtools middleware can retain model-step payloads for local
+  // inspection. Keep it out of Drive-bearing turns so selected file content
+  // remains confined to the provider request that answers the current turn.
+  if (process.env.NODE_ENV === "development" && !containsGoogleDriveContent) {
     client = wrapLanguageModel({
       model: client,
       middleware: devToolsMiddleware(),
@@ -243,12 +260,14 @@ const handleChatRequest = async (
     system: systemPrompt + userContext,
     experimental_context: {
       chatId: id,
+      selectedGoogleDriveFiles,
       workspaceSlug: workspace.slug,
     },
     providerOptions: {
       openai: {
         promptCacheKey: getMayaPromptCacheKey(workspace.id),
         reasoningEffort: OPENAI_DEFAULT_REASONING_EFFORT,
+        ...(containsGoogleDriveContent ? { store: false } : {}),
         textVerbosity: "low",
       } satisfies OpenAIResponsesProviderOptions,
       google: {
@@ -294,7 +313,7 @@ const handleChatRequest = async (
     onFinish: async ({ messages }) => {
       await saveChat({
         id,
-        messages,
+        messages: redactGoogleDriveContentFromMessages(messages),
         reservation: writeReservation,
         workspaceSlug: workspace.slug,
       });

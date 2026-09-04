@@ -5,6 +5,7 @@ import { useHotkeys } from "react-hotkeys-hook";
 import { HeaderContainer, MobileMenuButton } from "@/components/shared";
 import { StoriesViewOptionsButton, StoriesFilterButton } from "@/components/ui";
 import { useTerminology } from "@/hooks";
+import { walkthroughTargets } from "@/shared/walkthrough/targets";
 import type { MyWorkLayout } from "../types";
 import { MyWorkLayoutSwitcher } from "./my-work-layout-switcher";
 import { useMyWork } from "./provider";
@@ -83,33 +84,41 @@ export const Header = ({
         </Box>
       </Flex>
       <Flex align="center" className="min-w-0" gap={2}>
-        <Tabs
-          onValueChange={(value) => {
-            setTab(value as typeof tab);
-          }}
-          value={tab}
-        >
-          <Tabs.List className="hide-scrollbar mx-0 max-w-[48vw] flex-nowrap overflow-x-auto md:mx-0">
-            {visibleTabs.map((visibleTab) => (
-              <Tabs.Tab key={visibleTab} value={visibleTab}>
-                {tabLabels[visibleTab]}
-              </Tabs.Tab>
-            ))}
-          </Tabs.List>
-        </Tabs>
+        <Box data-walkthrough-target={walkthroughTargets.myWorkTabs}>
+          <Tabs
+            onValueChange={(value) => {
+              setTab(value as typeof tab);
+            }}
+            value={tab}
+          >
+            <Tabs.List className="hide-scrollbar mx-0 max-w-[48vw] flex-nowrap overflow-x-auto md:mx-0">
+              {visibleTabs.map((visibleTab) => (
+                <Tabs.Tab key={visibleTab} value={visibleTab}>
+                  {tabLabels[visibleTab]}
+                </Tabs.Tab>
+              ))}
+            </Tabs.List>
+          </Tabs>
+        </Box>
         <span aria-hidden="true" className="bg-border mx-1 h-5 w-px shrink-0" />
-        <MyWorkLayoutSwitcher layout={layout} setLayout={setLayout} />
-        <StoriesFilterButton
-          filters={filters}
-          resetFilters={resetFilters}
-          setFilters={setFilters}
-        />
-        <StoriesViewOptionsButton
-          groupByOptions={["status", "priority", "assignee"]}
-          layout={layout}
-          setViewOptions={setViewOptions}
-          viewOptions={viewOptions}
-        />
+        <Box data-walkthrough-target={walkthroughTargets.myWorkViewControls}>
+          <MyWorkLayoutSwitcher layout={layout} setLayout={setLayout} />
+        </Box>
+        <Box data-walkthrough-target={walkthroughTargets.myWorkFilters}>
+          <StoriesFilterButton
+            filters={filters}
+            resetFilters={resetFilters}
+            setFilters={setFilters}
+          />
+        </Box>
+        <Box data-walkthrough-target={walkthroughTargets.myWorkDisplayOptions}>
+          <StoriesViewOptionsButton
+            groupByOptions={["status", "priority", "assignee"]}
+            layout={layout}
+            setViewOptions={setViewOptions}
+            viewOptions={viewOptions}
+          />
+        </Box>
       </Flex>
     </HeaderContainer>
   );

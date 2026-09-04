@@ -19,7 +19,7 @@ export const useOnboardingTourProgress = ({
 
   return useQuery({
     queryKey: userKeys.onboardingTourProgress(
-      workspaceSlug,
+      session?.user.id ?? "anonymous",
       tourKey,
       tourVersion,
     ),

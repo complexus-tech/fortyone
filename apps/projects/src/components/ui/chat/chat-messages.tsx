@@ -6,6 +6,7 @@ import type { ChatAddToolApproveResponseFunction, ChatStatus } from "ai";
 import { useProfile } from "@/lib/hooks/profile";
 import type { MayaUIMessage } from "@/lib/ai/tools/types";
 import { useTerminology } from "@/hooks";
+import { walkthroughTargets } from "@/shared/walkthrough/targets";
 import { ChatMessage } from "./chat-message";
 import {
   getMessageProgressLabel,
@@ -93,6 +94,9 @@ export const ChatMessages = ({
         "hide-scrollbar": !isOnPage,
         "px-[18px] pt-4 pb-5": isPopup,
       })}
+      data-walkthrough-target={
+        isOnPage ? walkthroughTargets.mayaConversation : undefined
+      }
       onScroll={handleScroll}
     >
       <Flex

@@ -16,6 +16,7 @@ import {
 import { cn } from "lib";
 import { ExpandableSearchHeader } from "@/components/shared";
 import { useUserRole, useWorkspacePath } from "@/hooks";
+import { walkthroughTargets } from "@/shared/walkthrough/targets";
 import { DOCUMENTS_SIDEBAR_RECENT_LIMIT } from "./constants";
 import { useCreateDocument, useDocuments } from "./hooks";
 import { formatDocumentRelativeTime } from "./relative-time";
@@ -94,43 +95,51 @@ export const DocumentsList = () => {
       className="border-border/70 bg-sidebar/35 h-full min-h-0 min-w-0 overflow-hidden border-r"
       direction="column"
     >
-      <ExpandableSearchHeader
-        actions={
-          <Button
-            aria-label="Create document"
-            asIcon
-            className="aspect-square"
-            color="tertiary"
-            disabled={!canCreateDocuments || createDocument.isPending}
-            onClick={handleCreate}
-            size="sm"
-          >
-            <PlusIcon strokeWidth={2} />
-          </Button>
-        }
-        initialValue={search}
-        key={search}
-        label="Search documents"
-        leading={
-          <Flex align="center" className="min-w-0" gap={2}>
-            <DocsIcon
-              className="text-text-muted size-5 shrink-0"
-              strokeWidth={2}
-            />
-            <Text className="truncate" fontSize="lg" fontWeight="semibold">
-              Documents
-            </Text>
-          </Flex>
-        }
-        onSubmit={(nextSearch) => {
-          router.push(
-            getDocumentsHref(scope === "templates" ? "all" : scope, nextSearch),
-          );
-        }}
-        placeholder="Search documents..."
-      />
+      <Box data-walkthrough-target={walkthroughTargets.documentsSearch}>
+        <ExpandableSearchHeader
+          actions={
+            <Button
+              aria-label="Create document"
+              asIcon
+              className="aspect-square"
+              color="tertiary"
+              disabled={!canCreateDocuments || createDocument.isPending}
+              onClick={handleCreate}
+              size="sm"
+            >
+              <PlusIcon strokeWidth={2} />
+            </Button>
+          }
+          initialValue={search}
+          key={search}
+          label="Search documents"
+          leading={
+            <Flex align="center" className="min-w-0" gap={2}>
+              <DocsIcon
+                className="text-text-muted size-5 shrink-0"
+                strokeWidth={2}
+              />
+              <Text className="truncate" fontSize="lg" fontWeight="semibold">
+                Documents
+              </Text>
+            </Flex>
+          }
+          onSubmit={(nextSearch) => {
+            router.push(
+              getDocumentsHref(
+                scope === "templates" ? "all" : scope,
+                nextSearch,
+              ),
+            );
+          }}
+          placeholder="Search documents..."
+        />
+      </Box>
 
-      <Box className="px-3 py-3">
+      <Box
+        className="px-3 py-3"
+        data-walkthrough-target={walkthroughTargets.documentsNavigation}
+      >
         {scopeOptions.map(({ icon: Icon, label, value }) => {
           const isActive = isDocumentsHome && scope === value;
           return (
@@ -155,7 +164,10 @@ export const DocumentsList = () => {
         })}
       </Box>
 
-      <Box className="border-border/70 min-h-0 flex-1 overflow-y-auto border-t px-3 py-4">
+      <Box
+        className="border-border/70 min-h-0 flex-1 overflow-y-auto border-t px-3 py-4"
+        data-walkthrough-target={walkthroughTargets.documentsRecent}
+      >
         <Text className="mb-2 px-3" color="muted" fontWeight="semibold">
           Recent
         </Text>

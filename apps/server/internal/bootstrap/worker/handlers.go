@@ -29,30 +29,31 @@ import (
 )
 
 type taskMuxDependencies struct {
-	Log                 *logger.Logger
-	DatabasePool        *pgxpool.Pool
-	Brevo               *brevo.Service
-	Mailer              mailer.Service
-	GitHub              *github.Service
-	Figma               taskhandlers.FigmaWebhookProcessor
-	Maya                *maya.Service
-	MayaRepository      *mayarepository.Repo
-	Attachments         *attachments.Service
-	EmailCopy           emailcopy.Generator
-	EmailThreads        emailthread.GuidancePreparer
-	Notifications       *notifications.Service
-	WeeklyDigest        jobs.WeeklyDigestStore
-	SlackEvents         taskhandlers.SlackEventProcessor
-	EmailReplies        taskhandlers.EmailReplyProcessor
-	EmailRecovery       taskhandlers.EmailReplyRecoverer
-	Calendar            taskhandlers.CalendarSyncProcessor
-	SystemUserID        uuid.UUID
-	FeedbackTasks       *tasks.Service
-	FeedbackOutbox      taskhandlers.FeedbackOutboxProcessor
-	StoryScheduleOutbox taskhandlers.StoryScheduleTransitionOutboxProcessor
-	InvitationOutbox    taskhandlers.InvitationOutboxProcessor
-	FeedbackSecurityKey string
-	IdempotencyReceipts taskhandlers.IdempotencyReceiptPurger
+	Log                    *logger.Logger
+	DatabasePool           *pgxpool.Pool
+	Brevo                  *brevo.Service
+	Mailer                 mailer.Service
+	GitHub                 *github.Service
+	Figma                  taskhandlers.FigmaWebhookProcessor
+	Maya                   *maya.Service
+	MayaRepository         *mayarepository.Repo
+	Attachments            *attachments.Service
+	EmailCopy              emailcopy.Generator
+	EmailThreads           emailthread.GuidancePreparer
+	Notifications          *notifications.Service
+	WeeklyDigest           jobs.WeeklyDigestStore
+	SlackEvents            taskhandlers.SlackEventProcessor
+	EmailReplies           taskhandlers.EmailReplyProcessor
+	EmailRecovery          taskhandlers.EmailReplyRecoverer
+	Calendar               taskhandlers.CalendarSyncProcessor
+	SystemUserID           uuid.UUID
+	FeedbackTasks          *tasks.Service
+	FeedbackOutbox         taskhandlers.FeedbackOutboxProcessor
+	StoryScheduleOutbox    taskhandlers.StoryScheduleTransitionOutboxProcessor
+	GoogleDriveRevocations taskhandlers.GoogleDriveRevocationProcessor
+	InvitationOutbox       taskhandlers.InvitationOutboxProcessor
+	FeedbackSecurityKey    string
+	IdempotencyReceipts    taskhandlers.IdempotencyReceiptPurger
 }
 
 func buildTaskMux(dependencies taskMuxDependencies) *asynq.ServeMux {
@@ -76,11 +77,12 @@ func buildTaskMux(dependencies taskMuxDependencies) *asynq.ServeMux {
 		SlackEvents: dependencies.SlackEvents, EmailReplies: dependencies.EmailReplies,
 		EmailRecovery: dependencies.EmailRecovery, Calendar: dependencies.Calendar,
 		SystemUserID: dependencies.SystemUserID, FeedbackTasks: dependencies.FeedbackTasks,
-		FeedbackOutbox:      dependencies.FeedbackOutbox,
-		FeedbackDeliveries:  feedbackStore,
-		StoryScheduleOutbox: dependencies.StoryScheduleOutbox,
-		InvitationOutbox:    dependencies.InvitationOutbox,
-		FeedbackSecurityKey: dependencies.FeedbackSecurityKey,
+		FeedbackOutbox:         dependencies.FeedbackOutbox,
+		FeedbackDeliveries:     feedbackStore,
+		StoryScheduleOutbox:    dependencies.StoryScheduleOutbox,
+		GoogleDriveRevocations: dependencies.GoogleDriveRevocations,
+		InvitationOutbox:       dependencies.InvitationOutbox,
+		FeedbackSecurityKey:    dependencies.FeedbackSecurityKey,
 	})
 	storyAutomationHandlers := taskhandlers.NewStoryAutomationHandlers(
 		taskhandlers.StoryAutomationHandlerDependencies{
@@ -181,6 +183,7 @@ func buildTaskMux(dependencies taskMuxDependencies) *asynq.ServeMux {
 	mux.HandleFunc(tasks.TypeCalendarScheduleReconcile, workerTaskService.HandleCalendarScheduleReconcile)
 	mux.HandleFunc(tasks.TypeCalendarWorkspaceScheduleBatch, workerTaskService.HandleCalendarWorkspaceScheduleBatch)
 	mux.HandleFunc(tasks.TypeCalendarScheduleOutbox, workerTaskService.HandleCalendarScheduleOutboxDispatch)
+	mux.HandleFunc(tasks.TypeGoogleDriveRevocationDispatch, workerTaskService.HandleGoogleDriveRevocationDispatch)
 	mux.HandleFunc(tasks.TypeStoryScheduleTransitionOutbox, workerTaskService.HandleStoryScheduleTransitionOutboxDispatch)
 	mux.HandleFunc(tasks.TypeInvitationOutboxDispatch, workerTaskService.HandleInvitationOutboxDispatch)
 

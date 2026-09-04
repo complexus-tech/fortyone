@@ -78,6 +78,11 @@ type Config struct {
 	FigmaRedirectURL            string
 	FigmaWebhookURL             string
 	FigmaWebhookPayloadSecret   string
+	GoogleDriveClientID         string
+	GoogleDriveClientSecret     string
+	GoogleDriveRedirectURL      string
+	GoogleDrivePickerAPIKey     string
+	GoogleDriveAppID            string
 	AIAPIKey                    string
 	SSEHub                      *sse.Hub
 	AllowedOrigins              web.OriginPolicy

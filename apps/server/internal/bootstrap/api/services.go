@@ -36,6 +36,8 @@ import (
 	figma "github.com/complexus-tech/projects-api/internal/modules/figma/service"
 	githubrepository "github.com/complexus-tech/projects-api/internal/modules/github/repository"
 	github "github.com/complexus-tech/projects-api/internal/modules/github/service"
+	googledriverepository "github.com/complexus-tech/projects-api/internal/modules/googledrive/repository"
+	googledrive "github.com/complexus-tech/projects-api/internal/modules/googledrive/service"
 	integrationrequestsrepository "github.com/complexus-tech/projects-api/internal/modules/integrationrequests/repository"
 	integrationrequests "github.com/complexus-tech/projects-api/internal/modules/integrationrequests/service"
 	invitationsrepository "github.com/complexus-tech/projects-api/internal/modules/invitations/repository"
@@ -108,6 +110,7 @@ type services struct {
 	epics                *epics.Service
 	feedback             *feedback.Service
 	figma                *figma.Service
+	googleDrive          *googledrive.Service
 	github               *github.Service
 	slack                *slack.Service
 	integrationRequests  *integrationrequests.Service
@@ -437,6 +440,16 @@ func buildServices(cfg mux.Config, dependencies Dependencies) services {
 		figmaStories,
 		figmaConfig,
 	)
+	googleDriveService := googledrive.New(
+		cfg.Log,
+		googledriverepository.New(dependencies.DatabasePool),
+		googledrive.Config{
+			ClientID: cfg.GoogleDriveClientID, ClientSecret: cfg.GoogleDriveClientSecret,
+			RedirectURL: cfg.GoogleDriveRedirectURL, PickerAPIKey: cfg.GoogleDrivePickerAPIKey,
+			AppID: cfg.GoogleDriveAppID, WebsiteURL: cfg.WebsiteURL,
+			Credentials: dependencies.CredentialVault,
+		},
+	)
 
 	return services{
 		activities: activities.New(activitiesrepository.New(dependencies.DatabasePool)),
@@ -460,6 +473,7 @@ func buildServices(cfg mux.Config, dependencies Dependencies) services {
 		epics:                epics.New(),
 		feedback:             feedbackService,
 		figma:                figmaService,
+		googleDrive:          googleDriveService,
 		github:               githubService,
 		slack:                slackService,
 		integrationRequests:  integrationRequestsService,
@@ -536,6 +550,9 @@ func (s services) validate() error {
 	}
 	if s.figma == nil {
 		return fmt.Errorf("missing service: figma")
+	}
+	if s.googleDrive == nil {
+		return fmt.Errorf("missing service: googleDrive")
 	}
 	if s.github == nil {
 		return fmt.Errorf("missing service: github")

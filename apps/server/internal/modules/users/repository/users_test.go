@@ -25,12 +25,12 @@ type fakeUserQueries struct {
 	upsertPreferences         func(context.Context, usersql.UpsertAutomationPreferencesForMemberParams) (int64, error)
 	getOnboardingTourProgress func(
 		context.Context,
-		usersql.GetOrCreateOnboardingTourProgressForMemberParams,
-	) (usersql.UserOnboardingTourProgress, error)
+		usersql.GetOrCreateOnboardingTourProgressForUserParams,
+	) (usersql.UserOnboardingTourProgressGlobal, error)
 	upsertOnboardingTourProgress func(
 		context.Context,
-		usersql.UpsertOnboardingTourProgressForMemberParams,
-	) (usersql.UserOnboardingTourProgress, error)
+		usersql.UpsertOnboardingTourProgressForUserParams,
+	) (usersql.UserOnboardingTourProgressGlobal, error)
 	verificationLock func(context.Context, usersql.AcquireVerificationTokenIssueLockParams) error
 	countIssues      func(context.Context, usersql.CountRecentVerificationTokenIssuesParams) (int32, error)
 	createToken      func(context.Context, usersql.CreateVerificationTokenParams) (usersql.CreateVerificationTokenRow, error)
@@ -143,17 +143,17 @@ func (fake fakeUserQueries) UpsertAutomationPreferencesForMember(
 	return fake.upsertPreferences(ctx, params)
 }
 
-func (fake fakeUserQueries) GetOrCreateOnboardingTourProgressForMember(
+func (fake fakeUserQueries) GetOrCreateOnboardingTourProgressForUser(
 	ctx context.Context,
-	params usersql.GetOrCreateOnboardingTourProgressForMemberParams,
-) (usersql.UserOnboardingTourProgress, error) {
+	params usersql.GetOrCreateOnboardingTourProgressForUserParams,
+) (usersql.UserOnboardingTourProgressGlobal, error) {
 	return fake.getOnboardingTourProgress(ctx, params)
 }
 
-func (fake fakeUserQueries) UpsertOnboardingTourProgressForMember(
+func (fake fakeUserQueries) UpsertOnboardingTourProgressForUser(
 	ctx context.Context,
-	params usersql.UpsertOnboardingTourProgressForMemberParams,
-) (usersql.UserOnboardingTourProgress, error) {
+	params usersql.UpsertOnboardingTourProgressForUserParams,
+) (usersql.UserOnboardingTourProgressGlobal, error) {
 	return fake.upsertOnboardingTourProgress(ctx, params)
 }
 
@@ -437,11 +437,10 @@ func TestAutomationPreferencesUseTypedPatchPresence(t *testing.T) {
 	}
 }
 
-func TestOnboardingTourProgressUsesTypedScopedUpsert(t *testing.T) {
+func TestOnboardingTourProgressUsesTypedUserScopedUpsert(t *testing.T) {
 	t.Parallel()
 
 	userID := uuid.New()
-	workspaceID := uuid.New()
 	status := users.CoreOnboardingTourStatusCompleted
 	writtenAt := time.Date(2026, time.August, 31, 7, 30, 0, 0, time.UTC)
 	storedStepIDs := []string{"create-task"}
@@ -449,10 +448,9 @@ func TestOnboardingTourProgressUsesTypedScopedUpsert(t *testing.T) {
 	repository := newWithQueries(fakeUserQueries{
 		upsertOnboardingTourProgress: func(
 			_ context.Context,
-			params usersql.UpsertOnboardingTourProgressForMemberParams,
-		) (usersql.UserOnboardingTourProgress, error) {
-			if params.UserID != userID || params.WorkspaceID != workspaceID ||
-				params.TourKey != "workspace-getting-started" || params.TourVersion != "v1" {
+			params usersql.UpsertOnboardingTourProgressForUserParams,
+		) (usersql.UserOnboardingTourProgressGlobal, error) {
+			if params.UserID != userID || params.TourKey != "workspace-getting-started" || params.TourVersion != "v1" {
 				t.Fatalf("onboarding scope = %#v", params)
 			}
 			if !params.SetStatus || params.Status != string(status) {
@@ -462,9 +460,8 @@ func TestOnboardingTourProgressUsesTypedScopedUpsert(t *testing.T) {
 				len(params.CompletedActionIds) != 1 || params.CompletedActionIds[0] != "create-task" {
 				t.Fatalf("onboarding completion patch = %#v", params)
 			}
-			return usersql.UserOnboardingTourProgress{
+			return usersql.UserOnboardingTourProgressGlobal{
 				UserID:             userID,
-				WorkspaceID:        workspaceID,
 				TourKey:            params.TourKey,
 				TourVersion:        params.TourVersion,
 				CompletedStepIds:   storedStepIDs,
@@ -476,7 +473,7 @@ func TestOnboardingTourProgressUsesTypedScopedUpsert(t *testing.T) {
 		},
 	})
 
-	progress, err := repository.UpdateOnboardingTourProgress(context.Background(), userID, workspaceID, users.CoreUpdateOnboardingTourProgress{
+	progress, err := repository.UpdateOnboardingTourProgress(context.Background(), userID, users.CoreUpdateOnboardingTourProgress{
 		OnboardingTourScope: users.CoreOnboardingTourScope{
 			TourKey:     "workspace-getting-started",
 			TourVersion: "v1",
@@ -488,8 +485,7 @@ func TestOnboardingTourProgressUsesTypedScopedUpsert(t *testing.T) {
 	if err != nil {
 		t.Fatalf("update onboarding progress: %v", err)
 	}
-	if progress.UserID != userID || progress.WorkspaceID != workspaceID ||
-		progress.Status != status || !progress.UpdatedAt.Equal(writtenAt) {
+	if progress.UserID != userID || progress.Status != status || !progress.UpdatedAt.Equal(writtenAt) {
 		t.Fatalf("mapped onboarding progress = %#v", progress)
 	}
 
@@ -499,21 +495,20 @@ func TestOnboardingTourProgressUsesTypedScopedUpsert(t *testing.T) {
 	}
 }
 
-func TestOnboardingTourProgressHidesMissingMembership(t *testing.T) {
+func TestOnboardingTourProgressHidesInactiveOrMissingUser(t *testing.T) {
 	t.Parallel()
 
 	repository := newWithQueries(fakeUserQueries{
 		getOnboardingTourProgress: func(
 			context.Context,
-			usersql.GetOrCreateOnboardingTourProgressForMemberParams,
-		) (usersql.UserOnboardingTourProgress, error) {
-			return usersql.UserOnboardingTourProgress{}, pgx.ErrNoRows
+			usersql.GetOrCreateOnboardingTourProgressForUserParams,
+		) (usersql.UserOnboardingTourProgressGlobal, error) {
+			return usersql.UserOnboardingTourProgressGlobal{}, pgx.ErrNoRows
 		},
 	})
 
 	_, err := repository.GetOnboardingTourProgress(
 		context.Background(),
-		uuid.New(),
 		uuid.New(),
 		users.CoreOnboardingTourScope{TourKey: "workspace-getting-started", TourVersion: "v1"},
 	)

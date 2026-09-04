@@ -1,6 +1,6 @@
 # Privacy Policy
 
-Last updated: August 9, 2026
+Last updated: September 4, 2026
 
 This Privacy Policy describes Our policies and procedures on the collection, use and disclosure of Your information when You use the Service and tells You about Your privacy rights and how the law protects You.
 
@@ -78,6 +78,16 @@ When You connect Google Calendar, We may collect and store Your Google account i
 We use Google Calendar data to show Your meetings beside FortyOne work, calculate availability, avoid obvious schedule conflicts, and provide schedule-aware planning features. Detailed calendar events are visible only to the connected calendar owner. Teammates, managers, Maya, and capacity-planning features receive title-free availability windows rather than event content. The integration is read-only and does not create, edit, or delete Google Calendar events.
 
 FortyOne keeps a rolling calendar snapshot that currently covers seven days before and ninety days after the sync date. When You disconnect Google Calendar, We clear the connection credentials and scopes and delete the cached calendar events and availability windows for that connection. FortyOne's use and transfer of information received from Google APIs adheres to the [Google API Services User Data Policy](https://developers.google.com/terms/api-services-user-data-policy), including its Limited Use requirements.
+
+#### Google Drive and Google Workspace
+
+When You connect Google Drive, We may collect and store Your Google account identifier, connected email address, authorized scopes, encrypted OAuth credentials, connection status, and metadata for Google Drive files that You explicitly select through Google Picker or create through FortyOne. File metadata may include the file identifier and resource key, name, type, Google link, version, modification time, Shared Drive identifier, and availability status. FortyOne does not receive general access to all of Your Google Drive files through this connection.
+
+We use this data to attach selected Google Docs, Sheets, Slides, and supported files to FortyOne work, display current file information, create a Google Doc or Sheet at Your request, and open the original file in Google. Attaching a file may make its title and Google link visible to people who can access the related FortyOne story, objective, comment, or document, but it does not grant those people access in Google. Google permissions remain authoritative, and FortyOne does not use one member's Google credentials to provide file content to another member.
+
+When You explicitly select a connected file for Maya, We retrieve and process only the supported, size-limited content needed to answer Your request. That content may be transferred to Our artificial intelligence service providers solely to deliver the requested user-facing feature and is not used by FortyOne to train general-purpose artificial intelligence models. FortyOne does not retain the extracted source text in Maya's tool history, although Maya's generated answer and a metadata-only processing receipt remain in Your chat history until that chat is deleted under the ordinary retention controls. When You choose **Import as a FortyOne document**, We create a separate snapshot governed by the destination workspace's document visibility and retention controls; later changes to the Google file do not automatically update that snapshot.
+
+Active connection credentials are retained while the integration remains connected. After disconnect or FortyOne account deactivation, FortyOne may retain a sealed, access-restricted copy of the credential solely to complete or operationally resolve Google's remote revocation; it is not used for product access, and completed or superseded cleanup records remove that sealed credential. Linked-file metadata is retained while the corresponding FortyOne reference remains in use. Temporary exports and extracted content used for previews, Maya, or conversion are deleted after the bounded processing or cache period. Disconnecting Google Drive or deactivating Your FortyOne account immediately removes the local connection and schedules remote revocation, preventing further Google access through the product; imported FortyOne documents and intentionally shared link records may remain until an authorized user deletes them under FortyOne's ordinary retention controls. FortyOne's use and transfer of information received from Google APIs adheres to the [Google API Services User Data Policy](https://developers.google.com/terms/api-services-user-data-policy), including its Limited Use requirements.
 
 #### GitHub
 

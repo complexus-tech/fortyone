@@ -29,6 +29,11 @@ const integrations: readonly Integration[] = [
     src: "/integrations/google-calendar-2026.svg",
   },
   {
+    detail: "Work files",
+    name: "Google Drive",
+    src: "/integrations/drive.svg",
+  },
+  {
     detail: "Availability",
     name: "Outlook Calendar",
     src: "/integrations/outlook-2025.svg",
@@ -76,8 +81,8 @@ export const Integrations = () => {
           </Text>
           <Text className="text-text-description mx-auto mt-6 max-w-2xl text-base text-pretty">
             Bring requests from Slack, availability from Google and Outlook,
-            delivery context from GitHub, and designs from Figma into the same
-            plan. Reply to Maya from Gmail.
+            files from Google Drive, delivery context from GitHub, and designs
+            from Figma into the same plan. Reply to Maya from Gmail.
           </Text>
         </Box>
 

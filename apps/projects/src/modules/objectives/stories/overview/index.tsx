@@ -23,6 +23,7 @@ import { useIsAdminOrOwner } from "@/hooks/owner";
 import { createRichTextStarterKit } from "@/lib/tiptap/starter-kit";
 import { useChatContext } from "@/context/chat-context";
 import { RelatedDocuments } from "@/modules/documents/related-documents";
+import { GoogleDriveFileSection } from "@/modules/google-drive";
 import { ObjectiveForecastRiskBanner } from "@/modules/objectives/components/objective-forecast-risk";
 import {
   useCanUpdateObjective,
@@ -207,6 +208,11 @@ export const Overview = () => {
               </Box>
               <Properties />
               <RelatedDocuments entityId={objectiveId} entityType="objective" />
+              <GoogleDriveFileSection
+                canEdit={canUpdate}
+                suggestedTitle={objective?.name}
+                target={{ id: objectiveId, type: "objective" }}
+              />
               <Divider className="my-8" />
               <Activity viewport="desktop" />
             </Container>
@@ -282,6 +288,11 @@ export const Overview = () => {
           </Box>
           <Properties />
           <RelatedDocuments entityId={objectiveId} entityType="objective" />
+          <GoogleDriveFileSection
+            canEdit={canUpdate}
+            suggestedTitle={objective?.name}
+            target={{ id: objectiveId, type: "objective" }}
+          />
           <Divider className="my-6 md:my-8" />
           <Activity viewport="mobile" />
         </Container>

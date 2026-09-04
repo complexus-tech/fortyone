@@ -140,6 +140,11 @@ A blank example means the deployment must choose a value when the enabled capabi
 | `GITHUB_WEBHOOK_SECRET` | API, worker | `string` | API: —<br>worker: — | yes | [API Config.GitHub.WebhookSecret](../cmd/api/config.go#L171)<br>[worker Config.GitHub.WebhookSecret](../internal/bootstrap/worker/config.go#L158) |  |
 | `GITHUB_WEBHOOK_URL` | API | `string` | — | no | [API Config.GitHub.WebhookURL](../cmd/api/config.go#L170) |  |
 | `GOOGLE_CLIENT_ID` | API, worker | `string` | API: —<br>worker: — | no | [API Config.Google.ClientID](../cmd/api/config.go#L134)<br>[worker Config.GoogleClientID](../internal/bootstrap/worker/config.go#L142) | Google (legacy fallback, use APP_AUTH_GOOGLE_CLIENT_IDS instead) |
+| `GOOGLE_DRIVE_APP_ID` | API | `string` | — | no | [API Config.GoogleDrive.AppID](../cmd/api/config.go#L190) |  |
+| `GOOGLE_DRIVE_CLIENT_ID` | API | `string` | — | no | [API Config.GoogleDrive.ClientID](../cmd/api/config.go#L186) | Google Drive personal integration (dedicated Cloud project; never share with sign-in or Calendar) |
+| `GOOGLE_DRIVE_CLIENT_SECRET` | API | `string` | — | yes | [API Config.GoogleDrive.ClientSecret](../cmd/api/config.go#L187) |  |
+| `GOOGLE_DRIVE_PICKER_API_KEY` | API | `string` | — | no | [API Config.GoogleDrive.PickerAPIKey](../cmd/api/config.go#L189) |  |
+| `GOOGLE_DRIVE_REDIRECT_URL` | API | `string` | `https://api.fortyone.app/integrations/google-drive/callback` | no | [API Config.GoogleDrive.RedirectURL](../cmd/api/config.go#L188) |  |
 | `SLACK_CLIENT_ID` | API, worker | `string` | API: —<br>worker: — | no | [API Config.Slack.ClientID](../cmd/api/config.go#L174)<br>[worker Config.Slack.ClientID](../internal/bootstrap/worker/config.go#L149) | Slack |
 | `SLACK_CLIENT_SECRET` | API, worker | `string` | API: —<br>worker: — | yes | [API Config.Slack.ClientSecret](../cmd/api/config.go#L175)<br>[worker Config.Slack.ClientSecret](../internal/bootstrap/worker/config.go#L150) |  |
 | `SLACK_REDIRECT_URL` | API | `string` | `https://api.fortyone.app/integrations/slack/setup` | no | [API Config.Slack.RedirectURL](../cmd/api/config.go#L177) | Optional outside local development; the API defaults to this production URL. |

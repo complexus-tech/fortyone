@@ -3,6 +3,7 @@
 import type { ComponentProps, RefObject } from "react";
 import { cn } from "lib";
 import { Box, Flex } from "ui";
+import { walkthroughTargets } from "@/shared/walkthrough/targets";
 import { CanvasConnections } from "./strategy-map-canvas-renderers";
 import { StrategyCanvasNodes } from "./strategy-map-canvas-nodes";
 
@@ -75,6 +76,7 @@ export const StrategyMapCanvasSurface = ({
       align="center"
       className="border-border bg-surface/90 text-text-muted pointer-events-none absolute bottom-4 left-1/2 z-40 -translate-x-1/2 gap-2 rounded-lg border px-3.5 py-2 text-sm shadow-lg backdrop-blur"
       data-canvas-control
+      data-walkthrough-target={walkthroughTargets.strategyCanvasHelp}
     >
       <span>Drag cards to position</span>
       <span aria-hidden>·</span>

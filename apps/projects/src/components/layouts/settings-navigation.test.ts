@@ -40,6 +40,14 @@ describe("settings navigation", () => {
       "Feedback",
     ]);
     expect(navigation[0]?.items.at(-1)?.title).toBe("Invitations");
+    expect(navigation[0]?.items).toEqual(
+      expect.arrayContaining([
+        {
+          href: "/acme/settings/account/google-drive",
+          title: "Google Drive",
+        },
+      ]),
+    );
   });
 
   it.each(["member", "guest"] as const)(
@@ -64,6 +72,9 @@ describe("settings navigation", () => {
       expect(
         navigation.flatMap(({ items }) => items).map(({ title }) => title),
       ).not.toContain("Imports");
+      expect(
+        navigation.flatMap(({ items }) => items).map(({ title }) => title),
+      ).toContain("Google Drive");
     },
   );
 

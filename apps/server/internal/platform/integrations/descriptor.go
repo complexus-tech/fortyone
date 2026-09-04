@@ -16,6 +16,7 @@ const (
 	FamilyCalendar        Family = "calendar"
 	FamilySupportFeedback Family = "support_feedback"
 	FamilyDesignContext   Family = "design_context"
+	FamilyCloudContent    Family = "cloud_content"
 )
 
 // CapabilityKey identifies one narrow provider behavior contract.

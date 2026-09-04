@@ -3,49 +3,138 @@
 import {
   getWalkthroughTargetSelector,
   walkthroughTargets,
+  type WalkthroughTarget,
 } from "@/shared/walkthrough/targets";
 import { getModuleWalkthroughTour } from "./module-walkthrough-tours";
 
-describe("getModuleWalkthroughTour", () => {
-  it.each([
-    ["/acme/my-work", "workspace-module-my-work", walkthroughTargets.myWork],
-    [
-      "/acme/calendar",
-      "workspace-module-calendar",
+type TourExpectation = {
+  minimumSteps?: number;
+  pathname: string;
+  stepTargets: WalkthroughTarget[];
+  tourKey: string;
+};
+
+const tourExpectations: TourExpectation[] = [
+  {
+    pathname: "/acme/my-work",
+    stepTargets: [
+      walkthroughTargets.myWork,
+      walkthroughTargets.myWorkTabs,
+      walkthroughTargets.myWorkViewControls,
+      walkthroughTargets.myWorkFilters,
+      walkthroughTargets.myWorkDisplayOptions,
+      walkthroughTargets.myWorkContent,
+    ],
+    tourKey: "workspace-module-my-work",
+  },
+  {
+    pathname: "/acme/calendar",
+    stepTargets: [
       walkthroughTargets.calendar,
+      walkthroughTargets.calendarDateNavigation,
+      walkthroughTargets.calendarView,
+      walkthroughTargets.calendarActions,
+      walkthroughTargets.calendarGrid,
     ],
-    ["/acme/summary", "workspace-module-summary", walkthroughTargets.summary],
-    ["/acme/maya", "workspace-module-maya", walkthroughTargets.mayaNavigation],
-    ["/acme/roadmap", "workspace-module-roadmap", walkthroughTargets.roadmap],
-    [
-      "/acme/strategy",
-      "workspace-module-strategy",
+    tourKey: "workspace-module-calendar",
+  },
+  {
+    pathname: "/acme/summary",
+    stepTargets: [
+      walkthroughTargets.summary,
+      walkthroughTargets.summaryDateRange,
+      walkthroughTargets.summaryOverview,
+      walkthroughTargets.summaryHealth,
+      walkthroughTargets.summaryMyWork,
+      walkthroughTargets.summaryActivityFeed,
+    ],
+    tourKey: "workspace-module-summary",
+  },
+  {
+    pathname: "/acme/maya",
+    stepTargets: [
+      walkthroughTargets.mayaNavigation,
+      walkthroughTargets.mayaNewChat,
+      walkthroughTargets.mayaHeaderActions,
+      walkthroughTargets.mayaConversation,
+      walkthroughTargets.mayaComposer,
+    ],
+    tourKey: "workspace-module-maya",
+  },
+  {
+    pathname: "/acme/roadmap",
+    stepTargets: [
+      walkthroughTargets.roadmap,
+      walkthroughTargets.roadmapHeader,
+      walkthroughTargets.roadmapLayout,
+      walkthroughTargets.roadmapViewOptions,
+      walkthroughTargets.roadmapObjectives,
+      walkthroughTargets.create,
+    ],
+    tourKey: "workspace-module-roadmap",
+  },
+  {
+    pathname: "/acme/strategy",
+    stepTargets: [
       walkthroughTargets.strategy,
+      walkthroughTargets.strategyCanvas,
+      walkthroughTargets.strategyCanvasHelp,
+      walkthroughTargets.strategyZoom,
+      walkthroughTargets.strategyAddPillar,
     ],
-    [
-      "/acme/docs/plan-1",
-      "workspace-module-documents",
+    tourKey: "workspace-module-strategy",
+  },
+  {
+    pathname: "/acme/docs/plan-1",
+    stepTargets: [
       walkthroughTargets.documents,
+      walkthroughTargets.documentsSearch,
+      walkthroughTargets.documentsNavigation,
+      walkthroughTargets.documentsRecent,
+      walkthroughTargets.documentsWorkspace,
     ],
-    [
-      "/acme/teams/team-1/backlog",
-      "workspace-module-team",
+    tourKey: "workspace-module-documents",
+  },
+  {
+    pathname: "/acme/teams/team-1/backlog",
+    stepTargets: [
+      walkthroughTargets.teams,
+      walkthroughTargets.teamNavigation,
+      walkthroughTargets.teamSections,
+      walkthroughTargets.workspaceContent,
+      walkthroughTargets.manageTeams,
+    ],
+    tourKey: "workspace-module-team",
+  },
+  {
+    minimumSteps: 4,
+    pathname: "/acme/sprints",
+    stepTargets: [
+      walkthroughTargets.sprintsNavigation,
+      walkthroughTargets.sprintsHeader,
+      walkthroughTargets.sprintsList,
       walkthroughTargets.teams,
     ],
-    ["/acme/sprints", "workspace-module-team", walkthroughTargets.teams],
-  ])("maps %s to its persisted module tour", (pathname, tourKey, target) => {
-    const tour = getModuleWalkthroughTour(pathname, "acme");
+    tourKey: "workspace-module-sprints",
+  },
+];
 
-    expect(tour).toMatchObject({
-      tourKey,
-      version: "1.0.0",
-    });
-    expect(tour?.steps).toHaveLength(2);
-    expect(tour?.steps[0]?.target).toBe(getWalkthroughTargetSelector(target));
-    expect(tour?.steps[1]?.target).toBe(
-      getWalkthroughTargetSelector(walkthroughTargets.workspaceContent),
-    );
-  });
+describe("getModuleWalkthroughTour", () => {
+  it.each(tourExpectations)(
+    "maps $pathname to a complete persisted module tour",
+    ({ minimumSteps = 5, pathname, stepTargets, tourKey }) => {
+      const tour = getModuleWalkthroughTour(pathname, "acme");
+
+      expect(tour).toMatchObject({ tourKey, version: "1.0.0" });
+      expect(tour?.steps.map(({ target }) => target)).toEqual(
+        stepTargets.map(getWalkthroughTargetSelector),
+      );
+      expect(tour?.steps.length).toBeGreaterThanOrEqual(minimumSteps);
+      expect(new Set(tour?.steps.map(({ id }) => id)).size).toBe(
+        tour?.steps.length,
+      );
+    },
+  );
 
   it.each([
     "/acme/settings",

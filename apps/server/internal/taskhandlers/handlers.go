@@ -127,6 +127,7 @@ type handlers struct {
 	feedbackTasks          FeedbackDeliveryEnqueuer
 	feedbackOutbox         FeedbackOutboxProcessor
 	storyScheduleOutbox    StoryScheduleTransitionOutboxProcessor
+	googleDriveRevocations GoogleDriveRevocationProcessor
 	invitationOutbox       InvitationOutboxProcessor
 	feedbackDeliveries     feedbackContributorDeliveryStore
 	feedbackSecurityKey    string
@@ -156,6 +157,7 @@ type WorkerHandlerDependencies struct {
 	FeedbackOutbox         FeedbackOutboxProcessor
 	FeedbackDeliveries     feedback.ContributorDeliveryStore
 	StoryScheduleOutbox    StoryScheduleTransitionOutboxProcessor
+	GoogleDriveRevocations GoogleDriveRevocationProcessor
 	InvitationOutbox       InvitationOutboxProcessor
 	FeedbackSecurityKey    string
 }
@@ -189,6 +191,7 @@ func NewWorkerHandlers(dependencies WorkerHandlerDependencies) *handlers {
 		feedbackTasks:          dependencies.FeedbackTasks,
 		feedbackOutbox:         dependencies.FeedbackOutbox,
 		storyScheduleOutbox:    dependencies.StoryScheduleOutbox,
+		googleDriveRevocations: dependencies.GoogleDriveRevocations,
 		invitationOutbox:       dependencies.InvitationOutbox,
 		feedbackDeliveries:     dependencies.FeedbackDeliveries,
 		feedbackSecurityKey:    dependencies.FeedbackSecurityKey,

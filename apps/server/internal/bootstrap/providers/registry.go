@@ -8,6 +8,7 @@ import (
 	figmaprovider "github.com/complexus-tech/projects-api/internal/modules/figma"
 	githubprovider "github.com/complexus-tech/projects-api/internal/modules/github"
 	gitlabprovider "github.com/complexus-tech/projects-api/internal/modules/gitlab"
+	googledriveprovider "github.com/complexus-tech/projects-api/internal/modules/googledrive"
 	slackprovider "github.com/complexus-tech/projects-api/internal/modules/slack"
 	"github.com/complexus-tech/projects-api/internal/platform/integrations"
 )
@@ -20,6 +21,7 @@ func BuiltInRegistry() (integrations.Registry, error) {
 		gitlabprovider.ProviderDescriptor(),
 		slackprovider.ProviderDescriptor(),
 		figmaprovider.ProviderDescriptor(),
+		googledriveprovider.ProviderDescriptor(),
 		calendarprovider.GoogleProviderDescriptor(),
 		calendarprovider.MicrosoftProviderDescriptor(),
 	)

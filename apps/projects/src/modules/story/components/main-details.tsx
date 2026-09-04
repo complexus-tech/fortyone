@@ -6,7 +6,7 @@ import Document from "@tiptap/extension-document";
 import Paragraph from "@tiptap/extension-paragraph";
 import TextExtension from "@tiptap/extension-text";
 import { cn } from "lib";
-import type { ReactNode } from "react";
+import type { ClipboardEvent, ReactNode } from "react";
 import { useCallback, useEffect } from "react";
 import { useLocalStorage, useUserRole } from "@/hooks";
 import { useDebouncedCallback } from "@/hooks/debounce";
@@ -24,6 +24,7 @@ import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
 import { useStoryDescriptionMedia } from "@/modules/story/hooks/use-story-description-media";
 import { useIsAdminOrOwner } from "@/hooks/owner";
 import { RelatedDocuments } from "@/modules/documents/related-documents";
+import { GoogleDriveFileSection } from "@/modules/google-drive";
 import { useStoryById } from "../hooks/story";
 import type { StoryUpdate } from "../types";
 import { Activities } from "./activities";
@@ -37,6 +38,7 @@ import { FigmaSection } from "./figma-section";
 import { OptionsHeader } from "./options-header";
 import { Options } from "./options";
 import { useFigmaDescriptionPaste } from "./use-figma-description-paste";
+import { useGoogleDriveDescriptionPaste } from "./use-google-drive-description-paste";
 
 const DEBOUNCE_DELAY = 1000; // 1000ms delay
 
@@ -172,10 +174,18 @@ export const MainDetails = ({
     },
     immediatelyRender: false,
   });
-  const handleDescriptionPaste = useFigmaDescriptionPaste({
+  const handleFigmaDescriptionPaste = useFigmaDescriptionPaste({
     editor: descriptionEditor,
     storyId,
   });
+  const {
+    onPaste: handleGoogleDriveDescriptionPaste,
+    picker: googleDriveDescriptionPicker,
+  } = useGoogleDriveDescriptionPaste({ editor: descriptionEditor, storyId });
+  const handleDescriptionPaste = (event: ClipboardEvent<HTMLDivElement>) => {
+    handleGoogleDriveDescriptionPaste(event);
+    handleFigmaDescriptionPaste(event);
+  };
 
   useEffect(
     () => () => {
@@ -255,6 +265,7 @@ export const MainDetails = ({
           editor={descriptionEditor}
           onPaste={handleDescriptionPaste}
         />
+        {googleDriveDescriptionPicker}
         <RichTextTableMenu editor={descriptionEditor} scrollTarget={null} />
         <SubStories
           isSubStoriesOpen={isSubStoriesOpen}
@@ -279,6 +290,11 @@ export const MainDetails = ({
           />
         )}
         <RelatedDocuments entityId={storyId} entityType="story" />
+        <GoogleDriveFileSection
+          canEdit={!isDeleted && userRole !== "guest"}
+          suggestedTitle={title}
+          target={{ id: storyId, type: "story" }}
+        />
         <Box
           className={cn("md:hidden", {
             "md:block": inlineProperties,

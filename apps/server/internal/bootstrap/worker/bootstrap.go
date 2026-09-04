@@ -13,6 +13,8 @@ import (
 	emailreply "github.com/complexus-tech/projects-api/internal/modules/emailreply/service"
 	feedbackrepository "github.com/complexus-tech/projects-api/internal/modules/feedback/repository"
 	feedback "github.com/complexus-tech/projects-api/internal/modules/feedback/service"
+	googledriverepository "github.com/complexus-tech/projects-api/internal/modules/googledrive/repository"
+	googledrive "github.com/complexus-tech/projects-api/internal/modules/googledrive/service"
 	invitationsrepository "github.com/complexus-tech/projects-api/internal/modules/invitations/repository"
 	invitations "github.com/complexus-tech/projects-api/internal/modules/invitations/service"
 	mayarepository "github.com/complexus-tech/projects-api/internal/modules/maya/repository"
@@ -271,6 +273,11 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 		storiesrepository.New(log, connections.Pool),
 		eventPublisher,
 	)
+	googleDriveRevocations := googledrive.NewRevocationDispatcher(
+		log,
+		googledriverepository.New(connections.Pool),
+		credentialVault,
+	)
 	feedbackOutbox := feedback.New(
 		feedbackrepository.New(log, connections.Pool),
 		nil,
@@ -405,11 +412,12 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 		SlackEvents:  slackEvents, EmailReplies: emailReplyProcessor,
 		EmailRecovery: emailReplyIngress, Calendar: calendarService,
 		SystemUserID: systemUserID, FeedbackTasks: tasksService,
-		FeedbackOutbox:      feedbackOutbox,
-		StoryScheduleOutbox: storyScheduleOutbox,
-		InvitationOutbox:    invitationOutbox,
-		FeedbackSecurityKey: cfg.Feedback.SecurityKey,
-		IdempotencyReceipts: idempotencyReceipts,
+		FeedbackOutbox:         feedbackOutbox,
+		StoryScheduleOutbox:    storyScheduleOutbox,
+		GoogleDriveRevocations: googleDriveRevocations,
+		InvitationOutbox:       invitationOutbox,
+		FeedbackSecurityKey:    cfg.Feedback.SecurityKey,
+		IdempotencyReceipts:    idempotencyReceipts,
 	})
 	if err := registerOutboundWebhookTask(taskMux, log, storyMutationEventDispatcher, outboundWebhookDispatcher); err != nil {
 		return App{}, fmt.Errorf("register outbound webhook worker: %w", err)

@@ -1,4 +1,5 @@
 import type { InferUITools, UIDataTypes, UIMessage } from "ai";
+import type { MayaUIDataTypes } from "../google-drive-context";
 import type { MayaActionLease } from "../action-lease";
 import type { tools } from ".";
 
@@ -13,6 +14,6 @@ export type MayaMessageMetadata = {
 
 export type MayaUIMessage = UIMessage<
   MayaMessageMetadata,
-  UIDataTypes,
+  MayaUIDataTypes & UIDataTypes,
   MyTools
 >;

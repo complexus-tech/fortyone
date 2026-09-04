@@ -11,10 +11,9 @@ import (
 	"github.com/google/uuid"
 )
 
-const getOrCreateOnboardingTourProgressForMember = `-- name: GetOrCreateOnboardingTourProgressForMember :one
-INSERT INTO public.user_onboarding_tour_progress (
+const getOrCreateOnboardingTourProgressForUser = `-- name: GetOrCreateOnboardingTourProgressForUser :one
+INSERT INTO public.user_onboarding_tour_progress_global (
     user_id,
-    workspace_id,
     tour_key,
     tour_version,
     completed_step_ids,
@@ -24,8 +23,7 @@ INSERT INTO public.user_onboarding_tour_progress (
     updated_at
 )
 SELECT
-    membership.user_id,
-    membership.workspace_id,
+    account.user_id,
     CAST($1 AS text),
     CAST($2 AS text),
     ARRAY[]::text[],
@@ -33,16 +31,13 @@ SELECT
     'active',
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP
-FROM public.workspace_members AS membership
-INNER JOIN public.users AS account ON account.user_id = membership.user_id
-WHERE membership.user_id = $3
-  AND membership.workspace_id = $4
+FROM public.users AS account
+WHERE account.user_id = $3
   AND account.is_active = TRUE
-ON CONFLICT (user_id, workspace_id, tour_key, tour_version) DO UPDATE
-SET tour_key = user_onboarding_tour_progress.tour_key
+ON CONFLICT (user_id, tour_key, tour_version) DO UPDATE
+SET tour_key = user_onboarding_tour_progress_global.tour_key
 RETURNING
     user_id,
-    workspace_id,
     tour_key,
     tour_version,
     completed_step_ids,
@@ -52,24 +47,17 @@ RETURNING
     updated_at
 `
 
-type GetOrCreateOnboardingTourProgressForMemberParams struct {
+type GetOrCreateOnboardingTourProgressForUserParams struct {
 	TourKey     string
 	TourVersion string
 	UserID      uuid.UUID
-	WorkspaceID uuid.UUID
 }
 
-func (q *Queries) GetOrCreateOnboardingTourProgressForMember(ctx context.Context, arg GetOrCreateOnboardingTourProgressForMemberParams) (UserOnboardingTourProgress, error) {
-	row := q.db.QueryRow(ctx, getOrCreateOnboardingTourProgressForMember,
-		arg.TourKey,
-		arg.TourVersion,
-		arg.UserID,
-		arg.WorkspaceID,
-	)
-	var i UserOnboardingTourProgress
+func (q *Queries) GetOrCreateOnboardingTourProgressForUser(ctx context.Context, arg GetOrCreateOnboardingTourProgressForUserParams) (UserOnboardingTourProgressGlobal, error) {
+	row := q.db.QueryRow(ctx, getOrCreateOnboardingTourProgressForUser, arg.TourKey, arg.TourVersion, arg.UserID)
+	var i UserOnboardingTourProgressGlobal
 	err := row.Scan(
 		&i.UserID,
-		&i.WorkspaceID,
 		&i.TourKey,
 		&i.TourVersion,
 		&i.CompletedStepIds,
@@ -81,10 +69,9 @@ func (q *Queries) GetOrCreateOnboardingTourProgressForMember(ctx context.Context
 	return i, err
 }
 
-const upsertOnboardingTourProgressForMember = `-- name: UpsertOnboardingTourProgressForMember :one
-INSERT INTO public.user_onboarding_tour_progress (
+const upsertOnboardingTourProgressForUser = `-- name: UpsertOnboardingTourProgressForUser :one
+INSERT INTO public.user_onboarding_tour_progress_global (
     user_id,
-    workspace_id,
     tour_key,
     tour_version,
     completed_step_ids,
@@ -94,8 +81,7 @@ INSERT INTO public.user_onboarding_tour_progress (
     updated_at
 )
 SELECT
-    membership.user_id,
-    membership.workspace_id,
+    account.user_id,
     CAST($1 AS text),
     CAST($2 AS text),
     CAST($3 AS text[]),
@@ -107,38 +93,39 @@ SELECT
     END,
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP
-FROM public.workspace_members AS membership
-INNER JOIN public.users AS account ON account.user_id = membership.user_id
-WHERE membership.user_id = $7
-  AND membership.workspace_id = $8
+FROM public.users AS account
+WHERE account.user_id = $7
   AND account.is_active = TRUE
-ON CONFLICT (user_id, workspace_id, tour_key, tour_version) DO UPDATE
+ON CONFLICT (user_id, tour_key, tour_version) DO UPDATE
 SET
     completed_step_ids = ARRAY(
         SELECT DISTINCT step_id.value
-        FROM unnest(
-            user_onboarding_tour_progress.completed_step_ids || EXCLUDED.completed_step_ids
+        FROM UNNEST(
+            user_onboarding_tour_progress_global.completed_step_ids ||
+            EXCLUDED.completed_step_ids
         ) AS step_id(value)
         ORDER BY step_id.value
     ),
     completed_action_ids = ARRAY(
         SELECT DISTINCT action_id.value
-        FROM unnest(
-            user_onboarding_tour_progress.completed_action_ids || EXCLUDED.completed_action_ids
+        FROM UNNEST(
+            user_onboarding_tour_progress_global.completed_action_ids ||
+            EXCLUDED.completed_action_ids
         ) AS action_id(value)
         ORDER BY action_id.value
     ),
     status = CASE
-        WHEN user_onboarding_tour_progress.status IN ('completed', 'skipped')
-            THEN user_onboarding_tour_progress.status
-        WHEN CAST($5 AS boolean)
-            THEN EXCLUDED.status
-        ELSE user_onboarding_tour_progress.status
+        WHEN user_onboarding_tour_progress_global.status = 'completed'
+            OR EXCLUDED.status = 'completed'
+            THEN 'completed'
+        WHEN user_onboarding_tour_progress_global.status = 'skipped'
+            OR EXCLUDED.status = 'skipped'
+            THEN 'skipped'
+        ELSE 'active'
     END,
     updated_at = CURRENT_TIMESTAMP
 RETURNING
     user_id,
-    workspace_id,
     tour_key,
     tour_version,
     completed_step_ids,
@@ -148,7 +135,7 @@ RETURNING
     updated_at
 `
 
-type UpsertOnboardingTourProgressForMemberParams struct {
+type UpsertOnboardingTourProgressForUserParams struct {
 	TourKey            string
 	TourVersion        string
 	CompletedStepIds   []string
@@ -156,11 +143,10 @@ type UpsertOnboardingTourProgressForMemberParams struct {
 	SetStatus          bool
 	Status             string
 	UserID             uuid.UUID
-	WorkspaceID        uuid.UUID
 }
 
-func (q *Queries) UpsertOnboardingTourProgressForMember(ctx context.Context, arg UpsertOnboardingTourProgressForMemberParams) (UserOnboardingTourProgress, error) {
-	row := q.db.QueryRow(ctx, upsertOnboardingTourProgressForMember,
+func (q *Queries) UpsertOnboardingTourProgressForUser(ctx context.Context, arg UpsertOnboardingTourProgressForUserParams) (UserOnboardingTourProgressGlobal, error) {
+	row := q.db.QueryRow(ctx, upsertOnboardingTourProgressForUser,
 		arg.TourKey,
 		arg.TourVersion,
 		arg.CompletedStepIds,
@@ -168,12 +154,10 @@ func (q *Queries) UpsertOnboardingTourProgressForMember(ctx context.Context, arg
 		arg.SetStatus,
 		arg.Status,
 		arg.UserID,
-		arg.WorkspaceID,
 	)
-	var i UserOnboardingTourProgress
+	var i UserOnboardingTourProgressGlobal
 	err := row.Scan(
 		&i.UserID,
-		&i.WorkspaceID,
 		&i.TourKey,
 		&i.TourVersion,
 		&i.CompletedStepIds,

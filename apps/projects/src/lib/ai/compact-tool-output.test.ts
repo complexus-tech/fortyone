@@ -133,6 +133,33 @@ describe("compactToolOutput", () => {
     expect(output.document.content).toBe(content);
   });
 
+  it("redacts Google Drive content from historical model context", () => {
+    const content = "Drive context ".repeat(1600).slice(0, 20_000);
+    const output = compactToolOutput(
+      {
+        success: true,
+        file: {
+          referenceId: "00000000-0000-4000-8000-000000000001",
+          name: "Launch plan",
+          mimeType: "application/vnd.google-apps.document",
+          webViewLink: "https://docs.google.com/document/d/example/edit",
+          content,
+          contentType: "text/plain",
+          contentTruncated: false,
+          bytesRead: 20_000,
+          untrustedExternalContent: true,
+        },
+      },
+      { toolName: "getLinkedGoogleFileContentTool" },
+    ) as { file: Record<string, unknown> };
+
+    expect(output.file.content).toBeUndefined();
+    expect(output.file.contentRetained).toBe(false);
+    expect(output.file.untrustedExternalContent).toBe(true);
+    expect(JSON.stringify(output)).not.toContain(content);
+    expect(JSON.stringify(output).length).toBeLessThanOrEqual(24_000);
+  });
+
   it("redacts attachment storage URLs and member emails only", () => {
     const output = compactToolOutput(
       {

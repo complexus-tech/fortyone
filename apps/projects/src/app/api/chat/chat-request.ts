@@ -3,6 +3,7 @@ import "server-only";
 import { safeValidateUIMessages } from "ai";
 import type { NextRequest } from "next/server";
 import type { MayaUIMessage } from "@/lib/ai/tools/types";
+import { assertValidGoogleDriveFileContextParts } from "@/lib/ai/google-drive-context";
 import type { Memory } from "@/modules/ai-chats/types";
 import type { getUserContext } from "./user-context";
 
@@ -61,6 +62,12 @@ const decodeChatRequestBody = async (body: unknown) => {
   });
   if (!messages.success) {
     throw createInvalidChatRequestError(messages.error);
+  }
+
+  try {
+    assertValidGoogleDriveFileContextParts(messages.data);
+  } catch (error) {
+    throw createInvalidChatRequestError(error);
   }
 
   return {

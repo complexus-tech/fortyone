@@ -72,6 +72,18 @@ func registerSchedules(scheduler scheduleRegistrar) error {
 
 	_, err = scheduler.Register(
 		"*/1 * * * *",
+		asynq.NewTask(tasks.TypeGoogleDriveRevocationDispatch, nil),
+		asynq.Queue("integrations"),
+		asynq.MaxRetry(2),
+		asynq.Timeout(2*time.Minute),
+		asynq.Unique(55*time.Second),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register Google Drive revocation dispatch task: %w", err)
+	}
+
+	_, err = scheduler.Register(
+		"*/1 * * * *",
 		asynq.NewTask(tasks.TypeStoryScheduleTransitionOutbox, nil),
 		asynq.Queue("automation"),
 	)

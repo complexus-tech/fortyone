@@ -98,6 +98,7 @@ export const ChatContent = ({ isPopup = false }: { isPopup?: boolean }) => {
           {needsUpgrade ? <LimitReached isOnPage={!isPopup} /> : null}
           <ChatInput
             attachments={chat.attachments}
+            googleDriveFiles={chat.googleDriveFiles}
             isOnPage={!isPopup}
             isPopup={isPopup}
             liveVoiceDisabled={needsUpgrade}
@@ -106,6 +107,7 @@ export const ChatContent = ({ isPopup = false }: { isPopup?: boolean }) => {
             onChange={(event) => {
               chat.setInput(event.target.value);
             }}
+            onGoogleDriveFileRemove={chat.removeGoogleDriveFile}
             onSend={chat.handleSend}
             onStop={chat.handleStop}
             realtimeVoice={chat.realtimeVoice}

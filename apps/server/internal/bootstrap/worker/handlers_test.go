@@ -62,6 +62,14 @@ func TestBuildTaskMuxRegistersStoryScheduleTransitionOutbox(t *testing.T) {
 	require.Equal(t, tasks.TypeStoryScheduleTransitionOutbox, pattern)
 }
 
+func TestBuildTaskMuxRegistersGoogleDriveRevocationDispatch(t *testing.T) {
+	mux := buildTaskMux(taskMuxDependencies{})
+
+	handler, pattern := mux.Handler(asynq.NewTask(tasks.TypeGoogleDriveRevocationDispatch, nil))
+	require.NotNil(t, handler)
+	require.Equal(t, tasks.TypeGoogleDriveRevocationDispatch, pattern)
+}
+
 func TestBuildTaskMuxRegistersCalendarWorkspaceScheduleBatch(t *testing.T) {
 	mux := buildTaskMux(taskMuxDependencies{})
 

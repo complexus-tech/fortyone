@@ -1,8 +1,14 @@
 import type { Editor } from "@tiptap/core";
 import type { ClipboardEventHandler } from "react";
-import { useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useRef } from "react";
 import { toast } from "sonner";
-import { useLinkFigmaStory } from "@/lib/hooks/figma";
+import { useUserRole, useWorkspacePath } from "@/hooks";
+import {
+  useCreateFigmaInstallSession,
+  useFigmaIntegration,
+  useLinkFigmaStory,
+} from "@/lib/hooks/figma";
 import { FigmaIcon } from "@/modules/settings/workspace/integrations/figma/icon";
 import {
   getFigmaLinkLabel,
@@ -17,7 +23,54 @@ export const useFigmaDescriptionPaste = ({
   editor: Editor | null;
   storyId: string;
 }) => {
+  const router = useRouter();
+  const { userRole } = useUserRole();
+  const { withWorkspace } = useWorkspacePath();
+  const { data: integration } = useFigmaIntegration();
+  const { mutate: connectFigma } = useCreateFigmaInstallSession();
   const { mutateAsync: linkFigmaStory } = useLinkFigmaStory();
+  const connectionNudgeShown = useRef(false);
+  const figmaSettingsHref = withWorkspace(
+    "/settings/workspace/integrations/figma",
+  );
+
+  const showConnectionNudge = useCallback(() => {
+    if (userRole !== "admin" || connectionNudgeShown.current) return;
+
+    connectionNudgeShown.current = true;
+    const isConfigured = integration?.configured === true;
+    const promptId = toast.info("Connect Figma to preview this design", {
+      action: {
+        label: isConfigured ? "Connect Figma" : "Open settings",
+        onClick: (actionEvent) => {
+          actionEvent.preventDefault();
+          toast.dismiss(promptId);
+          if (isConfigured) {
+            connectFigma();
+            return;
+          }
+          router.push(figmaSettingsHref);
+        },
+      },
+      cancel: {
+        label: "Keep link",
+        onClick: () => {
+          toast.dismiss(promptId);
+        },
+      },
+      description: isConfigured
+        ? "The pasted link was kept. Connect the workspace to create its preview."
+        : "The pasted link was kept. Open Figma settings to finish the workspace setup.",
+      duration: 10_000,
+      icon: <FigmaIcon className="h-4 w-auto" />,
+    });
+  }, [
+    connectFigma,
+    figmaSettingsHref,
+    integration?.configured,
+    router,
+    userRole,
+  ]);
 
   const attachFigmaDesign = useCallback(
     async ({
@@ -81,6 +134,12 @@ export const useFigmaDescriptionPaste = ({
       );
       if (!rawURL) return;
 
+      if (!integration) return;
+      if (!integration.connection?.isActive) {
+        showConnectionNudge();
+        return;
+      }
+
       const approximatePosition = editor.state.selection.from;
       const promptId = toast.info("Figma link detected", {
         action: {
@@ -105,6 +164,6 @@ export const useFigmaDescriptionPaste = ({
         icon: <FigmaIcon className="h-4 w-auto" />,
       });
     },
-    [attachFigmaDesign, editor],
+    [attachFigmaDesign, editor, integration, showConnectionNudge],
   );
 };

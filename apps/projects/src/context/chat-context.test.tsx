@@ -1,10 +1,10 @@
 /* global beforeEach, describe, expect, it, jest -- Jest globals are provided by the projects test runner. */
 
 import { generateId } from "ai";
-import { act, render } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { useMayaChat } from "@/modules/maya";
 import type { MayaChatConfig } from "@/modules/maya";
-import { ChatProvider } from "./chat-context";
+import { ChatProvider, useChatContext } from "./chat-context";
 
 jest.mock("ai", () => ({ generateId: jest.fn() }));
 
@@ -16,6 +16,33 @@ jest.mock("@/modules/maya", () => ({ useMayaChat: jest.fn() }));
 
 const generateIdMock = jest.mocked(generateId);
 const useMayaChatMock = jest.mocked(useMayaChat);
+const addGoogleDriveFile = jest.fn();
+const setInput = jest.fn();
+
+const GoogleDriveContextProbe = ({
+  name = "Launch plan",
+}: {
+  name?: string;
+}) => {
+  const { openChatWithGoogleDriveFile } = useChatContext();
+  return (
+    <button
+      onClick={() => {
+        openChatWithGoogleDriveFile(
+          {
+            id: "00000000-0000-4000-8000-000000000001",
+            mimeType: "application/vnd.google-apps.document",
+            name,
+          },
+          "Review this plan",
+        );
+      }}
+      type="button"
+    >
+      Ask Maya
+    </button>
+  );
+};
 
 const getLatestConfig = (): MayaChatConfig => {
   const latestCall = useMayaChatMock.mock.calls.at(-1);
@@ -30,8 +57,9 @@ describe("ChatProvider session lifecycle", () => {
     jest.clearAllMocks();
     generateIdMock.mockReturnValue("draft-chat-id-01");
     useMayaChatMock.mockReturnValue({
+      addGoogleDriveFile,
       handleSuggestedPrompt: jest.fn(),
-      setInput: jest.fn(),
+      setInput,
     } as unknown as ReturnType<typeof useMayaChat>);
   });
 
@@ -67,6 +95,38 @@ describe("ChatProvider session lifecycle", () => {
         currentChatId: "draft-chat-id-02",
         hasSelectedChat: false,
       }),
+    );
+  });
+
+  it("opens Maya with a validated linked-file reference and optional draft", () => {
+    render(
+      <ChatProvider>
+        <GoogleDriveContextProbe />
+      </ChatProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Ask Maya" }));
+
+    expect(addGoogleDriveFile).toHaveBeenCalledWith({
+      referenceId: "00000000-0000-4000-8000-000000000001",
+      mimeType: "application/vnd.google-apps.document",
+      name: "Launch plan",
+    });
+    expect(setInput).toHaveBeenCalledWith("Review this plan");
+  });
+
+  it("bounds a linked-file display name before adding it to Maya", () => {
+    const longName = "x".repeat(700);
+    render(
+      <ChatProvider>
+        <GoogleDriveContextProbe name={longName} />
+      </ChatProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Ask Maya" }));
+
+    expect(addGoogleDriveFile).toHaveBeenCalledWith(
+      expect.objectContaining({ name: longName.slice(0, 500) }),
     );
   });
 });

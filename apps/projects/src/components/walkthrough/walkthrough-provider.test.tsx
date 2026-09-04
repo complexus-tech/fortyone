@@ -284,6 +284,39 @@ describe("WalkthroughProvider", () => {
     });
   });
 
+  it("keeps browser fallback state global to the user instead of the workspace", () => {
+    const setActionProgress = jest.fn();
+    useProfileMock.mockReturnValue({
+      data: { id: "user-1" },
+      isPending: false,
+    } as ReturnType<typeof useProfile>);
+    useLocalStorageMock.mockImplementation((key) =>
+      key === "fortyone:walkthrough-action-progress"
+        ? ([{}, setActionProgress] as never)
+        : ([null, jest.fn()] as never),
+    );
+
+    const { result } = renderHook(() => useWalkthrough(), {
+      wrapper: WalkthroughTestProvider,
+    });
+
+    act(() => {
+      result.current.setSteps(actionGatedWalkthroughSteps);
+      result.current.completeWalkthroughAction("story-created");
+    });
+
+    expect(useLocalStorageMock).toHaveBeenCalledWith(
+      "fortyone:walkthrough-closed-at:user-1:workspace-getting-started:1.0.0",
+      null,
+    );
+    const updateProgress = setActionProgress.mock.calls.at(-1)?.[0] as (
+      progress: Record<string, string[]>,
+    ) => Record<string, string[]>;
+    expect(updateProgress({})).toEqual({
+      "user-1:workspace-getting-started:1.0.0": ["story-created"],
+    });
+  });
+
   it("does not let the legacy global completion flag hide active scoped progress", () => {
     useProfileMock.mockReturnValue({
       data: { hasSeenWalkthrough: true },
@@ -367,6 +400,42 @@ describe("WalkthroughProvider", () => {
       expect(result.current.state).toMatchObject({
         currentStep: 0,
         isActive: true,
+      });
+    },
+  );
+
+  it.each(["completed", "skipped"] as const)(
+    "does not auto-start a module tour with persisted %s progress",
+    (status) => {
+      useOnboardingTourProgressMock.mockReturnValue({
+        data: {
+          completedActionIds: [],
+          completedStepIds: ["navigation", "workspace"],
+          status,
+          tourKey: "workspace-module-calendar",
+          tourVersion: "1.0.0",
+        },
+        isPending: false,
+      } as unknown as ReturnType<typeof useOnboardingTourProgress>);
+      const wrapper = ({ children }: { children: ReactNode }) => (
+        <WalkthroughProvider
+          autoStart
+          dismissOnClose
+          tourKey="workspace-module-calendar"
+          version="1.0.0"
+        >
+          {children}
+        </WalkthroughProvider>
+      );
+      const { result } = renderHook(() => useWalkthrough(), { wrapper });
+
+      act(() => {
+        result.current.setSteps(walkthroughSteps);
+      });
+
+      expect(result.current.state).toMatchObject({
+        hasSeenWalkthrough: true,
+        isActive: false,
       });
     },
   );

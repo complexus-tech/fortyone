@@ -13,6 +13,7 @@ import { Streamdown, type StreamdownProps } from "streamdown";
 import type { User } from "@/types";
 import { useCopyToClipboard, useTerminology } from "@/hooks";
 import type { MayaUIMessage } from "@/lib/ai/tools/types";
+import { getGoogleDriveFileContextsFromMessage } from "@/lib/ai/google-drive-context";
 import { NewStoryDialog } from "../new-story-dialog";
 import { AttachmentsDisplay } from "./attachments-display";
 import {
@@ -22,6 +23,7 @@ import {
 } from "./chat-message-utils";
 import { isToolMessagePart } from "./tool-output-policy";
 import { ToolOutputRenderer } from "./tool-output-renderer";
+import { GoogleDriveContextChips } from "./google-drive-context-chips";
 
 type ChatMessageProps = {
   isAnimating?: boolean;
@@ -150,7 +152,13 @@ const RenderMessage = ({
   onPromptSelect: (prompt: string) => void;
 }) => {
   if (message.role === "user") {
-    return <UserPrompt text={getMessageText(message)} />;
+    const googleDriveFiles = getGoogleDriveFileContextsFromMessage(message);
+    return (
+      <div className="space-y-2.5">
+        <UserPrompt text={getMessageText(message)} />
+        <GoogleDriveContextChips files={googleDriveFiles} />
+      </div>
+    );
   }
 
   const visibleToolPartIndexes = getVisibleToolPartIndexes(message);

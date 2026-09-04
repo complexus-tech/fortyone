@@ -18,4 +18,8 @@ const (
 	CapabilityCalendarWatch        CapabilityKey = "calendar.watch"
 
 	CapabilityDesignFileContext CapabilityKey = "design.file_context"
+
+	CapabilityCloudFileContext CapabilityKey = "cloud_content.file_context"
+	CapabilityCloudFileCreate  CapabilityKey = "cloud_content.file_create"
+	CapabilityCloudFileImport  CapabilityKey = "cloud_content.file_import"
 )

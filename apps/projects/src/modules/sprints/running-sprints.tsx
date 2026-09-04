@@ -3,10 +3,11 @@ import { Box, Flex, Text } from "ui";
 import { BodyContainer } from "@/components/shared";
 import { NewSprintButton } from "@/components/ui";
 import { SprintsEmptyIllustration } from "@/components/ui/illustrations/empty-state-illustrations";
+import { walkthroughTargets } from "@/shared/walkthrough/targets";
 import { SprintRow } from "./components/row";
+import { RunningSprintsHeader } from "./components/running-sprints-header";
 import { SprintsSkeleton } from "./components/sprints-skeleton";
 import { useRunningSprints } from "./hooks/running-sprints";
-import { RunningSprintsHeader } from "./components/running-sprints-header";
 
 export const RunningSprintsList = () => {
   const { data: sprints = [], isPending } = useRunningSprints();
@@ -17,7 +18,7 @@ export const RunningSprintsList = () => {
   return (
     <>
       <RunningSprintsHeader />
-      <BodyContainer>
+      <BodyContainer data-walkthrough-target={walkthroughTargets.sprintsList}>
         {sprints.length === 0 && (
           <Box className="flex h-[70dvh] items-center justify-center">
             <Box className="flex flex-col items-center">

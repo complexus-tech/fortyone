@@ -44,6 +44,7 @@ import { useRemoveMemberMutation } from "@/modules/teams/hooks/remove-member-mut
 import { ConfirmDialog, NavLink, TeamColor } from "@/components/ui";
 import type { Team as TeamType } from "@/modules/teams/types";
 import type { TeamFeedbackSummary } from "@/modules/team-feedback/types";
+import { walkthroughTargets } from "@/shared/walkthrough/targets";
 // import { useTeamStatuses } from "@/lib/hooks/statuses";
 import { useTeamIntegrationRequests } from "@/modules/integration-requests/hooks/use-team-requests";
 import { NavCount } from "./nav-count";
@@ -83,6 +84,9 @@ const CollapsedTeamNavigation = ({
               isTeamActive &&
                 "bg-primary/5 text-primary before:bg-primary before:absolute before:top-1/2 before:-left-3 before:h-10 before:w-1.5 before:-translate-y-1/2 before:rounded-r-full",
             )}
+            data-walkthrough-target={
+              isTeamActive ? walkthroughTargets.teamSections : undefined
+            }
             type="button"
           >
             <TeamColor className="size-4" color={color} />
@@ -237,6 +241,9 @@ export const Team = ({
           className={cn("group", {
             "opacity-80 backdrop-blur": isDragging,
           })}
+          data-walkthrough-target={
+            isTeamActive ? walkthroughTargets.teamNavigation : undefined
+          }
           ref={setNodeRef}
           style={style}
         >
@@ -375,6 +382,9 @@ export const Team = ({
                 <Collapsible.Content>
                   <Flex
                     className="border-border mt-2 ml-5 border-l-[0.5px] pl-2"
+                    data-walkthrough-target={
+                      isTeamActive ? walkthroughTargets.teamSections : undefined
+                    }
                     direction="column"
                     gap={1}
                   >

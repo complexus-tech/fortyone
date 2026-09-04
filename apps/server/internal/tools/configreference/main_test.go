@@ -110,12 +110,21 @@ func TestSensitiveClassificationAvoidsIdentifiersAndQuotas(t *testing.T) {
 		"APP_AZURE_STORAGE_ACCOUNT_KEY":             true,
 		"APP_INVITATION_TOKEN_HMAC_PREVIOUS_KEYS":   true,
 		"APP_INVITATION_TOKEN_HMAC_KEY_ID":          false,
+		"GOOGLE_DRIVE_PICKER_API_KEY":               false,
 		"OPENAI_ASSISTANT_WORKSPACE_TOKENS_PER_DAY": false,
 	}
 	for name, want := range tests {
 		if got := isSensitive(name); got != want {
 			t.Errorf("isSensitive(%q) = %t, want %t", name, got, want)
 		}
+	}
+}
+
+func TestVariableCategoryClassifiesGoogleDriveAsProviderIntegration(t *testing.T) {
+	t.Parallel()
+
+	if got := variableCategory("GOOGLE_DRIVE_CLIENT_ID"); got != "Provider integrations" {
+		t.Fatalf("variableCategory(GOOGLE_DRIVE_CLIENT_ID) = %q, want Provider integrations", got)
 	}
 }
 

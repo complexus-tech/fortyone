@@ -127,4 +127,91 @@ describe("Maya chat request decoding", () => {
     expect(handle).toHaveBeenCalledTimes(1);
     expect(handle.mock.calls[0]?.[0].messages).toEqual(messages);
   });
+
+  it("accepts a bounded Google Drive reference selected on the user turn", async () => {
+    const messages = [
+      {
+        id: "user-drive-context",
+        parts: [
+          { text: "Review this file", type: "text" },
+          {
+            data: {
+              referenceId: "00000000-0000-4000-8000-000000000001",
+              name: "Launch plan",
+              mimeType: "application/vnd.google-apps.document",
+            },
+            type: "data-google-drive-file-context",
+          },
+        ],
+        role: "user",
+      },
+    ];
+    const handle = jest.fn(async () => new Response("stream"));
+
+    const response = await chatRequestModule.dispatchValidatedChatRequest({
+      handle,
+      request: createRequest({ messages }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(handle).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects a Google Drive provider ID in place of an opaque reference", async () => {
+    const messages = [
+      {
+        id: "user-drive-context",
+        parts: [
+          { text: "Review this file", type: "text" },
+          {
+            data: {
+              referenceId: "google-provider-file-id",
+              name: "Launch plan",
+              mimeType: "application/vnd.google-apps.document",
+            },
+            type: "data-google-drive-file-context",
+          },
+        ],
+        role: "user",
+      },
+    ];
+    const handle = jest.fn(async () => new Response("stream"));
+
+    const response = await chatRequestModule.dispatchValidatedChatRequest({
+      handle,
+      request: createRequest({ messages }),
+    });
+
+    expect(response.status).toBe(400);
+    expect(handle).not.toHaveBeenCalled();
+  });
+
+  it("rejects a selected Drive file Maya cannot read as text", async () => {
+    const messages = [
+      {
+        id: "user-drive-context",
+        parts: [
+          { text: "Review this file", type: "text" },
+          {
+            data: {
+              referenceId: "00000000-0000-4000-8000-000000000001",
+              name: "Brand image",
+              mimeType: "image/png",
+            },
+            type: "data-google-drive-file-context",
+          },
+        ],
+        role: "user",
+      },
+    ];
+    const handle = jest.fn(async () => new Response("stream"));
+
+    const response = await chatRequestModule.dispatchValidatedChatRequest({
+      handle,
+      request: createRequest({ messages }),
+    });
+
+    expect(response.status).toBe(400);
+    expect(handle).not.toHaveBeenCalled();
+  });
 });

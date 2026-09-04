@@ -16,6 +16,7 @@ import type {
   CalendarScheduleBlock,
 } from "@/lib/queries/calendar/types";
 import { useMyStoriesGrouped } from "@/modules/stories/hooks/use-my-stories-grouped";
+import { walkthroughTargets } from "@/shared/walkthrough/targets";
 import { getVisibleCalendarScheduleBlocks } from "./calendar-block";
 import {
   deriveCalendarVisibleHours,
@@ -405,7 +406,10 @@ export const PersonalCalendar = (props: PersonalCalendarProps) => {
           }}
           onSync={syncConnection}
         />
-        <Box className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <Box
+          className="flex min-h-0 flex-1 flex-col overflow-hidden"
+          data-walkthrough-target={walkthroughTargets.calendarGrid}
+        >
           {hasCalendarLoadError ? (
             <Box
               className="flex min-h-0 flex-1 items-center justify-center px-6 py-12 text-center"

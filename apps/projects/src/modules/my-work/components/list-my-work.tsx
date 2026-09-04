@@ -15,6 +15,7 @@ import { StoriesEmptyIllustration } from "@/components/ui/illustrations/stories-
 import { getGroupedStoryFilterParams } from "@/components/ui/stories-filter-query";
 import type { StateCategory } from "@/types/states";
 import { useMyStoriesGrouped } from "@/modules/stories/hooks/use-my-stories-grouped";
+import { walkthroughTargets } from "@/shared/walkthrough/targets";
 import { useMyWork } from "./provider";
 import { getMyWorkTabFilterParams, type MyWorkTab } from "./tabs";
 
@@ -101,7 +102,10 @@ export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
   const { filters, resetFilters, setFilters, tab } = useMyWork();
 
   return (
-    <Box className="h-(--app-page-content-height) min-h-0 overflow-hidden">
+    <Box
+      className="h-(--app-page-content-height) min-h-0 overflow-hidden"
+      data-walkthrough-target={walkthroughTargets.myWorkContent}
+    >
       <Tabs className="flex h-full min-h-0 flex-col" value={tab}>
         <StoriesFilterBar
           filters={filters}

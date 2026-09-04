@@ -37,6 +37,7 @@ export const MayaChat = () => {
     status,
     error,
     attachments,
+    googleDriveFiles,
     currentChatId,
     realtimeVoice,
 
@@ -50,6 +51,7 @@ export const MayaChat = () => {
     handleSuggestedPrompt,
     addToolApprovalResponse,
     setAttachments,
+    removeGoogleDriveFile,
 
     // Dialog states
     isStoryOpen,
@@ -104,6 +106,7 @@ export const MayaChat = () => {
           {needsUpgrade ? <LimitReached isOnPage /> : null}
           <ChatInput
             attachments={attachments}
+            googleDriveFiles={googleDriveFiles}
             isOnPage
             liveVoiceDisabled={needsUpgrade}
             messagesCount={displayMessages.length}
@@ -111,6 +114,7 @@ export const MayaChat = () => {
             onChange={(e) => {
               setInput(e.target.value);
             }}
+            onGoogleDriveFileRemove={removeGoogleDriveFile}
             onSend={handleSend}
             onStop={handleStop}
             realtimeVoice={realtimeVoice}

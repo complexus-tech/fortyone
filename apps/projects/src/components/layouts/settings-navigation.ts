@@ -36,6 +36,10 @@ export const buildSettingsNavigation = ({
     { title: "Profile", href: withWorkspace("/settings/account") },
     { title: "Calendar", href: withWorkspace("/settings/account/calendar") },
     {
+      title: "Google Drive",
+      href: withWorkspace("/settings/account/google-drive"),
+    },
+    {
       title: "Preferences",
       href: withWorkspace("/settings/account/preferences"),
     },

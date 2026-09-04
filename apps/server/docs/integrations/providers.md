@@ -108,6 +108,73 @@ See [GitLab proof boundaries](code-hosts.md#gitlab-proof).
 - OAuth state is single-use. Disconnect stops watches, revokes the grant, and
   deletes recoverable credentials.
 
+## Google Drive
+
+- Family: cloud content. The initial release uses the non-sensitive
+  `drive.file` scope only; it does not search or index a user's whole Drive.
+- Auth: personal OAuth account linking with PKCE and a hashed, single-use
+  server-side state. The callback also requires the initiating FortyOne browser
+  session and rejects a different or expired login before exchanging the Google
+  authorization code. Use a separate, dedicated Google Cloud project for each
+  environment—not merely a separate OAuth client—and never share that project
+  with Google sign-in or Calendar. Google's programmatic revocation invalidates
+  the subject's grant across every scope and OAuth client in the Cloud project.
+- Enable the Google Drive, Google Picker, Google Docs, and Google Sheets APIs
+  in both development and production Google Cloud projects. Google Slides can
+  be enabled when native Slides creation is introduced; the current adapter
+  only reads a Picker-selected presentation through Drive export.
+- Configure the consent screen with `openid`, `email`, `profile`, and
+  `https://www.googleapis.com/auth/drive.file`. Do not add broad Drive search or
+  read scopes: `drive.file` is the product boundary for explicitly selected or
+  FortyOne-created files.
+- Configure each OAuth client's authorized redirect URI as its exact public API
+  origin plus `/integrations/google-drive/callback`, with no wildcard or trailing
+  slash. The Picker App ID is the numeric Google Cloud project number shown
+  under **IAM & Admin > Settings**, not the project name or project ID.
+- Restrict the production Picker API key's website referrers to
+  `https://fortyone.app/*`, `https://*.fortyone.app/*`, and
+  `https://docs.google.com/*`; the wildcard is required for workspace
+  subdomains and the Google referrer is required because Picker runs in a
+  Google-hosted iframe. Give development its own key with only the exact local
+  referrer, for example `http://localhost:3000/*`. Restrict both keys' APIs to
+  Google Picker API and Google Drive API.
+- OAuth credentials use the shared context-bound vault with user, Google
+  subject, and immutable installation-generation AAD. Refresh uses an
+  original-envelope compare-and-swap. Provider 401s mark the account as
+  requiring reauthorization. Callback completion verifies that Google's granted
+  scopes include `drive.file` before any credential is persisted. One active
+  FortyOne user exclusively owns a Google subject; a second user receives a
+  conflict, and failed OAuth cleanup never revokes that existing owner's grant.
+  When a callback fails after token exchange, FortyOne first rechecks global
+  subject ownership under the same lifecycle fence. If no active owner exists,
+  it stores a sealed, generation-bound cleanup job; if ownership is active or
+  cannot be determined, it fails closed without calling Google's project-wide
+  revocation endpoint. An inline fallback is permitted only after ownership
+  absence was proven and the durable cleanup job itself could not be sealed or
+  persisted.
+- A linked file records stable metadata but does not grant teammates Google
+  access. Content reads require a grant for the requesting user's currently
+  connected Google account and revalidate the provider file before export.
+- Disconnect removes only the current workspace binding when another workspace
+  still uses the same account. The final binding atomically copies the existing
+  vault envelope into a durable generation-fenced revocation outbox, then
+  destroys the local account credential. Explicit disconnect, membership
+  removal, soft user deactivation, and hard account deletion use the same
+  idempotent staging path. Reactivation never restores a prior Drive binding or
+  credential; the user must reconnect explicitly. The
+  worker opens the sealed token only in memory and calls Google outside database
+  transactions; reconnect supersedes older same-subject generations before a
+  stale job can revoke. Already-invalid grants complete successfully; transient
+  network failures, 429s, recognized Google 403 rate-limit reasons, and 5xx
+  responses use bounded retries, while a terminal failure retains the sealed
+  envelope for operator resolution. Removing a file's final reference,
+  including a target-deletion cascade, also removes its cached metadata and
+  actor grants.
+- Create operations use a durable idempotency record plus a provider
+  `appProperties` operation ID. Every retry searches for an already-created
+  file before issuing another create request. Google Doc imports are explicit,
+  bounded, one-way snapshots with source provenance.
+
 ## Microsoft Calendar
 
 - Family: calendar, with the same FortyOne capability contracts as Google where

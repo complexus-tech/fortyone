@@ -184,7 +184,7 @@ func validateDescriptor(descriptor Descriptor) error {
 
 func validFamily(family Family) bool {
 	switch family {
-	case FamilyCodeHost, FamilyMessaging, FamilyCalendar, FamilySupportFeedback, FamilyDesignContext:
+	case FamilyCodeHost, FamilyMessaging, FamilyCalendar, FamilySupportFeedback, FamilyDesignContext, FamilyCloudContent:
 		return true
 	default:
 		return false

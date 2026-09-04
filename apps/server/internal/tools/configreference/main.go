@@ -384,7 +384,7 @@ func variableCategory(name string) string {
 		return "Email"
 	case strings.HasPrefix(name, "OPENAI_"):
 		return "AI"
-	case strings.HasPrefix(name, "GITHUB_"), strings.HasPrefix(name, "SLACK_"), strings.HasPrefix(name, "FIGMA_"), name == "APP_GITHUB_APP_ID", name == "GOOGLE_CLIENT_ID", strings.HasPrefix(name, "STRIPE_"):
+	case strings.HasPrefix(name, "GITHUB_"), strings.HasPrefix(name, "SLACK_"), strings.HasPrefix(name, "FIGMA_"), strings.HasPrefix(name, "GOOGLE_DRIVE_"), name == "APP_GITHUB_APP_ID", name == "GOOGLE_CLIENT_ID", strings.HasPrefix(name, "STRIPE_"):
 		return "Provider integrations"
 	case strings.HasPrefix(name, "APP_STORAGE_"), strings.HasPrefix(name, "STORAGE_"), strings.HasPrefix(name, "APP_AWS_"), strings.HasPrefix(name, "APP_AZURE_"):
 		return "Storage"
@@ -397,7 +397,7 @@ func variableCategory(name string) string {
 
 func isSensitive(name string) bool {
 	upper := strings.ToUpper(name)
-	if strings.HasSuffix(upper, "_HMAC_KEY_ID") || strings.HasSuffix(upper, "_TOKENS_PER_DAY") {
+	if name == "GOOGLE_DRIVE_PICKER_API_KEY" || strings.HasSuffix(upper, "_HMAC_KEY_ID") || strings.HasSuffix(upper, "_TOKENS_PER_DAY") {
 		return false
 	}
 	return strings.Contains(upper, "SECRET") ||

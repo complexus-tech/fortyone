@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { useWorkspacePath } from "@/hooks";
 import { userKeys } from "@/constants/keys";
 import { updateOnboardingTourProgressAction } from "@/lib/actions/users/update-onboarding-tour-progress";
+import { useSession } from "@/lib/auth/client";
 import type {
   OnboardingTourProgress,
   UpdateOnboardingTourProgress,
@@ -24,6 +25,7 @@ const mergeStatus = (
 
 export const useUpdateOnboardingTourProgressMutation = () => {
   const queryClient = useQueryClient();
+  const { data: session } = useSession();
   const { workspaceSlug } = useWorkspacePath();
 
   const mutation = useMutation({
@@ -32,7 +34,7 @@ export const useUpdateOnboardingTourProgressMutation = () => {
 
     onMutate: async (payload) => {
       const queryKey = userKeys.onboardingTourProgress(
-        workspaceSlug,
+        session?.user.id ?? "anonymous",
         payload.tourKey,
         payload.tourVersion,
       );
@@ -71,29 +73,27 @@ export const useUpdateOnboardingTourProgressMutation = () => {
     },
 
     onSuccess: (progress, _payload, context) => {
-      if (context) {
-        queryClient.setQueryData<OnboardingTourProgress>(
-          context.queryKey,
-          (currentProgress) => {
-            if (!currentProgress) {
-              return progress;
-            }
+      queryClient.setQueryData<OnboardingTourProgress>(
+        context.queryKey,
+        (currentProgress) => {
+          if (!currentProgress) {
+            return progress;
+          }
 
-            return {
-              ...progress,
-              completedActionIds: mergeUnique(
-                progress.completedActionIds,
-                currentProgress.completedActionIds,
-              ),
-              completedStepIds: mergeUnique(
-                progress.completedStepIds,
-                currentProgress.completedStepIds,
-              ),
-              status: mergeStatus(progress.status, currentProgress.status),
-            };
-          },
-        );
-      }
+          return {
+            ...progress,
+            completedActionIds: mergeUnique(
+              progress.completedActionIds,
+              currentProgress.completedActionIds,
+            ),
+            completedStepIds: mergeUnique(
+              progress.completedStepIds,
+              currentProgress.completedStepIds,
+            ),
+            status: mergeStatus(progress.status, currentProgress.status),
+          };
+        },
+      );
     },
   });
 

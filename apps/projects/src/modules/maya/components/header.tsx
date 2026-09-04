@@ -8,6 +8,7 @@ import { useSession } from "@/lib/auth/client";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { useWorkspacePath } from "@/hooks";
 import { useTotalMessages } from "@/modules/ai-chats/hooks/use-total-messages";
+import { walkthroughTargets } from "@/shared/walkthrough/targets";
 
 type MayaHeaderProps = {
   currentChatId: string;
@@ -38,6 +39,7 @@ export const Header = ({
           <MobileMenuButton />
           <Button
             color="tertiary"
+            data-walkthrough-target={walkthroughTargets.mayaNewChat}
             leftIcon={<PlusIcon strokeWidth={2.8} />}
             onClick={handleNewChat}
             variant="naked"
@@ -45,7 +47,11 @@ export const Header = ({
             New chat
           </Button>
         </Flex>
-        <Flex align="center" className="gap-2 md:gap-4">
+        <Flex
+          align="center"
+          className="gap-2 md:gap-4"
+          data-walkthrough-target={walkthroughTargets.mayaHeaderActions}
+        >
           {tier !== "enterprise" && !isInternalUser && (
             <Tooltip
               title={

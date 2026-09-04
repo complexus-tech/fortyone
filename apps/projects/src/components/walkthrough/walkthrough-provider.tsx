@@ -11,10 +11,11 @@ import {
   type ReactNode,
 } from "react";
 import type { WalkthroughTargetSelector } from "@/shared/walkthrough/targets";
+import { useSession } from "@/lib/auth/client";
 import { useProfile } from "@/lib/hooks/profile";
 import { useOnboardingTourProgress } from "@/lib/hooks/users/onboarding-tour-progress";
 import { useUpdateOnboardingTourProgressMutation } from "@/lib/hooks/users/update-onboarding-tour-progress";
-import { useLocalStorage, useMediaQuery, useWorkspacePath } from "@/hooks";
+import { useLocalStorage, useMediaQuery } from "@/hooks";
 import type {
   OnboardingTourStatus,
   UpdateOnboardingTourProgress,
@@ -195,7 +196,7 @@ export const WalkthroughProvider = ({
   tourKey = WORKSPACE_GETTING_STARTED_TOUR_KEY,
 }: WalkthroughProviderProps) => {
   const { data: profile, isPending: isProfilePending } = useProfile();
-  const { workspaceSlug } = useWorkspacePath();
+  const { data: session } = useSession();
   const {
     data: onboardingTourProgress,
     isPending: isOnboardingTourProgressPending,
@@ -205,14 +206,11 @@ export const WalkthroughProvider = ({
   });
   const { mutate: updateOnboardingTourProgress } =
     useUpdateOnboardingTourProgressMutation();
+  const walkthroughUserID = session?.user.id ?? profile?.id ?? "anonymous";
+  const walkthroughScope = `${walkthroughUserID}:${tourKey}:${version}`;
   const [walkthroughClosedAt, setWalkthroughClosedAt] = useLocalStorage<
     string | null
-  >(
-    tourKey === WORKSPACE_GETTING_STARTED_TOUR_KEY
-      ? "fortyone:walkthrough-closed-at"
-      : `fortyone:walkthrough-closed-at:${tourKey}:${version}`,
-    null,
-  );
+  >(`fortyone:walkthrough-closed-at:${walkthroughScope}`, null);
   const [walkthroughActionProgress, setWalkthroughActionProgress] =
     useLocalStorage<WalkthroughActionProgress>(
       WALKTHROUGH_ACTION_PROGRESS_STORAGE_KEY,
@@ -237,9 +235,7 @@ export const WalkthroughProvider = ({
     state.hasSeenWalkthrough ||
     (onboardingTourProgress?.status !== undefined &&
       onboardingTourProgress.status !== "active");
-  const walkthroughActionScope = `${profile?.id ?? "anonymous"}:${workspaceSlug || "workspace"}:${
-    tourKey === WORKSPACE_GETTING_STARTED_TOUR_KEY ? "" : `${tourKey}:`
-  }${version}`;
+  const walkthroughActionScope = walkthroughScope;
   const legacyCompletedActions = useMemo(
     () => walkthroughActionProgress[walkthroughActionScope] ?? [],
     [walkthroughActionProgress, walkthroughActionScope],

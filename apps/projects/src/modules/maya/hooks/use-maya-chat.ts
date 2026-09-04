@@ -23,6 +23,12 @@ import { useMemories } from "@/modules/ai-chats/hooks/use-memory";
 import { useTotalMessages } from "@/modules/ai-chats/hooks/use-total-messages";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import type { MayaUIMessage } from "@/lib/ai/tools/types";
+import {
+  createGoogleDriveFileContextPart,
+  googleDriveFileContextSchema,
+  MAX_GOOGLE_DRIVE_FILE_CONTEXTS,
+  type GoogleDriveFileContext,
+} from "@/lib/ai/google-drive-context";
 import type { MayaChatConfig } from "../types";
 import { getMayaToolInvalidationKeys } from "../utils/tool-query-invalidation";
 import {
@@ -65,6 +71,9 @@ export const useMayaChat = (config: MayaChatConfig) => {
   const [isObjectiveOpen, setIsObjectiveOpen] = useState(false);
   const [isSprintOpen, setIsSprintOpen] = useState(false);
   const [attachments, setAttachments] = useState<File[]>([]);
+  const [googleDriveFiles, setGoogleDriveFiles] = useState<
+    GoogleDriveFileContext[]
+  >([]);
   const { getTermDisplay } = useTerminology();
   const currentChatId = config.currentChatId;
   const { data: aiChatMessages = [], isSuccess: isChatHistoryLoaded } =
@@ -121,6 +130,7 @@ export const useMayaChat = (config: MayaChatConfig) => {
     setMessages([]);
     setInput("");
     setAttachments([]);
+    setGoogleDriveFiles([]);
   };
 
   const handleChatSelect = async (chatId: string) => {
@@ -137,6 +147,7 @@ export const useMayaChat = (config: MayaChatConfig) => {
     locallyModifiedChatIdRef.current = null;
     setInput("");
     setAttachments([]);
+    setGoogleDriveFiles([]);
     config.updateChatRef(chatId);
   };
 
@@ -263,7 +274,13 @@ export const useMayaChat = (config: MayaChatConfig) => {
   };
 
   const handleSendMessage = async (content: string) => {
-    if (!content.trim() && attachments.length === 0) return;
+    if (
+      !content.trim() &&
+      attachments.length === 0 &&
+      googleDriveFiles.length === 0
+    ) {
+      return;
+    }
     if (isSendingRef.current) return;
     if (isChatResponseInProgress(status)) return;
 
@@ -293,6 +310,7 @@ export const useMayaChat = (config: MayaChatConfig) => {
     }
 
     const pendingAttachments = attachments;
+    const pendingGoogleDriveFiles = googleDriveFiles;
     await runWithChatSendGuard({
       sendGuard: isSendingRef,
       status,
@@ -316,12 +334,30 @@ export const useMayaChat = (config: MayaChatConfig) => {
             (attachment) => !pendingAttachmentSet.has(attachment),
           ),
         );
+        const pendingGoogleDriveFileIds = new Set(
+          pendingGoogleDriveFiles.map((file) => file.referenceId),
+        );
+        setGoogleDriveFiles((currentFiles) =>
+          currentFiles.filter(
+            (file) => !pendingGoogleDriveFileIds.has(file.referenceId),
+          ),
+        );
 
         locallyModifiedChatIdRef.current = currentChatId;
-        await sendMessage({
-          text: content,
-          files: attachmentData,
-        });
+        if (pendingGoogleDriveFiles.length > 0) {
+          const messageText =
+            content.trim() ||
+            `Review the selected Google Drive ${pendingGoogleDriveFiles.length === 1 ? "file" : "files"}.`;
+          const parts: MayaUIMessage["parts"] = [
+            { text: messageText, type: "text" },
+            ...attachmentData,
+            ...pendingGoogleDriveFiles.map(createGoogleDriveFileContextPart),
+          ];
+          await sendMessage({ parts, role: "user" });
+          return;
+        }
+
+        await sendMessage({ text: content, files: attachmentData });
       },
     });
   };
@@ -331,8 +367,54 @@ export const useMayaChat = (config: MayaChatConfig) => {
   };
 
   const handleSend = () => {
-    if (!input.trim() && attachments.length === 0) return;
+    if (
+      !input.trim() &&
+      attachments.length === 0 &&
+      googleDriveFiles.length === 0
+    ) {
+      return;
+    }
     void handleSendMessage(input);
+  };
+
+  const addGoogleDriveFile = (file: GoogleDriveFileContext) => {
+    const result = googleDriveFileContextSchema.safeParse(file);
+    if (!result.success) {
+      toast.error("That Google Drive file reference is invalid.");
+      return;
+    }
+    if (
+      googleDriveFiles.some(
+        (currentFile) => currentFile.referenceId === result.data.referenceId,
+      )
+    ) {
+      return;
+    }
+    if (googleDriveFiles.length >= MAX_GOOGLE_DRIVE_FILE_CONTEXTS) {
+      toast.error(
+        `You can select up to ${MAX_GOOGLE_DRIVE_FILE_CONTEXTS} Google Drive files.`,
+      );
+      return;
+    }
+
+    setGoogleDriveFiles((currentFiles) => {
+      if (
+        currentFiles.length >= MAX_GOOGLE_DRIVE_FILE_CONTEXTS ||
+        currentFiles.some(
+          (currentFile) => currentFile.referenceId === result.data.referenceId,
+        )
+      ) {
+        return currentFiles;
+      }
+
+      return [...currentFiles, result.data];
+    });
+  };
+
+  const removeGoogleDriveFile = (referenceId: string) => {
+    setGoogleDriveFiles((currentFiles) =>
+      currentFiles.filter((file) => file.referenceId !== referenceId),
+    );
   };
 
   const stop = () => {
@@ -347,6 +429,7 @@ export const useMayaChat = (config: MayaChatConfig) => {
     status,
     error,
     attachments,
+    googleDriveFiles,
     currentChatId,
     realtimeVoice,
 
@@ -360,6 +443,8 @@ export const useMayaChat = (config: MayaChatConfig) => {
     handleSuggestedPrompt,
     addToolApprovalResponse,
     setAttachments,
+    addGoogleDriveFile,
+    removeGoogleDriveFile,
 
     // Dialog states
     isStoryOpen,

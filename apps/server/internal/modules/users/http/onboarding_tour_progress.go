@@ -51,12 +51,7 @@ func (h *Handlers) GetOnboardingTourProgress(ctx context.Context, w http.Respons
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
-	workspace, err := mid.GetWorkspace(ctx)
-	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
-	}
-
-	progress, err := h.users.GetOnboardingTourProgress(ctx, userID, workspace.ID, users.CoreOnboardingTourScope{
+	progress, err := h.users.GetOnboardingTourProgress(ctx, userID, users.CoreOnboardingTourScope{
 		TourKey:     query.TourKey,
 		TourVersion: query.TourVersion,
 	})
@@ -82,11 +77,6 @@ func (h *Handlers) UpdateOnboardingTourProgress(ctx context.Context, w http.Resp
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
-	workspace, err := mid.GetWorkspace(ctx)
-	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
-	}
-
 	var req UpdateOnboardingTourProgressRequest
 	if err := web.Decode(r, &req); err != nil {
 		return web.RespondError(ctx, w, fmt.Errorf("invalid request: %w", err), http.StatusBadRequest)
@@ -95,7 +85,6 @@ func (h *Handlers) UpdateOnboardingTourProgress(ctx context.Context, w http.Resp
 	progress, err := h.users.UpdateOnboardingTourProgress(
 		ctx,
 		userID,
-		workspace.ID,
 		toCoreUpdateOnboardingTourProgress(req),
 	)
 	if err != nil {

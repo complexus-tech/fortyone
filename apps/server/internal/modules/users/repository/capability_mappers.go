@@ -25,7 +25,7 @@ func mapAutomationPreferences(
 }
 
 func mapOnboardingTourProgress(
-	userID, workspaceID uuid.UUID,
+	userID uuid.UUID,
 	tourKey, tourVersion string,
 	completedStepIDs, completedActionIDs []string,
 	status string,
@@ -33,7 +33,6 @@ func mapOnboardingTourProgress(
 ) usersdomain.OnboardingTourProgress {
 	return usersdomain.OnboardingTourProgress{
 		UserID:             userID,
-		WorkspaceID:        workspaceID,
 		TourKey:            tourKey,
 		TourVersion:        tourVersion,
 		CompletedStepIDs:   append([]string(nil), completedStepIDs...),

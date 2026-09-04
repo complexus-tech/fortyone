@@ -4,7 +4,7 @@
 
 This deterministic inventory shows where routes and persistence live in the API codebase. Run `make inventory-generate` after moving a route, test, or query, or changing a persistence dependency; `make inventory-check` rejects drift. Counts describe code shape, not test quality or security approval.
 
-Current snapshot: **437 routes across 44 modules**. Registered middleware classifies 352 routes with required user authentication, 9 with optional authentication, 76 without user-auth middleware, 311 with current workspace-membership resolution, 162 with an explicit role/scope guard, and 50 with a route-level rate limit. The no-user-auth set includes 6 webhook routes whose provider signature/replay policy must be verified in their handler contract. These are registration facts, not proof of complete service/resource authorization.
+Current snapshot: **450 routes across 45 modules**. Registered middleware classifies 365 routes with required user authentication, 9 with optional authentication, 76 without user-auth middleware, 323 with current workspace-membership resolution, 169 with an explicit role/scope guard, and 50 with a route-level rate limit. The no-user-auth set includes 6 webhook routes whose provider signature/replay policy must be verified in their handler contract. These are registration facts, not proof of complete service/resource authorization.
 
 Credential configuration is indexed in [`docs/configuration.md`](../configuration.md), migration compatibility in [`docs/database/migration-operations.md`](../database/migration-operations.md), and architectural exceptions in the enforced debt baseline.
 
@@ -28,9 +28,10 @@ Credential configuration is indexed in [`docs/configuration.md`](../configuratio
 | `emailreply` | 1 | 11 / 49 | 22 | yes | 0 | [context_loader.go](../../internal/modules/emailreply/service/context_loader.go#L1) (495) |
 | `epics` | 1 | 2 / 2 | 0 | no | 0 | [epics.go](../../internal/modules/epics/http/epics.go#L1) (41) |
 | `feedback` | 62 | 17 / 137 | 160 | yes | 0 | [models.go](../../internal/modules/feedback/http/models.go#L1) (578) |
-| `figma` | 12 | 10 / 27 | 26 | yes | 0 | [figma.go](../../internal/modules/figma/service/figma.go#L1) (405) |
-| `github` | 21 | 19 / 52 | 62 | yes | 0 | [lookups.go](../../internal/modules/github/repository/lookups.go#L1) (306) |
+| `figma` | 12 | 10 / 29 | 26 | yes | 0 | [figma.go](../../internal/modules/figma/service/figma.go#L1) (453) |
+| `github` | 21 | 19 / 54 | 62 | yes | 0 | [lookups.go](../../internal/modules/github/repository/lookups.go#L1) (306) |
 | `gitlab` | 0 | 4 / 12 | 0 | no | 0 | [webhook_runtime.go](../../internal/modules/gitlab/webhook_runtime.go#L1) (229) |
+| `googledrive` | 13 | 14 / 71 | 51 | yes | 0 | [service.go](../../internal/modules/googledrive/service/service.go#L1) (699) |
 | `health` | 2 | 1 / 3 | 0 | no | 0 | [health.go](../../internal/modules/health/http/health.go#L1) (92) |
 | `integrationrequests` | 10 | 9 / 28 | 35 | yes | 0 | [integrationrequests.go](../../internal/modules/integrationrequests/service/integrationrequests.go#L1) (361) |
 | `invitations` | 6 | 12 / 38 | 22 | yes | 0 | [commands.go](../../internal/modules/invitations/repository/commands.go#L1) (322) |
@@ -46,15 +47,15 @@ Credential configuration is indexed in [`docs/configuration.md`](../configuratio
 | `outboundwebhooks` | 5 | 10 / 25 | 24 | yes | 0 | [dispatcher.go](../../internal/modules/outboundwebhooks/service/dispatcher.go#L1) (337) |
 | `reports` | 15 | 8 / 23 | 44 | yes | 0 | [reports.go](../../internal/modules/reports/service/reports.go#L1) (318) |
 | `search` | 2 | 7 / 18 | 5 | yes | 0 | [models.go](../../internal/modules/search/http/models.go#L1) (227) |
-| `slack` | 16 | 68 / 296 | 78 | yes | 0 | [capability_models.go](../../internal/modules/slack/service/capability_models.go#L1) (555) |
+| `slack` | 16 | 68 / 296 | 79 | yes | 0 | [capability_models.go](../../internal/modules/slack/service/capability_models.go#L1) (555) |
 | `sprints` | 7 | 7 / 13 | 14 | yes | 0 | [models.go](../../internal/modules/sprints/http/models.go#L1) (270) |
 | `sse` | 1 | 0 / 0 | 0 | no | 0 | — |
 | `states` | 4 | 4 / 5 | 17 | yes | 0 | [repository.go](../../internal/modules/states/repository/repository.go#L1) (332) |
-| `stories` | 35 | 64 / 196 | 91 | yes | 0 | [secondary_mutations.go](../../internal/modules/stories/repository/secondary_mutations.go#L1) (470) |
+| `stories` | 35 | 65 / 203 | 91 | yes | 0 | [secondary_mutations.go](../../internal/modules/stories/repository/secondary_mutations.go#L1) (470) |
 | `subscriptions` | 7 | 8 / 26 | 18 | yes | 0 | [subscriptions.go](../../internal/modules/subscriptions/http/subscriptions.go#L1) (280) |
 | `teams` | 12 | 5 / 16 | 16 | yes | 0 | [teams.go](../../internal/modules/teams/http/teams.go#L1) (590) |
 | `teamsettings` | 4 | 14 / 33 | 27 | yes | 0 | [sprint_automation.go](../../internal/modules/teamsettings/repository/sprint_automation.go#L1) (394) |
-| `users` | 28 | 18 / 57 | 34 | yes | 0 | [users.go](../../internal/modules/users/service/users.go#L1) (730) |
+| `users` | 28 | 18 / 57 | 34 | yes | 0 | [users.go](../../internal/modules/users/service/users.go#L1) (678) |
 | `workspaces` | 16 | 8 / 21 | 33 | yes | 0 | [lifecycle_maintenance.go](../../internal/modules/workspaces/repository/lifecycle_maintenance.go#L1) (482) |
 
 ## Route ownership
@@ -333,6 +334,23 @@ Credential configuration is indexed in [`docs/configuration.md`](../configuratio
 | `DELETE` | `/workspaces/{workspaceSlug}/stories/{storyId}/github-links/{linkId}` | `auth=required; workspace=current; role>=member` | `h.DeleteStoryGitHubLink` | `auth → workspace → memberOnly` | [routes.go](../../internal/modules/github/http/routes.go#L47) |
 | `GET` | `/workspaces/{workspaceSlug}/teams/{teamId}/settings/github` | `auth=required; workspace=current` | `h.GetTeamSettings` | `auth → workspace` | [routes.go](../../internal/modules/github/http/routes.go#L44) |
 | `PUT` | `/workspaces/{workspaceSlug}/teams/{teamId}/settings/github` | `auth=required; workspace=current; role>=admin` | `h.UpdateTeamSettings` | `auth → workspace → adminOnly` | [routes.go](../../internal/modules/github/http/routes.go#L45) |
+### googledrive
+
+| Method | Path | Registered guards | Handler | Registered middleware | Source |
+| --- | --- | --- | --- | --- | --- |
+| `GET` | `/integrations/google-drive/callback` | `auth=required` | `handlers.CompleteOAuth` | `auth` | [routes.go](../../internal/modules/googledrive/http/routes.go#L40) |
+| `GET` | `/workspaces/{workspaceSlug}/google-drive/files` | `auth=required; workspace=current` | `handlers.ListFiles` | `auth → workspace` | [routes.go](../../internal/modules/googledrive/http/routes.go#L31) |
+| `POST` | `/workspaces/{workspaceSlug}/google-drive/files` | `auth=required; workspace=current; role>=member` | `handlers.AttachFiles` | `auth → workspace → member` | [routes.go](../../internal/modules/googledrive/http/routes.go#L32) |
+| `POST` | `/workspaces/{workspaceSlug}/google-drive/files/create` | `auth=required; workspace=current; role>=member` | `handlers.CreateFile` | `auth → workspace → member` | [routes.go](../../internal/modules/googledrive/http/routes.go#L33) |
+| `DELETE` | `/workspaces/{workspaceSlug}/google-drive/files/{referenceId}` | `auth=required; workspace=current; role>=member` | `handlers.DeleteFile` | `auth → workspace → member` | [routes.go](../../internal/modules/googledrive/http/routes.go#L38) |
+| `GET` | `/workspaces/{workspaceSlug}/google-drive/files/{referenceId}/content` | `auth=required; workspace=current` | `handlers.ReadContent` | `auth → workspace` | [routes.go](../../internal/modules/googledrive/http/routes.go#L34) |
+| `POST` | `/workspaces/{workspaceSlug}/google-drive/files/{referenceId}/imports` | `auth=required; workspace=current; role>=member` | `handlers.ImportFile` | `auth → workspace → member` | [routes.go](../../internal/modules/googledrive/http/routes.go#L37) |
+| `GET` | `/workspaces/{workspaceSlug}/google-drive/files/{referenceId}/preview` | `auth=required; workspace=current` | `handlers.ReadPreview` | `auth → workspace` | [routes.go](../../internal/modules/googledrive/http/routes.go#L35) |
+| `POST` | `/workspaces/{workspaceSlug}/google-drive/files/{referenceId}/refresh` | `auth=required; workspace=current; role>=member` | `handlers.RefreshFile` | `auth → workspace → member` | [routes.go](../../internal/modules/googledrive/http/routes.go#L36) |
+| `DELETE` | `/workspaces/{workspaceSlug}/integrations/google-drive` | `auth=required; workspace=current` | `handlers.Disconnect` | `auth → workspace` | [routes.go](../../internal/modules/googledrive/http/routes.go#L28) |
+| `GET` | `/workspaces/{workspaceSlug}/integrations/google-drive` | `auth=required; workspace=current` | `handlers.GetIntegration` | `auth → workspace` | [routes.go](../../internal/modules/googledrive/http/routes.go#L24) |
+| `POST` | `/workspaces/{workspaceSlug}/integrations/google-drive/connect-session` | `auth=required; workspace=current; role>=member` | `handlers.CreateConnectSession` | `auth → workspace → member` | [routes.go](../../internal/modules/googledrive/http/routes.go#L25) |
+| `POST` | `/workspaces/{workspaceSlug}/integrations/google-drive/picker-session` | `auth=required; workspace=current; role>=member` | `handlers.CreatePickerSession` | `auth → workspace → member` | [routes.go](../../internal/modules/googledrive/http/routes.go#L29) |
 ### health
 
 | Method | Path | Registered guards | Handler | Registered middleware | Source |

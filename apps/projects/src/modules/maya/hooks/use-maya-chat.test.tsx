@@ -409,4 +409,63 @@ describe("useMayaChat onboarding completion", () => {
 
     expect(onUserMessageSubmitted).not.toHaveBeenCalled();
   });
+
+  it("sends only an opaque selected Google Drive reference as message data", async () => {
+    const { result } = renderMayaChat();
+    const selectedFile = {
+      referenceId: "00000000-0000-4000-8000-000000000001",
+      name: "Launch plan",
+      mimeType: "application/vnd.google-apps.document",
+    };
+
+    act(() => {
+      result.current.addGoogleDriveFile(selectedFile);
+    });
+    await waitFor(() => {
+      expect(result.current.googleDriveFiles).toEqual([selectedFile]);
+    });
+
+    act(() => {
+      result.current.handleSuggestedPrompt("Summarize this plan");
+    });
+
+    await waitFor(() => {
+      expect(sendMessage).toHaveBeenCalledWith({
+        parts: [
+          { text: "Summarize this plan", type: "text" },
+          {
+            data: selectedFile,
+            type: "data-google-drive-file-context",
+          },
+        ],
+        role: "user",
+      });
+    });
+    expect(JSON.stringify(sendMessage.mock.calls)).not.toContain(
+      "google-provider-file-id",
+    );
+  });
+
+  it("keeps rapid Google Drive additions without overwriting earlier files", async () => {
+    const { result } = renderMayaChat();
+    const firstFile = {
+      referenceId: "00000000-0000-4000-8000-000000000001",
+      name: "Launch plan",
+      mimeType: "application/vnd.google-apps.document",
+    };
+    const secondFile = {
+      referenceId: "00000000-0000-4000-8000-000000000002",
+      name: "Launch model",
+      mimeType: "application/vnd.google-apps.spreadsheet",
+    };
+
+    act(() => {
+      result.current.addGoogleDriveFile(firstFile);
+      result.current.addGoogleDriveFile(secondFile);
+    });
+
+    await waitFor(() => {
+      expect(result.current.googleDriveFiles).toEqual([firstFile, secondFile]);
+    });
+  });
 });

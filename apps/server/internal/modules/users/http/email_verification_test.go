@@ -144,7 +144,7 @@ func (emailVerificationRateLimitRepo) UpdateAutomationPreferences(ctx context.Co
 
 func (emailVerificationRateLimitRepo) GetOnboardingTourProgress(
 	ctx context.Context,
-	userID, workspaceID uuid.UUID,
+	userID uuid.UUID,
 	scope users.CoreOnboardingTourScope,
 ) (users.CoreOnboardingTourProgress, error) {
 	return users.CoreOnboardingTourProgress{}, nil
@@ -152,7 +152,7 @@ func (emailVerificationRateLimitRepo) GetOnboardingTourProgress(
 
 func (emailVerificationRateLimitRepo) UpdateOnboardingTourProgress(
 	ctx context.Context,
-	userID, workspaceID uuid.UUID,
+	userID uuid.UUID,
 	updates users.CoreUpdateOnboardingTourProgress,
 ) (users.CoreOnboardingTourProgress, error) {
 	return users.CoreOnboardingTourProgress{}, nil

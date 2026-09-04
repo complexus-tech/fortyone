@@ -20,6 +20,7 @@ import (
 	feedbackhttp "github.com/complexus-tech/projects-api/internal/modules/feedback/http"
 	figmahttp "github.com/complexus-tech/projects-api/internal/modules/figma/http"
 	githubhttp "github.com/complexus-tech/projects-api/internal/modules/github/http"
+	googledrivehttp "github.com/complexus-tech/projects-api/internal/modules/googledrive/http"
 	healthhttp "github.com/complexus-tech/projects-api/internal/modules/health/http"
 	integrationrequestshttp "github.com/complexus-tech/projects-api/internal/modules/integrationrequests/http"
 	invitationshttp "github.com/complexus-tech/projects-api/internal/modules/invitations/http"
@@ -209,6 +210,13 @@ func (r routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Cache:             cfg.Cache,
 		BrowserSessions:   browserSessions,
 		Service:           svcs.figma,
+	}, app)
+	googledrivehttp.Routes(googledrivehttp.Config{
+		WorkspaceResolver: r.workspaceResolver,
+		Log:               cfg.Log,
+		SecretKey:         cfg.SecretKey,
+		BrowserSessions:   browserSessions,
+		Service:           svcs.googleDrive,
 	}, app)
 	slackhttp.Routes(slackhttp.Config{
 		WorkspaceResolver: r.workspaceResolver,

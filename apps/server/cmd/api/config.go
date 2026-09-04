@@ -182,6 +182,13 @@ type Config struct {
 		RedirectURL  string `default:"https://api.fortyone.app/integrations/figma/callback" env:"FIGMA_REDIRECT_URL"`
 		WebhookURL   string `default:"https://api.fortyone.app/webhooks/figma" env:"FIGMA_WEBHOOK_URL"`
 	}
+	GoogleDrive struct {
+		ClientID     string `env:"GOOGLE_DRIVE_CLIENT_ID"`
+		ClientSecret string `env:"GOOGLE_DRIVE_CLIENT_SECRET"`
+		RedirectURL  string `default:"https://api.fortyone.app/integrations/google-drive/callback" env:"GOOGLE_DRIVE_REDIRECT_URL"`
+		PickerAPIKey string `env:"GOOGLE_DRIVE_PICKER_API_KEY"`
+		AppID        string `env:"GOOGLE_DRIVE_APP_ID"`
+	}
 }
 
 func verificationTokenConfig(cfg Config) users.VerificationTokenConfig {

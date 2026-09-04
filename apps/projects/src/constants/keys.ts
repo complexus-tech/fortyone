@@ -100,14 +100,14 @@ export const userKeys = {
   automationPreferences: (workspaceSlug: string) =>
     [...userKeys.all, "automation-preferences", workspaceSlug] as const,
   onboardingTourProgress: (
-    workspaceSlug: string,
+    userID: string,
     tourKey: string,
     tourVersion: string,
   ) =>
     [
       ...userKeys.all,
       "onboarding-tour-progress",
-      workspaceSlug,
+      userID,
       tourKey,
       tourVersion,
     ] as const,

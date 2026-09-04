@@ -266,6 +266,8 @@ const TOOL_THINKING_LABELS: Record<string, string> = {
   "tool-deleteMemory": "Removing memory",
   "tool-listCustomerFeedbackTool": "Reading customer feedback",
   "tool-getCustomerFeedbackTool": "Getting feedback details",
+  "tool-listLinkedGoogleFilesTool": "Checking selected Google Drive files",
+  "tool-getLinkedGoogleFileContentTool": "Reading Google Drive file",
   "tool-theme": "Changing theme",
 };
 

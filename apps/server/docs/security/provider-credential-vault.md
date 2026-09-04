@@ -1,8 +1,8 @@
 # Provider credential vault
 
-The credential vault protects recoverable GitHub, Slack, and Figma OAuth
-credentials at rest. Provider tokens are stored as versioned authenticated
-envelopes, never as plaintext fallbacks.
+The credential vault protects recoverable GitHub, Slack, Figma, and Google
+Drive OAuth credentials at rest. Provider tokens are stored as versioned
+authenticated envelopes, never as plaintext fallbacks.
 
 ## Simple configuration model
 
@@ -35,15 +35,37 @@ key ID and version, nonces, ciphertext, and wrapped DEK. It does not store the
 authenticated provider binding. Callers reconstruct that binding from trusted
 database identity:
 
-| Provider | Tenant binding | Subject binding | Credential type | Generation binding |
-| --- | --- | --- | --- | --- |
-| GitHub | `account:<user UUID>` | user UUID | `user-oauth-access-token` | `users.github_access_token_generation` |
-| Slack | workspace UUID | Slack team ID | `bot-oauth` | `slack_workspaces.installation_generation` |
-| Figma | workspace UUID | Figma connection UUID | `oauth-token` | `figma_connections.installation_generation` |
+| Provider     | Tenant binding        | Subject binding       | Credential type           | Generation binding                              |
+| ------------ | --------------------- | --------------------- | ------------------------- | ----------------------------------------------- |
+| GitHub       | `account:<user UUID>` | user UUID             | `user-oauth-access-token` | `users.github_access_token_generation`          |
+| Slack        | workspace UUID        | Slack team ID         | `bot-oauth`               | `slack_workspaces.installation_generation`      |
+| Figma        | workspace UUID        | Figma connection UUID | `oauth-token`             | `figma_connections.installation_generation`     |
+| Google Drive | user UUID             | Google subject        | `oauth-token`             | `google_drive_accounts.installation_generation` |
 
 Changing the provider, tenant, subject, credential type, or generation causes
 authentication to fail. An encrypted token cannot be copied to another user,
 workspace, installation, or connection and still decrypt.
+
+Google Drive final-binding teardown copies that same `vault.v2` envelope and
+its authenticated user, subject, and installation-generation context into
+`google_drive_revocation_outbox` in the local teardown transaction. The outbox
+has no user/account foreign key so it survives account and user deletion, but
+it never contains a plaintext access or refresh token. A worker reconstructs
+the original vault context, opens the token only in bounded memory, destroys the
+opened secret after use, and performs the Google request outside a database
+transaction. Completed and reconnect-superseded rows clear the envelope;
+terminal provider failures retain only the sealed envelope for controlled
+operator reconciliation.
+
+An OAuth callback that exchanged a token but could not safely persist a
+connection uses the same outbox only after proving that the Google subject has
+no active FortyOne owner. These callback-cleanup rows have no source account
+ID because no account was created, but retain the authenticated user, subject,
+and fresh cleanup generation required to open the envelope. The cleanup
+decoder accepts a non-empty access or refresh token because Google may omit a
+refresh token on a failed callback; the normal connected-account decoder still
+requires access token, refresh token, and expiry. Neither path stores plaintext
+credentials at rest.
 
 `Open` returns a redacted, explicitly destroyable secret holder. Application
 logs contain safe identifiers and bounded outcomes only. They must never
@@ -63,7 +85,15 @@ extending the legacy format.
 Apply migrations before deploying the replacement API and worker. Start one
 worker first and let its bounded backfill complete before scaling the remaining
 workers. Then verify GitHub link operations, Slack installation and event
-processing, and Figma connection and webhook processing.
+processing, Figma connection and webhook processing, and Google Drive
+connection, Picker, refresh, bounded-read, disconnect, and revocation-outbox
+processing.
+
+Before changing or retiring any vault key generation, stop new Google Drive
+lifecycle mutations and drain or explicitly supersede every pending,
+processing, and failed Drive revocation row that references that generation.
+The API and worker must share the keyring throughout this drain; losing the old
+key makes the remote cleanup token intentionally unrecoverable.
 
 ## Root-secret changes
 
@@ -82,7 +112,7 @@ operational need justifies that complexity.
 
 ```bash
 go test -race ./internal/platform/appkeys ./internal/platform/credentialvault
-go test -race ./internal/modules/github/... ./internal/modules/slack/... ./internal/modules/figma/...
+go test -race ./internal/modules/github/... ./internal/modules/slack/... ./internal/modules/figma/... ./internal/modules/googledrive/...
 go test ./internal/bootstrap/architecture
 make security-check
 ```

@@ -155,9 +155,16 @@ describe("Navigation", () => {
       "before:-left-4",
     );
 
-    expect(screen.getByRole("link", { name: "Active Sprint" })).toHaveAttribute(
+    const activeSprintLink = screen.getByRole("link", {
+      name: "Active Sprint",
+    });
+    expect(activeSprintLink).toHaveAttribute(
       "href",
       "/acme/teams/team-1/sprints/sprint-1/stories",
+    );
+    expect(activeSprintLink).toHaveAttribute(
+      "data-walkthrough-target",
+      walkthroughTargets.sprintsNavigation,
     );
     expect(screen.getByRole("link", { name: "AI Agent" })).toHaveAttribute(
       "data-walkthrough-target",

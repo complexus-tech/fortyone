@@ -128,6 +128,8 @@ export const Navigation = ({
 
       if (href === withWorkspace("/maya")) {
         walkthroughTarget = walkthroughTargets.mayaNavigation;
+      } else if (sprintItem?.href === href) {
+        walkthroughTarget = walkthroughTargets.sprintsNavigation;
       } else if (href === withWorkspace("/my-work")) {
         walkthroughTarget = walkthroughTargets.myWork;
       } else if (href === withWorkspace("/calendar")) {

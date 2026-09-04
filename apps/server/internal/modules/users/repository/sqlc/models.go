@@ -63,9 +63,8 @@ func (e TokenType) Valid() bool {
 	return false
 }
 
-type UserOnboardingTourProgress struct {
+type UserOnboardingTourProgressGlobal struct {
 	UserID             uuid.UUID
-	WorkspaceID        uuid.UUID
 	TourKey            string
 	TourVersion        string
 	CompletedStepIds   []string

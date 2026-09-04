@@ -140,22 +140,26 @@ func TestUsersEnforceWorkspacePrivateDataAndActorSemantics(t *testing.T) {
 	}
 
 	tourScope := users.CoreOnboardingTourScope{TourKey: "workspace-getting-started", TourVersion: "v1"}
-	progress, err := repository.GetOnboardingTourProgress(ctx, activeA, workspaceA, tourScope)
+	progress, err := repository.GetOnboardingTourProgress(ctx, activeA, tourScope)
 	if err != nil {
 		t.Fatalf("get default onboarding progress: %v", err)
 	}
 	if progress.Status != users.CoreOnboardingTourStatusActive || len(progress.CompletedStepIDs) != 0 || len(progress.CompletedActionIDs) != 0 {
 		t.Fatalf("default onboarding progress = %#v", progress)
 	}
-	if _, err := repository.GetOnboardingTourProgress(ctx, activeA, workspaceB, tourScope); !errors.Is(err, users.ErrNotFound) {
-		t.Fatalf("cross-workspace onboarding progress error = %v, want ErrNotFound", err)
+	otherUserProgress, err := repository.GetOnboardingTourProgress(ctx, activeB, tourScope)
+	if err != nil {
+		t.Fatalf("get other user onboarding progress: %v", err)
 	}
-	if _, err := repository.GetOnboardingTourProgress(ctx, inactiveA, workspaceA, tourScope); !errors.Is(err, users.ErrNotFound) {
+	if otherUserProgress.UserID != activeB || otherUserProgress.Status != users.CoreOnboardingTourStatusActive {
+		t.Fatalf("other user onboarding progress = %#v", otherUserProgress)
+	}
+	if _, err := repository.GetOnboardingTourProgress(ctx, inactiveA, tourScope); !errors.Is(err, users.ErrNotFound) {
 		t.Fatalf("inactive onboarding progress error = %v, want ErrNotFound", err)
 	}
 
 	completed := users.CoreOnboardingTourStatusCompleted
-	progress, err = repository.UpdateOnboardingTourProgress(ctx, activeA, workspaceA, users.CoreUpdateOnboardingTourProgress{
+	progress, err = repository.UpdateOnboardingTourProgress(ctx, activeA, users.CoreUpdateOnboardingTourProgress{
 		OnboardingTourScope: tourScope,
 		CompletedStepIDs:    []string{"create-task"},
 		CompletedActionIDs:  []string{"create-task"},
@@ -171,7 +175,7 @@ func TestUsersEnforceWorkspacePrivateDataAndActorSemantics(t *testing.T) {
 	}
 
 	active := users.CoreOnboardingTourStatusActive
-	progress, err = repository.UpdateOnboardingTourProgress(ctx, activeA, workspaceA, users.CoreUpdateOnboardingTourProgress{
+	progress, err = repository.UpdateOnboardingTourProgress(ctx, activeA, users.CoreUpdateOnboardingTourProgress{
 		OnboardingTourScope: tourScope,
 		CompletedStepIDs:    []string{"open-maya"},
 		CompletedActionIDs:  []string{"open-maya"},
@@ -184,6 +188,14 @@ func TestUsersEnforceWorkspacePrivateDataAndActorSemantics(t *testing.T) {
 		len(progress.CompletedStepIDs) != 2 || progress.CompletedStepIDs[0] != "create-task" || progress.CompletedStepIDs[1] != "open-maya" ||
 		len(progress.CompletedActionIDs) != 2 || progress.CompletedActionIDs[0] != "create-task" || progress.CompletedActionIDs[1] != "open-maya" {
 		t.Fatalf("merged onboarding progress = %#v", progress)
+	}
+	otherUserProgress, err = repository.GetOnboardingTourProgress(ctx, activeB, tourScope)
+	if err != nil {
+		t.Fatalf("get isolated other user onboarding progress: %v", err)
+	}
+	if otherUserProgress.Status != users.CoreOnboardingTourStatusActive ||
+		len(otherUserProgress.CompletedStepIDs) != 0 || len(otherUserProgress.CompletedActionIDs) != 0 {
+		t.Fatalf("other user progress changed with owner update: %#v", otherUserProgress)
 	}
 }
 

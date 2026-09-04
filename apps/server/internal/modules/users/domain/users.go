@@ -204,7 +204,6 @@ type OnboardingTourScope struct {
 
 type OnboardingTourProgress struct {
 	UserID             uuid.UUID
-	WorkspaceID        uuid.UUID
 	TourKey            string
 	TourVersion        string
 	CompletedStepIDs   []string
