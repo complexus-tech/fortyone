@@ -1,0 +1,24 @@
+.headerBackdrop {
+  --document-canvas-color: color-mix(
+    in oklab,
+    var(--color-surface-muted) 60%,
+    var(--color-background)
+  );
+
+  background: linear-gradient(
+    to bottom,
+    var(--document-canvas-color) 0%,
+    var(--document-canvas-color) 32%,
+    color-mix(in oklab, var(--document-canvas-color) 68%, transparent) 58%,
+    color-mix(in oklab, var(--document-canvas-color) 24%, transparent) 82%,
+    transparent 100%
+  );
+}
+
+:global(.dark) .headerBackdrop {
+  --document-canvas-color: color-mix(
+    in oklab,
+    var(--color-surface-muted) 50%,
+    var(--color-background)
+  );
+}

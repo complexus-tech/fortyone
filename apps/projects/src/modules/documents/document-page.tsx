@@ -4,6 +4,7 @@ import type { Dispatch, SetStateAction } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useEditor } from "@tiptap/react";
+import { cn } from "lib";
 import { toast } from "sonner";
 import {
   Box,
@@ -69,6 +70,7 @@ import {
 } from "./hooks";
 import { RelatedWorkPanel } from "./related-work-panel";
 import type { DocumentUpdate } from "./types";
+import styles from "./document-page.module.css";
 
 const documentAccessLabels = {
   private: "Private",
@@ -77,6 +79,8 @@ const documentAccessLabels = {
 } as const;
 
 const DOCUMENT_MEDIA_INPUT_ID = "document-media-upload";
+const DOCUMENT_HEADER_BACKDROP_CLASS_NAME =
+  "pointer-events-none absolute inset-x-0 top-0 z-20 h-18";
 
 type DocumentCreationDraft = {
   description: string;
@@ -93,16 +97,20 @@ const shouldShowDocumentTextMenu = ({
   !editor.isActive("table");
 
 const DocumentPageSkeleton = () => (
-  <Box className="h-full min-h-0">
-    <Flex
-      align="center"
-      className="border-border/70 h-18 border-b px-5"
-      justify="between"
+  <Box className="relative h-full min-h-0">
+    <Box
+      className={cn(DOCUMENT_HEADER_BACKDROP_CLASS_NAME, styles.headerBackdrop)}
     >
-      <Skeleton className="h-5 w-44" />
-      <Skeleton className="h-8 w-24" />
-    </Flex>
-    <Box className="mx-auto w-full max-w-5xl px-8 py-16 sm:px-10 lg:px-12">
+      <Flex
+        align="center"
+        className="pointer-events-auto relative z-10 h-18 px-5"
+        justify="between"
+      >
+        <Skeleton className="h-5 w-44" />
+        <Skeleton className="h-8 w-24" />
+      </Flex>
+    </Box>
+    <Box className="mx-auto w-full max-w-5xl px-8 pt-34 pb-16 sm:px-10 lg:px-12 lg:pt-34">
       <Skeleton className="mb-8 h-12 w-3/4" />
       <Skeleton className="mb-3 h-6 w-full" />
       <Skeleton className="mb-3 h-6 w-5/6" />
@@ -354,11 +362,13 @@ export const DocumentPage = ({ documentId }: { documentId: string }) => {
     });
   };
 
-  return (
-    <Flex className="h-full min-h-0 min-w-0" direction="column">
+  const documentHeader = (
+    <Box
+      className={cn(DOCUMENT_HEADER_BACKDROP_CLASS_NAME, styles.headerBackdrop)}
+    >
       <Flex
         align="center"
-        className="border-border/70 h-18 shrink-0 border-b px-4 md:px-5"
+        className="pointer-events-auto relative z-10 h-18 px-4 md:px-5"
         justify="between"
       >
         <Flex align="center" className="min-w-0" gap={2}>
@@ -456,27 +466,33 @@ export const DocumentPage = ({ documentId }: { documentId: string }) => {
           )}
         </Flex>
       </Flex>
+    </Box>
+  );
 
+  return (
+    <Flex className="h-full min-h-0 min-w-0" direction="column">
       <Box className="min-h-0 flex-1">
         <BoardDividedPanel autoSaveId="workspace:documents:related-work:divided-panel">
           <BoardDividedPanel.MainPanel>
             <Box className="relative h-full min-w-0">
+              {documentHeader}
               {isDesktop && !isRelatedWorkOpen ? (
-                <Box className="absolute top-6 right-0 z-20">
+                <Box className="absolute top-24 right-5 z-30">
                   <Tooltip title="Show related work">
                     <Button
                       aria-expanded="false"
                       aria-label="Show related work"
-                      asIcon
-                      className="rounded-r-none border-r-0"
+                      className="border-border/70 bg-surface-elevated/90 shadow-shadow hover:border-border-strong hover:bg-surface-elevated dark:border-border-strong/80 dark:bg-surface-elevated/90 dark:hover:bg-surface-elevated gap-1.5 border-[0.5px] px-3 shadow-lg backdrop-blur-xl transition-[background-color,border-color,box-shadow,transform] hover:-translate-y-0.5"
                       color="tertiary"
+                      leftIcon={<LinkIcon className="size-4" />}
                       onClick={() => {
                         setIsRelatedWorkOpen(true);
                       }}
+                      rounded="full"
                       size="sm"
                       variant="outline"
                     >
-                      <LinkIcon />
+                      Related work
                     </Button>
                   </Tooltip>
                 </Box>
@@ -500,7 +516,7 @@ export const DocumentPage = ({ documentId }: { documentId: string }) => {
                 className="h-full min-w-0 overflow-y-auto"
                 ref={setScrollContainer}
               >
-                <Box className="mx-auto w-full max-w-5xl px-8 pt-12 pb-32 sm:px-10 lg:px-12 lg:pt-16">
+                <Box className="mx-auto w-full max-w-5xl px-8 pt-30 pb-32 sm:px-10 lg:px-12 lg:pt-34">
                   <textarea
                     aria-label="Document title"
                     className="text-foreground placeholder:text-text-muted mb-6 block min-h-14 w-full resize-none overflow-hidden bg-transparent text-4xl leading-tight font-semibold outline-none md:text-5xl"
