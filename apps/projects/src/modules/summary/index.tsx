@@ -63,7 +63,10 @@ export const SummaryPage = () => {
           </ErrorBoundary>
         </Box>
         <Box className="my-4 grid grid-cols-1 gap-4 @5xl:grid-cols-2">
-          <Box data-walkthrough-target={walkthroughTargets.summaryMyWork}>
+          <Box
+            className="grid"
+            data-walkthrough-target={walkthroughTargets.summaryMyWork}
+          >
             <ErrorBoundary
               fallback={
                 <div>
@@ -77,7 +80,10 @@ export const SummaryPage = () => {
               <MyStories />
             </ErrorBoundary>
           </Box>
-          <Box data-walkthrough-target={walkthroughTargets.summaryActivityFeed}>
+          <Box
+            className="grid"
+            data-walkthrough-target={walkthroughTargets.summaryActivityFeed}
+          >
             <ErrorBoundary fallback={<div>Error loading activities</div>}>
               <Activities />
             </ErrorBoundary>

@@ -1,12 +1,11 @@
-{{ define "content" }}
-<h1 class="heading" style="{{ emailStyle "heading" }}">{{ .InviteeName }} joined {{ .WorkspaceName }}</h1>
-<div class="email-body" style="{{ emailStyle "bodyBlock" }}">
-  <p class="text" style="{{ emailStyle "text" }}">
-    Great news. {{ .InviteeName }} accepted your invitation to join
-    {{ .WorkspaceName }} and has joined as {{ .Role }}.
-  </p>
-  <div class="button-container" style="{{ emailStyle "buttonContainer" }}">
-    <a href="{{ .LoginURL }}" class="button" style="{{ emailStyle "button" }}">Go to {{ .WorkspaceName }}</a>
-  </div>
-</div>
-{{ end }}
+{{define "content"}}
+<h1 class="heading" style="{{emailStyle "heading"}}">Your team just grew.</h1>
+<p style="{{emailStyle "text"}}">{{.InviteeName}} accepted your invitation and joined {{.WorkspaceName}}.</p>
+<p style="{{emailStyle "text"}}">You’re ready to start working together.</p>
+<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-top:18px;"><tr>
+<td width="50%" valign="top" style="padding-right:12px;"><p style="{{emailStyle "panelLabel"}}">New member</p><p style="{{emailStyle "panelValue"}}">{{.InviteeName}}</p></td>
+<td width="50%" valign="top"><p style="{{emailStyle "panelLabel"}}">Role</p><p style="{{emailStyle "panelValue"}}">{{.Role}}</p></td>
+</tr></table>
+{{end}}
+{{define "actions"}}{{template "button" .}}<p style="margin:18px 0 0;text-align:center;color:#72645d;font-size:13px;line-height:21px;">A shared space for what’s next.</p>{{end}}
+{{define "footer"}}<p style="{{emailStyle "footerText"}}">You invited {{.InviteeName}} to this workspace.</p>{{end}}

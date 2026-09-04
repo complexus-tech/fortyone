@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type Dispatch, type SetStateAction } from "react";
+import { useState } from "react";
 import { Badge, Box, Button, Flex, Menu, Tooltip } from "ui";
 import {
   CommandIcon,
@@ -26,16 +26,19 @@ import { useTerminology } from "@/hooks/use-terminology-display";
 import { useWorkspacePath } from "@/hooks/use-workspace-path";
 import { walkthroughTargets } from "@/shared/walkthrough/targets";
 import { Commands } from "./commands";
+import { useStoryCreationDialog } from "./use-story-creation-dialog";
 
 const isTeamObjectivesIndex = (pathname: string) =>
   /\/teams\/[^/]+\/objectives\/?$/.test(pathname);
 
 export const AppCommandBar = () => {
-  const [isStoryOpen, setIsStoryOpen] = useState(false);
+  const {
+    isOpen: isStoryOpen,
+    setIsOpen: setStoryDialogOpen,
+    onCreated: handleStoryCreated,
+  } = useStoryCreationDialog();
   const [isObjectiveOpen, setIsObjectiveOpen] = useState(false);
   const [isKeyboardShortcutsOpen, setIsKeyboardShortcutsOpen] = useState(false);
-  const hasCreatedStoryRef = useRef(false);
-  const isStoryOpenRef = useRef(false);
   const { isCollapsed } = useSidebar();
   const action = useCurrentAppCommandAction();
   const pathname = usePathname();
@@ -48,7 +51,7 @@ export const AppCommandBar = () => {
   const { getTermDisplay } = useTerminology();
   const { userRole } = useUserRole();
   const { withWorkspace } = useWorkspacePath();
-  const { completeWalkthroughAction, startWalkthrough } = useWalkthrough();
+  const { startWalkthrough } = useWalkthrough();
 
   const createsObjective =
     pathname === withWorkspace("/roadmap") || isTeamObjectivesIndex(pathname);
@@ -58,33 +61,6 @@ export const AppCommandBar = () => {
   const label = action?.label ?? fallbackLabel;
   const isDisabled = action?.disabled ?? userRole === "guest";
   const createsStory = !action && !createsObjective;
-
-  const completeCreatedStoryWalkthroughAction = () => {
-    if (isStoryOpenRef.current || !hasCreatedStoryRef.current) {
-      return;
-    }
-
-    hasCreatedStoryRef.current = false;
-    completeWalkthroughAction("story-created");
-  };
-  const setStoryDialogOpen: Dispatch<SetStateAction<boolean>> = (nextState) => {
-    const isOpen =
-      typeof nextState === "function"
-        ? nextState(isStoryOpenRef.current)
-        : nextState;
-
-    isStoryOpenRef.current = isOpen;
-    setIsStoryOpen(isOpen);
-
-    if (!isOpen) {
-      completeCreatedStoryWalkthroughAction();
-    }
-  };
-  const handleStoryCreated = () => {
-    hasCreatedStoryRef.current = true;
-
-    queueMicrotask(completeCreatedStoryWalkthroughAction);
-  };
 
   const handleCreate = () => {
     if (isDisabled) return;

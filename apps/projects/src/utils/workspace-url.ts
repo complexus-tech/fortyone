@@ -22,7 +22,7 @@ export const getRedirectUrl = (
     if (invitations.length > 0) {
       return `/onboarding/join?token=${invitations[0].token}`;
     }
-    return "/account";
+    return "/onboarding/create";
   }
   const activeWorkspace =
     workspaces.find((workspace) => workspace.id === lastUsedWorkspaceId) ||

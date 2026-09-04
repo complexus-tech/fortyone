@@ -1,8 +1,12 @@
 /* global describe, expect, it, jest -- Jest globals are provided by the projects test runner. */
-import type { Workspace } from "@/types";
+import type { Workspace } from "@/types/workspace";
 import { getWelcomeDestinations } from "./destinations";
 
 jest.mock("@/utils", () => ({
+  buildWorkspaceUrl: (workspaceSlug: string, path = "/my-work") =>
+    `/${workspaceSlug}${path}`,
+}));
+jest.mock("@/utils/workspace-url", () => ({
   buildWorkspaceUrl: (workspaceSlug: string, path = "/my-work") =>
     `/${workspaceSlug}${path}`,
 }));
@@ -24,6 +28,8 @@ describe("welcome destinations", () => {
     expect(destinations).toEqual({
       redirectUrl: "/active/settings/account",
       importUrl: "/active/settings/workspace/imports?from=onboarding",
+      taskUrl: "/active/my-work?onboarding=task",
+      calendarUrl: "/active/settings/account/calendar",
     });
   });
 
@@ -32,7 +38,13 @@ describe("welcome destinations", () => {
     (userRole) => {
       expect(
         getWelcomeDestinations([workspace("workspace", "acme", userRole)]),
-      ).toEqual({ redirectUrl: "/acme/my-work" });
+      ).toEqual({
+        redirectUrl: "/acme/my-work",
+        calendarUrl: "/acme/settings/account/calendar",
+        ...(userRole === "member"
+          ? { taskUrl: "/acme/my-work?onboarding=task" }
+          : {}),
+      });
     },
   );
 

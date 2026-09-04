@@ -19,6 +19,7 @@ var (
 	ErrMemberNotFound         = workspacedomain.ErrMemberNotFound
 	ErrSlugTaken              = workspacedomain.ErrSlugTaken
 	ErrRestrictedSlug         = workspacedomain.ErrRestrictedSlug
+	ErrInvalidWorkType        = workspacedomain.ErrInvalidWorkType
 	ErrTx                     = errors.New("failed to create a workspace")
 	ErrAlreadyWorkspaceMember = workspacedomain.ErrAlreadyWorkspaceMember
 )
@@ -83,6 +84,10 @@ type SeedContentCreator interface {
 	CreateWorkspaceSeedContent(context.Context, uuid.UUID, uuid.UUID, uuid.UUID) error
 }
 
+type ExampleContentCreator interface {
+	CreateWorkspaceExamples(context.Context, uuid.UUID, uuid.UUID, uuid.UUID, WorkType) error
+}
+
 type TrialStart struct {
 	UserID        uuid.UUID
 	Email         string
@@ -104,6 +109,7 @@ type Service struct {
 	log           *logger.Logger
 	unitOfWork    UnitOfWork
 	seedContent   SeedContentCreator
+	examples      ExampleContentCreator
 	users         UserDirectory
 	subscriptions SubscriptionManager
 	publisher     EventPublisher
@@ -114,6 +120,7 @@ type Service struct {
 // details deliberately stay out of this surface.
 type Dependencies struct {
 	SeedContent   SeedContentCreator
+	Examples      ExampleContentCreator
 	Users         UserDirectory
 	Subscriptions SubscriptionManager
 	Publisher     EventPublisher
@@ -126,7 +133,7 @@ func New(log *logger.Logger, repo Repository, unitOfWork UnitOfWork, deps Depend
 	}
 	return &Service{
 		repo: repo, log: log, unitOfWork: unitOfWork,
-		seedContent: deps.SeedContent, users: deps.Users,
+		seedContent: deps.SeedContent, examples: deps.Examples, users: deps.Users,
 		subscriptions: deps.Subscriptions, publisher: deps.Publisher,
 		trials: deps.Trials,
 	}

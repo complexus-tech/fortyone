@@ -1,25 +1,10 @@
-{{ define "content" }}
-<h1 class="heading" style="{{ emailStyle "heading" }}">
-  {{ .ActorName }} has scheduled {{ .WorkspaceName }} for deletion
-</h1>
-<div class="email-body" style="{{ emailStyle "bodyBlock" }}">
-  <p class="text" style="{{ emailStyle "text" }}">
-    All data will be permanently deleted in {{ .DeletionTime }}. The deletion was
-    requested by {{ .ActorEmail }}.
-  </p>
-  <p class="text" style="{{ emailStyle "text" }}">
-    To cancel the deletion, log in to your workspace and select Cancel scheduled
-    deletion within {{ .DeletionTime }} of the request.
-  </p>
-  <p class="text" style="{{ emailStyle "text" }}">FortyOne will not be able to recover your data after deletion.</p>
-  <div class="button-container" style="{{ emailStyle "buttonContainer" }}">
-    <a href="{{ .RestoreURL }}" class="button" style="{{ emailStyle "button" }}">Open workspace</a>
-  </div>
-  <div class="email-panel is-quiet workspace-link-panel" style="{{ emailStyle "quietPanel" }}">
-    <p class="panel-label" style="{{ emailStyle "panelLabelTight" }}">Workspace link</p>
-    <p class="text" style="{{ emailStyle "textNoMargin" }}">
-      <a href="{{ .WorkspaceURL }}" class="workspace-link" style="{{ emailStyle "workspaceLink" }}">{{ .WorkspaceURL }}</a>
-    </p>
-  </div>
-</div>
-{{ end }}
+{{define "content"}}
+<h1 class="heading" style="{{emailStyle "heading"}}">{{.WorkspaceName}} is scheduled for deletion.</h1>
+<p style="{{emailStyle "text"}}">Your workspace and its data will be permanently deleted in {{.DeletionTime}}.</p>
+<h2 style="margin:20px 0 8px;color:#aa421b;font-size:17px;line-height:23px;font-weight:600;">Deletion in {{.DeletionTime}}</h2>
+<p style="{{emailStyle "text"}}">This includes your stories, objectives, comments, and files. FortyOne will not be able to recover this data after deletion.</p>
+{{if .ActorName}}<div style="{{emailStyle "quietPanel"}}"><p style="{{emailStyle "panelLabel"}}">Requested by</p><p style="{{emailStyle "textNoMargin"}}">{{.ActorName}}<br>{{.ActorEmail}}</p></div>{{end}}
+<p style="{{emailStyle "text"}}">To keep this workspace, open workspace settings and select <strong>Cancel scheduled deletion</strong> within {{.DeletionTime}} of the request.</p>
+<p style="{{emailStyle "panelLabelTight"}}">Workspace link</p>
+<p style="{{emailStyle "textNoMargin"}}"><a class="workspace-link" href="{{.WorkspaceURL}}" style="{{emailStyle "workspaceLink"}}">{{.WorkspaceURL}}</a></p>
+{{end}}

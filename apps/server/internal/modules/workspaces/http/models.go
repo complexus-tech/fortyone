@@ -64,9 +64,11 @@ func toAppWorkspaces(workspaces []workspaces.CoreWorkspace) []AppWorkspace {
 }
 
 type AppNewWorkspace struct {
-	Name     string `json:"name" validate:"required"`
-	Slug     string `json:"slug" validate:"required,min=3,max=255"`
-	TeamSize string `json:"teamSize" validate:"required"`
+	Name            string              `json:"name" validate:"required"`
+	Slug            string              `json:"slug" validate:"required,min=3,max=255"`
+	TeamSize        string              `json:"teamSize" validate:"required"`
+	IncludeExamples *bool               `json:"includeExamples,omitempty"`
+	WorkType        workspaces.WorkType `json:"workType,omitempty" validate:"omitempty,oneof=product marketing operations personal general"`
 }
 
 type AppUpdateWorkspace struct {

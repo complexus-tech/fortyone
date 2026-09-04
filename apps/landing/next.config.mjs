@@ -10,6 +10,20 @@ const nextConfig = {
   transpilePackages: ["ui", "icons", "next-mdx-remote"],
   pageExtensions: ["tsx", "ts", "mdx"],
   reactCompiler: true,
+  async headers() {
+    return [
+      {
+        source: "/email-assets/v1/:path*",
+        headers: [
+          { key: "Access-Control-Allow-Origin", value: "*" },
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
+    ];
+  },
   experimental: {
     useTypeScriptCli: true,
     turbopackFileSystemCacheForDev: true,

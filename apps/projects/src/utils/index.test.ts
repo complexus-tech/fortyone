@@ -56,13 +56,26 @@ describe("getRedirectUrl", () => {
     ).toBe("/portal/city-roads/feedback");
   });
 
-  it("sends accounts without workspaces to global account settings", () => {
-    expect(getRedirectUrl([])).toBe("/account");
+  it("starts workspace onboarding for new accounts", () => {
+    expect(getRedirectUrl([])).toBe("/onboarding/create");
+  });
+
+  it("preserves account and public feedback callbacks for participants", () => {
+    expect(getRedirectUrl([], [], undefined, "/account")).toBe("/account");
+    expect(getRedirectUrl([], [], undefined, "/portal/product/feedback")).toBe(
+      "/portal/product/feedback",
+    );
+  });
+
+  it("takes invited users to their invitation before workspace setup", () => {
+    expect(getRedirectUrl([], [{ token: "invitation-token" }])).toBe(
+      "/onboarding/join?token=invitation-token",
+    );
   });
 
   it("does not redirect to an external callback URL", () => {
     expect(
       getRedirectUrl([], [], undefined, "https://malicious.example.com"),
-    ).toBe("/account");
+    ).toBe("/onboarding/create");
   });
 });

@@ -1,12 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { Button, Container, Text } from "ui";
+import { Box, Button, Flex, Text } from "ui";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { Logo } from "@/components/ui";
-import type { Workspace } from "@/types";
-import type { Team } from "@/modules/teams/types";
+import {
+  JOIN_ONBOARDING_STEPS,
+  OnboardingStepper,
+} from "@/components/onboarding/onboarding-stepper";
+import { Logo } from "@/components/ui/logo";
+import type { Workspace } from "@/types/workspace";
+import type { Team } from "@/modules/teams/public/types";
 import { inviteOnboardingMembers } from "@/modules/invitations/public/onboarding";
 import { withOnboardingCallbackUrl } from "@/modules/onboarding/routing";
 import { InviteForm } from "./components/invite-form";
@@ -83,39 +87,39 @@ export const InviteTeam = ({
   );
 
   return (
-    <Container className="max-h-dvh max-w-120 overflow-y-auto md:max-w-xl">
+    <Box className="w-full px-6 md:max-w-xl">
       <Logo asIcon />
-      <Text as="h1" className="mt-10 mb-6 text-4xl" fontWeight="semibold">
+      <Text as="h1" className="mt-8 mb-6 text-4xl" fontWeight="semibold">
         Build With Your Team
       </Text>
-      <Text className="mb-8" color="muted">
-        Great objectives are achieved together. Invite your teammates to
-        collaborate and align on your organization&apos;s goals.
-      </Text>
+      <OnboardingStepper currentStep={2} steps={JOIN_ONBOARDING_STEPS} />
       <InviteForm onFormChange={setMembers} />
-      <Button
-        align="center"
-        className="mt-4 md:py-3"
-        color="invert"
-        disabled={!isValid}
-        fullWidth
-        loading={isLoading}
-        loadingText="Inviting members..."
-        onClick={handleContinue}
-      >
-        Invite members
-      </Button>
-      <Button
-        align="center"
-        className="mt-2 md:py-3"
-        color="tertiary"
-        fullWidth
-        href={welcomeUrl}
-        size="lg"
-        variant="naked"
-      >
-        I&apos;ll do this later
-      </Button>
-    </Container>
+      <Flex align="center" className="mt-5 flex-wrap gap-3" justify="between">
+        <Button
+          align="center"
+          className="shrink-0 px-7 md:px-8"
+          color="tertiary"
+          disabled={isLoading}
+          onClick={() => {
+            router.push(welcomeUrl);
+          }}
+          type="button"
+          variant="outline"
+        >
+          Skip
+        </Button>
+        <Button
+          align="center"
+          className="ml-auto shrink-0 px-7 md:px-8"
+          color="invert"
+          disabled={!isValid || isLoading}
+          loading={isLoading}
+          loadingText="Inviting…"
+          onClick={handleContinue}
+        >
+          Invite members
+        </Button>
+      </Flex>
+    </Box>
   );
 };

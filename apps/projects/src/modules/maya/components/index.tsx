@@ -122,11 +122,13 @@ export const MayaChat = () => {
         styles.page,
       )}
     >
-      <Header
-        currentChatId={currentChatId}
-        handleChatSelect={handleChatSelect}
-        handleNewChat={handleNewChat}
-      />
+      {!isEmptyState ? (
+        <Header
+          currentChatId={currentChatId}
+          handleChatSelect={handleChatSelect}
+          handleNewChat={handleNewChat}
+        />
+      ) : null}
       <BodyContainer className="flex h-auto min-h-0 flex-1 flex-col overflow-hidden">
         {isEmptyState ? (
           <Box className="relative flex min-h-0 flex-1 overflow-y-auto">

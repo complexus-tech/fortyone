@@ -2,15 +2,45 @@
 
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
+import { toast } from "sonner";
 import { walkthroughTargets } from "@/shared/walkthrough/targets";
 import { AppCommandBar } from "./app-command-bar";
 
 const mockCompleteWalkthroughAction = jest.fn();
 const mockStartWalkthrough = jest.fn();
+const mockCloseWalkthrough = jest.fn();
+const mockRouterPush = jest.fn();
+let mockUserRole: "admin" | "member" | "guest" | undefined = "admin";
+let mockMembersPending = false;
+let mockTeamsPending = false;
+let mockHasTeams = true;
+let mockWalkthroughActive = false;
+
+jest.mock("sonner", () => ({ toast: jest.fn() }));
 
 jest.mock("next/navigation", () => ({
   useParams: () => ({}),
   usePathname: () => "/acme/my-work",
+  useRouter: () => ({ push: mockRouterPush }),
+  useSearchParams: () => new URLSearchParams(window.location.search),
+}));
+
+jest.mock("@/lib/auth/client", () => ({
+  useSession: () => ({ data: { user: { id: "user-1" } } }),
+}));
+jest.mock("@/lib/hooks/members", () => ({
+  useMembers: () => ({
+    data: [{ id: "user-1", isActive: true, isSystem: false }],
+    isPending: mockMembersPending,
+    isError: false,
+  }),
+}));
+jest.mock("@/modules/teams/public/queries", () => ({
+  useJoinedTeams: () => ({
+    data: mockHasTeams ? [{ id: "team-1" }] : [],
+    isPending: mockTeamsPending,
+    isError: false,
+  }),
 }));
 
 jest.mock("ui", () => {
@@ -99,12 +129,13 @@ jest.mock("@/hooks/use-terminology-display", () => ({
 }));
 
 jest.mock("@/hooks/role", () => ({
-  useUserRole: () => ({ userRole: "admin" }),
+  useUserRole: () => ({ userRole: mockUserRole }),
 }));
 
 jest.mock("@/hooks/use-workspace-path", () => ({
   useWorkspacePath: () => ({
     withWorkspace: (path: string) => `/acme${path}`,
+    workspaceSlug: "acme",
   }),
 }));
 
@@ -155,7 +186,9 @@ jest.mock("@/components/ui/new-story-dialog", () => ({
 jest.mock("@/components/walkthrough/walkthrough-provider", () => ({
   useWalkthrough: () => ({
     completeWalkthroughAction: mockCompleteWalkthroughAction,
+    closeWalkthrough: mockCloseWalkthrough,
     startWalkthrough: mockStartWalkthrough,
+    state: { isActive: mockWalkthroughActive },
   }),
 }));
 
@@ -188,6 +221,15 @@ describe("AppCommandBar", () => {
   beforeEach(() => {
     mockCompleteWalkthroughAction.mockClear();
     mockStartWalkthrough.mockClear();
+    mockCloseWalkthrough.mockClear();
+    mockRouterPush.mockClear();
+    jest.mocked(toast).mockClear();
+    mockUserRole = "admin";
+    mockMembersPending = false;
+    mockTeamsPending = false;
+    mockHasTeams = true;
+    mockWalkthroughActive = false;
+    window.history.replaceState(null, "", "/acme/my-work");
   });
 
   it("shows Help with the existing command controls", () => {
@@ -259,5 +301,124 @@ describe("AppCommandBar", () => {
         "story-created",
       );
     });
+  });
+
+  it("waits for workspace membership and teams before consuming the first-task intent", () => {
+    window.history.replaceState(
+      { retained: true },
+      "",
+      "/acme/my-work?filter=assigned&onboarding=task&tag=a&tag=b#today",
+    );
+    mockUserRole = undefined;
+    mockMembersPending = true;
+    mockTeamsPending = true;
+    const { rerender } = render(<AppCommandBar />);
+    expect(
+      screen.queryByRole("button", { name: "Close task dialog" }),
+    ).not.toBeInTheDocument();
+    expect(window.location.search).toContain("onboarding=task");
+
+    mockUserRole = "admin";
+    mockMembersPending = false;
+    rerender(<AppCommandBar />);
+    expect(
+      screen.queryByRole("button", { name: "Close task dialog" }),
+    ).not.toBeInTheDocument();
+
+    mockTeamsPending = false;
+    mockWalkthroughActive = true;
+    rerender(<AppCommandBar />);
+    expect(
+      screen.getByRole("button", { name: "Close task dialog" }),
+    ).toBeInTheDocument();
+    expect(window.location.search).toBe("?filter=assigned&tag=a&tag=b");
+    expect(window.location.hash).toBe("#today");
+    expect(window.history.state).toEqual({ retained: true });
+    expect(mockCloseWalkthrough).toHaveBeenCalled();
+    expect(mockStartWalkthrough).not.toHaveBeenCalled();
+    expect(mockCompleteWalkthroughAction).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Close task dialog" }));
+    rerender(<AppCommandBar />);
+    expect(
+      screen.queryByRole("button", { name: "Close task dialog" }),
+    ).not.toBeInTheDocument();
+    expect(toast).not.toHaveBeenCalled();
+    expect(mockCompleteWalkthroughAction).not.toHaveBeenCalled();
+  });
+
+  it("keeps a delayed automatic tour from covering the onboarding task dialog", () => {
+    window.history.replaceState(null, "", "/acme/my-work?onboarding=task");
+    const { rerender } = render(<AppCommandBar />);
+    mockCloseWalkthrough.mockClear();
+
+    mockWalkthroughActive = true;
+    rerender(<AppCommandBar />);
+
+    expect(mockCloseWalkthrough).toHaveBeenCalledTimes(1);
+    expect(
+      screen.getByRole("button", { name: "Close task dialog" }),
+    ).toBeInTheDocument();
+    expect(mockCompleteWalkthroughAction).not.toHaveBeenCalled();
+    expect(mockStartWalkthrough).not.toHaveBeenCalled();
+  });
+
+  it("consumes a guest's intent without opening or replaying it after a role change", () => {
+    window.history.replaceState(
+      null,
+      "",
+      "/acme/my-work?onboarding=task&filter=all",
+    );
+    mockUserRole = "guest";
+    const { rerender } = render(<AppCommandBar />);
+    expect(window.location.search).toBe("?filter=all");
+    expect(
+      screen.queryByRole("button", { name: "Close task dialog" }),
+    ).not.toBeInTheDocument();
+
+    mockUserRole = "member";
+    rerender(<AppCommandBar />);
+    expect(
+      screen.queryByRole("button", { name: "Close task dialog" }),
+    ).not.toBeInTheDocument();
+    expect(mockCloseWalkthrough).not.toHaveBeenCalled();
+  });
+
+  it("leaves the intent pending when the user has no joined team", () => {
+    window.history.replaceState(null, "", "/acme/my-work?onboarding=task");
+    mockHasTeams = false;
+    render(<AppCommandBar />);
+    expect(
+      screen.queryByRole("button", { name: "Close task dialog" }),
+    ).not.toBeInTheDocument();
+    expect(window.location.search).toContain("onboarding=task");
+  });
+
+  it("offers optional calendar setup only after the onboarding task is created", async () => {
+    window.history.replaceState(null, "", "/acme/my-work?onboarding=task");
+    render(<AppCommandBar />);
+    expect(toast).not.toHaveBeenCalled();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Simulate story saved" }),
+    );
+    await waitFor(() => {
+      expect(toast).toHaveBeenCalledTimes(1);
+    });
+    expect(mockCompleteWalkthroughAction).toHaveBeenCalledWith("story-created");
+    expect(toast).toHaveBeenCalledWith(
+      "Plan around your meetings",
+      expect.objectContaining({
+        description: expect.stringContaining("Optional"),
+        action: expect.objectContaining({ label: "Connect calendar" }),
+      }),
+    );
+    const action = jest.mocked(toast).mock.calls[0][1]?.action;
+    if (!action || typeof action !== "object" || !("onClick" in action))
+      throw new Error("Calendar action is missing");
+    action.onClick({} as never);
+    expect(mockRouterPush).toHaveBeenCalledWith(
+      "/acme/settings/account/calendar",
+    );
   });
 });

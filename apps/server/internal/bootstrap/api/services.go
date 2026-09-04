@@ -229,6 +229,7 @@ func buildServices(cfg mux.Config, dependencies Dependencies) services {
 		workspaceUnitOfWork,
 		workspaces.Dependencies{
 			SeedContent:   workspacebootstrap.NewSeedContentCreator(statesService, storiesService),
+			Examples:      workspacebootstrap.NewExampleContentCreator(statesService, storiesService),
 			Users:         workspacebootstrap.NewUserDirectory(usersService),
 			Subscriptions: workspacebootstrap.NewSubscriptionManager(subscriptionsService),
 			Publisher:     cfg.Publisher,

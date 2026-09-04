@@ -9,13 +9,14 @@ import (
 func TestRenderMayaReplyHTMLUsesProductShellAndDoesNotTrustTheSubject(t *testing.T) {
 	t.Parallel()
 
-	rendered := renderMayaReplyHTML(`Update <script>alert("x")</script>`, `<p>Safe response</p>`)
+	rendered, err := renderMayaReplyHTML(`Update <script>alert("x")</script>`, `<p>Safe response</p>`)
 
+	require.NoError(t, err)
 	require.Contains(t, rendered, "<!doctype html>")
-	require.Contains(t, rendered, mayaReplyLogoURL)
+	require.Contains(t, rendered, "https://fortyone.app/email-assets/v1/wordmark.png")
 	require.Contains(t, rendered, "FortyOne by Complexus LLC")
 	require.Contains(t, rendered, ">Safe response</p>")
-	require.Contains(t, rendered, `font-family: Geist, Helvetica, Arial, sans-serif`)
+	require.Contains(t, rendered, `font-family: Inter, Arial, Helvetica, sans-serif`)
 	require.NotContains(t, rendered, `<script>`)
 	require.Contains(t, rendered, `&lt;script&gt;`)
 }

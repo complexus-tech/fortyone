@@ -6,10 +6,19 @@ import { buildAuthHeaders } from "@/lib/http/auth-headers";
 import { getCookieHeader } from "@/lib/http/header";
 import { requestError } from "../fetch-error";
 
+export type WorkspaceWorkType =
+  | "product"
+  | "marketing"
+  | "operations"
+  | "personal"
+  | "general";
+
 type NewWorkspace = {
   name: string;
   slug: string;
   teamSize: string;
+  includeExamples?: boolean;
+  workType?: WorkspaceWorkType;
 };
 
 const apiUrl = getApiUrl();

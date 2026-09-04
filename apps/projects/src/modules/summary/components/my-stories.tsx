@@ -1,11 +1,12 @@
 "use client";
 import { Avatar, Box, Button, Flex, Tabs, Text, Tooltip, Wrapper } from "ui";
-import { ArrowRightIcon, CalendarIcon, StoryIcon } from "icons";
+import { ArrowRightIcon, CalendarIcon } from "icons";
 import { addDays, format, formatISO } from "date-fns";
 import Link from "next/link";
 import { cn } from "lib";
 import { useState } from "react";
 import { RowWrapper, PriorityIcon, StoryStatusIcon } from "@/components/ui";
+import { WorkEmptyIllustration } from "@/components/ui/illustrations/empty-state-illustrations";
 import { useMyStoriesGrouped } from "@/modules/stories/hooks/use-my-stories-grouped";
 import { useStatuses } from "@/lib/hooks/statuses";
 import type { Story } from "@/modules/stories/types";
@@ -228,7 +229,7 @@ export const MyStories = () => {
               gap={3}
               justify="center"
             >
-              <StoryIcon className="h-24 opacity-70" />
+              <WorkEmptyIllustration />
               <Text color="muted">
                 You do not have any{" "}
                 {getTermDisplay("storyTerm", { variant: "plural" })} in
@@ -248,7 +249,7 @@ export const MyStories = () => {
               gap={3}
               justify="center"
             >
-              <StoryIcon className="h-24 opacity-70" />
+              <WorkEmptyIllustration />
               <Text color="muted">
                 You do not have any{" "}
                 {getTermDisplay("storyTerm", { variant: "plural" })} due soon.
@@ -267,7 +268,7 @@ export const MyStories = () => {
               gap={3}
               justify="center"
             >
-              <StoryIcon className="h-24 opacity-70" />
+              <WorkEmptyIllustration />
               <Text color="muted">
                 You do not have any{" "}
                 {getTermDisplay("storyTerm", { variant: "plural" })} due.

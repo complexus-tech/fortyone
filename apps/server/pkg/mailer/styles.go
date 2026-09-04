@@ -4,64 +4,66 @@ import (
 	"html/template"
 )
 
-const emailFontStack = `Geist, Helvetica, Arial, sans-serif`
+const emailFontStack = `Inter, Arial, Helvetica, sans-serif`
 
-// Email clients do not consistently support OKLCH, so these colors are the
-// sRGB hex equivalents of the shared light and dark theme tokens.
+// Email-safe colors from the approved warm email design.
 const (
-	emailColorBackground        = `#fefefd` // background: oklch(0.997 0.002 95)
-	emailColorForeground        = `#0b0a08` // foreground: oklch(0.145 0.006 95)
-	emailColorForegroundInverse = `#fefefd` // foreground-inverse: oklch(0.997 0.002 95)
-	emailColorTextSecondary     = `#3b3a38` // text-secondary: oklch(0.35 0.005 95)
-	emailColorTextMuted         = `#565552` // text-muted: oklch(0.45 0.005 95)
-	emailColorSurfaceMuted      = `#f7f7f4` // surface-muted: oklch(0.975 0.003 95)
-	emailColorBorder            = `#e5e4e2` // border: oklch(0.92 0.004 95)
-	emailColorButton            = `#14120b` // dark background: oklch(0.1821 0.0139 94)
+	emailColorBackground        = `#fff1e7`
+	emailColorForeground        = `#25150e`
+	emailColorForegroundInverse = `#ffffff`
+	emailColorTextSecondary     = `#25150e`
+	emailColorTextMuted         = `#72645d`
+	emailColorSurfaceMuted      = `#fff7f1`
+	emailColorBorder            = `#f1e4dc`
+	emailColorButton            = `#25150e`
 )
 
 var emailStyles = map[string]string{
-	"body":                  `margin: 0; padding: 0; background-color: ` + emailColorBackground + `; color: ` + emailColorTextSecondary + `; font-family: ` + emailFontStack + `; font-size: 15px; line-height: 1.62;`,
+	"replyList":             `margin: 0 0 12px; padding-left: 20px; color: ` + emailColorForeground + `; font-family: ` + emailFontStack + `; font-size: 15px; line-height: 21px;`,
+	"replyItem":             `margin: 0 0 6px;`,
+	"signature":             `margin: 16px 0 0; color: ` + emailColorForeground + `; font-family: ` + emailFontStack + `; font-size: 15px; line-height: 21px;`,
+	"body":                  `margin: 0; padding: 0; background-color: ` + emailColorBackground + `; color: ` + emailColorTextSecondary + `; font-family: ` + emailFontStack + `; font-size: 15px; line-height: 21px;`,
 	"shell":                 `width: 100%; max-width: 640px; margin: 0 auto; background-color: ` + emailColorBackground + `;`,
 	"inner":                 `padding: 48px 48px 38px;`,
-	"brand":                 `display: block; margin: 0 0 40px;`,
-	"logo":                  `display: block; width: auto; height: 42px; border-radius: 8px;`,
+	"brand":                 `display: block; margin: 0 0 26px;`,
+	"logo":                  `display: block; border: 0; width: 126px; height: 31px;`,
 	"eyebrow":               `margin: 0 0 14px; color: ` + emailColorTextMuted + `; font-family: ` + emailFontStack + `; font-size: 12px; font-weight: 600; line-height: 1.4; text-transform: uppercase;`,
-	"heading":               `margin: 0; max-width: 520px; color: ` + emailColorForeground + `; font-family: ` + emailFontStack + `; font-size: 26px; font-weight: 600; line-height: 1.16;`,
-	"bodyBlock":             `margin-top: 28px;`,
-	"text":                  `margin: 0 0 18px; color: ` + emailColorTextSecondary + `; font-family: ` + emailFontStack + `; font-size: 15px; line-height: 1.62;`,
-	"textNoMargin":          `margin: 0; color: ` + emailColorTextSecondary + `; font-family: ` + emailFontStack + `; font-size: 15px; line-height: 1.62;`,
-	"textSmallTop":          `margin: 12px 0 0; color: ` + emailColorTextSecondary + `; font-family: ` + emailFontStack + `; font-size: 15px; line-height: 1.62;`,
-	"buttonContainer":       `margin: 30px 0;`,
-	"button":                `display: inline-block; padding: 10px 18px; border-radius: 8px; background-color: ` + emailColorButton + `; color: ` + emailColorForegroundInverse + `; font-family: ` + emailFontStack + `; font-size: 15px; font-weight: 400; line-height: 1.35; text-align: center; text-decoration: none;`,
-	"panel":                 `margin: 28px 0; padding: 22px 24px; border-radius: 8px; background-color: ` + emailColorSurfaceMuted + `;`,
-	"quietPanel":            `margin: 28px 0; padding: 22px 0; border-top: 1px solid ` + emailColorBorder + `; border-bottom: 1px solid ` + emailColorBorder + `; background-color: transparent; border-radius: 0;`,
-	"notificationPanel":     `margin: 28px 0; padding: 0; background-color: transparent; color: ` + emailColorTextSecondary + `; font-family: ` + emailFontStack + `; font-size: 15px; line-height: 1.62;`,
-	"panelLabel":            `margin: 0 0 10px; color: ` + emailColorTextMuted + `; font-family: ` + emailFontStack + `; font-size: 15px; font-weight: 600; line-height: 1.4;`,
+	"heading":               `margin: 0 0 12px; max-width: 420px; color: ` + emailColorForeground + `; font-family: ` + emailFontStack + `; font-size: 23px; font-weight: 600; line-height: 29px; letter-spacing: -0.5px;`,
+	"bodyBlock":             `margin: 0;`,
+	"text":                  `margin: 0 0 12px; color: ` + emailColorTextSecondary + `; font-family: ` + emailFontStack + `; font-size: 15px; line-height: 21px;`,
+	"textNoMargin":          `margin: 0; color: ` + emailColorTextSecondary + `; font-family: ` + emailFontStack + `; font-size: 15px; line-height: 21px;`,
+	"textSmallTop":          `margin: 12px 0 0; color: ` + emailColorTextSecondary + `; font-family: ` + emailFontStack + `; font-size: 15px; line-height: 21px;`,
+	"buttonContainer":       `margin: 0;`,
+	"button":                `display: block; padding: 10px 12px; border: 1px solid ` + emailColorButton + `; border-radius: 6px; background-color: ` + emailColorButton + `; color: #ffffff; font-family: ` + emailFontStack + `; font-size: 14px; font-weight: 600; line-height: 22px; text-align: center; text-decoration: none; mso-hide: all;`,
+	"panel":                 `margin: 18px 0 0; padding: 0; background-color: transparent;`,
+	"quietPanel":            `margin: 14px 0; padding: 16px 0; border-top: 1px solid ` + emailColorBorder + `; border-bottom: 1px solid ` + emailColorBorder + `;`,
+	"notificationPanel":     `margin: 14px 0 0; padding: 0; color: ` + emailColorForeground + `; font-family: ` + emailFontStack + `; font-size: 15px; line-height: 21px;`,
+	"panelLabel":            `margin: 0 0 8px; color: ` + emailColorTextMuted + `; font-family: ` + emailFontStack + `; font-size: 11px; font-weight: 600; line-height: 17px; letter-spacing: 1.6px; text-transform: uppercase;`,
 	"panelLabelTight":       `margin: 0 0 4px; color: ` + emailColorTextMuted + `; font-family: ` + emailFontStack + `; font-size: 15px; font-weight: 600; line-height: 1.4;`,
-	"panelValue":            `margin: 0; color: ` + emailColorForeground + `; font-family: ` + emailFontStack + `; font-size: 15px; font-weight: 500; line-height: 1.62;`,
-	"panelTitle":            `margin: 0 0 12px; color: ` + emailColorForeground + `; font-family: ` + emailFontStack + `; font-size: 15px; font-weight: 600; line-height: 1.3;`,
+	"panelValue":            `margin: 0; color: ` + emailColorForeground + `; font-family: ` + emailFontStack + `; font-size: 16px; font-weight: 400; line-height: 21px;`,
+	"panelTitle":            `margin: 0 0 6px; color: ` + emailColorForeground + `; font-family: ` + emailFontStack + `; font-size: 15px; font-weight: 600; line-height: 21px;`,
 	"detailList":            `display: block; margin: 0; padding: 0; list-style: none;`,
 	"detailRow":             `display: block; padding: 0 0 10px;`,
-	"detailLabel":           `display: inline-block; min-width: 116px; color: ` + emailColorTextMuted + `; font-family: ` + emailFontStack + `; font-size: 15px; line-height: 1.5;`,
-	"detailValue":           `color: ` + emailColorForeground + `; font-family: ` + emailFontStack + `; font-size: 15px; font-weight: 600; line-height: 1.5;`,
-	"codePanel":             `margin: 28px 0; padding: 24px; border-radius: 8px; background-color: ` + emailColorSurfaceMuted + `;`,
-	"codePanelCentered":     `margin: 28px 0; padding: 24px; border-radius: 8px; background-color: ` + emailColorSurfaceMuted + `; text-align: center;`,
+	"detailLabel":           `display: inline-block; min-width: 116px; color: ` + emailColorTextMuted + `; font-family: ` + emailFontStack + `; font-size: 15px; line-height: 21px;`,
+	"detailValue":           `color: ` + emailColorForeground + `; font-family: ` + emailFontStack + `; font-size: 15px; font-weight: 600; line-height: 21px;`,
+	"codePanel":             `margin: 16px 0; padding: 20px; border-radius: 8px; background-color: ` + emailColorSurfaceMuted + `;`,
+	"codePanelCentered":     `margin: 16px 0; padding: 20px; border-radius: 8px; background-color: ` + emailColorSurfaceMuted + `; text-align: center;`,
 	"verificationCode":      `margin: 0; color: ` + emailColorForeground + `; font-family: SFMono-Regular, Consolas, monospace; font-size: 30px; font-weight: 600; line-height: 1.1;`,
-	"securityNote":          `margin: 28px 0 0; padding-top: 22px; border-top: 1px solid ` + emailColorBorder + `; color: ` + emailColorTextMuted + `; font-family: ` + emailFontStack + `; font-size: 15px; line-height: 1.62;`,
+	"securityNote":          `margin: 16px 0 0; color: ` + emailColorTextMuted + `; font-family: ` + emailFontStack + `; font-size: 13px; line-height: 21px;`,
 	"secondaryActions":      `margin-top: 32px; margin-bottom: 42px;`,
-	"secondaryActionLink":   `color: ` + emailColorTextMuted + `; font-family: ` + emailFontStack + `; font-size: 15px; line-height: 1.5; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px;`,
-	"workspaceLink":         `display: inline-block; overflow-wrap: anywhere; color: ` + emailColorForeground + `; font-family: ` + emailFontStack + `; font-size: 15px; line-height: 1.5; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px;`,
-	"notificationText":      `margin: 0 0 14px; color: ` + emailColorTextSecondary + `; font-family: ` + emailFontStack + `; font-size: 15px; line-height: 1.62;`,
-	"notificationList":      `margin: 0; padding: 0;`,
-	"notificationItemFirst": `padding: 0 0 10px; border-top: 0; color: ` + emailColorTextSecondary + `; font-family: ` + emailFontStack + `; font-size: 15px; line-height: 1.5;`,
-	"notificationItem":      `padding: 10px 0; border-top: 1px solid ` + emailColorBorder + `; color: ` + emailColorTextSecondary + `; font-family: ` + emailFontStack + `; font-size: 15px; line-height: 1.5;`,
+	"secondaryActionLink":   `color: ` + emailColorTextMuted + `; font-family: ` + emailFontStack + `; font-size: 15px; line-height: 21px; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px;`,
+	"workspaceLink":         `display: inline-block; overflow-wrap: anywhere; color: ` + emailColorForeground + `; font-family: ` + emailFontStack + `; font-size: 15px; line-height: 21px; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px;`,
+	"notificationText":      `margin: 0 0 12px; color: ` + emailColorTextSecondary + `; font-family: ` + emailFontStack + `; font-size: 15px; line-height: 21px;`,
+	"notificationList":      `margin: 0; padding: 0; list-style: none;`,
+	"notificationItemFirst": `padding: 12px 0; border-top: 1px solid ` + emailColorBorder + `; color: ` + emailColorTextSecondary + `; font-family: ` + emailFontStack + `; font-size: 15px; line-height: 21px;`,
+	"notificationItem":      `padding: 12px 0; border-top: 1px solid ` + emailColorBorder + `; color: ` + emailColorTextSecondary + `; font-family: ` + emailFontStack + `; font-size: 15px; line-height: 21px;`,
 	"notificationSublist":   `margin: 6px 0 12px; padding: 0; list-style: none;`,
-	"notificationSubitem":   `padding: 8px 0; border-top: 0; color: ` + emailColorTextMuted + `; font-family: ` + emailFontStack + `; font-size: 15px; line-height: 1.5;`,
-	"notificationMessage":   `margin: 0; color: ` + emailColorTextSecondary + `; font-family: ` + emailFontStack + `; font-size: 15px; line-height: 1.55;`,
-	"notificationLink":      `display: inline; color: ` + emailColorForeground + `; font-family: ` + emailFontStack + `; font-size: 15px; font-weight: 600; line-height: 1.55; text-decoration: none;`,
-	"footer":                `margin-top: 46px; padding-top: 26px; border-top: 1px solid ` + emailColorBorder + `; color: ` + emailColorTextMuted + `; font-family: ` + emailFontStack + `; font-size: 15px; line-height: 1.5;`,
-	"footerText":            `margin: 0 0 6px; color: ` + emailColorTextMuted + `; font-family: ` + emailFontStack + `; font-size: 14px; line-height: 1.5;`,
-	"footerTextLast":        `margin: 0; color: ` + emailColorTextMuted + `; font-family: ` + emailFontStack + `; font-size: 14px; line-height: 1.5;`,
+	"notificationSubitem":   `padding: 8px 0; border-top: 0; color: ` + emailColorTextMuted + `; font-family: ` + emailFontStack + `; font-size: 15px; line-height: 21px;`,
+	"notificationMessage":   `margin: 0; color: ` + emailColorTextSecondary + `; font-family: ` + emailFontStack + `; font-size: 15px; line-height: 21px;`,
+	"notificationLink":      `display: inline; color: ` + emailColorForeground + `; font-family: ` + emailFontStack + `; font-size: 15px; font-weight: 600; line-height: 21px; text-decoration: none;`,
+	"footer":                `margin-top: 46px; padding-top: 26px; border-top: 1px solid ` + emailColorBorder + `; color: ` + emailColorTextMuted + `; font-family: ` + emailFontStack + `; font-size: 15px; line-height: 21px;`,
+	"footerText":            `margin: 0 0 8px; color: ` + emailColorTextMuted + `; font-family: ` + emailFontStack + `; font-size: 13px; line-height: 21px;`,
+	"footerTextLast":        `margin: 0; color: ` + emailColorTextMuted + `; font-family: ` + emailFontStack + `; font-size: 13px; line-height: 21px;`,
 }
 
 func emailStyle(name string) template.CSS {

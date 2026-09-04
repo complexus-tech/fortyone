@@ -1,235 +1,201 @@
 "use client";
 
-import { Box, Input, Select, Text, Button, Flex } from "ui";
-import type { ChangeEvent, FormEvent } from "react";
-import { useCallback, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
-import { CloseIcon } from "icons";
-import { createWorkspaceAction } from "@/lib/actions/create-workspace";
-import { useDebounce } from "@/hooks";
-import { checkWorkspaceAvailability } from "@/lib/queries/check-workspace-availability";
-import { useWorkspaces } from "@/lib/hooks/workspaces";
+import type { FormEvent } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
+import { Text, Button, Flex } from "ui";
+import { useProfile } from "@/lib/hooks/profile";
+import type { User } from "@/types/user";
+import { OnboardingStepper } from "@/components/onboarding/onboarding-stepper";
+import { getOnboardingStartUrl } from "@/modules/onboarding/start";
+import { useWorkspaceOnboarding } from "../use-workspace-onboarding";
+import { WorkspaceDetailsStep } from "./workspace-details-step";
 import {
-  getOnboardingWorkspaceUrl,
-  withOnboardingCallbackUrl,
-} from "@/modules/onboarding/routing";
+  WorkspaceStartStep,
+  WorkspaceWorkStep,
+} from "./workspace-onboarding-choices";
 
-const isFortyOneApp = process.env.NEXT_PUBLIC_DOMAIN === "fortyone.app";
+const subscribeToClient = () => () => undefined;
+const clientSnapshot = () => true;
+const serverSnapshot = () => false;
+const STEP_TITLES = [
+  "Create Workspace",
+  "What kind of work?",
+  "Make your first move",
+] as const;
 
-const formatSlug = (name: string) =>
-  name
-    .toLowerCase()
-    .replace(/[^a-z0-9-]/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "");
+const WorkspaceForm = ({
+  profile,
+  callbackUrl,
+}: {
+  profile: User;
+  callbackUrl?: string;
+}) => {
+  const {
+    availability,
+    draft,
+    error,
+    isLoading,
+    changeName,
+    changeStep,
+    updateDraft,
+    createWorkspace,
+  } = useWorkspaceOnboarding({
+    profile,
+    onCreated: (workspaceSlug, start) => {
+      window.location.href = getOnboardingStartUrl(
+        workspaceSlug,
+        start,
+        callbackUrl,
+      );
+    },
+  });
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (draft.step === 0) changeStep(1);
+    else if (draft.step === 1) changeStep(2);
+    else void createWorkspace();
+  };
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const previousStepRef = useRef(draft.step);
+  useEffect(() => {
+    if (previousStepRef.current === draft.step) return;
+    previousStepRef.current = draft.step;
+    headingRef.current?.focus({ preventScroll: true });
+    headingRef.current?.scrollIntoView({ block: "start" });
+  }, [draft.step]);
+
+  return (
+    <>
+      <h1
+        className="mt-8 mb-6 text-4xl font-semibold outline-none"
+        ref={headingRef}
+        tabIndex={-1}
+      >
+        {STEP_TITLES[draft.step]}
+      </h1>
+      <div className="mb-6">
+        <OnboardingStepper
+          currentStep={draft.step}
+          furthestStep={draft.furthestStep}
+          onStepChange={
+            isLoading
+              ? undefined
+              : (step) => {
+                  if (step === 0 || step === 1 || step === 2) {
+                    changeStep(step);
+                  }
+                }
+          }
+        />
+      </div>
+      <form className="space-y-5" onSubmit={handleSubmit}>
+        <fieldset className="space-y-5" disabled={isLoading}>
+          {draft.step === 0 ? (
+            <WorkspaceDetailsStep
+              availability={availability}
+              draft={draft}
+              onChange={updateDraft}
+              onNameChange={changeName}
+              showFullName={!profile.fullName.trim()}
+            />
+          ) : null}
+          {draft.step === 1 ? (
+            <WorkspaceWorkStep draft={draft} onChange={updateDraft} />
+          ) : null}
+          {draft.step === 2 ? (
+            <WorkspaceStartStep draft={draft} onChange={updateDraft} />
+          ) : null}
+        </fieldset>
+        {error ? (
+          <Text className="text-danger" role="alert">
+            {error}
+          </Text>
+        ) : null}
+        <Flex align="center" className="flex-wrap gap-3" justify="between">
+          {draft.step > 0 ? (
+            <Button
+              align="center"
+              className="shrink-0 px-7 md:px-8"
+              color="tertiary"
+              disabled={isLoading}
+              onClick={() => {
+                if (draft.step === 2) void createWorkspace("empty");
+                else changeStep(0);
+              }}
+              type="button"
+              variant="outline"
+            >
+              {draft.step === 2 ? "Skip" : "Back"}
+            </Button>
+          ) : null}
+          <Button
+            align="center"
+            className="ml-auto shrink-0 px-7 md:px-8"
+            color="invert"
+            disabled={
+              (draft.step === 0 &&
+                (availability === "checking" ||
+                  availability === "unavailable")) ||
+              (draft.step === 1 && !draft.workType)
+            }
+            fullWidth={draft.step === 0}
+            loading={isLoading}
+            loadingText="Creating…"
+            type="submit"
+          >
+            {
+              [
+                "Continue to your work",
+                "Choose how to start",
+                "Create Workspace",
+              ][draft.step]
+            }
+          </Button>
+        </Flex>
+      </form>
+    </>
+  );
+};
 
 export const CreateWorkspaceForm = ({
   callbackUrl,
 }: {
   callbackUrl?: string;
 }) => {
-  const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
-  const [isAvailable, setIsAvailable] = useState(true);
-  const hasOrgBlurredRef = useRef(false);
-  const [form, setForm] = useState({
-    name: "",
-    slug: "",
-    teamSize: "1-5",
-  });
-  const { data: workspaces = [] } = useWorkspaces();
-
-  const checkAvailability = useDebounce(
-    useCallback(async (slugToCheck: string) => {
-      if (slugToCheck.length <= 3) return;
-
-      setIsAvailable(true);
-      const res = await checkWorkspaceAvailability(slugToCheck).catch(
-        () => null,
-      );
-      setIsAvailable(Boolean(res?.data?.available));
-    }, []),
-    1000,
+  const profileQuery = useProfile();
+  const clientReady = useSyncExternalStore(
+    subscribeToClient,
+    clientSnapshot,
+    serverSnapshot,
   );
-
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    const shouldSyncSlug = name === "name" && !hasOrgBlurredRef.current;
-    const nextSlug = shouldSyncSlug ? formatSlug(value) : value.toLowerCase();
-
-    setForm((currentForm) => ({
-      ...currentForm,
-      [name]: value,
-      ...(shouldSyncSlug ? { slug: nextSlug } : {}),
-    }));
-
-    if (name === "slug" || shouldSyncSlug) {
-      checkAvailability(nextSlug);
-    }
-  };
-
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    if (!form.name || !form.slug) {
-      toast.warning("Validation warning", {
-        description: "Please enter a workspace name and URL",
-      });
-      return;
-    }
-
-    if (form.slug.length > 16) {
-      toast.warning("Validation warning", {
-        description: "Workspace URL must be less than 16 characters",
-      });
-      return;
-    }
-
-    if (form.slug.length < 3) {
-      toast.warning("Validation warning", {
-        description: "Workspace URL must be at least 3 characters",
-      });
-      return;
-    }
-
-    setIsLoading(true);
-    const res = await createWorkspaceAction({
-      name: form.name.trim(),
-      slug: form.slug.trim(),
-      teamSize: form.teamSize,
-    });
-    if (res.error?.message) {
-      setIsLoading(false);
-      toast.error("Failed to create workspace", {
-        description: res.error.message || "Something went wrong",
-      });
-      return;
-    }
-    const workspace = res.data!;
-    if (workspaces.length === 0) {
-      router.push(
-        withOnboardingCallbackUrl("/onboarding/account", callbackUrl),
-      );
-    } else {
-      window.location.href = getOnboardingWorkspaceUrl(
-        workspace.slug,
-        callbackUrl,
-      );
-    }
-  };
-
-  return (
-    <form className="space-y-5" onSubmit={handleSubmit}>
-      <Input
-        className="rounded-lg"
-        label="Your Workspace"
-        name="name"
-        onBlur={() => {
-          hasOrgBlurredRef.current = true;
-        }}
-        onChange={handleChange}
-        placeholder="Enter workspace name"
-        required
-        value={form.name}
-      />
-      <Input
-        className="rounded-lg"
-        hasError={!isAvailable}
-        helpText={
-          !isAvailable
-            ? "This URL is already taken. Please try a different one."
-            : "Pick a simple, memorable URL for your workspace"
-        }
-        label="Workspace URL"
-        maxLength={16}
-        minLength={3}
-        name="slug"
-        onChange={handleChange}
-        pattern="^[a-z][a-z0-9-]*$"
-        required
-        rightIcon={
-          <Flex align="center" gap={2}>
-            {isFortyOneApp ? <Text>.fortyone.app</Text> : null}
-            {!isAvailable ? (
-              <Flex
-                align="center"
-                className="bg-danger size-5 rounded-full"
-                justify="center"
-              >
-                <CloseIcon
-                  className="h-3 text-white dark:text-white"
-                  strokeWidth={3}
-                />
-              </Flex>
-            ) : null}
-          </Flex>
-        }
-        value={form.slug}
-      />
-      <Box>
-        <Text as="label" className="mb-2 block font-medium">
-          How many people will use this workspace?
+  if (profileQuery.isError) {
+    return (
+      <div className="mt-10" role="alert">
+        <Text className="mb-4">
+          We couldn’t load your account. Please try again.
         </Text>
-        <Select
-          onValueChange={(value) => {
-            setForm((currentForm) => ({
-              ...currentForm,
-              teamSize: value,
-            }));
-          }}
-          value={form.teamSize}
+        <Button
+          loading={profileQuery.isFetching}
+          onClick={() => void profileQuery.refetch()}
+          type="button"
         >
-          <Select.Trigger className="border-border bg-surface/70 h-[2.7rem] w-full rounded-lg">
-            <Select.Input />
-          </Select.Trigger>
-          <Select.Content>
-            <Select.Group>
-              <Select.Option
-                className="h-10 rounded-lg text-[0.9rem]"
-                value="1-5"
-              >
-                1-5
-              </Select.Option>
-              <Select.Option
-                className="h-10 rounded-lg text-[0.9rem]"
-                value="6-10"
-              >
-                6-10
-              </Select.Option>
-              <Select.Option
-                className="h-10 rounded-lg text-[0.9rem]"
-                value="51-200"
-              >
-                51-200
-              </Select.Option>
-              <Select.Option
-                className="h-10 rounded-lg text-[0.9rem]"
-                value="201-500"
-              >
-                201-500
-              </Select.Option>
-              <Select.Option
-                className="h-10 rounded-lg text-[0.9rem]"
-                value="500+"
-              >
-                500+
-              </Select.Option>
-            </Select.Group>
-          </Select.Content>
-        </Select>
-      </Box>
-      <Button
-        align="center"
-        className="mt-4 md:py-3"
-        color="invert"
-        fullWidth
-        loading={isLoading}
-        loadingText="Creating workspace..."
-        size="lg"
-      >
-        Create Workspace
-      </Button>
-    </form>
+          Try again
+        </Button>
+      </div>
+    );
+  }
+  if (!clientReady || !profileQuery.data) {
+    return (
+      <Text className="mt-10" color="muted" role="status">
+        Getting your account ready…
+      </Text>
+    );
+  }
+  return (
+    <WorkspaceForm
+      callbackUrl={callbackUrl}
+      key={profileQuery.data.id}
+      profile={profileQuery.data}
+    />
   );
 };

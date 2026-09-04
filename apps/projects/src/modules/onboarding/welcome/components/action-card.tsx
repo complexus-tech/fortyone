@@ -16,13 +16,21 @@ export const ActionCard = ({
   href,
 }: ActionCardProps) => {
   return (
-    <Link href={href}>
-      <Wrapper className="border-opacity-40 dark:border-opacity-40 py-2.5 shadow-none">
-        <Flex gap={3}>
-          <Box className="mt-1">{icon}</Box>
-          <Box>
-            <Text>{title}</Text>
-            <Text className="mt-1 text-base" color="muted">
+    <Link
+      className="group block rounded-xl opacity-80 transition-opacity duration-150 outline-none hover:opacity-100 focus-visible:opacity-100 motion-reduce:transition-none"
+      href={href}
+    >
+      <Wrapper className="group-hover:border-foreground/70 group-hover:ring-foreground/70 group-focus-visible:border-foreground group-focus-visible:ring-foreground border py-4 shadow-none group-hover:ring-1 group-focus-visible:ring-2">
+        <Flex align="center" gap={3}>
+          <Box className="flex w-10 shrink-0 items-center justify-center">
+            {icon}
+          </Box>
+          <Box className="min-w-0">
+            <Text fontWeight="medium">{title}</Text>
+            <Text
+              className="mt-1 text-[calc(1rem-1px)] leading-5 whitespace-nowrap"
+              color="muted"
+            >
               {description}
             </Text>
           </Box>

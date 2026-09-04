@@ -1,20 +1,13 @@
 "use client";
 
-import { Box, Text } from "ui";
-import { Logo } from "@/components/ui";
+import { Box } from "ui";
+import { Logo } from "@/components/ui/logo";
 import { CreateWorkspaceForm } from "./components/create-workspace-form";
 
 export const CreateWorkspace = ({ callbackUrl }: { callbackUrl?: string }) => {
   return (
-    <Box className="px-6 md:max-w-lg">
+    <Box className="w-full px-6 md:max-w-lg">
       <Logo asIcon />
-      <Text as="h1" className="mt-10 mb-6 text-4xl" fontWeight="semibold">
-        Create Workspace
-      </Text>
-      <Text className="mb-6" color="muted">
-        Create an environment where teams can set objectives, track OKRs, and
-        drive results together.
-      </Text>
       <CreateWorkspaceForm callbackUrl={callbackUrl} />
     </Box>
   );

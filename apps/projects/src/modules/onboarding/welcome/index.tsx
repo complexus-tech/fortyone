@@ -1,9 +1,18 @@
 "use client";
-import { Badge, Box, Button, Container, Text } from "ui";
-import { CommandIcon, DownloadIcon, SettingsIcon } from "icons";
-import { Logo } from "@/components/ui";
-import type { User, Workspace } from "@/types";
+import { Box, Button, Text } from "ui";
+import {
+  JOIN_ONBOARDING_STEPS,
+  OnboardingStepper,
+} from "@/components/onboarding/onboarding-stepper";
+import { Logo } from "@/components/ui/logo";
+import type { User } from "@/types/user";
+import type { Workspace } from "@/types/workspace";
 import { ActionCard } from "./components/action-card";
+import {
+  CalendarActionIcon,
+  ImportActionIcon,
+  TaskActionIcon,
+} from "./components/welcome-action-icons";
 import { getWelcomeDestinations } from "./destinations";
 
 export const Welcome = ({
@@ -15,72 +24,55 @@ export const Welcome = ({
   workspaces: Workspace[];
   profile: User;
 }) => {
-  const { importUrl, redirectUrl } = getWelcomeDestinations(
-    workspaces,
-    profile.lastUsedWorkspaceId,
-    callbackUrl,
-  );
+  const { calendarUrl, importUrl, redirectUrl, taskUrl } =
+    getWelcomeDestinations(
+      workspaces,
+      profile.lastUsedWorkspaceId,
+      callbackUrl,
+    );
 
   return (
-    <Container className="max-w-md md:max-w-xl">
+    <Box className="w-full px-6 md:max-w-xl">
       <Logo asIcon />
-      <Text as="h1" className="mt-10 mb-6 text-4xl" fontWeight="semibold">
+      <Text as="h1" className="mt-8 mb-6 text-4xl" fontWeight="semibold">
         Welcome to FortyOne👋
       </Text>
-      <Text className="mb-6" color="muted">
-        Your workspace is ready. Create your first story by pressing{" "}
-        <Badge
-          className="inline-flex rounded-md font-semibold"
-          color="tertiary"
-        >
-          shift+n
-        </Badge>{" "}
-        or explore the features below.
-      </Text>
+      <OnboardingStepper currentStep={2} steps={JOIN_ONBOARDING_STEPS} />
       <Box className="grid gap-4">
+        {taskUrl ? (
+          <ActionCard
+            description="Turn your next idea into action."
+            href={taskUrl}
+            icon={<TaskActionIcon />}
+            title="Create your first task"
+          />
+        ) : null}
         {importUrl ? (
           <ActionCard
-            description="Bring work from Jira or upload an export. You'll review everything before anything is created."
+            description="Bring tasks from another tool."
             href={importUrl}
-            icon={<DownloadIcon />}
+            icon={<ImportActionIcon />}
             title="Import existing work"
           />
         ) : null}
-        <ActionCard
-          description="Connect your GitHub repositories and Slack channels for seamless integration."
-          href={redirectUrl}
-          icon={<SettingsIcon />}
-          title="Set up integrations"
-        />
-        <ActionCard
-          description={
-            <>
-              Boost your productivity with keyboard shortcuts (press{" "}
-              <Badge
-                className="text-muted dark:text-text-secondary inline-flex gap-0 rounded-md font-semibold"
-                color="tertiary"
-              >
-                <CommandIcon className="h-3" strokeWidth={3} />
-                +k
-              </Badge>{" "}
-              for help)
-            </>
-          }
-          href={redirectUrl}
-          icon={<CommandIcon />}
-          title="Master shortcuts"
-        />
+        {calendarUrl ? (
+          <ActionCard
+            description="See meetings beside your work."
+            href={calendarUrl}
+            icon={<CalendarActionIcon />}
+            title="Connect your calendar"
+          />
+        ) : null}
       </Box>
       <Button
         align="center"
-        className="mt-4 md:py-3"
+        className="mt-4"
         color="invert"
         fullWidth
         href={redirectUrl}
-        size="lg"
       >
-        Get Started
+        Start planning
       </Button>
-    </Container>
+    </Box>
   );
 };

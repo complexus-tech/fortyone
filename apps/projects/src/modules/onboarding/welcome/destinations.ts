@@ -2,15 +2,16 @@ import type { Workspace } from "@/types/workspace";
 import {
   getOnboardingWorkspaceUrl,
   withOnboardingCallbackUrl,
-} from "@/modules/onboarding/routing";
-
-const IMPORT_WORKSPACE_PATH = "/settings/workspace/imports?from=onboarding";
+} from "../routing";
+import { getOnboardingStartUrl, ONBOARDING_CALENDAR_PATH } from "../start";
 
 type WelcomeWorkspace = Pick<Workspace, "id" | "slug" | "userRole">;
 
 type WelcomeDestinations = {
   redirectUrl: string;
+  taskUrl?: string;
   importUrl?: string;
+  calendarUrl?: string;
 };
 
 export const getWelcomeDestinations = (
@@ -30,12 +31,17 @@ export const getWelcomeDestinations = (
 
   return {
     redirectUrl: getOnboardingWorkspaceUrl(activeWorkspace.slug, callbackUrl),
+    calendarUrl: getOnboardingWorkspaceUrl(
+      activeWorkspace.slug,
+      ONBOARDING_CALENDAR_PATH,
+    ),
+    ...(activeWorkspace.userRole === "admin" ||
+    activeWorkspace.userRole === "member"
+      ? { taskUrl: getOnboardingStartUrl(activeWorkspace.slug, "task") }
+      : {}),
     ...(activeWorkspace.userRole === "admin"
       ? {
-          importUrl: getOnboardingWorkspaceUrl(
-            activeWorkspace.slug,
-            IMPORT_WORKSPACE_PATH,
-          ),
+          importUrl: getOnboardingStartUrl(activeWorkspace.slug, "import"),
         }
       : {}),
   };

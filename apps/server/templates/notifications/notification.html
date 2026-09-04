@@ -1,19 +1,7 @@
-{{ define "content" }}
-<h1 class="heading" style="{{ emailStyle "heading" }}">{{ .NotificationTitle }}</h1>
-<div class="email-body" style="{{ emailStyle "bodyBlock" }}">
-  <p class="text" style="{{ emailStyle "text" }}">Hi {{ .UserName }},</p>
-  <div class="highlight notification-message" style="{{ emailStyle "notificationPanel" }}">
-    {{ safeHTML .NotificationMessage }}
-  </div>
-  {{ if .NotificationCTAURL }}
-  <div class="button-container" style="{{ emailStyle "buttonContainer" }}">
-    <a href="{{ .NotificationCTAURL }}" class="button" style="{{ emailStyle "button" }}">{{ .NotificationCTALabel }}</a>
-  </div>
-  {{ end }}
-  {{ if .NotificationsSettingsURL }}
-  <div class="secondary-actions" style="{{ emailStyle "secondaryActions" }}">
-    <a href="{{ .NotificationsSettingsURL }}" style="{{ emailStyle "secondaryActionLink" }}">Manage notifications</a>
-  </div>
-  {{ end }}
-</div>
-{{ end }}
+{{define "content"}}
+<h1 class="heading" style="{{emailStyle "heading"}}">{{.NotificationTitle}}</h1>
+{{if .UserName}}<p style="{{emailStyle "text"}}">Hi {{.UserName}},</p>{{end}}
+<div class="notification-message" style="{{emailStyle "notificationPanel"}}">{{safeHTML .NotificationMessage}}</div>
+{{if .EmailIsMaya}}<p style="{{emailStyle "signature"}}"><strong>Maya</strong><br><span style="color:#72645d;font-size:14px;">Your AI agent at FortyOne</span></p>{{end}}
+{{end}}
+{{define "footer"}}{{if .NotificationsSettingsURL}}<p style="{{emailStyle "footerText"}}"><a href="{{.NotificationsSettingsURL}}" style="color:#72645d;text-decoration:underline;">Manage notification preferences</a></p>{{end}}{{end}}

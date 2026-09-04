@@ -5,9 +5,6 @@
     Click the button below to securely log in, or enter the verification code
     on the login screen. This link expires in {{ .ExpiresIn }}.
   </p>
-  <div class="button-container" style="{{ emailStyle "buttonContainer" }}">
-    <a href="{{ .VerificationURL }}" class="button" style="{{ emailStyle "button" }}">Login to {{ .CompanyName }}</a>
-  </div>
   {{ if .OTP }}
   <div class="code-panel" style="{{ emailStyle "codePanel" }}">
     <p class="panel-label" style="{{ emailStyle "panelLabel" }}">Your verification code</p>

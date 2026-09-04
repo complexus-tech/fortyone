@@ -7,102 +7,64 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 )
 
 func TestTemplatesRenderApprovedEmailSystem(t *testing.T) {
 	rendered := renderTemplateForTest(t, "auth/verification", map[string]any{
-		"Subject":         "Your login link for FortyOne",
-		"VerificationURL": "https://projects.fortyone.app/login/verify",
-		"ExpiresIn":       "10 minutes",
-		"OTP":             "827657",
+		"VerificationURL": "https://cloud.fortyone.app/login/verify?token=abc&state=xyz", "ExpiresIn": "10 minutes", "OTP": "827657",
 	})
-
-	assertContains(t, rendered, "fonts.googleapis.com/css2?family=Geist:wght@400;500;600")
-	assertContains(t, rendered, "@font-face")
-	assertContains(t, rendered, "font-family: 'Geist'")
-	assertContains(t, rendered, `font-family: "Geist", Helvetica, Arial, sans-serif`)
-	assertContains(t, rendered, "background-color: #fefefd")
-	assertContains(t, rendered, ".email-title")
-	assertNotContains(t, rendered, `class="eyebrow"`)
-	assertContains(t, rendered, `style="margin: 0; max-width: 520px; color: #0b0a08; font-family: Geist, Helvetica, Arial, sans-serif; font-size: 26px; font-weight: 600; line-height: 1.16;"`)
-	assertContains(t, rendered, `style="margin: 0 0 18px; color: #3b3a38; font-family: Geist, Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.62;"`)
-	assertContains(t, rendered, `style="display: inline-block; padding: 10px 18px; border-radius: 8px; background-color: #14120b; color: #fefefd; font-family: Geist, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: 400; line-height: 1.35; text-align: center; text-decoration: none;"`)
-	assertNotContains(t, rendered, "background-color: #111111")
-	assertNotContains(t, rendered, "color: #ffffff")
-	assertContains(t, rendered, "font-weight: 600")
-	assertContains(t, rendered, "font-size: 26px")
-	assertContains(t, rendered, "padding: 10px 18px")
-	assertContains(t, rendered, ".email-shell {\n          width: 100% !important;\n          max-width: none !important;\n        }")
-	assertContains(t, rendered, ".verification-code")
-	assertContains(t, rendered, ".email-body .verification-code")
-	assertContains(t, rendered, `font-family: "SFMono-Regular", "Roboto Mono"`)
-	assertContains(t, rendered, `style="margin: 0; color: #0b0a08; font-family: SFMono-Regular, Consolas, monospace; font-size: 30px; font-weight: 600; line-height: 1.1;"`)
-	assertContains(t, rendered, ".email-body .security-note")
-	assertContains(t, rendered, "FortyOne by Complexus LLC")
-
-	if strings.Contains(rendered, "Inter") {
-		t.Fatalf("email template should not reference Inter")
+	for _, expected := range []string{defaultLogoURL, "font-family:Inter", "fonts/Inter-Regular.woff2", "font-size: 23px", "line-height: 21px", "font-size:21px!important", "#fff1e7", `bgcolor="#ffffff"`, `class="email-card"`, `<!--[if mso]>`, `v:roundrect`, `width:456px`, "827657", "FortyOne by Complexus LLC", "token=abc&amp;state=xyz"} {
+		assertContains(t, rendered, expected)
 	}
-	if strings.Contains(rendered, "Jost") {
-		t.Fatalf("email template should not reference Jost")
-	}
-	if strings.Contains(rendered, "wght@400;500;600;700") {
-		t.Fatalf("email template should not load bold font weight")
-	}
-	if strings.Contains(rendered, "min-height: 48px") {
-		t.Fatalf("email buttons should not use min-height because it adds extra height on top of padding in email clients")
+	for _, rejected := range []string{"Geist", "/images/logo.png", "#ZgotmplZ", "<no value>", `class="eyebrow"`, `src="data:`} {
+		assertNotContains(t, rendered, rejected)
 	}
 }
 
-func TestWorkspaceLinkEmailsRenderUnderlinedLinks(t *testing.T) {
-	for _, templateName := range []string{
-		"workspaces/deletion_scheduled_confirmation",
-		"workspaces/deletion_scheduled_notification",
+func TestInvitationArtworkAndDestinations(t *testing.T) {
+	for _, tc := range []struct{ name, asset, urlKey string }{
+		{"invites/invitation", "invitation.png", "VerificationURL"},
+		{"invites/acceptance", "invitation-accepted.png", "LoginURL"},
 	} {
-		t.Run(templateName, func(t *testing.T) {
-			rendered := renderTemplateForTest(t, templateName, map[string]any{
-				"Subject":       "Workspace deletion scheduled",
-				"WorkspaceName": "Art Circles",
-				"WorkspaceURL":  "https://projects.fortyone.app/workspaces/art-circles",
-				"RestoreURL":    "https://projects.fortyone.app/workspaces/art-circles/settings",
-				"DeletionTime":  "7 days",
-				"ActorName":     "Joseph Mukorivo",
-				"ActorEmail":    "joseph@example.com",
-			})
-
-			assertContains(t, rendered, "Workspace link")
-			assertContains(t, rendered, "class=\"workspace-link\"")
-			assertContains(t, rendered, `style="display: inline-block; overflow-wrap: anywhere; color: #0b0a08; font-family: Geist, Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.5; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px;"`)
-			assertContains(t, rendered, "margin-bottom: 4px")
-			assertContains(t, rendered, "https://projects.fortyone.app/workspaces/art-circles")
+		t.Run(tc.name, func(t *testing.T) {
+			rendered := renderTemplateForTest(t, tc.name, map[string]any{tc.urlKey: "https://cloud.fortyone.app/target?token=original", "WorkspaceName": `Acme <script>alert(1)</script>`, "InviterName": "Joseph", "InviteeName": "Alex", "Role": "Member", "ExpiresIn": "7 days"})
+			assertContains(t, rendered, emailAsset(tc.asset))
+			assertContains(t, rendered, "max-width:480px")
+			assertContains(t, rendered, "width:416px")
+			assertContains(t, rendered, `width="126" height="31"`)
+			assertContains(t, rendered, "https://cloud.fortyone.app/target?token=original")
+			assertContains(t, rendered, "&lt;script&gt;")
+			assertNotContains(t, rendered, "<script>")
 		})
 	}
 }
 
-func TestNotificationEmailRendersInlineMessageStyles(t *testing.T) {
-	rendered := renderTemplateForTest(t, "notifications/notification", map[string]any{
-		"NotificationTitle":        "3 tasks need attention",
-		"UserName":                 "Joseph Mukorivo",
-		"NotificationMessage":      `<h3 style="margin: 0 0 12px; color: #0b0a08; font-family: Geist, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: 600; line-height: 1.3;">What's coming up</h3><p style="margin: 0 0 12px; color: #3b3a38; font-family: Geist, Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.62;">You have 3 tasks that need attention.</p>`,
-		"WorkspaceName":            "Art Circles",
-		"NotificationCTAURL":       "https://projects.fortyone.app/work",
-		"NotificationCTALabel":     "View my work",
-		"NotificationsSettingsURL": "https://projects.fortyone.app/settings/notifications",
-	})
+func TestWorkspaceLinkEmailsPreserveRecoveryInstructions(t *testing.T) {
+	for _, name := range []string{"workspaces/deletion_scheduled_confirmation", "workspaces/deletion_scheduled_notification"} {
+		rendered := renderTemplateForTest(t, name, map[string]any{"WorkspaceName": "Acme", "WorkspaceURL": "https://cloud.fortyone.app/acme", "RestoreURL": "https://cloud.fortyone.app/acme/settings", "DeletionTime": "48 hours", "ActorName": "Joseph", "ActorEmail": "joseph@example.com"})
+		for _, expected := range []string{"48 hours", "https://cloud.fortyone.app/acme/settings", "Workspace link", "https://cloud.fortyone.app/acme"} {
+			assertContains(t, rendered, expected)
+		}
+	}
+}
 
-	assertContains(t, rendered, `style="margin: 28px 0; padding: 0; background-color: transparent; color: #3b3a38; font-family: Geist, Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.62;"`)
-	assertNotContains(t, rendered, `padding: 20px 24px; border-radius: 8px; background-color: #f7f7f4;`)
-	assertContains(t, rendered, `style="margin: 0 0 12px; color: #0b0a08; font-family: Geist, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: 600; line-height: 1.3;"`)
-	assertContains(t, rendered, `style="margin: 0 0 12px; color: #3b3a38; font-family: Geist, Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.62;"`)
-	assertNotContains(t, rendered, "Workspace</p>")
-	assertNotContains(t, rendered, `style="margin: 28px 0; padding: 22px 0; border-top: 1px solid #e5e4e2; border-bottom: 1px solid #e5e4e2; background-color: transparent; border-radius: 0;"`)
-	assertContains(t, rendered, `style="color: #565552; font-family: Geist, Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.5; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px;"`)
-	assertContains(t, rendered, `style="margin: 0 0 6px; color: #565552; font-family: Geist, Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.5;"`)
+func TestNotificationEmailHasOptionalActionAndPreferences(t *testing.T) {
+	data := map[string]any{"NotificationTitle": "Your story changed", "UserName": "Alex", "NotificationMessage": "<h3>Onboarding</h3><p>Ready for review.</p>", "NotificationsSettingsURL": "https://cloud.fortyone.app/settings/notifications"}
+	rendered := renderTemplateForTest(t, "notifications/notification", data)
+	assertContains(t, rendered, "Ready for review.")
+	assertContains(t, rendered, EmailStyleString("panelTitle"))
+	assertContains(t, rendered, "Manage notification preferences")
+	assertNotContains(t, rendered, `class="actions"`)
+	assertNotContains(t, rendered, `class="hero"`)
+	data["NotificationCTAURL"], data["NotificationCTALabel"] = "https://cloud.fortyone.app/work", "View my work"
+	rendered = renderTemplateForTest(t, "notifications/notification", data)
+	assertContains(t, rendered, `class="actions"`)
+	assertContains(t, rendered, "View my work")
 }
 
 func TestAllEmailTemplatesRenderWithApprovedLayout(t *testing.T) {
 	testCases := map[string]map[string]any{
+		"feedback/verification": {"PortalName": "Acme feedback", "VerificationURL": "https://example.com/verify", "Code": "654321", "ExpiresIn": "10 minutes"},
 		"auth/verification": {
 			"VerificationURL": "https://projects.fortyone.app/login/verify",
 			"ExpiresIn":       "10 minutes",
@@ -191,13 +153,7 @@ func renderTemplateForTest(t *testing.T, templateName string, data map[string]an
 	basePath := filepath.Join(templatesDir, "layouts", "base.html")
 	contentPath := filepath.Join(templatesDir, templateName+".html")
 
-	tmpl, err := template.New("").Funcs(template.FuncMap{
-		"formatDate": func(t time.Time) string {
-			return t.Format("January 2, 2006")
-		},
-		"safeHTML":   safeEmailHTML,
-		"emailStyle": emailStyle,
-	}).ParseFiles(basePath, contentPath)
+	tmpl, err := template.New("").Funcs(emailTemplateFuncs()).ParseFiles(basePath, contentPath)
 	if err != nil {
 		t.Fatalf("parse template %s: %v", templateName, err)
 	}
@@ -212,11 +168,22 @@ func renderTemplateForTest(t *testing.T, templateName string, data map[string]an
 		renderData[key] = value
 	}
 
+	prepareTemplateData(templateName, renderData)
+
 	var buf bytes.Buffer
 	if err := tmpl.ExecuteTemplate(&buf, "base", renderData); err != nil {
 		t.Fatalf("render template %s: %v", templateName, err)
 	}
 
+	if outputDir := os.Getenv("FORTYONE_EMAIL_PREVIEW_DIR"); outputDir != "" {
+		if err := os.MkdirAll(outputDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		path := filepath.Join(outputDir, strings.ReplaceAll(templateName, "/", "-")+".html")
+		if err := os.WriteFile(path, buf.Bytes(), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
 	return buf.String()
 }
 

@@ -62,9 +62,11 @@ func (h *Handlers) Create(ctx context.Context, writer http.ResponseWriter, reque
 	if err != nil {
 		return web.RespondError(ctx, writer, err, http.StatusUnauthorized)
 	}
-	workspace, err := h.workspaces.Create(ctx, workspaces.CoreWorkspace{
+	workspace, err := h.workspaces.CreateWithOptions(ctx, workspaces.CoreWorkspace{
 		Name: input.Name, Slug: input.Slug, TeamSize: input.TeamSize,
-	}, userID)
+	}, userID, workspaces.CreationOptions{
+		IncludeExamples: input.IncludeExamples, WorkType: input.WorkType,
+	})
 	if err != nil {
 		return web.RespondError(ctx, writer, err, http.StatusBadRequest)
 	}

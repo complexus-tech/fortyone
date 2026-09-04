@@ -22,7 +22,10 @@ func (processor *Processor) deliverReply(
 	if err != nil {
 		return err
 	}
-	htmlBody = renderMayaReplyHTML(reply.Copy.Subject, htmlBody)
+	htmlBody, err = renderMayaReplyHTML(reply.Copy.Subject, htmlBody)
+	if err != nil {
+		return err
+	}
 	eventID := strings.TrimPrefix(delivery.IdempotencyKey, "email-reply:")
 	messageID := deterministicReplyMessageID(thread.ID, eventID, reply.Key)
 	if len(delivery.ProviderPayload) == 0 {

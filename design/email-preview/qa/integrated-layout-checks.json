@@ -1,0 +1,380 @@
+[
+  {
+    "id": "invites-invitation",
+    "cardWidth": 480,
+    "fontsLoaded": true,
+    "heading": "23px",
+    "imagesLoaded": true,
+    "scrollWidth": 838,
+    "width": 838
+  },
+  {
+    "id": "invites-acceptance",
+    "cardWidth": 480,
+    "fontsLoaded": true,
+    "heading": "23px",
+    "imagesLoaded": true,
+    "scrollWidth": 838,
+    "width": 838
+  },
+  {
+    "id": "notifications-notification",
+    "cardWidth": 520,
+    "fontsLoaded": true,
+    "heading": "23px",
+    "imagesLoaded": true,
+    "scrollWidth": 838,
+    "width": 838
+  },
+  {
+    "id": "maya-weekly",
+    "cardWidth": 520,
+    "fontsLoaded": true,
+    "heading": "23px",
+    "imagesLoaded": true,
+    "scrollWidth": 838,
+    "width": 838
+  },
+  {
+    "id": "maya-confirmation",
+    "cardWidth": 520,
+    "fontsLoaded": true,
+    "heading": "23px",
+    "imagesLoaded": true,
+    "scrollWidth": 838,
+    "width": 838
+  },
+  {
+    "id": "auth-verification",
+    "cardWidth": 520,
+    "fontsLoaded": true,
+    "heading": "23px",
+    "imagesLoaded": true,
+    "scrollWidth": 838,
+    "width": 838
+  },
+  {
+    "id": "auth-verification_mobile",
+    "cardWidth": 520,
+    "fontsLoaded": true,
+    "heading": "23px",
+    "imagesLoaded": true,
+    "scrollWidth": 838,
+    "width": 838
+  },
+  {
+    "id": "feedback-verification",
+    "cardWidth": 520,
+    "fontsLoaded": true,
+    "heading": "23px",
+    "imagesLoaded": true,
+    "scrollWidth": 838,
+    "width": 838
+  },
+  {
+    "id": "users-inactivity_warning",
+    "cardWidth": 520,
+    "fontsLoaded": true,
+    "heading": "23px",
+    "imagesLoaded": true,
+    "scrollWidth": 838,
+    "width": 838
+  },
+  {
+    "id": "workspaces-inactivity_warning",
+    "cardWidth": 520,
+    "fontsLoaded": true,
+    "heading": "23px",
+    "imagesLoaded": true,
+    "scrollWidth": 838,
+    "width": 838
+  },
+  {
+    "id": "workspaces-deletion_scheduled_confirmation",
+    "cardWidth": 520,
+    "fontsLoaded": true,
+    "heading": "23px",
+    "imagesLoaded": true,
+    "scrollWidth": 838,
+    "width": 838
+  },
+  {
+    "id": "workspaces-deletion_scheduled_notification",
+    "cardWidth": 520,
+    "fontsLoaded": true,
+    "heading": "23px",
+    "imagesLoaded": true,
+    "scrollWidth": 838,
+    "width": 838
+  },
+  {
+    "id": "workspaces-restored_confirmation",
+    "cardWidth": 520,
+    "fontsLoaded": true,
+    "heading": "23px",
+    "imagesLoaded": true,
+    "scrollWidth": 838,
+    "width": 838
+  },
+  {
+    "id": "workspaces-restored_notification",
+    "cardWidth": 520,
+    "fontsLoaded": true,
+    "heading": "23px",
+    "imagesLoaded": true,
+    "scrollWidth": 838,
+    "width": 838
+  },
+  {
+    "id": "invites-invitation",
+    "cardWidth": 358,
+    "fontsLoaded": true,
+    "heading": "21px",
+    "imagesLoaded": true,
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "id": "invites-acceptance",
+    "cardWidth": 358,
+    "fontsLoaded": true,
+    "heading": "21px",
+    "imagesLoaded": true,
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "id": "notifications-notification",
+    "cardWidth": 358,
+    "fontsLoaded": true,
+    "heading": "21px",
+    "imagesLoaded": true,
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "id": "maya-weekly",
+    "cardWidth": 358,
+    "fontsLoaded": true,
+    "heading": "21px",
+    "imagesLoaded": true,
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "id": "maya-confirmation",
+    "cardWidth": 358,
+    "fontsLoaded": true,
+    "heading": "21px",
+    "imagesLoaded": true,
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "id": "auth-verification",
+    "cardWidth": 358,
+    "fontsLoaded": true,
+    "heading": "21px",
+    "imagesLoaded": true,
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "id": "auth-verification_mobile",
+    "cardWidth": 358,
+    "fontsLoaded": true,
+    "heading": "21px",
+    "imagesLoaded": true,
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "id": "feedback-verification",
+    "cardWidth": 358,
+    "fontsLoaded": true,
+    "heading": "21px",
+    "imagesLoaded": true,
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "id": "users-inactivity_warning",
+    "cardWidth": 358,
+    "fontsLoaded": true,
+    "heading": "21px",
+    "imagesLoaded": true,
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "id": "workspaces-inactivity_warning",
+    "cardWidth": 358,
+    "fontsLoaded": true,
+    "heading": "21px",
+    "imagesLoaded": true,
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "id": "workspaces-deletion_scheduled_confirmation",
+    "cardWidth": 358,
+    "fontsLoaded": true,
+    "heading": "21px",
+    "imagesLoaded": true,
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "id": "workspaces-deletion_scheduled_notification",
+    "cardWidth": 358,
+    "fontsLoaded": true,
+    "heading": "21px",
+    "imagesLoaded": true,
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "id": "workspaces-restored_confirmation",
+    "cardWidth": 358,
+    "fontsLoaded": true,
+    "heading": "21px",
+    "imagesLoaded": true,
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "id": "workspaces-restored_notification",
+    "cardWidth": 358,
+    "fontsLoaded": true,
+    "heading": "21px",
+    "imagesLoaded": true,
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "id": "invites-invitation",
+    "cardWidth": 288,
+    "fontsLoaded": true,
+    "heading": "21px",
+    "imagesLoaded": true,
+    "scrollWidth": 320,
+    "width": 320
+  },
+  {
+    "id": "invites-acceptance",
+    "cardWidth": 288,
+    "fontsLoaded": true,
+    "heading": "21px",
+    "imagesLoaded": true,
+    "scrollWidth": 320,
+    "width": 320
+  },
+  {
+    "id": "notifications-notification",
+    "cardWidth": 288,
+    "fontsLoaded": true,
+    "heading": "21px",
+    "imagesLoaded": true,
+    "scrollWidth": 320,
+    "width": 320
+  },
+  {
+    "id": "maya-weekly",
+    "cardWidth": 288,
+    "fontsLoaded": true,
+    "heading": "21px",
+    "imagesLoaded": true,
+    "scrollWidth": 320,
+    "width": 320
+  },
+  {
+    "id": "maya-confirmation",
+    "cardWidth": 288,
+    "fontsLoaded": true,
+    "heading": "21px",
+    "imagesLoaded": true,
+    "scrollWidth": 320,
+    "width": 320
+  },
+  {
+    "id": "auth-verification",
+    "cardWidth": 288,
+    "fontsLoaded": true,
+    "heading": "21px",
+    "imagesLoaded": true,
+    "scrollWidth": 320,
+    "width": 320
+  },
+  {
+    "id": "auth-verification_mobile",
+    "cardWidth": 288,
+    "fontsLoaded": true,
+    "heading": "21px",
+    "imagesLoaded": true,
+    "scrollWidth": 320,
+    "width": 320
+  },
+  {
+    "id": "feedback-verification",
+    "cardWidth": 288,
+    "fontsLoaded": true,
+    "heading": "21px",
+    "imagesLoaded": true,
+    "scrollWidth": 320,
+    "width": 320
+  },
+  {
+    "id": "users-inactivity_warning",
+    "cardWidth": 288,
+    "fontsLoaded": true,
+    "heading": "21px",
+    "imagesLoaded": true,
+    "scrollWidth": 320,
+    "width": 320
+  },
+  {
+    "id": "workspaces-inactivity_warning",
+    "cardWidth": 288,
+    "fontsLoaded": true,
+    "heading": "21px",
+    "imagesLoaded": true,
+    "scrollWidth": 320,
+    "width": 320
+  },
+  {
+    "id": "workspaces-deletion_scheduled_confirmation",
+    "cardWidth": 288,
+    "fontsLoaded": true,
+    "heading": "21px",
+    "imagesLoaded": true,
+    "scrollWidth": 320,
+    "width": 320
+  },
+  {
+    "id": "workspaces-deletion_scheduled_notification",
+    "cardWidth": 288,
+    "fontsLoaded": true,
+    "heading": "21px",
+    "imagesLoaded": true,
+    "scrollWidth": 320,
+    "width": 320
+  },
+  {
+    "id": "workspaces-restored_confirmation",
+    "cardWidth": 288,
+    "fontsLoaded": true,
+    "heading": "21px",
+    "imagesLoaded": true,
+    "scrollWidth": 320,
+    "width": 320
+  },
+  {
+    "id": "workspaces-restored_notification",
+    "cardWidth": 288,
+    "fontsLoaded": true,
+    "heading": "21px",
+    "imagesLoaded": true,
+    "scrollWidth": 320,
+    "width": 320
+  }
+]

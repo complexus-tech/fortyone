@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>FortyOne — Email design studio</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="gallery.css" />
+  </head>
+  <body>
+    <aside class="sidebar">
+      <a
+        href="#invitation"
+        class="studio-brand"
+        aria-label="FortyOne email studio"
+        ><img src="assets/wordmark.png" width="112" height="27" alt="fortyone"
+      /></a>
+      <p class="collection-label">EMAIL DESIGN STUDIO</p>
+      <h1>A warmer inbox.</h1>
+      <p class="sidebar-intro">
+        One family. A little personality.<br />The right message for the moment.
+      </p>
+      <nav id="email-navigation" aria-label="Email templates"></nav>
+      <div class="sidebar-footer">
+        <span class="status-dot"></span> Preview collection
+        <span class="version">01</span>
+      </div>
+    </aside>
+    <main>
+      <header class="toolbar">
+        <div>
+          <p class="toolbar-kicker">FORTYONE / EMAILS</p>
+          <h2 id="template-name">Workspace invitation</h2>
+        </div>
+        <div class="toolbar-actions">
+          <button
+            id="metadata-toggle"
+            type="button"
+            aria-expanded="false"
+            aria-controls="metadata"
+          >
+            Metadata</button
+          ><a id="open-html" target="_blank" rel="noopener"
+            >Open HTML <span aria-hidden="true">↗</span></a
+          ><a href="email-preview.zip" download class="download"
+            >Download collection</a
+          >
+        </div>
+      </header>
+      <section id="metadata" hidden aria-label="Sample email metadata">
+        <p class="metadata-intro">
+          Sample data for review. No email is sent and no workspace is
+          connected.
+        </p>
+        <dl id="metadata-list"></dl>
+        <details>
+          <summary>Template fields &amp; source</summary>
+          <p id="source-path"></p>
+          <pre id="fields"></pre>
+          <p id="template-note"></p>
+        </details>
+      </section>
+      <section class="preview-controls" aria-label="Preview controls">
+        <div class="viewport-switch" role="group" aria-label="Email viewport">
+          <button type="button" data-width="desktop" aria-pressed="true">
+            Desktop</button
+          ><button type="button" data-width="390" aria-pressed="false">
+            Mobile · 390</button
+          ><button type="button" data-width="320" aria-pressed="false">
+            Small · 320
+          </button>
+        </div>
+        <label class="image-control"
+          ><input id="hide-images" type="checkbox" /> Images off</label
+        >
+        <p class="preview-caption">
+          Live HTML <span aria-hidden="true">·</span> Sample content
+        </p>
+      </section>
+      <div class="stage" id="stage">
+        <div class="email-window" id="email-window">
+          <div class="envelope">
+            <div class="sender-icon" aria-hidden="true">F</div>
+            <div class="envelope-copy">
+              <strong id="subject"></strong><span id="envelope-sender"></span
+              ><span id="preheader"></span>
+            </div>
+            <span class="sample-label">SAMPLE</span>
+          </div>
+          <iframe
+            id="email-frame"
+            title="Workspace invitation email preview"
+            sandbox="allow-same-origin"
+          ></iframe>
+        </div>
+      </div>
+      <footer class="gallery-footer">
+        <p>Preview only. Email links use example.com.</p>
+        <div>
+          <a id="download-html" download>Download HTML</a
+          ><a id="open-text" target="_blank" rel="noopener">Plain text</a>
+        </div>
+      </footer>
+    </main>
+    <dialog id="link-dialog" aria-labelledby="link-title">
+      <p class="toolbar-kicker">PREVIEW LINK</p>
+      <h2 id="link-title">This is a sample action.</h2>
+      <p>In the real email, this link opens the relevant place in FortyOne.</p>
+      <p class="link-destination" id="link-destination"></p>
+      <form method="dialog">
+        <button class="download">Back to preview</button>
+      </form>
+    </dialog>
+    <script id="manifest" type="application/json">[{"id":"invitation","name":"Workspace invitation","group":"Workspace","subject":"Joseph invited you to Acme on FortyOne","preheader":"Your team is ready for you. Join Acme as a member.","title":"Your team is ready for you.","image":"invitation.png","imageAlt":"Two open doorways in warm peach and orange.","paragraphs":["Joseph invited you to join Acme on FortyOne.","See what’s in progress, pick up a task, and work together in one place."],"details":[["Workspace","Acme"],["Your role","Member"]],"action":{"label":"Join Acme","path":"accept-invitation"},"helper":"This invitation expires in 7 days.","footer":"Not expecting this invitation? You can ignore it.","source":"apps/server/templates/invites/invitation.html","fields":{"recipientName":"Alex","workspaceName":"Acme","inviterName":"Joseph","role":"Member","expiresIn":"7 days","verificationURL":"https://example.com/fortyone/accept-invitation"},"html":"emails/invitation.html","text":"emails/invitation.txt","bytes":8118,"sender":"FortyOne \u003cnotifications@example.com>","recipient":"Alex \u003calex@example.com>","replyTo":"Not enabled in this preview"},{"id":"invitation-accepted","name":"Invitation accepted","group":"Workspace","subject":"Alex joined Acme","preheader":"Your invitation was accepted. Alex is now a member of Acme.","title":"Your team just grew.","image":"invitation-accepted.png","imageAlt":"Two paths come together at an open doorway.","paragraphs":["Alex accepted your invitation and joined Acme.","You’re ready to start working together."],"details":[["New member","Alex"],["Role","Member"]],"action":{"label":"Open Acme","path":"workspace"},"helper":"A shared space for what’s next.","footer":"You invited Alex to this workspace.","recipient":"Joseph \u003cjoseph@example.com>","source":"apps/server/templates/invites/acceptance.html","fields":{"inviteeName":"Alex","workspaceName":"Acme","role":"Member","loginURL":"https://example.com/fortyone/workspace"},"html":"emails/invitation-accepted.html","text":"emails/invitation-accepted.txt","bytes":8042,"sender":"FortyOne \u003cnotifications@example.com>","replyTo":"Not enabled in this preview"},{"id":"story-updates","name":"Story updates","group":"Notifications","subject":"3 updates in Acme","preheader":"A status change, an assignment, and a comment on your stories.","title":"Here’s what changed.","paragraphs":["Hi Alex, you have 3 updates in Acme."],"updates":[{"id":"WEB-128","title":"Improve the onboarding flow","text":"Joseph changed the status to In progress."},{"id":"WEB-142","title":"Add workspace search","text":"Sarah assigned this story to you."},{"id":"WEB-136","title":"Refresh the project overview","text":"Joseph left a comment:","quote":"The updated layout is ready for your review."}],"action":{"label":"View notifications","path":"notifications"},"footerLink":"Manage notification preferences","source":"apps/server/templates/notifications/notification.html","note":"A sample grouped layout. Existing delivery rules and available event fields will be preserved during integration.","fields":{"recipientName":"Alex","workspaceName":"Acme","notificationTitle":"Here’s what changed.","notificationType":"story_update","updateCount":3},"html":"emails/story-updates.html","text":"emails/story-updates.txt","bytes":8740,"sender":"FortyOne \u003cnotifications@example.com>","recipient":"Alex \u003calex@example.com>","replyTo":"Not enabled in this preview"},{"id":"conversation","name":"Conversation reply","group":"Notifications","subject":"Sarah replied to your comment","preheader":"On WEB-128 · Improve the onboarding flow","title":"Sarah replied to your comment","paragraphs":["On WEB-128 · Improve the onboarding flow"],"conversation":{"original":"Can we simplify the first step?","author":"Sarah","reply":"Yes — I’ve removed the extra fields. Could you take another look before we ship?"},"closing":"Open the conversation to reply.","action":{"label":"View conversation","path":"stories/WEB-128/conversation"},"footerLink":"Manage notification preferences","source":"apps/server/templates/notifications/notification.html","note":"The prior-comment excerpt is a review fixture; include it only when available to the authorized recipient. Replies open the app.","fields":{"recipientName":"Alex","workspaceName":"Acme","notificationType":"comment_reply","authorName":"Sarah","storyIdentifier":"WEB-128","storyTitle":"Improve the onboarding flow"},"html":"emails/conversation.html","text":"emails/conversation.txt","bytes":8131,"sender":"FortyOne \u003cnotifications@example.com>","recipient":"Alex \u003calex@example.com>","replyTo":"Not enabled in this preview"},{"id":"workspace-deletion","name":"Scheduled deletion","group":"Workspace","subject":"Acme is scheduled for deletion","preheader":"Deletion is scheduled in 48 hours. Open settings to cancel it.","tone":"warning","title":"Acme is scheduled for deletion.","paragraphs":["Joseph requested deletion of this workspace."],"warning":{"title":"Deletion in 48 hours","text":"All workspace data will be permanently deleted. This cannot be undone."},"rows":[["Workspace","Acme"],["Requested by","joseph@example.com"]],"closing":"To keep Acme, open workspace settings and select Cancel scheduled deletion before the 48-hour window ends.","emphasis":"Cancel scheduled deletion","action":{"label":"Open workspace settings","path":"settings"},"fallback":"acme.fortyone.app","footer":"You’re receiving this because you’re a workspace admin.","source":"apps/server/templates/workspaces/deletion_scheduled_notification.html","note":"Opening the email link does not cancel deletion. The existing settings action is still required. The deadline is sample copy relative to the request.","fields":{"workspaceName":"Acme","actorName":"Joseph","actorEmail":"joseph@example.com","deletionTime":"48 hours","restoreURL":"https://example.com/fortyone/settings"},"html":"emails/workspace-deletion.html","text":"emails/workspace-deletion.txt","bytes":8298,"sender":"FortyOne \u003cnotifications@example.com>","recipient":"Alex \u003calex@example.com>","replyTo":"Not enabled in this preview"},{"id":"workspace-inactivity","name":"Inactive workspace","group":"Workspace","subject":"Keep your Acme workspace","preheader":"Sign in within 30 days to keep your workspace and its data.","title":"Still need your Acme workspace?","paragraphs":["Acme hasn’t been active for a while. It’s scheduled for deletion in 30 days."],"warning":{"title":"Keep your work with a sign-in","text":"Sign in before then to keep the workspace active. Otherwise, the workspace and all its data will be deleted."},"action":{"label":"Keep my workspace","path":"workspace/sign-in"},"helper":"No longer using Acme? No action is needed.","footer":"A service notice about your Acme workspace.","source":"apps/server/templates/workspaces/inactivity_warning.html","fields":{"workspaceName":"Acme","deletionTime":"30 days","workspaceURL":"https://example.com/fortyone/workspace/sign-in"},"html":"emails/workspace-inactivity.html","text":"emails/workspace-inactivity.txt","bytes":7261,"sender":"FortyOne \u003cnotifications@example.com>","recipient":"Alex \u003calex@example.com>","replyTo":"Not enabled in this preview"},{"id":"maya-weekly","name":"Maya’s weekly note","group":"Maya","subject":"A little focus for the week","preheader":"5 stories completed. Here’s what needs your attention next.","title":"A little focus for the week.","paragraphs":["Hi Alex,","You completed 5 stories last week. Here’s what needs your attention now."],"updates":[{"title":"2 overdue stories","text":"Decide what still needs doing and reset any dates that have slipped."},{"title":"3 stories due this week","text":"Choose the most important one to move forward first."},{"title":"1 mention waiting for you","text":"Catch up with your team before planning your next steps."}],"closing":"What’s changed since your last update? Reply to this email and I’ll help you work through the next step.","maya":true,"action":{"label":"Plan my week","path":"my-work?tab=assigned"},"footerLink":"Manage notification preferences","source":"apps/server/pkg/jobs/weekly_digest.go","fields":{"recipientName":"Alex","workspaceName":"Acme","completedStories":5,"overdueStories":2,"dueThisWeek":3,"unreadMentions":1,"senderProfile":"maya"},"html":"emails/maya-weekly.html","text":"emails/maya-weekly.txt","bytes":8558,"sender":"Maya, AI Agent \u003cmaya@example.com>","recipient":"Alex \u003calex@example.com>","replyTo":"Maya \u003cmaya-thread@example.com> (sample)"},{"id":"maya-follow-up","name":"Maya’s confirmation","group":"Maya","subject":"Re: Activation check-in","preheader":"Review the proposed update. No changes have been made yet.","title":"Ready to update Activation.","paragraphs":["Hi Alex,","Based on your reply, here’s the change I can make."],"proposal":{"objective":"Activation","before":"At Risk","after":"On Track","checkIn":"The launch blocker is resolved."},"closing":"No changes have been made yet.","maya":true,"confirmation":true,"source":"apps/server/internal/modules/emailreply/service/reply_html.go","note":"CONFIRM and CANCEL are email replies, not clickable actions. This preview never writes to a workspace.","fields":{"recipientName":"Alex","workspaceName":"Acme","objectiveName":"Activation","currentHealth":"At Risk","proposedHealth":"On Track","checkIn":"The launch blocker is resolved.","senderProfile":"maya"},"html":"emails/maya-follow-up.html","text":"emails/maya-follow-up.txt","bytes":7984,"sender":"Maya, AI Agent \u003cmaya@example.com>","recipient":"Alex \u003calex@example.com>","replyTo":"Maya \u003cmaya-thread@example.com> (sample)"}]</script>
+    <script src="gallery.js"></script>
+  </body>
+</html>

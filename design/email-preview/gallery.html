@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>FortyOne — Email design studio</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="gallery.css" />
+  </head>
+  <body>
+    <aside class="sidebar">
+      <a
+        href="#invitation"
+        class="studio-brand"
+        aria-label="FortyOne email studio"
+        ><img src="assets/wordmark.png" width="112" height="27" alt="fortyone"
+      /></a>
+      <p class="collection-label">EMAIL DESIGN STUDIO</p>
+      <h1>A warmer inbox.</h1>
+      <p class="sidebar-intro">
+        One family. A little personality.<br />The right message for the moment.
+      </p>
+      <nav id="email-navigation" aria-label="Email templates"></nav>
+      <div class="sidebar-footer">
+        <span class="status-dot"></span> Preview collection
+        <span class="version">01</span>
+      </div>
+    </aside>
+    <main>
+      <header class="toolbar">
+        <div>
+          <p class="toolbar-kicker">FORTYONE / EMAILS</p>
+          <h2 id="template-name">Workspace invitation</h2>
+        </div>
+        <div class="toolbar-actions">
+          <button
+            id="metadata-toggle"
+            type="button"
+            aria-expanded="false"
+            aria-controls="metadata"
+          >
+            Metadata</button
+          ><a id="open-html" target="_blank" rel="noopener"
+            >Open HTML <span aria-hidden="true">↗</span></a
+          ><a href="email-preview.zip" download class="download"
+            >Download collection</a
+          >
+        </div>
+      </header>
+      <section id="metadata" hidden aria-label="Sample email metadata">
+        <p class="metadata-intro">
+          Sample data for review. No email is sent and no workspace is
+          connected.
+        </p>
+        <dl id="metadata-list"></dl>
+        <details>
+          <summary>Template fields &amp; source</summary>
+          <p id="source-path"></p>
+          <pre id="fields"></pre>
+          <p id="template-note"></p>
+        </details>
+      </section>
+      <section class="preview-controls" aria-label="Preview controls">
+        <div class="viewport-switch" role="group" aria-label="Email viewport">
+          <button type="button" data-width="desktop" aria-pressed="true">
+            Desktop</button
+          ><button type="button" data-width="390" aria-pressed="false">
+            Mobile · 390</button
+          ><button type="button" data-width="320" aria-pressed="false">
+            Small · 320
+          </button>
+        </div>
+        <label class="image-control"
+          ><input id="hide-images" type="checkbox" /> Images off</label
+        >
+        <p class="preview-caption">
+          Live HTML <span aria-hidden="true">·</span> Sample content
+        </p>
+      </section>
+      <div class="stage" id="stage">
+        <div class="email-window" id="email-window">
+          <div class="envelope">
+            <div class="sender-icon" aria-hidden="true">F</div>
+            <div class="envelope-copy">
+              <strong id="subject"></strong><span id="envelope-sender"></span
+              ><span id="preheader"></span>
+            </div>
+            <span class="sample-label">SAMPLE</span>
+          </div>
+          <iframe
+            id="email-frame"
+            title="Workspace invitation email preview"
+            sandbox="allow-same-origin"
+          ></iframe>
+        </div>
+      </div>
+      <footer class="gallery-footer">
+        <p>Preview only. Email links use example.com.</p>
+        <div>
+          <a id="download-html" download>Download HTML</a
+          ><a id="open-text" target="_blank" rel="noopener">Plain text</a>
+        </div>
+      </footer>
+    </main>
+    <dialog id="link-dialog" aria-labelledby="link-title">
+      <p class="toolbar-kicker">PREVIEW LINK</p>
+      <h2 id="link-title">This is a sample action.</h2>
+      <p>In the real email, this link opens the relevant place in FortyOne.</p>
+      <p class="link-destination" id="link-destination"></p>
+      <form method="dialog">
+        <button class="download">Back to preview</button>
+      </form>
+    </dialog>
+    <!-- MANIFEST -->
+    <script src="gallery.js"></script>
+  </body>
+</html>

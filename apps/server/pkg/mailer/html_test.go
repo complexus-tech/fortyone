@@ -27,7 +27,8 @@ func TestSafeEmailHTMLRemovesExecutableMarkupAndUnapprovedCSS(t *testing.T) {
 
 	sanitized := string(safeEmailHTML(input))
 
-	require.Equal(t, "<p>Hello </p><a>Open</a>", sanitized)
+	require.Contains(t, sanitized, ">Hello </p>")
+	require.Contains(t, sanitized, ">Open</a>")
 	for _, forbidden := range []string{"script", "svg", "img", "javascript:", "onclick", "background-image", "attacker.test", "secret"} {
 		require.NotContains(t, strings.ToLower(sanitized), forbidden)
 	}
@@ -38,5 +39,6 @@ func TestSafeEmailHTMLEscapesTextAndBalancesAllowedElements(t *testing.T) {
 
 	sanitized := string(safeEmailHTML(`<div><strong>one</div><p>two & three`))
 
-	require.Equal(t, `<div><strong>one</strong></div><p>two &amp; three</p>`, sanitized)
+	require.Contains(t, sanitized, `<div><strong>one</strong></div><p style=`)
+	require.Contains(t, sanitized, `>two &amp; three</p>`)
 }

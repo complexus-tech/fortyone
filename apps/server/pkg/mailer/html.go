@@ -39,7 +39,7 @@ var droppedEmailHTMLElements = map[string]struct{}{
 }
 
 // Previously queued notification jobs may contain these two renderer-owned
-// styles. Keeping exact values preserves delivery compatibility without
+// styles. Recognize these exact values and migrate their typography without
 // permitting arbitrary inline CSS.
 var legacyEmailStyles = map[string]struct{}{
 	`margin: 0 0 12px; color: #0b0a08; font-family: Geist, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: 600; line-height: 1.3;`: {},
@@ -118,6 +118,7 @@ func safeEmailHTML(value string) template.HTML {
 func writeAllowedEmailStartTag(output *strings.Builder, name string, attributes []htmlparser.Attribute) {
 	output.WriteByte('<')
 	output.WriteString(name)
+	hasStyle := false
 	for _, attribute := range attributes {
 		attributeName := strings.ToLower(attribute.Key)
 		attributeValue := strings.TrimSpace(attribute.Val)
@@ -126,10 +127,23 @@ func writeAllowedEmailStartTag(output *strings.Builder, name string, attributes 
 			output.WriteString(` href="`)
 			output.WriteString(stdhtml.EscapeString(attributeValue))
 			output.WriteByte('"')
-		case attributeName == "style" && allowedEmailStyle(attributeValue):
+		case attributeName == "style" && !hasStyle && allowedEmailStyle(attributeValue):
+			hasStyle = true
+			if _, legacy := legacyEmailStyles[attributeValue]; legacy {
+				attributeValue = EmailStyleString("notificationText")
+				if strings.HasPrefix(name, "h") {
+					attributeValue = EmailStyleString("panelTitle")
+				}
+			}
 			output.WriteString(` style="`)
 			output.WriteString(stdhtml.EscapeString(attributeValue))
 			output.WriteByte('"')
+		}
+	}
+	if !hasStyle {
+		key := map[string]string{"p": "notificationText", "h1": "panelTitle", "h2": "panelTitle", "h3": "panelTitle", "h4": "panelTitle", "h5": "panelTitle", "h6": "panelTitle", "ul": "notificationList", "li": "notificationItem", "a": "notificationLink"}[name]
+		if key != "" {
+			output.WriteString(` style="` + stdhtml.EscapeString(EmailStyleString(key)) + `"`)
 		}
 	}
 	output.WriteByte('>')

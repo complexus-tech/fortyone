@@ -1,0 +1,15 @@
+Still need your Acme workspace?
+
+Acme hasn’t been active for a while. It’s scheduled for deletion in 30 days.
+
+Keep your work with a sign-in
+
+Sign in before then to keep the workspace active. Otherwise, the workspace and all its data will be deleted.
+
+Keep my workspace: https://example.com/fortyone/workspace/sign-in
+
+No longer using Acme? No action is needed.
+
+A service notice about your Acme workspace.
+
+FortyOne by Complexus LLC

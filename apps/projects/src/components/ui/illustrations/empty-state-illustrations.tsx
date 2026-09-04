@@ -24,6 +24,112 @@ const Sparkles = () => (
   </>
 );
 
+export const WorkEmptyIllustration = ({
+  className,
+}: {
+  className?: string;
+}) => (
+  <EmptyStateIllustrationFrame className={className}>
+    <WindowHeader />
+    {[76, 101, 126].map((y, index) => (
+      <g key={y} opacity={1 - index * 0.22}>
+        <rect
+          fill="currentColor"
+          fillOpacity="0.035"
+          height="19"
+          rx="5"
+          stroke="currentColor"
+          strokeOpacity="0.2"
+          width="148"
+          x="66"
+          y={y}
+        />
+        <rect
+          height="7"
+          rx="2"
+          stroke="currentColor"
+          strokeOpacity="0.4"
+          width="7"
+          x="76"
+          y={y + 6}
+        />
+        <path
+          d={`M94 ${y + 9.5}H${158 - index * 12}`}
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeOpacity="0.3"
+          strokeWidth="2"
+        />
+        <circle
+          cx="201"
+          cy={y + 9.5}
+          fill="currentColor"
+          opacity="0.18"
+          r="3"
+        />
+      </g>
+    ))}
+    <Sparkles />
+  </EmptyStateIllustrationFrame>
+);
+
+export const ActivityEmptyIllustration = ({
+  className,
+}: {
+  className?: string;
+}) => (
+  <EmptyStateIllustrationFrame className={className}>
+    <WindowHeader />
+    <path
+      d="M76 83V135"
+      stroke="currentColor"
+      strokeDasharray="3 5"
+      strokeOpacity="0.2"
+      strokeWidth="1.5"
+    />
+    {[82, 107, 132].map((y, index) => (
+      <g key={y} opacity={1 - index * 0.22}>
+        <circle cx="76" cy={y} fill="currentColor" opacity="0.12" r="7" />
+        <circle cx="76" cy={y} fill="currentColor" opacity="0.4" r="2.5" />
+        <path
+          d={`M92 ${y - 3}H${145 - index * 7}M92 ${y + 4}H${127 - index * 7}`}
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeOpacity="0.28"
+          strokeWidth="2"
+        />
+      </g>
+    ))}
+    <circle
+      cx="189"
+      cy="108"
+      fill="currentColor"
+      fillOpacity="0.05"
+      r="25"
+      stroke="currentColor"
+      strokeOpacity="0.32"
+      strokeWidth="1.5"
+    />
+    <path
+      d="M189 88V91M209 108H206M189 128V125M169 108H172"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeOpacity="0.2"
+      strokeWidth="1.5"
+    />
+    <path
+      d="M189 95V108L198 114"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeOpacity="0.5"
+      strokeWidth="2"
+    />
+    <circle cx="189" cy="108" fill="currentColor" opacity="0.5" r="2" />
+    <Sparkles />
+  </EmptyStateIllustrationFrame>
+);
+
 export const RoadmapEmptyIllustration = ({
   className,
 }: {

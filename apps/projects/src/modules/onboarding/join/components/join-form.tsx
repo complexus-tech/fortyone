@@ -95,7 +95,6 @@ export const JoinForm = ({
         color="tertiary"
         fullWidth
         href="/onboarding/create"
-        size="lg"
         variant="naked"
       >
         Create your own workspace

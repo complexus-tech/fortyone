@@ -80,7 +80,7 @@ type service struct {
 
 const (
 	defaultCompanyName     = "FortyOne"
-	defaultLogoURL         = "https://fortyone.app/images/logo.png"
+	defaultLogoURL         = emailAssetBaseURL + "wordmark.png"
 	defaultMayaFromAddress = "maya@fortyone.app"
 	defaultSubject         = "FortyOne"
 )
@@ -97,13 +97,7 @@ func NewService(cfg Config, log *logger.Logger) (Service, error) {
 	}
 
 	baseTemplatePath := filepath.Join(cfg.BaseDir, "templates/layouts/base.html")
-	baseTemplate, err := template.New("").Funcs(template.FuncMap{
-		"formatDate": func(t time.Time) string {
-			return t.Format("January 2, 2006")
-		},
-		"safeHTML":   safeEmailHTML,
-		"emailStyle": emailStyle,
-	}).ParseFiles(baseTemplatePath)
+	baseTemplate, err := template.New("").Funcs(emailTemplateFuncs()).ParseFiles(baseTemplatePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse base template: %w", err)
 	}
@@ -280,6 +274,9 @@ func (s *service) SendTemplated(ctx context.Context, templateEmail TemplatedEmai
 			data["Data"] = templateEmail.Data
 		}
 	}
+
+	prepareTemplateData(templateEmail.Template, data)
+	data["EmailIsMaya"] = templateEmail.Sender == SenderProfileMaya
 
 	tmpl, ok := s.templates[templateEmail.Template]
 	if !ok {

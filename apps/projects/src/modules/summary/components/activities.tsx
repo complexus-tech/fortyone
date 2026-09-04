@@ -1,8 +1,8 @@
 "use client";
 import { Flex, Text, Wrapper } from "ui";
-import { ClockIcon } from "icons";
 import { useActivities } from "@/lib/hooks/activities";
 import { Activity } from "@/components/ui/activity";
+import { ActivityEmptyIllustration } from "@/components/ui/illustrations/empty-state-illustrations";
 import { useSummaryDateFilters } from "@/modules/summary/hooks/summary-date-filters";
 import { ActivitiesSkeleton } from "./activities-skeleton";
 
@@ -25,7 +25,7 @@ export const Activities = () => {
           gap={3}
           justify="center"
         >
-          <ClockIcon className="h-24 opacity-70" />
+          <ActivityEmptyIllustration />
           <Text color="muted">You do not have any activities yet.</Text>
         </Flex>
       ) : (

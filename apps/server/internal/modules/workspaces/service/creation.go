@@ -2,6 +2,7 @@ package workspaces
 
 import (
 	"context"
+	"errors"
 	"strings"
 
 	"github.com/google/uuid"
@@ -10,9 +11,19 @@ import (
 )
 
 func (s *Service) Create(ctx context.Context, input CoreWorkspace, userID uuid.UUID) (CoreWorkspace, error) {
+	return s.CreateWithOptions(ctx, input, userID, CreationOptions{})
+}
+
+func (s *Service) CreateWithOptions(ctx context.Context, input CoreWorkspace, userID uuid.UUID, options CreationOptions) (CoreWorkspace, error) {
 	s.log.Info(ctx, "business.core.workspaces.create")
 	ctx, span := startSpan(ctx, "business.core.workspaces.Create")
 	defer span.End()
+	if err := options.Validate(); err != nil {
+		return CoreWorkspace{}, err
+	}
+	if options.IncludeExamples != nil && *options.IncludeExamples && s.examples == nil {
+		return CoreWorkspace{}, errors.New("workspace examples are unavailable")
+	}
 	input.Slug = strings.ToLower(strings.TrimSpace(input.Slug))
 	if _, restricted := restrictedSlugs[input.Slug]; restricted {
 		return CoreWorkspace{}, ErrRestrictedSlug
@@ -55,12 +66,26 @@ func (s *Service) Create(ctx context.Context, input CoreWorkspace, userID uuid.U
 		return CoreWorkspace{}, ErrTx
 	}
 
-	if err := s.seedContent.CreateWorkspaceSeedContent(ctx, workspace.ID, team.ID, userID); err != nil {
+	if err := s.createInitialContent(ctx, workspace.ID, team.ID, userID, options); err != nil {
 		s.log.Error(ctx, "failed to create workspace seed content", "error", err)
 	}
 	s.enqueueTrialStart(ctx, workspace, userID)
 	span.AddEvent("workspace created.", trace.WithAttributes(attribute.String("workspace_id", workspace.ID.String())))
 	return workspace, nil
+}
+
+func (s *Service) createInitialContent(ctx context.Context, workspaceID, teamID, userID uuid.UUID, options CreationOptions) error {
+	if options.IncludeExamples == nil {
+		return s.seedContent.CreateWorkspaceSeedContent(ctx, workspaceID, teamID, userID)
+	}
+	if !*options.IncludeExamples {
+		return nil
+	}
+	workType := options.WorkType
+	if workType == "" {
+		workType = WorkTypeGeneral
+	}
+	return s.examples.CreateWorkspaceExamples(ctx, workspaceID, teamID, userID, workType)
 }
 
 func (s *Service) enqueueTrialStart(ctx context.Context, workspace CoreWorkspace, userID uuid.UUID) {

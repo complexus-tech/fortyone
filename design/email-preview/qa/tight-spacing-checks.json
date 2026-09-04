@@ -1,0 +1,238 @@
+{
+  "before": [
+    {
+      "id": "maya-weekly",
+      "height": 764.5
+    },
+    {
+      "id": "maya-follow-up",
+      "height": 720.5
+    },
+    {
+      "id": "conversation",
+      "height": 512
+    },
+    {
+      "id": "story-updates",
+      "height": 639
+    }
+  ],
+  "after": [
+    {
+      "id": "invitation",
+      "heading": "23px",
+      "height": 615,
+      "imagesLoaded": true,
+      "lineHeight": "21px",
+      "scrollWidth": 838,
+      "width": 838
+    },
+    {
+      "id": "invitation-accepted",
+      "heading": "23px",
+      "height": 594,
+      "imagesLoaded": true,
+      "lineHeight": "21px",
+      "scrollWidth": 838,
+      "width": 838
+    },
+    {
+      "id": "story-updates",
+      "heading": "23px",
+      "height": 553,
+      "imagesLoaded": true,
+      "lineHeight": "21px",
+      "scrollWidth": 838,
+      "width": 838
+    },
+    {
+      "id": "conversation",
+      "heading": "23px",
+      "height": 432,
+      "imagesLoaded": true,
+      "lineHeight": "21px",
+      "scrollWidth": 838,
+      "width": 838
+    },
+    {
+      "id": "workspace-deletion",
+      "heading": "23px",
+      "height": 517,
+      "imagesLoaded": true,
+      "lineHeight": "21px",
+      "scrollWidth": 838,
+      "width": 838
+    },
+    {
+      "id": "workspace-inactivity",
+      "heading": "23px",
+      "height": 379,
+      "imagesLoaded": true,
+      "lineHeight": "21px",
+      "scrollWidth": 838,
+      "width": 838
+    },
+    {
+      "id": "maya-weekly",
+      "heading": "23px",
+      "height": 638.5,
+      "imagesLoaded": true,
+      "lineHeight": "21px",
+      "scrollWidth": 838,
+      "width": 838
+    },
+    {
+      "id": "maya-follow-up",
+      "heading": "23px",
+      "height": 602.5,
+      "imagesLoaded": true,
+      "lineHeight": "21px",
+      "scrollWidth": 838,
+      "width": 838
+    },
+    {
+      "id": "invitation",
+      "heading": "21px",
+      "height": 577,
+      "imagesLoaded": true,
+      "lineHeight": "21px",
+      "scrollWidth": 390,
+      "width": 390
+    },
+    {
+      "id": "invitation-accepted",
+      "heading": "21px",
+      "height": 556,
+      "imagesLoaded": true,
+      "lineHeight": "21px",
+      "scrollWidth": 390,
+      "width": 390
+    },
+    {
+      "id": "story-updates",
+      "heading": "21px",
+      "height": 570,
+      "imagesLoaded": true,
+      "lineHeight": "21px",
+      "scrollWidth": 390,
+      "width": 390
+    },
+    {
+      "id": "conversation",
+      "heading": "21px",
+      "height": 449,
+      "imagesLoaded": true,
+      "lineHeight": "21px",
+      "scrollWidth": 390,
+      "width": 390
+    },
+    {
+      "id": "workspace-deletion",
+      "heading": "21px",
+      "height": 613,
+      "imagesLoaded": true,
+      "lineHeight": "21px",
+      "scrollWidth": 390,
+      "width": 390
+    },
+    {
+      "id": "workspace-inactivity",
+      "heading": "21px",
+      "height": 423,
+      "imagesLoaded": true,
+      "lineHeight": "21px",
+      "scrollWidth": 390,
+      "width": 390
+    },
+    {
+      "id": "maya-weekly",
+      "heading": "21px",
+      "height": 697.5,
+      "imagesLoaded": true,
+      "lineHeight": "21px",
+      "scrollWidth": 390,
+      "width": 390
+    },
+    {
+      "id": "maya-follow-up",
+      "heading": "21px",
+      "height": 619.5,
+      "imagesLoaded": true,
+      "lineHeight": "21px",
+      "scrollWidth": 390,
+      "width": 390
+    },
+    {
+      "id": "invitation",
+      "heading": "21px",
+      "height": 590,
+      "imagesLoaded": true,
+      "lineHeight": "21px",
+      "scrollWidth": 320,
+      "width": 320
+    },
+    {
+      "id": "invitation-accepted",
+      "heading": "21px",
+      "height": 542,
+      "imagesLoaded": true,
+      "lineHeight": "21px",
+      "scrollWidth": 320,
+      "width": 320
+    },
+    {
+      "id": "story-updates",
+      "heading": "21px",
+      "height": 612,
+      "imagesLoaded": true,
+      "lineHeight": "21px",
+      "scrollWidth": 320,
+      "width": 320
+    },
+    {
+      "id": "conversation",
+      "heading": "21px",
+      "height": 497,
+      "imagesLoaded": true,
+      "lineHeight": "21px",
+      "scrollWidth": 320,
+      "width": 320
+    },
+    {
+      "id": "workspace-deletion",
+      "heading": "21px",
+      "height": 682,
+      "imagesLoaded": true,
+      "lineHeight": "21px",
+      "scrollWidth": 320,
+      "width": 320
+    },
+    {
+      "id": "workspace-inactivity",
+      "heading": "21px",
+      "height": 509,
+      "imagesLoaded": true,
+      "lineHeight": "21px",
+      "scrollWidth": 320,
+      "width": 320
+    },
+    {
+      "id": "maya-weekly",
+      "heading": "21px",
+      "height": 766.5,
+      "imagesLoaded": true,
+      "lineHeight": "21px",
+      "scrollWidth": 320,
+      "width": 320
+    },
+    {
+      "id": "maya-follow-up",
+      "heading": "21px",
+      "height": 688.5,
+      "imagesLoaded": true,
+      "lineHeight": "21px",
+      "scrollWidth": 320,
+      "width": 320
+    }
+  ]
+}

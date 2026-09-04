@@ -73,14 +73,13 @@ export const CreateAccountForm = ({
 
       <Button
         align="center"
-        className="mt-4 md:py-3"
+        className="mt-4"
         color="invert"
         fullWidth
         loading={isLoading}
-        loadingText="Creating account..."
-        size="lg"
+        loadingText="Saving…"
       >
-        Create Account
+        Continue
       </Button>
     </form>
   );

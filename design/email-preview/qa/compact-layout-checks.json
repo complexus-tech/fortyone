@@ -1,0 +1,218 @@
+[
+  {
+    "id": "invitation",
+    "cardWidth": 480,
+    "fontStatus": "loaded",
+    "headingSize": "24px",
+    "imagesLoaded": true,
+    "scrollWidth": 838,
+    "width": 838
+  },
+  {
+    "id": "invitation-accepted",
+    "cardWidth": 480,
+    "fontStatus": "loaded",
+    "headingSize": "24px",
+    "imagesLoaded": true,
+    "scrollWidth": 838,
+    "width": 838
+  },
+  {
+    "id": "story-updates",
+    "cardWidth": 520,
+    "fontStatus": "loaded",
+    "headingSize": "24px",
+    "imagesLoaded": true,
+    "scrollWidth": 838,
+    "width": 838
+  },
+  {
+    "id": "conversation",
+    "cardWidth": 520,
+    "fontStatus": "loaded",
+    "headingSize": "24px",
+    "imagesLoaded": true,
+    "scrollWidth": 838,
+    "width": 838
+  },
+  {
+    "id": "workspace-deletion",
+    "cardWidth": 520,
+    "fontStatus": "loaded",
+    "headingSize": "24px",
+    "imagesLoaded": true,
+    "scrollWidth": 838,
+    "width": 838
+  },
+  {
+    "id": "workspace-inactivity",
+    "cardWidth": 520,
+    "fontStatus": "loaded",
+    "headingSize": "24px",
+    "imagesLoaded": true,
+    "scrollWidth": 838,
+    "width": 838
+  },
+  {
+    "id": "maya-weekly",
+    "cardWidth": 520,
+    "fontStatus": "loaded",
+    "headingSize": "24px",
+    "imagesLoaded": true,
+    "scrollWidth": 838,
+    "width": 838
+  },
+  {
+    "id": "maya-follow-up",
+    "cardWidth": 520,
+    "fontStatus": "loaded",
+    "headingSize": "24px",
+    "imagesLoaded": true,
+    "scrollWidth": 838,
+    "width": 838
+  },
+  {
+    "id": "invitation",
+    "cardWidth": 358,
+    "fontStatus": "loaded",
+    "headingSize": "22px",
+    "imagesLoaded": true,
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "id": "invitation-accepted",
+    "cardWidth": 358,
+    "fontStatus": "loaded",
+    "headingSize": "22px",
+    "imagesLoaded": true,
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "id": "story-updates",
+    "cardWidth": 358,
+    "fontStatus": "loaded",
+    "headingSize": "22px",
+    "imagesLoaded": true,
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "id": "conversation",
+    "cardWidth": 358,
+    "fontStatus": "loaded",
+    "headingSize": "22px",
+    "imagesLoaded": true,
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "id": "workspace-deletion",
+    "cardWidth": 358,
+    "fontStatus": "loaded",
+    "headingSize": "22px",
+    "imagesLoaded": true,
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "id": "workspace-inactivity",
+    "cardWidth": 358,
+    "fontStatus": "loaded",
+    "headingSize": "22px",
+    "imagesLoaded": true,
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "id": "maya-weekly",
+    "cardWidth": 358,
+    "fontStatus": "loaded",
+    "headingSize": "22px",
+    "imagesLoaded": true,
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "id": "maya-follow-up",
+    "cardWidth": 358,
+    "fontStatus": "loaded",
+    "headingSize": "22px",
+    "imagesLoaded": true,
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "id": "invitation",
+    "cardWidth": 288,
+    "fontStatus": "loaded",
+    "headingSize": "22px",
+    "imagesLoaded": true,
+    "scrollWidth": 320,
+    "width": 320
+  },
+  {
+    "id": "invitation-accepted",
+    "cardWidth": 288,
+    "fontStatus": "loaded",
+    "headingSize": "22px",
+    "imagesLoaded": true,
+    "scrollWidth": 320,
+    "width": 320
+  },
+  {
+    "id": "story-updates",
+    "cardWidth": 288,
+    "fontStatus": "loaded",
+    "headingSize": "22px",
+    "imagesLoaded": true,
+    "scrollWidth": 320,
+    "width": 320
+  },
+  {
+    "id": "conversation",
+    "cardWidth": 288,
+    "fontStatus": "loaded",
+    "headingSize": "22px",
+    "imagesLoaded": true,
+    "scrollWidth": 320,
+    "width": 320
+  },
+  {
+    "id": "workspace-deletion",
+    "cardWidth": 288,
+    "fontStatus": "loaded",
+    "headingSize": "22px",
+    "imagesLoaded": true,
+    "scrollWidth": 320,
+    "width": 320
+  },
+  {
+    "id": "workspace-inactivity",
+    "cardWidth": 288,
+    "fontStatus": "loaded",
+    "headingSize": "22px",
+    "imagesLoaded": true,
+    "scrollWidth": 320,
+    "width": 320
+  },
+  {
+    "id": "maya-weekly",
+    "cardWidth": 288,
+    "fontStatus": "loaded",
+    "headingSize": "22px",
+    "imagesLoaded": true,
+    "scrollWidth": 320,
+    "width": 320
+  },
+  {
+    "id": "maya-follow-up",
+    "cardWidth": 288,
+    "fontStatus": "loaded",
+    "headingSize": "22px",
+    "imagesLoaded": true,
+    "scrollWidth": 320,
+    "width": 320
+  }
+]
