@@ -201,7 +201,7 @@ describe("feedback widget loader", () => {
       "--widget-launcher-background:oklch(0.19 0.028 40/.1)",
     );
     expect(FEEDBACK_WIDGET_LOADER_SOURCE).toContain(
-      "--widget-launcher-background:oklch(0.94 0.014 55/.2)",
+      "--widget-launcher-background:oklch(0.2135 0.0118 91.8/.96)",
     );
     expect(FEEDBACK_WIDGET_LOADER_SOURCE).toContain(
       "background:var(--widget-launcher-background)",
