@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useWorkspacePath } from "@/hooks";
 import { useSession } from "@/lib/auth/client";
+import { documentKeys } from "@/shared/documents/keys";
 import {
   addDocumentRelationshipAction,
   archiveDocumentAction,
@@ -14,7 +15,6 @@ import {
   updateDocumentAccessAction,
   updateDocumentAction,
 } from "./actions";
-import { documentKeys } from "./constants";
 import { getDocument, getDocuments, getRelatedDocuments } from "./queries";
 import type {
   DocumentAccessUpdate,

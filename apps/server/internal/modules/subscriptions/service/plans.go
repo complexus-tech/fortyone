@@ -110,7 +110,8 @@ func (s *Service) CancelSubscription(ctx context.Context, workspaceID uuid.UUID)
 	if current == nil {
 		return ErrInvalidSubscription
 	}
-	if current.CancelAtPeriodEnd {
+	if current.CancelAtPeriodEnd || current.Status == stripe.SubscriptionStatusCanceled ||
+		current.Status == stripe.SubscriptionStatusIncompleteExpired {
 		return ErrSubscriptionAlreadyCanceled
 	}
 

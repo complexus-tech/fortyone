@@ -15,12 +15,24 @@ func (s *Service) Delete(ctx context.Context, workspaceID, deletedBy uuid.UUID) 
 	s.log.Info(ctx, "business.core.workspaces.delete")
 	ctx, span := startSpan(ctx, "business.core.workspaces.Delete")
 	defer span.End()
-	if err := s.repo.Delete(ctx, workspaceID, deletedBy); err != nil {
+	workspace, err := s.repo.Get(ctx, workspaceID, deletedBy)
+	if err != nil {
 		span.RecordError(err)
 		return err
 	}
+	if workspace.DeletedAt != nil {
+		return ErrNotFound
+	}
+	// Keep the workspace available for retry if billing is unavailable. Once
+	// soft-deleted, its subscription records can be removed by the purge job.
 	if err := s.subscriptions.CancelWorkspaceSubscription(ctx, workspaceID); err != nil {
-		s.log.Error(ctx, "failed to cancel workspace subscription", "error", err, "workspace_id", workspaceID)
+		span.RecordError(err)
+		s.log.Error(ctx, "workspace deletion stopped because subscription cancellation failed", "error", err, "workspace_id", workspaceID)
+		return fmt.Errorf("cancel workspace subscription before deletion: %w", err)
+	}
+	if err := s.repo.Delete(ctx, workspaceID, deletedBy); err != nil {
+		span.RecordError(err)
+		return err
 	}
 	if err := s.publishWorkspaceDeletionEvents(ctx, workspaceID, deletedBy); err != nil {
 		s.log.Error(ctx, "failed to publish workspace deletion events", "error", err, "workspace_id", workspaceID)

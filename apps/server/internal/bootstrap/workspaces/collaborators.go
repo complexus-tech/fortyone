@@ -2,6 +2,7 @@ package workspacebootstrap
 
 import (
 	"context"
+	"errors"
 
 	subscriptions "github.com/complexus-tech/projects-api/internal/modules/subscriptions/service"
 	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
@@ -33,7 +34,10 @@ func (directory userDirectory) UpdateLastUsedWorkspace(ctx context.Context, user
 }
 
 type subscriptionManager struct {
-	service *subscriptions.Service
+	service interface {
+		UpdateSubscriptionSeats(context.Context, uuid.UUID) error
+		CancelSubscription(context.Context, uuid.UUID) error
+	}
 }
 
 func NewSubscriptionManager(service *subscriptions.Service) workspaces.SubscriptionManager {
@@ -45,7 +49,12 @@ func (manager subscriptionManager) UpdateWorkspaceSeats(ctx context.Context, wor
 }
 
 func (manager subscriptionManager) CancelWorkspaceSubscription(ctx context.Context, workspaceID uuid.UUID) error {
-	return manager.service.CancelSubscription(ctx, workspaceID)
+	err := manager.service.CancelSubscription(ctx, workspaceID)
+	if errors.Is(err, subscriptions.ErrNoActiveSubscriptionToChange) ||
+		errors.Is(err, subscriptions.ErrSubscriptionAlreadyCanceled) {
+		return nil
+	}
+	return err
 }
 
 type trialScheduler struct {

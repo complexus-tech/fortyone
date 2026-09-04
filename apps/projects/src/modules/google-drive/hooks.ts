@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useWorkspacePath } from "@/hooks";
 import { useSession } from "@/lib/auth/client";
-import { documentKeys } from "@/modules/documents/constants";
+import { documentKeys } from "@/shared/documents/keys";
 import {
   attachGoogleDriveFilesAction,
   createGoogleDriveConnectSessionAction,

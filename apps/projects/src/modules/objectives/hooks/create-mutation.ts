@@ -4,14 +4,21 @@ import { useSession } from "@/lib/auth/client";
 import { useAnalytics, useWorkspacePath } from "@/hooks";
 import { createObjective } from "../actions/create-objective";
 import type { Objective, NewObjective } from "../types";
+import { objectiveKeys } from "../constants";
+import {
+  optimisticallyCreateObjective,
+  settleOptimisticObjective,
+} from "./create-mutation-cache";
 
 export const useCreateObjectiveMutation = () => {
   const queryClient = useQueryClient();
   const { data: session } = useSession();
   const { workspaceSlug } = useWorkspacePath();
   const { analytics } = useAnalytics();
+  const mutationKey = [...objectiveKeys.all(workspaceSlug), "create"] as const;
 
   const mutation = useMutation({
+    mutationKey,
     mutationFn: async (newObjective: NewObjective) => {
       const response = await createObjective(newObjective, workspaceSlug);
       if (response.error?.message) {
@@ -28,12 +35,12 @@ export const useCreateObjectiveMutation = () => {
     onMutate: (newObjective) => {
       const optimisticObjective: Objective = {
         ...newObjective,
-        id: "optimistic",
+        id: `optimistic:${crypto.randomUUID()}`,
         sequenceId: 0,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         workspaceId: "optimistic",
-        isPrivate: false,
+        isPrivate: newObjective.isPrivate ?? false,
         health: null,
         color: newObjective.color ?? "#4A90E2",
         forecastStartDate: null,
@@ -60,45 +67,14 @@ export const useCreateObjectiveMutation = () => {
           backlog: 0,
         },
       };
-      const queryCache = queryClient.getQueryCache();
-      const queries = queryCache.getAll();
-
-      queries.forEach((query) => {
-        const queryKey = JSON.stringify(query.queryKey);
-        if (
-          queryKey.toLowerCase().includes("objectives") &&
-          query.isActive() &&
-          queryKey.toLowerCase().includes("list")
-        ) {
-          queryClient.cancelQueries({ queryKey: query.queryKey });
-          queryClient.setQueryData<Objective[]>(
-            query.queryKey,
-            (prev: Objective[] = []) => {
-              return [...prev, optimisticObjective];
-            },
-          );
-        }
-      });
+      return optimisticallyCreateObjective(
+        queryClient,
+        workspaceSlug,
+        optimisticObjective,
+      );
     },
-    onError: (error, variables) => {
-      const queryCache = queryClient.getQueryCache();
-      const queries = queryCache.getAll();
-
-      queries.forEach((query) => {
-        const queryKey = JSON.stringify(query.queryKey);
-        if (
-          queryKey.toLowerCase().includes("objectives") &&
-          query.isActive() &&
-          queryKey.toLowerCase().includes("list")
-        ) {
-          queryClient.setQueryData<Objective[]>(
-            query.queryKey,
-            (prev: Objective[] = []) => {
-              return prev.filter((objective) => objective.id !== "optimistic");
-            },
-          );
-        }
-      });
+    onError: (error, variables, context) => {
+      settleOptimisticObjective(queryClient, context);
 
       toast.error("Failed to create objective", {
         description:
@@ -111,25 +87,21 @@ export const useCreateObjectiveMutation = () => {
         },
       });
     },
-    onSuccess: (objective) => {
+    onSuccess: (objective, _variables, context) => {
+      settleOptimisticObjective(queryClient, context, objective);
       analytics.track("objective_created", {
         name: objective.name,
         startDate: objective.startDate,
         priority: objective.priority,
       });
-      const queryCache = queryClient.getQueryCache();
-      const queries = queryCache.getAll();
-
-      queries.forEach((query) => {
-        const queryKey = JSON.stringify(query.queryKey);
-        if (
-          queryKey.toLowerCase().includes("objectives") &&
-          query.isActive() &&
-          queryKey.toLowerCase().includes("list")
-        ) {
-          queryClient.invalidateQueries({ queryKey: query.queryKey });
-        }
-      });
+    },
+    onSettled: () => {
+      // Wait for sibling creates before refetching away their optimistic rows.
+      if (queryClient.isMutating({ mutationKey }) === 1) {
+        void queryClient.invalidateQueries({
+          queryKey: objectiveKeys.list(workspaceSlug),
+        });
+      }
     },
   });
 

@@ -50,6 +50,7 @@ const sanitizeDiagnosticMessage = (message: string) =>
       "[credential redacted]",
     )
     .replace(
+      // eslint-disable-next-line prefer-named-capture-group -- The ES2017 target requires numbered groups to preserve the field and separator.
       /\b(authorization|api[-_ ]?key|password|secret|token)(\s*[:=]\s*)[^,\s]+/gi,
       "$1$2[redacted]",
     )

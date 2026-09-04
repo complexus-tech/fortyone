@@ -16,7 +16,9 @@ export const getQueryClient = cache(
           retry: 1,
         },
         mutations: {
-          retry: 1,
+          // Writes may have committed before a response is lost. Only mutations
+          // with an explicit idempotency policy should opt into automatic retry.
+          retry: false,
         },
         dehydrate: {
           shouldDehydrateQuery: (query) =>
