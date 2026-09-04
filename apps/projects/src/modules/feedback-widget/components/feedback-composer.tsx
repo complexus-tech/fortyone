@@ -1,18 +1,51 @@
 "use client";
 
-import { useState } from "react";
+import type { Editor } from "@tiptap/core";
+import { useEditor } from "@tiptap/react";
+import { useCallback, useRef, useState } from "react";
 import { ArrowLeft2Icon, CheckIcon, ImageIcon } from "icons";
-import { Box, Button, Flex, Text } from "ui";
+import { Box, Button, Flex, Menu, Text, TextEditor } from "ui";
+import { FeedbackAttachmentPreviews } from "@/components/ui/feedback-attachment-previews";
+import { TeamColor } from "@/components/ui/team-color";
+import { createRichTextExtensions } from "@/lib/tiptap/rich-text-extensions";
+import { getPersistableRichTextContent } from "@/lib/tiptap/rich-text-media";
+import { RichTextTableMenu } from "@/lib/tiptap/rich-text-table-menu";
+import {
+  addUniqueFeedbackAttachments,
+  FEEDBACK_ATTACHMENT_ACCEPT,
+  MAX_FEEDBACK_ATTACHMENTS,
+} from "@/shared/feedback-widget/attachments";
 import type {
   PublicPortal,
   PublicRequest,
 } from "@/shared/feedback-widget/types";
 import {
   createWidgetFeedbackAction,
+  type CreateWidgetFeedbackInput,
   type CreateWidgetFeedbackResult,
 } from "../actions";
 import type { WidgetSubmissionIdentity } from "./types";
 import { WidgetBackButton, WidgetIconButton } from "./widget-ui";
+
+const boardPreferenceKey = (portalSlug: string) =>
+  `fortyone-feedback-widget:${portalSlug}:board`;
+
+const getInitialBoardId = (portal: PublicPortal) => {
+  const fallbackBoardId = portal.boards[0]?.id ?? "";
+  if (portal.boards.length < 2 || typeof window === "undefined") {
+    return fallbackBoardId;
+  }
+  try {
+    const savedBoardId = window.localStorage.getItem(
+      boardPreferenceKey(portal.slug),
+    );
+    return portal.boards.some((board) => board.id === savedBoardId)
+      ? savedBoardId ?? fallbackBoardId
+      : fallbackBoardId;
+  } catch {
+    return fallbackBoardId;
+  }
+};
 
 export const FeedbackComposer = ({
   canUseIdentity,
@@ -31,14 +64,47 @@ export const FeedbackComposer = ({
   onRequireIdentity: () => void;
   portal: PublicPortal;
 }) => {
-  const [boardId, setBoardId] = useState(
-    portal.boards.length === 1 ? portal.boards[0]?.id ?? "" : "",
-  );
+  const [boardId, setBoardId] = useState(() => getInitialBoardId(portal));
   const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
+  const [attachments, setAttachments] = useState<File[]>([]);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showIdentityChoice, setShowIdentityChoice] = useState(false);
+  const mediaInputRef = useRef<HTMLInputElement>(null);
+  const selectedBoard = portal.boards.find((board) => board.id === boardId);
+
+  const addAttachments = useCallback((_: Editor, files: File[]) => {
+    setAttachments((current) => addUniqueFeedbackAttachments(current, files));
+  }, []);
+  const openMediaPicker = useCallback(() => {
+    mediaInputRef.current?.click();
+  }, []);
+  const descriptionEditor = useEditor({
+    content: "",
+    editable: true,
+    editorProps: {
+      attributes: {
+        "aria-label": "Feedback details",
+        class: "min-h-48 outline-none",
+      },
+    },
+    extensions: createRichTextExtensions({
+      onMediaFiles: addAttachments,
+      onMediaRequest: openMediaPicker,
+      placeholder:
+        "Tell us a little more about the problem, idea, or improvement. Type / for commands.",
+    }),
+    immediatelyRender: false,
+  });
+
+  const selectBoard = (nextBoardId: string) => {
+    setBoardId(nextBoardId);
+    try {
+      window.localStorage.setItem(boardPreferenceKey(portal.slug), nextBoardId);
+    } catch {
+      // The in-memory selection still works when storage is unavailable.
+    }
+  };
 
   const submit = async (activeIdentity: WidgetSubmissionIdentity | null) => {
     if (!boardId || !title.trim() || isSubmitting) return;
@@ -51,9 +117,17 @@ export const FeedbackComposer = ({
     setIsSubmitting(true);
     setError("");
     const participationIntent = activeIdentity?.kind ?? "anonymous";
-    const response = await createWidgetFeedbackAction({
+    const description = descriptionEditor
+      ? getPersistableRichTextContent(descriptionEditor)
+      : { contentHtml: "", contentText: "" };
+    const attachmentData = new FormData();
+    attachments.forEach((file) => {
+      attachmentData.append("files", file);
+    });
+    const feedbackInput: CreateWidgetFeedbackInput = {
       boardId,
-      description: description.trim(),
+      description: description.contentText.trim(),
+      descriptionHTML: description.contentHtml,
       participationIntent,
       portalSlug: portal.slug,
       sessionToken:
@@ -61,7 +135,12 @@ export const FeedbackComposer = ({
           ? activeIdentity.sessionToken
           : undefined,
       title: title.trim(),
-    })
+    };
+    const submission =
+      attachments.length > 0
+        ? createWidgetFeedbackAction(feedbackInput, attachmentData)
+        : createWidgetFeedbackAction(feedbackInput);
+    const response = await submission
       .catch(() => null)
       .finally(() => {
         setIsSubmitting(false);
@@ -150,34 +229,53 @@ export const FeedbackComposer = ({
         <Text className="text-[16px]" fontWeight="semibold">
           Share feedback
         </Text>
+        {portal.boards.length > 1 ? (
+          <div className="ml-auto">
+            <Menu>
+              <Menu.Button>
+                <Button
+                  className="max-w-40 gap-1.5 rounded-lg px-2.5 text-[12px]"
+                  color="tertiary"
+                  leftIcon={
+                    selectedBoard ? (
+                      <TeamColor color={selectedBoard.color} />
+                    ) : undefined
+                  }
+                  size="xs"
+                  variant="outline"
+                >
+                  <span className="truncate">
+                    {selectedBoard?.name ?? "Select board"}
+                  </span>
+                </Button>
+              </Menu.Button>
+              <Menu.Items align="end" className="w-56">
+                <Menu.Group>
+                  {portal.boards.map((board) => (
+                    <Menu.Item
+                      active={board.id === boardId}
+                      className="justify-between gap-3"
+                      key={board.id}
+                      onSelect={() => {
+                        selectBoard(board.id);
+                      }}
+                    >
+                      <span className="flex min-w-0 items-center gap-1.5">
+                        <TeamColor className="shrink-0" color={board.color} />
+                        <span className="truncate">{board.name}</span>
+                      </span>
+                      {board.id === boardId ? (
+                        <CheckIcon className="h-4" />
+                      ) : null}
+                    </Menu.Item>
+                  ))}
+                </Menu.Group>
+              </Menu.Items>
+            </Menu>
+          </div>
+        ) : null}
       </Flex>
       <Box className="min-h-0 flex-1 overflow-y-auto px-5 py-3">
-        {portal.boards.length > 1 ? (
-          <label className="mb-5 block space-y-2">
-            <Text
-              as="span"
-              className="block text-[11px] tracking-[0.08em] uppercase"
-              color="muted"
-              fontWeight="semibold"
-            >
-              Board
-            </Text>
-            <select
-              className="border-border bg-surface focus-visible:ring-ring h-10 w-full rounded-lg border px-3 text-[13px] outline-none focus-visible:ring-2"
-              onChange={(event) => {
-                setBoardId(event.target.value);
-              }}
-              value={boardId}
-            >
-              <option value="">Choose a board</option>
-              {portal.boards.map((board) => (
-                <option key={board.id} value={board.id}>
-                  {board.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : null}
         <input
           aria-label="Feedback title"
           className="text-foreground placeholder:text-text-muted/55 w-full border-0 bg-transparent p-0 text-[20px] leading-7 font-semibold outline-none"
@@ -188,15 +286,19 @@ export const FeedbackComposer = ({
           placeholder="What could be better?"
           value={title}
         />
-        <textarea
-          aria-label="Feedback details"
-          className="text-foreground placeholder:text-text-muted/50 mt-4 min-h-48 w-full resize-none border-0 bg-transparent p-0 text-[14px] leading-6 outline-none"
-          maxLength={5000}
-          onChange={(event) => {
-            setDescription(event.target.value);
+        <TextEditor
+          className="rich-document-editor text-foreground mt-4 min-h-48 text-[14px] leading-6"
+          editor={descriptionEditor}
+        />
+        <RichTextTableMenu editor={descriptionEditor} scrollTarget={null} />
+        <FeedbackAttachmentPreviews
+          files={attachments}
+          layout="widget"
+          onRemove={(file) => {
+            setAttachments((current) =>
+              current.filter((candidate) => candidate !== file),
+            );
           }}
-          placeholder="Tell us a little more about the problem, idea, or improvement."
-          value={description}
         />
         {error ? (
           <Text className="mt-4 text-[12px] text-red-600 dark:text-red-400">
@@ -205,7 +307,26 @@ export const FeedbackComposer = ({
         ) : null}
       </Box>
       <Flex align="center" className="shrink-0 px-5 py-4" justify="between">
-        <WidgetIconButton aria-label="Add an image" disabled>
+        <input
+          accept={FEEDBACK_ATTACHMENT_ACCEPT}
+          aria-label="Attach files"
+          className="sr-only"
+          multiple
+          onChange={(event) => {
+            const files = Array.from(event.target.files ?? []);
+            event.target.value = "";
+            if (descriptionEditor && files.length > 0) {
+              addAttachments(descriptionEditor, files);
+            }
+          }}
+          ref={mediaInputRef}
+          type="file"
+        />
+        <WidgetIconButton
+          aria-label="Attach files"
+          disabled={attachments.length >= MAX_FEEDBACK_ATTACHMENTS}
+          onClick={openMediaPicker}
+        >
           <ImageIcon className="h-5" />
         </WidgetIconButton>
         <button

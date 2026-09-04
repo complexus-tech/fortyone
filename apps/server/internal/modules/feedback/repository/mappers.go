@@ -55,7 +55,7 @@ type itemProjection struct {
 	MergedIntoItemID                                    *uuid.UUID
 	MergedAt                                            *time.Time
 	MergedByUserID                                      *uuid.UUID
-	Title, Description, Slug, Status                    string
+	Title, Description, DescriptionHTML, Slug, Status   string
 	VoteCount, UpvoteCount, DownvoteCount, CommentCount int32
 	RoadmapSummary                                      *string
 	BoardTeamID                                         uuid.UUID
@@ -81,7 +81,7 @@ func (row itemProjection) core() feedback.CoreItem {
 		AuthorEmail: row.AuthorEmail, AuthorAvatar: row.AuthorAvatar, ParticipantKind: row.ParticipantKind,
 		AuthorMasked: row.AuthorMasked, MergedIntoItemID: row.MergedIntoItemID, MergedAt: row.MergedAt,
 		MergedByUserID: row.MergedByUserID, Following: row.Following, Title: row.Title,
-		Description: row.Description, Slug: row.Slug, Status: row.Status, VoteCount: int(row.VoteCount),
+		Description: row.Description, DescriptionHTML: row.DescriptionHTML, Slug: row.Slug, Status: row.Status, VoteCount: int(row.VoteCount),
 		UpvoteCount: int(row.UpvoteCount), DownvoteCount: int(row.DownvoteCount), CommentCount: int(row.CommentCount),
 		RoadmapSummary: row.RoadmapSummary, ReadAt: row.ReadAt, DeletedAt: row.DeletedAt,
 		CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt,

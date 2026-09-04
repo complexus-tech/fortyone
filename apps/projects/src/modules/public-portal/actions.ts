@@ -22,11 +22,12 @@ import type {
   PublicPortalGuestParticipant,
 } from "./types";
 
-type CreateFeedbackInput = {
+export type CreateFeedbackInput = {
   portalSlug: string;
   boardId: string;
   title: string;
   description: string;
+  descriptionHTML?: string;
 };
 
 type ItemInput = {
@@ -171,6 +172,7 @@ const refreshFeedbackItem = (portalSlug: string, itemSlug?: string) => {
 const submitFeedback = async (
   input: CreateFeedbackInput,
   participationIntent: "account" | "verified_guest" | "external" | "anonymous",
+  attachmentData?: FormData,
 ) => {
   try {
     const portalSlug = normalizeFeedbackPortalSlug(input.portalSlug);
@@ -201,15 +203,33 @@ const submitFeedback = async (
     const ingressHeaders = isAnonymous
       ? await createFeedbackIngressHeaders(portalSlug)
       : undefined;
+    const attachments = attachmentData?.getAll("files") ?? [];
+    const payload =
+      attachments.length > 0
+        ? (() => {
+            const formData = new FormData();
+            formData.set("boardId", input.boardId);
+            formData.set("description", input.description);
+            formData.set("descriptionHTML", input.descriptionHTML ?? "");
+            formData.set("participationIntent", participationIntent);
+            formData.set("title", input.title);
+            formData.set("website", "");
+            attachments.forEach((file) => {
+              formData.append("files", file);
+            });
+            return formData;
+          })()
+        : {
+            boardId: input.boardId,
+            description: input.description,
+            descriptionHTML: input.descriptionHTML ?? "",
+            participationIntent,
+            title: input.title,
+            website: "",
+          };
     const response = await post<ApiResponse<ApiFeedbackItem>>(
       `portals/${encodeURIComponent(portalSlug)}/feedback/items`,
-      {
-        boardId: input.boardId,
-        description: input.description,
-        participationIntent,
-        title: input.title,
-        website: "",
-      },
+      payload,
       ingressHeaders || guestAuthorization
         ? {
             credentials: "omit",
@@ -232,16 +252,20 @@ const submitFeedback = async (
   }
 };
 
-export const createFeedbackAction = async (input: CreateFeedbackInput) =>
-  submitFeedback(input, "account");
+export const createFeedbackAction = async (
+  input: CreateFeedbackInput,
+  attachmentData?: FormData,
+) => submitFeedback(input, "account", attachmentData);
 
 export const createAnonymousFeedbackAction = async (
   input: CreateFeedbackInput,
-) => submitFeedback(input, "anonymous");
+  attachmentData?: FormData,
+) => submitFeedback(input, "anonymous", attachmentData);
 
 export const createVerifiedGuestFeedbackAction = async (
   input: CreateFeedbackInput,
-) => submitFeedback(input, "verified_guest");
+  attachmentData?: FormData,
+) => submitFeedback(input, "verified_guest", attachmentData);
 
 const getParticipantWriteOptions = async (
   portalSlug: string,

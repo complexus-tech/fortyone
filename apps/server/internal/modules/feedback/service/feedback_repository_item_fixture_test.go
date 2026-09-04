@@ -108,6 +108,18 @@ func (r *repoStub) ListItemComments(ctx context.Context, workspaceID, itemID uui
 	return result, nil
 }
 
+func (r *repoStub) LinkItemAttachment(context.Context, uuid.UUID, uuid.UUID, uuid.UUID) (CoreItemAttachment, error) {
+	return CoreItemAttachment{}, nil
+}
+
+func (r *repoStub) GetItemAttachment(context.Context, uuid.UUID, uuid.UUID, uuid.UUID) (CoreItemAttachment, error) {
+	return CoreItemAttachment{}, nil
+}
+
+func (r *repoStub) ListItemAttachments(context.Context, uuid.UUID, []uuid.UUID) ([]CoreItemAttachment, error) {
+	return []CoreItemAttachment{}, nil
+}
+
 func (r *repoStub) GetComment(ctx context.Context, workspaceID, itemID, commentID uuid.UUID) (CoreComment, error) {
 	for _, comment := range r.comments {
 		if comment.WorkspaceID == workspaceID && comment.ItemID == itemID && comment.ID == commentID {

@@ -99,6 +99,13 @@ jest.mock("ui", () => {
     size?: string;
     variant?: string;
   }) => React.createElement("span", props, children);
+  const TextEditor = ({
+    "aria-label": ariaLabel,
+    className,
+  }: {
+    "aria-label"?: string;
+    className?: string;
+  }) => React.createElement("div", { "aria-label": ariaLabel, className });
   return {
     Avatar: ({ name, ...props }: { name: string }) =>
       React.createElement("div", { ...props, "aria-label": name }),
@@ -126,6 +133,7 @@ jest.mock("ui", () => {
         type: "button",
       }),
     Text,
+    TextEditor,
   };
 });
 
@@ -807,7 +815,7 @@ describe("FeedbackWidgetFrame identity and guest participation", () => {
     const commentInput = screen.getByLabelText("Add a comment");
     const commentAction = screen.getByRole("button", { name: "Comment" });
 
-    expect(backButton).toHaveClass("bg-state-hover");
+    expect(backButton).toHaveClass("bg-white", "text-stone-900");
     expect(status).toHaveClass("h-9", "text-[12px]");
     expect(commentInput.parentElement).toHaveClass("rounded-xl");
     expect(commentAction).toHaveClass("h-9", "text-[12px]");

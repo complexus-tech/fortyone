@@ -3,10 +3,12 @@ package feedbackhttp
 import (
 	"context"
 	"errors"
+	"mime/multipart"
 	"net/http"
 	"strings"
 	"time"
 
+	attachments "github.com/complexus-tech/projects-api/internal/modules/attachments/service"
 	feedback "github.com/complexus-tech/projects-api/internal/modules/feedback/service"
 	teams "github.com/complexus-tech/projects-api/internal/modules/teams/service"
 	"github.com/complexus-tech/projects-api/pkg/logger"
@@ -44,6 +46,12 @@ type profileImageResolver interface {
 	ResolveProfileImageURL(ctx context.Context, avatar string, expiry time.Duration) (string, error)
 }
 
+type feedbackAttachmentService interface {
+	UploadAttachment(context.Context, multipart.File, *multipart.FileHeader, uuid.UUID, uuid.UUID) (attachments.FileInfo, error)
+	ResolveAttachmentAccessURL(context.Context, uuid.UUID, uuid.UUID, time.Duration) (attachments.FileInfo, error)
+	DeleteOrphanedMedia(context.Context, uuid.UUID, uuid.UUID) error
+}
+
 type teamAccessService interface {
 	GetByID(ctx context.Context, teamID, workspaceID, userID uuid.UUID) (teams.CoreTeam, error)
 }
@@ -52,11 +60,13 @@ type Handlers struct {
 	feedback      *feedback.Service
 	teams         teamAccessService
 	profileImages profileImageResolver
+	attachments   feedbackAttachmentService
 	log           *logger.Logger
 }
 
 func New(service *feedback.Service, teamAccess teamAccessService, profileImages profileImageResolver, log *logger.Logger) *Handlers {
-	return &Handlers{feedback: service, teams: teamAccess, profileImages: profileImages, log: log}
+	attachmentFiles, _ := profileImages.(feedbackAttachmentService)
+	return &Handlers{feedback: service, teams: teamAccess, profileImages: profileImages, attachments: attachmentFiles, log: log}
 }
 
 func (h *Handlers) authorizeTeam(ctx context.Context, workspaceID, teamID, userID uuid.UUID) error {

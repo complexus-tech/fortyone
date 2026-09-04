@@ -55,12 +55,21 @@ export type PublicFeedbackStoryLink = {
   relationship: "created_from" | "linked" | "solves";
 };
 
+export type PublicRequestAttachment = {
+  id: string;
+  filename: string;
+  size: number;
+  mimeType: string;
+  url: string;
+};
+
 export type PublicRequest = {
   id: string;
   authorId: string | null;
   slug: string;
   title: string;
   description: string;
+  descriptionHTML?: string;
   authorMasked?: boolean;
   authorName: string;
   authorAvatar?: string | null;
@@ -72,6 +81,7 @@ export type PublicRequest = {
   roadmapSummary?: string;
   comments: PublicRequestComment[];
   storyLinks: PublicFeedbackStoryLink[];
+  attachments?: PublicRequestAttachment[];
   participantKind?: PublicParticipantKind;
   following?: boolean;
   viewerVote?: -1 | 0 | 1;

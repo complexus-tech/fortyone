@@ -8,7 +8,9 @@ import Underline from "@tiptap/extension-underline";
 import { useEditor } from "@tiptap/react";
 import { toast } from "sonner";
 import { useDebouncedCallback } from "@/hooks/debounce";
+import { getPersistableRichTextContent } from "@/lib/tiptap/rich-text-media";
 import { createRichTextStarterKit } from "@/lib/tiptap/starter-kit";
+import { addUniqueFeedbackAttachments } from "@/shared/feedback-widget/attachments";
 import { getCurrentFeedbackGuestAction } from "../actions";
 import { getAnonymousFeedbackTrackingUrl } from "../anonymous-tracking";
 import { useSimilarPublicFeedback } from "../client-query";
@@ -39,6 +41,7 @@ export const useNewFeedbackComposer = ({
     useState<PublicPortalParticipant>(participant);
   const [isCheckingGuestSession, setIsCheckingGuestSession] = useState(false);
   const [title, setTitle] = useState("");
+  const [attachments, setAttachments] = useState<File[]>([]);
   const [anonymousSubmission, setAnonymousSubmission] = useState<{
     trackingUrl: string;
   } | null>(null);
@@ -117,6 +120,7 @@ export const useNewFeedbackComposer = ({
 
   const resetDraft = () => {
     setTitle("");
+    setAttachments([]);
     titleRef.current = "";
     setSimilarityInput({ description: "", title: "" });
     descriptionEditor?.commands.setContent("");
@@ -132,12 +136,30 @@ export const useNewFeedbackComposer = ({
     }
   };
 
-  const getDraftInput = () => ({
-    boardId,
-    description: descriptionEditor?.getText() ?? "",
-    portalSlug: portal.slug,
-    title,
-  });
+  const getDraftInput = () => {
+    const description = descriptionEditor
+      ? getPersistableRichTextContent(descriptionEditor)
+      : { contentHtml: "", contentText: "" };
+
+    return {
+      attachments,
+      boardId,
+      description: description.contentText,
+      descriptionHTML: description.contentHtml,
+      portalSlug: portal.slug,
+      title,
+    };
+  };
+
+  const addAttachments = (files: File[]) => {
+    setAttachments((current) => addUniqueFeedbackAttachments(current, files));
+  };
+
+  const removeAttachment = (file: File) => {
+    setAttachments((current) =>
+      current.filter((candidate) => candidate !== file),
+    );
+  };
 
   const submitAnonymously = () => {
     const input = getDraftInput();
@@ -253,7 +275,9 @@ export const useNewFeedbackComposer = ({
   };
 
   return {
+    addAttachments,
     anonymousSubmission,
+    attachments,
     blockingMatch,
     boardId,
     close,
@@ -266,6 +290,7 @@ export const useNewFeedbackComposer = ({
     open,
     openComposer,
     openExistingFeedback,
+    removeAttachment,
     selectedBoard,
     setBoardId,
     setComposerStep,

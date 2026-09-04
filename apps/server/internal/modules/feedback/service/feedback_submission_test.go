@@ -107,11 +107,14 @@ func TestPublicFeedbackWritesDeriveWorkspaceFromPortal(t *testing.T) {
 		BoardID:             boardID,
 		AuthorID:            authorID,
 		Title:               "Repair the crossing signal",
+		Description:         "The signal is too short.",
+		DescriptionHTML:     "<p>The signal is <strong>too short</strong>.</p>",
 		Source:              SubmissionSourcePortal,
 		ParticipationIntent: ParticipationIntentAccount,
 	})
 
 	require.NoError(t, err)
+	require.Equal(t, "<p>The signal is <strong>too short</strong>.</p>", repo.createdItems[0].DescriptionHTML)
 	item := result.Item
 	require.Equal(t, workspaceID, item.WorkspaceID)
 	require.Equal(t, portalID, item.PortalID)

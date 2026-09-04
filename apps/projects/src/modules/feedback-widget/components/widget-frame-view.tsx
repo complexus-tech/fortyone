@@ -8,7 +8,7 @@ import {
   RoadmapIcon,
   UpdatesIcon,
 } from "icons";
-import { Avatar, Box, Flex, Text } from "ui";
+import { Avatar, Box, Button, Flex, Text } from "ui";
 import { cn, getReadableTextColor } from "lib";
 import type {
   PublicFeedbackListStatus,
@@ -429,15 +429,16 @@ export const WidgetFrameView = ({
         >
           {portal.workspace.name}
         </Text>
-        <button
-          className="bg-foreground text-background focus-visible:ring-ring inline-flex h-9 shrink-0 items-center gap-2 rounded-xl px-4 text-[12px] font-semibold shadow-sm focus-visible:ring-2 focus-visible:outline-none"
+        <Button
+          className="h-9 shrink-0 gap-2 rounded-xl px-3.5 text-[12px] shadow-sm"
+          color="invert"
           disabled={isPending}
+          leftIcon={<EditIcon className="h-3.5 text-current" />}
           onClick={onOpenComposer}
-          type="button"
+          size="sm"
         >
-          <EditIcon className="h-3.5 text-current" />
           Add feedback
-        </button>
+        </Button>
         {currentIdentity && portal.hasPublishedUpdates ? (
           <WidgetIconButton
             aria-label={

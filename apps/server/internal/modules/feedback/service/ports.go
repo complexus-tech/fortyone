@@ -55,6 +55,9 @@ type ItemStore interface {
 	CreateItem(context.Context, CoreItemInput) (CoreItem, error)
 	GetOrCreateAccountContributor(context.Context, uuid.UUID, uuid.UUID) (CoreContributor, error)
 	CreateAnonymousItem(context.Context, CoreItemInput) (CoreItem, error)
+	LinkItemAttachment(context.Context, uuid.UUID, uuid.UUID, uuid.UUID) (CoreItemAttachment, error)
+	GetItemAttachment(context.Context, uuid.UUID, uuid.UUID, uuid.UUID) (CoreItemAttachment, error)
+	ListItemAttachments(context.Context, uuid.UUID, []uuid.UUID) ([]CoreItemAttachment, error)
 	UpdateItemStatus(context.Context, uuid.UUID, uuid.UUID, CoreUpdateItemStatusInput) (CoreItem, bool, error)
 	UpdateItemStatusIfUnchanged(context.Context, uuid.UUID, uuid.UUID, time.Time, CoreUpdateItemStatusInput) (CoreItem, bool, bool, error)
 	TrashItem(context.Context, uuid.UUID, uuid.UUID) error

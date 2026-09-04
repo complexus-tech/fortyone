@@ -1,6 +1,8 @@
 package feedbackhttp
 
 import (
+	"fmt"
+	"net/url"
 	"time"
 
 	feedback "github.com/complexus-tech/projects-api/internal/modules/feedback/service"
@@ -37,37 +39,47 @@ type AppBoard struct {
 }
 
 type AppItem struct {
-	ID               uuid.UUID      `json:"id"`
-	WorkspaceID      uuid.UUID      `json:"workspaceId"`
-	PortalID         uuid.UUID      `json:"portalId"`
-	BoardID          uuid.UUID      `json:"boardId"`
-	AuthorID         *uuid.UUID     `json:"authorId"`
-	AuthorName       string         `json:"authorName"`
-	AuthorAvatar     *string        `json:"authorAvatar"`
-	Title            string         `json:"title"`
-	Description      string         `json:"description"`
-	Slug             string         `json:"slug"`
-	Status           string         `json:"status"`
-	VoteCount        int            `json:"voteCount"`
-	UpvoteCount      int            `json:"upvoteCount"`
-	DownvoteCount    int            `json:"downvoteCount"`
-	CommentCount     int            `json:"commentCount"`
-	RoadmapSummary   *string        `json:"roadmapSummary,omitempty"`
-	ReadAt           *time.Time     `json:"readAt"`
-	DeletedAt        *time.Time     `json:"deletedAt,omitempty"`
-	RestoreUntil     *time.Time     `json:"restoreUntil,omitempty"`
-	Board            *AppBoard      `json:"board,omitempty"`
-	CreatedAt        time.Time      `json:"createdAt"`
-	UpdatedAt        time.Time      `json:"updatedAt"`
-	Comments         []AppComment   `json:"comments"`
-	StoryLinks       []AppStoryLink `json:"storyLinks"`
-	Anonymous        bool           `json:"anonymous,omitempty"`
-	ParticipantKind  string         `json:"participantKind,omitempty"`
-	AuthorMasked     bool           `json:"authorMasked,omitempty"`
-	MergedIntoItemID *uuid.UUID     `json:"mergedIntoItemId,omitempty"`
-	MergedAt         *time.Time     `json:"mergedAt,omitempty"`
-	MergedByUserID   *uuid.UUID     `json:"mergedByUserId,omitempty"`
-	Following        bool           `json:"following,omitempty"`
+	ID               uuid.UUID           `json:"id"`
+	WorkspaceID      uuid.UUID           `json:"workspaceId"`
+	PortalID         uuid.UUID           `json:"portalId"`
+	BoardID          uuid.UUID           `json:"boardId"`
+	AuthorID         *uuid.UUID          `json:"authorId"`
+	AuthorName       string              `json:"authorName"`
+	AuthorAvatar     *string             `json:"authorAvatar"`
+	Title            string              `json:"title"`
+	Description      string              `json:"description"`
+	DescriptionHTML  string              `json:"descriptionHTML,omitempty"`
+	Slug             string              `json:"slug"`
+	Status           string              `json:"status"`
+	VoteCount        int                 `json:"voteCount"`
+	UpvoteCount      int                 `json:"upvoteCount"`
+	DownvoteCount    int                 `json:"downvoteCount"`
+	CommentCount     int                 `json:"commentCount"`
+	RoadmapSummary   *string             `json:"roadmapSummary,omitempty"`
+	ReadAt           *time.Time          `json:"readAt"`
+	DeletedAt        *time.Time          `json:"deletedAt,omitempty"`
+	RestoreUntil     *time.Time          `json:"restoreUntil,omitempty"`
+	Board            *AppBoard           `json:"board,omitempty"`
+	CreatedAt        time.Time           `json:"createdAt"`
+	UpdatedAt        time.Time           `json:"updatedAt"`
+	Comments         []AppComment        `json:"comments"`
+	StoryLinks       []AppStoryLink      `json:"storyLinks"`
+	Attachments      []AppItemAttachment `json:"attachments,omitempty"`
+	Anonymous        bool                `json:"anonymous,omitempty"`
+	ParticipantKind  string              `json:"participantKind,omitempty"`
+	AuthorMasked     bool                `json:"authorMasked,omitempty"`
+	MergedIntoItemID *uuid.UUID          `json:"mergedIntoItemId,omitempty"`
+	MergedAt         *time.Time          `json:"mergedAt,omitempty"`
+	MergedByUserID   *uuid.UUID          `json:"mergedByUserId,omitempty"`
+	Following        bool                `json:"following,omitempty"`
+}
+
+type AppItemAttachment struct {
+	ID       uuid.UUID `json:"id"`
+	Filename string    `json:"filename"`
+	Size     int64     `json:"size"`
+	MimeType string    `json:"mimeType"`
+	URL      string    `json:"url"`
 }
 
 type AppPrivateAuthor struct {
@@ -233,16 +245,18 @@ type AppSetBoardReviewer struct {
 }
 
 type AppCreateItem struct {
-	PortalID    uuid.UUID `json:"portalId"`
-	BoardID     uuid.UUID `json:"boardId"`
-	Title       string    `json:"title"`
-	Description string    `json:"description"`
+	PortalID        uuid.UUID `json:"portalId"`
+	BoardID         uuid.UUID `json:"boardId"`
+	Title           string    `json:"title"`
+	Description     string    `json:"description"`
+	DescriptionHTML string    `json:"descriptionHTML"`
 }
 
 type AppCreatePublicItem struct {
 	BoardID             uuid.UUID `json:"boardId"`
 	Title               string    `json:"title"`
 	Description         string    `json:"description"`
+	DescriptionHTML     string    `json:"descriptionHTML"`
 	ParticipationIntent string    `json:"participationIntent"`
 	Website             string    `json:"website"`
 }
@@ -373,7 +387,7 @@ func toAppBoardReviewer(core feedback.CoreBoardReviewer) AppBoardReviewer {
 	}
 }
 
-func toAppItem(core feedback.CoreItem, comments []AppComment, links []AppStoryLink) AppItem {
+func toAppItem(core feedback.CoreItem, comments []AppComment, links []AppStoryLink, attachments ...AppItemAttachment) AppItem {
 	authorID := uuidPointer(core.AuthorID)
 	authorAvatar := core.AuthorAvatar
 	if core.AuthorMasked {
@@ -396,6 +410,7 @@ func toAppItem(core feedback.CoreItem, comments []AppComment, links []AppStoryLi
 		Following:        core.Following,
 		Title:            core.Title,
 		Description:      core.Description,
+		DescriptionHTML:  core.DescriptionHTML,
 		Slug:             core.Slug,
 		Status:           core.Status,
 		VoteCount:        core.VoteCount,
@@ -409,6 +424,7 @@ func toAppItem(core feedback.CoreItem, comments []AppComment, links []AppStoryLi
 		UpdatedAt:        core.UpdatedAt,
 		Comments:         comments,
 		StoryLinks:       links,
+		Attachments:      attachments,
 	}
 	if core.DeletedAt != nil {
 		restoreUntil := core.DeletedAt.Add(30 * 24 * time.Hour)
@@ -564,6 +580,13 @@ func toAppPortalSnapshot(core feedback.CorePortalSnapshot) AppPortal {
 	for _, link := range core.Links {
 		linksByItem[link.ItemID] = append(linksByItem[link.ItemID], toAppStoryLink(link))
 	}
+	attachmentsByItem := map[uuid.UUID][]AppItemAttachment{}
+	for _, attachment := range core.Attachments {
+		attachmentsByItem[attachment.ItemID] = append(
+			attachmentsByItem[attachment.ItemID],
+			toAppItemAttachment(core.Portal.Slug, attachment),
+		)
+	}
 	portal := toAppPortal(core.Portal)
 	portal.Boards = make([]AppBoard, 0, len(core.Boards))
 	for _, board := range core.Boards {
@@ -571,8 +594,26 @@ func toAppPortalSnapshot(core feedback.CorePortalSnapshot) AppPortal {
 	}
 	portal.Items = make([]AppItem, 0, len(core.Items))
 	for _, item := range core.Items {
-		portal.Items = append(portal.Items, toAppItem(item, commentsByItem[item.ID], linksByItem[item.ID]))
+		portal.Items = append(
+			portal.Items,
+			toAppItem(item, commentsByItem[item.ID], linksByItem[item.ID], attachmentsByItem[item.ID]...),
+		)
 	}
 	portal.ItemsHasMore = core.ItemsHasMore
 	return portal
+}
+
+func toAppItemAttachment(portalSlug string, attachment feedback.CoreItemAttachment) AppItemAttachment {
+	return AppItemAttachment{
+		ID:       attachment.ID,
+		Filename: attachment.Filename,
+		Size:     attachment.Size,
+		MimeType: attachment.MimeType,
+		URL: fmt.Sprintf(
+			"/portals/%s/feedback/items/%s/attachments/%s",
+			url.PathEscape(portalSlug),
+			attachment.ItemID,
+			attachment.ID,
+		),
+	}
 }

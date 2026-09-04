@@ -139,15 +139,19 @@ jest.mock("icons", () => {
     ArrowRight2Icon: Icon,
     ArrowUpDownIcon: Icon,
     ArrowUpIcon: Icon,
+    AttachmentIcon: Icon,
     BellIcon: Icon,
     CheckIcon: Icon,
     ChevronRightIcon: Icon,
+    CloseIcon: Icon,
     CommentIcon: Icon,
     ReplyIcon: Icon,
     CopyIcon: Icon,
     DashboardIcon: Icon,
+    DocsIcon: Icon,
     ExternalLinkIcon: Icon,
     GanttIcon: Icon,
+    ImageIcon: Icon,
     KanbanIcon: Icon,
     ListIcon: Icon,
     LogoutIcon: Icon,
@@ -905,6 +909,7 @@ describe("Public portal UI", () => {
     expect(createAnonymousFeedbackActionMock).toHaveBeenCalledWith({
       boardId: "road-repairs",
       description: "",
+      descriptionHTML: "",
       portalSlug: "city-roads",
       title: "Anonymous safety feedback",
     });
@@ -1088,6 +1093,42 @@ describe("Public portal UI", () => {
         }),
       );
     });
+  });
+
+  it("shows and submits file attachments from the feedback popup", async () => {
+    const portal = {
+      ...publicPortalFixture,
+      boards: [publicPortalFixture.boards[0]],
+    };
+    render(
+      <PublicPortalRequestsPage participant={portalViewer} portal={portal} />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "New Feedback" }));
+    expect(screen.getByRole("button", { name: "Attach files" })).toBeVisible();
+
+    const attachment = new File(["feedback evidence"], "evidence.txt", {
+      type: "text/plain",
+    });
+    fireEvent.change(screen.getByLabelText("Select feedback attachments"), {
+      target: { files: [attachment] },
+    });
+    expect(screen.getByText("evidence.txt")).toBeVisible();
+
+    fireEvent.change(screen.getByLabelText("Feedback title"), {
+      target: { value: "Include supporting evidence" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Submit feedback" }));
+
+    await waitFor(() => {
+      expect(createFeedbackActionMock).toHaveBeenCalledWith(
+        expect.objectContaining({ title: "Include supporting evidence" }),
+        expect.any(FormData),
+      );
+    });
+    const submittedFiles =
+      createFeedbackActionMock.mock.calls[0]?.[1]?.getAll("files");
+    expect(submittedFiles).toEqual([attachment]);
   });
 
   it("keeps similarity UI hidden when no similar feedback is found", async () => {

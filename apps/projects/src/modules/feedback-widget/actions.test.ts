@@ -115,6 +115,37 @@ describe("feedback widget participation intent", () => {
     expect(authMock).not.toHaveBeenCalled();
   });
 
+  it("submits rich text and selected media as multipart widget feedback", async () => {
+    postMock.mockResolvedValue({
+      data: {
+        anonymous: true,
+        id: "feedback-1",
+        slug: "repair-the-crossing-signal",
+      },
+    });
+    const attachments = new FormData();
+    attachments.append(
+      "files",
+      new File(["image"], "crossing.png", { type: "image/png" }),
+    );
+
+    await createWidgetFeedbackAction(
+      {
+        ...input,
+        descriptionHTML: "<p>The crossing is <strong>unsafe</strong>.</p>",
+        participationIntent: "anonymous",
+      },
+      attachments,
+    );
+
+    const payload = postMock.mock.calls[0]?.[1];
+    expect(payload).toBeInstanceOf(FormData);
+    expect((payload as FormData).get("descriptionHTML")).toBe(
+      "<p>The crossing is <strong>unsafe</strong>.</p>",
+    );
+    expect((payload as FormData).get("files")).toBeInstanceOf(File);
+  });
+
   it("exchanges signed identity without putting it in credentials or a URL", async () => {
     postMock.mockResolvedValue({
       data: {

@@ -20,6 +20,7 @@ import {
   createVerifiedGuestFeedbackAction,
   toggleFeedbackVoteAction,
 } from "./actions";
+import type { CreateFeedbackInput } from "./actions";
 import { isContactableParticipant } from "./participant";
 
 const updateRequestInLists = (
@@ -247,6 +248,20 @@ const getActionData = <T>(
   return response.data;
 };
 
+type CreateFeedbackMutationInput = CreateFeedbackInput & {
+  attachments?: File[];
+};
+
+const toAttachmentData = (attachments: File[] | undefined) => {
+  if (!attachments?.length) return undefined;
+
+  const formData = new FormData();
+  attachments.forEach((file) => {
+    formData.append("files", file);
+  });
+  return formData;
+};
+
 export const useCreatePublicFeedback = ({
   portal,
   participant,
@@ -258,7 +273,7 @@ export const useCreatePublicFeedback = ({
 
   return useMutation({
     mutationFn: async (
-      input: Parameters<typeof createFeedbackAction>[0] & {
+      input: CreateFeedbackMutationInput & {
         participant?: Exclude<PublicPortalParticipant, { kind: "anonymous" }>;
       },
     ) => {
@@ -266,13 +281,20 @@ export const useCreatePublicFeedback = ({
       if (!isContactableParticipant(activeParticipant)) {
         throw new Error("Verify your email or log in to submit feedback");
       }
-      const { participant: _participantOverride, ...actionInput } = input;
+      const {
+        attachments,
+        participant: _participantOverride,
+        ...actionInput
+      } = input;
       const action =
         activeParticipant.kind === "account"
           ? createFeedbackAction
           : createVerifiedGuestFeedbackAction;
+      const attachmentData = toAttachmentData(attachments);
       const result = getActionData(
-        await action(actionInput),
+        await (attachmentData
+          ? action(actionInput, attachmentData)
+          : action(actionInput)),
         "Unable to submit feedback",
       );
       if (result.kind !== activeParticipant.kind) {
@@ -334,11 +356,13 @@ export const useCreateAnonymousPublicFeedback = ({
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (
-      input: Parameters<typeof createAnonymousFeedbackAction>[0],
-    ) => {
+    mutationFn: async (input: CreateFeedbackMutationInput) => {
+      const { attachments, ...actionInput } = input;
+      const attachmentData = toAttachmentData(attachments);
       const result = getActionData(
-        await createAnonymousFeedbackAction(input),
+        await (attachmentData
+          ? createAnonymousFeedbackAction(actionInput, attachmentData)
+          : createAnonymousFeedbackAction(actionInput)),
         "Unable to submit feedback",
       );
       if (result.kind !== "anonymous") {

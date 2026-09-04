@@ -30,6 +30,7 @@ func (s *Service) CreateItem(ctx context.Context, input CoreItemInput) (CoreItem
 	}
 	input.Title = strings.TrimSpace(input.Title)
 	input.Description = strings.TrimSpace(input.Description)
+	input.DescriptionHTML = strings.TrimSpace(input.DescriptionHTML)
 	if input.Title == "" {
 		return CoreItem{}, invalidInput("feedback title is required")
 	}
@@ -46,6 +47,7 @@ func (s *Service) CreateItem(ctx context.Context, input CoreItemInput) (CoreItem
 func (s *Service) CreatePublicItem(ctx context.Context, input CorePublicItemInput) (CorePublicItemResult, error) {
 	input.Title = strings.TrimSpace(input.Title)
 	input.Description = strings.TrimSpace(input.Description)
+	input.DescriptionHTML = strings.TrimSpace(input.DescriptionHTML)
 	input.ParticipationIntent = strings.ToLower(strings.TrimSpace(input.ParticipationIntent))
 	if input.Title == "" {
 		return CorePublicItemResult{}, invalidInput("feedback title is required")
@@ -55,6 +57,9 @@ func (s *Service) CreatePublicItem(ctx context.Context, input CorePublicItemInpu
 	}
 	if utf8.RuneCountInString(input.Description) > maxPublicFeedbackDescriptionCharacters {
 		return CorePublicItemResult{}, invalidInputf("feedback description must be %d characters or fewer", maxPublicFeedbackDescriptionCharacters)
+	}
+	if utf8.RuneCountInString(input.DescriptionHTML) > maxPublicFeedbackDescriptionHTMLCharacters {
+		return CorePublicItemResult{}, invalidInput("formatted feedback description is too large")
 	}
 	switch input.ParticipationIntent {
 	case ParticipationIntentAccount:
@@ -94,13 +99,14 @@ func (s *Service) CreatePublicItem(ctx context.Context, input CorePublicItemInpu
 		return CorePublicItemResult{}, invalidInput("public feedback source must be portal or widget")
 	}
 	itemInput := CoreItemInput{
-		WorkspaceID: portal.WorkspaceID,
-		PortalID:    portal.ID,
-		BoardID:     board.ID,
-		Title:       input.Title,
-		Description: input.Description,
-		Slug:        normalizeSlug(input.Title) + "-" + uuid.NewString()[:8],
-		Source:      input.Source,
+		WorkspaceID:     portal.WorkspaceID,
+		PortalID:        portal.ID,
+		BoardID:         board.ID,
+		Title:           input.Title,
+		Description:     input.Description,
+		DescriptionHTML: input.DescriptionHTML,
+		Slug:            normalizeSlug(input.Title) + "-" + uuid.NewString()[:8],
+		Source:          input.Source,
 	}
 	if input.ParticipationIntent == ParticipationIntentAccount {
 		contributor, err := s.repo.GetOrCreateAccountContributor(ctx, portal.ID, input.AuthorID)
@@ -141,6 +147,58 @@ func (s *Service) CreatePublicItem(ctx context.Context, input CorePublicItemInpu
 		return CorePublicItemResult{}, err
 	}
 	return CorePublicItemResult{Item: item, Anonymous: true, ParticipantKind: ContributorKindAnonymous}, nil
+}
+
+func (s *Service) AttachPublicItemFile(
+	ctx context.Context,
+	portalSlug string,
+	itemID, attachmentID, accountID uuid.UUID,
+	participant *CoreParticipant,
+	participationIntent string,
+) (CoreItemAttachment, error) {
+	if itemID == uuid.Nil || attachmentID == uuid.Nil {
+		return CoreItemAttachment{}, invalidInput("feedback and attachment ids are required")
+	}
+	portal, err := s.repo.GetPortalBySlug(ctx, strings.TrimSpace(portalSlug))
+	if err != nil {
+		return CoreItemAttachment{}, err
+	}
+	item, err := s.repo.GetItemByPortal(ctx, portal.ID, itemID)
+	if err != nil {
+		return CoreItemAttachment{}, err
+	}
+	switch strings.ToLower(strings.TrimSpace(participationIntent)) {
+	case ParticipationIntentAccount:
+		if accountID == uuid.Nil || item.AuthorID != accountID {
+			return CoreItemAttachment{}, ErrAuthenticationRequired
+		}
+	case ParticipationIntentVerifiedGuest, ParticipationIntentExternal:
+		if participant == nil || participant.ID == uuid.Nil || item.ContributorID != participant.ID {
+			return CoreItemAttachment{}, ErrAuthenticationRequired
+		}
+	case ParticipationIntentAnonymous:
+		if item.ParticipantKind != ContributorKindAnonymous {
+			return CoreItemAttachment{}, ErrAuthenticationRequired
+		}
+	default:
+		return CoreItemAttachment{}, invalidInput("unsupported feedback participation intent")
+	}
+	return s.repo.LinkItemAttachment(ctx, portal.ID, item.ID, attachmentID)
+}
+
+func (s *Service) GetPublicItemAttachment(
+	ctx context.Context,
+	portalSlug string,
+	itemID, attachmentID uuid.UUID,
+) (CoreItemAttachment, error) {
+	if itemID == uuid.Nil || attachmentID == uuid.Nil {
+		return CoreItemAttachment{}, invalidInput("feedback and attachment ids are required")
+	}
+	portal, err := s.repo.GetPortalBySlug(ctx, strings.TrimSpace(portalSlug))
+	if err != nil {
+		return CoreItemAttachment{}, err
+	}
+	return s.repo.GetItemAttachment(ctx, portal.ID, itemID, attachmentID)
 }
 
 func (s *Service) ListPublicSimilarItems(ctx context.Context, portalSlug, title, description string, limit int) ([]CoreSimilarItem, error) {

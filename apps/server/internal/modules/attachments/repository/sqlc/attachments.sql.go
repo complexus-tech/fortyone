@@ -224,6 +224,11 @@ WHERE attachment.attachment_id = $1
       FROM public.document_attachments AS document_relation
       WHERE document_relation.attachment_id = attachment.attachment_id
   )
+  AND NOT EXISTS (
+      SELECT 1
+      FROM public.feedback_item_attachments AS feedback_relation
+      WHERE feedback_relation.attachment_id = attachment.attachment_id
+  )
 RETURNING attachment.attachment_id, attachment.filename, attachment.size, attachment.mime_type, attachment.uploaded_by, attachment.workspace_id, attachment.created_at, attachment.blob_name, attachment.scan_status, attachment.scan_completed_at, attachment.scan_failure_reason, attachment.optimization_status, attachment.optimization_attempts, attachment.optimization_started_at, attachment.optimization_completed_at, attachment.optimization_lease_expires_at, attachment.optimization_last_error, attachment.updated_at
 `
 

@@ -16,6 +16,7 @@ export type PublicFeedbackListStatus = FeedbackWidget.PublicFeedbackListStatus;
 export type PublicPortalSort = FeedbackWidget.PublicPortalSort;
 export type PublicRequestBoard = FeedbackWidget.PublicRequestBoard;
 export type PublicRequestComment = FeedbackWidget.PublicRequestComment;
+export type PublicRequestAttachment = FeedbackWidget.PublicRequestAttachment;
 export type PublicFeedbackStoryLink = FeedbackWidget.PublicFeedbackStoryLink;
 export type PublicRequest = FeedbackWidget.PublicRequest;
 export type PublicPortalUpdate = FeedbackWidget.PublicPortalUpdate;

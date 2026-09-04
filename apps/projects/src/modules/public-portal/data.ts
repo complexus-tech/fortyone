@@ -1,3 +1,4 @@
+import { getApiUrl } from "@/lib/api-url";
 import type {
   PublicContributor,
   PublicContributorCommentsPage,
@@ -9,6 +10,7 @@ import type {
   PublicPortalWorkspace,
   PublicParticipantKind,
   PublicRequestBoard,
+  PublicRequestAttachment,
   PublicRequestComment,
   PublicRequestStatus,
 } from "./types";
@@ -42,6 +44,7 @@ export type ApiFeedbackItem = {
   authorAvatar?: string | null;
   title: string;
   description: string;
+  descriptionHTML?: string;
   slug: string;
   status: PublicRequestStatus;
   voteCount: number;
@@ -54,6 +57,7 @@ export type ApiFeedbackItem = {
   participantKind?: PublicParticipantKind;
   following?: boolean;
   viewerVote?: -1 | 0 | 1;
+  attachments?: PublicRequestAttachment[];
 };
 
 type ApiFeedbackComment = {
@@ -186,6 +190,7 @@ export const toPublicRequest = (
     slug: item.slug,
     title: item.title,
     description: item.description,
+    descriptionHTML: item.descriptionHTML,
     authorMasked: item.authorMasked,
     authorName: item.authorName,
     authorAvatar: item.authorAvatar,
@@ -197,6 +202,12 @@ export const toPublicRequest = (
     roadmapSummary: item.roadmapSummary ?? undefined,
     comments,
     storyLinks: item.storyLinks ?? [],
+    attachments: (item.attachments ?? []).map((attachment) => ({
+      ...attachment,
+      url: attachment.url.startsWith("http")
+        ? attachment.url
+        : `${getApiUrl()}${attachment.url}`,
+    })),
     participantKind: item.participantKind,
     following: item.following,
     viewerVote: item.viewerVote,

@@ -2,11 +2,16 @@ package feedbackhttp
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
+	attachments "github.com/complexus-tech/projects-api/internal/modules/attachments/service"
 	feedback "github.com/complexus-tech/projects-api/internal/modules/feedback/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
+	"github.com/complexus-tech/projects-api/pkg/validate"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 )
@@ -25,12 +30,13 @@ func (h *Handlers) CreateItem(ctx context.Context, w http.ResponseWriter, r *htt
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 	item, err := h.feedback.CreateItem(ctx, feedback.CoreItemInput{
-		WorkspaceID: workspace.ID,
-		PortalID:    input.PortalID,
-		BoardID:     input.BoardID,
-		AuthorID:    userID,
-		Title:       input.Title,
-		Description: input.Description,
+		WorkspaceID:     workspace.ID,
+		PortalID:        input.PortalID,
+		BoardID:         input.BoardID,
+		AuthorID:        userID,
+		Title:           input.Title,
+		Description:     input.Description,
+		DescriptionHTML: input.DescriptionHTML,
 	})
 	if err != nil {
 		return web.RespondError(ctx, w, err, httpStatus(err))
@@ -40,11 +46,139 @@ func (h *Handlers) CreateItem(ctx context.Context, w http.ResponseWriter, r *htt
 }
 
 func (h *Handlers) CreatePublicItem(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	if strings.HasPrefix(r.Header.Get("Content-Type"), "multipart/form-data") {
+		return h.createPublicItemWithAttachments(ctx, w, r, feedback.SubmissionSourcePortal)
+	}
 	return h.createPublicItem(ctx, w, r, feedback.SubmissionSourcePortal)
 }
 
 func (h *Handlers) CreateWidgetItem(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	if strings.HasPrefix(r.Header.Get("Content-Type"), "multipart/form-data") {
+		return h.createPublicItemWithAttachments(ctx, w, r, feedback.SubmissionSourceWidget)
+	}
 	return h.createPublicItem(ctx, w, r, feedback.SubmissionSourceWidget)
+}
+
+func (h *Handlers) createPublicItemWithAttachments(
+	ctx context.Context,
+	w http.ResponseWriter,
+	r *http.Request,
+	source string,
+) error {
+	if h.attachments == nil {
+		return web.RespondError(ctx, w, errors.New("feedback attachment service is unavailable"), http.StatusServiceUnavailable)
+	}
+	const maxFiles = 5
+	const multipartOverheadAllowance int64 = 1 << 20
+	if err := web.ParseMultipartForm(w, r, maxFiles*validate.MaxAttachmentSize+multipartOverheadAllowance); err != nil {
+		return web.RespondError(ctx, w, fmt.Errorf("invalid feedback upload: %w", err), http.StatusBadRequest)
+	}
+	defer func() {
+		if err := web.RemoveMultipartForm(r); err != nil && h.log != nil {
+			h.log.Warn(ctx, "failed to remove feedback upload temporary files", "error", err)
+		}
+	}()
+	files := r.MultipartForm.File["files"]
+	if len(files) == 0 || len(files) > maxFiles {
+		return web.RespondError(ctx, w, feedback.ErrInvalidInput, http.StatusBadRequest)
+	}
+	boardID, err := uuid.Parse(r.FormValue("boardId"))
+	if err != nil {
+		return web.RespondError(ctx, w, feedback.ErrInvalidInput, http.StatusBadRequest)
+	}
+	input := AppCreatePublicItem{
+		BoardID: boardID, Title: r.FormValue("title"), Description: r.FormValue("description"),
+		DescriptionHTML: r.FormValue("descriptionHTML"), ParticipationIntent: r.FormValue("participationIntent"),
+		Website: r.FormValue("website"),
+	}
+	if err := validatePublicItemBotTrap(input); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	userID, _ := mid.GetUserID(ctx)
+	var participant *feedback.CoreParticipant
+	if input.ParticipationIntent == feedback.ParticipationIntentVerifiedGuest || input.ParticipationIntent == feedback.ParticipationIntentExternal {
+		resolved, resolveErr := h.resolvePublicParticipant(ctx, r, input.ParticipationIntent)
+		if resolveErr != nil {
+			return web.RespondError(ctx, w, resolveErr, httpStatus(resolveErr))
+		}
+		participant = &resolved.Participant
+	}
+	portalSlug := web.Params(r, "portalSlug")
+	portal, err := h.feedback.GetPublicPortal(ctx, portalSlug)
+	if err != nil {
+		return web.RespondError(ctx, w, err, httpStatus(err))
+	}
+	uploaded := make([]attachments.FileInfo, 0, len(files))
+	cleanupUploads := func() {
+		for _, file := range uploaded {
+			if cleanupErr := h.attachments.DeleteOrphanedMedia(ctx, file.ID, portal.WorkspaceID); cleanupErr != nil && h.log != nil {
+				h.log.Warn(ctx, "failed to clean up feedback attachment", "error", cleanupErr, "attachment_id", file.ID)
+			}
+		}
+	}
+	for _, header := range files {
+		file, openErr := header.Open()
+		if openErr != nil {
+			cleanupUploads()
+			return web.RespondError(ctx, w, openErr, http.StatusBadRequest)
+		}
+		fileInfo, uploadErr := h.attachments.UploadAttachment(ctx, file, header, userID, portal.WorkspaceID)
+		_ = file.Close()
+		if uploadErr != nil {
+			cleanupUploads()
+			return web.RespondError(ctx, w, uploadErr, http.StatusBadRequest)
+		}
+		uploaded = append(uploaded, fileInfo)
+	}
+	result, err := h.feedback.CreatePublicItem(ctx, feedback.CorePublicItemInput{
+		PortalSlug: portalSlug, BoardID: input.BoardID, AuthorID: userID, Title: input.Title,
+		Description: input.Description, DescriptionHTML: input.DescriptionHTML, Source: source,
+		ParticipationIntent: input.ParticipationIntent, Participant: participant,
+	})
+	if err != nil {
+		cleanupUploads()
+		return web.RespondError(ctx, w, err, httpStatus(err))
+	}
+	appAttachments := make([]AppItemAttachment, 0, len(uploaded))
+	for _, file := range uploaded {
+		linked, linkErr := h.feedback.AttachPublicItemFile(
+			ctx, portalSlug, result.Item.ID, file.ID, userID, participant, input.ParticipationIntent,
+		)
+		if linkErr != nil {
+			return web.RespondError(ctx, w, linkErr, httpStatus(linkErr))
+		}
+		appAttachments = append(appAttachments, toAppItemAttachment(portalSlug, linked))
+	}
+	result.Item.AuthorAvatar = h.resolveAuthorAvatar(ctx, result.Item.AuthorAvatar, make(map[string]*string))
+	item := toAppItem(result.Item, nil, nil, appAttachments...)
+	item.Anonymous = result.Anonymous
+	item.ParticipantKind = result.ParticipantKind
+	item.Following = result.Following
+	return web.Respond(ctx, w, item, http.StatusCreated)
+}
+
+func (h *Handlers) ResolvePublicItemAttachment(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	if h.attachments == nil {
+		return web.RespondError(ctx, w, errors.New("feedback attachment service is unavailable"), http.StatusServiceUnavailable)
+	}
+	itemID, itemErr := uuid.Parse(web.Params(r, "itemId"))
+	attachmentID, attachmentErr := uuid.Parse(web.Params(r, "attachmentId"))
+	if itemErr != nil || attachmentErr != nil {
+		return web.RespondError(ctx, w, feedback.ErrInvalidInput, http.StatusBadRequest)
+	}
+	attachment, err := h.feedback.GetPublicItemAttachment(ctx, web.Params(r, "portalSlug"), itemID, attachmentID)
+	if err != nil {
+		return web.RespondError(ctx, w, err, httpStatus(err))
+	}
+	file, err := h.attachments.ResolveAttachmentAccessURL(ctx, attachment.ID, attachment.WorkspaceID, 5*time.Minute)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusNotFound)
+	}
+	w.Header().Set("Cache-Control", "private, no-store")
+	w.Header().Set("Referrer-Policy", "no-referrer")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	http.Redirect(w, r, file.URL, http.StatusTemporaryRedirect)
+	return nil
 }
 
 func (h *Handlers) createPublicItem(ctx context.Context, w http.ResponseWriter, r *http.Request, source string) error {
@@ -70,6 +204,7 @@ func (h *Handlers) createPublicItem(ctx context.Context, w http.ResponseWriter, 
 		AuthorID:            userID,
 		Title:               input.Title,
 		Description:         input.Description,
+		DescriptionHTML:     input.DescriptionHTML,
 		Source:              source,
 		ParticipationIntent: input.ParticipationIntent,
 		Participant:         participant,

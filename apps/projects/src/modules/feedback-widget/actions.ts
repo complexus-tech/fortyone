@@ -120,6 +120,7 @@ const toWidgetParticipantSession = (
 export type CreateWidgetFeedbackInput = {
   boardId: string;
   description: string;
+  descriptionHTML?: string;
   participationIntent: "account" | "anonymous" | "external" | "verified_guest";
   portalSlug: string;
   sessionToken?: string;
@@ -167,6 +168,7 @@ const widgetWriteOptions = (
 
 export const createWidgetFeedbackAction = async (
   input: CreateWidgetFeedbackInput,
+  attachmentData?: FormData,
 ) => {
   try {
     const portalSlug = normalizeFeedbackPortalSlug(input.portalSlug);
@@ -197,15 +199,33 @@ export const createWidgetFeedbackAction = async (
     const contributorHeaders = input.sessionToken
       ? { Authorization: `FeedbackSession ${input.sessionToken}` }
       : undefined;
+    const attachments = attachmentData?.getAll("files") ?? [];
+    const payload =
+      attachments.length > 0
+        ? (() => {
+            const formData = new FormData();
+            formData.set("boardId", input.boardId);
+            formData.set("description", input.description);
+            formData.set("descriptionHTML", input.descriptionHTML ?? "");
+            formData.set("participationIntent", input.participationIntent);
+            formData.set("title", input.title);
+            formData.set("website", "");
+            attachments.forEach((file) => {
+              formData.append("files", file);
+            });
+            return formData;
+          })()
+        : {
+            boardId: input.boardId,
+            description: input.description,
+            descriptionHTML: input.descriptionHTML ?? "",
+            participationIntent: input.participationIntent,
+            title: input.title,
+            website: "",
+          };
     const response = await post<ApiResponse<ApiFeedbackItem>>(
       `portals/${encodeURIComponent(portalSlug)}/widget/feedback/items`,
-      {
-        boardId: input.boardId,
-        description: input.description,
-        participationIntent: input.participationIntent,
-        title: input.title,
-        website: "",
-      },
+      payload,
       ingressHeaders || contributorHeaders
         ? {
             credentials:

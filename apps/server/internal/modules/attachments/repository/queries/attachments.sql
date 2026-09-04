@@ -71,6 +71,11 @@ WHERE attachment.attachment_id = sqlc.arg(attachment_id)
       FROM public.document_attachments AS document_relation
       WHERE document_relation.attachment_id = attachment.attachment_id
   )
+  AND NOT EXISTS (
+      SELECT 1
+      FROM public.feedback_item_attachments AS feedback_relation
+      WHERE feedback_relation.attachment_id = attachment.attachment_id
+  )
 RETURNING attachment.*;
 
 -- name: LinkWorkspaceStoryAttachment :one

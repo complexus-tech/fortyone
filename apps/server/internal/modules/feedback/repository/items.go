@@ -171,7 +171,7 @@ func (r *Repo) createItem(ctx context.Context, input feedback.CoreItemInput, req
 
 func createItemWithQueries(ctx context.Context, q feedbacksql.Querier, input feedback.CoreItemInput, requireActor bool) (feedback.CoreItem, error) {
 	itemID, err := q.CreateFeedbackItem(ctx, feedbacksql.CreateFeedbackItemParams{
-		Title: input.Title, Description: input.Description, Slug: input.Slug, SubmissionSource: input.Source,
+		Title: input.Title, Description: input.Description, DescriptionHtml: input.DescriptionHTML, Slug: input.Slug, SubmissionSource: input.Source,
 		BoardID: input.BoardID, ContributorID: input.ContributorID, WorkspaceID: input.WorkspaceID,
 		PortalID: input.PortalID, RequireActor: requireActor, ActorID: uuidPointer(input.AuthorID),
 	})
@@ -183,6 +183,46 @@ func createItemWithQueries(ctx context.Context, q feedbacksql.Querier, input fee
 		return feedback.CoreItem{}, normalizeError(err)
 	}
 	return workspaceItemProjection(row).core(), nil
+}
+
+func (r *Repo) LinkItemAttachment(ctx context.Context, portalID, itemID, attachmentID uuid.UUID) (feedback.CoreItemAttachment, error) {
+	linkedID, err := r.queries.LinkFeedbackItemAttachment(ctx, feedbacksql.LinkFeedbackItemAttachmentParams{
+		PortalID: portalID, ItemID: itemID, AttachmentID: attachmentID,
+	})
+	if err != nil {
+		return feedback.CoreItemAttachment{}, normalizeError(err)
+	}
+	return r.GetItemAttachment(ctx, portalID, itemID, linkedID)
+}
+
+func (r *Repo) GetItemAttachment(ctx context.Context, portalID, itemID, attachmentID uuid.UUID) (feedback.CoreItemAttachment, error) {
+	row, err := r.queries.GetFeedbackItemAttachment(ctx, feedbacksql.GetFeedbackItemAttachmentParams{
+		PortalID: portalID, ItemID: itemID, AttachmentID: attachmentID,
+	})
+	if err != nil {
+		return feedback.CoreItemAttachment{}, normalizeError(err)
+	}
+	return feedback.CoreItemAttachment{ID: row.AttachmentID, ItemID: row.ItemID, WorkspaceID: row.WorkspaceID,
+		Filename: row.Filename, Size: row.Size, MimeType: row.MimeType, CreatedAt: row.CreatedAt}, nil
+}
+
+func (r *Repo) ListItemAttachments(ctx context.Context, portalID uuid.UUID, itemIDs []uuid.UUID) ([]feedback.CoreItemAttachment, error) {
+	if len(itemIDs) == 0 {
+		return []feedback.CoreItemAttachment{}, nil
+	}
+	rows, err := r.queries.ListFeedbackItemAttachments(ctx, feedbacksql.ListFeedbackItemAttachmentsParams{
+		PortalID: portalID, ItemIds: itemIDs,
+	})
+	if err != nil {
+		return nil, normalizeError(err)
+	}
+	items := make([]feedback.CoreItemAttachment, 0, len(rows))
+	for _, row := range rows {
+		items = append(items, feedback.CoreItemAttachment{ID: row.AttachmentID, ItemID: row.ItemID,
+			WorkspaceID: row.WorkspaceID, Filename: row.Filename, Size: row.Size,
+			MimeType: row.MimeType, CreatedAt: row.CreatedAt})
+	}
+	return items, nil
 }
 
 func (r *Repo) GetOrCreateAccountContributor(ctx context.Context, portalID, userID uuid.UUID) (feedback.CoreContributor, error) {
@@ -353,7 +393,7 @@ func pageBounds(page, pageSize int) (int32, int32, error) {
 func listItemProjection(row feedbacksql.ListFeedbackItemsRow) itemProjection {
 	return itemProjection{row.ID, row.WorkspaceID, row.PortalID, row.BoardID, row.ContributorID, row.AuthorID,
 		row.AuthorName, row.AuthorEmail, nonEmptyStringPointer(row.AuthorAvatar), row.ParticipantKind, row.AuthorMasked,
-		row.Following, row.MergedIntoItemID, row.MergedAt, row.MergedByUserID, row.Title, row.Description, row.Slug,
+		row.Following, row.MergedIntoItemID, row.MergedAt, row.MergedByUserID, row.Title, row.Description, row.DescriptionHtml, row.Slug,
 		row.Status, row.VoteCount, row.UpvoteCount, row.DownvoteCount, row.CommentCount, row.RoadmapSummary,
 		row.BoardTeamID, row.BoardName, row.BoardSlug, row.BoardColor, row.BoardOrderIndex, row.BoardCreatedAt,
 		row.BoardUpdatedAt, uuidPointer(row.PrimaryLinkID), uuidPointer(row.PrimaryStoryID), row.PrimaryStoryTitle,
@@ -364,7 +404,7 @@ func listItemProjection(row feedbacksql.ListFeedbackItemsRow) itemProjection {
 func workspaceItemProjection(row feedbacksql.GetWorkspaceFeedbackItemRow) itemProjection {
 	return itemProjection{row.ID, row.WorkspaceID, row.PortalID, row.BoardID, row.ContributorID, row.AuthorID,
 		row.AuthorName, row.AuthorEmail, nonEmptyStringPointer(row.AuthorAvatar), row.ParticipantKind, row.AuthorMasked,
-		row.Following, row.MergedIntoItemID, row.MergedAt, row.MergedByUserID, row.Title, row.Description, row.Slug,
+		row.Following, row.MergedIntoItemID, row.MergedAt, row.MergedByUserID, row.Title, row.Description, row.DescriptionHtml, row.Slug,
 		row.Status, row.VoteCount, row.UpvoteCount, row.DownvoteCount, row.CommentCount, row.RoadmapSummary,
 		row.BoardTeamID, row.BoardName, row.BoardSlug, row.BoardColor, row.BoardOrderIndex, row.BoardCreatedAt,
 		row.BoardUpdatedAt, uuidPointer(row.PrimaryLinkID), uuidPointer(row.PrimaryStoryID), row.PrimaryStoryTitle,
@@ -375,7 +415,7 @@ func workspaceItemProjection(row feedbacksql.GetWorkspaceFeedbackItemRow) itemPr
 func publicItemProjection(row feedbacksql.GetPublicFeedbackItemRow) itemProjection {
 	return itemProjection{row.ID, row.WorkspaceID, row.PortalID, row.BoardID, row.ContributorID, row.AuthorID,
 		row.AuthorName, row.AuthorEmail, nonEmptyStringPointer(row.AuthorAvatar), row.ParticipantKind, row.AuthorMasked,
-		row.Following, row.MergedIntoItemID, row.MergedAt, row.MergedByUserID, row.Title, row.Description, row.Slug,
+		row.Following, row.MergedIntoItemID, row.MergedAt, row.MergedByUserID, row.Title, row.Description, row.DescriptionHtml, row.Slug,
 		row.Status, row.VoteCount, row.UpvoteCount, row.DownvoteCount, row.CommentCount, row.RoadmapSummary,
 		row.BoardTeamID, row.BoardName, row.BoardSlug, row.BoardColor, row.BoardOrderIndex, row.BoardCreatedAt,
 		row.BoardUpdatedAt, uuidPointer(row.PrimaryLinkID), uuidPointer(row.PrimaryStoryID), row.PrimaryStoryTitle,

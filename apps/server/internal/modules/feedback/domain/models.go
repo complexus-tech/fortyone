@@ -129,6 +129,7 @@ type CoreItem struct {
 	Following        bool
 	Title            string
 	Description      string
+	DescriptionHTML  string
 	Slug             string
 	Status           string
 	VoteCount        int
@@ -142,6 +143,16 @@ type CoreItem struct {
 	DeletedAt        *time.Time
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
+}
+
+type CoreItemAttachment struct {
+	ID          uuid.UUID
+	ItemID      uuid.UUID
+	WorkspaceID uuid.UUID
+	Filename    string
+	Size        int64
+	MimeType    string
+	CreatedAt   time.Time
 }
 
 // CorePrivateAuthor is kept separate from CoreItem so contact data cannot
@@ -279,6 +290,7 @@ type CorePortalSnapshot struct {
 	ItemsHasMore bool
 	Comments     []CoreComment
 	Links        []CoreStoryLink
+	Attachments  []CoreItemAttachment
 }
 
 type CorePortalInput struct {
@@ -306,15 +318,16 @@ type CoreBoardInput struct {
 }
 
 type CoreItemInput struct {
-	WorkspaceID   uuid.UUID
-	PortalID      uuid.UUID
-	BoardID       uuid.UUID
-	ContributorID uuid.UUID
-	AuthorID      uuid.UUID
-	Title         string
-	Description   string
-	Slug          string
-	Source        string
+	WorkspaceID     uuid.UUID
+	PortalID        uuid.UUID
+	BoardID         uuid.UUID
+	ContributorID   uuid.UUID
+	AuthorID        uuid.UUID
+	Title           string
+	Description     string
+	DescriptionHTML string
+	Slug            string
+	Source          string
 }
 
 type CoreBoardReviewerInput struct {
@@ -330,6 +343,7 @@ type CorePublicItemInput struct {
 	AuthorID            uuid.UUID
 	Title               string
 	Description         string
+	DescriptionHTML     string
 	Source              string
 	ParticipationIntent string
 	Participant         *CoreParticipant

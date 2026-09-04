@@ -34,6 +34,7 @@ type CoreContributorActivityPage = feedbackdomain.CoreContributorActivityPage
 type CoreListContributorActivityInput = feedbackdomain.CoreListContributorActivityInput
 type CoreBoard = feedbackdomain.CoreBoard
 type CoreItem = feedbackdomain.CoreItem
+type CoreItemAttachment = feedbackdomain.CoreItemAttachment
 type CorePrivateAuthor = feedbackdomain.CorePrivateAuthor
 type CoreMergeItemResult = feedbackdomain.CoreMergeItemResult
 type CoreCanonicalItem = feedbackdomain.CoreCanonicalItem

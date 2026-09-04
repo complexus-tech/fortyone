@@ -41,6 +41,7 @@ INSERT INTO feedback_items (
     author_id,
     title,
     description,
+    description_html,
     slug,
     submission_source
 )
@@ -52,23 +53,24 @@ SELECT fp.workspace_id,
        $1,
        $2,
        $3,
-       $4
+       $4,
+       $5
 FROM feedback_portals fp
 INNER JOIN feedback_boards fb
     ON fb.portal_id = fp.id
    AND fb.workspace_id = fp.workspace_id
-   AND fb.id = $5
+   AND fb.id = $6
 INNER JOIN feedback_contributors contributor
     ON contributor.portal_id = fp.id
-   AND contributor.id = $6
+   AND contributor.id = $7
    AND contributor.blocked_at IS NULL
-WHERE fp.workspace_id = $7
-  AND fp.id = $8
+WHERE fp.workspace_id = $8
+  AND fp.id = $9
   AND (
-      NOT CAST($9 AS boolean)
+      NOT CAST($10 AS boolean)
       OR (
           contributor.kind = 'account'
-          AND contributor.user_id = $10
+          AND contributor.user_id = $11
           AND EXISTS (
               SELECT 1
               FROM workspace_members wm
@@ -80,7 +82,7 @@ WHERE fp.workspace_id = $7
                  AND current_actor.is_active = true
                  AND current_actor.is_system = false
               WHERE wm.workspace_id = fp.workspace_id
-                AND wm.user_id = $10
+                AND wm.user_id = $11
                 AND wm.role IN ('admin', 'member')
           )
       )
@@ -91,6 +93,7 @@ RETURNING id
 type CreateFeedbackItemParams struct {
 	Title            string
 	Description      string
+	DescriptionHtml  string
 	Slug             string
 	SubmissionSource string
 	BoardID          uuid.UUID
@@ -105,6 +108,7 @@ func (q *Queries) CreateFeedbackItem(ctx context.Context, arg CreateFeedbackItem
 	row := q.db.QueryRow(ctx, createFeedbackItem,
 		arg.Title,
 		arg.Description,
+		arg.DescriptionHtml,
 		arg.Slug,
 		arg.SubmissionSource,
 		arg.BoardID,
@@ -139,6 +143,56 @@ func (q *Queries) FeedbackItemStoryManaged(ctx context.Context, arg FeedbackItem
 	var exists bool
 	err := row.Scan(&exists)
 	return exists, err
+}
+
+const getFeedbackItemAttachment = `-- name: GetFeedbackItemAttachment :one
+SELECT attachment.attachment_id,
+       relation.item_id,
+       attachment.workspace_id,
+       attachment.filename,
+       attachment.size,
+       attachment.mime_type,
+       relation.created_at
+FROM feedback_item_attachments AS relation
+INNER JOIN feedback_items AS item ON item.id = relation.item_id
+INNER JOIN attachments AS attachment
+    ON attachment.attachment_id = relation.attachment_id
+   AND attachment.workspace_id = item.workspace_id
+WHERE item.portal_id = $1
+  AND item.id = $2
+  AND attachment.attachment_id = $3
+  AND item.deleted_at IS NULL
+`
+
+type GetFeedbackItemAttachmentParams struct {
+	PortalID     uuid.UUID
+	ItemID       uuid.UUID
+	AttachmentID uuid.UUID
+}
+
+type GetFeedbackItemAttachmentRow struct {
+	AttachmentID uuid.UUID
+	ItemID       uuid.UUID
+	WorkspaceID  uuid.UUID
+	Filename     string
+	Size         int64
+	MimeType     string
+	CreatedAt    time.Time
+}
+
+func (q *Queries) GetFeedbackItemAttachment(ctx context.Context, arg GetFeedbackItemAttachmentParams) (GetFeedbackItemAttachmentRow, error) {
+	row := q.db.QueryRow(ctx, getFeedbackItemAttachment, arg.PortalID, arg.ItemID, arg.AttachmentID)
+	var i GetFeedbackItemAttachmentRow
+	err := row.Scan(
+		&i.AttachmentID,
+		&i.ItemID,
+		&i.WorkspaceID,
+		&i.Filename,
+		&i.Size,
+		&i.MimeType,
+		&i.CreatedAt,
+	)
+	return i, err
 }
 
 const getFeedbackItemProtection = `-- name: GetFeedbackItemProtection :one
@@ -252,6 +306,7 @@ SELECT fi.id,
        false AS following,
        fi.title,
        fi.description,
+       fi.description_html,
        fi.slug,
        CAST(CASE
            WHEN projected_story.id IS NULL THEN fi.status
@@ -329,6 +384,7 @@ type GetPublicFeedbackItemRow struct {
 	Following              bool
 	Title                  string
 	Description            string
+	DescriptionHtml        string
 	Slug                   string
 	Status                 string
 	VoteCount              int32
@@ -376,6 +432,7 @@ func (q *Queries) GetPublicFeedbackItem(ctx context.Context, arg GetPublicFeedba
 		&i.Following,
 		&i.Title,
 		&i.Description,
+		&i.DescriptionHtml,
 		&i.Slug,
 		&i.Status,
 		&i.VoteCount,
@@ -432,6 +489,7 @@ SELECT fi.id,
        false AS following,
        fi.title,
        fi.description,
+       fi.description_html,
        fi.slug,
        CAST(CASE
            WHEN projected_story.id IS NULL THEN fi.status
@@ -508,6 +566,7 @@ type GetWorkspaceFeedbackItemRow struct {
 	Following              bool
 	Title                  string
 	Description            string
+	DescriptionHtml        string
 	Slug                   string
 	Status                 string
 	VoteCount              int32
@@ -555,6 +614,7 @@ func (q *Queries) GetWorkspaceFeedbackItem(ctx context.Context, arg GetWorkspace
 		&i.Following,
 		&i.Title,
 		&i.Description,
+		&i.DescriptionHtml,
 		&i.Slug,
 		&i.Status,
 		&i.VoteCount,
@@ -581,6 +641,95 @@ func (q *Queries) GetWorkspaceFeedbackItem(ctx context.Context, arg GetWorkspace
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const linkFeedbackItemAttachment = `-- name: LinkFeedbackItemAttachment :one
+INSERT INTO feedback_item_attachments (item_id, attachment_id)
+SELECT item.id, attachment.attachment_id
+FROM feedback_items AS item
+INNER JOIN attachments AS attachment
+    ON attachment.attachment_id = $1
+   AND attachment.workspace_id = item.workspace_id
+WHERE item.id = $2
+  AND item.portal_id = $3
+  AND item.deleted_at IS NULL
+ON CONFLICT (item_id, attachment_id) DO NOTHING
+RETURNING attachment_id
+`
+
+type LinkFeedbackItemAttachmentParams struct {
+	AttachmentID uuid.UUID
+	ItemID       uuid.UUID
+	PortalID     uuid.UUID
+}
+
+func (q *Queries) LinkFeedbackItemAttachment(ctx context.Context, arg LinkFeedbackItemAttachmentParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, linkFeedbackItemAttachment, arg.AttachmentID, arg.ItemID, arg.PortalID)
+	var attachment_id uuid.UUID
+	err := row.Scan(&attachment_id)
+	return attachment_id, err
+}
+
+const listFeedbackItemAttachments = `-- name: ListFeedbackItemAttachments :many
+SELECT attachment.attachment_id,
+       relation.item_id,
+       attachment.workspace_id,
+       attachment.filename,
+       attachment.size,
+       attachment.mime_type,
+       relation.created_at
+FROM feedback_item_attachments AS relation
+INNER JOIN feedback_items AS item ON item.id = relation.item_id
+INNER JOIN attachments AS attachment
+    ON attachment.attachment_id = relation.attachment_id
+   AND attachment.workspace_id = item.workspace_id
+WHERE item.portal_id = $1
+  AND relation.item_id = ANY(CAST($2 AS uuid[]))
+  AND item.deleted_at IS NULL
+ORDER BY relation.created_at, attachment.attachment_id
+`
+
+type ListFeedbackItemAttachmentsParams struct {
+	PortalID uuid.UUID
+	ItemIds  []uuid.UUID
+}
+
+type ListFeedbackItemAttachmentsRow struct {
+	AttachmentID uuid.UUID
+	ItemID       uuid.UUID
+	WorkspaceID  uuid.UUID
+	Filename     string
+	Size         int64
+	MimeType     string
+	CreatedAt    time.Time
+}
+
+func (q *Queries) ListFeedbackItemAttachments(ctx context.Context, arg ListFeedbackItemAttachmentsParams) ([]ListFeedbackItemAttachmentsRow, error) {
+	rows, err := q.db.Query(ctx, listFeedbackItemAttachments, arg.PortalID, arg.ItemIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListFeedbackItemAttachmentsRow{}
+	for rows.Next() {
+		var i ListFeedbackItemAttachmentsRow
+		if err := rows.Scan(
+			&i.AttachmentID,
+			&i.ItemID,
+			&i.WorkspaceID,
+			&i.Filename,
+			&i.Size,
+			&i.MimeType,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listFeedbackItems = `-- name: ListFeedbackItems :many
@@ -636,6 +785,7 @@ SELECT fi.id,
        false AS following,
        fi.title,
        fi.description,
+       fi.description_html,
        fi.slug,
        CAST(CASE
            WHEN projected_story.id IS NULL THEN fi.status
@@ -831,6 +981,7 @@ type ListFeedbackItemsRow struct {
 	Following              bool
 	Title                  string
 	Description            string
+	DescriptionHtml        string
 	Slug                   string
 	Status                 string
 	VoteCount              int32
@@ -910,6 +1061,7 @@ func (q *Queries) ListFeedbackItems(ctx context.Context, arg ListFeedbackItemsPa
 			&i.Following,
 			&i.Title,
 			&i.Description,
+			&i.DescriptionHtml,
 			&i.Slug,
 			&i.Status,
 			&i.VoteCount,

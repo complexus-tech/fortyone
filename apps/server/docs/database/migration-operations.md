@@ -47,6 +47,7 @@ The machine-readable source of truth is [`internal/migrations/manifest.json`](..
 | `000180` | `google_drive_atomic_document_imports` | `forward-only` | `schema-first` | Replacement import endpoints require schema 000180 and require an Idempotency-Key. Old API instances ignore the additive operation table. | Unaffected. Provider reads and atomic native-document finalization remain synchronous API operations. |
 | `000181` | `google_drive_user_deactivation_cleanup` | `forward-only` | `schema-first` | Existing user deactivation updates automatically delete that user's Drive workspace bindings; no API contract changes. | The Google Drive revocation dispatcher introduced with schema 000179 processes any encrypted tombstones staged by deactivation or backfill. |
 | `000182` | `global_user_onboarding_tour_progress` | `forward-only` | `schema-first` | The existing workspace-prefixed onboarding routes and JSON contract remain compatible. Replacement APIs use the workspace only to authorize route access and persist one account-global record. | Unaffected. Walkthrough progress remains synchronous user API state. |
+| `000183` | `feedback_rich_descriptions` | `forward-only` | `schema-first` | Old APIs continue reading and writing plain descriptions. Replacement APIs persist descriptionHTML and expose attachment upload and read paths. | Existing attachment scanning and optimization workers continue processing the shared attachment records without a new worker contract. |
 
 ## `000152_harden_verification_tokens`
 
@@ -948,6 +949,35 @@ Operational notes:
 - The legacy users.has_seen_walkthrough boolean maps only to completed workspace-getting-started version 1.0.0 state; it does not suppress contextual module tours.
 - The legacy workspace-module-team version 1.0.0 state seeds workspace-module-sprints version 1.0.0 once during migration so splitting the routes does not replay an already completed or dismissed tour.
 - The workspace-prefixed route remains membership-protected for compatibility, but workspace identity is not part of the persisted onboarding key.
+
+## `000183_feedback_rich_descriptions`
+
+- **Classification:** `forward-only`
+- **Files:** `000183_feedback_rich_descriptions.up.sql`, `000183_feedback_rich_descriptions.down.sql`
+- **Schema:** Adds optional rich-description storage and a workspace-bound attachment relation for feedback items while retaining the existing plain description.
+- **API:** Old APIs continue reading and writing plain descriptions. Replacement APIs persist descriptionHTML and expose attachment upload and read paths.
+- **Worker:** Existing attachment scanning and optimization workers continue processing the shared attachment records without a new worker contract.
+- **Mixed versions:** Apply schema 000183 before the replacement API. Old API instances remain compatible, but rich descriptions and feedback attachments require the replacement API.
+- **Rollout mode:** `schema-first`
+
+Rollout:
+
+1. Apply migration 000183 and verify the additive description column and workspace-bound feedback attachment relation.
+2. Deploy the replacement API before the widget client so multipart feedback submissions always reach a compatible handler.
+3. Submit plain, rich-text, authenticated, guest, and anonymous widget feedback and verify attachment access resolves only through the exact portal and feedback relation.
+4. Monitor attachment upload failures, orphan cleanup, scanning, and image optimization before completing rollout.
+
+Recovery (`forward-fix`):
+
+1. Disable feedback media selection while preserving feedback items and attachment relations if uploads or reads are unhealthy.
+2. Repair the API or relation data forward and verify every retained attachment remains workspace-bound before re-enabling uploads.
+3. Do not run the down migration after rich descriptions or attachment relations exist; it refuses to discard user content.
+
+Operational notes:
+
+- Plain description remains the search and notification source while description_html preserves editor formatting.
+- Attachment object access requires an exact portal, item, and attachment relation and redirects through a short-lived storage URL.
+- Feedback attachments share the established attachment validation, scanning, optimization, and orphan-deletion lifecycle.
 
 ## Adding the next migration
 

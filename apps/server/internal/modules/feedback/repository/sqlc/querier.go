@@ -61,6 +61,7 @@ type Querier interface {
 	GetFeedbackBoard(ctx context.Context, arg GetFeedbackBoardParams) (FeedbackBoard, error)
 	GetFeedbackContributorPreference(ctx context.Context, arg GetFeedbackContributorPreferenceParams) (GetFeedbackContributorPreferenceRow, error)
 	GetFeedbackContributorSession(ctx context.Context, arg GetFeedbackContributorSessionParams) (GetFeedbackContributorSessionRow, error)
+	GetFeedbackItemAttachment(ctx context.Context, arg GetFeedbackItemAttachmentParams) (GetFeedbackItemAttachmentRow, error)
 	GetFeedbackItemFollow(ctx context.Context, arg GetFeedbackItemFollowParams) (GetFeedbackItemFollowRow, error)
 	GetFeedbackItemProtection(ctx context.Context, arg GetFeedbackItemProtectionParams) (GetFeedbackItemProtectionRow, error)
 	GetFeedbackItemReadAt(ctx context.Context, arg GetFeedbackItemReadAtParams) (time.Time, error)
@@ -88,6 +89,7 @@ type Querier interface {
 	InsertFeedbackMergeOutbox(ctx context.Context, arg InsertFeedbackMergeOutboxParams) error
 	InsertFeedbackPublicationOutbox(ctx context.Context, arg InsertFeedbackPublicationOutboxParams) error
 	InsertFeedbackUpdateItems(ctx context.Context, arg InsertFeedbackUpdateItemsParams) (int64, error)
+	LinkFeedbackItemAttachment(ctx context.Context, arg LinkFeedbackItemAttachmentParams) (uuid.UUID, error)
 	LinkFeedbackStory(ctx context.Context, arg LinkFeedbackStoryParams) (LinkFeedbackStoryRow, error)
 	ListAccountFeedbackItemFollowers(ctx context.Context, arg ListAccountFeedbackItemFollowersParams) ([]*uuid.UUID, error)
 	ListAccountFeedbackPublicationRecipients(ctx context.Context, arg ListAccountFeedbackPublicationRecipientsParams) ([]ListAccountFeedbackPublicationRecipientsRow, error)
@@ -101,6 +103,7 @@ type Querier interface {
 	ListFeedbackDigestItems(ctx context.Context, arg ListFeedbackDigestItemsParams) ([]ListFeedbackDigestItemsRow, error)
 	ListFeedbackDigestRecipients(ctx context.Context, arg ListFeedbackDigestRecipientsParams) ([]ListFeedbackDigestRecipientsRow, error)
 	ListFeedbackDigestSubscriptions(ctx context.Context, arg ListFeedbackDigestSubscriptionsParams) ([]ListFeedbackDigestSubscriptionsRow, error)
+	ListFeedbackItemAttachments(ctx context.Context, arg ListFeedbackItemAttachmentsParams) ([]ListFeedbackItemAttachmentsRow, error)
 	ListFeedbackItemFollows(ctx context.Context, arg ListFeedbackItemFollowsParams) ([]ListFeedbackItemFollowsRow, error)
 	ListFeedbackItems(ctx context.Context, arg ListFeedbackItemsParams) ([]ListFeedbackItemsRow, error)
 	ListFeedbackMergeCandidates(ctx context.Context, arg ListFeedbackMergeCandidatesParams) ([]ListFeedbackMergeCandidatesRow, error)

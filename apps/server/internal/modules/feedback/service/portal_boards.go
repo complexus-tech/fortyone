@@ -7,6 +7,10 @@ import (
 	"github.com/google/uuid"
 )
 
+func (s *Service) GetPublicPortal(ctx context.Context, slug string) (CorePortal, error) {
+	return s.repo.GetPortalBySlug(ctx, strings.TrimSpace(slug))
+}
+
 func (s *Service) GetPortalSnapshot(ctx context.Context, slug string, input CorePortalSnapshotInput) (CorePortalSnapshot, error) {
 	portal, err := s.repo.GetPortalBySlug(ctx, strings.TrimSpace(slug))
 	if err != nil {
@@ -42,10 +46,14 @@ func (s *Service) getPortalSnapshot(ctx context.Context, portal CorePortal, inpu
 	if err != nil {
 		return CorePortalSnapshot{}, err
 	}
-	if input.SummaryOnly {
-		return CorePortalSnapshot{Portal: portal, Boards: boards, Items: itemsPage.Items, ItemsHasMore: itemsPage.HasMore}, nil
-	}
 	visibleItemIDs := coreItemIDs(itemsPage.Items)
+	attachments, err := s.repo.ListItemAttachments(ctx, portal.ID, visibleItemIDs)
+	if err != nil {
+		return CorePortalSnapshot{}, err
+	}
+	if input.SummaryOnly {
+		return CorePortalSnapshot{Portal: portal, Boards: boards, Items: itemsPage.Items, ItemsHasMore: itemsPage.HasMore, Attachments: attachments}, nil
+	}
 	comments, err := s.repo.ListComments(ctx, portal.ID, visibleItemIDs)
 	if err != nil {
 		return CorePortalSnapshot{}, err
@@ -54,7 +62,7 @@ func (s *Service) getPortalSnapshot(ctx context.Context, portal CorePortal, inpu
 	if err != nil {
 		return CorePortalSnapshot{}, err
 	}
-	return CorePortalSnapshot{Portal: portal, Boards: boards, Items: itemsPage.Items, ItemsHasMore: itemsPage.HasMore, Comments: comments, Links: links}, nil
+	return CorePortalSnapshot{Portal: portal, Boards: boards, Items: itemsPage.Items, ItemsHasMore: itemsPage.HasMore, Comments: comments, Links: links, Attachments: attachments}, nil
 }
 
 func (s *Service) ListPortals(ctx context.Context, input CoreWorkspacePortalInput) ([]CorePortal, error) {

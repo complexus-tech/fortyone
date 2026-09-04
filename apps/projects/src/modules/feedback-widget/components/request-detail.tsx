@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft2Icon } from "icons";
-import { Avatar, Box, Flex, Text } from "ui";
+import { useEditor } from "@tiptap/react";
+import { ArrowLeft2Icon, AttachmentIcon } from "icons";
+import { Avatar, Box, Flex, Text, TextEditor } from "ui";
+import { createRichTextExtensions } from "@/lib/tiptap/rich-text-extensions";
 import type {
   PublicPortal,
   PublicRequest,
@@ -65,9 +67,38 @@ export const RequestDetail = ({
   const [comment, setComment] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const descriptionEditor = useEditor({
+    content: request.descriptionHTML || request.description,
+    editable: false,
+    extensions: createRichTextExtensions({
+      onMediaFiles: () => undefined,
+      onMediaRequest: () => undefined,
+      placeholder: "",
+    }),
+    immediatelyRender: false,
+  });
   let commentActionLabel = "Verify to comment";
   if (identity) {
     commentActionLabel = isSubmitting ? "Posting…" : "Comment";
+  }
+  let descriptionContent = null;
+  if (request.descriptionHTML) {
+    descriptionContent = (
+      <TextEditor
+        className="rich-document-editor text-text-muted mt-3 text-[13px] leading-6"
+        editor={descriptionEditor}
+        hideBubbleMenu
+      />
+    );
+  } else if (request.description) {
+    descriptionContent = (
+      <Text
+        className="mt-3 text-[13px] leading-6 whitespace-pre-wrap"
+        color="muted"
+      >
+        {request.description}
+      </Text>
+    );
   }
 
   const submitComment = async () => {
@@ -110,7 +141,11 @@ export const RequestDetail = ({
   return (
     <Box className="bg-background absolute inset-0 z-20 flex min-h-0 flex-col">
       <Flex align="center" className="h-16 shrink-0 px-4" gap={2}>
-        <WidgetBackButton aria-label="Back to feedback" onClick={onBack}>
+        <WidgetBackButton
+          aria-label="Back to feedback"
+          className="bg-white text-stone-900 hover:bg-white/90 hover:text-stone-950"
+          onClick={onBack}
+        >
           <ArrowLeft2Icon className="h-5" />
         </WidgetBackButton>
         <Text className="text-[16px]" fontWeight="semibold">
@@ -140,13 +175,47 @@ export const RequestDetail = ({
         >
           {request.title}
         </Text>
-        {request.description ? (
-          <Text
-            className="mt-3 text-[13px] leading-6 whitespace-pre-wrap"
-            color="muted"
-          >
-            {request.description}
-          </Text>
+        {descriptionContent}
+        {request.attachments && request.attachments.length > 0 ? (
+          <Box className="mt-5 grid grid-cols-2 gap-2">
+            {request.attachments.map((attachment) =>
+              attachment.mimeType.startsWith("image/") ? (
+                <a
+                  className="border-border bg-surface-muted/30 focus-visible:ring-ring overflow-hidden rounded-xl border focus-visible:ring-2 focus-visible:outline-none"
+                  href={attachment.url}
+                  key={attachment.id}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element -- The API serves user uploads through stable authorized redirect URLs. */}
+                  <img
+                    alt={attachment.filename}
+                    className="aspect-[4/3] w-full object-cover"
+                    src={attachment.url}
+                  />
+                  <Text
+                    className="truncate px-2.5 py-2 text-[11px]"
+                    color="muted"
+                  >
+                    {attachment.filename}
+                  </Text>
+                </a>
+              ) : (
+                <a
+                  className="border-border bg-surface-muted/30 text-text-muted hover:text-foreground focus-visible:ring-ring col-span-2 flex items-center gap-2 rounded-xl border px-3 py-2.5 focus-visible:ring-2 focus-visible:outline-none"
+                  href={attachment.url}
+                  key={attachment.id}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  <AttachmentIcon className="h-4 shrink-0" />
+                  <span className="truncate text-[12px] font-medium">
+                    {attachment.filename}
+                  </span>
+                </a>
+              ),
+            )}
+          </Box>
         ) : null}
         <Flex align="center" className="mt-6" justify="between">
           <StatusBadge status={request.status} />

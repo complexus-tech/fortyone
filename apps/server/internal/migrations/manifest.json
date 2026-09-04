@@ -1189,6 +1189,44 @@
         "The legacy workspace-module-team version 1.0.0 state seeds workspace-module-sprints version 1.0.0 once during migration so splitting the routes does not replay an already completed or dismissed tour.",
         "The workspace-prefixed route remains membership-protected for compatibility, but workspace identity is not part of the persisted onboarding key."
       ]
+    },
+    {
+      "version": 183,
+      "slug": "feedback_rich_descriptions",
+      "classification": "forward-only",
+      "files": {
+        "up": "000183_feedback_rich_descriptions.up.sql",
+        "down": "000183_feedback_rich_descriptions.down.sql"
+      },
+      "compatibility": {
+        "schema": "Adds optional rich-description storage and a workspace-bound attachment relation for feedback items while retaining the existing plain description.",
+        "api": "Old APIs continue reading and writing plain descriptions. Replacement APIs persist descriptionHTML and expose attachment upload and read paths.",
+        "worker": "Existing attachment scanning and optimization workers continue processing the shared attachment records without a new worker contract.",
+        "mixed_versions": "Apply schema 000183 before the replacement API. Old API instances remain compatible, but rich descriptions and feedback attachments require the replacement API."
+      },
+      "rollout": {
+        "sequence": 32,
+        "mode": "schema-first",
+        "steps": [
+          "Apply migration 000183 and verify the additive description column and workspace-bound feedback attachment relation.",
+          "Deploy the replacement API before the widget client so multipart feedback submissions always reach a compatible handler.",
+          "Submit plain, rich-text, authenticated, guest, and anonymous widget feedback and verify attachment access resolves only through the exact portal and feedback relation.",
+          "Monitor attachment upload failures, orphan cleanup, scanning, and image optimization before completing rollout."
+        ]
+      },
+      "recovery": {
+        "strategy": "forward-fix",
+        "procedure": [
+          "Disable feedback media selection while preserving feedback items and attachment relations if uploads or reads are unhealthy.",
+          "Repair the API or relation data forward and verify every retained attachment remains workspace-bound before re-enabling uploads.",
+          "Do not run the down migration after rich descriptions or attachment relations exist; it refuses to discard user content."
+        ]
+      },
+      "operational_notes": [
+        "Plain description remains the search and notification source while description_html preserves editor formatting.",
+        "Attachment object access requires an exact portal, item, and attachment relation and redirects through a short-lived storage URL.",
+        "Feedback attachments share the established attachment validation, scanning, optimization, and orphan-deletion lifecycle."
+      ]
     }
   ]
 }

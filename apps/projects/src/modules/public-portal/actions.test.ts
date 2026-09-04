@@ -83,6 +83,34 @@ describe("public feedback participation intent", () => {
     expect(ingressHeadersMock).not.toHaveBeenCalled();
   });
 
+  it("submits public feedback attachments as multipart form data", async () => {
+    authMock.mockResolvedValue({} as Awaited<ReturnType<typeof auth>>);
+    postMock.mockResolvedValue({
+      data: {
+        id: "feedback-with-file",
+        participantKind: "account",
+        slug: "repair-the-crossing-signal",
+      },
+    });
+    const attachment = new File(["evidence"], "evidence.txt", {
+      type: "text/plain",
+    });
+    const attachmentData = new FormData();
+    attachmentData.append("files", attachment);
+
+    await createFeedbackAction(
+      { ...input, descriptionHTML: "<p>The crossing is unsafe.</p>" },
+      attachmentData,
+    );
+
+    const payload = postMock.mock.calls[0]?.[1];
+    expect(payload).toBeInstanceOf(FormData);
+    expect((payload as FormData).get("descriptionHTML")).toBe(
+      "<p>The crossing is unsafe.</p>",
+    );
+    expect((payload as FormData).getAll("files")).toEqual([attachment]);
+  });
+
   it("preserves anonymous intent when a session appears before submit", async () => {
     authMock.mockResolvedValue({} as Awaited<ReturnType<typeof auth>>);
     postMock.mockResolvedValue({

@@ -51,6 +51,7 @@ SELECT fi.id,
        false AS following,
        fi.title,
        fi.description,
+       fi.description_html,
        fi.slug,
        CAST(CASE
            WHEN projected_story.id IS NULL THEN fi.status
@@ -227,6 +228,7 @@ SELECT fi.id,
        false AS following,
        fi.title,
        fi.description,
+       fi.description_html,
        fi.slug,
        CAST(CASE
            WHEN projected_story.id IS NULL THEN fi.status
@@ -307,6 +309,7 @@ SELECT fi.id,
        false AS following,
        fi.title,
        fi.description,
+       fi.description_html,
        fi.slug,
        CAST(CASE
            WHEN projected_story.id IS NULL THEN fi.status
@@ -369,6 +372,7 @@ INSERT INTO feedback_items (
     author_id,
     title,
     description,
+    description_html,
     slug,
     submission_source
 )
@@ -379,6 +383,7 @@ SELECT fp.workspace_id,
        contributor.user_id,
        sqlc.arg(title),
        sqlc.arg(description),
+       sqlc.arg(description_html),
        sqlc.arg(slug),
        sqlc.arg(submission_source)
 FROM feedback_portals fp
@@ -414,6 +419,55 @@ WHERE fp.workspace_id = sqlc.arg(workspace_id)
       )
   )
 RETURNING id;
+
+-- name: LinkFeedbackItemAttachment :one
+INSERT INTO feedback_item_attachments (item_id, attachment_id)
+SELECT item.id, attachment.attachment_id
+FROM feedback_items AS item
+INNER JOIN attachments AS attachment
+    ON attachment.attachment_id = sqlc.arg(attachment_id)
+   AND attachment.workspace_id = item.workspace_id
+WHERE item.id = sqlc.arg(item_id)
+  AND item.portal_id = sqlc.arg(portal_id)
+  AND item.deleted_at IS NULL
+ON CONFLICT (item_id, attachment_id) DO NOTHING
+RETURNING attachment_id;
+
+-- name: GetFeedbackItemAttachment :one
+SELECT attachment.attachment_id,
+       relation.item_id,
+       attachment.workspace_id,
+       attachment.filename,
+       attachment.size,
+       attachment.mime_type,
+       relation.created_at
+FROM feedback_item_attachments AS relation
+INNER JOIN feedback_items AS item ON item.id = relation.item_id
+INNER JOIN attachments AS attachment
+    ON attachment.attachment_id = relation.attachment_id
+   AND attachment.workspace_id = item.workspace_id
+WHERE item.portal_id = sqlc.arg(portal_id)
+  AND item.id = sqlc.arg(item_id)
+  AND attachment.attachment_id = sqlc.arg(attachment_id)
+  AND item.deleted_at IS NULL;
+
+-- name: ListFeedbackItemAttachments :many
+SELECT attachment.attachment_id,
+       relation.item_id,
+       attachment.workspace_id,
+       attachment.filename,
+       attachment.size,
+       attachment.mime_type,
+       relation.created_at
+FROM feedback_item_attachments AS relation
+INNER JOIN feedback_items AS item ON item.id = relation.item_id
+INNER JOIN attachments AS attachment
+    ON attachment.attachment_id = relation.attachment_id
+   AND attachment.workspace_id = item.workspace_id
+WHERE item.portal_id = sqlc.arg(portal_id)
+  AND relation.item_id = ANY(CAST(sqlc.arg(item_ids) AS uuid[]))
+  AND item.deleted_at IS NULL
+ORDER BY relation.created_at, attachment.attachment_id;
 
 -- name: CreateAnonymousFeedbackContributor :one
 INSERT INTO feedback_contributors (portal_id, kind)

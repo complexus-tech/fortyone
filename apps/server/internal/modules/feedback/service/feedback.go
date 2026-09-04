@@ -39,16 +39,17 @@ var (
 var nonSlugCharacters = regexp.MustCompile(`[^a-z0-9]+`)
 
 const (
-	maxPublicFeedbackTitleCharacters       = 200
-	maxPublicFeedbackDescriptionCharacters = 20_000
-	maxPublicFeedbackCommentCharacters     = 10_000
-	defaultContributorPageSize             = 20
-	maxContributorPageSize                 = 50
-	publicRoadmapSlug                      = "roadmap"
-	defaultSimilarItemsLimit               = 3
-	maxSimilarItemsLimit                   = 5
-	minimumSimilarityTitleCharacters       = 10
-	duplicateItemConfidence                = 0.82
+	maxPublicFeedbackTitleCharacters           = 200
+	maxPublicFeedbackDescriptionCharacters     = 20_000
+	maxPublicFeedbackDescriptionHTMLCharacters = 100_000
+	maxPublicFeedbackCommentCharacters         = 10_000
+	defaultContributorPageSize                 = 20
+	maxContributorPageSize                     = 50
+	publicRoadmapSlug                          = "roadmap"
+	defaultSimilarItemsLimit                   = 3
+	maxSimilarItemsLimit                       = 5
+	minimumSimilarityTitleCharacters           = 10
+	duplicateItemConfidence                    = 0.82
 )
 
 type Service struct {

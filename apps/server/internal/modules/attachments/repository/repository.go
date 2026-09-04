@@ -39,13 +39,16 @@ func (repository *Repository) CreateAttachment(
 	if err := repository.configured(); err != nil {
 		return attachmentdomain.Attachment{}, err
 	}
-	uploaderID := attachment.UploadedBy
+	var uploaderID *uuid.UUID
+	if attachment.UploadedBy != uuid.Nil {
+		uploaderID = &attachment.UploadedBy
+	}
 	row, err := repository.queries.CreateAttachment(ctx, attachmentssql.CreateAttachmentParams{
 		Filename:           attachment.Filename,
 		BlobName:           attachment.BlobName,
 		Size:               attachment.Size,
 		MimeType:           attachment.MimeType,
-		UploadedBy:         &uploaderID,
+		UploadedBy:         uploaderID,
 		WorkspaceID:        attachment.WorkspaceID,
 		ScanStatus:         string(defaultScanStatus(attachment.ScanStatus)),
 		OptimizationStatus: string(defaultOptimizationStatus(attachment.OptimizationStatus)),
