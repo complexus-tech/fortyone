@@ -3,8 +3,8 @@ import Document from "@tiptap/extension-document";
 import Link from "@tiptap/extension-link";
 import Paragraph from "@tiptap/extension-paragraph";
 import Text from "@tiptap/extension-text";
+import type { GoogleDriveFileReference } from "@/shared/google-drive/types";
 import { replacePastedGoogleDriveURLLabel } from "./google-drive-description-link";
-import type { GoogleDriveFileReference } from "./types";
 
 const rawURL = "https://docs.google.com/spreadsheets/d/sheet-1/edit";
 const file = {

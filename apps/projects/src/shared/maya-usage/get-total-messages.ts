@@ -1,6 +1,7 @@
-import { get, type WorkspaceCtx } from "@/lib/http";
-import type { ApiResponse } from "@/types";
-import type { AiTotalChatMessages } from "../types";
+import type { WorkspaceCtx } from "@/lib/http";
+import type { ApiResponse } from "@/types/api-response";
+import { get } from "@/lib/http";
+import type { AiTotalChatMessages } from "./types";
 
 export const getTotalMessagesForTheMonth = async (ctx: WorkspaceCtx) => {
   const chats = await get<ApiResponse<AiTotalChatMessages>>(

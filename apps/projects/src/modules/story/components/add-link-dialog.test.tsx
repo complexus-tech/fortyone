@@ -29,8 +29,7 @@ jest.mock("@/hooks", () => ({
 jest.mock("@/modules/settings/workspace/integrations/figma/url", () => ({
   isFigmaURL: () => false,
 }));
-jest.mock("@/modules/google-drive", () => ({
-  ...jest.requireActual("@/modules/google-drive/google-drive-url"),
+jest.mock("@/modules/google-drive/public/files", () => ({
   GoogleDrivePickerDialog: ({
     onAttached,
     onClose,

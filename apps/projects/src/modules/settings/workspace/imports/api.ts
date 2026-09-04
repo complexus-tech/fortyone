@@ -1,20 +1,23 @@
 import type { WorkspaceCtx } from "@/lib/http";
 import { get, post, put } from "@/lib/http";
-import type { ApiResponse, Label, Link, Member } from "@/types";
+import type { ApiResponse } from "@/types/api-response";
+import type { Label } from "@/types/label";
+import type { Link } from "@/types/link";
+import type { Member } from "@/types/member";
 import type { State } from "@/types/states";
-import type { Team, CreateTeamInput } from "@/modules/teams/types";
+import type { Team, CreateTeamInput } from "@/modules/teams/public/types";
 import type {
   NewStrategicPillar,
   StrategicPillar,
-} from "@/modules/strategy/types";
+} from "@/modules/strategy/public/types";
 import type {
   KeyResult,
   NewKeyResult,
   NewObjective,
   Objective,
   ObjectiveStatus,
-} from "@/modules/objectives/types";
-import type { NewSprint, Sprint } from "@/modules/sprints/types";
+} from "@/modules/objectives/public/types";
+import type { NewSprint, Sprint } from "@/modules/sprints/public/types";
 import type {
   StoryAssociation,
   StoryAssociationType,

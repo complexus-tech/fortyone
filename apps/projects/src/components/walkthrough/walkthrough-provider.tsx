@@ -13,13 +13,13 @@ import {
 import type { WalkthroughTargetSelector } from "@/shared/walkthrough/targets";
 import { useSession } from "@/lib/auth/client";
 import { useProfile } from "@/lib/hooks/profile";
-import { useOnboardingTourProgress } from "@/lib/hooks/users/onboarding-tour-progress";
-import { useUpdateOnboardingTourProgressMutation } from "@/lib/hooks/users/update-onboarding-tour-progress";
+import { useOnboardingTourProgress } from "@/shared/walkthrough/progress/use-progress";
+import { useUpdateOnboardingTourProgressMutation } from "@/shared/walkthrough/progress/use-update-progress";
 import { useLocalStorage, useMediaQuery } from "@/hooks";
 import type {
   OnboardingTourStatus,
   UpdateOnboardingTourProgress,
-} from "@/types";
+} from "@/shared/walkthrough/progress/types";
 import type { WalkthroughPosition } from "./walkthrough-position";
 import { WORKSPACE_GETTING_STARTED_TOUR_KEY } from "./walkthrough-tour";
 

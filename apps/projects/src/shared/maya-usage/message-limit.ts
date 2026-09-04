@@ -16,8 +16,6 @@ export const canSendMayaMessage = ({
   return limit === Infinity || totalMessages < limit;
 };
 
-export const shouldShowMayaMessageLimit = (
-  input: MayaMessageLimitInput,
-) => {
+export const shouldShowMayaMessageLimit = (input: MayaMessageLimitInput) => {
   return !canSendMayaMessage(input);
 };

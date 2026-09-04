@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { withWorkspacePath } from "@/utils";
+import { withWorkspacePath } from "@/utils/workspace-url";
 
 export const metadata = { title: "Settings › Google Drive" };
 

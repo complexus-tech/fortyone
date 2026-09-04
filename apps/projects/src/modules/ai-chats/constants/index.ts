@@ -1,3 +1,5 @@
+import { mayaUsageKeys } from "@/shared/maya-usage/keys";
+
 export const aiChatKeys = {
   all: ["ai-chats"] as const,
   workspace: (workspaceSlug: string) =>
@@ -10,8 +12,7 @@ export const aiChatKeys = {
     [...aiChatKeys.details(workspaceSlug), id] as const,
   messages: (workspaceSlug: string, id: string) =>
     [...aiChatKeys.detail(workspaceSlug, id), "messages"] as const,
-  totalMessages: (workspaceSlug: string) =>
-    [...aiChatKeys.workspace(workspaceSlug), "total-messages"] as const,
+  totalMessages: mayaUsageKeys.totalMessages,
   memories: (workspaceSlug: string) =>
     [...aiChatKeys.workspace(workspaceSlug), "memories"] as const,
   memory: (workspaceSlug: string, id: string) =>

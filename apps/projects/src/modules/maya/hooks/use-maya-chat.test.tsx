@@ -102,7 +102,7 @@ jest.mock("@/modules/ai-chats/hooks/use-memory", () => ({
   useMemories: () => ({ data: [] }),
 }));
 
-jest.mock("@/modules/ai-chats/hooks/use-total-messages", () => ({
+jest.mock("@/shared/maya-usage/use-total-messages", () => ({
   useTotalMessages: () => ({ data: mockTotalMessages }),
 }));
 

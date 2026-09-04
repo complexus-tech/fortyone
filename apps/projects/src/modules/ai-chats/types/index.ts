@@ -9,9 +9,7 @@ export type AiChatSession = {
   updatedAt: string;
 };
 
-export type AiTotalChatMessages = {
-  count: number;
-};
+export type { AiTotalChatMessages } from "@/shared/maya-usage/types";
 
 export type CreateAiChatPayload = {
   id: string;

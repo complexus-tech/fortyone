@@ -3,69 +3,16 @@ import type { UserSummary } from "./user-summary";
 export type { ApiResponse } from "./api-response";
 export type { User } from "./user";
 export type { UserSummary } from "./user-summary";
-
-export type UserRole = "admin" | "member" | "guest" | "system";
-
-export type Member = {
-  id: string;
-  username: string;
-  email: string;
-  role: UserRole;
-  fullName: string;
-  avatarUrl: string | null;
-  isActive: boolean;
-  isSystem: boolean;
-  isInternal: boolean;
-  teamAiRoleTitle?: string;
-  teamAiRoleDescription?: string;
-  inferredTeamAiRoleTitle?: string;
-  inferredTeamAiRoleDescription?: string;
-  inferredTeamAiRoleStoryCount?: number;
-  inferredTeamAiRoleConfidence?: number;
-  inferredTeamAiRoleGeneratedAt?: string | null;
-  lastStoryActivityAt?: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
-
-export type MembersPage = {
-  members: Member[];
-  pagination: {
-    page: number;
-    pageSize: number;
-    hasMore: boolean;
-    nextPage: number;
-  };
-};
-
-export type Label = {
-  id: string;
-  name: string;
-  color: string;
-  teamId: string | null;
-  workspaceId: string;
-  createdAt: string;
-  updatedAt: string;
-};
-
-export type LabelsPage = {
-  labels: Label[];
-  pagination: {
-    page: number;
-    pageSize: number;
-    hasMore: boolean;
-    nextPage: number;
-  };
-};
-
-export type Link = {
-  id: string;
-  url: string;
-  title: string;
-  storyId: string;
-  createdAt: string;
-  updatedAt: string;
-};
+export type { UserRole } from "./user-role";
+export type { Member, MembersPage } from "./member";
+export type { Label, LabelsPage } from "./label";
+export type { Link } from "./link";
+export type { Workspace } from "./workspace";
+export type {
+  OnboardingTourStatus,
+  OnboardingTourProgress,
+  UpdateOnboardingTourProgress,
+} from "@/shared/walkthrough/progress/types";
 
 export type Comment = {
   id: string;
@@ -102,20 +49,6 @@ export type Contribution = {
   contributions: number;
 };
 
-export type Workspace = {
-  id: string;
-  name: string;
-  slug: string;
-  color: string;
-  avatarUrl: string | null;
-  userRole: UserRole;
-  trialEndsOn: string | null;
-  deletedAt: string | null;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-};
-
 export type WorkspaceSettings = {
   storyTerm: "issue" | "task" | "story";
   sprintTerm: "sprint" | "cycle" | "iteration";
@@ -140,25 +73,6 @@ export type AutomationPreferences = {
 export type UpdateAutomationPreferences = Partial<
   Omit<AutomationPreferences, "id">
 >;
-
-export type OnboardingTourStatus = "active" | "completed" | "skipped";
-
-export type OnboardingTourProgress = {
-  completedActionIds: string[];
-  completedStepIds: string[];
-  status: OnboardingTourStatus;
-  tourKey: string;
-  tourVersion: string;
-};
-
-export type UpdateOnboardingTourProgress = Pick<
-  OnboardingTourProgress,
-  "tourKey" | "tourVersion"
-> & {
-  completedActionIds?: string[];
-  completedStepIds?: string[];
-  status?: OnboardingTourStatus;
-};
 
 export type Subscription = {
   workspaceId: string;

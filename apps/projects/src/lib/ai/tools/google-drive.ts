@@ -14,7 +14,7 @@ import { ApiContractError, ApiError, get, type WorkspaceCtx } from "@/lib/http";
 import {
   canMayaReadGoogleDriveFile,
   isTrustedGoogleDriveWebViewLink,
-} from "@/modules/google-drive/capabilities";
+} from "@/shared/google-drive/capabilities";
 
 const GOOGLE_DRIVE_CONTENT_LIMIT = 20_000;
 const GOOGLE_DRIVE_MAX_RESPONSE_CONTENT = 1_048_576;

@@ -3,13 +3,19 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-const source = readFileSync(
-  join(
-    process.cwd(),
-    "src/modules/settings/workspace/imports/components/import-wizard.tsx",
-  ),
-  "utf8",
-);
+const readComponent = (...names: string[]) =>
+  names
+    .map((name) =>
+      readFileSync(
+        join(
+          process.cwd(),
+          "src/modules/settings/workspace/imports/components",
+          name,
+        ),
+        "utf8",
+      ),
+    )
+    .join("\n");
 const selectSource = readFileSync(
   join(process.cwd(), "../../packages/ui/src/select.tsx"),
   "utf8",
@@ -29,7 +35,10 @@ const memberPickerSource = readFileSync(
   "utf8",
 );
 const runImportSource = readFileSync(
-  join(process.cwd(), "src/modules/settings/workspace/imports/run-import.ts"),
+  join(
+    process.cwd(),
+    "src/modules/settings/workspace/imports/import-people.ts",
+  ),
   "utf8",
 );
 const thinkingSource = readFileSync(
@@ -39,6 +48,10 @@ const thinkingSource = readFileSync(
 
 describe("ImportWizard presentation", () => {
   it("keeps the whole dialog inside the viewport with one scrollable body", () => {
+    const source = readComponent(
+      "import-wizard.tsx",
+      "import-wizard-footer.tsx",
+    );
     expect(source).toContain(
       'className="mt-0 flex max-h-[calc(100dvh-2rem)] max-w-3xl flex-col md:mt-0"',
     );
@@ -54,6 +67,7 @@ describe("ImportWizard presentation", () => {
   });
 
   it("only dismisses the importer through an explicit action", () => {
+    const source = readComponent("import-wizard.tsx");
     expect(source).toMatch(
       /onInteractOutside=\{\(event\) => \{\s*event\.preventDefault\(\);/,
     );
@@ -64,6 +78,7 @@ describe("ImportWizard presentation", () => {
   });
 
   it("polls long-running analysis with a bounded retry window", () => {
+    const source = readComponent("use-import-analysis.ts");
     expect(source).toContain(
       "const IMPORT_ANALYSIS_POLL_TIMEOUT_MS = 7 * 60 * 1000",
     );
@@ -86,6 +101,10 @@ describe("ImportWizard presentation", () => {
   });
 
   it("uses the segmented Art Circles analysis treatment without a spinner", () => {
+    const source = readComponent(
+      "import-analysis-banner.tsx",
+      "import-run-step.tsx",
+    );
     expect(source).not.toContain("LoadingIcon");
     expect(source).not.toContain("animate-spin");
     expect(source).toContain("IMPORT_ANALYSIS_PHASES");
@@ -133,6 +152,11 @@ describe("ImportWizard presentation", () => {
   });
 
   it("uses compact team controls", () => {
+    const source = readComponent(
+      "import-team-controls.tsx",
+      "import-destination-fields.tsx",
+      "import-teams-step.tsx",
+    );
     expect(source).toContain('selected && "border-primary bg-primary/5');
     expect(source).toContain('selected && "bg-primary/10 text-primary"');
     expect(source).toContain("relative min-h-20 rounded-xl");
@@ -154,6 +178,10 @@ describe("ImportWizard presentation", () => {
   });
 
   it("keeps team and member setup concise", () => {
+    const source = readComponent(
+      "import-teams-step.tsx",
+      "import-members-step.tsx",
+    );
     expect(source).toContain(
       "Reuse or create source teams, joining matched teams when needed.",
     );
@@ -181,6 +209,12 @@ describe("ImportWizard presentation", () => {
   });
 
   it("separates teams, members, review, and import into five steps", () => {
+    const source = readComponent(
+      "import-wizard.tsx",
+      "import-wizard-progress.tsx",
+      "import-wizard-footer.tsx",
+      "import-step-validation.ts",
+    );
     expect(source).toContain(
       'const STEPS = ["Upload", "Teams", "Members", "Review", "Import"]',
     );
@@ -196,6 +230,10 @@ describe("ImportWizard presentation", () => {
   });
 
   it("always adds safely matched members without a policy toggle", () => {
+    const source = readComponent(
+      "import-members-step.tsx",
+      "use-import-execution.ts",
+    );
     expect(source).not.toContain("addMatchedMembers");
     expect(runImportSource).not.toContain("addMatchedMembers");
     expect(runImportSource).toContain(
@@ -205,6 +243,11 @@ describe("ImportWizard presentation", () => {
   });
 
   it("keeps review focused and gives both review groups a border", () => {
+    const source = readComponent(
+      "import-review-step.tsx",
+      "import-field-mapping.tsx",
+      "import-task-review.tsx",
+    );
     expect(source).toContain("Review your import");
     expect(source).toContain("DO_NOT_IMPORT_VALUE");
     expect(source).toContain("<Select.Trigger");
@@ -221,6 +264,7 @@ describe("ImportWizard presentation", () => {
   });
 
   it("keeps mapping notes light and limited to four visible lines", () => {
+    const source = readComponent("import-review-step.tsx");
     expect(source).toContain(
       'className="text-foreground/90 font-medium dark:text-white/90"',
     );
@@ -231,6 +275,7 @@ describe("ImportWizard presentation", () => {
   });
 
   it("renders task review rows as a checkbox and editable title only", () => {
+    const source = readComponent("import-task-review.tsx");
     expect(source).toMatch(/aria-label=\{`Import \$\{task\.title\}`\}/);
     expect(source).toMatch(/aria-label=\{`Title for \$\{task\.sourceId\}`\}/);
     expect(source).toContain("updateTaskTitle(taskIndex, event.target.value)");
@@ -247,6 +292,12 @@ describe("ImportWizard presentation", () => {
   });
 
   it("keeps deterministic Trello cards stable and archives opt-in", () => {
+    const source = readComponent(
+      "import-draft-model.ts",
+      "use-import-analysis.ts",
+      "use-import-selection.ts",
+      "import-task-review.tsx",
+    );
     expect(source).toContain(
       'const TRELLO_SOURCE_NAMESPACE_PREFIX = "trello:board:"',
     );
@@ -261,22 +312,18 @@ describe("ImportWizard presentation", () => {
       "return analyzedEntity ? { ...analyzedEntity, ...entity } : entity",
     );
     expect(source).toContain("merged.push(entity)");
-    expect(source).toContain(
-      "current.people,\n                      completedAnalysis.people",
-    );
-    expect(source).toContain(
-      "current.teams,\n                      completedAnalysis.teams",
-    );
-    expect(source).toContain(
-      "current.labels,\n                      completedAnalysis.labels",
-    );
+    expect(source).toMatch(/current\.people,\s*completedAnalysis\.people/);
+    expect(source).toMatch(/current\.teams,\s*completedAnalysis\.teams/);
+    expect(source).toMatch(/current\.labels,\s*completedAnalysis\.labels/);
     expect(source).toMatch(
       /usesDeterministicRowMapping && mapping\s*\? mapRowsToImportTasks\(current\.rows, mapping\)\s*:\s*current\.tasks/,
     );
     expect(source).toContain(
       "enrichmentOnly: preservesDeterministicTrelloGraph",
     );
-    expect(source).toContain("getTaskIndexesBySourceId(response.analysis");
+    expect(source).toContain(
+      "getTaskIndexesBySourceId(uploadedDraft, archivedSourceIds)",
+    );
     expect(source).toContain('id="include-archived-trello-cards"');
     expect(source).toMatch(
       /Include archived \(\{archivedTrelloTaskIndexes\.size\}\)/,
@@ -287,6 +334,7 @@ describe("ImportWizard presentation", () => {
   });
 
   it("uses icon-free inverted primary actions", () => {
+    const source = readComponent("import-wizard-footer.tsx");
     expect(source).toContain('color="invert"');
     expect(source).not.toContain('color="gradient"');
     expect(source).not.toMatch(
@@ -295,22 +343,41 @@ describe("ImportWizard presentation", () => {
   });
 
   it("accepts JSON exports through the universal importer", () => {
+    const source = readComponent(
+      "import-upload-step.tsx",
+      "use-import-analysis.ts",
+      "import-draft-model.ts",
+      "import-wizard.tsx",
+    );
     expect(source).toContain('"application/json": [".json"]');
     expect(source).toContain("CSV, JSON, Excel");
     expect(source).toContain('current?.sourceType === "csv"');
     expect(source).toContain("...completedAnalysis");
-    expect(source).toContain("response.analysis.teams");
+    expect(source).toContain("uploadedDraft.teams");
+    expect(source).toContain("onUploaded(response.analysis, file.name)");
     expect(source).toContain("mergeAnalyzedTaskGraph");
     expect(source).toContain("prepareCompletedAIImportAnalysis");
     expect(source).toContain("setDraft(response.analysis);");
   });
 
   it("locks source identity after an attempt while preserving safe retries", () => {
+    const source = readComponent(
+      "use-import-execution.ts",
+      "use-import-analysis.ts",
+      "import-wizard.tsx",
+      "import-field-mapping.tsx",
+      "import-teams-step.tsx",
+      "import-members-step.tsx",
+      "import-analysis-banner.tsx",
+    );
     expect(source).toContain(
       "const [hasAttemptedImport, setHasAttemptedImport] = useState(false)",
     );
     expect(source).toContain("setHasAttemptedImport(true);");
-    expect(source.match(/setHasAttemptedImport\(false\);/g)).toHaveLength(2);
+    expect(source).toContain("setHasAttemptedImport(false);");
+    expect(
+      readComponent("import-wizard.tsx").match(/resetReview\(\);/g),
+    ).toHaveLength(2);
     expect(source).toContain(
       "if (isImportMappingFieldLocked(field, hasAttemptedImport)) return;",
     );
@@ -319,7 +386,7 @@ describe("ImportWizard presentation", () => {
     expect(source).toContain(
       "already created and complete only unfinished work.",
     );
-    expect(source).toContain("Previously created {storyTermPlural} are");
+    expect(source).toMatch(/Previously\s+created \{storyTermPlural\} are/);
     expect(source).toContain("{storyTerm}-field edits apply only to");
     expect(source).toContain("Import setup is locked for safe retries");
     expect(source).toContain(
@@ -333,13 +400,19 @@ describe("ImportWizard presentation", () => {
   });
 
   it("seeds an empty workspace fallback from immediate and polled source teams", () => {
+    const source = readComponent("import-wizard.tsx");
     expect(source).toContain("getImportSourceTeamDestination(sourceTeam)");
     expect(source).toContain('setStructureMode("preserve")');
-    expect(source).toContain("response.analysis.teams.at(0)");
+    expect(source).toContain("uploadedDraft.teams.at(0)");
     expect(source).toContain("teams.length === 0");
   });
 
   it("matches preserved source teams against the whole workspace", () => {
+    const source = readComponent(
+      "import-wizard.tsx",
+      "use-import-execution.ts",
+      "import-teams-step.tsx",
+    );
     expect(source).toContain("useJoinedTeams, useTeams");
     expect(source).toContain("knownWorkspaceTeams");
     expect(source).toContain("existingTeams={knownWorkspaceTeams}");
@@ -358,6 +431,10 @@ describe("ImportWizard presentation", () => {
   });
 
   it("scopes a created fallback team to the current file and destination", () => {
+    const source = readComponent(
+      "use-import-execution.ts",
+      "import-wizard-model.ts",
+    );
     expect(source).toContain("const createdFallbackTeam = useRef");
     expect(source).toContain("getNewTeamImportSignature");
     expect(source).toContain("JSON.stringify([");
@@ -367,6 +444,7 @@ describe("ImportWizard presentation", () => {
   });
 
   it("refreshes every possibly mutated domain after partial failures", () => {
+    const source = readComponent("use-import-execution.ts");
     expect(source).toContain("void Promise.allSettled([");
     expect(source).toContain("storyKeys.all(workspaceSlug)");
     expect(source).toContain("objectiveKeys.all(workspaceSlug)");
@@ -375,6 +453,12 @@ describe("ImportWizard presentation", () => {
   });
 
   it("reviews pillars and keeps strategy-only imports team-free", () => {
+    const source = readComponent(
+      "use-import-execution.ts",
+      "import-wizard.tsx",
+      "import-teams-step.tsx",
+      "import-wizard-footer.tsx",
+    );
     expect(source).toContain("selectedStrategicPillarSourceIds");
     expect(source).toContain("strategicPillarDestinationMatches");
     expect(source).toContain("hasSelectedTeamScopedImport");
@@ -387,6 +471,13 @@ describe("ImportWizard presentation", () => {
   });
 
   it("supports explicit member mapping and prevents privacy widening", () => {
+    const source = readComponent(
+      "use-import-people-review.ts",
+      "import-members-step.tsx",
+      "use-import-selection.ts",
+      "import-teams-step.tsx",
+      "import-step-validation.ts",
+    );
     expect(source).toContain("confirmedMemberIdsByIdentityKey");
     expect(source).toContain("suggestImportPersonMember");
     expect(source).toContain("<ImportMemberPicker");
@@ -420,7 +511,14 @@ describe("ImportWizard presentation", () => {
   });
 
   it("uses the workspace terminology throughout import review and results", () => {
-    expect(source).toContain("useTerminology, useWorkspacePath");
+    const source = readComponent(
+      "use-import-terms.ts",
+      "import-task-review.tsx",
+      "import-run-step.tsx",
+      "import-wizard.tsx",
+    );
+    expect(source).toContain('from "@/hooks/use-terminology-display"');
+    expect(source).toContain('from "@/hooks/use-workspace-path"');
     expect(source).toContain('getTermDisplay("storyTerm")');
     expect(source).toContain("{storyTermCapitalized} review");
     expect(source).toContain("stable {storyTerm} source IDs");

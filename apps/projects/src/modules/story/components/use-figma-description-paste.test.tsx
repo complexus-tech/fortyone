@@ -6,7 +6,8 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { useRouter } from "next/navigation";
 import type { ClipboardEvent } from "react";
 import { toast } from "sonner";
-import { useUserRole, useWorkspacePath } from "@/hooks";
+import { useUserRole } from "@/hooks/role";
+import { useWorkspacePath } from "@/hooks/use-workspace-path";
 import {
   useCreateFigmaInstallSession,
   useFigmaIntegration,
@@ -31,8 +32,10 @@ jest.mock("@/lib/hooks/figma", () => ({
   useLinkFigmaStory: jest.fn(),
 }));
 
-jest.mock("@/hooks", () => ({
+jest.mock("@/hooks/role", () => ({
   useUserRole: jest.fn(),
+}));
+jest.mock("@/hooks/use-workspace-path", () => ({
   useWorkspacePath: jest.fn(),
 }));
 

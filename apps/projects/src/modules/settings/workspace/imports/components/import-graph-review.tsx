@@ -12,32 +12,14 @@ import {
   UserMultiple02Icon,
 } from "icons";
 import { Box, Checkbox, Flex, Input, Text } from "ui";
-import { useTerminology } from "@/hooks";
-import type { Team } from "@/modules/teams/types";
+import { useTerminology } from "@/hooks/use-terminology-display";
+import type { Team } from "@/modules/teams/public/types";
 import type { ImportDraft } from "../schema";
-import { resolveImportSourceTeam } from "../run-import";
-
-export type ObjectiveImportDestinationPreview = {
-  kind:
-    | "none"
-    | "unique"
-    | "ambiguous"
-    | "pillar_conflict"
-    | "privacy_conflict"
-    | "source_conflict"
-    | "team_conflict";
-  teamLabel: string;
-  objectiveName?: string;
-  matchCount?: number;
-  locked?: boolean;
-  pillarLabel?: string;
-};
-
-export type StrategicPillarImportDestinationPreview = {
-  kind: "none" | "unique" | "ambiguous" | "source_conflict";
-  pillarName?: string;
-  matchCount?: number;
-};
+import { resolveImportSourceTeam } from "../import-team-model";
+import type {
+  ObjectiveImportDestinationPreview,
+  StrategicPillarImportDestinationPreview,
+} from "./import-review-types";
 
 const EntityCount = ({
   count,

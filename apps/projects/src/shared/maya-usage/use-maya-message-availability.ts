@@ -1,7 +1,7 @@
 import { useSession } from "@/lib/auth/client";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
-import { useTotalMessages } from "@/modules/ai-chats/hooks/use-total-messages";
-import { shouldShowMayaMessageLimit } from "../utils/message-limit";
+import { useTotalMessages } from "./use-total-messages";
+import { shouldShowMayaMessageLimit } from "./message-limit";
 
 export const useMayaMessageAvailability = () => {
   const { data: totalMessages = 0, isError, isPending } = useTotalMessages();

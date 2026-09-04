@@ -1,7 +1,8 @@
-import { get } from "@/lib/http";
 import type { WorkspaceCtx } from "@/lib/http";
-import { normalizeOnboardingTourProgress } from "@/lib/onboarding-tour-progress";
-import type { ApiResponse, OnboardingTourProgress } from "@/types";
+import type { ApiResponse } from "@/types/api-response";
+import { get } from "@/lib/http";
+import type { OnboardingTourProgress } from "./types";
+import { normalizeOnboardingTourProgress } from "./normalize-progress";
 
 type OnboardingTourProgressQuery = {
   tourKey: string;

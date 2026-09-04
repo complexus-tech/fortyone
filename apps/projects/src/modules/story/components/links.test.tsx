@@ -24,9 +24,7 @@ jest.mock("@/lib/hooks/link-metadata", () => ({
   useLinkMetadata: () => ({ data: undefined }),
 }));
 
-jest.mock("@/modules/google-drive", () => ({
-  ...jest.requireActual("@/modules/google-drive/google-drive-url"),
-  ...jest.requireActual("@/modules/google-drive/google-file-type-icon"),
+jest.mock("@/modules/google-drive/public/files", () => ({
   useGoogleDriveFiles: () => ({ data: [] }),
 }));
 

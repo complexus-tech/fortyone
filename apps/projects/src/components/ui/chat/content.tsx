@@ -6,7 +6,7 @@ import { Box, Button, Flex, Text } from "ui";
 import { NewObjectiveDialog, NewStoryDialog } from "@/components/ui";
 import { NewSprintDialog } from "@/components/ui/new-sprint-dialog";
 import { useChatContext } from "@/context/chat-context";
-import { useMayaMessageAvailability } from "@/modules/maya/hooks/use-maya-message-availability";
+import { useMayaMessageAvailability } from "@/shared/maya-usage/use-maya-message-availability";
 import { ChatHeader } from "./chat-header";
 import { ChatInput } from "./chat-input";
 import { ChatMessages } from "./chat-messages";

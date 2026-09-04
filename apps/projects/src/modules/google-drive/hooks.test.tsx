@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, renderHook, waitFor } from "@testing-library/react";
+import type { GoogleDriveFileReference } from "@/shared/google-drive/types";
 import {
   attachGoogleDriveFilesAction,
   createGoogleDriveFileAction,
@@ -14,9 +15,8 @@ import {
   useCreateGoogleDriveFile,
   useImportGoogleDriveFile,
 } from "./hooks";
-import type { GoogleDriveFileReference } from "./types";
 
-jest.mock("@/hooks", () => ({
+jest.mock("@/hooks/use-workspace-path", () => ({
   useWorkspacePath: () => ({ workspaceSlug: "acme" }),
 }));
 jest.mock("@/lib/auth/client", () => ({

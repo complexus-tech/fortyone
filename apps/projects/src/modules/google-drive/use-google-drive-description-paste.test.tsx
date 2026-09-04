@@ -3,12 +3,12 @@ import { act, isValidElement } from "react";
 import type { ClipboardEvent } from "react";
 import { renderHook, waitFor } from "@testing-library/react";
 import { toast } from "sonner";
+import type { GoogleDriveFileReference } from "@/shared/google-drive/types";
 import {
   useAttachGoogleDriveFiles,
   useCreateGoogleDriveConnectSession,
   useGoogleDriveIntegration,
 } from "./hooks";
-import type { GoogleDriveFileReference } from "./types";
 import { replacePastedGoogleDriveURLLabel } from "./google-drive-description-link";
 import type { GoogleDrivePickerDialogProps } from "./google-drive-picker-dialog";
 import { useGoogleDriveDescriptionPaste } from "./use-google-drive-description-paste";
@@ -28,7 +28,9 @@ jest.mock("./hooks", () => ({
   useCreateGoogleDriveConnectSession: jest.fn(),
   useGoogleDriveIntegration: jest.fn(),
 }));
-jest.mock("./google-drive-icon", () => ({ GoogleDriveIcon: () => null }));
+jest.mock("@/shared/google-drive/google-drive-icon", () => ({
+  GoogleDriveIcon: () => null,
+}));
 jest.mock("./google-drive-picker-dialog", () => ({
   GoogleDrivePickerDialog: () => null,
 }));

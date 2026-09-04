@@ -1,6 +1,7 @@
 import { act } from "react";
 import { render, waitFor } from "@testing-library/react";
 import { toast } from "sonner";
+import type { GoogleDriveFileReference } from "@/shared/google-drive/types";
 import { GoogleDrivePickerDialog } from "./google-drive-picker-dialog";
 import {
   useAttachGoogleDriveFiles,
@@ -8,7 +9,6 @@ import {
   useCreateGoogleDrivePickerSession,
   useGoogleDriveIntegration,
 } from "./hooks";
-import type { GoogleDriveFileReference } from "./types";
 
 jest.mock("./hooks", () => ({
   useAttachGoogleDriveFiles: jest.fn(),

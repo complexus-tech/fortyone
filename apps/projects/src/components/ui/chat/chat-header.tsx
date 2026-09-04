@@ -15,7 +15,7 @@ import { useProfile } from "@/lib/hooks/profile";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { useWorkspacePath } from "@/hooks";
 import { useAiChats } from "@/modules/ai-chats/hooks/use-ai-chats";
-import { useTotalMessages } from "@/modules/ai-chats/hooks/use-total-messages";
+import { useTotalMessages } from "@/shared/maya-usage/use-total-messages";
 import { HistoryDialog } from "./history-dialog";
 
 const HEADER_ICON_STROKE_WIDTH = 2;

@@ -2,19 +2,22 @@ import type { Editor } from "@tiptap/core";
 import type { ClipboardEventHandler } from "react";
 import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
-import { GoogleDriveIcon } from "./google-drive-icon";
+import { GoogleDriveIcon } from "@/shared/google-drive/google-drive-icon";
+import {
+  getStandaloneGoogleDriveURL,
+  parseGoogleDriveURL,
+  type GoogleDriveURL,
+} from "@/shared/google-drive/google-drive-url";
+import type {
+  GoogleDriveFileReference,
+  GoogleDriveTarget,
+} from "@/shared/google-drive/types";
 import { GoogleDrivePickerDialog } from "./google-drive-picker-dialog";
 import {
   useAttachGoogleDriveFiles,
   useCreateGoogleDriveConnectSession,
   useGoogleDriveIntegration,
 } from "./hooks";
-import {
-  getStandaloneGoogleDriveURL,
-  parseGoogleDriveURL,
-  type GoogleDriveURL,
-} from "./google-drive-url";
-import type { GoogleDriveFileReference, GoogleDriveTarget } from "./types";
 import { replacePastedGoogleDriveURLLabel } from "./google-drive-description-link";
 
 type PendingGoogleDrivePaste = {

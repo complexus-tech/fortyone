@@ -1,6 +1,6 @@
 import type { UIMessage } from "ai";
 import { z } from "zod";
-import { canMayaReadGoogleDriveFile } from "@/modules/google-drive/capabilities";
+import { canMayaReadGoogleDriveFile } from "@/shared/google-drive/capabilities";
 
 export const GOOGLE_DRIVE_FILE_CONTEXT_DATA_KEY =
   "google-drive-file-context" as const;

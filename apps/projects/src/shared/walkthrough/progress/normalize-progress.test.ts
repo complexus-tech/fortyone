@@ -1,6 +1,6 @@
 /* global describe, expect, it -- Jest globals are provided by the projects test runner. */
 
-import { normalizeOnboardingTourProgress } from "./onboarding-tour-progress";
+import { normalizeOnboardingTourProgress } from "./normalize-progress";
 
 const scope = {
   tourKey: "workspace-getting-started",

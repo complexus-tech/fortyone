@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { ArrowDown2Icon, CheckIcon } from "icons";
 import { Avatar, Button, Command, Flex, Popover, Text } from "ui";
-import type { Member } from "@/types";
+import type { Member } from "@/types/member";
 
 type ImportMemberPickerProps = {
   disabled?: boolean;

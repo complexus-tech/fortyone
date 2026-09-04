@@ -12,25 +12,25 @@ import {
 } from "icons";
 import { useEffect, useState } from "react";
 import { useChatContext } from "@/context/chat-context";
-import { useWorkspacePath } from "@/hooks";
+import { useWorkspacePath } from "@/hooks/use-workspace-path";
 import {
   canMayaReadGoogleDriveFile,
   isTrustedGoogleDriveWebViewLink,
-} from "./capabilities";
-import { useDeleteGoogleDriveFile, useRefreshGoogleDriveFile } from "./hooks";
-import { GoogleDrivePickerButton } from "./google-drive-picker-button";
-import { parseGoogleDriveURL } from "./google-drive-url";
+} from "@/shared/google-drive/capabilities";
+import { parseGoogleDriveURL } from "@/shared/google-drive/google-drive-url";
 import {
   getGoogleFileTypeLabel,
   GoogleFileTypeIcon,
   hasNativeGoogleWorkspaceIcon,
   isGoogleDocsMimeType,
-} from "./google-file-type-icon";
+} from "@/shared/google-drive/google-file-type-icon";
 import type {
   GoogleDriveFileAvailability,
   GoogleDriveFileReference,
   GoogleDriveTarget,
-} from "./types";
+} from "@/shared/google-drive/types";
+import { GoogleDrivePickerButton } from "./google-drive-picker-button";
+import { useDeleteGoogleDriveFile, useRefreshGoogleDriveFile } from "./hooks";
 
 const availabilityPresentation: Record<
   Exclude<GoogleDriveFileAvailability, "available">,

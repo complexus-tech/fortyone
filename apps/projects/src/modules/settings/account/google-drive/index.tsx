@@ -4,13 +4,14 @@ import { useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { Badge, Box, Button, Flex, Skeleton, Text } from "ui";
 import { toast } from "sonner";
-import { useUserRole, useWorkspacePath } from "@/hooks";
+import { useUserRole } from "@/hooks/role";
+import { useWorkspacePath } from "@/hooks/use-workspace-path";
 import {
   useCreateGoogleDriveConnectSession,
   useDisconnectGoogleDrive,
   useGoogleDriveIntegration,
-} from "@/modules/google-drive/hooks";
-import { GoogleDriveIcon } from "@/modules/google-drive";
+} from "@/modules/google-drive/public/connection";
+import { GoogleDriveIcon } from "@/shared/google-drive/google-drive-icon";
 import {
   SectionHeader,
   SettingsBackButton,

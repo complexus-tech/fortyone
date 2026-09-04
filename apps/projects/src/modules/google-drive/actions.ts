@@ -2,8 +2,8 @@
 
 import { auth } from "@/auth";
 import { post, remove } from "@/lib/http";
-import type { ApiResponse } from "@/types";
-import { getApiError } from "@/utils";
+import type { ApiResponse } from "@/types/api-response";
+import { getApiError } from "@/utils/api-error";
 import type {
   GoogleDriveFileReference,
   GoogleDriveFileType,
@@ -12,7 +12,7 @@ import type {
   GoogleDrivePickerFile,
   GoogleDrivePickerSession,
   GoogleDriveTarget,
-} from "./types";
+} from "@/shared/google-drive/types";
 
 const context = async (workspaceSlug: string) => ({
   session: (await auth())!,

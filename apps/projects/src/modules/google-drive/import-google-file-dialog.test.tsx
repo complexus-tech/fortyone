@@ -1,15 +1,15 @@
 /* global beforeEach, describe, expect, it, jest -- Jest globals are provided by the projects test runner. */
 
 import { fireEvent, render, screen } from "@testing-library/react";
+import type { GoogleDriveFileReference } from "@/shared/google-drive/types";
 import { ImportGoogleFileDialog } from "./import-google-file-dialog";
-import type { GoogleDriveFileReference } from "./types";
 
 const mockMutate = jest.fn();
 
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ push: jest.fn() }),
 }));
-jest.mock("@/hooks", () => ({
+jest.mock("@/hooks/use-workspace-path", () => ({
   useWorkspacePath: () => ({
     withWorkspace: (path: string) => `/acme${path}`,
   }),

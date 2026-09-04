@@ -3,7 +3,8 @@ import type { ClipboardEventHandler } from "react";
 import { useRouter } from "next/navigation";
 import { useCallback, useRef } from "react";
 import { toast } from "sonner";
-import { useUserRole, useWorkspacePath } from "@/hooks";
+import { useUserRole } from "@/hooks/role";
+import { useWorkspacePath } from "@/hooks/use-workspace-path";
 import {
   useCreateFigmaInstallSession,
   useFigmaIntegration,

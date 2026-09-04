@@ -1,4 +1,4 @@
-import type { OnboardingTourProgress, OnboardingTourStatus } from "@/types";
+import type { OnboardingTourProgress, OnboardingTourStatus } from "./types";
 
 type OnboardingTourScope = Pick<
   OnboardingTourProgress,

@@ -23,7 +23,7 @@ import { useIsAdminOrOwner } from "@/hooks/owner";
 import { createRichTextStarterKit } from "@/lib/tiptap/starter-kit";
 import { useChatContext } from "@/context/chat-context";
 import { RelatedDocuments } from "@/modules/documents/related-documents";
-import { GoogleDriveFileSection } from "@/modules/google-drive";
+import { GoogleDriveFileSection } from "@/modules/google-drive/public/files";
 import { ObjectiveForecastRiskBanner } from "@/modules/objectives/components/objective-forecast-risk";
 import {
   useCanUpdateObjective,

@@ -10,7 +10,7 @@ import {
   useWorkspacePath,
 } from "@/hooks";
 import { useChatContext } from "@/context/chat-context";
-import { useMayaMessageAvailability } from "@/modules/maya/hooks/use-maya-message-availability";
+import { useMayaMessageAvailability } from "@/shared/maya-usage/use-maya-message-availability";
 import {
   getWalkthroughTargetSelector,
   walkthroughTargetSelectors,
@@ -42,7 +42,7 @@ jest.mock("@/context/chat-context", () => ({
   useChatContext: jest.fn(),
 }));
 
-jest.mock("@/modules/maya/hooks/use-maya-message-availability", () => ({
+jest.mock("@/shared/maya-usage/use-maya-message-availability", () => ({
   useMayaMessageAvailability: jest.fn(),
 }));
 

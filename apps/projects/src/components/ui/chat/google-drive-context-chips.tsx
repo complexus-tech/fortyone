@@ -1,7 +1,7 @@
 import { CloseIcon } from "icons";
 import { cn } from "lib";
 import type { GoogleDriveFileContext } from "@/lib/ai/google-drive-context";
-import { GoogleFileTypeIcon } from "@/modules/google-drive/google-file-type-icon";
+import { GoogleFileTypeIcon } from "@/shared/google-drive/google-file-type-icon";
 
 export const GoogleDriveContextChips = ({
   files,

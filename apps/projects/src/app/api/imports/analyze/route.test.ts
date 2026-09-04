@@ -10,6 +10,7 @@ import { GET, POST } from "./route";
 const mockResponsesCreate = jest.fn();
 const mockResponsesRetrieve = jest.fn();
 
+jest.mock("server-only", () => ({}));
 jest.mock("@/auth", () => ({ auth: jest.fn() }));
 jest.mock("@/lib/queries/workspaces/get-workspace", () => ({
   getWorkspace: jest.fn(),

@@ -10,7 +10,7 @@ describe("ChatContent", () => {
   it("keeps AI message limits scoped to non-internal users", () => {
     const source = readSource("src/components/ui/chat/content.tsx");
     const availabilitySource = readSource(
-      "src/modules/maya/hooks/use-maya-message-availability.ts",
+      "src/shared/maya-usage/use-maya-message-availability.ts",
     );
 
     expect(source).toContain("useMayaMessageAvailability");

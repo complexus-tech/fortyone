@@ -1,12 +1,12 @@
+import type { ApiResponse } from "@/types/api-response";
 import { auth } from "@/auth";
 import { put } from "@/lib/http";
-import { normalizeOnboardingTourProgress } from "@/lib/onboarding-tour-progress";
+import { getApiError } from "@/utils/api-error";
 import type {
-  ApiResponse,
   OnboardingTourProgress,
   UpdateOnboardingTourProgress,
-} from "@/types";
-import { getApiError } from "@/utils";
+} from "./types";
+import { normalizeOnboardingTourProgress } from "./normalize-progress";
 
 export const updateOnboardingTourProgressAction = async (
   payload: UpdateOnboardingTourProgress,

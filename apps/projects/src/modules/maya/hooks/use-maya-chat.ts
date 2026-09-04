@@ -20,7 +20,7 @@ import { useProfile } from "@/lib/hooks/profile";
 import { useTerminology, useWorkspacePath } from "@/hooks";
 import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
 import { useMemories } from "@/modules/ai-chats/hooks/use-memory";
-import { useTotalMessages } from "@/modules/ai-chats/hooks/use-total-messages";
+import { useTotalMessages } from "@/shared/maya-usage/use-total-messages";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import type { MayaUIMessage } from "@/lib/ai/tools/types";
 import {
@@ -29,6 +29,7 @@ import {
   MAX_GOOGLE_DRIVE_FILE_CONTEXTS,
   type GoogleDriveFileContext,
 } from "@/lib/ai/google-drive-context";
+import { canSendMayaMessage } from "@/shared/maya-usage/message-limit";
 import type { MayaChatConfig } from "../types";
 import { getMayaToolInvalidationKeys } from "../utils/tool-query-invalidation";
 import {
@@ -36,7 +37,6 @@ import {
   runWithChatSendGuard,
 } from "../utils/chat-send-policy";
 import { prepareMayaChatSendRequest } from "../utils/chat-request-payload";
-import { canSendMayaMessage } from "../utils/message-limit";
 import { mergeRealtimeVoiceMessages } from "../utils/realtime-voice-messages";
 import { useMayaRealtimeVoice } from "./use-maya-realtime-voice";
 

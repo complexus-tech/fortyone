@@ -2,8 +2,8 @@
 
 import type { ReactNode } from "react";
 import { render, screen } from "@testing-library/react";
+import type { GoogleDriveFileReference } from "@/shared/google-drive/types";
 import { GoogleDriveFileSection } from "./google-drive-file-section";
-import type { GoogleDriveFileReference } from "./types";
 
 const mockUseGoogleDriveFiles = jest.fn();
 const mockUseGoogleDriveIntegration = jest.fn();

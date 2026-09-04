@@ -24,10 +24,8 @@ import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
 import { useStoryDescriptionMedia } from "@/modules/story/hooks/use-story-description-media";
 import { useIsAdminOrOwner } from "@/hooks/owner";
 import { RelatedDocuments } from "@/modules/documents/related-documents";
-import {
-  GoogleDriveFileSection,
-  useGoogleDriveDescriptionPaste,
-} from "@/modules/google-drive";
+import { GoogleDriveFileSection } from "@/modules/google-drive/public/files";
+import { useGoogleDriveDescriptionPaste } from "@/modules/google-drive/public/editor";
 import { useStoryById } from "../hooks/story";
 import type { StoryUpdate } from "../types";
 import { Activities } from "./activities";

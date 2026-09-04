@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { useWorkspacePath } from "@/hooks";
+import { useWorkspacePath } from "@/hooks/use-workspace-path";
 import { userKeys } from "@/constants/keys";
 import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
 import { useSession } from "@/lib/auth/client";
-import { getOnboardingTourProgress } from "@/lib/queries/users/onboarding-tour-progress";
+import { getOnboardingTourProgress } from "./get-progress";
 
 type OnboardingTourProgressOptions = {
   tourKey: string;

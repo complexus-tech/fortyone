@@ -5,11 +5,14 @@ import { useState } from "react";
 import dynamic from "next/dynamic";
 import { Button } from "ui";
 import { toast } from "sonner";
+import type {
+  GoogleDriveFileReference,
+  GoogleDriveTarget,
+} from "@/shared/google-drive/types";
 import {
   useCreateGoogleDriveConnectSession,
   useGoogleDriveIntegration,
 } from "./hooks";
-import type { GoogleDriveFileReference, GoogleDriveTarget } from "./types";
 
 const GoogleDrivePickerDialog = dynamic(
   () =>

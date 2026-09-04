@@ -1,5 +1,5 @@
 import type { Editor } from "@tiptap/core";
-import type { GoogleDriveFileReference } from "./types";
+import type { GoogleDriveFileReference } from "@/shared/google-drive/types";
 
 const GOOGLE_DRIVE_LINK_CLASS = "google-drive-smart-link";
 

@@ -7,7 +7,7 @@ import { HeaderContainer, MobileMenuButton } from "@/components/shared";
 import { useSession } from "@/lib/auth/client";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { useWorkspacePath } from "@/hooks";
-import { useTotalMessages } from "@/modules/ai-chats/hooks/use-total-messages";
+import { useTotalMessages } from "@/shared/maya-usage/use-total-messages";
 import { walkthroughTargets } from "@/shared/walkthrough/targets";
 
 type MayaHeaderProps = {

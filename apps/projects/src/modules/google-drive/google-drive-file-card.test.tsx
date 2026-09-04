@@ -1,8 +1,8 @@
 /* global beforeEach, describe, expect, it, jest -- Jest globals are provided by the projects test runner. */
 
 import { fireEvent, render, screen } from "@testing-library/react";
+import type { GoogleDriveFileReference } from "@/shared/google-drive/types";
 import { GoogleDriveFileCard } from "./google-drive-file-card";
-import type { GoogleDriveFileReference } from "./types";
 
 const mockOpenChatWithGoogleDriveFile = jest.fn();
 const mockDeleteFile = jest.fn();
@@ -14,7 +14,7 @@ jest.mock("@/context/chat-context", () => ({
   }),
 }));
 
-jest.mock("@/hooks", () => ({
+jest.mock("@/hooks/use-workspace-path", () => ({
   useWorkspacePath: () => ({ workspaceSlug: "acme" }),
 }));
 

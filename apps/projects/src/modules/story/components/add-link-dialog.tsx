@@ -14,10 +14,10 @@ import { isFigmaURL } from "@/modules/settings/workspace/integrations/figma/url"
 import { useDeleteLinkMutation } from "@/lib/hooks/delete-link-mutation";
 import {
   GoogleDrivePickerDialog,
-  parseGoogleDriveURL,
   useAttachGoogleDriveFiles,
-} from "@/modules/google-drive";
-import type { GoogleDriveURL } from "@/modules/google-drive";
+} from "@/modules/google-drive/public/files";
+import { parseGoogleDriveURL } from "@/shared/google-drive/google-drive-url";
+import type { GoogleDriveURL } from "@/shared/google-drive/google-drive-url";
 
 type PendingGoogleDriveLink = {
   fallbackLinkId: string;

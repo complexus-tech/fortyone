@@ -2,7 +2,7 @@ import type { UIMessage } from "ai";
 import {
   canMayaReadGoogleDriveFile,
   isTrustedGoogleDriveWebViewLink,
-} from "@/modules/google-drive/capabilities";
+} from "@/shared/google-drive/capabilities";
 
 const GOOGLE_DRIVE_CONTENT_TOOL_NAME =
   "getLinkedGoogleFileContentTool" as const;

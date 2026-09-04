@@ -4,6 +4,16 @@ import { useState } from "react";
 import { Box, Button, Flex, Menu, Skeleton, Text } from "ui";
 import { PlusIcon, ReloadIcon } from "icons";
 import { cn } from "lib";
+import { GoogleDriveIcon } from "@/shared/google-drive/google-drive-icon";
+import {
+  GoogleDocsIcon,
+  GoogleSheetsIcon,
+} from "@/shared/google-drive/google-workspace-file-icons";
+import type {
+  GoogleDriveFileReference,
+  GoogleDriveFileType,
+  GoogleDriveTarget,
+} from "@/shared/google-drive/types";
 import {
   useCreateGoogleDriveConnectSession,
   useGoogleDriveFiles,
@@ -11,18 +21,8 @@ import {
 } from "./hooks";
 import { CreateGoogleFileDialog } from "./create-google-file-dialog";
 import { GoogleDriveFileCard } from "./google-drive-file-card";
-import { GoogleDriveIcon } from "./google-drive-icon";
 import { GoogleDrivePickerButton } from "./google-drive-picker-button";
-import {
-  GoogleDocsIcon,
-  GoogleSheetsIcon,
-} from "./google-workspace-file-icons";
 import { ImportGoogleFileDialog } from "./import-google-file-dialog";
-import type {
-  GoogleDriveFileReference,
-  GoogleDriveFileType,
-  GoogleDriveTarget,
-} from "./types";
 
 const GoogleDriveCreateMenu = ({
   disabled,

@@ -1,4 +1,4 @@
-import type { Member } from "@/types";
+import type { Member } from "@/types/member";
 import type { State, StateCategory } from "@/types/states";
 import {
   looksLikeMarkdown,

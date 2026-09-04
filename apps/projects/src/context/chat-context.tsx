@@ -12,7 +12,7 @@ import {
 } from "react";
 import { useWalkthrough } from "@/components/walkthrough/walkthrough-provider";
 import { useMayaChat } from "@/modules/maya";
-import type { GoogleDriveFileReference } from "@/modules/google-drive/types";
+import type { GoogleDriveFileReference } from "@/shared/google-drive/types";
 
 type ChatContextType = {
   chat: ReturnType<typeof useMayaChat>;

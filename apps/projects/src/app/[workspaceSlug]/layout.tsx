@@ -24,7 +24,7 @@ import {
 } from "@/components/walkthrough/walkthrough-tour";
 import { ChatProvider } from "@/context/chat-context";
 import { getProfile } from "@/lib/queries/users/profile";
-import { getOnboardingTourProgress } from "@/lib/queries/users/onboarding-tour-progress";
+import { getOnboardingTourProgress } from "@/shared/walkthrough/progress/get-progress";
 import { getCookieHeader } from "@/lib/http/header";
 import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
 import { ServerSentEvents } from "../server-sent-events";

@@ -1,13 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { useWorkspacePath } from "@/hooks";
+import { useWorkspacePath } from "@/hooks/use-workspace-path";
 import { userKeys } from "@/constants/keys";
-import { updateOnboardingTourProgressAction } from "@/lib/actions/users/update-onboarding-tour-progress";
 import { useSession } from "@/lib/auth/client";
+import { updateOnboardingTourProgressAction } from "./update-progress";
 import type {
   OnboardingTourProgress,
   UpdateOnboardingTourProgress,
-} from "@/types";
+} from "./types";
 
 const mergeUnique = (current: string[], updates: string[] | undefined) =>
   Array.from(new Set([...current, ...(updates ?? [])]));

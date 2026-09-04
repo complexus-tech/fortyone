@@ -2,9 +2,16 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { useWorkspacePath } from "@/hooks";
+import { useWorkspacePath } from "@/hooks/use-workspace-path";
 import { useSession } from "@/lib/auth/client";
 import { documentKeys } from "@/shared/documents/keys";
+import type {
+  GoogleDriveFileReference,
+  GoogleDriveFileType,
+  GoogleDriveImportVisibility,
+  GoogleDrivePickerFile,
+  GoogleDriveTarget,
+} from "@/shared/google-drive/types";
 import {
   attachGoogleDriveFilesAction,
   createGoogleDriveConnectSessionAction,
@@ -16,13 +23,6 @@ import {
   refreshGoogleDriveFileAction,
 } from "./actions";
 import { getGoogleDriveFiles, getGoogleDriveIntegration } from "./queries";
-import type {
-  GoogleDriveFileReference,
-  GoogleDriveFileType,
-  GoogleDriveImportVisibility,
-  GoogleDrivePickerFile,
-  GoogleDriveTarget,
-} from "./types";
 
 export const googleDriveKeys = {
   all: (workspaceSlug: string) => ["google-drive", workspaceSlug] as const,

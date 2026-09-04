@@ -23,9 +23,9 @@ import {
   getGoogleFileTypeLabel,
   GoogleFileTypeIcon,
   hasNativeGoogleWorkspaceIcon,
-  parseGoogleDriveURL,
-  useGoogleDriveFiles,
-} from "@/modules/google-drive";
+} from "@/shared/google-drive/google-file-type-icon";
+import { parseGoogleDriveURL } from "@/shared/google-drive/google-drive-url";
+import { useGoogleDriveFiles } from "@/modules/google-drive/public/files";
 import { AddLinkDialog } from "./add-link-dialog";
 
 const StoryLink = ({ canEdit, link }: { canEdit: boolean; link: LinkType }) => {

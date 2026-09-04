@@ -5,13 +5,13 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Box, Button, Dialog, Flex, Select, Text } from "ui";
 import { LockKeyholeIcon, UserMultiple02Icon } from "icons";
-import { useWorkspacePath } from "@/hooks";
-import { useImportGoogleDriveFile } from "./hooks";
-import { GoogleFileTypeIcon } from "./google-file-type-icon";
+import { useWorkspacePath } from "@/hooks/use-workspace-path";
+import { GoogleFileTypeIcon } from "@/shared/google-drive/google-file-type-icon";
 import type {
   GoogleDriveFileReference,
   GoogleDriveImportVisibility,
-} from "./types";
+} from "@/shared/google-drive/types";
+import { useImportGoogleDriveFile } from "./hooks";
 
 export const ImportGoogleFileDialog = ({
   file,

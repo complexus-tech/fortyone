@@ -259,6 +259,124 @@ beforeEach(() => {
 });
 
 describe("multi-entity import runner", () => {
+  it("finishes parent collaborator reconciliation before importing its child", async () => {
+    let releaseCollaborators = () => {};
+    const collaboratorsFinished = new Promise<void>((resolve) => {
+      releaseCollaborators = resolve;
+    });
+    let notifyCollaboratorsStarted = () => {};
+    const collaboratorsStarted = new Promise<void>((resolve) => {
+      notifyCollaboratorsStarted = resolve;
+    });
+    updateStoryCollaboratorsMock.mockImplementationOnce(async () => {
+      notifyCollaboratorsStarted();
+      await collaboratorsFinished;
+    });
+    getWorkspaceMembersMock.mockResolvedValue([
+      {
+        id: "collaborator-id",
+        email: "collaborator@example.com",
+        fullName: "Collaborator",
+        username: "collaborator",
+        isActive: true,
+        isSystem: false,
+      },
+    ] as never);
+    const onProgress = jest.fn();
+    const importRun = run({
+      draft: draft({
+        people: [
+          {
+            sourceId: "collaborator",
+            name: "Collaborator",
+            email: "collaborator@example.com",
+            teamSourceIds: [],
+          },
+        ],
+        tasks: [
+          { ...task("child", "Child"), parentSourceId: "parent" },
+          {
+            ...task("parent", "Parent"),
+            collaboratorPersonSourceIds: ["collaborator"],
+          },
+        ],
+      }),
+      selectedTaskIndexes: new Set([0, 1]),
+      onProgress,
+    });
+
+    await collaboratorsStarted;
+    try {
+      expect(importStoriesBatchMock).toHaveBeenCalledTimes(1);
+      expect(importStoriesBatchMock.mock.calls[0][0].items).toEqual([
+        expect.objectContaining({ sourceKey: "parent" }),
+      ]);
+      expect(updateStoryCollaboratorsMock).toHaveBeenCalledWith(
+        "story-1",
+        ["collaborator-id"],
+        ctx,
+      );
+    } finally {
+      releaseCollaborators();
+    }
+
+    const result = await importRun;
+    expect(importStoriesBatchMock).toHaveBeenCalledTimes(2);
+    expect(importStoriesBatchMock.mock.calls[1][0].items).toEqual([
+      expect.objectContaining({
+        sourceKey: "child",
+        story: expect.objectContaining({ parentId: "story-1" }),
+      }),
+    ]);
+    expect(result).toMatchObject({
+      created: 2,
+      failed: 0,
+      appliedCollaborators: 1,
+      addedMemberships: 1,
+    });
+    expect(onProgress).toHaveBeenLastCalledWith(100);
+  });
+
+  it("blocks a failed parent's descendants while preserving independent results", async () => {
+    importStoriesBatchMock.mockImplementationOnce(async (request) => ({
+      data: {
+        counts: { total: 2, created: 1, replayed: 0, failed: 1 },
+        items: request.items.map(({ sourceKey }) => ({
+          sourceKey,
+          storyId: sourceKey === "parent" ? null : "independent-story",
+          created: sourceKey !== "parent",
+          error:
+            sourceKey === "parent"
+              ? { code: "invalid_story", message: "Parent rejected" }
+              : null,
+        })),
+      },
+    }));
+
+    const result = await run({
+      draft: draft({
+        tasks: [
+          { ...task("child", "Child"), parentSourceId: "parent" },
+          task("parent", "Parent"),
+          task("independent", "Independent"),
+        ],
+      }),
+      selectedTaskIndexes: new Set([0, 1, 2]),
+    });
+
+    expect(importStoriesBatchMock).toHaveBeenCalledTimes(1);
+    expect(result).toMatchObject({ created: 1, failed: 2, replayed: 0 });
+    expect(result.items).toContainEqual({
+      sourceKey: "child",
+      storyId: null,
+      created: false,
+      error: {
+        code: "parent_import_failed",
+        message: "The parent work item could not be imported.",
+      },
+    });
+  });
+
   it("adds an exact workspace-email match to the imported team", async () => {
     getWorkspaceMembersMock.mockResolvedValue([
       {

@@ -55,10 +55,8 @@ import {
   uploadRichTextMediaFiles,
 } from "@/lib/tiptap/rich-text-media";
 import { RichTextTableMenu } from "@/lib/tiptap/rich-text-table-menu";
-import {
-  GoogleDriveFileSection,
-  useGoogleDriveDescriptionPaste,
-} from "@/modules/google-drive";
+import { GoogleDriveFileSection } from "@/modules/google-drive/public/files";
+import { useGoogleDriveDescriptionPaste } from "@/modules/google-drive/public/editor";
 import { DocumentAccessMenu } from "./document-access-menu";
 import {
   deleteDocumentMediaAction,

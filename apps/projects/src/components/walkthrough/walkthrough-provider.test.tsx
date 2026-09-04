@@ -4,8 +4,8 @@ import { StrictMode, type ReactNode } from "react";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { useLocalStorage, useMediaQuery, useWorkspacePath } from "@/hooks";
 import { useProfile } from "@/lib/hooks/profile";
-import { useOnboardingTourProgress } from "@/lib/hooks/users/onboarding-tour-progress";
-import { useUpdateOnboardingTourProgressMutation } from "@/lib/hooks/users/update-onboarding-tour-progress";
+import { useOnboardingTourProgress } from "@/shared/walkthrough/progress/use-progress";
+import { useUpdateOnboardingTourProgressMutation } from "@/shared/walkthrough/progress/use-update-progress";
 import {
   type WalkthroughStep,
   WalkthroughProvider,
@@ -22,11 +22,11 @@ jest.mock("@/lib/hooks/profile", () => ({
   useProfile: jest.fn(),
 }));
 
-jest.mock("@/lib/hooks/users/onboarding-tour-progress", () => ({
+jest.mock("@/shared/walkthrough/progress/use-progress", () => ({
   useOnboardingTourProgress: jest.fn(),
 }));
 
-jest.mock("@/lib/hooks/users/update-onboarding-tour-progress", () => ({
+jest.mock("@/shared/walkthrough/progress/use-update-progress", () => ({
   useUpdateOnboardingTourProgressMutation: jest.fn(),
 }));
 

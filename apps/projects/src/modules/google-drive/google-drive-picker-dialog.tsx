@@ -2,17 +2,17 @@
 
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
+import type {
+  GoogleDriveFileReference,
+  GoogleDrivePickerFile,
+  GoogleDriveTarget,
+} from "@/shared/google-drive/types";
 import {
   useAttachGoogleDriveFiles,
   useCreateGoogleDriveConnectSession,
   useCreateGoogleDrivePickerSession,
   useGoogleDriveIntegration,
 } from "./hooks";
-import type {
-  GoogleDriveFileReference,
-  GoogleDrivePickerFile,
-  GoogleDriveTarget,
-} from "./types";
 
 const GOOGLE_PICKER_SCRIPT_ID = "google-drive-picker-api";
 const GOOGLE_PICKER_SCRIPT_URL = "https://apis.google.com/js/api.js";

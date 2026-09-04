@@ -4,12 +4,15 @@ import type { FormEvent } from "react";
 import { useRef, useState } from "react";
 import { Box, Button, Dialog, Flex, Input, Text } from "ui";
 import { cn } from "lib";
-import { useCreateGoogleDriveFile } from "./hooks";
 import {
   GoogleDocsIcon,
   GoogleSheetsIcon,
-} from "./google-workspace-file-icons";
-import type { GoogleDriveFileType, GoogleDriveTarget } from "./types";
+} from "@/shared/google-drive/google-workspace-file-icons";
+import type {
+  GoogleDriveFileType,
+  GoogleDriveTarget,
+} from "@/shared/google-drive/types";
+import { useCreateGoogleDriveFile } from "./hooks";
 
 const fileTypes: {
   description: string;

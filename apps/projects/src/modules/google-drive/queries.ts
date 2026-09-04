@@ -1,11 +1,11 @@
 import { get } from "@/lib/http";
 import type { WorkspaceCtx } from "@/lib/http";
-import type { ApiResponse } from "@/types";
+import type { ApiResponse } from "@/types/api-response";
 import type {
   GoogleDriveFileReference,
   GoogleDriveIntegration,
   GoogleDriveTarget,
-} from "./types";
+} from "@/shared/google-drive/types";
 
 export const getGoogleDriveIntegration = async (ctx: WorkspaceCtx) => {
   const response = await get<ApiResponse<GoogleDriveIntegration>>(
