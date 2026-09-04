@@ -24,7 +24,10 @@ import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
 import { useStoryDescriptionMedia } from "@/modules/story/hooks/use-story-description-media";
 import { useIsAdminOrOwner } from "@/hooks/owner";
 import { RelatedDocuments } from "@/modules/documents/related-documents";
-import { GoogleDriveFileSection } from "@/modules/google-drive";
+import {
+  GoogleDriveFileSection,
+  useGoogleDriveDescriptionPaste,
+} from "@/modules/google-drive";
 import { useStoryById } from "../hooks/story";
 import type { StoryUpdate } from "../types";
 import { Activities } from "./activities";
@@ -38,7 +41,6 @@ import { FigmaSection } from "./figma-section";
 import { OptionsHeader } from "./options-header";
 import { Options } from "./options";
 import { useFigmaDescriptionPaste } from "./use-figma-description-paste";
-import { useGoogleDriveDescriptionPaste } from "./use-google-drive-description-paste";
 
 const DEBOUNCE_DELAY = 1000; // 1000ms delay
 
@@ -181,7 +183,10 @@ export const MainDetails = ({
   const {
     onPaste: handleGoogleDriveDescriptionPaste,
     picker: googleDriveDescriptionPicker,
-  } = useGoogleDriveDescriptionPaste({ editor: descriptionEditor, storyId });
+  } = useGoogleDriveDescriptionPaste({
+    editor: descriptionEditor,
+    target: { id: storyId, type: "story" },
+  });
   const handleDescriptionPaste = (event: ClipboardEvent<HTMLDivElement>) => {
     handleGoogleDriveDescriptionPaste(event);
     handleFigmaDescriptionPaste(event);

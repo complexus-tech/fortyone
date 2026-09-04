@@ -2,6 +2,7 @@ export { GoogleDriveFileSection } from "./google-drive-file-section";
 export { GoogleDrivePickerButton } from "./google-drive-picker-button";
 export { GoogleDrivePickerDialog } from "./google-drive-picker-dialog";
 export { GoogleDriveIcon } from "./google-drive-icon";
+export { useGoogleDriveDescriptionPaste } from "./use-google-drive-description-paste";
 export {
   getGoogleFileTypeLabel,
   GoogleFileTypeIcon,

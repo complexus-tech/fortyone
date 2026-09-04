@@ -1,6 +1,5 @@
 "use client";
 
-import type { ReactNode } from "react";
 import { useState } from "react";
 import { Box, Button, Flex, Menu, Skeleton, Text } from "ui";
 import { PlusIcon, ReloadIcon } from "icons";
@@ -96,14 +95,7 @@ export const GoogleDriveFileSection = ({
     isConnected && !needsReauthorization && integration.data?.configured,
   );
 
-  if (
-    !canEdit &&
-    !filesQuery.isPending &&
-    !filesQuery.isError &&
-    files.length === 0
-  ) {
-    return null;
-  }
+  if (files.length === 0) return null;
 
   const connectLabel =
     needsReauthorization || isConnected ? "Reconnect" : "Connect Drive";
@@ -112,91 +104,55 @@ export const GoogleDriveFileSection = ({
   };
   const connectionUnavailable =
     integration.isPending || integration.data?.configured === false;
-  const isEmpty =
-    !filesQuery.isPending && !filesQuery.isError && files.length === 0;
   const openCreateDialog = (fileType: GoogleDriveFileType) => {
     setCreateType(fileType);
   };
-  let emptyStateActions: ReactNode = null;
-  if (canEdit) {
-    emptyStateActions = canUseGoogleContent ? (
-      <Flex align="center" className="ml-auto shrink-0" gap={1}>
-        <GoogleDrivePickerButton
-          color="tertiary"
-          disabled={connectionUnavailable}
-          size="sm"
-          target={target}
-          variant="naked"
-        />
-        <GoogleDriveCreateMenu
-          disabled={connectionUnavailable}
-          onSelect={openCreateDialog}
-        />
-      </Flex>
-    ) : (
-      <Button
-        className="ml-auto shrink-0"
-        color="tertiary"
-        disabled={connectionUnavailable}
-        loading={connect.isPending}
-        onClick={startConnection}
-        size="sm"
-        variant="outline"
-      >
-        {connectLabel}
-      </Button>
-    );
-  }
 
   return (
     <Box className={cn("mt-4", className)}>
-      {!isEmpty ? (
-        <Flex
-          align="center"
-          className="border-border min-h-10 border-b-[0.5px] pb-2"
-          justify="between"
-        >
-          <Flex align="center" gap={2}>
-            <GoogleDriveIcon className="size-5" />
-            <Text fontWeight="semibold">Google Drive</Text>
-            {files.length > 0 ? (
-              <Text color="muted">{files.length}</Text>
-            ) : null}
-          </Flex>
-          {canEdit ? (
-            <Flex align="center" gap={1}>
-              {canUseGoogleContent ? (
-                <>
-                  <GoogleDrivePickerButton
-                    color="tertiary"
-                    disabled={connectionUnavailable}
-                    size="sm"
-                    target={target}
-                    variant="naked"
-                  >
-                    Attach from Drive
-                  </GoogleDrivePickerButton>
-                  <GoogleDriveCreateMenu
-                    disabled={connectionUnavailable}
-                    onSelect={openCreateDialog}
-                  />
-                </>
-              ) : (
-                <Button
+      <Flex
+        align="center"
+        className="border-border min-h-10 border-b-[0.5px] pb-2"
+        justify="between"
+      >
+        <Flex align="center" gap={2}>
+          <GoogleDriveIcon className="size-5" />
+          <Text fontWeight="semibold">Context from Google</Text>
+          <Text color="muted">{files.length}</Text>
+        </Flex>
+        {canEdit ? (
+          <Flex align="center" gap={1}>
+            {canUseGoogleContent ? (
+              <>
+                <GoogleDrivePickerButton
                   color="tertiary"
                   disabled={connectionUnavailable}
-                  loading={connect.isPending}
-                  onClick={startConnection}
                   size="sm"
+                  target={target}
                   variant="naked"
                 >
-                  {connectLabel}
-                </Button>
-              )}
-            </Flex>
-          ) : null}
-        </Flex>
-      ) : null}
+                  Attach from Drive
+                </GoogleDrivePickerButton>
+                <GoogleDriveCreateMenu
+                  disabled={connectionUnavailable}
+                  onSelect={openCreateDialog}
+                />
+              </>
+            ) : (
+              <Button
+                color="tertiary"
+                disabled={connectionUnavailable}
+                loading={connect.isPending}
+                onClick={startConnection}
+                size="sm"
+                variant="naked"
+              >
+                {connectLabel}
+              </Button>
+            )}
+          </Flex>
+        ) : null}
+      </Flex>
 
       {filesQuery.isPending ? (
         <Box
@@ -226,7 +182,7 @@ export const GoogleDriveFileSection = ({
           </Button>
         </Flex>
       ) : null}
-      {!filesQuery.isPending && !filesQuery.isError && files.length > 0 ? (
+      {!filesQuery.isPending && !filesQuery.isError ? (
         <Box className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
           {files.map((file) => (
             <GoogleDriveFileCard
@@ -243,26 +199,6 @@ export const GoogleDriveFileSection = ({
           ))}
         </Box>
       ) : null}
-      {isEmpty ? (
-        <Flex
-          align="center"
-          className="border-border/70 bg-surface-muted/10 flex-wrap rounded-xl border-[0.5px] px-3 py-3"
-          gap={3}
-          justify="between"
-        >
-          <Flex align="center" className="min-w-0 flex-1" gap={3}>
-            <GoogleDriveIcon className="size-7 shrink-0" />
-            <Box className="min-w-0">
-              <Text fontWeight="semibold">Bring in work from Google</Text>
-              <Text className="mt-0.5" color="muted">
-                Attach an existing file or create one without leaving FortyOne.
-              </Text>
-            </Box>
-          </Flex>
-          {emptyStateActions}
-        </Flex>
-      ) : null}
-
       {createType ? (
         <CreateGoogleFileDialog
           initialFileType={createType}

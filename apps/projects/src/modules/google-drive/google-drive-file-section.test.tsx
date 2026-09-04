@@ -1,7 +1,7 @@
 /* global beforeEach, describe, expect, it, jest -- Jest globals are provided by the projects test runner. */
 
 import type { ReactNode } from "react";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { GoogleDriveFileSection } from "./google-drive-file-section";
 import type { GoogleDriveFileReference } from "./types";
 
@@ -80,39 +80,12 @@ beforeEach(() => {
 });
 
 describe("GoogleDriveFileSection", () => {
-  it("uses one compact Drive card for the connected empty state", () => {
-    render(<GoogleDriveFileSection canEdit target={target} />);
-
-    expect(screen.queryByText("Google Drive")).not.toBeInTheDocument();
-    expect(screen.getByText("Bring in work from Google")).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Attach from Drive" }),
-    ).toHaveAttribute("data-variant", "naked");
-    expect(
-      document.querySelector('svg[viewBox="0 0 192 192"]'),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Create Google file" }),
-    ).toHaveTextContent("Create Google file");
-
-    fireEvent.pointerDown(
-      screen.getByRole("button", { name: "Create Google file" }),
-      { button: 0, ctrlKey: false },
+  it("renders nothing until Google context has been attached", () => {
+    const { container } = render(
+      <GoogleDriveFileSection canEdit target={target} />,
     );
 
-    const docItem = screen.getByRole("menuitem", { name: "Google Doc" });
-    const sheetItem = screen.getByRole("menuitem", { name: "Google Sheet" });
-    expect(
-      docItem.querySelector('svg[viewBox="0 0 192 192"] path[fill="#3186FF"]'),
-    ).not.toBeNull();
-    expect(
-      sheetItem.querySelector(
-        'svg[viewBox="0 0 192 192"] path[fill="#009954"]',
-      ),
-    ).not.toBeNull();
-
-    fireEvent.click(docItem);
-    expect(screen.getByRole("dialog")).toHaveTextContent("Create document");
+    expect(container).toBeEmptyDOMElement();
   });
 
   it("retains the section header and actions when files exist", () => {
@@ -124,7 +97,7 @@ describe("GoogleDriveFileSection", () => {
 
     render(<GoogleDriveFileSection canEdit target={target} />);
 
-    expect(screen.getByText("Google Drive")).toBeInTheDocument();
+    expect(screen.getByText("Context from Google")).toBeInTheDocument();
     expect(screen.getByText("1")).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Attach from Drive" }),

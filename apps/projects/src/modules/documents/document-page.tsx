@@ -55,7 +55,10 @@ import {
   uploadRichTextMediaFiles,
 } from "@/lib/tiptap/rich-text-media";
 import { RichTextTableMenu } from "@/lib/tiptap/rich-text-table-menu";
-import { GoogleDriveFileSection } from "@/modules/google-drive";
+import {
+  GoogleDriveFileSection,
+  useGoogleDriveDescriptionPaste,
+} from "@/modules/google-drive";
 import { DocumentAccessMenu } from "./document-access-menu";
 import {
   deleteDocumentMediaAction,
@@ -242,6 +245,11 @@ export const DocumentPage = ({ documentId }: { documentId: string }) => {
     },
     onBlur: flushContent,
   });
+  const { onPaste: handleGoogleDrivePaste, picker: googleDrivePastePicker } =
+    useGoogleDriveDescriptionPaste({
+      editor,
+      target: { id: documentId, type: "document" },
+    });
 
   useEffect(() => {
     if (!document) return;
@@ -540,7 +548,9 @@ export const DocumentPage = ({ documentId }: { documentId: string }) => {
                     bubbleMenuShouldShow={shouldShowDocumentTextMenu}
                     className="rich-document-editor min-h-[55dvh] text-[1.1rem] leading-7"
                     editor={editor}
+                    onPaste={handleGoogleDrivePaste}
                   />
+                  {googleDrivePastePicker}
                   <RichTextTableMenu
                     editor={editor}
                     scrollTarget={scrollContainer}

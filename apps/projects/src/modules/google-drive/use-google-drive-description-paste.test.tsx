@@ -7,10 +7,10 @@ import {
   useAttachGoogleDriveFiles,
   useCreateGoogleDriveConnectSession,
   useGoogleDriveIntegration,
-} from "@/modules/google-drive";
-import type { GoogleDriveFileReference } from "@/modules/google-drive";
-import { replacePastedGoogleDriveURLLabel } from "@/modules/google-drive/google-drive-description-link";
-import type { GoogleDrivePickerDialogProps } from "@/modules/google-drive/google-drive-picker-dialog";
+} from "./hooks";
+import type { GoogleDriveFileReference } from "./types";
+import { replacePastedGoogleDriveURLLabel } from "./google-drive-description-link";
+import type { GoogleDrivePickerDialogProps } from "./google-drive-picker-dialog";
 import { useGoogleDriveDescriptionPaste } from "./use-google-drive-description-paste";
 
 jest.mock("sonner", () => ({
@@ -23,16 +23,17 @@ jest.mock("sonner", () => ({
   },
 }));
 
-jest.mock("@/modules/google-drive", () => ({
-  ...jest.requireActual("@/modules/google-drive/google-drive-url"),
-  GoogleDriveIcon: () => null,
-  GoogleDrivePickerDialog: () => null,
+jest.mock("./hooks", () => ({
   useAttachGoogleDriveFiles: jest.fn(),
   useCreateGoogleDriveConnectSession: jest.fn(),
   useGoogleDriveIntegration: jest.fn(),
 }));
+jest.mock("./google-drive-icon", () => ({ GoogleDriveIcon: () => null }));
+jest.mock("./google-drive-picker-dialog", () => ({
+  GoogleDrivePickerDialog: () => null,
+}));
 
-jest.mock("@/modules/google-drive/google-drive-description-link", () => ({
+jest.mock("./google-drive-description-link", () => ({
   replacePastedGoogleDriveURLLabel: jest.fn(() => true),
 }));
 
@@ -89,11 +90,28 @@ describe("useGoogleDriveDescriptionPaste", () => {
     } as ReturnType<typeof useGoogleDriveIntegration>);
   });
 
+  it("supports Google context on document editors", () => {
+    renderHook(() =>
+      useGoogleDriveDescriptionPaste({
+        editor: createEditor(),
+        target: { id: "document-1", type: "document" },
+      }),
+    );
+
+    expect(useAttachGoogleDriveFiles).toHaveBeenCalledWith(
+      { id: "document-1", type: "document" },
+      { notifyOnError: false, notifyOnSuccess: false },
+    );
+  });
+
   it("attaches an authorized standalone URL and upgrades its pasted label", async () => {
     attachFiles.mockResolvedValue([file]);
     const editor = createEditor();
     const { result } = renderHook(() =>
-      useGoogleDriveDescriptionPaste({ editor, storyId: "story-1" }),
+      useGoogleDriveDescriptionPaste({
+        editor,
+        target: { id: "story-1", type: "story" },
+      }),
     );
 
     paste(result.current.onPaste, RAW_URL);
@@ -129,7 +147,7 @@ describe("useGoogleDriveDescriptionPaste", () => {
     const { result } = renderHook(() =>
       useGoogleDriveDescriptionPaste({
         editor: createEditor(),
-        storyId: "story-1",
+        target: { id: "story-1", type: "story" },
       }),
     );
 
@@ -167,7 +185,7 @@ describe("useGoogleDriveDescriptionPaste", () => {
     const { result } = renderHook(() =>
       useGoogleDriveDescriptionPaste({
         editor: createEditor(),
-        storyId: "story-1",
+        target: { id: "story-1", type: "story" },
       }),
     );
 
@@ -197,7 +215,7 @@ describe("useGoogleDriveDescriptionPaste", () => {
     const { result } = renderHook(() =>
       useGoogleDriveDescriptionPaste({
         editor: createEditor(),
-        storyId: "story-1",
+        target: { id: "story-1", type: "story" },
       }),
     );
 
@@ -205,9 +223,10 @@ describe("useGoogleDriveDescriptionPaste", () => {
 
     expect(attachFiles).not.toHaveBeenCalled();
     expect(toast.info).toHaveBeenCalledWith(
-      "Connect Google Drive to preview this file",
+      "Get more context from this Google file",
       expect.objectContaining({
-        description: "The pasted link will stay in the description.",
+        description:
+          "Connect Google Drive to add a private preview. The pasted link will stay in the description.",
         duration: 10_000,
       }),
     );
@@ -240,7 +259,7 @@ describe("useGoogleDriveDescriptionPaste", () => {
     const { result } = renderHook(() =>
       useGoogleDriveDescriptionPaste({
         editor: createEditor(),
-        storyId: "story-1",
+        target: { id: "story-1", type: "story" },
       }),
     );
 
@@ -263,7 +282,7 @@ describe("useGoogleDriveDescriptionPaste", () => {
     const { result } = renderHook(() =>
       useGoogleDriveDescriptionPaste({
         editor: createEditor(),
-        storyId: "story-1",
+        target: { id: "story-1", type: "story" },
       }),
     );
 
@@ -286,13 +305,13 @@ describe("useGoogleDriveDescriptionPaste", () => {
     const codeHook = renderHook(() =>
       useGoogleDriveDescriptionPaste({
         editor: createEditor({ code: true }),
-        storyId: "story-1",
+        target: { id: "story-1", type: "story" },
       }),
     );
     const textHook = renderHook(() =>
       useGoogleDriveDescriptionPaste({
         editor: createEditor(),
-        storyId: "story-1",
+        target: { id: "story-1", type: "story" },
       }),
     );
 

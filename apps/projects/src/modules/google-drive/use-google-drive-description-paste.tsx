@@ -2,20 +2,20 @@ import type { Editor } from "@tiptap/core";
 import type { ClipboardEventHandler } from "react";
 import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
+import { GoogleDriveIcon } from "./google-drive-icon";
+import { GoogleDrivePickerDialog } from "./google-drive-picker-dialog";
 import {
-  GoogleDriveIcon,
-  GoogleDrivePickerDialog,
-  getStandaloneGoogleDriveURL,
-  parseGoogleDriveURL,
   useAttachGoogleDriveFiles,
   useCreateGoogleDriveConnectSession,
   useGoogleDriveIntegration,
-} from "@/modules/google-drive";
-import type {
-  GoogleDriveFileReference,
-  GoogleDriveURL,
-} from "@/modules/google-drive";
-import { replacePastedGoogleDriveURLLabel } from "@/modules/google-drive/google-drive-description-link";
+} from "./hooks";
+import {
+  getStandaloneGoogleDriveURL,
+  parseGoogleDriveURL,
+  type GoogleDriveURL,
+} from "./google-drive-url";
+import type { GoogleDriveFileReference, GoogleDriveTarget } from "./types";
+import { replacePastedGoogleDriveURLLabel } from "./google-drive-description-link";
 
 type PendingGoogleDrivePaste = {
   approximatePosition: number;
@@ -31,12 +31,11 @@ const getErrorDetail = (error: unknown, key: "code" | "message") => {
 
 export const useGoogleDriveDescriptionPaste = ({
   editor,
-  storyId,
+  target,
 }: {
   editor: Editor | null;
-  storyId: string;
+  target: GoogleDriveTarget;
 }) => {
-  const target = { id: storyId, type: "story" as const };
   const integration = useGoogleDriveIntegration();
   const connect = useCreateGoogleDriveConnectSession();
   const attachFiles = useAttachGoogleDriveFiles(target, {
@@ -62,30 +61,27 @@ export const useGoogleDriveDescriptionPaste = ({
       }
       hasShownConnectionPrompt.current = true;
 
-      const promptId = toast.info(
-        reconnect
-          ? "Reconnect Google Drive to preview this file"
-          : "Connect Google Drive to preview this file",
-        {
-          action: {
-            label: reconnect ? "Reconnect" : "Connect Drive",
-            onClick: (event) => {
-              event.preventDefault();
-              connect.mutate(window.location.href);
-            },
+      const promptId = toast.info("Get more context from this Google file", {
+        action: {
+          label: reconnect ? "Reconnect" : "Connect Drive",
+          onClick: (event) => {
+            event.preventDefault();
+            connect.mutate(window.location.href);
           },
-          cancel: {
-            label: "Keep link",
-            onClick: () => {
-              toast.dismiss(promptId);
-            },
-          },
-          description: "The pasted link will stay in the description.",
-          duration: 10_000,
-          icon: <GoogleDriveIcon className="size-4" />,
-          ...(toastId !== undefined ? { id: toastId } : {}),
         },
-      );
+        cancel: {
+          label: "Keep link",
+          onClick: () => {
+            toast.dismiss(promptId);
+          },
+        },
+        description: `${
+          reconnect ? "Reconnect" : "Connect"
+        } Google Drive to add a private preview. The pasted link will stay in the description.`,
+        duration: 10_000,
+        icon: <GoogleDriveIcon className="size-4" />,
+        ...(toastId !== undefined ? { id: toastId } : {}),
+      });
     },
     [connect],
   );
