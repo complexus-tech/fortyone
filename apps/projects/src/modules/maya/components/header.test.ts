@@ -13,6 +13,8 @@ describe("Maya quota headers", () => {
     expect(source).toContain("useSession");
     expect(source).toContain("session?.user.isInternal");
     expect(source).toContain('tier !== "enterprise" && !isInternalUser');
+    expect(source).toContain("absolute inset-x-0 top-0 z-20");
+    expect(source).toContain("bg-transparent");
   });
 
   it("hides the docked quota affordance for internal users", () => {

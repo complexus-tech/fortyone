@@ -1,11 +1,14 @@
 "use client";
 
 import { Button, Tooltip } from "ui";
+import { cn } from "lib";
 import { StopIcon, VoiceIcon } from "icons";
 import type { useMayaRealtimeVoice } from "../hooks/use-maya-realtime-voice";
 
 type RealtimeVoiceControlProps = {
+  color?: "invert" | "tertiary";
   disabled?: boolean;
+  isHighlighted?: boolean;
   voice: ReturnType<typeof useMayaRealtimeVoice>;
 };
 
@@ -25,7 +28,9 @@ const getButtonLabel = (voice: ReturnType<typeof useMayaRealtimeVoice>) => {
 };
 
 export const RealtimeVoiceControl = ({
+  color = "invert",
   disabled = false,
+  isHighlighted = false,
   voice,
 }: RealtimeVoiceControlProps) => {
   const { connect, disconnect, status } = voice;
@@ -53,8 +58,10 @@ export const RealtimeVoiceControl = ({
     >
       <Button
         aria-label={label}
-        className="shrink-0 gap-1.5"
-        color="invert"
+        className={cn("shrink-0 gap-1.5", {
+          "bg-state-hover dark:bg-state-hover": isHighlighted,
+        })}
+        color={color}
         disabled={disabled || isConnecting || isDisconnecting}
         leftIcon={buttonIcon}
         onClick={() => {

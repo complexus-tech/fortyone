@@ -1,0 +1,35 @@
+.page {
+  background-image: radial-gradient(
+      54% 32% at 18% 0%,
+      color-mix(in oklab, var(--color-secondary) 7%, transparent),
+      transparent 76%
+    ),
+    radial-gradient(
+      46% 28% at 52% -4%,
+      color-mix(in oklab, var(--color-info) 6%, transparent),
+      transparent 78%
+    ),
+    radial-gradient(
+      52% 30% at 88% 0%,
+      color-mix(in oklab, var(--color-primary) 7%, transparent),
+      transparent 76%
+    );
+}
+
+:global(.dark) .page {
+  background-image: radial-gradient(
+      54% 32% at 18% 0%,
+      color-mix(in oklab, var(--color-secondary) 5%, transparent),
+      transparent 76%
+    ),
+    radial-gradient(
+      46% 28% at 52% -4%,
+      color-mix(in oklab, var(--color-info) 5%, transparent),
+      transparent 78%
+    ),
+    radial-gradient(
+      52% 30% at 88% 0%,
+      color-mix(in oklab, var(--color-primary) 6%, transparent),
+      transparent 76%
+    );
+}

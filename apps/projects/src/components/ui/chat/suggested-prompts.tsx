@@ -1,8 +1,7 @@
 import { Notification02Icon, StoryIcon, TeamIcon } from "icons";
-import { Box, Flex, Wrapper, Text } from "ui";
+import { Box, Flex, Text } from "ui";
 import { cn } from "lib";
 import { useProfile } from "@/lib/hooks/profile";
-import { useTerminology } from "@/hooks";
 import { PriorityIcon } from "../priority-icon";
 
 type SuggestedPromptsProps = {
@@ -27,40 +26,40 @@ export const SuggestedPrompts = ({
   isPopup = false,
   fromIndex = 0,
 }: SuggestedPromptsProps) => {
-  const { getTermDisplay } = useTerminology();
-  const storyTermPlural = getTermDisplay("storyTerm", { variant: "plural" });
   const { data: profile } = useProfile();
   const name = profile?.fullName.split(" ")[0] || profile?.username;
 
   const SUGGESTED_PROMPTS = [
     {
-      icon: <TeamIcon className="text-success dark:text-success" />,
-      label: "Who's on my team?",
-      value: "See a list of everyone in your current team and their roles.",
-      classes: "bg-success/10 dark:bg-success/10",
+      icon: (
+        <TeamIcon className="text-success dark:text-success size-[1.1875rem]" />
+      ),
+      label: "Plan project",
+      value: "Build a clear project plan.",
     },
     {
-      icon: <StoryIcon className="text-warning dark:text-warning" />,
-      label: "What's on my plate?",
-      value: `View all ${storyTermPlural} assigned to you across teams.`,
-      classes: "bg-warning/10 dark:bg-warning/10",
+      icon: (
+        <StoryIcon className="text-warning dark:text-warning size-[1.1875rem]" />
+      ),
+      label: "Sprint summary",
+      value: "Summarize the current sprint.",
     },
     {
-      icon: <Notification02Icon className="text-info dark:text-info" />,
-      label: "What's new for me?",
-      value: "Check your latest unread notifications and updates.",
-      classes: "bg-info/10 dark:bg-info/10",
+      icon: (
+        <Notification02Icon className="text-info dark:text-info size-[1.1875rem]" />
+      ),
+      label: "Status report",
+      value: "Draft a concise project update.",
     },
     {
       icon: (
         <PriorityIcon
-          className="text-danger dark:text-danger"
+          className="text-danger dark:text-danger size-[1.1875rem]"
           priority="High"
         />
       ),
-      label: "High priority work",
-      value: `Find your most urgent ${storyTermPlural} across teams to focus on.`,
-      classes: "bg-danger/10 dark:bg-danger/10",
+      label: "Active work",
+      value: "Find all work currently in progress.",
     },
   ];
 
@@ -92,66 +91,48 @@ export const SuggestedPrompts = ({
   }
 
   return (
-    <Box
-      className={cn("px-6 py-4", {
-        "md:py-6": isOnPage,
-      })}
-    >
-      <Text
-        className={cn("mx-auto w-max pb-1.5 text-center text-4xl md:w-11/12", {
-          "md:mb-10 md:text-5xl": isOnPage,
-        })}
-      >
-        Hi, {name}! Ask me anything!
-      </Text>
+    <Box className={cn("px-6 py-4", { "px-0 pt-7 pb-0": isOnPage })}>
       <Box
         className={cn("mt-6 flex flex-col gap-3", {
-          "grid md:grid-cols-2 md:gap-4": isOnPage,
+          "mt-0 grid sm:grid-cols-2 sm:gap-3 lg:grid-cols-4": isOnPage,
         })}
       >
         {SUGGESTED_PROMPTS.slice(fromIndex).map((prompt) => (
-          <Wrapper
+          <button
             className={cn(
-              "dark:bg-surface/60 ring-primary flex cursor-pointer items-center gap-3 transition hover:ring-2 md:px-4",
+              "border-border/70 bg-surface/72 hover:bg-surface focus-visible:ring-primary dark:bg-surface/55 dark:hover:bg-surface/80 flex min-h-[6.25rem] cursor-pointer flex-col items-start gap-2.5 rounded-2xl border px-3.5 py-3 text-left transition-[background-color,border-color,transform] hover:-translate-y-0.5 hover:border-[color-mix(in_oklab,var(--color-info)_35%,var(--color-border))] focus-visible:ring-2 focus-visible:outline-none",
               {
-                "gap-3 md:px-4 md:py-3": isOnPage,
+                "sm:min-h-[6.5rem] lg:px-4 lg:py-3": isOnPage,
               },
             )}
             key={prompt.label}
             onClick={() => {
               onPromptSelect(prompt.label);
             }}
-            tabIndex={0}
+            type="button"
           >
-            <Flex
-              align="center"
-              className={cn(
-                "bg-surface-muted size-10 shrink-0 rounded-lg",
-                prompt.classes,
-              )}
-              gap={2}
-              justify="center"
-            >
+            <Flex align="center" className="size-5 shrink-0" justify="center">
               {prompt.icon}
             </Flex>
-            <Box>
+            <Box className="w-full min-w-0 overflow-hidden">
               <Text
                 className={cn("font-semibold", {
-                  "md:text-lg": isOnPage,
+                  "text-base leading-5": isOnPage,
                 })}
               >
                 {prompt.label}
               </Text>
               <Text
                 className={cn("text-[0.95rem]", {
-                  "md:mt-0.5 md:text-base md:leading-[1.3rem]": isOnPage,
+                  "mt-1 block w-full overflow-hidden leading-5 text-ellipsis whitespace-nowrap":
+                    isOnPage,
                 })}
                 color="muted"
               >
                 {prompt.value}
               </Text>
             </Box>
-          </Wrapper>
+          </button>
         ))}
       </Box>
     </Box>

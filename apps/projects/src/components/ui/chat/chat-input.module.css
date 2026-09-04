@@ -1,0 +1,65 @@
+.emptyStateFrame,
+.dockedFrame {
+  background-image: linear-gradient(
+    to bottom right,
+    var(--color-secondary),
+    var(--color-info),
+    var(--color-primary)
+  );
+}
+
+:global(.dark) .emptyStateFrame,
+:global(.dark) .dockedFrame {
+  background-image: linear-gradient(
+    to bottom right,
+    color-mix(in oklab, var(--color-secondary) 42%, var(--brand-ink)),
+    color-mix(in oklab, var(--color-info) 62%, var(--brand-ink)),
+    color-mix(in oklab, var(--color-primary) 72%, var(--brand-ink))
+  );
+}
+
+.emptyStateFrame {
+  padding: 6px;
+  border-radius: 2.25rem;
+}
+
+.dockedFrame {
+  padding: 3px;
+  border-radius: calc(var(--radius-2xl) + 3px);
+}
+
+.emptyStateSurface,
+.dockedSurface {
+  background: var(--color-surface);
+}
+
+:global(.dark) .emptyStateSurface,
+:global(.dark) .dockedSurface {
+  background: var(--color-surface-elevated);
+}
+
+.emptyStateSurface {
+  min-height: 9rem;
+  border-radius: calc(2.25rem - 6px);
+}
+
+.dockedSurface {
+  border-radius: var(--radius-2xl);
+}
+
+@supports (corner-shape: squircle) {
+  .emptyStateFrame {
+    border-radius: 2.75rem;
+    corner-shape: squircle;
+  }
+
+  .emptyStateSurface {
+    border-radius: calc(2.75rem - 6px);
+    corner-shape: squircle;
+  }
+
+  .dockedFrame,
+  .dockedSurface {
+    corner-shape: squircle;
+  }
+}

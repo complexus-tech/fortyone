@@ -101,7 +101,7 @@ export const ChatMessages = ({
     >
       <Flex
         className={cn({
-          "mx-auto w-full max-w-3xl px-6 py-5": isOnPage,
+          "mx-auto w-full max-w-3xl px-6 pt-20 pb-5": isOnPage,
         })}
         direction="column"
         gap={6}

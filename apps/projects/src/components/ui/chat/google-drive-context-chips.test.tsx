@@ -27,7 +27,11 @@ describe("GoogleDriveContextChips", () => {
       "border",
       "border-border/70",
       "bg-surface-muted/10",
-      "py-2.5",
+      "gap-1.5",
+      "rounded-2xl",
+      "px-1.5",
+      "py-1.5",
+      "text-[0.95rem]",
     );
     expect(
       docChip?.querySelector('svg[viewBox="0 0 192 192"] path[fill="#3186FF"]'),

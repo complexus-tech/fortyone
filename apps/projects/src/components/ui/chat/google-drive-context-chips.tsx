@@ -18,7 +18,7 @@ export const GoogleDriveContextChips = ({
     <div className={cn("flex flex-wrap gap-2", className)}>
       {files.map((file) => (
         <span
-          className="border-border/70 bg-surface-muted/10 text-text-primary flex max-w-full items-center gap-2 rounded-xl border px-3 py-2.5 text-sm"
+          className="border-border/70 bg-surface-muted/10 text-text-primary flex max-w-full items-center gap-1.5 rounded-2xl border px-1.5 py-1.5 text-[0.95rem]"
           key={file.referenceId}
           title={file.name}
         >
@@ -26,7 +26,7 @@ export const GoogleDriveContextChips = ({
             className="size-7 bg-transparent"
             mimeType={file.mimeType}
           />
-          <span className="max-w-56 truncate">{file.name}</span>
+          <span className="max-w-56 truncate leading-5">{file.name}</span>
           {onRemove ? (
             <button
               aria-label={`Remove ${file.name}`}

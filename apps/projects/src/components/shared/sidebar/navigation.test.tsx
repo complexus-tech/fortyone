@@ -137,10 +137,10 @@ describe("Navigation", () => {
       screen.getAllByRole("link").map((link) => link.textContent.trim()),
     ).toEqual([
       "My work",
+      "AI Agent",
       "Calendar",
       "Active Sprint",
       "Summary",
-      "AI Agent",
       "Roadmap",
       "Strategy Map",
       "Documents",
@@ -203,7 +203,7 @@ describe("Navigation", () => {
     );
     expect(
       screen.getAllByRole("link").map((link) => link.textContent.trim()),
-    ).toEqual(["My work", "Calendar", "Active Sprint", "Summary", "AI Agent"]);
+    ).toEqual(["My work", "AI Agent", "Calendar", "Active Sprint", "Summary"]);
 
     fireEvent.click(workspaceTrigger);
 

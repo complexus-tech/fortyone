@@ -187,7 +187,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
         </Box>
         <Box className="h-dvh min-w-0 flex-1 pt-(--app-content-inset) pr-(--app-content-inset) pb-(--app-content-inset) pl-2">
           <Box
-            className="border-border/80 bg-surface-muted/40 dark:bg-surface-muted/20 settings-card-borders h-full min-w-0 overflow-y-auto rounded-xl border-[0.5px]"
+            className="border-border/80 bg-surface-muted/60 dark:bg-surface-muted/50 settings-card-borders h-full min-w-0 overflow-y-auto rounded-2xl border-[0.5px]"
             data-settings-content-canvas
           >
             <Container

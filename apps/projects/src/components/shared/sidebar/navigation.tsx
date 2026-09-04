@@ -80,6 +80,11 @@ export const Navigation = ({
       href: withWorkspace("/my-work"),
     },
     {
+      name: "AI Agent",
+      icon: <AiIcon className={isCollapsed ? "h-5.5" : undefined} />,
+      href: withWorkspace("/maya"),
+    },
+    {
       name: "Calendar",
       icon: <CalendarIcon className={isCollapsed ? "h-5.5" : undefined} />,
       href: withWorkspace("/calendar"),
@@ -89,11 +94,6 @@ export const Navigation = ({
       name: "Summary",
       icon: <DashboardIcon className={isCollapsed ? "h-5.5" : undefined} />,
       href: withWorkspace("/summary"),
-    },
-    {
-      name: "AI Agent",
-      icon: <AiIcon className={isCollapsed ? "h-5.5" : undefined} />,
-      href: withWorkspace("/maya"),
     },
   ];
   const workspaceLinks: MenuItem[] = [

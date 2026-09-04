@@ -25,6 +25,7 @@ import { useTerminology } from "@/hooks";
 import { walkthroughTargets } from "@/shared/walkthrough/targets";
 import type { GoogleDriveFileContext } from "@/lib/ai/google-drive-context";
 import { GoogleDriveContextChips } from "./google-drive-context-chips";
+import styles from "./chat-input.module.css";
 
 type ChatInputProps = {
   value: string;
@@ -38,6 +39,7 @@ type ChatInputProps = {
   onGoogleDriveFileRemove: (referenceId: string) => void;
   isOnPage?: boolean;
   isPopup?: boolean;
+  isEmptyState?: boolean;
   messagesCount: number;
   liveVoiceDisabled?: boolean;
   realtimeVoice: ReturnType<typeof useMayaRealtimeVoice>;
@@ -121,6 +123,7 @@ export const ChatInput = ({
   onGoogleDriveFileRemove,
   isOnPage,
   isPopup = false,
+  isEmptyState = false,
   messagesCount,
   liveVoiceDisabled = false,
   realtimeVoice,
@@ -134,8 +137,16 @@ export const ChatInput = ({
     processRecordingRef.current();
   }, []);
   const isLiveVoiceActive = realtimeVoice.status !== "idle";
-  const placeholderTexts =
-    messagesCount > 2
+  const placeholderTexts = isEmptyState
+    ? [
+        "Ask Maya about your workspace or tell her what to do...",
+        "What would you like to move forward?",
+        "Find, plan, or update work with Maya...",
+        "Ask Maya about your workspace or tell her what to do...",
+        "What would you like to move forward?",
+        "Find, plan, or update work with Maya...",
+      ]
+    : messagesCount > 2
       ? [
           "Tell Maya what to do next...",
           "Continue the conversation...",
@@ -330,7 +341,8 @@ export const ChatInput = ({
     <Box
       className={cn("sticky bottom-0", {
         "px-3 pb-2.5": isPopup,
-        "px-6 pb-3": !isPopup,
+        "px-6 pb-3": !isPopup && !isEmptyState,
+        "relative px-0 pb-0": isEmptyState,
       })}
       data-walkthrough-target={walkthroughTargets.mayaComposer}
     >
@@ -360,186 +372,215 @@ export const ChatInput = ({
         </Flex>
       )}
       <Box
-        className={cn("py-2", {
-          "rounded-xl border-[0.5px] border-black/[0.07] bg-black/[0.035] dark:border-white/[0.07] dark:bg-white/[0.035]":
-            isPopup,
-          "border-border rounded-2xl border": !isPopup,
+        className={cn({
+          [styles.emptyStateFrame]: isEmptyState,
+          [styles.dockedFrame]: isOnPage && !isEmptyState,
         })}
       >
-        <GoogleDriveContextChips
-          className="px-4 py-3"
-          files={googleDriveFiles}
-          onRemove={onGoogleDriveFileRemove}
-        />
-        {images.length > 0 && (
-          <Box className="mt-2.5 grid grid-cols-3 gap-3 px-4">
-            {images.map((attachment) => (
-              <AttachmentPreviewItem
-                file={attachment}
-                key={getAttachmentKey(attachment)}
-                onDelete={() => {
-                  handleRemoveAttachment(attachments.indexOf(attachment));
-                }}
-              />
-            ))}
-          </Box>
-        )}
-        {pdfs.length > 0 && (
-          <Box className="mt-2.5 grid grid-cols-1 gap-3 px-4">
-            {pdfs.map((attachment) => (
-              <AttachmentPreviewItem
-                file={attachment}
-                key={getAttachmentKey(attachment)}
-                onDelete={() => {
-                  handleRemoveAttachment(attachments.indexOf(attachment));
-                }}
-              />
-            ))}
-          </Box>
-        )}
-
-        <Box className="relative dark:antialiased">
-          <textarea
-            aria-label="Chat message"
-            className={cn(
-              "max-h-40 min-h-12 w-full flex-1 resize-none border-none bg-transparent px-5 py-2 text-[1.1rem] shadow-none focus-visible:outline-none",
-              {
-                "md:min-h-[3.7rem]": isOnPage,
-                "px-4": isPopup,
-              },
-            )}
-            disabled={isLiveVoiceActive}
-            name="message"
-            onChange={onChange}
-            onKeyDown={handleKeyDown}
-            placeholder=""
-            ref={textareaRef}
-            rows={1}
-            value={value}
+        <Box
+          className={cn("py-2", {
+            "rounded-xl border-[0.5px] border-black/[0.07] bg-black/[0.035] dark:border-white/[0.07] dark:bg-white/[0.035]":
+              isPopup,
+            "border-border rounded-2xl border":
+              !isPopup && !isOnPage && !isEmptyState,
+            [styles.emptyStateSurface]: isEmptyState,
+            [styles.dockedSurface]: isOnPage && !isEmptyState,
+          })}
+        >
+          <GoogleDriveContextChips
+            className="px-4 py-3"
+            files={googleDriveFiles}
+            onRemove={onGoogleDriveFileRemove}
           />
-          {!value && (
-            <Box
-              aria-hidden="true"
-              className={cn(
-                "text-text-muted pointer-events-none absolute top-2 transition-[opacity,transform] duration-200 ease-in-out motion-reduce:transition-none",
-                {
-                  "left-4 text-[1.1rem]": isPopup,
-                  "left-5 text-[1.1rem]": !isPopup,
-                },
-              )}
-            >
-              {recordingState === "idle"
-                ? placeholderTexts[currentPlaceholderIndex]
-                : `${
-                    recordingState.charAt(0).toUpperCase() +
-                    recordingState.slice(1)
-                  }...`}
+          {images.length > 0 && (
+            <Box className="mt-2.5 grid grid-cols-3 gap-3 px-4">
+              {images.map((attachment) => (
+                <AttachmentPreviewItem
+                  file={attachment}
+                  key={getAttachmentKey(attachment)}
+                  onDelete={() => {
+                    handleRemoveAttachment(attachments.indexOf(attachment));
+                  }}
+                />
+              ))}
             </Box>
           )}
-        </Box>
-        <Flex align="center" className="mb-1 px-3" gap={2} justify="between">
-          <Flex align="center" gap={2}>
-            <input
-              {...getInputProps({
-                "aria-label": "Choose files to attach",
-              })}
+          {pdfs.length > 0 && (
+            <Box className="mt-2.5 grid grid-cols-1 gap-3 px-4">
+              {pdfs.map((attachment) => (
+                <AttachmentPreviewItem
+                  file={attachment}
+                  key={getAttachmentKey(attachment)}
+                  onDelete={() => {
+                    handleRemoveAttachment(attachments.indexOf(attachment));
+                  }}
+                />
+              ))}
+            </Box>
+          )}
+
+          <Box className="relative dark:antialiased">
+            <textarea
+              aria-label="Chat message"
+              className={cn(
+                "max-h-40 min-h-12 w-full flex-1 resize-none border-none bg-transparent px-5 py-2 text-[1.1rem] shadow-none focus-visible:outline-none",
+                {
+                  "md:min-h-[3.7rem]": isOnPage && !isEmptyState,
+                  "min-h-[5.75rem] pt-4 md:min-h-[6.75rem] md:px-6 md:pt-5":
+                    isEmptyState,
+                  "px-4": isPopup,
+                },
+              )}
+              disabled={isLiveVoiceActive}
+              name="message"
+              onChange={onChange}
+              onKeyDown={handleKeyDown}
+              placeholder=""
+              ref={textareaRef}
+              rows={1}
+              value={value}
             />
-            <Tooltip
-              side="bottom"
-              title={
-                attachments.length >= MAX_ATTACHMENT_COUNT
-                  ? `Maximum of ${MAX_ATTACHMENT_COUNT} files attached`
-                  : `Add files (max ${MAX_ATTACHMENT_COUNT} files, 5MB each)`
-              }
-            >
-              <Button
-                className="gap-1"
-                color="tertiary"
-                disabled={
-                  isLiveVoiceActive ||
+            {!value && (
+              <Box
+                aria-hidden="true"
+                className={cn(
+                  "text-text-muted pointer-events-none absolute top-2 transition-[opacity,transform] duration-200 ease-in-out motion-reduce:transition-none",
+                  {
+                    "left-4 text-[1.1rem]": isPopup,
+                    "left-5 text-[1.1rem]": !isPopup && !isEmptyState,
+                    "top-4 left-5 text-[1.1rem] md:top-5 md:left-6 md:text-[1.15rem]":
+                      isEmptyState,
+                  },
+                )}
+              >
+                {recordingState === "idle"
+                  ? placeholderTexts[currentPlaceholderIndex]
+                  : `${
+                      recordingState.charAt(0).toUpperCase() +
+                      recordingState.slice(1)
+                    }...`}
+              </Box>
+            )}
+          </Box>
+          <Flex
+            align="center"
+            className={cn("mb-1 px-3", { "md:px-4": isEmptyState })}
+            gap={2}
+            justify="between"
+          >
+            <Flex align="center" gap={2}>
+              <input
+                {...getInputProps({
+                  "aria-label": "Choose files to attach",
+                })}
+              />
+              <Tooltip
+                side="bottom"
+                title={
                   attachments.length >= MAX_ATTACHMENT_COUNT
+                    ? `Maximum of ${MAX_ATTACHMENT_COUNT} files attached`
+                    : `Add files (max ${MAX_ATTACHMENT_COUNT} files, 5MB each)`
                 }
-                onClick={open}
+              >
+                <Button
+                  aria-label={isEmptyState ? "Attach files" : undefined}
+                  className={cn("gap-1", {
+                    "bg-state-hover dark:bg-state-hover": isEmptyState,
+                  })}
+                  color="tertiary"
+                  disabled={
+                    isLiveVoiceActive ||
+                    attachments.length >= MAX_ATTACHMENT_COUNT
+                  }
+                  onClick={open}
+                  rounded="md"
+                  type="button"
+                  variant="naked"
+                >
+                  <PlusIcon />
+                  <span className={cn({ "hidden sm:inline": isEmptyState })}>
+                    Attach files
+                  </span>
+                </Button>
+              </Tooltip>
+            </Flex>
+
+            <Flex align="center" gap={2}>
+              <Button
+                aria-label={isEmptyState ? "Record a voice message" : undefined}
+                className={cn("gap-1", {
+                  "bg-state-hover dark:bg-state-hover": isEmptyState,
+                })}
+                color="tertiary"
+                disabled={isLiveVoiceActive}
+                leftIcon={
+                  isTranscribing ? (
+                    <LoadingIcon className="animate-spin" />
+                  ) : isRecording ? (
+                    <CloseIcon />
+                  ) : (
+                    <MicrophoneIcon />
+                  )
+                }
+                onClick={() => {
+                  if (isRecording) {
+                    stopRecording();
+                    resetRecording();
+                  } else {
+                    handleVoiceRecording();
+                  }
+                }}
                 rounded="md"
-                type="button"
                 variant="naked"
               >
-                <PlusIcon /> Attach files
+                <span className={cn({ "hidden sm:inline": isEmptyState })}>
+                  {isTranscribing
+                    ? "Transcribing..."
+                    : isRecording
+                      ? "Cancel"
+                      : "Record"}
+                </span>
               </Button>
-            </Tooltip>
-          </Flex>
-
-          <Flex align="center" gap={2}>
-            <Button
-              className="gap-1"
-              color="tertiary"
-              disabled={isLiveVoiceActive}
-              leftIcon={
-                isTranscribing ? (
-                  <LoadingIcon className="animate-spin" />
-                ) : isRecording ? (
-                  <CloseIcon />
+              <RealtimeVoiceControl
+                color={isEmptyState ? "tertiary" : "invert"}
+                disabled={liveVoiceDisabled}
+                isHighlighted={isEmptyState}
+                voice={realtimeVoice}
+              />
+              <Button
+                aria-label={
+                  isRecording
+                    ? "Send recording"
+                    : status === "submitted" || status === "streaming"
+                      ? "Stop response"
+                      : "Send message"
+                }
+                asIcon
+                color="invert"
+                disabled={isLiveVoiceActive}
+                onClick={() => {
+                  if (isRecording) {
+                    handleVoiceRecording();
+                  } else if (status === "submitted" || status === "streaming") {
+                    onStop();
+                  } else {
+                    onSend();
+                  }
+                }}
+                rounded="full"
+              >
+                {isRecording ? (
+                  <CheckIcon className="text-current dark:text-current" />
+                ) : status === "submitted" || status === "streaming" ? (
+                  <StopIcon className="text-current dark:text-current" />
                 ) : (
-                  <MicrophoneIcon />
-                )
-              }
-              onClick={() => {
-                if (isRecording) {
-                  stopRecording();
-                  resetRecording();
-                } else {
-                  handleVoiceRecording();
-                }
-              }}
-              rounded="md"
-              variant="naked"
-            >
-              {isTranscribing
-                ? "Transcribing..."
-                : isRecording
-                  ? "Cancel"
-                  : "Record"}
-            </Button>
-            <RealtimeVoiceControl
-              disabled={liveVoiceDisabled}
-              voice={realtimeVoice}
-            />
-            <Button
-              aria-label={
-                isRecording
-                  ? "Send recording"
-                  : status === "submitted" || status === "streaming"
-                    ? "Stop response"
-                    : "Send message"
-              }
-              asIcon
-              color="invert"
-              disabled={isLiveVoiceActive}
-              onClick={() => {
-                if (isRecording) {
-                  handleVoiceRecording();
-                } else if (status === "submitted" || status === "streaming") {
-                  onStop();
-                } else {
-                  onSend();
-                }
-              }}
-              rounded="md"
-            >
-              {isRecording ? (
-                <CheckIcon className="text-current dark:text-current" />
-              ) : status === "submitted" || status === "streaming" ? (
-                <StopIcon className="text-current dark:text-current" />
-              ) : (
-                <SendIcon />
-              )}
-            </Button>
+                  <SendIcon />
+                )}
+              </Button>
+            </Flex>
           </Flex>
-        </Flex>
+        </Box>
       </Box>
-      <Text align="center" className="pt-2 opacity-90" color="muted">
-        Maya can make mistakes, so double-check important info.
-      </Text>
     </Box>
   );
 };
