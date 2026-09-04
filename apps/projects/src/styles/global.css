@@ -106,21 +106,7 @@ html:has(.onboarding-layout) :is(input, textarea, select) {
   }
 
   :where(.dark, .dark *) .app-content-canvas-gradient {
-    background-image: radial-gradient(
-        54% 32% at 18% 0%,
-        color-mix(in oklab, var(--color-secondary) 0.5%, transparent),
-        transparent 76%
-      ),
-      radial-gradient(
-        46% 28% at 52% -4%,
-        color-mix(in oklab, var(--color-info) 0.5%, transparent),
-        transparent 78%
-      ),
-      radial-gradient(
-        52% 30% at 88% 0%,
-        color-mix(in oklab, var(--color-primary) 0.75%, transparent),
-        transparent 76%
-      );
+    background-image: none;
   }
 
   .hide-scrollbar {
