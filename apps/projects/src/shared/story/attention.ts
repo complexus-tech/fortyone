@@ -1,4 +1,4 @@
-import { formatISO, subDays } from "date-fns";
+import { formatISO } from "date-fns";
 import type { StateCategory } from "@/types/states";
 
 export const STORY_ATTENTION_VIEWS = ["overdue", "today"] as const;
@@ -19,9 +19,6 @@ export const getStoryAttentionFilters = (
       "paused",
     ] as StateCategory[],
     deadlineAfter: view === "today" ? today : undefined,
-    deadlineBefore:
-      view === "today"
-        ? today
-        : formatISO(subDays(date, 1), { representation: "date" }),
+    deadlineBefore: today,
   };
 };

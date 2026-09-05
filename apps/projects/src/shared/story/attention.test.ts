@@ -2,7 +2,7 @@
 import { getStoryAttentionFilters } from "./attention";
 
 describe("work attention filters", () => {
-  it("keeps overdue strictly before today, including at month boundaries", () => {
+  it("includes the selected day in the overdue cutoff at month boundaries", () => {
     expect(
       getStoryAttentionFilters("overdue", new Date(2024, 2, 1, 0, 15)),
     ).toEqual({
@@ -10,7 +10,7 @@ describe("work attention filters", () => {
       showSubStories: true,
       categories: ["backlog", "unstarted", "started", "paused"],
       deadlineAfter: undefined,
-      deadlineBefore: "2024-02-29",
+      deadlineBefore: "2024-03-01",
     });
   });
   it("uses the same local calendar date for both due-today boundaries", () => {

@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import type { StoriesViewOptions } from "@/components/ui/stories-view-options-button";
 import { getGroupedStoryFilterParams } from "@/components/ui/stories-filter-query";
 import { STORY_ATTENTION_VIEWS } from "@/shared/story/attention";
+import { useStatuses } from "@/lib/hooks/statuses";
 import { useLocalStorage } from "@/hooks";
 import type { StoriesLayout } from "@/components/ui";
 import { useStoriesFilters } from "@/components/ui/stories-filter-state";
@@ -20,6 +21,7 @@ import {
   STABLE_MY_WORK_TABS,
   type MyWorkTab,
 } from "./tabs";
+import { getAttentionStoriesFilters } from "./attention-filters";
 
 type MyWork = {
   viewOptions: StoriesViewOptions;
@@ -30,6 +32,8 @@ type MyWork = {
   setTab: (value: MyWorkTab) => void;
   tab: MyWorkTab;
   visibleTabs: MyWorkTab[];
+  attentionStatus: "pending" | "error" | null;
+  retryAttention: () => void;
 };
 
 const MyWorkContext = createContext<MyWork | undefined>(undefined);
@@ -72,10 +76,23 @@ export const MyWorkProvider = ({
     "tab",
     parseAsStringLiteral(MY_WORK_TABS).withDefault("all"),
   );
-  const [, setAttention] = useQueryState(
+  const [attention, setAttention] = useQueryState(
     "attention",
     parseAsStringLiteral(STORY_ATTENTION_VIEWS),
   );
+  const {
+    data: statuses,
+    isError: statusesError,
+    refetch: refetchStatuses,
+  } = useStatuses();
+
+  useEffect(() => {
+    if (!attention || !statuses) return;
+
+    setFilters(getAttentionStoriesFilters(attention, new Date(), statuses));
+    void setTabState("assigned");
+    void setAttention(null);
+  }, [attention, statuses, setFilters, setTabState, setAttention]);
   const countFilters = getGroupedStoryFilterParams(filters);
   const countOptions = {
     ...countFilters,
@@ -134,6 +151,10 @@ export const MyWorkProvider = ({
     void setAttention(null);
     void setTabState(value);
   };
+  let attentionStatus: MyWork["attentionStatus"] = null;
+  if (attention) {
+    attentionStatus = statusesError && !statuses ? "error" : "pending";
+  }
 
   return (
     <MyWorkContext.Provider
@@ -152,6 +173,10 @@ export const MyWorkProvider = ({
         setTab,
         tab,
         visibleTabs,
+        attentionStatus,
+        retryAttention: () => {
+          void refetchStatuses();
+        },
       }}
     >
       {children}

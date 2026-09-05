@@ -15,11 +15,6 @@ import { StoriesEmptyIllustration } from "@/components/ui/illustrations/stories-
 import { getGroupedStoryFilterParams } from "@/components/ui/stories-filter-query";
 import type { StateCategory } from "@/types/states";
 import { useMyStoriesGrouped } from "@/modules/stories/hooks/use-my-stories-grouped";
-import {
-  getStoryAttentionFilters,
-  STORY_ATTENTION_VIEWS,
-  type StoryAttentionView,
-} from "@/shared/story/attention";
 import { walkthroughTargets } from "@/shared/walkthrough/targets";
 import { useMyWork } from "./provider";
 import { getMyWorkTabFilterParams, type MyWorkTab } from "./tabs";
@@ -27,11 +22,9 @@ import { getMyWorkTabFilterParams, type MyWorkTab } from "./tabs";
 const StoriesPanelContent = ({
   layout,
   tab,
-  attention,
 }: {
   layout: StoriesLayout;
   tab: MyWorkTab;
-  attention: StoryAttentionView | null;
 }) => {
   const validCategories = [
     "backlog",
@@ -72,28 +65,23 @@ const StoriesPanelContent = ({
   const { data: groupedStories, isPending } = useMyStoriesGrouped(
     viewOptions.groupBy,
     {
-      ...(attention
-        ? getStoryAttentionFilters(attention, new Date())
-        : {
-            ...groupedFilters,
-            ...tabFilters,
-            categories: categories ?? tabFilters.categories,
-            createdAfter: createdAfter ?? tabFilters.createdAfter,
-            createdBefore: createdBefore ?? tabFilters.createdBefore,
-            deadlineAfter: hasEndDateFilter
-              ? groupedFilters.deadlineAfter
-              : tabFilters.deadlineAfter,
-            deadlineBefore: hasEndDateFilter
-              ? groupedFilters.deadlineBefore
-              : overdueDeadline ?? tabFilters.deadlineBefore,
-            deadlineNot: hasEndDateFilter
-              ? groupedFilters.deadlineNot
-              : tabFilters.deadlineNot,
-          }),
+      ...groupedFilters,
+      ...tabFilters,
+      categories: categories ?? tabFilters.categories,
+      createdAfter: createdAfter ?? tabFilters.createdAfter,
+      createdBefore: createdBefore ?? tabFilters.createdBefore,
+      deadlineAfter: hasEndDateFilter
+        ? groupedFilters.deadlineAfter
+        : tabFilters.deadlineAfter,
+      deadlineBefore: hasEndDateFilter
+        ? groupedFilters.deadlineBefore
+        : overdueDeadline ?? tabFilters.deadlineBefore,
+      deadlineNot: hasEndDateFilter
+        ? groupedFilters.deadlineNot
+        : tabFilters.deadlineNot,
       orderBy: viewOptions.orderBy,
       orderDirection: viewOptions.orderDirection,
-      showSubStories:
-        attention || viewOptions.showSubStories ? true : undefined,
+      showSubStories: viewOptions.showSubStories ? true : undefined,
     },
   );
   return isPending ? (
@@ -111,11 +99,30 @@ const StoriesPanelContent = ({
 };
 
 export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
-  const { filters, resetFilters, setFilters, tab } = useMyWork();
-  const [attention, setAttention] = useQueryState(
-    "attention",
-    parseAsStringLiteral(STORY_ATTENTION_VIEWS),
-  );
+  const {
+    filters,
+    resetFilters,
+    setFilters,
+    tab,
+    attentionStatus,
+    retryAttention,
+  } = useMyWork();
+
+  if (attentionStatus === "error") {
+    return (
+      <Box className="p-8 text-center">
+        <Text role="alert">
+          Unable to load the statuses needed for these filters.
+        </Text>
+        <Button onClick={retryAttention} size="sm" variant="outline">
+          Retry
+        </Button>
+      </Box>
+    );
+  }
+  if (attentionStatus === "pending") {
+    return <BoardSkeleton layout={layout} />;
+  }
 
   return (
     <Box
@@ -123,92 +130,44 @@ export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
       data-walkthrough-target={walkthroughTargets.myWorkContent}
     >
       <Tabs className="flex h-full min-h-0 flex-col" value={tab}>
-        {attention ? (
-          <Box className="border-border flex items-center justify-between gap-3 border-b px-5 py-2 md:px-12">
-            <Text color="muted" fontSize="sm">
-              Assigned to you ·{" "}
-              {attention === "today" ? "Due today" : "Overdue"}
-            </Text>
-            <Button
-              color="tertiary"
-              onClick={() => {
-                void setAttention(null);
-              }}
-              size="sm"
-              variant="naked"
-            >
-              Clear
-            </Button>
-          </Box>
-        ) : null}
-        {!attention ? (
-          <StoriesFilterBar
-            filters={filters}
-            resetFilters={resetFilters}
-            setFilters={setFilters}
-          />
-        ) : null}
+        <StoriesFilterBar
+          filters={filters}
+          resetFilters={resetFilters}
+          setFilters={setFilters}
+        />
         <Tabs.Panel className="min-h-0 flex-1" value="all">
           {tab === "all" ? (
-            <StoriesPanelContent
-              attention={attention}
-              layout={layout}
-              tab="all"
-            />
+            <StoriesPanelContent layout={layout} tab="all" />
           ) : null}
         </Tabs.Panel>
         <Tabs.Panel className="min-h-0 flex-1" value="today">
           {tab === "today" ? (
-            <StoriesPanelContent
-              attention={attention}
-              layout={layout}
-              tab="today"
-            />
+            <StoriesPanelContent layout={layout} tab="today" />
           ) : null}
         </Tabs.Panel>
         <Tabs.Panel className="min-h-0 flex-1" value="upcoming">
           {tab === "upcoming" ? (
-            <StoriesPanelContent
-              attention={attention}
-              layout={layout}
-              tab="upcoming"
-            />
+            <StoriesPanelContent layout={layout} tab="upcoming" />
           ) : null}
         </Tabs.Panel>
         <Tabs.Panel className="min-h-0 flex-1" value="blocked">
           {tab === "blocked" ? (
-            <StoriesPanelContent
-              attention={attention}
-              layout={layout}
-              tab="blocked"
-            />
+            <StoriesPanelContent layout={layout} tab="blocked" />
           ) : null}
         </Tabs.Panel>
         <Tabs.Panel className="min-h-0 flex-1" value="assigned">
           {tab === "assigned" ? (
-            <StoriesPanelContent
-              attention={attention}
-              layout={layout}
-              tab="assigned"
-            />
+            <StoriesPanelContent layout={layout} tab="assigned" />
           ) : null}
         </Tabs.Panel>
         <Tabs.Panel className="min-h-0 flex-1" value="collaborating">
           {tab === "collaborating" ? (
-            <StoriesPanelContent
-              attention={attention}
-              layout={layout}
-              tab="collaborating"
-            />
+            <StoriesPanelContent layout={layout} tab="collaborating" />
           ) : null}
         </Tabs.Panel>
         <Tabs.Panel className="min-h-0 flex-1" value="created">
           {tab === "created" ? (
-            <StoriesPanelContent
-              attention={attention}
-              layout={layout}
-              tab="created"
-            />
+            <StoriesPanelContent layout={layout} tab="created" />
           ) : null}
         </Tabs.Panel>
       </Tabs>

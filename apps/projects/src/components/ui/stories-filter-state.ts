@@ -50,8 +50,8 @@ export const useStoriesFilters = () => {
     () => getStoriesFilterStorageKey(pathname),
     [pathname],
   );
-  const [storedFilters, setStoredFilters] = useState<StoriesFilter>(() =>
-    readStoredFilters(storageKey),
+  const [storedFilters, setStoredFilters] = useState<StoriesFilter>(
+    DEFAULT_STORIES_FILTER,
   );
 
   useEffect(() => {

@@ -1,12 +1,33 @@
 /* global beforeEach, describe, expect, it, jest -- Jest globals are provided by the projects test runner. */
 
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { formatISO } from "date-fns";
 import type { StoriesViewOptions } from "@/components/ui/stories-view-options-button";
+import { getGroupedStoryFilterParams } from "@/components/ui/stories-filter-query";
+import { DEFAULT_STORIES_FILTER } from "@/components/ui/stories-filter-types";
+import type { StoriesFilter } from "@/components/ui/stories-filter-types";
 import type { MyWorkLayout } from "./types";
 import { ListMyStories } from ".";
 
+let mockAttention: string | null = null;
+const mockStatuses = [
+  { id: "active", category: "started" },
+  { id: "done-team-a", category: "completed" },
+  { id: "done-team-b", category: "completed" },
+  { id: "cancelled", category: "cancelled" },
+];
+let mockStatusesData: typeof mockStatuses | undefined = mockStatuses;
+jest.mock("@/lib/hooks/statuses", () => ({
+  useStatuses: () => ({
+    data: mockStatusesData,
+    isError: false,
+    refetch: jest.fn(),
+  }),
+}));
+
 jest.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
+  usePathname: () => "/workspace/my-work",
 }));
 
 jest.mock("sonner", () => ({
@@ -22,8 +43,10 @@ jest.mock("nuqs", () => {
     parseAsStringLiteral: () => ({
       withDefault: (defaultValue: string) => ({ defaultValue }),
     }),
-    useQueryState: (_key: string, parser: { defaultValue: string }) =>
-      React.useState(parser.defaultValue),
+    useQueryState: (key: string, parser: { defaultValue?: string }) =>
+      React.useState(
+        key === "attention" ? mockAttention : parser.defaultValue ?? null,
+      ),
   };
 });
 
@@ -35,14 +58,6 @@ jest.mock("@/hooks", () => {
     useMediaQuery: () => false,
   };
 });
-
-jest.mock("@/components/ui/stories-filter-state", () => ({
-  useStoriesFilters: () => ({
-    filters: {},
-    resetFilters: jest.fn(),
-    setFilters: jest.fn(),
-  }),
-}));
 
 jest.mock("@/modules/stories/hooks/use-my-stories-grouped", () => ({
   useMyStoriesGrouped: () => ({
@@ -61,10 +76,23 @@ jest.mock("./components/header", () => {
     layout: MyWorkLayout;
     setLayout: (value: MyWorkLayout) => void;
   }) => {
-    const { setViewOptions, viewOptions } = useMyWork();
+    const {
+      setViewOptions,
+      viewOptions,
+      filters,
+      resetFilters,
+      attentionStatus,
+    } = useMyWork();
 
     return (
       <header>
+        <output aria-label="Filters">{JSON.stringify(filters)}</output>
+        <output aria-label="Attention status">
+          {attentionStatus ?? "ready"}
+        </output>
+        <button onClick={resetFilters} type="button">
+          Clear filters
+        </button>
         <output aria-label="Current view options">
           {layout}:{viewOptions.groupBy}
         </output>
@@ -127,6 +155,8 @@ const createViewOptions = (
 describe("ListMyStories", () => {
   beforeEach(() => {
     localStorage.clear();
+    mockAttention = null;
+    mockStatusesData = mockStatuses;
   });
 
   it("keeps list and Kanban view options isolated across repeated switches", () => {
@@ -166,4 +196,63 @@ describe("ListMyStories", () => {
       "kanban:assignee",
     );
   });
+  it.each(["overdue", "today"])(
+    "applies and persists editable %s filters after statuses load",
+    async (view) => {
+      mockAttention = view;
+      mockStatusesData = undefined;
+      localStorage.setItem(
+        "stories:filters:/workspace/my-work",
+        JSON.stringify({
+          ...DEFAULT_STORIES_FILTER,
+          priorities: ["urgent"],
+        }),
+      );
+      const { rerender, unmount } = render(<ListMyStories />);
+      expect(screen.getByLabelText("Attention status")).toHaveTextContent(
+        "pending",
+      );
+      mockStatusesData = mockStatuses;
+      rerender(<ListMyStories />);
+      await waitFor(() => {
+        expect(screen.getByLabelText("Attention status")).toHaveTextContent(
+          "ready",
+        );
+      });
+      const expected: StoriesFilter = {
+        ...DEFAULT_STORIES_FILTER,
+        statusIds: ["done-team-a", "done-team-b", "cancelled"],
+        endDate: formatISO(new Date(), { representation: "date" }),
+        operators: {
+          endDate: view === "overdue" ? "isOnOrBefore" : "is",
+          statusIds: "isNotAnyOf",
+        },
+      };
+      expect(JSON.parse(screen.getByLabelText("Filters").textContent)).toEqual(
+        expected,
+      );
+      expect(
+        JSON.parse(localStorage.getItem("stories:filters:/workspace/my-work")!),
+      ).toEqual(expected);
+      expect(getGroupedStoryFilterParams(expected)).toMatchObject({
+        excludedStatusIds: expected.statusIds,
+        deadlineBefore: expected.endDate,
+        deadlineAfter: view === "today" ? expected.endDate : undefined,
+        priorities: undefined,
+      });
+      unmount();
+      mockAttention = null;
+      render(<ListMyStories />);
+      expect(JSON.parse(screen.getByLabelText("Filters").textContent)).toEqual(
+        expected,
+      );
+      fireEvent.click(screen.getByRole("button", { name: "Clear filters" }));
+      expect(JSON.parse(screen.getByLabelText("Filters").textContent)).toEqual(
+        DEFAULT_STORIES_FILTER,
+      );
+      expect(
+        localStorage.getItem("stories:filters:/workspace/my-work"),
+      ).toBeNull();
+    },
+  );
 });
