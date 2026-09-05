@@ -85,7 +85,7 @@ func actorText(text string, actor EmailActor) template.HTML {
 			continue
 		}
 		colors := avatarColor(name)
-		style := fmt.Sprintf("display:inline-block;width:20px;height:20px;line-height:20px;vertical-align:text-bottom;border-radius:50%%;background-color:%s;color:%s;font-family:Inter,Arial,Helvetica,sans-serif;font-size:8px;font-weight:500;text-align:center;", colors[0], colors[1])
+		style := fmt.Sprintf("display:inline-block;width:20px;height:20px;line-height:20px;vertical-align:text-bottom;border-radius:50%%;background-color:%s;color:%s;font-family:%s;font-size:8px;font-weight:500;text-align:center;", colors[0], colors[1], emailFontStack)
 		initials := html.EscapeString(avatarInitials(name))
 		badge := `<span aria-hidden="true" style="` + style + `">` + initials + `</span>`
 		if src := safeAvatarURL(actor.AvatarURL); src != "" {

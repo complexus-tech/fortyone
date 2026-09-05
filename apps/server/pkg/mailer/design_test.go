@@ -13,7 +13,7 @@ import (
 func TestEmailAssetsMatchLandingWordmarkAndExist(t *testing.T) {
 	root := filepath.Join(findTemplatesDirForTest(t), "..", "..", "landing")
 	assets := filepath.Join(root, "public", "email-assets", "v1")
-	for _, name := range []string{"wordmark.png", "invitation.png", "invitation-accepted.png", "fonts/Inter-Regular.woff2", "fonts/Inter-Medium.woff2", "fonts/Inter-SemiBold.woff2", "fonts/Inter-Bold.woff2"} {
+	for _, name := range []string{"wordmark.png", "invitation.png", "invitation-accepted.png"} {
 		info, err := os.Stat(filepath.Join(assets, name))
 		require.NoError(t, err)
 		require.Positive(t, info.Size())
@@ -38,7 +38,7 @@ func TestEmailAssetsMatchLandingWordmarkAndExist(t *testing.T) {
 func TestMayaReplySharesLayoutAndPreservesConfirmationText(t *testing.T) {
 	rendered, err := RenderMayaReply("Ready to update Activation.", `<p>Hi Alex,</p><p>Based on your reply, here’s the change I can make.</p><div style="`+EmailStyleString("quietPanel")+`"><p>Activation: At Risk → On Track</p><p>The launch blocker is resolved.</p></div><p>No changes have been made yet.</p><p>Reply CONFIRM to apply this change.</p><p>Reply CANCEL to leave it unchanged.</p>`)
 	require.NoError(t, err)
-	for _, expected := range []string{defaultLogoURL, `class="email-card"`, "max-width:520px", "line-height: 20px", "CONFIRM", "CANCEL", "No changes have been made yet.", "<!--[if mso]>", "Inter-Regular.woff2"} {
+	for _, expected := range []string{defaultLogoURL, `class="email-card"`, "max-width:520px", "line-height: 20px", "CONFIRM", "CANCEL", "No changes have been made yet.", "<!--[if mso]>", "font-family: Georgia, Times, serif"} {
 		require.Contains(t, rendered, expected)
 	}
 	require.NotContains(t, rendered, `class="hero"`)
@@ -49,7 +49,7 @@ func TestMayaReplySharesLayoutAndPreservesConfirmationText(t *testing.T) {
 func TestSafeEmailHTMLRestylesLegacyAndUnstyledCopy(t *testing.T) {
 	for legacy := range legacyEmailStyles {
 		sanitized := string(safeEmailHTML(`<p style="` + legacy + `">Queued copy</p>`))
-		require.Contains(t, sanitized, "Inter")
+		require.Contains(t, sanitized, "Georgia")
 		require.NotContains(t, sanitized, "Geist")
 	}
 	data := map[string]any{"LogoURL": "https://other.example/logo.png", "EmailWidth": 999, "EmailHeroURL": "https://other.example/image.png"}

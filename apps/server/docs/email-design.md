@@ -1,6 +1,6 @@
 # Email design and assets
 
-The production mailer now implements the approved compact email design: warm #fff6ef canvas, white rounded cards, 104px landing-page wordmark aligned left inside the white card, ticket divider, full-width CTA, Inter with Arial/Helvetica fallback, 22px desktop / 20px phone headings, and 14px body copy on a 20px line height. Invitation cards are 480px; other templates are 520px. Inner gutters are 32px desktop / 24px phone. Small labels use their original casing without uppercase transformation; label sizes and weights are unchanged.
+The production mailer now implements the approved compact email design: warm #fff6ef canvas, white square-cornered cards, 94px landing-page wordmark above the white card, aligned with its left edge, dashed divider with semicircular ticket cutouts, full-width square-cornered CTA, Georgia with Times/serif fallback, 22px desktop / 20px phone headings, and 14.5px body copy on a 20px line height. Invitation cards are 480px; other templates are 520px. Inner gutters are 32px desktop / 24px phone. Primary text and button backgrounds use `#3d1c10`; muted labels, supporting text and footers use `#6c605b`; button labels stay white and avatars keep their name-based colors and circular shape. Cards and illustrations have square corners. All text, including Outlook buttons, avatar initials and verification codes, uses the shared Georgia stack. Body text, detail values, button labels and signature text share the 14.5px size. Button labels use regular weight, including Outlook. Headings and labels have no added letter spacing. Small labels use their original casing without uppercase transformation; label sizes and weights are unchanged.
 
 ## Sources
 
@@ -8,12 +8,12 @@ The production mailer now implements the approved compact email design: warm #ff
 - `pkg/mailer/design.go` selects immutable artwork, widths, and CTA destinations from existing template data. Only invitation and acceptance get illustrations.
 - `pkg/mailer/styles.go` supplies inline typography and compact row styles for notification and digest producers.
 - `internal/modules/emailreply/service/reply_html.go` styles the agent's escaped paragraph, callout, and list blocks before using the shared shell. It preserves the actual agent copy, including CONFIRM/CANCEL instructions; fixture-only fields and content are not synthesized in live messages.
-- Public assets live in `apps/landing/public/email-assets/v1` at repository root, including the source SVG, rasterized wordmark, two illustrations, and licensed Inter files.
+- Public assets live in `apps/landing/public/email-assets/v1` at repository root, including the source SVG, rasterized wordmark, two illustrations, and calendar/comment icons. Legacy licensed Inter assets remain available for already-delivered emails; new emails do not download fonts.
 
 ## Release order
 
 1. Deploy the landing site assets and the `/email-assets/v1/:path*` CORS/cache headers.
-2. Verify the public logo, both illustrations, and font files return HTTP 200; font responses must allow cross-origin access.
+2. Verify the public logo, both illustrations, and icons return HTTP 200.
 3. Apply forward migrations `000184_routine_email_deliveries` and `000185_email_avatar_handles` to the release database after verifying it in the PostgreSQL integration suite.
 4. Deploy the API, then the worker with the updated template files. Set the worker’s `APP_API_PUBLIC_URL` to the same public HTTPS API origin used by the API. The worker also embeds the Maya reply shell; it must be rebuilt.
 5. Check representative messages in Gmail, Apple Mail, and Outlook, including images blocked and reply threading. No live email-client certification is implied by browser tests.
@@ -49,6 +49,6 @@ Changing the profile photo keeps the same email URL and resolves the replacement
 
 This follows Art Circles' public media redirect pattern, with opaque profile handles in place of raw storage keys. Unit tests reopen the same URL after eight simulated days, check that it requests a fresh signature, and verify it follows a replaced photo. Live cloud-storage resolution remains a release check.
 
-The shared footer places Manage notifications on the left and FortyOne by Complexus LLC on the right. When there is no settings link, the company credit is the only column and aligns left. Footer notes also align left. Existing explicit destinations take precedence, including feedback board settings and explicit omission for external contributors. Known workspace URLs use `/settings/account/notifications`. Maya reply footers use the already-authorized thread's workspace slug; sign-in-only messages without workspace context omit the workspace settings link.
+The shared footer places Manage notifications on the left and “A product of Complexus” on the right, at 13px to match footer notes. When there is no settings link, the company credit is the only column and aligns left. Footer notes also align left. The footer has no horizontal padding, so its text aligns with the outer edges of the card on desktop and mobile. Existing explicit destinations take precedence, including feedback board settings and explicit omission for external contributors. Known workspace URLs use `/settings/account/notifications`. Maya reply footers use the already-authorized thread's workspace slug; sign-in-only messages without workspace context omit the workspace settings link.
 
 Login and feedback verification codes render directly on the white card, without a nested panel or repeated code label. Browser review was completed during design approval; live email-client and cloud-storage checks remain release steps.

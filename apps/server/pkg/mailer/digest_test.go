@@ -46,10 +46,10 @@ func TestConsolidatedEmailRenderingAndFooter(t *testing.T) {
 	section.Rows = append(section.Rows, DigestRow{Text: "View 5 more updates →", URL: base + "/notifications", More: true})
 	data := map[string]any{"NotificationTitle": "10 updates to review in Product", "NotificationDigest": section, "WorkspaceURL": base, "NotificationCTAURL": base + "/notifications", "NotificationCTALabel": "View notifications"}
 	rendered := renderTemplateForTest(t, "notifications/notification", data)
-	for _, expected := range []string{"Manage notifications", base + "/settings/account/notifications", "View 5 more updates", "icons/calendar.png", `align="left"`, `align="right"`, `vertical-align:text-bottom`, `font-size:8px`, "FortyOne by Complexus LLC"} {
+	for _, expected := range []string{"Manage notifications", base + "/settings/account/notifications", "View 5 more updates", "icons/calendar.png", `align="left"`, `align="right"`, `vertical-align:text-bottom`, `font-size:8px`, "A product of Complexus"} {
 		assertContains(t, rendered, expected)
 	}
-	if strings.Index(rendered, "Manage notifications") > strings.Index(rendered, "FortyOne by Complexus LLC") {
+	if strings.Index(rendered, "Manage notifications") > strings.Index(rendered, "A product of Complexus") {
 		t.Fatal("preferences must precede right-aligned company footer")
 	}
 	delete(data, "NotificationDigest")

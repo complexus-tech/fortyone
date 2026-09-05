@@ -17,8 +17,7 @@ const emailAssetBaseURL = "https://fortyone.app/email-assets/v1/"
 
 func emailAsset(name string) string {
 	switch name {
-	case "icons/calendar.png", "icons/comment.png", "wordmark.png", "invitation.png", "invitation-accepted.png",
-		"fonts/Inter-Regular.woff2", "fonts/Inter-Medium.woff2", "fonts/Inter-SemiBold.woff2", "fonts/Inter-Bold.woff2":
+	case "icons/calendar.png", "icons/comment.png", "wordmark.png", "invitation.png", "invitation-accepted.png":
 		return emailAssetBaseURL + name
 	default:
 		return ""
@@ -27,6 +26,7 @@ func emailAsset(name string) string {
 
 func emailTemplateFuncs() template.FuncMap {
 	return template.FuncMap{
+		"emailFont": func() template.CSS { return template.CSS(emailFontStack) },
 		// html/template strips literal comments. Fixed delimiters preserve
 		// Outlook conditionals while their contents remain contextually escaped.
 		"emailActorText": actorText,
@@ -85,7 +85,7 @@ func prepareTemplateData(name string, data map[string]any) {
 
 var mayaReplyTemplate = template.Must(template.Must(template.New("").Funcs(emailTemplateFuncs()).Parse(emailtemplates.BaseLayout)).Parse(`
 {{define "content"}}<h1 class="heading" style="{{emailStyle "heading"}}">{{.Subject}}</h1>{{safeHTML .Content}}{{end}}
-{{define "actions"}}<p style="{{emailStyle "textNoMargin"}}"><strong>Maya</strong><br><span style="color:#72645d;font-size:14px;">Your AI agent at FortyOne</span></p>{{end}}
+{{define "actions"}}<p style="{{emailStyle "textNoMargin"}}"><strong>Maya</strong><br><span style="color:#6c605b;font-size:14.5px;">Your AI agent at FortyOne</span></p>{{end}}
 `))
 
 // RenderMayaReply shares the transactional shell and sanitizes the fixed HTML

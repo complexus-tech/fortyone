@@ -13,10 +13,10 @@ func TestTemplatesRenderApprovedEmailSystem(t *testing.T) {
 	rendered := renderTemplateForTest(t, "auth/verification", map[string]any{
 		"VerificationURL": "https://cloud.fortyone.app/login/verify?token=abc&state=xyz", "ExpiresIn": "10 minutes", "OTP": "827657",
 	})
-	for _, expected := range []string{defaultLogoURL, "font-family:Inter", "fonts/Inter-Regular.woff2", "font-size: 22px", "line-height: 20px", "font-size:20px!important", "#fff6ef", `bgcolor="#ffffff"`, `class="email-card"`, `<!--[if mso]>`, `v:roundrect`, `width:456px`, "827657", "FortyOne by Complexus LLC", "token=abc&amp;state=xyz"} {
+	for _, expected := range []string{defaultLogoURL, "font-family:Georgia, Times, serif", "font-size: 22px", "line-height: 20px", "font-size:20px!important", "#fff6ef", `bgcolor="#ffffff"`, `class="email-card"`, `<!--[if mso]>`, `v:roundrect`, `width:456px`, "827657", "A product of Complexus", "token=abc&amp;state=xyz"} {
 		assertContains(t, rendered, expected)
 	}
-	for _, rejected := range []string{"Geist", "/images/logo.png", "#ZgotmplZ", "<no value>", `class="eyebrow"`, `src="data:`} {
+	for _, rejected := range []string{"Inter", "@font-face", "Geist", "/images/logo.png", "#ZgotmplZ", "<no value>", `class="eyebrow"`, `src="data:`} {
 		assertNotContains(t, rendered, rejected)
 	}
 }
@@ -31,7 +31,7 @@ func TestInvitationArtworkAndDestinations(t *testing.T) {
 			assertContains(t, rendered, emailAsset(tc.asset))
 			assertContains(t, rendered, "max-width:480px")
 			assertContains(t, rendered, "width:416px")
-			assertContains(t, rendered, `width="104" height="26"`)
+			assertContains(t, rendered, `width="94" height="23"`)
 			assertContains(t, rendered, "https://cloud.fortyone.app/target?token=original")
 			assertContains(t, rendered, "&lt;script&gt;")
 			assertNotContains(t, rendered, "<script>")
@@ -140,8 +140,11 @@ func TestAllEmailTemplatesRenderWithApprovedLayout(t *testing.T) {
 			assertContains(t, rendered, "class=\"email-shell\"")
 			assertContains(t, rendered, "class=\"email-inner\"")
 			assertContains(t, rendered, "class=\"email-footer\"")
-			assertContains(t, rendered, "FortyOne by Complexus LLC")
+			assertContains(t, rendered, "A product of Complexus")
 			assertNotContains(t, rendered, `class="eyebrow"`)
+			assertContains(t, rendered, "font-family: Georgia, Times, serif")
+			assertNotContains(t, rendered, "Inter")
+			assertNotContains(t, rendered, "@font-face")
 		})
 	}
 }

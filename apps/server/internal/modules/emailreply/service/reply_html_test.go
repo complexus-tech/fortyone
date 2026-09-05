@@ -14,9 +14,9 @@ func TestRenderMayaReplyHTMLUsesProductShellAndDoesNotTrustTheSubject(t *testing
 	require.NoError(t, err)
 	require.Contains(t, rendered, "<!doctype html>")
 	require.Contains(t, rendered, "https://fortyone.app/email-assets/v1/wordmark.png")
-	require.Contains(t, rendered, "FortyOne by Complexus LLC")
+	require.Contains(t, rendered, "A product of Complexus")
 	require.Contains(t, rendered, ">Safe response</p>")
-	require.Contains(t, rendered, `font-family: Inter, Arial, Helvetica, sans-serif`)
+	require.Contains(t, rendered, `font-family: Georgia, Times, serif`)
 	require.NotContains(t, rendered, `<script>`)
 	require.Contains(t, rendered, `&lt;script&gt;`)
 }
