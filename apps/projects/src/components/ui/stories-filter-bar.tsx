@@ -1,60 +1,46 @@
 "use client";
-
+import type { ComponentProps } from "react";
 import { useDeferredValue, useState } from "react";
 import { useParams } from "next/navigation";
-import { Box, Button, Flex, Menu, Text } from "ui";
-import { ChevronRightIcon, PlusIcon } from "icons";
-import { useStatuses } from "@/lib/hooks/statuses";
-import {
-  MEMBER_MENU_PAGE_SIZE,
-  useMembers,
-  useMembersInfinite,
-} from "@/lib/hooks/members";
-import {
-  useTeamMembers,
-  useTeamMembersInfinite,
-} from "@/lib/hooks/team-members";
-import {
-  TEAM_MENU_PAGE_SIZE,
-  useTeams,
-  useTeamsInfinite,
-} from "@/modules/teams/hooks/teams";
-import {
-  SPRINT_MENU_PAGE_SIZE,
-  useTeamSprints,
-  useTeamSprintsInfinite,
-} from "@/modules/sprints/hooks/team-sprints";
+import { Button, Flex } from "ui";
+import { PlusIcon } from "icons";
+import type { EstimateScheme } from "@/lib/estimate";
 import {
   OBJECTIVE_MENU_PAGE_SIZE,
-  useTeamObjectives,
   useTeamObjectivesInfinite,
+  useTeamObjectives,
 } from "@/modules/objectives/hooks/use-objectives";
+import {
+  SPRINT_MENU_PAGE_SIZE,
+  useTeamSprintsInfinite,
+  useTeamSprints,
+} from "@/modules/sprints/hooks/team-sprints";
+import {
+  TEAM_MENU_PAGE_SIZE,
+  useTeamsInfinite,
+  useTeams,
+} from "@/modules/teams/hooks/teams";
+import {
+  useTeamMembersInfinite,
+  useTeamMembers,
+} from "@/lib/hooks/team-members";
+import {
+  MEMBER_MENU_PAGE_SIZE,
+  useMembersInfinite,
+  useMembers,
+} from "@/lib/hooks/members";
+import { useStatuses } from "@/lib/hooks/statuses";
 import { useTeamSettings } from "@/modules/teams/hooks/use-team-settings";
 import { useKeyResults } from "@/modules/objectives/hooks";
 import { useTerminology } from "@/hooks/use-terminology-display";
 import { useLabels } from "@/lib/hooks/labels";
-import { DEFAULT_ESTIMATE_SCHEME, type EstimateScheme } from "@/lib/estimate";
-import { getScopedStoriesFilterTeamId } from "./stories-filter-query";
-import type { StoriesFilterOperator } from "./stories-filter-types";
-import { getStoriesFilterOperator } from "./stories-filter-types";
-import { hasActiveStoriesFilters } from "./stories-filter-utils";
+import { DEFAULT_ESTIMATE_SCHEME } from "@/lib/estimate";
 import {
-  DateEditor,
-  EstimateEditor,
-  LabelEditor,
-} from "./stories-filter-bar/attribute-editors";
-import { buildFilterChips } from "./stories-filter-bar/filter-chips";
-import { buildFilterOptions } from "./stories-filter-bar/filter-options";
-import {
-  StoriesFilterChip,
-  TitleFilterDialog,
-} from "./stories-filter-bar/filter-chip";
-import {
-  EMPTY_FILTER_FIELDS,
-  getEditorContentClassName,
-  isFilterOperatorField,
-  removeStoriesFilterField,
-} from "./stories-filter-bar/filter-model";
+  KeyResultEditor,
+  ObjectiveEditor,
+  SprintEditor,
+  TeamEditor,
+} from "./stories-filter-bar/planning-editors";
 import {
   PeopleEditor,
   PriorityEditor,
@@ -63,14 +49,28 @@ import {
   type FilterStatusOption,
 } from "./stories-filter-bar/people-editors";
 import {
-  KeyResultEditor,
-  ObjectiveEditor,
-  SprintEditor,
-  TeamEditor,
-} from "./stories-filter-bar/planning-editors";
+  DateEditor,
+  EstimateEditor,
+  LabelEditor,
+} from "./stories-filter-bar/attribute-editors";
+import { getScopedStoriesFilterTeamId } from "./stories-filter-query";
+import type { StoriesFilterOperator } from "./stories-filter-types";
+import { getStoriesFilterOperator } from "./stories-filter-types";
+import { hasActiveStoriesFilters } from "./stories-filter-utils";
+import { buildFilterChips } from "./stories-filter-bar/filter-chips";
+import {
+  StoriesFilterChip,
+  TitleFilterDialog,
+} from "./stories-filter-bar/filter-chip";
+import {
+  EMPTY_FILTER_FIELDS,
+  isFilterOperatorField,
+  removeStoriesFilterField,
+} from "./stories-filter-bar/filter-model";
+import { StoriesFilterMenu as FilterMenu } from "./stories-filter-menu";
 import type {
-  StoriesFilterBarProps,
   StoriesFilterEditorProps,
+  StoriesFilterBarProps,
   StoriesFilterField,
 } from "./stories-filter-bar/types";
 
@@ -341,6 +341,36 @@ const FilterValueEditor = ({
   return null;
 };
 
+export const StoriesFilterMenu = (
+  props: Omit<ComponentProps<typeof FilterMenu>, "renderEditor">,
+) => {
+  const { teamId } = useParams<{ teamId?: string }>();
+  const { data: allStatuses = [] } = useStatuses();
+  const scopedTeamId = getScopedStoriesFilterTeamId(
+    teamId,
+    props.filters.teamIds,
+    getStoriesFilterOperator(props.filters, "teamIds"),
+  );
+  const { data: teamSettings } = useTeamSettings(scopedTeamId);
+  const estimateScheme =
+    teamSettings?.estimationSettings.scheme ?? DEFAULT_ESTIMATE_SCHEME;
+  return (
+    <FilterMenu
+      {...props}
+      renderEditor={(field) => (
+        <FilterValueEditor
+          allStatuses={allStatuses}
+          estimateScheme={estimateScheme}
+          field={field}
+          filters={props.filters}
+          setFilters={props.setFilters}
+          teamId={teamId}
+        />
+      )}
+    />
+  );
+};
+
 export const StoriesFilterBar = ({
   filters,
   setFilters,
@@ -424,12 +454,6 @@ export const StoriesFilterBar = ({
     users: userById,
   });
 
-  const filterOptions = buildFilterOptions({
-    filters,
-    getTermDisplay,
-    hasRouteTeam: Boolean(teamId),
-    hiddenFields: hiddenFieldSet,
-  });
   const renderEditor = (field: StoriesFilterField) => (
     <FilterValueEditor
       allStatuses={allStatuses}
@@ -471,78 +495,19 @@ export const StoriesFilterBar = ({
             renderEditor={renderEditor}
           />
         ))}
-        <Menu>
-          <Menu.Button>
-            <Button
-              aria-label="Add filter"
-              color="tertiary"
-              leftIcon={<PlusIcon className="h-4 w-auto" />}
-              size="sm"
-              variant="outline"
-            />
-          </Menu.Button>
-          <Menu.Items align="start" className="w-80 py-1">
-            <Box className="px-4 py-2">
-              <Menu.Input autoFocus placeholder="Add filter..." />
-            </Box>
-            <Menu.Separator className="my-0" />
-            <Menu.Group className="max-h-[min(30rem,calc(100dvh-12rem))] overflow-y-auto px-1 py-1.5">
-              {filterOptions.map((option) => {
-                const isActive = chips.some(
-                  (chip) => chip.field === option.field,
-                );
-                if (option.field === "contentContains") {
-                  return (
-                    <Menu.Item
-                      active={isActive}
-                      className="justify-between gap-4"
-                      key={option.field}
-                      onSelect={() => {
-                        setTitleDialogOpen(true);
-                      }}
-                    >
-                      <Box className="grid min-w-0 flex-1 grid-cols-[24px_minmax(0,1fr)] items-center">
-                        <span className="text-text-secondary flex h-6 w-6 shrink-0 items-center">
-                          {option.icon}
-                        </span>
-                        <Text className="truncate">{option.label}</Text>
-                      </Box>
-                    </Menu.Item>
-                  );
-                }
-
-                return (
-                  <Menu.SubMenu key={option.field}>
-                    <Menu.SubTrigger
-                      active={isActive}
-                      className="justify-between gap-4"
-                    >
-                      <Box className="grid min-w-0 flex-1 grid-cols-[24px_minmax(0,1fr)] items-center">
-                        <span className="text-text-secondary flex h-6 w-6 shrink-0 items-center">
-                          {option.icon}
-                        </span>
-                        <Text className="truncate">{option.label}</Text>
-                      </Box>
-                      <Flex align="center" className="shrink-0" gap={1}>
-                        <ChevronRightIcon
-                          className="text-text-muted h-3.5 w-auto"
-                          strokeWidth={2.8}
-                        />
-                      </Flex>
-                    </Menu.SubTrigger>
-                    <Menu.SubItems
-                      alignOffset={-6}
-                      className={getEditorContentClassName(option.field)}
-                      sideOffset={8}
-                    >
-                      {renderEditor(option.field)}
-                    </Menu.SubItems>
-                  </Menu.SubMenu>
-                );
-              })}
-            </Menu.Group>
-          </Menu.Items>
-        </Menu>
+        <StoriesFilterMenu
+          filters={filters}
+          hiddenFields={hiddenFields}
+          setFilters={setFilters}
+        >
+          <Button
+            aria-label="Add filter"
+            color="tertiary"
+            leftIcon={<PlusIcon className="h-4 w-auto" />}
+            size="sm"
+            variant="outline"
+          />
+        </StoriesFilterMenu>
         {titleDialogOpen ? (
           <TitleFilterDialog
             filters={filters}

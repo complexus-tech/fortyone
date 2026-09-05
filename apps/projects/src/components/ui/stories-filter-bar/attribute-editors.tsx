@@ -54,48 +54,53 @@ export const LabelEditor = ({
         value={query}
       />
       <Divider className="my-2" />
-      {!isLoadingLabels ? (
-        <Command.Empty className="py-2">
-          <Text color="muted">No labels found.</Text>
-        </Command.Empty>
-      ) : null}
-      <Command.Group
-        className="max-h-80 overflow-y-auto"
-        onScroll={handleScroll}
-      >
-        {isLoadingLabels ? (
-          <Command.Loading className="p-2">
-            <MenuLoadingSkeleton rows={5} />
-          </Command.Loading>
+      <Command.List className="w-full border-0 bg-transparent p-0 shadow-none backdrop-blur-none dark:bg-transparent">
+        {!isLoadingLabels ? (
+          <Command.Empty className="px-3 py-2 text-left text-base">
+            <Text color="muted">No labels found.</Text>
+          </Command.Empty>
         ) : null}
-        {labels.map((label, idx) => (
-          <Command.Item
-            active={Boolean(filters.labelIds?.includes(label.id))}
-            className="justify-between gap-4"
-            key={label.id}
-            onSelect={() => {
-              toggleLabel(label.id);
-            }}
-            value={label.name}
-          >
-            <Flex align="center" className="min-w-0 flex-1" gap={2}>
-              <TagsIcon className="h-4 w-auto" style={{ color: label.color }} />
-              <Text className="max-w-48 truncate">{label.name}</Text>
-            </Flex>
-            <Flex align="center" className="shrink-0" gap={2}>
-              {filters.labelIds?.includes(label.id) ? (
-                <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
-              ) : null}
-              <Text color="muted">{idx}</Text>
-            </Flex>
-          </Command.Item>
-        ))}
-        {isFetchingNextPage ? (
-          <Command.Loading className="p-2">
-            <MenuLoadingSkeleton rows={2} />
-          </Command.Loading>
-        ) : null}
-      </Command.Group>
+        <Command.Group
+          className="max-h-80 overflow-y-auto"
+          onScroll={handleScroll}
+        >
+          {isLoadingLabels ? (
+            <Command.Loading className="p-2">
+              <MenuLoadingSkeleton rows={5} />
+            </Command.Loading>
+          ) : null}
+          {labels.map((label, idx) => (
+            <Command.Item
+              active={Boolean(filters.labelIds?.includes(label.id))}
+              className="justify-between gap-4"
+              key={label.id}
+              onSelect={() => {
+                toggleLabel(label.id);
+              }}
+              value={label.name}
+            >
+              <Flex align="center" className="min-w-0 flex-1" gap={2}>
+                <TagsIcon
+                  className="h-4 w-auto"
+                  style={{ color: label.color }}
+                />
+                <Text className="max-w-48 truncate">{label.name}</Text>
+              </Flex>
+              <Flex align="center" className="shrink-0" gap={2}>
+                {filters.labelIds?.includes(label.id) ? (
+                  <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
+                ) : null}
+                <Text color="muted">{idx}</Text>
+              </Flex>
+            </Command.Item>
+          ))}
+          {isFetchingNextPage ? (
+            <Command.Loading className="p-2">
+              <MenuLoadingSkeleton rows={2} />
+            </Command.Loading>
+          ) : null}
+        </Command.Group>
+      </Command.List>
     </Command>
   );
 };
@@ -122,35 +127,37 @@ export const EstimateEditor = ({
     <Command>
       <Command.Input autoFocus placeholder="Change complexity..." />
       <Divider className="my-2" />
-      <Command.Empty className="py-2">
-        <Text color="muted">No complexity found.</Text>
-      </Command.Empty>
-      <Command.Group>
-        {options.map(({ label, value }, idx) => (
-          <Command.Item
-            active={Boolean(filters.estimateValues?.includes(value))}
-            className="justify-between gap-4"
-            key={value}
-            onSelect={() => {
-              toggleEstimate(value);
-            }}
-            value={label}
-          >
-            <Box className="grid min-w-0 flex-1 grid-cols-[24px_minmax(0,1fr)] items-center">
-              <EstimateIcon className="text-text-secondary h-4 w-auto" />
-              <Text className="truncate">
-                {formatEstimate(estimateScheme, value, "full")}
-              </Text>
-            </Box>
-            <Flex align="center" className="shrink-0" gap={2}>
-              {filters.estimateValues?.includes(value) ? (
-                <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
-              ) : null}
-              <Text color="muted">{idx}</Text>
-            </Flex>
-          </Command.Item>
-        ))}
-      </Command.Group>
+      <Command.List className="w-full border-0 bg-transparent p-0 shadow-none backdrop-blur-none dark:bg-transparent">
+        <Command.Empty className="px-3 py-2 text-left text-base">
+          <Text color="muted">No complexity found.</Text>
+        </Command.Empty>
+        <Command.Group>
+          {options.map(({ label, value }, idx) => (
+            <Command.Item
+              active={Boolean(filters.estimateValues?.includes(value))}
+              className="justify-between gap-4"
+              key={value}
+              onSelect={() => {
+                toggleEstimate(value);
+              }}
+              value={label}
+            >
+              <Box className="grid min-w-0 flex-1 grid-cols-[24px_minmax(0,1fr)] items-center">
+                <EstimateIcon className="text-text-secondary h-4 w-auto" />
+                <Text className="truncate">
+                  {formatEstimate(estimateScheme, value, "full")}
+                </Text>
+              </Box>
+              <Flex align="center" className="shrink-0" gap={2}>
+                {filters.estimateValues?.includes(value) ? (
+                  <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
+                ) : null}
+                <Text color="muted">{idx}</Text>
+              </Flex>
+            </Command.Item>
+          ))}
+        </Command.Group>
+      </Command.List>
     </Command>
   );
 };

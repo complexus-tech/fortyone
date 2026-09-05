@@ -94,6 +94,7 @@ export const Header = ({
             <LayoutSwitcher layout={layout} setLayout={setLayout} />
             <StoriesFilterButton
               filters={filters}
+              hiddenFields={["teamIds", "objectiveId"]}
               resetFilters={resetFilters}
               setFilters={setFilters}
             />

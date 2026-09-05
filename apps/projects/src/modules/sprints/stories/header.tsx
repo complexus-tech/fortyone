@@ -134,6 +134,7 @@ export const Header = ({
         />
         <StoriesFilterButton
           filters={filters}
+          hiddenFields={["teamIds", "sprintIds"]}
           resetFilters={resetFilters}
           setFilters={setFilters}
         />
