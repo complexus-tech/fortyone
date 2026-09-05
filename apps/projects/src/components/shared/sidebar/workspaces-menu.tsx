@@ -13,6 +13,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn, getReadableTextColor } from "lib";
 import { useAnalytics, useLocalStorage, useWorkspacePath } from "@/hooks";
+import { buildWorkspaceUrl } from "@/utils/workspace-url";
 import { useUserRole } from "@/hooks/role";
 import { useCurrentWorkspace, useWorkspaces } from "@/lib/hooks/workspaces";
 import { walkthroughTargets } from "@/shared/walkthrough/targets";
@@ -20,13 +21,6 @@ import { changeWorkspace, logOut } from "@/components/shared/sidebar/actions";
 import { clearAllStorage } from "@/components/shared/sidebar/utils";
 
 const isFortyOneApp = process.env.NEXT_PUBLIC_DOMAIN === "fortyone.app";
-
-const getWorkspaceUrl = (slug: string) => {
-  if (isFortyOneApp) {
-    return `https://${slug}.fortyone.app/my-work`;
-  }
-  return `/${slug}/my-work`;
-};
 
 export const WorkspacesMenu = ({
   isCollapsed = false,
@@ -56,7 +50,7 @@ export const WorkspacesMenu = ({
   };
 
   const handleChangeWorkspace = async (workspaceId: string, slug: string) => {
-    const nextPath = getWorkspaceUrl(slug);
+    const nextPath = buildWorkspaceUrl(slug);
     try {
       await changeWorkspace(workspaceId);
       window.location.href = nextPath;

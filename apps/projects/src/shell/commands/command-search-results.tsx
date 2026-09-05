@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import { EnterIcon, ObjectiveIcon, SearchIcon, StoryIcon } from "icons";
 import { Box, Command, Flex, Kbd, Skeleton, Text } from "ui";
+import { useTerminology } from "@/hooks/use-terminology-display";
 import { useObjectiveStatuses } from "@/lib/hooks/objective-statuses";
 import { useStatuses } from "@/lib/hooks/statuses";
 import type { Objective } from "@/modules/objectives/types";
@@ -100,10 +101,15 @@ const StoryResults = ({
   stories: Story[];
   teamCodesById: Map<string, string>;
 }) => {
+  const { getTermDisplay } = useTerminology();
   if (stories.length === 0) return null;
-
   return (
-    <Command.Group className="mb-3 px-0" heading={groupHeading("Tasks")}>
+    <Command.Group
+      className="mb-3 px-0"
+      heading={groupHeading(
+        getTermDisplay("storyTerm", { variant: "plural", capitalize: true }),
+      )}
+    >
       {stories.slice(0, RESULT_LIMIT).map((story) => {
         const status = statusesById.get(story.statusId);
         const teamCode = story.team?.code ?? teamCodesById.get(story.teamId);
@@ -152,10 +158,18 @@ const ObjectiveResults = ({
   onSelect: (objective: Objective) => void;
   statusesById: Map<string, { color: string; name: string }>;
 }) => {
+  const { getTermDisplay } = useTerminology();
   if (objectives.length === 0) return null;
-
   return (
-    <Command.Group className="mb-3 px-0" heading={groupHeading("Objectives")}>
+    <Command.Group
+      className="mb-3 px-0"
+      heading={groupHeading(
+        getTermDisplay("objectiveTerm", {
+          variant: "plural",
+          capitalize: true,
+        }),
+      )}
+    >
       {objectives.slice(0, RESULT_LIMIT).map((objective) => {
         const status = statusesById.get(objective.statusId);
 
@@ -163,7 +177,9 @@ const ObjectiveResults = ({
           <ResultItem
             description={
               <>
-                <span>Objective</span>
+                <span>
+                  {getTermDisplay("objectiveTerm", { capitalize: true })}
+                </span>
                 {status ? (
                   <>
                     <span> · </span>

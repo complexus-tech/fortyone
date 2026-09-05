@@ -1,3 +1,4 @@
+import { DEFAULT_WORKSPACE_PATH } from "@/shared/routing/workspace";
 import { buildWorkspaceUrl } from "@/utils/workspace-url";
 import { getOnboardingCallbackPath } from "./routing";
 
@@ -10,8 +11,8 @@ export const ONBOARDING_CALENDAR_PATH = "/settings/account/calendar";
 const START_PATHS: Record<OnboardingStart, string> = {
   task: `/my-work?${ONBOARDING_START_QUERY}=${ONBOARDING_TASK_START}`,
   import: "/settings/workspace/imports?from=onboarding",
-  examples: "/my-work",
-  empty: "/my-work",
+  examples: DEFAULT_WORKSPACE_PATH,
+  empty: DEFAULT_WORKSPACE_PATH,
 };
 
 export const getOnboardingStartUrl = (

@@ -166,6 +166,7 @@ const EmptyState = ({
 );
 
 export const StoriesBoard = ({
+  embedded = false,
   isInSearch,
   layout,
   groupedStories: allStories,
@@ -175,6 +176,7 @@ export const StoriesBoard = ({
   rowClassName,
   emptyStateIllustration,
 }: {
+  embedded?: boolean;
   isInSearch?: boolean;
   layout: StoriesLayout;
   groupedStories?: GroupedStoriesResponse;
@@ -264,6 +266,7 @@ export const StoriesBoard = ({
   // Memoize the context value to prevent unnecessary re-renders
   const boardContextValue = useMemo(
     () => ({
+      embedded,
       selectedStories,
       setSelectedStories,
       viewOptions,
@@ -277,6 +280,7 @@ export const StoriesBoard = ({
       },
     }),
     [
+      embedded,
       selectedStories,
       setViewOptions,
       viewOptions,
@@ -296,7 +300,7 @@ export const StoriesBoard = ({
     <BoardContext.Provider value={boardContextValue}>
       <Box
         className={cn("min-h-0 w-full min-w-0", {
-          "h-full overflow-hidden": !isInSearch,
+          "h-full overflow-hidden": !embedded && !isInSearch,
         })}
       >
         {!isInSearch && !hasStories && (
@@ -330,7 +334,7 @@ export const StoriesBoard = ({
                 className={cn(
                   "overflow-x-auto pb-6",
                   {
-                    "h-auto pb-0": isInSearch,
+                    "h-auto pb-0": embedded || isInSearch,
                   },
                   className,
                 )}

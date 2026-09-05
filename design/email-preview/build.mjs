@@ -6,7 +6,7 @@ import { emails } from "./content.mjs";
 const root = fileURLToPath(new URL(".", import.meta.url));
 const ink = "#25150e";
 const muted = "#72645d";
-const paper = "#fff1e7";
+const paper = "#fff6ef";
 const rule = "#f1e4dc";
 const fontStack = "Inter,Arial,Helvetica,sans-serif";
 const fontFaces = [

@@ -142,10 +142,12 @@ export const StoryRow = ({
   const { getTermDisplay } = useTerminology();
   const { workspaceSlug, withWorkspace } = useWorkspacePath();
   const isDesktop = useMediaQuery("(min-width: 768px)");
+  const { embedded, selectedStories, setSelectedStories, isColumnVisible } =
+    useBoard();
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: story.id,
+    disabled: embedded,
   });
-  const { selectedStories, setSelectedStories, isColumnVisible } = useBoard();
   const { data: preferences } = useAutomationPreferences();
   const openStoryInDialog = preferences?.openStoryInDialog;
 
@@ -219,12 +221,14 @@ export const StoryRow = ({
               gap={2}
             >
               {isInSearch ? <StoryIcon className="h-[1.1rem]" /> : null}
-              {isSubStory || isInSearch ? null : (
+              {embedded || isSubStory || isInSearch ? null : (
                 <DragHandle {...listeners} {...attributes} />
               )}
               <Checkbox
                 checked={selectedStories.includes(story.id)}
-                className="shrink-0 rounded md:absolute md:-left-[1.6rem]"
+                className={cn("shrink-0 rounded", {
+                  "md:absolute md:-left-[1.6rem]": !embedded,
+                })}
                 disabled={userRole === "guest"}
                 onCheckedChange={(checked) => {
                   setSelectedStories(

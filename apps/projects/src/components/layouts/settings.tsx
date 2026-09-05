@@ -20,6 +20,7 @@ import {
 } from "@/hooks";
 import { useMyInvitations } from "@/modules/invitations/hooks/my-invitations";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
+import { DEFAULT_WORKSPACE_PATH } from "@/shared/routing/workspace";
 import { Commands } from "@/shell/commands/commands";
 import { MobileMenuButton } from "../shared/mobile-menu";
 import { NavLink } from "../ui";
@@ -48,7 +49,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
   const { withWorkspace } = useWorkspacePath();
 
   const goBack = () => {
-    router.push(prevPage || withWorkspace("/my-work"));
+    router.push(prevPage || withWorkspace(DEFAULT_WORKSPACE_PATH));
     setPrevPage("");
   };
 

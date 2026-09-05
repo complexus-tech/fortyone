@@ -1,7 +1,6 @@
 import { buildWorkspaceUrl } from "@/utils";
 import { getSafeCallbackUrl, withCallbackUrl } from "@/utils/callback-url";
-
-const DEFAULT_WORKSPACE_PATH = "/my-work";
+import { DEFAULT_WORKSPACE_PATH } from "@/shared/routing/workspace";
 
 export const getOnboardingCallbackPath = (callbackUrl?: string | null) => {
   const safeCallbackUrl = getSafeCallbackUrl(callbackUrl);

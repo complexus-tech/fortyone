@@ -10,6 +10,7 @@ import {
   getFeedbackWidgetFrameAncestors,
   isValidFeedbackWidgetParent,
 } from "./modules/feedback-widget/embed-security";
+import { DEFAULT_WORKSPACE_PATH } from "./shared/routing/workspace";
 
 const AUTH_HOST = process.env.NEXT_PUBLIC_AUTH_HOST ?? "cloud.fortyone.app";
 const DOMAIN_SUFFIX = ".fortyone.app";
@@ -166,7 +167,10 @@ export default async function proxy(req: NextRequest) {
 
   if (isWorkspaceSubdomain && isAuthOnlyPath(pathname)) {
     if (pathname === "/" && isAuthenticated) {
-      const rewriteUrl = new URL(`/${subdomain}/my-work`, req.nextUrl);
+      const rewriteUrl = new URL(
+        `/${subdomain}${DEFAULT_WORKSPACE_PATH}`,
+        req.nextUrl,
+      );
       rewriteUrl.search = searchParams;
       return NextResponse.rewrite(rewriteUrl);
     }
@@ -177,7 +181,7 @@ export default async function proxy(req: NextRequest) {
       if (!redirectUrl.searchParams.has("callbackUrl")) {
         redirectUrl.searchParams.set(
           "callbackUrl",
-          `https://${subdomain}${DOMAIN_SUFFIX}/my-work`,
+          `https://${subdomain}${DOMAIN_SUFFIX}${DEFAULT_WORKSPACE_PATH}`,
         );
       }
     }
@@ -192,7 +196,9 @@ export default async function proxy(req: NextRequest) {
 
   if (isWorkspaceSubdomain && !pathname.startsWith(`/${subdomain}`)) {
     const nextPath =
-      pathname === "/" ? `/${subdomain}/my-work` : `/${subdomain}${pathname}`;
+      pathname === "/"
+        ? `/${subdomain}${DEFAULT_WORKSPACE_PATH}`
+        : `/${subdomain}${pathname}`;
     const rewriteUrl = new URL(nextPath, req.nextUrl);
     rewriteUrl.search = searchParams;
     return NextResponse.rewrite(rewriteUrl);

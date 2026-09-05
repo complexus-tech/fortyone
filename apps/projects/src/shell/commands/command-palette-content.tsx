@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { useState } from "react";
 import { Command, Dialog, Divider } from "ui";
+import { useTerminology } from "@/hooks/use-terminology-display";
 import { useDebouncedCallback } from "@/hooks/debounce";
 import { useSearch } from "@/modules/search/hooks/use-search";
 import { getStoryPath } from "@/shared/routing/story";
@@ -22,6 +23,10 @@ export const CommandPaletteContent = ({
   children: ReactNode;
   onNavigate: (path: string) => void;
 }) => {
+  const { getTermDisplay } = useTerminology();
+  const storyTerm = getTermDisplay("storyTerm", { variant: "plural" });
+  const objectiveTerm = getTermDisplay("objectiveTerm", { variant: "plural" });
+  const searchLabel = `Search ${storyTerm}, ${objectiveTerm}, or commands`;
   const [inputValue, setInputValue] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [selection, setSelection] = useState<CommandSelection>({
@@ -90,7 +95,7 @@ export const CommandPaletteContent = ({
           className="my-2.5 text-2xl antialiased"
           icon={null}
           onValueChange={handleInputValueChange}
-          placeholder="Search tasks, objectives, or commands…"
+          placeholder={`${searchLabel}…`}
           value={inputValue}
         />
         <Divider className="my-2.5" />

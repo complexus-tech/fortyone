@@ -7,6 +7,7 @@ import type {
 import type { DetailedStory } from "@/modules/story/types";
 
 export const BoardContext = createContext<{
+  embedded?: boolean;
   selectedStories: string[];
   setSelectedStories: (value: string[]) => void;
   viewOptions: StoriesViewOptions;

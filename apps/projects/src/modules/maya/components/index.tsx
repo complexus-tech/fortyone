@@ -17,6 +17,7 @@ import { useMayaChat } from "../hooks/use-maya-chat";
 import { useMayaNavigation } from "../hooks/use-maya-navigation";
 import type { MayaChatConfig } from "../types";
 import { Header } from "./header";
+import { RecentWork } from "./recent-work";
 import styles from "./index.module.css";
 
 export const MayaChat = () => {
@@ -132,7 +133,7 @@ export const MayaChat = () => {
       <BodyContainer className="flex h-auto min-h-0 flex-1 flex-col overflow-hidden">
         {isEmptyState ? (
           <Box className="relative flex min-h-0 flex-1 overflow-y-auto">
-            <Box className="mx-auto flex min-h-full w-full max-w-5xl flex-col justify-center px-5 py-10 sm:px-8 md:py-14">
+            <Box className="mx-auto my-auto flex w-full max-w-5xl flex-col px-5 pt-20 pb-10 sm:px-8 md:pt-28 md:pb-14">
               <Box className="mb-7 flex flex-col items-center text-center md:mb-9">
                 <Text
                   as="h1"
@@ -157,6 +158,7 @@ export const MayaChat = () => {
                   isOnPage
                   onPromptSelect={handleSuggestedPrompt}
                 />
+                <RecentWork />
               </Box>
             </Box>
           </Box>

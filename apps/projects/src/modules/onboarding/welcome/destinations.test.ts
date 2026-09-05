@@ -3,11 +3,11 @@ import type { Workspace } from "@/types/workspace";
 import { getWelcomeDestinations } from "./destinations";
 
 jest.mock("@/utils", () => ({
-  buildWorkspaceUrl: (workspaceSlug: string, path = "/my-work") =>
+  buildWorkspaceUrl: (workspaceSlug: string, path = "/maya") =>
     `/${workspaceSlug}${path}`,
 }));
 jest.mock("@/utils/workspace-url", () => ({
-  buildWorkspaceUrl: (workspaceSlug: string, path = "/my-work") =>
+  buildWorkspaceUrl: (workspaceSlug: string, path = "/maya") =>
     `/${workspaceSlug}${path}`,
 }));
 
@@ -39,7 +39,7 @@ describe("welcome destinations", () => {
       expect(
         getWelcomeDestinations([workspace("workspace", "acme", userRole)]),
       ).toEqual({
-        redirectUrl: "/acme/my-work",
+        redirectUrl: "/acme/maya",
         calendarUrl: "/acme/settings/account/calendar",
         ...(userRole === "member"
           ? { taskUrl: "/acme/my-work?onboarding=task" }

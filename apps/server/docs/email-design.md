@@ -1,6 +1,6 @@
 # Email design and assets
 
-The production mailer now implements the approved compact email design: warm #fff1e7 canvas, white rounded cards, landing-page wordmark, ticket divider, full-width CTA, Inter with Arial/Helvetica fallback, 23px desktop / 21px phone headings, and 15px body copy on a 21px line height. Invitation cards are 480px; other templates are 520px. Inner gutters are 32px desktop / 24px phone.
+The production mailer now implements the approved compact email design: warm #fff6ef canvas, white rounded cards, landing-page wordmark, ticket divider, full-width CTA, Inter with Arial/Helvetica fallback, 23px desktop / 21px phone headings, and 15px body copy on a 21px line height. Invitation cards are 480px; other templates are 520px. Inner gutters are 32px desktop / 24px phone.
 
 ## Sources
 

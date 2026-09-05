@@ -1,4 +1,5 @@
 import type { Workspace } from "@/types/workspace";
+import { DEFAULT_WORKSPACE_PATH } from "@/shared/routing/workspace";
 import { getSafeCallbackUrl } from "./callback-url";
 
 const isFortyOneApp = process.env.NEXT_PUBLIC_DOMAIN === "fortyone.app";
@@ -28,14 +29,13 @@ export const getRedirectUrl = (
     workspaces.find((workspace) => workspace.id === lastUsedWorkspaceId) ||
     workspaces[0];
 
-  if (isFortyOneApp) {
-    return `https://${activeWorkspace.slug}.fortyone.app/my-work`;
-  }
-
-  return `/${activeWorkspace.slug}/my-work`;
+  return buildWorkspaceUrl(activeWorkspace.slug);
 };
 
-export const buildWorkspaceUrl = (slug: string, path = "/my-work") => {
+export const buildWorkspaceUrl = (
+  slug: string,
+  path = DEFAULT_WORKSPACE_PATH,
+) => {
   if (isFortyOneApp) {
     return `https://${slug}.fortyone.app${path}`;
   }

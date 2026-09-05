@@ -4,6 +4,7 @@ import { cn } from "lib";
 import type { ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { useWorkspacePath } from "@/hooks";
+import { useRecordStoryVisit } from "@/shared/story/use-recent-story-history";
 import { NotFoundIllustration } from "@/components/ui/illustrations/empty-state-illustrations";
 import { ResourceNotFoundState } from "@/components/ui/resource-not-found-state";
 import { MainDetailsSkeleton } from "./components/main-details-skeleton";
@@ -38,6 +39,9 @@ export const StoryPage = ({
     refetch,
   } = useStoryById(storyId);
   const { withWorkspace } = useWorkspacePath();
+  useRecordStoryVisit(
+    !isError && story && !story.deletedAt ? story.id : undefined,
+  );
 
   if (isPending) {
     return <StorySkeleton isDialog={isDialog} />;

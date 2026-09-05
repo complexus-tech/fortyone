@@ -6,6 +6,7 @@ import { LazyMotion, domAnimation, m } from "framer-motion";
 import { useState } from "react";
 import { toast } from "sonner";
 import { usePathname } from "next/navigation";
+import { buildWorkspaceUrl } from "@/utils/workspace-url";
 import { checkout } from "@/lib/actions/billing/checkout";
 import { changePlan } from "@/lib/actions/billing/change-plan";
 import { useTerminology, useWorkspacePath } from "@/hooks";
@@ -138,7 +139,7 @@ export const Plans = () => {
   const handlePlanAction = async (plan: Plan) => {
     const host = `${window.location.protocol}//${window.location.host}`;
     const cancelUrl = `${host}${pathname}`;
-    const successUrl = `${host}/my-work`;
+    const successUrl = new URL(buildWorkspaceUrl(workspaceSlug), host).href;
     const resetLoadingState = () => {
       setIsProLoading(false);
       setIsBusinessLoading(false);

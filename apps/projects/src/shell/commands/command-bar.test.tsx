@@ -7,6 +7,8 @@ import { CommandBar } from "./command-bar";
 const mockRouterPush = jest.fn();
 const mockSetIsOpen = jest.fn();
 const mockUseSearch = jest.fn();
+let mockStoryTerm = "task";
+let mockObjectiveTerm = "objective";
 
 jest.mock("next/navigation", () => ({
   usePathname: () => "/acme/my-work",
@@ -23,8 +25,16 @@ jest.mock("@/hooks/tracking", () => ({
 
 jest.mock("@/hooks/use-terminology-display", () => ({
   useTerminology: () => ({
-    getTermDisplay: (term: string) =>
-      term === "objectiveTerm" ? "objective" : "task",
+    getTermDisplay: (
+      term: string,
+      options: { variant?: string; capitalize?: boolean } = {},
+    ) => {
+      let value = term === "objectiveTerm" ? mockObjectiveTerm : mockStoryTerm;
+      if (options.variant === "plural") value += "s";
+      return options.capitalize
+        ? value[0].toUpperCase() + value.slice(1)
+        : value;
+    },
   }),
 }));
 
@@ -214,6 +224,8 @@ const searchResponse = {
 
 describe("CommandBar workspace search", () => {
   beforeEach(() => {
+    mockStoryTerm = "task";
+    mockObjectiveTerm = "objective";
     jest.useFakeTimers();
     mockRouterPush.mockReset();
     mockSetIsOpen.mockReset();
@@ -286,5 +298,21 @@ describe("CommandBar workspace search", () => {
     expect(mockRouterPush).toHaveBeenCalledWith(
       "/acme/search?query=activation&type=all",
     );
+  });
+  it("uses workspace terminology in the search input and result headings", () => {
+    mockStoryTerm = "issue";
+    mockObjectiveTerm = "goal";
+    render(<CommandBar isOpen setIsOpen={mockSetIsOpen} />);
+    fireEvent.change(
+      screen.getByPlaceholderText("Search issues, goals, or commands…"),
+      {
+        target: { value: "activation" },
+      },
+    );
+    act(() => {
+      jest.advanceTimersByTime(300);
+    });
+    expect(screen.getByText("Issues")).toBeTruthy();
+    expect(screen.getByText("Goals")).toBeTruthy();
   });
 });

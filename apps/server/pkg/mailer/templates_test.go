@@ -13,7 +13,7 @@ func TestTemplatesRenderApprovedEmailSystem(t *testing.T) {
 	rendered := renderTemplateForTest(t, "auth/verification", map[string]any{
 		"VerificationURL": "https://cloud.fortyone.app/login/verify?token=abc&state=xyz", "ExpiresIn": "10 minutes", "OTP": "827657",
 	})
-	for _, expected := range []string{defaultLogoURL, "font-family:Inter", "fonts/Inter-Regular.woff2", "font-size: 23px", "line-height: 21px", "font-size:21px!important", "#fff1e7", `bgcolor="#ffffff"`, `class="email-card"`, `<!--[if mso]>`, `v:roundrect`, `width:456px`, "827657", "FortyOne by Complexus LLC", "token=abc&amp;state=xyz"} {
+	for _, expected := range []string{defaultLogoURL, "font-family:Inter", "fonts/Inter-Regular.woff2", "font-size: 23px", "line-height: 21px", "font-size:21px!important", "#fff6ef", `bgcolor="#ffffff"`, `class="email-card"`, `<!--[if mso]>`, `v:roundrect`, `width:456px`, "827657", "FortyOne by Complexus LLC", "token=abc&amp;state=xyz"} {
 		assertContains(t, rendered, expected)
 	}
 	for _, rejected := range []string{"Geist", "/images/logo.png", "#ZgotmplZ", "<no value>", `class="eyebrow"`, `src="data:`} {

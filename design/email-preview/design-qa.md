@@ -4,6 +4,10 @@ final result: passed
 
 Scope: browser-rendered review collection, not production email-client certification.
 
+## Lighter background refinement
+
+The main canvas and matching ticket notches now use `#fff6ef`, lightened from `#fff1e7`. White cards and existing artwork remain as approved. Older screenshots below record the prior background.
+
 ## Application template migration
 
 - Exported the SVG landing wordmark to a 504 × 123 transparent PNG. Canonical assets are now in `apps/landing/public/email-assets/v1`, with both approved illustrations and four licensed Inter weights.

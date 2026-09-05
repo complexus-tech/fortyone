@@ -57,9 +57,14 @@ jest.mock("next/server", () => {
   return { NextResponse: MockNextResponse };
 });
 
+const { NextResponse: mockedResponse } = jest.requireMock<{
+  NextResponse: { redirect: jest.Mock; rewrite: jest.Mock };
+}>("next/server");
+
 const mockedGetSessionFromRequest = jest.mocked(getSessionFromRequest);
 
 beforeEach(() => {
+  jest.clearAllMocks();
   mockedGetSessionFromRequest.mockReset();
 });
 
@@ -187,6 +192,53 @@ describe("authentication availability", () => {
     expect(response.headers.get("retry-after")).toBe("5");
     await expect(response.text()).resolves.toBe(
       "Authentication service is temporarily unavailable.",
+    );
+  });
+});
+
+describe("workspace home routing", () => {
+  const request = (path: string) => {
+    const url = new URL(path, "https://acme.fortyone.app");
+    return {
+      headers: { get: () => null },
+      nextUrl: url,
+      url: url.href,
+    } as unknown as NextRequest;
+  };
+
+  it("opens Maya at an authenticated workspace root and preserves the query", async () => {
+    mockedGetSessionFromRequest.mockResolvedValue({
+      id: "user-a",
+    } as NonNullable<Awaited<ReturnType<typeof getSessionFromRequest>>>);
+    await proxy(request("/?chatRef=conversation"));
+    expect(mockedResponse.rewrite).toHaveBeenCalledWith(
+      new URL("https://acme.fortyone.app/acme/maya?chatRef=conversation"),
+    );
+  });
+
+  it("returns signed-out workspace visitors to Maya after login", async () => {
+    mockedGetSessionFromRequest.mockResolvedValue(null);
+    await proxy(request("/"));
+    const redirectUrl = mockedResponse.redirect.mock.calls[0][0] as URL;
+    expect(redirectUrl.searchParams.get("callbackUrl")).toBe(
+      "https://acme.fortyone.app/maya",
+    );
+  });
+
+  it("keeps explicit callbacks when signing in from a workspace root", async () => {
+    mockedGetSessionFromRequest.mockResolvedValue(null);
+    await proxy(request("/?callbackUrl=%2Fmy-work"));
+    const redirectUrl = mockedResponse.redirect.mock.calls[0][0] as URL;
+    expect(redirectUrl.searchParams.get("callbackUrl")).toBe("/my-work");
+  });
+
+  it("keeps the My Work route available", async () => {
+    mockedGetSessionFromRequest.mockResolvedValue({
+      id: "user-a",
+    } as NonNullable<Awaited<ReturnType<typeof getSessionFromRequest>>>);
+    await proxy(request("/my-work?view=board"));
+    expect(mockedResponse.rewrite).toHaveBeenCalledWith(
+      new URL("https://acme.fortyone.app/acme/my-work?view=board"),
     );
   });
 });

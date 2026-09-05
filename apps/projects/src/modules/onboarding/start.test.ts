@@ -14,8 +14,8 @@ describe("onboarding first action destinations", () => {
   it.each([
     ["task", "/my-work?onboarding=task"],
     ["import", "/settings/workspace/imports?from=onboarding"],
-    ["examples", "/my-work"],
-    ["empty", "/my-work"],
+    ["examples", "/maya"],
+    ["empty", "/maya"],
   ] as const)("uses the workspace URL builder for %s", (start, path) => {
     expect(getOnboardingStartUrl("acme", start)).toBe(
       `https://acme.fortyone.app${path}`,

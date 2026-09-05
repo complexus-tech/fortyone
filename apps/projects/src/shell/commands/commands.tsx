@@ -7,6 +7,7 @@ import { cn } from "lib";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useRouter, usePathname } from "next/navigation";
 import { useQueryState } from "nuqs";
+import { useTerminology } from "@/hooks/use-terminology-display";
 import { KeyboardShortcuts } from "@/components/shared/keyboard-shortcuts";
 import { InviteMembersDialog } from "@/components/ui/invite-members";
 import { NewObjectiveDialog } from "@/components/ui/new-objective";
@@ -23,6 +24,10 @@ export const Commands = ({
   className?: string;
   showTrigger?: boolean;
 }) => {
+  const { getTermDisplay } = useTerminology();
+  const storyTerm = getTermDisplay("storyTerm", { variant: "plural" });
+  const objectiveTerm = getTermDisplay("objectiveTerm", { variant: "plural" });
+  const searchLabel = `Search ${storyTerm}, ${objectiveTerm}, or commands`;
   const { userRole } = useUserRole();
   const [isStoryOpen, setIsStoryOpen] = useState(false);
   const [isSprintsOpen, setIsSprintsOpen] = useState(false);
@@ -103,7 +108,7 @@ export const Commands = ({
           >
             <SearchIcon className="text-text-muted h-4 shrink-0" />
             <input
-              aria-label="Search tasks and objectives"
+              aria-label={`Search ${storyTerm} and ${objectiveTerm}`}
               className="placeholder:text-text-muted min-w-0 flex-1 bg-transparent outline-none"
               defaultValue={query}
               onKeyDown={(event) => {
@@ -111,7 +116,7 @@ export const Commands = ({
                   void setQuery(event.currentTarget.value.trim());
                 }
               }}
-              placeholder="Search tasks and objectives…"
+              placeholder={`Search ${storyTerm} and ${objectiveTerm}…`}
               type="search"
             />
           </search>
@@ -131,7 +136,7 @@ export const Commands = ({
       ) : null}
       {showTrigger && !isSearchPage ? (
         <button
-          aria-label="Search tasks, objectives, or commands"
+          aria-label={searchLabel}
           className={cn(
             "bg-surface-muted text-text-muted hover:bg-state-hover focus-visible:ring-ring flex h-11 min-w-0 items-center gap-2 rounded-lg px-3 text-left transition-colors outline-none focus-visible:ring-2",
             className,
@@ -142,9 +147,7 @@ export const Commands = ({
           type="button"
         >
           <SearchIcon className="h-4 shrink-0" />
-          <span className="min-w-0 flex-1 truncate">
-            Search tasks, objectives, or commands…
-          </span>
+          <span className="min-w-0 flex-1 truncate">{searchLabel}…</span>
           <Kbd className="!bg-surface/5 !text-text-muted dark:!bg-surface/10 hidden shrink-0 sm:flex">
             ⌘ K
           </Kbd>

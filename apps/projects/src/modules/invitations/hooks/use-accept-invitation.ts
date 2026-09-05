@@ -1,14 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { redirect } from "next/navigation";
+import { buildWorkspaceUrl } from "@/utils/workspace-url";
 import { acceptInvitation } from "../actions/accept-invitation";
 import {
   optimisticallyAcceptInvitation,
   reconcileAcceptedInvitation,
   rollbackAcceptedInvitation,
 } from "../mutations/cache";
-
-const isFortyOneApp = process.env.NEXT_PUBLIC_DOMAIN === "fortyone.app";
 
 export const useAcceptInvitationMutation = () => {
   const queryClient = useQueryClient();
@@ -55,13 +54,7 @@ export const useAcceptInvitationMutation = () => {
           action: {
             label: "Open",
             onClick: () => {
-              if (isFortyOneApp) {
-                redirect(
-                  `https://${context.invitation!.workspaceSlug}.fortyone.app/my-work`,
-                );
-              } else {
-                redirect(`/${context.invitation!.workspaceSlug}/my-work`);
-              }
+              redirect(buildWorkspaceUrl(context.invitation!.workspaceSlug));
             },
           },
         });

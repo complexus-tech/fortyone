@@ -6,7 +6,7 @@ import {
 } from "./routing";
 
 jest.mock("@/utils", () => ({
-  buildWorkspaceUrl: (workspaceSlug: string, path = "/my-work") =>
+  buildWorkspaceUrl: (workspaceSlug: string, path = "/maya") =>
     `/${workspaceSlug}${path}`,
 }));
 
@@ -41,7 +41,7 @@ describe("onboarding callback routing", () => {
 
   it("falls back to the workspace home when no callback is present", () => {
     expect(getOnboardingWorkspaceUrl("art-circles")).toMatch(
-      /art-circles(?:\.fortyone\.app)?\/my-work$/,
+      /art-circles(?:\.fortyone\.app)?\/maya$/,
     );
   });
 });

@@ -8,7 +8,7 @@ const emailFontStack = `Inter, Arial, Helvetica, sans-serif`
 
 // Email-safe colors from the approved warm email design.
 const (
-	emailColorBackground        = `#fff1e7`
+	emailColorBackground        = `#fff6ef`
 	emailColorForeground        = `#25150e`
 	emailColorForegroundInverse = `#ffffff`
 	emailColorTextSecondary     = `#25150e`
