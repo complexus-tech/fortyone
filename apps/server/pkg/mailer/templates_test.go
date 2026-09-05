@@ -13,7 +13,7 @@ func TestTemplatesRenderApprovedEmailSystem(t *testing.T) {
 	rendered := renderTemplateForTest(t, "auth/verification", map[string]any{
 		"VerificationURL": "https://cloud.fortyone.app/login/verify?token=abc&state=xyz", "ExpiresIn": "10 minutes", "OTP": "827657",
 	})
-	for _, expected := range []string{defaultLogoURL, "font-family:Inter", "fonts/Inter-Regular.woff2", "font-size: 23px", "line-height: 21px", "font-size:21px!important", "#fff6ef", `bgcolor="#ffffff"`, `class="email-card"`, `<!--[if mso]>`, `v:roundrect`, `width:456px`, "827657", "FortyOne by Complexus LLC", "token=abc&amp;state=xyz"} {
+	for _, expected := range []string{defaultLogoURL, "font-family:Inter", "fonts/Inter-Regular.woff2", "font-size: 22px", "line-height: 20px", "font-size:20px!important", "#fff6ef", `bgcolor="#ffffff"`, `class="email-card"`, `<!--[if mso]>`, `v:roundrect`, `width:456px`, "827657", "FortyOne by Complexus LLC", "token=abc&amp;state=xyz"} {
 		assertContains(t, rendered, expected)
 	}
 	for _, rejected := range []string{"Geist", "/images/logo.png", "#ZgotmplZ", "<no value>", `class="eyebrow"`, `src="data:`} {
@@ -31,7 +31,7 @@ func TestInvitationArtworkAndDestinations(t *testing.T) {
 			assertContains(t, rendered, emailAsset(tc.asset))
 			assertContains(t, rendered, "max-width:480px")
 			assertContains(t, rendered, "width:416px")
-			assertContains(t, rendered, `width="126" height="31"`)
+			assertContains(t, rendered, `width="104" height="26"`)
 			assertContains(t, rendered, "https://cloud.fortyone.app/target?token=original")
 			assertContains(t, rendered, "&lt;script&gt;")
 			assertNotContains(t, rendered, "<script>")
@@ -53,7 +53,7 @@ func TestNotificationEmailHasOptionalActionAndPreferences(t *testing.T) {
 	rendered := renderTemplateForTest(t, "notifications/notification", data)
 	assertContains(t, rendered, "Ready for review.")
 	assertContains(t, rendered, EmailStyleString("panelTitle"))
-	assertContains(t, rendered, "Manage notification preferences")
+	assertContains(t, rendered, "Manage notifications")
 	assertNotContains(t, rendered, `class="actions"`)
 	assertNotContains(t, rendered, `class="hero"`)
 	data["NotificationCTAURL"], data["NotificationCTALabel"] = "https://cloud.fortyone.app/work", "View my work"
@@ -76,9 +76,9 @@ func TestAllEmailTemplatesRenderWithApprovedLayout(t *testing.T) {
 		},
 		"notifications/notification": {
 			"ActorName":                "",
-			"NotificationTitle":        "3 tasks need attention",
+			"NotificationTitle":        "Your story has a new start date",
 			"UserName":                 "Joseph Mukorivo",
-			"NotificationMessage":      `<h3>What's coming up</h3><p>You have 3 tasks that need attention.</p>`,
+			"NotificationMessage":      `<h3>Prepare the launch</h3><p>Sam Taylor changed the start date to September 8.</p>`,
 			"WorkspaceName":            "Art Circles",
 			"NotificationCTAURL":       "https://projects.fortyone.app/work",
 			"NotificationCTALabel":     "View my work",
@@ -175,15 +175,6 @@ func renderTemplateForTest(t *testing.T, templateName string, data map[string]an
 		t.Fatalf("render template %s: %v", templateName, err)
 	}
 
-	if outputDir := os.Getenv("FORTYONE_EMAIL_PREVIEW_DIR"); outputDir != "" {
-		if err := os.MkdirAll(outputDir, 0755); err != nil {
-			t.Fatal(err)
-		}
-		path := filepath.Join(outputDir, strings.ReplaceAll(templateName, "/", "-")+".html")
-		if err := os.WriteFile(path, buf.Bytes(), 0644); err != nil {
-			t.Fatal(err)
-		}
-	}
 	return buf.String()
 }
 

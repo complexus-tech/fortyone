@@ -115,9 +115,9 @@ func TestFormatOverdueStoriesEmailContentCapsRowsAndAccountsForRemainder(t *test
 
 	require.Equal(t, maxGuidanceEmailRows-1, strings.Count(rendered, "<a href="))
 	require.Contains(t, rendered, "15 tasks</strong> that need attention")
-	require.Contains(t, rendered, "This email includes 11 of them; 4 more are available in assigned work")
-	require.Contains(t, rendered, ">Task xxxxxxxxxxx</a>")
-	require.NotContains(t, rendered, ">Task xxxxxxxxxxxx</a>")
+	require.Contains(t, rendered, "This email includes 5 of them; 10 more are available in assigned work")
+	require.Contains(t, rendered, ">Task xxxxx</a>")
+	require.NotContains(t, rendered, ">Task xxxxxx</a>")
 }
 
 func TestFormatOverdueObjectivesEmailContentUsesCompactNotificationRows(t *testing.T) {
@@ -180,7 +180,7 @@ func TestFormatOverdueObjectivesEmailContentCapsSignalsAndAccountsForRemainder(t
 	require.Equal(t, maxGuidanceEmailRows-1, strings.Count(rendered, "<a href="))
 	require.Contains(t, rendered, "12 objectives</strong> that need attention")
 	require.Contains(t, rendered, "They represent 12 objective and key-result signals")
-	require.Contains(t, rendered, "This email includes 11 signals; 1 more is available in objectives")
-	require.Contains(t, rendered, ">Objective xxxxxxxxxxx</a>")
-	require.NotContains(t, rendered, ">Objective xxxxxxxxxxxx</a>")
+	require.Contains(t, rendered, "This email includes 5 signals; 7 more are available in objectives")
+	require.Contains(t, rendered, ">Objective xxxxx</a>")
+	require.NotContains(t, rendered, ">Objective xxxxxx</a>")
 }

@@ -7,8 +7,8 @@ import (
 )
 
 // renderMayaReplyHTML uses the same layout as file-backed transactional mail.
-func renderMayaReplyHTML(subject, content string) (string, error) {
-	return mailer.RenderMayaReply(subject, styleMayaReplyBlocks(content))
+func renderMayaReplyHTML(subject, content string, workspaceSlug ...string) (string, error) {
+	return mailer.RenderMayaReply(subject, styleMayaReplyBlocks(content), workspaceSlug...)
 }
 
 // styleMayaReplyBlocks adds only constant, product-owned inline styles to the

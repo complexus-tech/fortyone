@@ -82,7 +82,7 @@ func (h *handlers) getNotificationEmailData(ctx context.Context, query notificat
 		WorkspaceID: delivery.WorkspaceID, NotificationType: string(delivery.NotificationType),
 		EntityType: string(delivery.EntityType), EntityID: delivery.EntityID,
 		Title: delivery.Title, Message: delivery.Message, UserEmail: delivery.UserEmail,
-		UserName: delivery.UserName, ActorName: delivery.ActorName,
+		UserName: delivery.UserName, ActorName: delivery.ActorName, ActorAvatarURL: delivery.ActorAvatarURL, ActorID: delivery.ActorID,
 		WorkspaceName: delivery.WorkspaceName, WorkspaceSlug: delivery.WorkspaceSlug,
 		WorkspaceRole: delivery.WorkspaceRole, EmailEnabled: delivery.EmailEnabled,
 		FeedbackSlug: delivery.FeedbackSlug,
@@ -111,6 +111,8 @@ func (h *handlers) getNotificationEmailDigestData(ctx context.Context, recipient
 			Message:          row.Message,
 			CreatedAt:        row.CreatedAt,
 			ActorName:        row.ActorName,
+			ActorAvatarURL:   row.ActorAvatarURL,
+			ActorID:          row.ActorID,
 			FeedbackSlug:     row.FeedbackSlug,
 		}
 	}

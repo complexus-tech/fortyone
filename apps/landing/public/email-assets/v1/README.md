@@ -1,8 +1,8 @@
 # FortyOne email assets — v1
 
 - `wordmark.svg`: exact Wordmark path from `src/components/ui/logo.tsx`, filled espresso (#25150e).
-- `wordmark.png`: transparent 504 × 123 PNG rasterized from that SVG; emails display it at 126 × 31.
-- `invitation.png` and `invitation-accepted.png`: approved original illustrations, 1040 × 520 PNGs. Display size: 416 × 208 on desktop, fluid on phones. Original prompt provenance is in `design/email-preview/assets/illustration-prompts.md` at repository root.
+- `wordmark.png`: transparent 504 × 123 PNG rasterized from that SVG; emails display it at 104 × 26.
+- `invitation.png` and `invitation-accepted.png`: approved original illustrations, 1040 × 520 PNGs. Display size: 416 × 208 on desktop, fluid on phones.
 - `fonts/`: unmodified Inter v4.1 static WOFF2 weights 400, 500, 600, 700 and SIL Open Font License.
 
 Public URL prefix: https://fortyone.app/email-assets/v1/

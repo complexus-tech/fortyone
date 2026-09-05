@@ -17,7 +17,7 @@ A blank example means the deployment must choose a value when the enabled capabi
 | `APP_API_DEBUG_HOST` | API | `string` | `localhost:9000` | no | [API Config.Web.DebugHost](../cmd/api/config.go#L97) |  |
 | `APP_API_HOST` | API | `string` | `localhost:8000` | no | [API Config.Web.APIHost](../cmd/api/config.go#L87) | APP |
 | `APP_API_IDLE_TIMEOUT` | API | `time.Duration` | `60s` | no | [API Config.Web.IdleTimeout](../cmd/api/config.go#L93) |  |
-| `APP_API_PUBLIC_URL` | API | `string` | `http://localhost:8000` | no | [API Config.Web.PublicURL](../cmd/api/config.go#L88) |  |
+| `APP_API_PUBLIC_URL` | API, worker | `string` | API: `http://localhost:8000`<br>worker: `http://localhost:8000` | no | [API Config.Web.PublicURL](../cmd/api/config.go#L88)<br>[worker Config.APIPublicURL](../internal/bootstrap/worker/config.go#L117) |  |
 | `APP_API_READINESS_CHECK_TIMEOUT` | API | `time.Duration` | `2s` | no | [API Config.Web.ReadinessCheckTimeout](../cmd/api/config.go#L95) |  |
 | `APP_API_READ_HEADER_TIMEOUT` | API | `time.Duration` | `10s` | no | [API Config.Web.ReadHeaderTimeout](../cmd/api/config.go#L90) |  |
 | `APP_API_READ_TIMEOUT` | API | `time.Duration` | `5m` | no | [API Config.Web.ReadTimeout](../cmd/api/config.go#L91) |  |
@@ -117,38 +117,38 @@ A blank example means the deployment must choose a value when the enabled capabi
 
 | Variable | Process | Type | Default | Sensitive | Schema field | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| `OPENAI_API_KEY` | worker | `string` | — | yes | [worker Config.AIAPIKey](../internal/bootstrap/worker/config.go#L140) | OpenAI |
-| `OPENAI_ASSISTANT_USER_CALLS_PER_MINUTE` | worker | `int64` | `12` | no | [worker Config.MessagingAssistant.UserCallsPerMinute](../internal/bootstrap/worker/config.go#L144) |  |
-| `OPENAI_ASSISTANT_WORKSPACE_CALLS_PER_MINUTE` | worker | `int64` | `120` | no | [worker Config.MessagingAssistant.WorkspaceCallsPerMinute](../internal/bootstrap/worker/config.go#L145) |  |
-| `OPENAI_ASSISTANT_WORKSPACE_TOKENS_PER_DAY` | worker | `int64` | `1000000` | no | [worker Config.MessagingAssistant.WorkspaceTokensPerDay](../internal/bootstrap/worker/config.go#L146) |  |
-| `OPENAI_MODEL` | worker | `string` | `gpt-5.6-luna` | no | [worker Config.AIModel](../internal/bootstrap/worker/config.go#L141) | Optional overrides; the worker defaults to these values when omitted. |
+| `OPENAI_API_KEY` | worker | `string` | — | yes | [worker Config.AIAPIKey](../internal/bootstrap/worker/config.go#L141) | OpenAI |
+| `OPENAI_ASSISTANT_USER_CALLS_PER_MINUTE` | worker | `int64` | `12` | no | [worker Config.MessagingAssistant.UserCallsPerMinute](../internal/bootstrap/worker/config.go#L145) |  |
+| `OPENAI_ASSISTANT_WORKSPACE_CALLS_PER_MINUTE` | worker | `int64` | `120` | no | [worker Config.MessagingAssistant.WorkspaceCallsPerMinute](../internal/bootstrap/worker/config.go#L146) |  |
+| `OPENAI_ASSISTANT_WORKSPACE_TOKENS_PER_DAY` | worker | `int64` | `1000000` | no | [worker Config.MessagingAssistant.WorkspaceTokensPerDay](../internal/bootstrap/worker/config.go#L147) |  |
+| `OPENAI_MODEL` | worker | `string` | `gpt-5.6-luna` | no | [worker Config.AIModel](../internal/bootstrap/worker/config.go#L142) | Optional overrides; the worker defaults to these values when omitted. |
 
 ## Provider integrations
 
 | Variable | Process | Type | Default | Sensitive | Schema field | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| `APP_GITHUB_APP_ID` | API, worker | `int64` | API: —<br>worker: — | no | [API Config.GitHub.AppID](../cmd/api/config.go#L164)<br>[worker Config.GitHub.AppID](../internal/bootstrap/worker/config.go#L154) | GitHub Integration |
-| `FIGMA_CLIENT_ID` | API, worker | `string` | API: —<br>worker: — | no | [API Config.Figma.ClientID](../cmd/api/config.go#L180)<br>[worker Config.Figma.ClientID](../internal/bootstrap/worker/config.go#L161) | Figma OAuth integration |
-| `FIGMA_CLIENT_SECRET` | API, worker | `string` | API: —<br>worker: — | yes | [API Config.Figma.ClientSecret](../cmd/api/config.go#L181)<br>[worker Config.Figma.ClientSecret](../internal/bootstrap/worker/config.go#L162) |  |
-| `FIGMA_REDIRECT_URL` | API, worker | `string` | API: `https://api.fortyone.app/integrations/figma/callback`<br>worker: `https://api.fortyone.app/integrations/figma/callback` | no | [API Config.Figma.RedirectURL](../cmd/api/config.go#L182)<br>[worker Config.Figma.RedirectURL](../internal/bootstrap/worker/config.go#L163) |  |
-| `FIGMA_WEBHOOK_URL` | API, worker | `string` | API: `https://api.fortyone.app/webhooks/figma`<br>worker: `https://api.fortyone.app/webhooks/figma` | no | [API Config.Figma.WebhookURL](../cmd/api/config.go#L183)<br>[worker Config.Figma.WebhookURL](../internal/bootstrap/worker/config.go#L164) |  |
-| `GITHUB_APP_SLUG` | API, worker | `string` | API: —<br>worker: — | no | [API Config.GitHub.AppSlug](../cmd/api/config.go#L165)<br>[worker Config.GitHub.AppSlug](../internal/bootstrap/worker/config.go#L155) |  |
+| `APP_GITHUB_APP_ID` | API, worker | `int64` | API: —<br>worker: — | no | [API Config.GitHub.AppID](../cmd/api/config.go#L164)<br>[worker Config.GitHub.AppID](../internal/bootstrap/worker/config.go#L155) | GitHub Integration |
+| `FIGMA_CLIENT_ID` | API, worker | `string` | API: —<br>worker: — | no | [API Config.Figma.ClientID](../cmd/api/config.go#L180)<br>[worker Config.Figma.ClientID](../internal/bootstrap/worker/config.go#L162) | Figma OAuth integration |
+| `FIGMA_CLIENT_SECRET` | API, worker | `string` | API: —<br>worker: — | yes | [API Config.Figma.ClientSecret](../cmd/api/config.go#L181)<br>[worker Config.Figma.ClientSecret](../internal/bootstrap/worker/config.go#L163) |  |
+| `FIGMA_REDIRECT_URL` | API, worker | `string` | API: `https://api.fortyone.app/integrations/figma/callback`<br>worker: `https://api.fortyone.app/integrations/figma/callback` | no | [API Config.Figma.RedirectURL](../cmd/api/config.go#L182)<br>[worker Config.Figma.RedirectURL](../internal/bootstrap/worker/config.go#L164) |  |
+| `FIGMA_WEBHOOK_URL` | API, worker | `string` | API: `https://api.fortyone.app/webhooks/figma`<br>worker: `https://api.fortyone.app/webhooks/figma` | no | [API Config.Figma.WebhookURL](../cmd/api/config.go#L183)<br>[worker Config.Figma.WebhookURL](../internal/bootstrap/worker/config.go#L165) |  |
+| `GITHUB_APP_SLUG` | API, worker | `string` | API: —<br>worker: — | no | [API Config.GitHub.AppSlug](../cmd/api/config.go#L165)<br>[worker Config.GitHub.AppSlug](../internal/bootstrap/worker/config.go#L156) |  |
 | `GITHUB_CLIENT_ID` | API | `string` | — | no | [API Config.GitHub.ClientID](../cmd/api/config.go#L166) |  |
 | `GITHUB_CLIENT_SECRET` | API | `string` | — | yes | [API Config.GitHub.ClientSecret](../cmd/api/config.go#L167) |  |
-| `GITHUB_PRIVATE_KEY_BASE64` | API, worker | `string` | API: —<br>worker: — | yes | [API Config.GitHub.PrivateKeyBase64](../cmd/api/config.go#L168)<br>[worker Config.GitHub.PrivateKeyBase64](../internal/bootstrap/worker/config.go#L156) |  |
-| `GITHUB_REDIRECT_URL` | API, worker | `string` | API: —<br>worker: — | no | [API Config.GitHub.RedirectURL](../cmd/api/config.go#L169)<br>[worker Config.GitHub.RedirectURL](../internal/bootstrap/worker/config.go#L157) |  |
-| `GITHUB_WEBHOOK_SECRET` | API, worker | `string` | API: —<br>worker: — | yes | [API Config.GitHub.WebhookSecret](../cmd/api/config.go#L171)<br>[worker Config.GitHub.WebhookSecret](../internal/bootstrap/worker/config.go#L158) |  |
+| `GITHUB_PRIVATE_KEY_BASE64` | API, worker | `string` | API: —<br>worker: — | yes | [API Config.GitHub.PrivateKeyBase64](../cmd/api/config.go#L168)<br>[worker Config.GitHub.PrivateKeyBase64](../internal/bootstrap/worker/config.go#L157) |  |
+| `GITHUB_REDIRECT_URL` | API, worker | `string` | API: —<br>worker: — | no | [API Config.GitHub.RedirectURL](../cmd/api/config.go#L169)<br>[worker Config.GitHub.RedirectURL](../internal/bootstrap/worker/config.go#L158) |  |
+| `GITHUB_WEBHOOK_SECRET` | API, worker | `string` | API: —<br>worker: — | yes | [API Config.GitHub.WebhookSecret](../cmd/api/config.go#L171)<br>[worker Config.GitHub.WebhookSecret](../internal/bootstrap/worker/config.go#L159) |  |
 | `GITHUB_WEBHOOK_URL` | API | `string` | — | no | [API Config.GitHub.WebhookURL](../cmd/api/config.go#L170) |  |
-| `GOOGLE_CLIENT_ID` | API, worker | `string` | API: —<br>worker: — | no | [API Config.Google.ClientID](../cmd/api/config.go#L134)<br>[worker Config.GoogleClientID](../internal/bootstrap/worker/config.go#L142) | Google (legacy fallback, use APP_AUTH_GOOGLE_CLIENT_IDS instead) |
+| `GOOGLE_CLIENT_ID` | API, worker | `string` | API: —<br>worker: — | no | [API Config.Google.ClientID](../cmd/api/config.go#L134)<br>[worker Config.GoogleClientID](../internal/bootstrap/worker/config.go#L143) | Google (legacy fallback, use APP_AUTH_GOOGLE_CLIENT_IDS instead) |
 | `GOOGLE_DRIVE_APP_ID` | API | `string` | — | no | [API Config.GoogleDrive.AppID](../cmd/api/config.go#L190) |  |
 | `GOOGLE_DRIVE_CLIENT_ID` | API | `string` | — | no | [API Config.GoogleDrive.ClientID](../cmd/api/config.go#L186) | Google Drive personal integration (dedicated Cloud project; never share with sign-in or Calendar) |
 | `GOOGLE_DRIVE_CLIENT_SECRET` | API | `string` | — | yes | [API Config.GoogleDrive.ClientSecret](../cmd/api/config.go#L187) |  |
 | `GOOGLE_DRIVE_PICKER_API_KEY` | API | `string` | — | no | [API Config.GoogleDrive.PickerAPIKey](../cmd/api/config.go#L189) |  |
 | `GOOGLE_DRIVE_REDIRECT_URL` | API | `string` | `https://api.fortyone.app/integrations/google-drive/callback` | no | [API Config.GoogleDrive.RedirectURL](../cmd/api/config.go#L188) |  |
-| `SLACK_CLIENT_ID` | API, worker | `string` | API: —<br>worker: — | no | [API Config.Slack.ClientID](../cmd/api/config.go#L174)<br>[worker Config.Slack.ClientID](../internal/bootstrap/worker/config.go#L149) | Slack |
-| `SLACK_CLIENT_SECRET` | API, worker | `string` | API: —<br>worker: — | yes | [API Config.Slack.ClientSecret](../cmd/api/config.go#L175)<br>[worker Config.Slack.ClientSecret](../internal/bootstrap/worker/config.go#L150) |  |
+| `SLACK_CLIENT_ID` | API, worker | `string` | API: —<br>worker: — | no | [API Config.Slack.ClientID](../cmd/api/config.go#L174)<br>[worker Config.Slack.ClientID](../internal/bootstrap/worker/config.go#L150) | Slack |
+| `SLACK_CLIENT_SECRET` | API, worker | `string` | API: —<br>worker: — | yes | [API Config.Slack.ClientSecret](../cmd/api/config.go#L175)<br>[worker Config.Slack.ClientSecret](../internal/bootstrap/worker/config.go#L151) |  |
 | `SLACK_REDIRECT_URL` | API | `string` | `https://api.fortyone.app/integrations/slack/setup` | no | [API Config.Slack.RedirectURL](../cmd/api/config.go#L177) | Optional outside local development; the API defaults to this production URL. |
-| `SLACK_SIGNING_SECRET` | API, worker | `string` | API: —<br>worker: — | yes | [API Config.Slack.SigningSecret](../cmd/api/config.go#L176)<br>[worker Config.Slack.SigningSecret](../internal/bootstrap/worker/config.go#L151) |  |
+| `SLACK_SIGNING_SECRET` | API, worker | `string` | API: —<br>worker: — | yes | [API Config.Slack.SigningSecret](../cmd/api/config.go#L176)<br>[worker Config.Slack.SigningSecret](../internal/bootstrap/worker/config.go#L152) |  |
 | `STRIPE_SECRET_KEY` | API | `string` | — | yes | [API Config.Stripe.SecretKey](../cmd/api/config.go#L160) | Stripe |
 | `STRIPE_WEBHOOK_SECRET` | API | `string` | — | yes | [API Config.Stripe.WebhookSecret](../cmd/api/config.go#L161) |  |
 
@@ -156,20 +156,20 @@ A blank example means the deployment must choose a value when the enabled capabi
 
 | Variable | Process | Type | Default | Sensitive | Schema field | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| `APP_AWS_ACCESS_KEY_ID` | API, worker | `string` | API: —<br>worker: — | yes | [API Config.AWS.AccessKeyID](../cmd/api/config.go#L151)<br>[worker Config.AWS.AccessKeyID](../internal/bootstrap/worker/config.go#L132) | AWS S3 Storage Optional paired static credential for approved local S3-compatible development. Leave unset in production so ECS task-role credentials are used. |
-| `APP_AWS_BUCKET` | API, worker | `string` | API: `fortyone`<br>worker: `fortyone` | no | [API Config.AWS.Bucket](../cmd/api/config.go#L157)<br>[worker Config.AWS.Bucket](../internal/bootstrap/worker/config.go#L138) |  |
-| `APP_AWS_ENDPOINT` | API, worker | `string` | API: —<br>worker: — | no | [API Config.AWS.Endpoint](../cmd/api/config.go#L154)<br>[worker Config.AWS.Endpoint](../internal/bootstrap/worker/config.go#L135) |  |
-| `APP_AWS_FORCE_PATH_STYLE` | API, worker | `bool` | API: `false`<br>worker: `false` | no | [API Config.AWS.ForcePathStyle](../cmd/api/config.go#L156)<br>[worker Config.AWS.ForcePathStyle](../internal/bootstrap/worker/config.go#L137) |  |
-| `APP_AWS_PUBLIC_URL` | API, worker | `string` | API: —<br>worker: — | no | [API Config.AWS.PublicURL](../cmd/api/config.go#L155)<br>[worker Config.AWS.PublicURL](../internal/bootstrap/worker/config.go#L136) |  |
-| `APP_AWS_REGION` | API, worker | `string` | API: `us-east-1`<br>worker: `us-east-1` | no | [API Config.AWS.Region](../cmd/api/config.go#L153)<br>[worker Config.AWS.Region](../internal/bootstrap/worker/config.go#L134) |  |
-| `APP_AWS_SECRET_ACCESS_KEY` | API, worker | `string` | API: —<br>worker: — | yes | [API Config.AWS.SecretAccessKey](../cmd/api/config.go#L152)<br>[worker Config.AWS.SecretAccessKey](../internal/bootstrap/worker/config.go#L133) | Optional paired local credential; must be set together with APP_AWS_ACCESS_KEY_ID and is rejected in production. |
-| `APP_AZURE_STORAGE_ACCOUNT_KEY` | API, worker | `string` | API: —<br>worker: — | yes | [API Config.Azure.StorageAccountKey](../cmd/api/config.go#L148)<br>[worker Config.Azure.StorageAccountKey](../internal/bootstrap/worker/config.go#L129) | Azure Storage |
-| `APP_AZURE_STORAGE_ACCOUNT_NAME` | API, worker | `string` | API: —<br>worker: — | no | [API Config.Azure.StorageAccountName](../cmd/api/config.go#L147)<br>[worker Config.Azure.StorageAccountName](../internal/bootstrap/worker/config.go#L128) |  |
-| `APP_AZURE_STORAGE_CONNECTION_STRING` | API, worker | `string` | API: —<br>worker: — | yes | [API Config.Azure.StorageConnectionString](../cmd/api/config.go#L146)<br>[worker Config.Azure.StorageConnectionString](../internal/bootstrap/worker/config.go#L127) |  |
-| `APP_STORAGE_PROVIDER` | API, worker | `string` | API: `aws`<br>worker: `aws` | no | [API Config.Storage.Provider](../cmd/api/config.go#L140)<br>[worker Config.Storage.Provider](../internal/bootstrap/worker/config.go#L121) | Storage Provider |
-| `STORAGE_ATTACHMENTS_NAME` | API, worker | `string` | API: `attachments`<br>worker: `attachments` | no | [API Config.Storage.AttachmentsBucket](../cmd/api/config.go#L143)<br>[worker Config.Storage.AttachmentsBucket](../internal/bootstrap/worker/config.go#L124) |  |
-| `STORAGE_PROFILE_IMAGES_NAME` | API, worker | `string` | API: `profiles`<br>worker: `profiles` | no | [API Config.Storage.ProfilesBucket](../cmd/api/config.go#L141)<br>[worker Config.Storage.ProfilesBucket](../internal/bootstrap/worker/config.go#L122) |  |
-| `STORAGE_WORKSPACE_LOGOS_NAME` | API, worker | `string` | API: `logos`<br>worker: `logos` | no | [API Config.Storage.LogosBucket](../cmd/api/config.go#L142)<br>[worker Config.Storage.LogosBucket](../internal/bootstrap/worker/config.go#L123) |  |
+| `APP_AWS_ACCESS_KEY_ID` | API, worker | `string` | API: —<br>worker: — | yes | [API Config.AWS.AccessKeyID](../cmd/api/config.go#L151)<br>[worker Config.AWS.AccessKeyID](../internal/bootstrap/worker/config.go#L133) | AWS S3 Storage Optional paired static credential for approved local S3-compatible development. Leave unset in production so ECS task-role credentials are used. |
+| `APP_AWS_BUCKET` | API, worker | `string` | API: `fortyone`<br>worker: `fortyone` | no | [API Config.AWS.Bucket](../cmd/api/config.go#L157)<br>[worker Config.AWS.Bucket](../internal/bootstrap/worker/config.go#L139) |  |
+| `APP_AWS_ENDPOINT` | API, worker | `string` | API: —<br>worker: — | no | [API Config.AWS.Endpoint](../cmd/api/config.go#L154)<br>[worker Config.AWS.Endpoint](../internal/bootstrap/worker/config.go#L136) |  |
+| `APP_AWS_FORCE_PATH_STYLE` | API, worker | `bool` | API: `false`<br>worker: `false` | no | [API Config.AWS.ForcePathStyle](../cmd/api/config.go#L156)<br>[worker Config.AWS.ForcePathStyle](../internal/bootstrap/worker/config.go#L138) |  |
+| `APP_AWS_PUBLIC_URL` | API, worker | `string` | API: —<br>worker: — | no | [API Config.AWS.PublicURL](../cmd/api/config.go#L155)<br>[worker Config.AWS.PublicURL](../internal/bootstrap/worker/config.go#L137) |  |
+| `APP_AWS_REGION` | API, worker | `string` | API: `us-east-1`<br>worker: `us-east-1` | no | [API Config.AWS.Region](../cmd/api/config.go#L153)<br>[worker Config.AWS.Region](../internal/bootstrap/worker/config.go#L135) |  |
+| `APP_AWS_SECRET_ACCESS_KEY` | API, worker | `string` | API: —<br>worker: — | yes | [API Config.AWS.SecretAccessKey](../cmd/api/config.go#L152)<br>[worker Config.AWS.SecretAccessKey](../internal/bootstrap/worker/config.go#L134) | Optional paired local credential; must be set together with APP_AWS_ACCESS_KEY_ID and is rejected in production. |
+| `APP_AZURE_STORAGE_ACCOUNT_KEY` | API, worker | `string` | API: —<br>worker: — | yes | [API Config.Azure.StorageAccountKey](../cmd/api/config.go#L148)<br>[worker Config.Azure.StorageAccountKey](../internal/bootstrap/worker/config.go#L130) | Azure Storage |
+| `APP_AZURE_STORAGE_ACCOUNT_NAME` | API, worker | `string` | API: —<br>worker: — | no | [API Config.Azure.StorageAccountName](../cmd/api/config.go#L147)<br>[worker Config.Azure.StorageAccountName](../internal/bootstrap/worker/config.go#L129) |  |
+| `APP_AZURE_STORAGE_CONNECTION_STRING` | API, worker | `string` | API: —<br>worker: — | yes | [API Config.Azure.StorageConnectionString](../cmd/api/config.go#L146)<br>[worker Config.Azure.StorageConnectionString](../internal/bootstrap/worker/config.go#L128) |  |
+| `APP_STORAGE_PROVIDER` | API, worker | `string` | API: `aws`<br>worker: `aws` | no | [API Config.Storage.Provider](../cmd/api/config.go#L140)<br>[worker Config.Storage.Provider](../internal/bootstrap/worker/config.go#L122) | Storage Provider |
+| `STORAGE_ATTACHMENTS_NAME` | API, worker | `string` | API: `attachments`<br>worker: `attachments` | no | [API Config.Storage.AttachmentsBucket](../cmd/api/config.go#L143)<br>[worker Config.Storage.AttachmentsBucket](../internal/bootstrap/worker/config.go#L125) |  |
+| `STORAGE_PROFILE_IMAGES_NAME` | API, worker | `string` | API: `profiles`<br>worker: `profiles` | no | [API Config.Storage.ProfilesBucket](../cmd/api/config.go#L141)<br>[worker Config.Storage.ProfilesBucket](../internal/bootstrap/worker/config.go#L123) |  |
+| `STORAGE_WORKSPACE_LOGOS_NAME` | API, worker | `string` | API: `logos`<br>worker: `logos` | no | [API Config.Storage.LogosBucket](../cmd/api/config.go#L142)<br>[worker Config.Storage.LogosBucket](../internal/bootstrap/worker/config.go#L124) |  |
 
 ## Observability
 
@@ -187,4 +187,4 @@ A blank example means the deployment must choose a value when the enabled capabi
 | `APP_MESSAGING_MUTATION_HMAC_KEY` | API, worker | `string` | API: development placeholder<br>worker: development placeholder | yes | [API Config.Messaging.MutationHMACKey](../cmd/api/config.go#L64)<br>[worker Config.Messaging.MutationHMACKey](../internal/bootstrap/worker/config.go#L110) | Shared only by API and worker replicas that issue or confirm assistant story mutations. Use independent random key material in production. |
 | `APP_OAUTH_ACCESS_TOKEN_SIGNING_KEY` | API | `string` | development placeholder | yes | [API Config.DeveloperOAuth.AccessTokenSigningKey](../cmd/api/config.go#L81) | Dedicated OAuth keys for delegated MCP clients. The access-token signing key and authorization/refresh-token digest keyring must be independent from each other and from every credential key above. Replace all development values in production and retain old digest keys only for their bounded token lifetime. |
 | `APP_OAUTH_DYNAMIC_CLIENT_TTL` | API | `time.Duration` | `720h` | no | [API Config.DeveloperOAuth.DynamicClientTTL](../cmd/api/config.go#L84) | Dynamic public clients are intentionally time-bounded (1h minimum, 90d max). |
-| `APP_WEBSITE_URL` | API, worker | `string` | API: `http://localhost:3000`<br>worker: `http://localhost:3000` | no | [API Config.Website.URL](../cmd/api/config.go#L137)<br>[worker Config.Website.URL](../internal/bootstrap/worker/config.go#L118) |  |
+| `APP_WEBSITE_URL` | API, worker | `string` | API: `http://localhost:3000`<br>worker: `http://localhost:3000` | no | [API Config.Website.URL](../cmd/api/config.go#L137)<br>[worker Config.Website.URL](../internal/bootstrap/worker/config.go#L119) |  |

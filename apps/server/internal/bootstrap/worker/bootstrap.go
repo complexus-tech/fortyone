@@ -403,7 +403,8 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 	}
 	taskMux := buildTaskMux(taskMuxDependencies{
 		Log: log, DatabasePool: connections.Pool,
-		Brevo: brevoService, Mailer: mailerService,
+		APIPublicURL: cfg.APIPublicURL,
+		Brevo:        brevoService, Mailer: mailerService,
 		GitHub: githubService, Figma: figmaRuntime.service, Maya: mayaService,
 		MayaRepository: mayaRepository,
 		Attachments:    attachmentsService, EmailCopy: emailCopyGenerator,

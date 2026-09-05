@@ -10,8 +10,9 @@ import (
 // leak into services or transports.
 type Repository struct {
 	queries notificationssql.Querier
+	pool    *pgxpool.Pool
 }
 
 func New(pool *pgxpool.Pool) *Repository {
-	return &Repository{queries: notificationssql.New(pool)}
+	return &Repository{queries: notificationssql.New(pool), pool: pool}
 }

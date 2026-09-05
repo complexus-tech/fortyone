@@ -17,6 +17,14 @@ type scheduledTask struct {
 	taskType string
 }
 
+func TestGuidanceHasNoSeparateEmailSchedules(t *testing.T) {
+	scheduler := &scheduleCapture{}
+	require.NoError(t, registerSchedules(scheduler))
+	for _, entry := range scheduler.entries {
+		require.NotContains(t, []string{tasks.TypeMorningBriefing, tasks.TypeWeeklyDigestEmail, tasks.TypeOverdueStoriesEmail, tasks.TypeObjectiveOverdueEmail}, entry.taskType)
+	}
+}
+
 func TestRegisterSchedulesDispatchesInvitationOutboxEveryMinute(t *testing.T) {
 	t.Parallel()
 	scheduler := &scheduleCapture{}

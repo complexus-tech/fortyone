@@ -6,6 +6,8 @@ package usersql
 
 import (
 	"context"
+
+	"github.com/google/uuid"
 )
 
 type Querier interface {
@@ -20,10 +22,12 @@ type Querier interface {
 	DeactivateInactiveUsers(ctx context.Context, arg DeactivateInactiveUsersParams) (int64, error)
 	DeactivateUser(ctx context.Context, arg DeactivateUserParams) (int64, error)
 	DeleteUserMemoryForOwner(ctx context.Context, arg DeleteUserMemoryForOwnerParams) (int64, error)
+	EnsureEmailAvatarHandle(ctx context.Context, arg EnsureEmailAvatarHandleParams) (uuid.UUID, error)
 	GetActiveBrowserSessionVersion(ctx context.Context, arg GetActiveBrowserSessionVersionParams) (int64, error)
 	GetActiveUserByEmail(ctx context.Context, arg GetActiveUserByEmailParams) (GetActiveUserByEmailRow, error)
 	GetActiveUserByID(ctx context.Context, arg GetActiveUserByIDParams) (GetActiveUserByIDRow, error)
 	GetEligibleUserInactivityWarningCandidate(ctx context.Context, arg GetEligibleUserInactivityWarningCandidateParams) (GetEligibleUserInactivityWarningCandidateRow, error)
+	GetEmailAvatar(ctx context.Context, arg GetEmailAvatarParams) (*string, error)
 	GetOrCreateAutomationPreferencesForMember(ctx context.Context, arg GetOrCreateAutomationPreferencesForMemberParams) (GetOrCreateAutomationPreferencesForMemberRow, error)
 	GetOrCreateOnboardingTourProgressForUser(ctx context.Context, arg GetOrCreateOnboardingTourProgressForUserParams) (UserOnboardingTourProgressGlobal, error)
 	GetUserByEmailAnyStatus(ctx context.Context, arg GetUserByEmailAnyStatusParams) (GetUserByEmailAnyStatusRow, error)

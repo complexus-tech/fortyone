@@ -26,6 +26,8 @@ WITH eligible_notification AS (
         recipient.email AS user_email,
         COALESCE(NULLIF(recipient.full_name, ''), recipient.username) AS user_name,
         COALESCE(NULLIF(actor.full_name, ''), actor.username) AS actor_name,
+        COALESCE(actor.avatar_url, '') AS actor_avatar_url,
+        actor.user_id AS actor_id,
         workspace.name AS workspace_name,
         workspace.slug AS workspace_slug,
         CAST(COALESCE(CAST(membership.role AS text), CAST('' AS text)) AS text) AS workspace_role,
@@ -188,6 +190,8 @@ SELECT
     eligible.user_email,
     eligible.user_name,
     eligible.actor_name,
+    eligible.actor_avatar_url,
+    eligible.actor_id,
     eligible.workspace_name,
     eligible.workspace_slug,
     eligible.workspace_role,
@@ -214,6 +218,8 @@ type GetNotificationEmailDeliveryRow struct {
 	UserEmail      string
 	UserName       string
 	ActorName      string
+	ActorAvatarURL string
+	ActorID        uuid.UUID
 	WorkspaceName  string
 	WorkspaceSlug  string
 	WorkspaceRole  string
@@ -239,6 +245,8 @@ func (q *Queries) GetNotificationEmailDelivery(ctx context.Context, arg GetNotif
 		&i.UserEmail,
 		&i.UserName,
 		&i.ActorName,
+		&i.ActorAvatarURL,
+		&i.ActorID,
 		&i.WorkspaceName,
 		&i.WorkspaceSlug,
 		&i.WorkspaceRole,
@@ -307,6 +315,8 @@ SELECT
     recipient.email AS user_email,
     COALESCE(NULLIF(recipient.full_name, ''), recipient.username) AS user_name,
     COALESCE(NULLIF(actor.full_name, ''), actor.username) AS actor_name,
+        COALESCE(actor.avatar_url, '') AS actor_avatar_url,
+        actor.user_id AS actor_id,
     workspace.name AS workspace_name,
     workspace.slug AS workspace_slug,
     CAST(COALESCE(CAST(membership.role AS text), CAST('' AS text)) AS text) AS workspace_role,
@@ -476,6 +486,8 @@ type ListNotificationEmailDigestDeliveriesRow struct {
 	UserEmail      string
 	UserName       string
 	ActorName      string
+	ActorAvatarURL string
+	ActorID        uuid.UUID
 	WorkspaceName  string
 	WorkspaceSlug  string
 	WorkspaceRole  string
@@ -506,6 +518,8 @@ func (q *Queries) ListNotificationEmailDigestDeliveries(ctx context.Context, arg
 			&i.UserEmail,
 			&i.UserName,
 			&i.ActorName,
+			&i.ActorAvatarURL,
+			&i.ActorID,
 			&i.WorkspaceName,
 			&i.WorkspaceSlug,
 			&i.WorkspaceRole,

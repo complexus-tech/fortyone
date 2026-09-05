@@ -14,6 +14,7 @@ import (
 const (
 	TypeNotificationEmail       = "notification:email:send"
 	TypeNotificationEmailDigest = "notification:email:digest"
+	TypeMorningBriefing         = "email:briefing:morning"
 	TypeWeeklyDigestEmail       = "email:digest:weekly"
 	TypeFeedbackDigestEmail     = "feedback:email:digest"
 	TypeOverdueStoriesEmail     = "overdue:stories:email"
@@ -54,7 +55,7 @@ func (s *Service) EnqueueNotificationEmail(payload NotificationEmailPayload, opt
 
 	defaultOpts := []asynq.Option{
 		asynq.Queue("notifications"),
-		asynq.MaxRetry(2),
+		asynq.MaxRetry(5),
 		asynq.ProcessIn(time.Hour), // 1-hour delay
 	}
 
@@ -93,7 +94,7 @@ func (s *Service) EnqueueNotificationEmailDigest(payload NotificationEmailDigest
 
 	defaultOpts := []asynq.Option{
 		asynq.Queue("notifications"),
-		asynq.MaxRetry(2),
+		asynq.MaxRetry(5),
 		asynq.ProcessIn(notificationEmailDigestDelay),
 		asynq.Unique(notificationEmailDigestUniqueTTL),
 	}

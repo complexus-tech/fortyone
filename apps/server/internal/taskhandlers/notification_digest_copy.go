@@ -42,6 +42,8 @@ func buildNotificationDigestCopyInput(data NotificationEmailDigestData, workspac
 	actionURLs := make(map[string]string, len(data.Items)+1)
 	factActions := make(map[string]string, len(data.Items))
 	factLabels := make(map[string]string, len(data.Items))
+	factActors := make(map[string]mailer.EmailActor, len(data.Items))
+	factIcons := make(map[string]string, len(data.Items))
 	hasStrategySnapshot := false
 	detailCount := 0
 	omittedNotificationCount := 0
@@ -115,7 +117,9 @@ func buildNotificationDigestCopyInput(data NotificationEmailDigestData, workspac
 		actionURLs[actionReferenceID] = destination
 		factActions[factReferenceID] = actionReferenceID
 		factLabels[factReferenceID] = notificationPlainText(item.Title, 180)
-		fallbackRows = append(fallbackRows, notificationDigestCopyRow{Text: factText, Label: factLabels[factReferenceID], URL: destination})
+		factIcons[factReferenceID] = notificationIcon(message, item.NotificationType)
+		factActors[factReferenceID] = mailer.EmailActor{ID: item.ActorID, Name: item.ActorName, AvatarURL: item.ActorAvatarURL}
+		fallbackRows = append(fallbackRows, notificationDigestCopyRow{Text: factText, Label: factLabels[factReferenceID], URL: destination, Actor: factActors[factReferenceID], Icon: factIcons[factReferenceID]})
 		detailCount++
 	}
 	if omittedNotificationCount > 0 {
@@ -196,6 +200,8 @@ func buildNotificationDigestCopyInput(data NotificationEmailDigestData, workspac
 		Actions:             actionURLs,
 		FactActions:         factActions,
 		FactLabels:          factLabels,
+		FactActors:          factActors,
+		FactIcons:           factIcons,
 		Fallback:            fallback,
 		HasStrategySnapshot: hasStrategySnapshot,
 		NotificationsURL:    notificationsURL,
@@ -399,12 +405,14 @@ func buildWeeklyStrategyDigestFacts(item NotificationEmailDigestItem, weekly str
 		fmt.Sprintf("%d incomplete key results without a recent update", weekly.Counts.StaleKeyResults),
 		fmt.Sprintf("within %d days", weekly.StaleAfterDays),
 	)
+	selectedObjectives, selectedKeyResults := selectWeeklyStrategyDetails(weekly.Objectives, weekly.KeyResults, rowLimit-1)
+	omitted := len(weekly.Objectives) + len(weekly.KeyResults) - len(selectedObjectives) - len(selectedKeyResults)
 	if weekly.OmittedDetails != nil {
-		omitted := weekly.OmittedDetails.Objectives + weekly.OmittedDetails.KeyResults
-		if omitted > 0 {
-			summaryText += fmt.Sprintf(" The saved detail shows a prioritized selection; %d additional %s available in Strategy.", omitted, pluralWord(omitted, "detail is", "details are"))
-			protectedSummaryTokens = append(protectedSummaryTokens, fmt.Sprintf("%d additional %s available in Strategy", omitted, pluralWord(omitted, "detail is", "details are")))
-		}
+		omitted += weekly.OmittedDetails.Objectives + weekly.OmittedDetails.KeyResults
+	}
+	if omitted > 0 {
+		summaryText += fmt.Sprintf(" View %d more details in Strategy.", omitted)
+		protectedSummaryTokens = append(protectedSummaryTokens, fmt.Sprintf("%d more details in Strategy", omitted))
 	}
 	facts = append(facts, emailcopy.Fact{
 		ReferenceID:     summaryReferenceID,
@@ -414,8 +422,6 @@ func buildWeeklyStrategyDigestFacts(item NotificationEmailDigestItem, weekly str
 	})
 	factActions[summaryReferenceID] = digestActionStrategy
 	fallbackRows = append(fallbackRows, notificationDigestCopyRow{Text: summaryText, URL: workspaceURL + "/strategy"})
-
-	selectedObjectives, selectedKeyResults := selectWeeklyStrategyDetails(weekly.Objectives, weekly.KeyResults, rowLimit-1)
 
 	for index, objective := range selectedObjectives {
 		factReferenceID := fmt.Sprintf("strategy_objective_%d_%s", index+1, objective.ID.String())
@@ -583,6 +589,9 @@ func strategyKeyResultNotificationURL(workspaceURL string, notificationID, keyRe
 }
 
 func buildGeneratedNotificationDigestCopy(input notificationDigestCopyInput, output emailcopy.Output) (notificationDigestCopy, error) {
+	if len(output.Rows) > maxNotificationDigestRows {
+		return notificationDigestCopy{}, errors.New("notification digest exceeds its row limit")
+	}
 	knownFacts := make(map[string]struct{}, len(input.Request.Facts))
 	for _, fact := range input.Request.Facts {
 		knownFacts[fact.ReferenceID] = struct{}{}
@@ -602,6 +611,8 @@ func buildGeneratedNotificationDigestCopy(input notificationDigestCopyInput, out
 		}
 		rows = append(rows, notificationDigestCopyRow{
 			Text:  notificationPlainText(row.Text, 360),
+			Actor: input.FactActors[row.ReferenceID],
+			Icon:  input.FactIcons[row.ReferenceID],
 			Label: input.FactLabels[row.ReferenceID],
 			URL:   destination,
 		})

@@ -235,6 +235,9 @@ func formatEmailLink(url string, label string) string {
 }
 
 func renderGeneratedEmailContent(output emailcopy.Output, destinations map[string]emailCopyDestination) (string, error) {
+	if len(output.Rows) > maxGuidanceEmailRows {
+		return "", fmt.Errorf("generated digest exceeds its row limit")
+	}
 	textStyle := mailer.EmailStyleString("notificationText")
 	listStyle := mailer.EmailStyleString("notificationList")
 	messageStyle := mailer.EmailStyleString("notificationMessage")

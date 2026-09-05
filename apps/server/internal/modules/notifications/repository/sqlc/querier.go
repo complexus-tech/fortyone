@@ -11,6 +11,8 @@ import (
 )
 
 type Querier interface {
+	ClaimRoutineEmail(ctx context.Context, arg ClaimRoutineEmailParams) (uuid.UUID, error)
+	CompleteRoutineEmail(ctx context.Context, arg CompleteRoutineEmailParams) (int64, error)
 	CountUnreadPortalFeedbackNotifications(ctx context.Context, arg CountUnreadPortalFeedbackNotificationsParams) (int64, error)
 	CountUnreadWorkspaceNotifications(ctx context.Context, arg CountUnreadWorkspaceNotificationsParams) (int64, error)
 	// CreateNotification persists a notification only while its recipient can
@@ -18,6 +20,7 @@ type Querier interface {
 	// durable email-delivery intent; dedupe replays return the original row without
 	// changing read/email timestamps or publishing a second realtime mutation.
 	CreateNotification(ctx context.Context, arg CreateNotificationParams) (CreateNotificationRow, error)
+	FailRoutineEmail(ctx context.Context, arg FailRoutineEmailParams) (int64, error)
 	// GetNotificationEmailDelivery returns one pending email only when the task
 	// payload's recipient/workspace scope still owns the notification and retains
 	// current resource or public-portal access.
@@ -25,10 +28,13 @@ type Querier interface {
 	// GetNotificationPreferences creates the typed default document on first read,
 	// but only for an active workspace member in a live workspace.
 	GetNotificationPreferences(ctx context.Context, arg GetNotificationPreferencesParams) (GetNotificationPreferencesRow, error)
+	GetRoutineEmailRecipient(ctx context.Context, arg GetRoutineEmailRecipientParams) (GetRoutineEmailRecipientRow, error)
 	// GetWeeklyDigestStats revalidates delivery eligibility and computes every
 	// signal against one caller-supplied UTC as-of time. Current entity access is
 	// applied before an unread notification can contribute to the aggregate.
 	GetWeeklyDigestStats(ctx context.Context, arg GetWeeklyDigestStatsParams) (GetWeeklyDigestStatsRow, error)
+	HasActiveRoutineEmailClaim(ctx context.Context, arg HasActiveRoutineEmailClaimParams) (bool, error)
+	HasRoutineEmailGuidance(ctx context.Context, arg HasRoutineEmailGuidanceParams) (bool, error)
 	// ListKeyResultNotificationAudience owns the key-result/objective lookup and
 	// recipient selection used by the event consumer. Both the event actor and
 	// every recipient must still have live access to the exact workspace team.
@@ -41,6 +47,7 @@ type Querier interface {
 	// workspace membership. Access instead requires an active account contributor
 	// that has not been blocked from the exact public portal.
 	ListPortalFeedbackNotifications(ctx context.Context, arg ListPortalFeedbackNotificationsParams) ([]ListPortalFeedbackNotificationsRow, error)
+	ListRoutineEmailRecipients(ctx context.Context, arg ListRoutineEmailRecipientsParams) ([]ListRoutineEmailRecipientsRow, error)
 	// ListWeeklyDigestRecipients pages active admin/member recipients using the
 	// same composite key for filtering and ordering. Weekly digest email defaults
 	// to enabled when no explicit boolean preference exists.
@@ -50,6 +57,7 @@ type Querier interface {
 	// membership, and current team/resource access so stale notifications cannot
 	// preserve access after revocation.
 	ListWorkspaceNotifications(ctx context.Context, arg ListWorkspaceNotificationsParams) ([]ListWorkspaceNotificationsRow, error)
+	LockRoutineEmailRecipient(ctx context.Context, arg LockRoutineEmailRecipientParams) error
 	MarkAllPortalFeedbackNotificationsRead(ctx context.Context, arg MarkAllPortalFeedbackNotificationsReadParams) (int64, error)
 	MarkNotificationEmailsSent(ctx context.Context, arg MarkNotificationEmailsSentParams) (int64, error)
 	MarkPortalFeedbackNotificationRead(ctx context.Context, arg MarkPortalFeedbackNotificationReadParams) (uuid.UUID, error)
@@ -62,6 +70,7 @@ type Querier interface {
 	MutateWorkspaceNotifications(ctx context.Context, arg MutateWorkspaceNotificationsParams) (int32, error)
 	NotificationDedupeKeyExists(ctx context.Context, arg NotificationDedupeKeyExistsParams) (bool, error)
 	PortalNotificationActorAuthorized(ctx context.Context, arg PortalNotificationActorAuthorizedParams) (bool, error)
+	RecordRoutineEmailGuidance(ctx context.Context, arg RecordRoutineEmailGuidanceParams) error
 	// UpdateNotificationPreference applies one presence-aware channel patch inside
 	// PostgreSQL. Concurrent updates to different preference types or channels do
 	// not overwrite the rest of the JSON document.

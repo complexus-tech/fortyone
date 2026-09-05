@@ -55,6 +55,9 @@ func Routes(cfg Config, app *web.App) {
 	gzip := mid.Gzip(cfg.Log)
 	workspace := mid.Workspace(cfg.Log, cfg.WorkspaceResolver)
 
+	avatar := emailAvatarHandler{users: usersService, images: attachmentsService}
+	app.Get("/media/email-avatars/{handle}/avatar", avatar.redirect)
+
 	// Public endpoints
 	app.Get("/auth/me", h.Me, auth)
 	app.Get("/auth/google", h.StartGoogleAuth)

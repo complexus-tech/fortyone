@@ -7,7 +7,7 @@
 <style>
 html{min-height:100%;background-color:#fff6ef;}body{margin:0!important;padding:0!important;width:100%!important;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;}
 table,td{mso-table-lspace:0pt;mso-table-rspace:0pt;}img{-ms-interpolation-mode:bicubic;}a[x-apple-data-detectors]{color:inherit!important;text-decoration:none!important;}
-@media screen and (max-width:560px){.outer{padding:26px 16px!important;}.email-inner{padding:24px 24px 14px!important;}.actions{padding:16px 24px 28px!important;}.brand{padding-bottom:24px!important;}.email-card{width:100%!important;}.email-footer{padding:24px 8px 0!important;}.heading{font-size:21px!important;line-height:27px!important;}.hero{margin-bottom:22px!important;}}
+@media screen and (max-width:560px){.outer{padding:26px 16px!important;}.email-inner{padding:24px 24px 14px!important;}.actions{padding:16px 24px 28px!important;}.brand{padding:24px 24px 0!important;}.email-card{width:100%!important;}.email-footer{padding:24px 8px 0!important;}.heading{font-size:20px!important;line-height:26px!important;}.hero{margin-bottom:22px!important;}}
 @media screen and (max-width:420px){.detail-label,.detail-value{display:block!important;min-width:0!important;width:100%!important;}.detail-label{padding-bottom:4px!important;}.detail-value{overflow-wrap:anywhere!important;}}
 </style></head>
 <body bgcolor="#fff6ef" style="{{emailStyle "body"}}">
@@ -15,16 +15,16 @@ table,td{mso-table-lspace:0pt;mso-table-rspace:0pt;}img{-ms-interpolation-mode:b
 <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" bgcolor="#fff6ef" style="background-color:#fff6ef;"><tr><td class="outer" align="center" style="padding:32px 24px;font-family:Inter,Arial,Helvetica,sans-serif;">
 {{msoOnly}}<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="{{.EmailWidth}}"><tr><td>{{msoEnd}}
 <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" class="email-shell" style="width:100%;max-width:{{.EmailWidth}}px;">
-<tr><td class="brand" align="center" style="padding:0 0 26px;"><img src="{{.LogoURL}}" width="126" height="31" alt="fortyone" style="{{emailStyle "logo"}}"></td></tr>
 <tr><td><table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" class="email-card" bgcolor="#ffffff" style="width:100%;background-color:#ffffff;border-radius:16px;border-collapse:separate;">
-<tr><td class="email-inner" style="padding:28px 32px 14px;">
+<tr><td class="brand" align="left" style="padding:28px 32px 0;"><img src="{{.LogoURL}}" width="104" height="26" alt="fortyone" style="{{emailStyle "logo"}}"></td></tr>
+<tr><td class="email-inner" style="padding:24px 32px 14px;">
 {{if .EmailHeroURL}}<img class="hero" src="{{.EmailHeroURL}}" width="416" alt="{{.EmailHeroAlt}}" style="display:block;border:0;border-radius:8px;width:100%;max-width:416px;height:auto;margin:0 0 24px;">{{end}}
 {{template "content" .}}
 </td></tr>
 {{if .EmailHasActions}}<tr><td height="24" style="padding:0;"><table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" ><tr><td width="12" style="width:12px;"><table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" ><tr><td height="24" bgcolor="#fff6ef" style="height:24px;border-radius:0 12px 12px 0;font-size:0;line-height:0;">&nbsp;</td></tr></table></td><td valign="middle" style="padding:0;"><table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" ><tr><td style="height:1px;border-top:1px dashed #eea27e;font-size:0;line-height:0;">&nbsp;</td></tr></table></td><td width="12" style="width:12px;"><table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" ><tr><td height="24" bgcolor="#fff6ef" style="height:24px;border-radius:12px 0 0 12px;font-size:0;line-height:0;">&nbsp;</td></tr></table></td></tr></table></td></tr>
 <tr><td class="actions" style="padding:16px 32px 26px;">{{block "actions" .}}{{template "button" .}}{{end}}</td></tr>{{end}}
 </table></td></tr>
-<tr><td class="email-footer" align="center" style="padding:26px 20px 0;color:#72645d;font-size:13px;line-height:21px;">{{block "footer" .}}{{end}}<p style="{{emailStyle "footerTextLast"}}">{{.CompanyName}} by Complexus LLC</p></td></tr>
+<tr><td class="email-footer" align="left" style="padding:26px 20px 0;color:#72645d;font-size:13px;line-height:20px;">{{block "footer" .}}{{end}}<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"><tr>{{if .NotificationsSettingsURL}}<td align="left" valign="top" style="font-size:12px;line-height:18px;padding-right:12px;"><a href="{{.NotificationsSettingsURL}}" style="color:#72645d;text-decoration:underline;">Manage notifications</a></td>{{end}}<td align="{{if .NotificationsSettingsURL}}right{{else}}left{{end}}" valign="top" style="font-size:12px;line-height:18px;">{{.CompanyName}} by Complexus LLC</td></tr></table></td></tr>
 </table>{{msoOnly}}</td></tr></table>{{msoEnd}}
 </td></tr></table></body></html>{{end}}
 {{define "button"}}{{if .EmailActionURL}}

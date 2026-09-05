@@ -38,16 +38,12 @@ func TestEmailAssetsMatchLandingWordmarkAndExist(t *testing.T) {
 func TestMayaReplySharesLayoutAndPreservesConfirmationText(t *testing.T) {
 	rendered, err := RenderMayaReply("Ready to update Activation.", `<p>Hi Alex,</p><p>Based on your reply, here’s the change I can make.</p><div style="`+EmailStyleString("quietPanel")+`"><p>Activation: At Risk → On Track</p><p>The launch blocker is resolved.</p></div><p>No changes have been made yet.</p><p>Reply CONFIRM to apply this change.</p><p>Reply CANCEL to leave it unchanged.</p>`)
 	require.NoError(t, err)
-	for _, expected := range []string{defaultLogoURL, `class="email-card"`, "max-width:520px", "line-height: 21px", "CONFIRM", "CANCEL", "No changes have been made yet.", "<!--[if mso]>", "Inter-Regular.woff2"} {
+	for _, expected := range []string{defaultLogoURL, `class="email-card"`, "max-width:520px", "line-height: 20px", "CONFIRM", "CANCEL", "No changes have been made yet.", "<!--[if mso]>", "Inter-Regular.woff2"} {
 		require.Contains(t, rendered, expected)
 	}
 	require.NotContains(t, rendered, `class="hero"`)
 	require.NotContains(t, rendered, `class="button"`)
 	require.NotContains(t, rendered, "#ZgotmplZ")
-	if dir := os.Getenv("FORTYONE_EMAIL_PREVIEW_DIR"); dir != "" {
-		require.NoError(t, os.MkdirAll(dir, 0755))
-		require.NoError(t, os.WriteFile(filepath.Join(dir, "maya-confirmation.html"), []byte(rendered), 0644))
-	}
 }
 
 func TestSafeEmailHTMLRestylesLegacyAndUnstyledCopy(t *testing.T) {
@@ -66,7 +62,7 @@ func TestSafeEmailHTMLRestylesLegacyAndUnstyledCopy(t *testing.T) {
 	require.Equal(t, 2, strings.Count(rendered, `style="`))
 }
 
-func TestMayaWeeklyNotificationUsesCompactRowsAndSignature(t *testing.T) {
+func TestLegacyNotificationContentUsesCompactRowsAndSignature(t *testing.T) {
 	var rows strings.Builder
 	for _, row := range [][2]string{
 		{"2 overdue stories", "Decide what still needs doing and reset any dates that have slipped."},
@@ -84,7 +80,4 @@ func TestMayaWeeklyNotificationUsesCompactRowsAndSignature(t *testing.T) {
 	require.Contains(t, rendered, "Your AI agent at FortyOne")
 	require.Contains(t, rendered, "padding: 12px 0;")
 	require.NotContains(t, rendered, `class="hero"`)
-	if dir := os.Getenv("FORTYONE_EMAIL_PREVIEW_DIR"); dir != "" {
-		require.NoError(t, os.WriteFile(filepath.Join(dir, "maya-weekly.html"), []byte(rendered), 0644))
-	}
 }

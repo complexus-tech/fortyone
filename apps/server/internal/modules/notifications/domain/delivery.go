@@ -67,6 +67,8 @@ type EmailNotification struct {
 	Message          json.RawMessage
 	UserEmail        string
 	UserName         string
+	ActorID          uuid.UUID
+	ActorAvatarURL   string
 	ActorName        string
 	WorkspaceName    string
 	WorkspaceSlug    string
@@ -83,6 +85,8 @@ type EmailDigestItem struct {
 	Title            string
 	Message          json.RawMessage
 	CreatedAt        time.Time
+	ActorID          uuid.UUID
+	ActorAvatarURL   string
 	ActorName        string
 	FeedbackSlug     string
 }

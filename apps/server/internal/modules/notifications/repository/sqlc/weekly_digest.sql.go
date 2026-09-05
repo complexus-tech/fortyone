@@ -52,6 +52,7 @@ accessible_notifications AS (
     WHERE notification.recipient_id = CAST($1 AS uuid)
       AND notification.workspace_id = CAST($2 AS uuid)
       AND notification.read_at IS NULL
+      AND notification.email_sent_at IS NULL
       AND EXISTS (SELECT 1 FROM recipient_access)
       AND (
           (

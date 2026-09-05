@@ -8,6 +8,7 @@ import (
 	mayarepository "github.com/complexus-tech/projects-api/internal/modules/maya/repository"
 	maya "github.com/complexus-tech/projects-api/internal/modules/maya/service"
 	messagingrepository "github.com/complexus-tech/projects-api/internal/modules/messaging/repository"
+	notificationsrepository "github.com/complexus-tech/projects-api/internal/modules/notifications/repository"
 	notifications "github.com/complexus-tech/projects-api/internal/modules/notifications/service"
 	objectivesrepository "github.com/complexus-tech/projects-api/internal/modules/objectives/repository"
 	storiesrepository "github.com/complexus-tech/projects-api/internal/modules/stories/repository"
@@ -29,6 +30,7 @@ import (
 )
 
 type taskMuxDependencies struct {
+	APIPublicURL           string
 	Log                    *logger.Logger
 	DatabasePool           *pgxpool.Pool
 	Brevo                  *brevo.Service
@@ -74,7 +76,10 @@ func buildTaskMux(dependencies taskMuxDependencies) *asynq.ServeMux {
 		MayaAssignments: dependencies.MayaRepository,
 		Attachments:     dependencies.Attachments, EmailCopy: dependencies.EmailCopy,
 		EmailThreads: dependencies.EmailThreads, NotificationDeliveries: dependencies.Notifications,
-		SlackEvents: dependencies.SlackEvents, EmailReplies: dependencies.EmailReplies,
+		RoutineDeliveries: notificationsrepository.New(dependencies.DatabasePool),
+		EmailAvatars:      users, APIPublicURL: dependencies.APIPublicURL,
+		BriefingSources: jobs.BriefingSources{Stories: storyStore, Objectives: objectiveGuidance, Weekly: dependencies.WeeklyDigest},
+		SlackEvents:     dependencies.SlackEvents, EmailReplies: dependencies.EmailReplies,
 		EmailRecovery: dependencies.EmailRecovery, Calendar: dependencies.Calendar,
 		SystemUserID: dependencies.SystemUserID, FeedbackTasks: dependencies.FeedbackTasks,
 		FeedbackOutbox:         dependencies.FeedbackOutbox,
@@ -204,9 +209,11 @@ func buildTaskMux(dependencies taskMuxDependencies) *asynq.ServeMux {
 	mux.HandleFunc(tasks.TypeStoryAutoClose, storyAutomationHandlers.HandleStoryAutoClose)
 	mux.HandleFunc(tasks.TypeSprintStoryMigration, storyAutomationHandlers.HandleSprintStoryMigration)
 	mux.HandleFunc(tasks.TypeMayaWorkFocusInference, mayaMaintenanceHandlers.HandleWorkFocusInference)
-	mux.HandleFunc(tasks.TypeOverdueStoriesEmail, guidanceHandlers.HandleOverdueStoriesEmail)
-	mux.HandleFunc(tasks.TypeObjectiveOverdueEmail, guidanceHandlers.HandleObjectiveOverdueEmail)
-	mux.HandleFunc(tasks.TypeWeeklyDigestEmail, guidanceHandlers.HandleWeeklyDigestEmail)
+	// Route legacy queued guidance jobs through the same daily claim during rollout.
+	mux.HandleFunc(tasks.TypeMorningBriefing, workerTaskService.HandleMorningBriefing)
+	mux.HandleFunc(tasks.TypeOverdueStoriesEmail, workerTaskService.HandleMorningBriefing)
+	mux.HandleFunc(tasks.TypeObjectiveOverdueEmail, workerTaskService.HandleMorningBriefing)
+	mux.HandleFunc(tasks.TypeWeeklyDigestEmail, workerTaskService.HandleMorningBriefing)
 	mux.HandleFunc(tasks.TypeFeedbackDigestEmail, guidanceHandlers.HandleFeedbackDigestEmail)
 	mux.HandleFunc(tasks.TypeStrategyCommunications, strategyHandlers.HandleStrategyCommunications)
 	mux.HandleFunc(tasks.TypeDisableInactiveAutomation, sprintAutomationHandlers.HandleDisableInactiveAutomation)

@@ -226,11 +226,11 @@ func TestOverdueStoriesEmailCopyRequestLimitsRowsAndAccountsForRemainder(t *test
 
 	request, destinations := overdueStoriesEmailCopyRequest(stories, "https://product.fortyone.app", "https://product.fortyone.app/my-work?tab=assigned")
 
-	require.Len(t, request.Facts, maxGuidanceEmailRows+1) // Optional workspace context plus twelve required rows.
+	require.Len(t, request.Facts, maxGuidanceEmailRows+1) // Optional workspace context plus six required rows.
 	require.Contains(t, factTextByReference(request.Facts, "task_summary"), "15 assigned tasks")
-	require.Contains(t, factTextByReference(request.Facts, "task_summary"), "11 of them")
-	require.Contains(t, factTextByReference(request.Facts, "task_summary"), "4 more")
-	require.Len(t, destinations, maxGuidanceEmailRows) // Eleven task links plus the primary CTA.
+	require.Contains(t, factTextByReference(request.Facts, "task_summary"), "5 of them")
+	require.Contains(t, factTextByReference(request.Facts, "task_summary"), "10 more")
+	require.Len(t, destinations, maxGuidanceEmailRows) // Five task links plus the primary CTA.
 }
 
 func TestSendObjectiveOverdueEmailLinksObjectivesAndKeyResults(t *testing.T) {

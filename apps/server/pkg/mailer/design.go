@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
+	"net/url"
 	"strings"
 	"time"
 
@@ -16,7 +17,7 @@ const emailAssetBaseURL = "https://fortyone.app/email-assets/v1/"
 
 func emailAsset(name string) string {
 	switch name {
-	case "wordmark.png", "invitation.png", "invitation-accepted.png",
+	case "icons/calendar.png", "icons/comment.png", "wordmark.png", "invitation.png", "invitation-accepted.png",
 		"fonts/Inter-Regular.woff2", "fonts/Inter-Medium.woff2", "fonts/Inter-SemiBold.woff2", "fonts/Inter-Bold.woff2":
 		return emailAssetBaseURL + name
 	default:
@@ -28,12 +29,14 @@ func emailTemplateFuncs() template.FuncMap {
 	return template.FuncMap{
 		// html/template strips literal comments. Fixed delimiters preserve
 		// Outlook conditionals while their contents remain contextually escaped.
-		"msoOnly":    func() template.HTML { return template.HTML(`<!--[if mso]>`) },
-		"msoEnd":     func() template.HTML { return template.HTML(`<![endif]-->`) },
-		"notMSO":     func() template.HTML { return template.HTML(`<!--[if !mso]><!-->`) },
-		"notMSOEnd":  func() template.HTML { return template.HTML(`<!--<![endif]-->`) },
-		"formatDate": func(t time.Time) string { return t.Format("January 2, 2006") },
-		"safeHTML":   safeEmailHTML, "emailStyle": emailStyle, "emailAsset": emailAsset,
+		"emailActorText": actorText,
+		"emailIcon":      func(name string) string { return emailAsset("icons/" + name + ".png") },
+		"msoOnly":        func() template.HTML { return template.HTML(`<!--[if mso]>`) },
+		"msoEnd":         func() template.HTML { return template.HTML(`<![endif]-->`) },
+		"notMSO":         func() template.HTML { return template.HTML(`<!--[if !mso]><!-->`) },
+		"notMSOEnd":      func() template.HTML { return template.HTML(`<!--<![endif]-->`) },
+		"formatDate":     func(t time.Time) string { return t.Format("January 2, 2006") },
+		"safeHTML":       safeEmailHTML, "emailStyle": emailStyle, "emailAsset": emailAsset,
 	}
 }
 
@@ -69,6 +72,11 @@ func prepareTemplateData(name string, data map[string]any) {
 	case "workspaces/restored_confirmation", "workspaces/restored_notification":
 		actionURL, actionLabel = value("WorkspaceURL"), "Open workspace"
 	}
+	if _, supplied := data["NotificationsSettingsURL"]; !supplied {
+		if parsed, err := url.Parse(value("WorkspaceURL")); err == nil && parsed.Scheme == "https" && strings.HasSuffix(parsed.Hostname(), ".fortyone.app") && parsed.User == nil {
+			data["NotificationsSettingsURL"] = "https://" + parsed.Host + "/settings/account/notifications"
+		}
+	}
 	data["LogoURL"] = defaultLogoURL
 	data["EmailWidth"], data["EmailInnerWidth"] = width, width-64
 	data["EmailActionURL"], data["EmailActionLabel"] = actionURL, actionLabel
@@ -82,8 +90,14 @@ var mayaReplyTemplate = template.Must(template.Must(template.New("").Funcs(email
 
 // RenderMayaReply shares the transactional shell and sanitizes the fixed HTML
 // vocabulary emitted by the email agent; model output cannot supply assets.
-func RenderMayaReply(subject, content string) (string, error) {
+func RenderMayaReply(subject, content string, workspaceSlug ...string) (string, error) {
 	data := map[string]any{"Subject": strings.TrimSpace(subject), "Content": content, "CompanyName": defaultCompanyName}
+	if len(workspaceSlug) > 0 {
+		slug := strings.TrimSpace(workspaceSlug[0])
+		if slug != "" && strings.Trim(slug, "abcdefghijklmnopqrstuvwxyz0123456789-") == "" {
+			data["WorkspaceURL"] = "https://" + slug + ".fortyone.app"
+		}
+	}
 	prepareTemplateData("maya/reply", data)
 	var output bytes.Buffer
 	if err := mayaReplyTemplate.ExecuteTemplate(&output, "base", data); err != nil {

@@ -19,7 +19,7 @@ import (
 
 const (
 	mayaGuidanceProductVoice = "Calm, concise product guidance that helps the recipient decide what to advance next. Avoid marketing language and notification-system jargon."
-	maxGuidanceEmailRows     = 12
+	maxGuidanceEmailRows     = mailer.DigestDetailLimit + 1
 	weeklyDigestBatchSize    = 100
 	weeklyDigestBatchDelay   = 100 * time.Millisecond
 )

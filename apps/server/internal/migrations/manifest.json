@@ -4,7 +4,10 @@
   "policy": {
     "baseline_rule": "versions-at-or-below-baseline-are-established",
     "applied_migration_mutation": "immutable",
-    "required_directions": ["up", "down"],
+    "required_directions": [
+      "up",
+      "down"
+    ],
     "production_recovery": "classification-driven",
     "forward_only_recovery": "forward-fix",
     "reversible_recovery": "down-migration"
@@ -1226,6 +1229,78 @@
         "Plain description remains the search and notification source while description_html preserves editor formatting.",
         "Attachment object access requires an exact portal, item, and attachment relation and redirects through a short-lived storage URL.",
         "Feedback attachments share the established attachment validation, scanning, optimization, and orphan-deletion lifecycle."
+      ]
+    },
+    {
+      "version": 184,
+      "slug": "routine_email_deliveries",
+      "classification": "forward-only",
+      "files": {
+        "up": "000184_routine_email_deliveries.up.sql",
+        "down": "000184_routine_email_deliveries.down.sql"
+      },
+      "compatibility": {
+        "schema": "Adds durable recipient/workspace claims and notification delivery coverage.",
+        "api": "Old APIs remain compatible.",
+        "worker": "The consolidated email worker requires this schema.",
+        "mixed_versions": "Apply schema first, deploy the API before the worker, then replace email workers without leaving old independent senders active."
+      },
+      "rollout": {
+        "sequence": 33,
+        "mode": "schema-first",
+        "steps": [
+          "Apply migration 000184 and verify claims in the PostgreSQL integration suite.",
+          "Replace scheduled-email workers together so old independent guidance senders cannot bypass the new claims.",
+          "Verify one-hour batches, local-time briefings, preferences and notification coverage before enabling the full schedule."
+        ]
+      },
+      "recovery": {
+        "strategy": "forward-fix",
+        "procedure": [
+          "Preserve the durable records and repair the application forward.",
+          "Do not run the down migration once records may be referenced by sent emails."
+        ]
+      },
+      "operational_notes": [
+        "This schema does not provide atomic SMTP and PostgreSQL commits.",
+        "Retain delivery claims when repairing a worker; deleting them can replay sent briefings."
+      ]
+    },
+    {
+      "version": 185,
+      "slug": "email_avatar_handles",
+      "classification": "forward-only",
+      "files": {
+        "up": "000185_email_avatar_handles.up.sql",
+        "down": "000185_email_avatar_handles.down.sql"
+      },
+      "compatibility": {
+        "schema": "Adds stable opaque handles resolving only current user profile images.",
+        "api": "Deploy the avatar redirect endpoint before workers emit durable image URLs.",
+        "worker": "Worker must use the public HTTPS APP_API_PUBLIC_URL pointing to the API endpoint.",
+        "mixed_versions": "Apply schema first, deploy the API before the worker, then replace email workers without leaving old independent senders active."
+      },
+      "rollout": {
+        "sequence": 34,
+        "mode": "schema-first",
+        "steps": [
+          "Apply migration 000185.",
+          "Deploy the API redirect endpoint and verify it returns a fresh short-lived storage URL with Cache-Control no-store.",
+          "Set APP_API_PUBLIC_URL on the worker to the public HTTPS API origin and deploy the worker.",
+          "Open the same image URL after the first storage signature expires; verify profile replacement and removed-account behavior."
+        ]
+      },
+      "recovery": {
+        "strategy": "forward-fix",
+        "procedure": [
+          "Preserve the durable records and repair the application forward.",
+          "Do not run the down migration once records may be referenced by sent emails."
+        ]
+      },
+      "operational_notes": [
+        "Handles contain no expiry and survive authentication-key rotation and profile-image replacement.",
+        "Handles are bearer links limited to profile images. Deleted accounts or removed photos stop resolving.",
+        "Retain the handle table and public API origin for the lifetime of delivered emails."
       ]
     }
   ]

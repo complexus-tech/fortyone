@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/complexus-tech/projects-api/pkg/emailthread"
 	"github.com/complexus-tech/projects-api/pkg/mailer"
 	"github.com/google/uuid"
 )
@@ -22,7 +23,13 @@ func (processor *Processor) deliverReply(
 	if err != nil {
 		return err
 	}
-	htmlBody, err = renderMayaReplyHTML(reply.Copy.Subject, htmlBody)
+	var replyContext emailthread.ThreadContext
+	if len(thread.Context) > 0 {
+		if err := json.Unmarshal(thread.Context, &replyContext); err != nil {
+			return fmt.Errorf("decode reply footer context: %w", err)
+		}
+	}
+	htmlBody, err = renderMayaReplyHTML(reply.Copy.Subject, htmlBody, replyContext.WorkspaceSlug)
 	if err != nil {
 		return err
 	}

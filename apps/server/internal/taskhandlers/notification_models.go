@@ -11,7 +11,7 @@ import (
 
 const (
 	maxNotificationMessageRunes     = 600
-	maxNotificationDigestRows       = 12
+	maxNotificationDigestRows       = mailer.DigestDetailLimit + 1
 	maxNotificationDigestDetailRows = maxNotificationDigestRows - 1
 )
 
@@ -138,12 +138,14 @@ type NotificationEmailData struct {
 	Message          json.RawMessage `db:"message"`
 	UserEmail        string          `db:"user_email"`
 	UserName         string          `db:"user_name"`
-	ActorName        string          `db:"actor_name"`
-	WorkspaceName    string          `db:"workspace_name"`
-	WorkspaceSlug    string          `db:"workspace_slug"`
-	WorkspaceRole    string          `db:"workspace_role"`
-	EmailEnabled     bool            `db:"email_enabled"`
-	FeedbackSlug     string          `db:"feedback_slug"`
+	ActorID          uuid.UUID
+	ActorAvatarURL   string
+	ActorName        string `db:"actor_name"`
+	WorkspaceName    string `db:"workspace_name"`
+	WorkspaceSlug    string `db:"workspace_slug"`
+	WorkspaceRole    string `db:"workspace_role"`
+	EmailEnabled     bool   `db:"email_enabled"`
+	FeedbackSlug     string `db:"feedback_slug"`
 }
 
 type NotificationEmailDigestItem struct {
@@ -154,8 +156,10 @@ type NotificationEmailDigestItem struct {
 	Title            string          `db:"title"`
 	Message          json.RawMessage `db:"message"`
 	CreatedAt        time.Time       `db:"created_at"`
-	ActorName        string          `db:"actor_name"`
-	FeedbackSlug     string          `db:"feedback_slug"`
+	ActorID          uuid.UUID
+	ActorAvatarURL   string
+	ActorName        string `db:"actor_name"`
+	FeedbackSlug     string `db:"feedback_slug"`
 }
 
 type NotificationEmailDigestData struct {
@@ -181,6 +185,8 @@ type notificationDigestCopy struct {
 }
 
 type notificationDigestCopyRow struct {
+	Icon  string
+	Actor mailer.EmailActor
 	Text  string
 	Label string
 	URL   string
@@ -196,6 +202,8 @@ type notificationDigestCopyInput struct {
 	Actions             map[string]string
 	FactActions         map[string]string
 	FactLabels          map[string]string
+	FactActors          map[string]mailer.EmailActor
+	FactIcons           map[string]string
 	Fallback            notificationDigestCopy
 	HasStrategySnapshot bool
 	NotificationsURL    string

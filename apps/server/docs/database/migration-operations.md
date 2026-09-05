@@ -48,6 +48,8 @@ The machine-readable source of truth is [`internal/migrations/manifest.json`](..
 | `000181` | `google_drive_user_deactivation_cleanup` | `forward-only` | `schema-first` | Existing user deactivation updates automatically delete that user's Drive workspace bindings; no API contract changes. | The Google Drive revocation dispatcher introduced with schema 000179 processes any encrypted tombstones staged by deactivation or backfill. |
 | `000182` | `global_user_onboarding_tour_progress` | `forward-only` | `schema-first` | The existing workspace-prefixed onboarding routes and JSON contract remain compatible. Replacement APIs use the workspace only to authorize route access and persist one account-global record. | Unaffected. Walkthrough progress remains synchronous user API state. |
 | `000183` | `feedback_rich_descriptions` | `forward-only` | `schema-first` | Old APIs continue reading and writing plain descriptions. Replacement APIs persist descriptionHTML and expose attachment upload and read paths. | Existing attachment scanning and optimization workers continue processing the shared attachment records without a new worker contract. |
+| `000184` | `routine_email_deliveries` | `forward-only` | `schema-first` | Old APIs remain compatible. | The consolidated email worker requires this schema. |
+| `000185` | `email_avatar_handles` | `forward-only` | `schema-first` | Deploy the avatar redirect endpoint before workers emit durable image URLs. | Worker must use the public HTTPS APP_API_PUBLIC_URL pointing to the API endpoint. |
 
 ## `000152_harden_verification_tokens`
 
@@ -978,6 +980,60 @@ Operational notes:
 - Plain description remains the search and notification source while description_html preserves editor formatting.
 - Attachment object access requires an exact portal, item, and attachment relation and redirects through a short-lived storage URL.
 - Feedback attachments share the established attachment validation, scanning, optimization, and orphan-deletion lifecycle.
+
+## `000184_routine_email_deliveries`
+
+- **Classification:** `forward-only`
+- **Files:** `000184_routine_email_deliveries.up.sql`, `000184_routine_email_deliveries.down.sql`
+- **Schema:** Adds durable recipient/workspace claims and notification delivery coverage.
+- **API:** Old APIs remain compatible.
+- **Worker:** The consolidated email worker requires this schema.
+- **Mixed versions:** Apply schema first, deploy the API before the worker, then replace email workers without leaving old independent senders active.
+- **Rollout mode:** `schema-first`
+
+Rollout:
+
+1. Apply migration 000184 and verify claims in the PostgreSQL integration suite.
+2. Replace scheduled-email workers together so old independent guidance senders cannot bypass the new claims.
+3. Verify one-hour batches, local-time briefings, preferences and notification coverage before enabling the full schedule.
+
+Recovery (`forward-fix`):
+
+1. Preserve the durable records and repair the application forward.
+2. Do not run the down migration once records may be referenced by sent emails.
+
+Operational notes:
+
+- This schema does not provide atomic SMTP and PostgreSQL commits.
+- Retain delivery claims when repairing a worker; deleting them can replay sent briefings.
+
+## `000185_email_avatar_handles`
+
+- **Classification:** `forward-only`
+- **Files:** `000185_email_avatar_handles.up.sql`, `000185_email_avatar_handles.down.sql`
+- **Schema:** Adds stable opaque handles resolving only current user profile images.
+- **API:** Deploy the avatar redirect endpoint before workers emit durable image URLs.
+- **Worker:** Worker must use the public HTTPS APP_API_PUBLIC_URL pointing to the API endpoint.
+- **Mixed versions:** Apply schema first, deploy the API before the worker, then replace email workers without leaving old independent senders active.
+- **Rollout mode:** `schema-first`
+
+Rollout:
+
+1. Apply migration 000185.
+2. Deploy the API redirect endpoint and verify it returns a fresh short-lived storage URL with Cache-Control no-store.
+3. Set APP_API_PUBLIC_URL on the worker to the public HTTPS API origin and deploy the worker.
+4. Open the same image URL after the first storage signature expires; verify profile replacement and removed-account behavior.
+
+Recovery (`forward-fix`):
+
+1. Preserve the durable records and repair the application forward.
+2. Do not run the down migration once records may be referenced by sent emails.
+
+Operational notes:
+
+- Handles contain no expiry and survive authentication-key rotation and profile-image replacement.
+- Handles are bearer links limited to profile images. Deleted accounts or removed photos stop resolving.
+- Retain the handle table and public API origin for the lifetime of delivered emails.
 
 ## Adding the next migration
 

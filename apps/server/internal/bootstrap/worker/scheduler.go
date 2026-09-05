@@ -224,33 +224,6 @@ func registerSchedules(scheduler scheduleRegistrar) error {
 	}
 
 	_, err = scheduler.Register(
-		"0 9 * * *", // Daily at 9:00 AM
-		asynq.NewTask(tasks.TypeOverdueStoriesEmail, nil),
-		asynq.Queue("automation"),
-	)
-	if err != nil {
-		return fmt.Errorf("failed to register overdue stories email task: %w", err)
-	}
-
-	_, err = scheduler.Register(
-		"0 10 * * 1", // Monday at 10:00 AM
-		asynq.NewTask(tasks.TypeObjectiveOverdueEmail, nil),
-		asynq.Queue("automation"),
-	)
-	if err != nil {
-		return fmt.Errorf("failed to register objective overdue email task: %w", err)
-	}
-
-	_, err = scheduler.Register(
-		"0 8 * * 1", // Monday at 8:00 AM
-		asynq.NewTask(tasks.TypeWeeklyDigestEmail, nil),
-		asynq.Queue("notifications"),
-	)
-	if err != nil {
-		return fmt.Errorf("failed to register weekly digest email task: %w", err)
-	}
-
-	_, err = scheduler.Register(
 		"0 * * * *", // Hourly; each recipient is evaluated in their local timezone
 		asynq.NewTask(tasks.TypeFeedbackDigestEmail, nil),
 		asynq.Queue("notifications"),

@@ -1,7 +1,9 @@
 {{define "content"}}
 <h1 class="heading" style="{{emailStyle "heading"}}">{{.NotificationTitle}}</h1>
-{{if .UserName}}<p style="{{emailStyle "text"}}">Hi {{.UserName}},</p>{{end}}
-<div class="notification-message" style="{{emailStyle "notificationPanel"}}">{{safeHTML .NotificationMessage}}</div>
+
+{{if .NotificationSections}}{{range .NotificationSections}}{{template "digest" .}}{{end}}{{else if .NotificationDigest}}{{template "digest" .NotificationDigest}}{{else}}<div class="notification-message" style="{{emailStyle "notificationPanel"}}">{{safeHTML .NotificationMessage}}</div>{{end}}
 {{if .EmailIsMaya}}<p style="{{emailStyle "signature"}}"><strong>Maya</strong><br><span style="color:#72645d;font-size:14px;">Your AI agent at FortyOne</span></p>{{end}}
 {{end}}
-{{define "footer"}}{{if .NotificationsSettingsURL}}<p style="{{emailStyle "footerText"}}"><a href="{{.NotificationsSettingsURL}}" style="color:#72645d;text-decoration:underline;">Manage notification preferences</a></p>{{end}}{{end}}
+{{define "footer"}}{{end}}
+{{define "digest"}}<p style="{{emailStyle "text"}}">{{.Intro}}</p>
+<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">{{range .Rows}}<tr><td style="{{emailStyle "notificationItem"}}">{{if .More}}<a href="{{.URL}}" style="{{emailStyle "notificationLink"}}">{{.Text}}</a>{{else}}{{if .Label}}<p style="margin:0 0 6px;font-size:14px;line-height:20px;font-weight:600;">{{if .Icon}}<img src="{{emailIcon .Icon}}" width="16" height="16" alt="" style="vertical-align:text-bottom;margin-right:6px;border:0;">{{end}}<a href="{{.URL}}" style="{{emailStyle "notificationLink"}}">{{.Label}}</a></p>{{end}}<p style="{{emailStyle "notificationMessage"}}">{{emailActorText .Text .Actor}}</p>{{end}}</td></tr>{{end}}</table>{{end}}

@@ -170,7 +170,7 @@ func notificationDigestMessageID(data NotificationEmailDigestData) string {
 	return "<notification-digest-" + hex.EncodeToString(digest[:16]) + "@fortyone.app>"
 }
 
-func notificationGuidanceThreadContext(data NotificationEmailDigestData) (json.RawMessage, error) {
+func notificationGuidanceThreadContext(data NotificationEmailDigestData, additionalTargets ...emailthread.TargetContext) (json.RawMessage, error) {
 	targets := make([]emailthread.TargetContext, 0)
 	seen := make(map[string]struct{})
 	addTarget := func(target emailthread.TargetContext) {
@@ -185,6 +185,9 @@ func notificationGuidanceThreadContext(data NotificationEmailDigestData) (json.R
 		targets = append(targets, target)
 	}
 
+	for _, target := range additionalTargets {
+		addTarget(target)
+	}
 	for _, item := range data.Items {
 		var message NotificationMessage
 		if err := json.Unmarshal(item.Message, &message); err != nil || message.Strategy == nil {
@@ -210,8 +213,12 @@ func notificationGuidanceThreadContext(data NotificationEmailDigestData) (json.R
 			}
 		}
 	}
+	source := "strategy_notification"
+	if len(additionalTargets) > 0 {
+		source = "workspace_updates"
+	}
 	return emailthread.EncodeThreadContext(emailthread.ThreadContext{
-		Source:        "strategy_notification",
+		Source:        source,
 		WorkspaceSlug: data.WorkspaceSlug,
 		Targets:       targets,
 	})
@@ -223,11 +230,12 @@ func (h *handlers) prepareNotificationGuidanceThread(
 	copy notificationDigestCopy,
 	messageID string,
 	plainText string,
+	targets ...emailthread.TargetContext,
 ) (string, error) {
-	if !copy.HasStrategySnapshot || copy.Sender != mailer.SenderProfileMaya || h.emailThreads == nil {
+	if (!copy.HasStrategySnapshot && len(targets) == 0) || copy.Sender != mailer.SenderProfileMaya || h.emailThreads == nil {
 		return "", nil
 	}
-	threadContext, err := notificationGuidanceThreadContext(data)
+	threadContext, err := notificationGuidanceThreadContext(data, targets...)
 	if err != nil {
 		return "", err
 	}
@@ -259,4 +267,25 @@ func (h *handlers) markNotificationsEmailSent(ctx context.Context, scope notific
 		return fmt.Errorf("mark notifications as emailed: %w", err)
 	}
 	return nil
+}
+
+func templateDigest(copy notificationDigestCopy) mailer.Digest {
+	result := mailer.Digest{Intro: copy.Intro, Rows: make([]mailer.DigestRow, 0, len(copy.Rows))}
+	for _, row := range copy.Rows {
+		text := strings.TrimPrefix(row.Text, row.Label+": ")
+		result.Rows = append(result.Rows, mailer.DigestRow{Label: row.Label, Text: text, URL: row.URL, Actor: row.Actor, Icon: row.Icon, More: row.Label == "Notifications" || (row.Label == "" && strings.Contains(row.Text, "more details in Strategy"))})
+	}
+	return result
+}
+
+func notificationIcon(message NotificationMessage, notificationType string) string {
+	for _, variable := range message.Variables {
+		if variable.Type == "date" || (variable.Type == "field" && strings.Contains(strings.ToLower(variable.Value), "date")) {
+			return "calendar"
+		}
+	}
+	if strings.Contains(notificationType, "comment") || strings.Contains(notificationType, "reply") || strings.Contains(notificationType, "conversation") {
+		return "comment"
+	}
+	return ""
 }

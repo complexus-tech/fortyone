@@ -114,7 +114,8 @@ type Config struct {
 		HMACKeyID    string `default:"v1" env:"APP_INVITATION_TOKEN_HMAC_KEY_ID"`
 		PreviousKeys string `env:"APP_INVITATION_TOKEN_HMAC_PREVIOUS_KEYS"`
 	}
-	Website struct {
+	APIPublicURL string `default:"http://localhost:8000" env:"APP_API_PUBLIC_URL"`
+	Website      struct {
 		URL string `default:"http://localhost:3000" env:"APP_WEBSITE_URL"`
 	}
 	Storage struct {

@@ -68,6 +68,8 @@ func (repository *Repository) GetEmailDelivery(ctx context.Context, query notifi
 		UserEmail:        row.UserEmail,
 		UserName:         row.UserName,
 		ActorName:        row.ActorName,
+		ActorAvatarURL:   row.ActorAvatarURL,
+		ActorID:          row.ActorID,
 		WorkspaceName:    row.WorkspaceName,
 		WorkspaceSlug:    row.WorkspaceSlug,
 		WorkspaceRole:    row.WorkspaceRole,
@@ -108,6 +110,8 @@ func (repository *Repository) ListEmailDigest(ctx context.Context, scope notific
 			Message:          json.RawMessage(row.Message),
 			CreatedAt:        *row.CreatedAt,
 			ActorName:        row.ActorName,
+			ActorAvatarURL:   row.ActorAvatarURL,
+			ActorID:          row.ActorID,
 			FeedbackSlug:     row.FeedbackSlug,
 		})
 	}

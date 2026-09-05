@@ -1,1 +1,0 @@
-Sample portrait copied without alteration from apps/landing/public/images/avatars/product-lead.png. Used only to demonstrate the image-present state with fictional preview names; this is not Sam Taylor’s real profile photo.

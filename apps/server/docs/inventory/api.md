@@ -4,7 +4,7 @@
 
 This deterministic inventory shows where routes and persistence live in the API codebase. Run `make inventory-generate` after moving a route, test, or query, or changing a persistence dependency; `make inventory-check` rejects drift. Counts describe code shape, not test quality or security approval.
 
-Current snapshot: **451 routes across 45 modules**. Registered middleware classifies 365 routes with required user authentication, 9 with optional authentication, 77 without user-auth middleware, 323 with current workspace-membership resolution, 169 with an explicit role/scope guard, and 50 with a route-level rate limit. The no-user-auth set includes 6 webhook routes whose provider signature/replay policy must be verified in their handler contract. These are registration facts, not proof of complete service/resource authorization.
+Current snapshot: **452 routes across 45 modules**. Registered middleware classifies 365 routes with required user authentication, 9 with optional authentication, 78 without user-auth middleware, 323 with current workspace-membership resolution, 169 with an explicit role/scope guard, and 50 with a route-level rate limit. The no-user-auth set includes 6 webhook routes whose provider signature/replay policy must be verified in their handler contract. These are registration facts, not proof of complete service/resource authorization.
 
 Credential configuration is indexed in [`docs/configuration.md`](../configuration.md), migration compatibility in [`docs/database/migration-operations.md`](../database/migration-operations.md), and architectural exceptions in the enforced debt baseline.
 
@@ -40,7 +40,7 @@ Credential configuration is indexed in [`docs/configuration.md`](../configuratio
 | `links` | 3 | 5 / 10 | 3 | yes | 0 | [links.go](../../internal/modules/links/http/links.go#L1) (115) |
 | `maya` | 7 | 20 / 108 | 30 | yes | 0 | [realtime_capabilities.go](../../internal/modules/maya/http/realtime_capabilities.go#L1) (624) |
 | `messaging` | 0 | 24 / 126 | 72 | yes | 0 | [team_work.go](../../internal/modules/messaging/service/team_work.go#L1) (654) |
-| `notifications` | 14 | 14 / 59 | 21 | yes | 0 | [rules_story_updates.go](../../internal/modules/notifications/service/rules_story_updates.go#L1) (410) |
+| `notifications` | 14 | 15 / 60 | 27 | yes | 0 | [rules_story_updates.go](../../internal/modules/notifications/service/rules_story_updates.go#L1) (410) |
 | `objectives` | 15 | 18 / 54 | 36 | yes | 0 | [strategy_communications.go](../../internal/modules/objectives/repository/strategy_communications.go#L1) (442) |
 | `objectivestatus` | 4 | 3 / 3 | 15 | yes | 0 | [repository.go](../../internal/modules/objectivestatus/repository/repository.go#L1) (318) |
 | `okractivities` | 0 | 4 / 12 | 3 | yes | 0 | [repository.go](../../internal/modules/okractivities/repository/repository.go#L1) (201) |
@@ -52,11 +52,11 @@ Credential configuration is indexed in [`docs/configuration.md`](../configuratio
 | `sse` | 1 | 0 / 0 | 0 | no | 0 | — |
 | `states` | 4 | 4 / 5 | 17 | yes | 0 | [repository.go](../../internal/modules/states/repository/repository.go#L1) (332) |
 | `stories` | 35 | 65 / 203 | 91 | yes | 0 | [secondary_mutations.go](../../internal/modules/stories/repository/secondary_mutations.go#L1) (470) |
-| `subscriptions` | 7 | 8 / 26 | 18 | yes | 0 | [subscriptions.go](../../internal/modules/subscriptions/http/subscriptions.go#L1) (280) |
+| `subscriptions` | 7 | 9 / 28 | 18 | yes | 0 | [subscriptions.go](../../internal/modules/subscriptions/http/subscriptions.go#L1) (280) |
 | `teams` | 12 | 5 / 16 | 16 | yes | 0 | [teams.go](../../internal/modules/teams/http/teams.go#L1) (590) |
 | `teamsettings` | 4 | 14 / 33 | 27 | yes | 0 | [sprint_automation.go](../../internal/modules/teamsettings/repository/sprint_automation.go#L1) (394) |
-| `users` | 28 | 18 / 57 | 34 | yes | 0 | [users.go](../../internal/modules/users/service/users.go#L1) (678) |
-| `workspaces` | 16 | 8 / 21 | 33 | yes | 0 | [lifecycle_maintenance.go](../../internal/modules/workspaces/repository/lifecycle_maintenance.go#L1) (482) |
+| `users` | 29 | 20 / 60 | 36 | yes | 0 | [users.go](../../internal/modules/users/service/users.go#L1) (678) |
+| `workspaces` | 16 | 12 / 32 | 33 | yes | 0 | [lifecycle_maintenance.go](../../internal/modules/workspaces/repository/lifecycle_maintenance.go#L1) (482) |
 
 ## Route ownership
 
@@ -619,34 +619,35 @@ Credential configuration is indexed in [`docs/configuration.md`](../configuratio
 
 | Method | Path | Registered guards | Handler | Registered middleware | Source |
 | --- | --- | --- | --- | --- | --- |
-| `GET` | `/auth/google` | `auth=none` | `h.StartGoogleAuth` | — | [routes.go](../../internal/modules/users/http/routes.go#L60) |
-| `GET` | `/auth/google/callback` | `auth=none` | `h.CompleteGoogleAuth` | — | [routes.go](../../internal/modules/users/http/routes.go#L61) |
-| `POST` | `/auth/google/verify` | `auth=none` | `h.GoogleAuth` | — | [routes.go](../../internal/modules/users/http/routes.go#L64) |
-| `GET` | `/auth/me` | `auth=required` | `h.Me` | `auth` | [routes.go](../../internal/modules/users/http/routes.go#L59) |
-| `GET` | `/auth/microsoft` | `auth=none` | `h.StartMicrosoftAuth` | — | [routes.go](../../internal/modules/users/http/routes.go#L62) |
-| `GET` | `/auth/microsoft/callback` | `auth=none` | `h.CompleteMicrosoftAuth` | — | [routes.go](../../internal/modules/users/http/routes.go#L63) |
-| `POST` | `/users/google/verify` | `auth=none` | `h.GoogleAuth` | — | [routes.go](../../internal/modules/users/http/routes.go#L65) |
-| `DELETE` | `/users/profile` | `auth=required` | `h.DeleteProfile` | `auth` | [routes.go](../../internal/modules/users/http/routes.go#L77) |
-| `GET` | `/users/profile` | `auth=required` | `h.GetProfile` | `auth` | [routes.go](../../internal/modules/users/http/routes.go#L75) |
-| `PUT` | `/users/profile` | `auth=required` | `h.UpdateProfile` | `auth` | [routes.go](../../internal/modules/users/http/routes.go#L76) |
-| `DELETE` | `/users/profile/image` | `auth=required` | `h.DeleteProfileImage` | `auth` | [routes.go](../../internal/modules/users/http/routes.go#L82) |
-| `POST` | `/users/profile/image` | `auth=required` | `h.UploadProfileImage` | `auth` | [routes.go](../../internal/modules/users/http/routes.go#L81) |
-| `DELETE` | `/users/session` | `auth=none` | `h.ClearSession` | — | [routes.go](../../internal/modules/users/http/routes.go#L72) |
-| `POST` | `/users/session` | `auth=required` | `h.CreateSession` | `auth` | [routes.go](../../internal/modules/users/http/routes.go#L71) |
-| `GET` | `/users/session/code` | `auth=required` | `h.GenerateSessionCode` | `auth` | [routes.go](../../internal/modules/users/http/routes.go#L70) |
-| `POST` | `/users/verify/email` | `auth=none` | `h.SendEmailVerification` | — | [routes.go](../../internal/modules/users/http/routes.go#L66) |
-| `POST` | `/users/verify/email/confirm` | `auth=none` | `h.VerifyEmail` | — | [routes.go](../../internal/modules/users/http/routes.go#L67) |
-| `POST` | `/workspaces/switch` | `auth=required` | `h.SwitchWorkspace` | `auth` | [routes.go](../../internal/modules/users/http/routes.go#L78) |
-| `GET` | `/workspaces/{workspaceSlug}/automation/preferences` | `auth=required; workspace=current` | `h.GetAutomationPreferences` | `auth → workspace` | [routes.go](../../internal/modules/users/http/routes.go#L85) |
-| `PUT` | `/workspaces/{workspaceSlug}/automation/preferences` | `auth=required; workspace=current` | `h.UpdateAutomationPreferences` | `auth → workspace` | [routes.go](../../internal/modules/users/http/routes.go#L86) |
-| `GET` | `/workspaces/{workspaceSlug}/members` | `auth=required; workspace=current` | `h.List` | `auth → workspace → gzip` | [routes.go](../../internal/modules/users/http/routes.go#L74) |
-| `GET` | `/workspaces/{workspaceSlug}/members/maya` | `auth=required; workspace=current` | `h.GetMayaAssignee` | `auth → workspace → gzip` | [routes.go](../../internal/modules/users/http/routes.go#L73) |
-| `GET` | `/workspaces/{workspaceSlug}/onboarding/walkthrough` | `auth=required; workspace=current` | `h.GetOnboardingTourProgress` | `auth → workspace` | [routes.go](../../internal/modules/users/http/routes.go#L87) |
-| `PUT` | `/workspaces/{workspaceSlug}/onboarding/walkthrough` | `auth=required; workspace=current` | `h.UpdateOnboardingTourProgress` | `auth → workspace` | [routes.go](../../internal/modules/users/http/routes.go#L88) |
-| `GET` | `/workspaces/{workspaceSlug}/users/memory` | `auth=required; workspace=current` | `h.ListUserMemories` | `auth → workspace` | [routes.go](../../internal/modules/users/http/routes.go#L93) |
-| `POST` | `/workspaces/{workspaceSlug}/users/memory` | `auth=required; workspace=current` | `h.AddUserMemory` | `auth → workspace` | [routes.go](../../internal/modules/users/http/routes.go#L92) |
-| `DELETE` | `/workspaces/{workspaceSlug}/users/memory/{id}` | `auth=required; workspace=current` | `h.DeleteUserMemory` | `auth → workspace` | [routes.go](../../internal/modules/users/http/routes.go#L95) |
-| `PUT` | `/workspaces/{workspaceSlug}/users/memory/{id}` | `auth=required; workspace=current` | `h.UpdateUserMemory` | `auth → workspace` | [routes.go](../../internal/modules/users/http/routes.go#L94) |
+| `GET` | `/auth/google` | `auth=none` | `h.StartGoogleAuth` | — | [routes.go](../../internal/modules/users/http/routes.go#L63) |
+| `GET` | `/auth/google/callback` | `auth=none` | `h.CompleteGoogleAuth` | — | [routes.go](../../internal/modules/users/http/routes.go#L64) |
+| `POST` | `/auth/google/verify` | `auth=none` | `h.GoogleAuth` | — | [routes.go](../../internal/modules/users/http/routes.go#L67) |
+| `GET` | `/auth/me` | `auth=required` | `h.Me` | `auth` | [routes.go](../../internal/modules/users/http/routes.go#L62) |
+| `GET` | `/auth/microsoft` | `auth=none` | `h.StartMicrosoftAuth` | — | [routes.go](../../internal/modules/users/http/routes.go#L65) |
+| `GET` | `/auth/microsoft/callback` | `auth=none` | `h.CompleteMicrosoftAuth` | — | [routes.go](../../internal/modules/users/http/routes.go#L66) |
+| `GET` | `/media/email-avatars/{handle}/avatar` | `auth=none` | `avatar.redirect` | — | [routes.go](../../internal/modules/users/http/routes.go#L59) |
+| `POST` | `/users/google/verify` | `auth=none` | `h.GoogleAuth` | — | [routes.go](../../internal/modules/users/http/routes.go#L68) |
+| `DELETE` | `/users/profile` | `auth=required` | `h.DeleteProfile` | `auth` | [routes.go](../../internal/modules/users/http/routes.go#L80) |
+| `GET` | `/users/profile` | `auth=required` | `h.GetProfile` | `auth` | [routes.go](../../internal/modules/users/http/routes.go#L78) |
+| `PUT` | `/users/profile` | `auth=required` | `h.UpdateProfile` | `auth` | [routes.go](../../internal/modules/users/http/routes.go#L79) |
+| `DELETE` | `/users/profile/image` | `auth=required` | `h.DeleteProfileImage` | `auth` | [routes.go](../../internal/modules/users/http/routes.go#L85) |
+| `POST` | `/users/profile/image` | `auth=required` | `h.UploadProfileImage` | `auth` | [routes.go](../../internal/modules/users/http/routes.go#L84) |
+| `DELETE` | `/users/session` | `auth=none` | `h.ClearSession` | — | [routes.go](../../internal/modules/users/http/routes.go#L75) |
+| `POST` | `/users/session` | `auth=required` | `h.CreateSession` | `auth` | [routes.go](../../internal/modules/users/http/routes.go#L74) |
+| `GET` | `/users/session/code` | `auth=required` | `h.GenerateSessionCode` | `auth` | [routes.go](../../internal/modules/users/http/routes.go#L73) |
+| `POST` | `/users/verify/email` | `auth=none` | `h.SendEmailVerification` | — | [routes.go](../../internal/modules/users/http/routes.go#L69) |
+| `POST` | `/users/verify/email/confirm` | `auth=none` | `h.VerifyEmail` | — | [routes.go](../../internal/modules/users/http/routes.go#L70) |
+| `POST` | `/workspaces/switch` | `auth=required` | `h.SwitchWorkspace` | `auth` | [routes.go](../../internal/modules/users/http/routes.go#L81) |
+| `GET` | `/workspaces/{workspaceSlug}/automation/preferences` | `auth=required; workspace=current` | `h.GetAutomationPreferences` | `auth → workspace` | [routes.go](../../internal/modules/users/http/routes.go#L88) |
+| `PUT` | `/workspaces/{workspaceSlug}/automation/preferences` | `auth=required; workspace=current` | `h.UpdateAutomationPreferences` | `auth → workspace` | [routes.go](../../internal/modules/users/http/routes.go#L89) |
+| `GET` | `/workspaces/{workspaceSlug}/members` | `auth=required; workspace=current` | `h.List` | `auth → workspace → gzip` | [routes.go](../../internal/modules/users/http/routes.go#L77) |
+| `GET` | `/workspaces/{workspaceSlug}/members/maya` | `auth=required; workspace=current` | `h.GetMayaAssignee` | `auth → workspace → gzip` | [routes.go](../../internal/modules/users/http/routes.go#L76) |
+| `GET` | `/workspaces/{workspaceSlug}/onboarding/walkthrough` | `auth=required; workspace=current` | `h.GetOnboardingTourProgress` | `auth → workspace` | [routes.go](../../internal/modules/users/http/routes.go#L90) |
+| `PUT` | `/workspaces/{workspaceSlug}/onboarding/walkthrough` | `auth=required; workspace=current` | `h.UpdateOnboardingTourProgress` | `auth → workspace` | [routes.go](../../internal/modules/users/http/routes.go#L91) |
+| `GET` | `/workspaces/{workspaceSlug}/users/memory` | `auth=required; workspace=current` | `h.ListUserMemories` | `auth → workspace` | [routes.go](../../internal/modules/users/http/routes.go#L96) |
+| `POST` | `/workspaces/{workspaceSlug}/users/memory` | `auth=required; workspace=current` | `h.AddUserMemory` | `auth → workspace` | [routes.go](../../internal/modules/users/http/routes.go#L95) |
+| `DELETE` | `/workspaces/{workspaceSlug}/users/memory/{id}` | `auth=required; workspace=current` | `h.DeleteUserMemory` | `auth → workspace` | [routes.go](../../internal/modules/users/http/routes.go#L98) |
+| `PUT` | `/workspaces/{workspaceSlug}/users/memory/{id}` | `auth=required; workspace=current` | `h.UpdateUserMemory` | `auth → workspace` | [routes.go](../../internal/modules/users/http/routes.go#L97) |
 ### workspaces
 
 | Method | Path | Registered guards | Handler | Registered middleware | Source |

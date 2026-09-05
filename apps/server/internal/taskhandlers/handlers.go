@@ -14,6 +14,7 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/brevo"
 	"github.com/complexus-tech/projects-api/pkg/emailcopy"
 	"github.com/complexus-tech/projects-api/pkg/emailthread"
+	"github.com/complexus-tech/projects-api/pkg/jobs"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/mailer"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
@@ -104,6 +105,8 @@ type NotificationDeliveryStore interface {
 }
 
 type handlers struct {
+	emailAvatars           EmailAvatarHandleStore
+	apiPublicURL           string
 	log                    *logger.Logger
 	brevoService           *brevo.Service
 	mailerService          mailer.Service
@@ -115,6 +118,8 @@ type handlers struct {
 	emailCopy              emailcopy.Generator
 	emailThreads           emailthread.GuidancePreparer
 	notificationDeliveries NotificationDeliveryStore
+	routineDeliveries      RoutineDeliveryStore
+	briefingSources        jobs.BriefingSources
 	slackEvents            SlackEventProcessor
 	slackCredentials       SlackCredentialBackfiller
 	slackRecovery          SlackInboxRecoverer
@@ -136,6 +141,8 @@ type handlers struct {
 // WorkerHandlerDependencies makes task composition explicit and prevents the
 // central worker constructor from becoming an unsafe positional-argument list.
 type WorkerHandlerDependencies struct {
+	EmailAvatars           EmailAvatarHandleStore
+	APIPublicURL           string
 	Log                    *logger.Logger
 	Brevo                  *brevo.Service
 	Mailer                 mailer.Service
@@ -147,6 +154,8 @@ type WorkerHandlerDependencies struct {
 	EmailCopy              emailcopy.Generator
 	EmailThreads           emailthread.GuidancePreparer
 	NotificationDeliveries NotificationDeliveryStore
+	RoutineDeliveries      RoutineDeliveryStore
+	BriefingSources        jobs.BriefingSources
 	SlackEvents            SlackEventProcessor
 	FigmaWebhooks          FigmaWebhookProcessor
 	EmailReplies           EmailReplyProcessor
@@ -168,6 +177,7 @@ func NewWorkerHandlers(dependencies WorkerHandlerDependencies) *handlers {
 	slackRecovery, _ := dependencies.SlackEvents.(SlackInboxRecoverer)
 	figmaRecovery, _ := dependencies.FigmaWebhooks.(FigmaWebhookRecoverer)
 	return &handlers{
+		emailAvatars: dependencies.EmailAvatars, apiPublicURL: dependencies.APIPublicURL,
 		log:                    dependencies.Log,
 		brevoService:           dependencies.Brevo,
 		mailerService:          dependencies.Mailer,
@@ -179,6 +189,8 @@ func NewWorkerHandlers(dependencies WorkerHandlerDependencies) *handlers {
 		emailCopy:              dependencies.EmailCopy,
 		emailThreads:           dependencies.EmailThreads,
 		notificationDeliveries: dependencies.NotificationDeliveries,
+		routineDeliveries:      dependencies.RoutineDeliveries,
+		briefingSources:        dependencies.BriefingSources,
 		slackEvents:            dependencies.SlackEvents,
 		slackCredentials:       slackCredentials,
 		slackRecovery:          slackRecovery,
