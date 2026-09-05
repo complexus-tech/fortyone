@@ -143,11 +143,20 @@ export const ProfileMenu = ({
                 <span className="flex w-full items-center justify-between gap-4">
                   <span className="flex items-center gap-2">
                     {theme === "system" ? (
-                      <SystemIcon className="h-[1.15rem]" />
+                      <SystemIcon
+                        className="h-5 w-auto shrink-0"
+                        strokeWidth={1.5}
+                      />
                     ) : theme === "light" ? (
-                      <SunIcon className="h-[1.15rem]" />
+                      <SunIcon
+                        className="h-5 w-auto shrink-0"
+                        strokeWidth={1.5}
+                      />
                     ) : (
-                      <MoonIcon className="h-[1.15rem]" />
+                      <MoonIcon
+                        className="h-5 w-auto shrink-0"
+                        strokeWidth={1.5}
+                      />
                     )}
                     Appearance
                   </span>
@@ -174,7 +183,10 @@ export const ProfileMenu = ({
                       setTheme("light");
                     }}
                   >
-                    <SunIcon className="h-[1.15rem]" />
+                    <SunIcon
+                      className="h-5 w-auto shrink-0"
+                      strokeWidth={1.5}
+                    />
                     Day mode
                   </Menu.Item>
                   <Menu.Item
@@ -183,7 +195,10 @@ export const ProfileMenu = ({
                       setTheme("dark");
                     }}
                   >
-                    <MoonIcon className="h-[1.15rem]" />
+                    <MoonIcon
+                      className="h-5 w-auto shrink-0"
+                      strokeWidth={1.5}
+                    />
                     Night mode
                   </Menu.Item>
                   <Menu.Item
@@ -192,7 +207,10 @@ export const ProfileMenu = ({
                       setTheme("system");
                     }}
                   >
-                    <SystemIcon className="h-[1.15rem]" />
+                    <SystemIcon
+                      className="h-5 w-auto shrink-0"
+                      strokeWidth={1.5}
+                    />
                     Sync with system
                   </Menu.Item>
                 </Menu.Group>
