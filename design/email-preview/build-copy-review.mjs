@@ -14,7 +14,30 @@ const sharp = require(process.env.SHARP_MODULE || "sharp");
 await mkdir(join(out, "emails"), { recursive: true });
 await cp(join(root, "assets"), join(out, "assets"), { recursive: true });
 await mkdir(join(out, "assets/icons"), { recursive: true });
+await mkdir(join(out, "assets/avatars"), { recursive: true });
+await cp(
+  join(repository, "apps/landing/public/images/avatars/product-lead.png"),
+  join(out, "assets/avatars/sample-profile.png"),
+);
+await writeFile(
+  join(out, "assets/avatars/README.md"),
+  "Sample portrait copied without alteration from apps/landing/public/images/avatars/product-lead.png. Used only to demonstrate the image-present state with fictional preview names; this is not Sam Taylor’s real profile photo.\n",
+);
+const calendarSource = await readFile(
+  join(repository, "packages/icons/src/calendar.tsx"),
+  "utf8",
+);
+const commentSource = await readFile(
+  join(repository, "packages/icons/src/comment.tsx"),
+  "utf8",
+);
+const calendarPaths = [...calendarSource.matchAll(/\bd="([^"]+)"/g)]
+  .map((match) => `<path d="${match[1]}"/>`)
+  .join("");
+const commentPath = commentSource.match(/\bd="([^"]+)"/)[1];
 const shapes = {
+  calendar: calendarPaths,
+  comment: `<path d="${commentPath}" fill="#a9512a" stroke="none" fill-rule="evenodd" clip-rule="evenodd"/>`,
   check: '<path d="M5 14L8.5 17.5L19 6.5"/>',
   clock: '<circle cx="12" cy="12" r="10"/><path d="M12 8V12L14 14"/>',
   lock: '<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/>',
@@ -28,7 +51,7 @@ for (const [name, shape] of Object.entries(shapes)) {
 }
 await writeFile(
   join(out, "assets/icons/README.md"),
-  "Check and clock paths adapted from packages/icons/src/check.tsx and clock.tsx. Lock is a simple purpose-built vector. PNG files are rendered at 3x their 32px display size; SVG sources are retained for editing. Email markup uses PNG only. Icons are decorative; the adjacent text carries their meaning.\n",
+  "Check and clock paths adapted from packages/icons/src/check.tsx and clock.tsx. Calendar and comment paths are read directly from their shared packages/icons/src components. Lock is a simple purpose-built vector. PNG files are rendered at 3x their 32px display size; SVG sources are retained for editing. Email markup uses PNG only. Icons are decorative; the adjacent text carries their meaning.\n",
 );
 const ids = new Set();
 const manifest = [];
@@ -141,7 +164,7 @@ await writeFile(
 );
 await writeFile(
   join(out, "COVERAGE.md"),
-  `# Coverage and implementation notes\n\nThis collection covers the 12 file-backed application template types plus notification, job, and Maya reply variants found in the repository. The shared notification template carries many event types; these are representative states, not separate delivery templates. Dynamic AI wording, arbitrary field combinations, and provider-side Brevo automations are not an exhaustive enumerable catalog. No direct-message chat email producer was found; the conversation preview represents comment replies.\n\n## Review boundary\n\nOnly prototype files changed. Existing integrated previews continue to represent application templates. Subjects, preheaders, bodies, CTA labels, and footers here are proposed together. All values and destinations are fictional. Production implementation must preserve permission filtering, actual event facts, recipient timezone, token expiry, and unsubscribe/reply behavior. Maya replies retain literal CONFIRM and CANCEL commands; confirmation proposes one mutation.\n\n## Icons and avatars\n\nPNG icons are optional decoration for access, time-sensitive notices, and success receipts. They remain comprehensible with images blocked. Initials are rendered as text, with a visible full name beside them. Real avatar photos can be supported later by passing a suitable avatar URL through the notification payload; that plumbing is not implemented here. Do not fabricate profile photos or imply these initials are real user data.\n\n## Rollout copy locations\n\nInvitation subjects exist in both the event consumer and active invitation worker. Notification copy comes from rules and task handlers; digests come from jobs; Maya content comes from the email agent and deterministic reply processor. Editing template HTML alone will not update every subject or dynamically produced message.\n\n## Preview map\n\n| Preview | Group | Source |\n|---|---|---|\n` +
+  `# Coverage and implementation notes\n\nThis collection covers the 12 file-backed application template types plus notification, job, and Maya reply variants found in the repository. The shared notification template carries many event types; these are representative states, not separate delivery templates. Dynamic AI wording, arbitrary field combinations, and provider-side Brevo automations are not an exhaustive enumerable catalog. No direct-message chat email producer was found; the conversation preview represents comment replies.\n\n## Review boundary\n\nOnly prototype files changed. Existing integrated previews continue to represent application templates. Subjects, preheaders, bodies, CTA labels, and footers here are proposed together. All values and destinations are fictional. Production implementation must preserve permission filtering, actual event facts, recipient timezone, token expiry, and unsubscribe/reply behavior. Maya replies retain literal CONFIRM and CANCEL commands; confirmation proposes one mutation.\n\n## Icons and avatars\n\nPNG icons mark access, calendar changes, conversations, time-sensitive notices, and success receipts. Avatars are 20px with 8px initials and a 4px name gap. Actor avatars appear inline at the start of activity sentences, rather than in a separate top row. The renderer executes packages/lib/src/avatar-color.ts directly, preserving the frontend palette, normalization, and hash. If a person has a valid avatarURL, the renderer uses that image; otherwise it derives initials from the name. A supplied image has initials as alternative text and the name remains readable if images are blocked. The conversation fixture uses a sample portrait from the landing assets, not a real user account. Live avatar URLs still need passing through the production notification payload when this design is integrated.\n\n## Rollout copy locations\n\nInvitation subjects exist in both the event consumer and active invitation worker. Notification copy comes from rules and task handlers; digests come from jobs; Maya content comes from the email agent and deterministic reply processor. Editing template HTML alone will not update every subject or dynamically produced message.\n\n## Preview map\n\n| Preview | Group | Source |\n|---|---|---|\n` +
     manifest
       .map(
         (e) =>

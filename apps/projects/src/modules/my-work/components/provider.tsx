@@ -5,6 +5,7 @@ import { createContext, useContext, useEffect } from "react";
 import type { ReactNode } from "react";
 import type { StoriesViewOptions } from "@/components/ui/stories-view-options-button";
 import { getGroupedStoryFilterParams } from "@/components/ui/stories-filter-query";
+import { STORY_ATTENTION_VIEWS } from "@/shared/story/attention";
 import { useLocalStorage } from "@/hooks";
 import type { StoriesLayout } from "@/components/ui";
 import { useStoriesFilters } from "@/components/ui/stories-filter-state";
@@ -71,6 +72,10 @@ export const MyWorkProvider = ({
     "tab",
     parseAsStringLiteral(MY_WORK_TABS).withDefault("all"),
   );
+  const [, setAttention] = useQueryState(
+    "attention",
+    parseAsStringLiteral(STORY_ATTENTION_VIEWS),
+  );
   const countFilters = getGroupedStoryFilterParams(filters);
   const countOptions = {
     ...countFilters,
@@ -126,6 +131,7 @@ export const MyWorkProvider = ({
   }, [selectedTabIsVisible, setTabState]);
 
   const setTab = (value: MyWorkTab) => {
+    void setAttention(null);
     void setTabState(value);
   };
 
@@ -135,8 +141,14 @@ export const MyWorkProvider = ({
         viewOptions,
         setViewOptions,
         filters,
-        setFilters,
-        resetFilters,
+        setFilters: (value) => {
+          void setAttention(null);
+          setFilters(value);
+        },
+        resetFilters: () => {
+          void setAttention(null);
+          resetFilters();
+        },
         setTab,
         tab,
         visibleTabs,

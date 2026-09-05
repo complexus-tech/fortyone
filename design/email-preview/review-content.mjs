@@ -3,8 +3,8 @@ const rules = "apps/server/internal/modules/notifications/service/";
 const jobs = "apps/server/pkg/jobs/";
 const replies = "apps/server/internal/modules/emailreply/service/";
 const action = (label, path = "workspace") => ({ label, path });
-const sam = { name: "Sam Taylor", initials: "ST" };
-const alex = { name: "Alex Morgan", initials: "AM" };
+const sam = { name: "Sam Taylor" };
+const alex = { name: "Alex Morgan" };
 const base = (id, name, group, title, paragraphs, extra = {}) => ({
   id,
   name,
@@ -15,7 +15,7 @@ const base = (id, name, group, title, paragraphs, extra = {}) => ({
   preheader: paragraphs[0] || title,
   source: `${templates}notifications/notification.html`,
   fields: { workspace: "Acme", recipient: "Alex Morgan" },
-  note: "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+  note: "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
   footerLink: "Manage notification preferences",
   ...extra,
 });
@@ -32,6 +32,18 @@ const workspace = (id, name, title, paragraphs, extra) =>
     footer: "Sent to you as an administrator of Acme.",
     ...extra,
   });
+const activityIcons = {
+  "due-date-set": "calendar",
+  "due-date-changed": "calendar",
+  "due-date-removed": "calendar",
+  "start-date": "calendar",
+  scheduled: "calendar",
+  "schedule-day": "calendar",
+  "schedule-time": "clock",
+  comment: "comment",
+  conversation: "comment",
+  mention: "comment",
+};
 const activity = (id, name, title, text, extra = {}) =>
   base(id, name, "Activity", title, [], {
     preheader: text || title,
@@ -40,6 +52,7 @@ const activity = (id, name, title, text, extra = {}) =>
     action: action("View story", "stories/ACM-142"),
     source: `${rules}rules_story_updates.go`,
     ...extra,
+    icon: activityIcons[id] || extra.icon,
   });
 const maya = (id, name, title, paragraphs, extra = {}) =>
   base(id, name, "Maya", title, paragraphs, {
@@ -228,7 +241,7 @@ export const reviewEmails = [
       "assigned",
       "Story assigned",
       "Sam assigned you a story",
-      "You’re now assigned to this story.",
+      "Sam assigned this story to you.",
     ],
     [
       "reassigned",
@@ -324,7 +337,7 @@ export const reviewEmails = [
       "story-update",
       "Other story updates",
       "Sam updated a story",
-      "Open the story to review the latest changes.",
+      "Sam updated this story. Open it to review the latest changes.",
     ],
   ].map(([id, name, title, text]) => activity(id, name, title, text)),
   activity(
@@ -388,7 +401,7 @@ export const reviewEmails = [
       {
         id: "ACM-142",
         title: "Improve the onboarding flow",
-        text: "",
+        text: "Sam commented:",
         quote:
           "The updated screens are ready. Could you review the welcome step before we hand this over?",
       },
@@ -401,6 +414,7 @@ export const reviewEmails = [
     "The updated screens are ready for review.",
     {
       updates: undefined,
+      person: { ...sam, avatarURL: "../assets/avatars/sample-profile.png" },
       conversation: {
         original: "Can we make the welcome step shorter?",
         author: "Sam Taylor",
@@ -416,7 +430,7 @@ export const reviewEmails = [
       {
         id: "ACM-142",
         title: "Improve the onboarding flow",
-        text: "",
+        text: "Sam mentioned you:",
         quote:
           "Alex, could you confirm whether these screens cover the sign-in flow?",
       },
@@ -435,7 +449,7 @@ export const reviewEmails = [
       updates: [
         {
           title: "Improve activation",
-          text: "Health changed from At risk to On track.",
+          text: "Sam changed the health from At risk to On track.",
         },
       ],
       action: action("View objective", "objectives/activation"),
@@ -454,7 +468,7 @@ export const reviewEmails = [
       updates: [
         {
           title: "Increase first-week activation to 60%",
-          text: "Progress changed from 42% to 48%.",
+          text: "Sam updated progress from 42% to 48%.",
         },
       ],
       action: action("View key result", "objectives/activation"),
@@ -545,7 +559,11 @@ export const reviewEmails = [
     base(id, name, "Feedback", title, [], {
       preheader: text || title,
       person: id === "feedback-comment" ? sam : undefined,
-      updates: [{ title: item, text }],
+      icon: id === "feedback-comment" ? "comment" : undefined,
+      updates:
+        id === "feedback-comment"
+          ? [{ title: "Add saved views", text: "Sam replied:", quote: text }]
+          : [{ title: item, text }],
       action: action("View feedback", "feedback/saved-views"),
       source: `${rules}rules.go`,
     }),
@@ -562,16 +580,19 @@ export const reviewEmails = [
           id: "ACM-142",
           title: "Improve the onboarding flow",
           text: "Sam moved this story to In review.",
+          person: sam,
         },
         {
           id: "ACM-156",
           title: "Add saved views",
           text: "Jordan assigned this story to you.",
+          person: { name: "Jordan Lee" },
         },
         {
           id: "ACM-161",
           title: "Update the billing page",
           text: "Sam mentioned you in a comment.",
+          person: sam,
         },
       ],
       action: action("View updates", "notifications"),

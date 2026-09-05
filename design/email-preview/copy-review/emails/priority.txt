@@ -1,7 +1,5 @@
 A story’s priority changed
 
-Sam Taylor
-
 ACM-142
 Improve the onboarding flow
 Sam changed the priority from Medium to High.

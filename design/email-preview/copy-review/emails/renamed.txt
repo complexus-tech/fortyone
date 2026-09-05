@@ -1,7 +1,5 @@
 A story has a new name
 
-Sam Taylor
-
 ACM-142
 Improve the onboarding flow
 Sam renamed “Refresh onboarding” to “Improve the onboarding flow”.

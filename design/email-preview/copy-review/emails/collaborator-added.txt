@@ -1,7 +1,5 @@
 You’re now a collaborator
 
-Sam Taylor
-
 ACM-142
 Improve the onboarding flow
 Sam added you as a collaborator on this story.

@@ -8,7 +8,7 @@ Only prototype files changed. Existing integrated previews continue to represent
 
 ## Icons and avatars
 
-PNG icons are optional decoration for access, time-sensitive notices, and success receipts. They remain comprehensible with images blocked. Initials are rendered as text, with a visible full name beside them. Real avatar photos can be supported later by passing a suitable avatar URL through the notification payload; that plumbing is not implemented here. Do not fabricate profile photos or imply these initials are real user data.
+PNG icons mark access, calendar changes, conversations, time-sensitive notices, and success receipts. Avatars are 20px with 8px initials and a 4px name gap. Actor avatars appear inline at the start of activity sentences, rather than in a separate top row. The renderer executes packages/lib/src/avatar-color.ts directly, preserving the frontend palette, normalization, and hash. If a person has a valid avatarURL, the renderer uses that image; otherwise it derives initials from the name. A supplied image has initials as alternative text and the name remains readable if images are blocked. The conversation fixture uses a sample portrait from the landing assets, not a real user account. Live avatar URLs still need passing through the production notification payload when this design is integrated.
 
 ## Rollout copy locations
 

@@ -1,8 +1,7 @@
 A new reply to your feedback
 
-Sam Taylor
-
-Sam replied to “Add saved views”
+Add saved views
+Sam replied:
 Thanks for the suggestion. Which filters would you like to save?
 
 View feedback: https://example.com/fortyone/feedback/saved-views

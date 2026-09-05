@@ -1,10 +1,8 @@
 Sam updated a story
 
-Sam Taylor
-
 ACM-142
 Improve the onboarding flow
-Open the story to review the latest changes.
+Sam updated this story. Open it to review the latest changes.
 
 View story: https://example.com/fortyone/stories/ACM-142
 

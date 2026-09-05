@@ -1,7 +1,5 @@
 A story’s due date changed
 
-Sam Taylor
-
 ACM-142
 Improve the onboarding flow
 Sam moved the due date from 11 September to 14 September 2026.

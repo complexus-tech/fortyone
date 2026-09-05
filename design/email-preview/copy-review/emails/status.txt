@@ -1,7 +1,5 @@
 A story is ready for review
 
-Sam Taylor
-
 ACM-142
 Improve the onboarding flow
 Sam changed the status from In progress to In review.

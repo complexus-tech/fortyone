@@ -1,10 +1,8 @@
 Sam assigned you a story
 
-Sam Taylor
-
 ACM-142
 Improve the onboarding flow
-You’re now assigned to this story.
+Sam assigned this story to you.
 
 View story: https://example.com/fortyone/stories/ACM-142
 

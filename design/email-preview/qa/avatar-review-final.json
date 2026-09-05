@@ -1,0 +1,46 @@
+[
+  {
+    "avatars": [
+      {
+        "alignment": "middle",
+        "width": 20
+      }
+    ],
+    "file": "/copy-review/emails/start-date.html",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "avatars": [
+      {
+        "alignment": "middle",
+        "width": 20
+      }
+    ],
+    "file": "/copy-review/emails/conversation.html",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "avatars": [
+      {
+        "alignment": "middle",
+        "width": 20
+      },
+      {
+        "alignment": "middle",
+        "width": 20
+      },
+      {
+        "alignment": "middle",
+        "width": 20
+      }
+    ],
+    "file": "/copy-review/emails/activity-digest.html",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  }
+]

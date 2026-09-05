@@ -1,7 +1,5 @@
 You’re no longer assigned
 
-Sam Taylor
-
 ACM-142
 Improve the onboarding flow
 Sam removed you as the assignee of this story.

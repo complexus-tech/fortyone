@@ -16,7 +16,7 @@
       "recipient": "Alex Morgan",
       "sampleCode": "482 916"
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "footer": "If you didn’t request this email, you can ignore it.",
     "icon": "lock",
     "code": "482 916",
@@ -77,7 +77,7 @@
       "recipient": "Alex Morgan",
       "sampleCode": "482 916"
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "footer": "If you didn’t request this email, you can ignore it.",
     "icon": "lock",
     "code": "482 916",
@@ -105,7 +105,7 @@
       "recipient": "Alex Morgan",
       "sampleCode": "482 916"
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "footer": "If you didn’t request this email, you can ignore it.",
     "icon": "lock",
     "code": "482 916",
@@ -136,17 +136,15 @@
       "recipient": "Alex Morgan",
       "actor": {
         "name": "Sam Taylor",
-        "initials": "ST",
         "role": "Invited you"
       }
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "footer": "If you weren’t expecting this invitation, you can ignore it.",
     "image": "invitation.png",
     "imageAlt": "A warm illustration of a shared team workspace",
     "person": {
       "name": "Sam Taylor",
-      "initials": "ST",
       "role": "Invited you"
     },
     "action": {
@@ -156,7 +154,7 @@
     "helper": "Your invitation expires in 7 days.",
     "html": "emails/invitation.html",
     "text": "emails/invitation.txt",
-    "bytes": 7672,
+    "bytes": 7636,
     "sender": "FortyOne <notifications@example.com>",
     "recipient": "Alex Morgan <alex@example.com>",
     "replyTo": "Not enabled in this preview"
@@ -177,17 +175,15 @@
       "recipient": "Alex Morgan",
       "actor": {
         "name": "Alex Morgan",
-        "initials": "AM",
         "role": "New teammate"
       }
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "footer": "You invited Alex to join Acme.",
     "image": "invitation-accepted.png",
     "imageAlt": "A warm illustration welcoming a new teammate",
     "person": {
       "name": "Alex Morgan",
-      "initials": "AM",
       "role": "New teammate"
     },
     "action": {
@@ -196,7 +192,7 @@
     },
     "html": "emails/invitation-accepted.html",
     "text": "emails/invitation-accepted.txt",
-    "bytes": 7447,
+    "bytes": 7409,
     "sender": "FortyOne <notifications@example.com>",
     "recipient": "Alex Morgan <alex@example.com>",
     "replyTo": "Not enabled in this preview"
@@ -217,7 +213,7 @@
       "workspace": "Acme",
       "recipient": "Alex Morgan"
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "footer": "This notice concerns your FortyOne account.",
     "icon": "clock",
     "action": {
@@ -247,7 +243,7 @@
       "workspace": "Acme",
       "recipient": "Alex Morgan"
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "footer": "Sent to you as an administrator of Acme.",
     "icon": "clock",
     "warning": {
@@ -287,7 +283,7 @@
         ]
       ]
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "footer": "Sent to you as an administrator of Acme.",
     "icon": "clock",
     "rows": [
@@ -329,7 +325,7 @@
         ]
       ]
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "footer": "Sent to you as an administrator of Acme.",
     "icon": "clock",
     "rows": [
@@ -364,7 +360,7 @@
       "workspace": "Acme",
       "recipient": "Alex Morgan"
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "footer": "Sent to you as an administrator of Acme.",
     "icon": "check",
     "action": {
@@ -393,7 +389,7 @@
       "workspace": "Acme",
       "recipient": "Alex Morgan"
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "footer": "Sent to you as an administrator of Acme.",
     "icon": "check",
     "action": {
@@ -414,27 +410,25 @@
     "title": "Sam assigned you a story",
     "paragraphs": [],
     "subject": "Sam assigned you a story",
-    "preheader": "You’re now assigned to this story.",
+    "preheader": "Sam assigned this story to you.",
     "source": "apps/server/internal/modules/notifications/service/rules_story_updates.go",
     "fields": {
       "workspace": "Acme",
       "recipient": "Alex Morgan",
       "actor": {
-        "name": "Sam Taylor",
-        "initials": "ST"
+        "name": "Sam Taylor"
       }
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "footerLink": "Manage notification preferences",
     "person": {
-      "name": "Sam Taylor",
-      "initials": "ST"
+      "name": "Sam Taylor"
     },
     "updates": [
       {
         "id": "ACM-142",
         "title": "Improve the onboarding flow",
-        "text": "You’re now assigned to this story."
+        "text": "Sam assigned this story to you."
       }
     ],
     "action": {
@@ -443,7 +437,7 @@
     },
     "html": "emails/assigned.html",
     "text": "emails/assigned.txt",
-    "bytes": 7755,
+    "bytes": 7724,
     "sender": "FortyOne <notifications@example.com>",
     "recipient": "Alex Morgan <alex@example.com>",
     "replyTo": "Not enabled in this preview"
@@ -461,15 +455,13 @@
       "workspace": "Acme",
       "recipient": "Alex Morgan",
       "actor": {
-        "name": "Sam Taylor",
-        "initials": "ST"
+        "name": "Sam Taylor"
       }
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "footerLink": "Manage notification preferences",
     "person": {
-      "name": "Sam Taylor",
-      "initials": "ST"
+      "name": "Sam Taylor"
     },
     "updates": [
       {
@@ -484,7 +476,7 @@
     },
     "html": "emails/reassigned.html",
     "text": "emails/reassigned.txt",
-    "bytes": 7783,
+    "bytes": 7762,
     "sender": "FortyOne <notifications@example.com>",
     "recipient": "Alex Morgan <alex@example.com>",
     "replyTo": "Not enabled in this preview"
@@ -502,15 +494,13 @@
       "workspace": "Acme",
       "recipient": "Alex Morgan",
       "actor": {
-        "name": "Sam Taylor",
-        "initials": "ST"
+        "name": "Sam Taylor"
       }
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "footerLink": "Manage notification preferences",
     "person": {
-      "name": "Sam Taylor",
-      "initials": "ST"
+      "name": "Sam Taylor"
     },
     "updates": [
       {
@@ -525,7 +515,7 @@
     },
     "html": "emails/unassigned.html",
     "text": "emails/unassigned.txt",
-    "bytes": 7781,
+    "bytes": 7760,
     "sender": "FortyOne <notifications@example.com>",
     "recipient": "Alex Morgan <alex@example.com>",
     "replyTo": "Not enabled in this preview"
@@ -543,15 +533,13 @@
       "workspace": "Acme",
       "recipient": "Alex Morgan",
       "actor": {
-        "name": "Sam Taylor",
-        "initials": "ST"
+        "name": "Sam Taylor"
       }
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "footerLink": "Manage notification preferences",
     "person": {
-      "name": "Sam Taylor",
-      "initials": "ST"
+      "name": "Sam Taylor"
     },
     "updates": [
       {
@@ -566,7 +554,7 @@
     },
     "html": "emails/collaborator-added.html",
     "text": "emails/collaborator-added.txt",
-    "bytes": 7781,
+    "bytes": 7760,
     "sender": "FortyOne <notifications@example.com>",
     "recipient": "Alex Morgan <alex@example.com>",
     "replyTo": "Not enabled in this preview"
@@ -584,15 +572,13 @@
       "workspace": "Acme",
       "recipient": "Alex Morgan",
       "actor": {
-        "name": "Sam Taylor",
-        "initials": "ST"
+        "name": "Sam Taylor"
       }
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "footerLink": "Manage notification preferences",
     "person": {
-      "name": "Sam Taylor",
-      "initials": "ST"
+      "name": "Sam Taylor"
     },
     "updates": [
       {
@@ -607,7 +593,7 @@
     },
     "html": "emails/collaborator-removed.html",
     "text": "emails/collaborator-removed.txt",
-    "bytes": 7793,
+    "bytes": 7772,
     "sender": "FortyOne <notifications@example.com>",
     "recipient": "Alex Morgan <alex@example.com>",
     "replyTo": "Not enabled in this preview"
@@ -625,15 +611,13 @@
       "workspace": "Acme",
       "recipient": "Alex Morgan",
       "actor": {
-        "name": "Sam Taylor",
-        "initials": "ST"
+        "name": "Sam Taylor"
       }
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "footerLink": "Manage notification preferences",
     "person": {
-      "name": "Sam Taylor",
-      "initials": "ST"
+      "name": "Sam Taylor"
     },
     "updates": [
       {
@@ -648,7 +632,7 @@
     },
     "html": "emails/priority.html",
     "text": "emails/priority.txt",
-    "bytes": 7781,
+    "bytes": 7760,
     "sender": "FortyOne <notifications@example.com>",
     "recipient": "Alex Morgan <alex@example.com>",
     "replyTo": "Not enabled in this preview"
@@ -666,15 +650,13 @@
       "workspace": "Acme",
       "recipient": "Alex Morgan",
       "actor": {
-        "name": "Sam Taylor",
-        "initials": "ST"
+        "name": "Sam Taylor"
       }
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "footerLink": "Manage notification preferences",
     "person": {
-      "name": "Sam Taylor",
-      "initials": "ST"
+      "name": "Sam Taylor"
     },
     "updates": [
       {
@@ -689,7 +671,7 @@
     },
     "html": "emails/status.html",
     "text": "emails/status.txt",
-    "bytes": 7795,
+    "bytes": 7774,
     "sender": "FortyOne <notifications@example.com>",
     "recipient": "Alex Morgan <alex@example.com>",
     "replyTo": "Not enabled in this preview"
@@ -707,15 +689,13 @@
       "workspace": "Acme",
       "recipient": "Alex Morgan",
       "actor": {
-        "name": "Sam Taylor",
-        "initials": "ST"
+        "name": "Sam Taylor"
       }
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "footerLink": "Manage notification preferences",
     "person": {
-      "name": "Sam Taylor",
-      "initials": "ST"
+      "name": "Sam Taylor"
     },
     "updates": [
       {
@@ -730,7 +710,7 @@
     },
     "html": "emails/description.html",
     "text": "emails/description.txt",
-    "bytes": 7847,
+    "bytes": 7826,
     "sender": "FortyOne <notifications@example.com>",
     "recipient": "Alex Morgan <alex@example.com>",
     "replyTo": "Not enabled in this preview"
@@ -748,15 +728,13 @@
       "workspace": "Acme",
       "recipient": "Alex Morgan",
       "actor": {
-        "name": "Sam Taylor",
-        "initials": "ST"
+        "name": "Sam Taylor"
       }
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "footerLink": "Manage notification preferences",
     "person": {
-      "name": "Sam Taylor",
-      "initials": "ST"
+      "name": "Sam Taylor"
     },
     "updates": [
       {
@@ -769,9 +747,10 @@
       "label": "View story",
       "path": "stories/ACM-142"
     },
+    "icon": "calendar",
     "html": "emails/due-date-set.html",
     "text": "emails/due-date-set.txt",
-    "bytes": 7771,
+    "bytes": 7882,
     "sender": "FortyOne <notifications@example.com>",
     "recipient": "Alex Morgan <alex@example.com>",
     "replyTo": "Not enabled in this preview"
@@ -789,15 +768,13 @@
       "workspace": "Acme",
       "recipient": "Alex Morgan",
       "actor": {
-        "name": "Sam Taylor",
-        "initials": "ST"
+        "name": "Sam Taylor"
       }
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "footerLink": "Manage notification preferences",
     "person": {
-      "name": "Sam Taylor",
-      "initials": "ST"
+      "name": "Sam Taylor"
     },
     "updates": [
       {
@@ -810,9 +787,10 @@
       "label": "View story",
       "path": "stories/ACM-142"
     },
+    "icon": "calendar",
     "html": "emails/due-date-changed.html",
     "text": "emails/due-date-changed.txt",
-    "bytes": 7815,
+    "bytes": 7926,
     "sender": "FortyOne <notifications@example.com>",
     "recipient": "Alex Morgan <alex@example.com>",
     "replyTo": "Not enabled in this preview"
@@ -830,15 +808,13 @@
       "workspace": "Acme",
       "recipient": "Alex Morgan",
       "actor": {
-        "name": "Sam Taylor",
-        "initials": "ST"
+        "name": "Sam Taylor"
       }
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "footerLink": "Manage notification preferences",
     "person": {
-      "name": "Sam Taylor",
-      "initials": "ST"
+      "name": "Sam Taylor"
     },
     "updates": [
       {
@@ -851,9 +827,10 @@
       "label": "View story",
       "path": "stories/ACM-142"
     },
+    "icon": "calendar",
     "html": "emails/due-date-removed.html",
     "text": "emails/due-date-removed.txt",
-    "bytes": 7823,
+    "bytes": 7934,
     "sender": "FortyOne <notifications@example.com>",
     "recipient": "Alex Morgan <alex@example.com>",
     "replyTo": "Not enabled in this preview"
@@ -871,15 +848,13 @@
       "workspace": "Acme",
       "recipient": "Alex Morgan",
       "actor": {
-        "name": "Sam Taylor",
-        "initials": "ST"
+        "name": "Sam Taylor"
       }
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "footerLink": "Manage notification preferences",
     "person": {
-      "name": "Sam Taylor",
-      "initials": "ST"
+      "name": "Sam Taylor"
     },
     "updates": [
       {
@@ -892,9 +867,10 @@
       "label": "View story",
       "path": "stories/ACM-142"
     },
+    "icon": "calendar",
     "html": "emails/start-date.html",
     "text": "emails/start-date.txt",
-    "bytes": 7819,
+    "bytes": 7930,
     "sender": "FortyOne <notifications@example.com>",
     "recipient": "Alex Morgan <alex@example.com>",
     "replyTo": "Not enabled in this preview"
@@ -912,15 +888,13 @@
       "workspace": "Acme",
       "recipient": "Alex Morgan",
       "actor": {
-        "name": "Sam Taylor",
-        "initials": "ST"
+        "name": "Sam Taylor"
       }
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "footerLink": "Manage notification preferences",
     "person": {
-      "name": "Sam Taylor",
-      "initials": "ST"
+      "name": "Sam Taylor"
     },
     "updates": [
       {
@@ -935,7 +909,7 @@
     },
     "html": "emails/sprint.html",
     "text": "emails/sprint.txt",
-    "bytes": 7795,
+    "bytes": 7774,
     "sender": "FortyOne <notifications@example.com>",
     "recipient": "Alex Morgan <alex@example.com>",
     "replyTo": "Not enabled in this preview"
@@ -953,15 +927,13 @@
       "workspace": "Acme",
       "recipient": "Alex Morgan",
       "actor": {
-        "name": "Sam Taylor",
-        "initials": "ST"
+        "name": "Sam Taylor"
       }
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "footerLink": "Manage notification preferences",
     "person": {
-      "name": "Sam Taylor",
-      "initials": "ST"
+      "name": "Sam Taylor"
     },
     "updates": [
       {
@@ -976,7 +948,7 @@
     },
     "html": "emails/estimate.html",
     "text": "emails/estimate.txt",
-    "bytes": 7779,
+    "bytes": 7758,
     "sender": "FortyOne <notifications@example.com>",
     "recipient": "Alex Morgan <alex@example.com>",
     "replyTo": "Not enabled in this preview"
@@ -994,15 +966,13 @@
       "workspace": "Acme",
       "recipient": "Alex Morgan",
       "actor": {
-        "name": "Sam Taylor",
-        "initials": "ST"
+        "name": "Sam Taylor"
       }
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "footerLink": "Manage notification preferences",
     "person": {
-      "name": "Sam Taylor",
-      "initials": "ST"
+      "name": "Sam Taylor"
     },
     "updates": [
       {
@@ -1017,7 +987,7 @@
     },
     "html": "emails/collaborators.html",
     "text": "emails/collaborators.txt",
-    "bytes": 7789,
+    "bytes": 7768,
     "sender": "FortyOne <notifications@example.com>",
     "recipient": "Alex Morgan <alex@example.com>",
     "replyTo": "Not enabled in this preview"
@@ -1035,15 +1005,13 @@
       "workspace": "Acme",
       "recipient": "Alex Morgan",
       "actor": {
-        "name": "Sam Taylor",
-        "initials": "ST"
+        "name": "Sam Taylor"
       }
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "footerLink": "Manage notification preferences",
     "person": {
-      "name": "Sam Taylor",
-      "initials": "ST"
+      "name": "Sam Taylor"
     },
     "updates": [
       {
@@ -1058,7 +1026,7 @@
     },
     "html": "emails/renamed.html",
     "text": "emails/renamed.txt",
-    "bytes": 7827,
+    "bytes": 7806,
     "sender": "FortyOne <notifications@example.com>",
     "recipient": "Alex Morgan <alex@example.com>",
     "replyTo": "Not enabled in this preview"
@@ -1070,27 +1038,25 @@
     "title": "Sam updated a story",
     "paragraphs": [],
     "subject": "Sam updated a story",
-    "preheader": "Open the story to review the latest changes.",
+    "preheader": "Sam updated this story. Open it to review the latest changes.",
     "source": "apps/server/internal/modules/notifications/service/rules_story_updates.go",
     "fields": {
       "workspace": "Acme",
       "recipient": "Alex Morgan",
       "actor": {
-        "name": "Sam Taylor",
-        "initials": "ST"
+        "name": "Sam Taylor"
       }
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "footerLink": "Manage notification preferences",
     "person": {
-      "name": "Sam Taylor",
-      "initials": "ST"
+      "name": "Sam Taylor"
     },
     "updates": [
       {
         "id": "ACM-142",
         "title": "Improve the onboarding flow",
-        "text": "Open the story to review the latest changes."
+        "text": "Sam updated this story. Open it to review the latest changes."
       }
     ],
     "action": {
@@ -1099,7 +1065,7 @@
     },
     "html": "emails/story-update.html",
     "text": "emails/story-update.txt",
-    "bytes": 7761,
+    "bytes": 7774,
     "sender": "FortyOne <notifications@example.com>",
     "recipient": "Alex Morgan <alex@example.com>",
     "replyTo": "Not enabled in this preview"
@@ -1163,10 +1129,10 @@
       "label": "View story",
       "path": "stories/ACM-142"
     },
-    "icon": "clock",
+    "icon": "calendar",
     "html": "emails/scheduled.html",
     "text": "emails/scheduled.txt",
-    "bytes": 7462,
+    "bytes": 7465,
     "sender": "FortyOne <notifications@example.com>",
     "recipient": "Alex Morgan <alex@example.com>",
     "replyTo": "Not enabled in this preview"
@@ -1197,10 +1163,10 @@
       "label": "View story",
       "path": "stories/ACM-142"
     },
-    "icon": "clock",
+    "icon": "calendar",
     "html": "emails/schedule-day.html",
     "text": "emails/schedule-day.txt",
-    "bytes": 7490,
+    "bytes": 7493,
     "sender": "FortyOne <notifications@example.com>",
     "recipient": "Alex Morgan <alex@example.com>",
     "replyTo": "Not enabled in this preview"
@@ -1354,21 +1320,19 @@
       "workspace": "Acme",
       "recipient": "Alex Morgan",
       "actor": {
-        "name": "Sam Taylor",
-        "initials": "ST"
+        "name": "Sam Taylor"
       }
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "footerLink": "Manage notification preferences",
     "person": {
-      "name": "Sam Taylor",
-      "initials": "ST"
+      "name": "Sam Taylor"
     },
     "updates": [
       {
         "id": "ACM-142",
         "title": "Improve the onboarding flow",
-        "text": "",
+        "text": "Sam commented:",
         "quote": "The updated screens are ready. Could you review the welcome step before we hand this over?"
       }
     ],
@@ -1376,9 +1340,10 @@
       "label": "View story",
       "path": "stories/ACM-142"
     },
+    "icon": "comment",
     "html": "emails/comment.html",
     "text": "emails/comment.txt",
-    "bytes": 8098,
+    "bytes": 8222,
     "sender": "FortyOne <notifications@example.com>",
     "recipient": "Alex Morgan <alex@example.com>",
     "replyTo": "Not enabled in this preview"
@@ -1397,14 +1362,14 @@
       "recipient": "Alex Morgan",
       "actor": {
         "name": "Sam Taylor",
-        "initials": "ST"
+        "avatarURL": "../assets/avatars/sample-profile.png"
       }
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "footerLink": "Manage notification preferences",
     "person": {
       "name": "Sam Taylor",
-      "initials": "ST"
+      "avatarURL": "../assets/avatars/sample-profile.png"
     },
     "action": {
       "label": "View conversation",
@@ -1415,9 +1380,10 @@
       "author": "Sam Taylor",
       "reply": "Yes, I’ve reduced it to two steps and updated the designs. Could you take another look?"
     },
+    "icon": "comment",
     "html": "emails/conversation.html",
     "text": "emails/conversation.txt",
-    "bytes": 8252,
+    "bytes": 8521,
     "sender": "FortyOne <notifications@example.com>",
     "recipient": "Alex Morgan <alex@example.com>",
     "replyTo": "Not enabled in this preview"
@@ -1435,21 +1401,19 @@
       "workspace": "Acme",
       "recipient": "Alex Morgan",
       "actor": {
-        "name": "Sam Taylor",
-        "initials": "ST"
+        "name": "Sam Taylor"
       }
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "footerLink": "Manage notification preferences",
     "person": {
-      "name": "Sam Taylor",
-      "initials": "ST"
+      "name": "Sam Taylor"
     },
     "updates": [
       {
         "id": "ACM-142",
         "title": "Improve the onboarding flow",
-        "text": "",
+        "text": "Sam mentioned you:",
         "quote": "Alex, could you confirm whether these screens cover the sign-in flow?"
       }
     ],
@@ -1457,9 +1421,10 @@
       "label": "View mention",
       "path": "stories/ACM-142/comments"
     },
+    "icon": "comment",
     "html": "emails/mention.html",
     "text": "emails/mention.txt",
-    "bytes": 8069,
+    "bytes": 8197,
     "sender": "FortyOne <notifications@example.com>",
     "recipient": "Alex Morgan <alex@example.com>",
     "replyTo": "Not enabled in this preview"
@@ -1477,20 +1442,18 @@
       "workspace": "Acme",
       "recipient": "Alex Morgan",
       "actor": {
-        "name": "Sam Taylor",
-        "initials": "ST"
+        "name": "Sam Taylor"
       }
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "footerLink": "Manage notification preferences",
     "person": {
-      "name": "Sam Taylor",
-      "initials": "ST"
+      "name": "Sam Taylor"
     },
     "updates": [
       {
         "title": "Improve activation",
-        "text": "Health changed from At risk to On track."
+        "text": "Sam changed the health from At risk to On track."
       }
     ],
     "action": {
@@ -1499,7 +1462,7 @@
     },
     "html": "emails/objective-update.html",
     "text": "emails/objective-update.txt",
-    "bytes": 7623,
+    "bytes": 7610,
     "sender": "FortyOne <notifications@example.com>",
     "recipient": "Alex Morgan <alex@example.com>",
     "replyTo": "Not enabled in this preview"
@@ -1517,20 +1480,18 @@
       "workspace": "Acme",
       "recipient": "Alex Morgan",
       "actor": {
-        "name": "Sam Taylor",
-        "initials": "ST"
+        "name": "Sam Taylor"
       }
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "footerLink": "Manage notification preferences",
     "person": {
-      "name": "Sam Taylor",
-      "initials": "ST"
+      "name": "Sam Taylor"
     },
     "updates": [
       {
         "title": "Increase first-week activation to 60%",
-        "text": "Progress changed from 42% to 48%."
+        "text": "Sam updated progress from 42% to 48%."
       }
     ],
     "action": {
@@ -1539,7 +1500,7 @@
     },
     "html": "emails/key-result-update.html",
     "text": "emails/key-result-update.txt",
-    "bytes": 7660,
+    "bytes": 7643,
     "sender": "FortyOne <notifications@example.com>",
     "recipient": "Alex Morgan <alex@example.com>",
     "replyTo": "Not enabled in this preview"
@@ -1565,7 +1526,7 @@
         ]
       ]
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "footerLink": "Manage notification preferences",
     "rows": [
       [
@@ -1599,7 +1560,7 @@
       "workspace": "Acme",
       "recipient": "Alex Morgan"
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "footerLink": "Manage notification preferences",
     "updates": [
       {
@@ -1691,20 +1652,20 @@
       "workspace": "Acme",
       "recipient": "Alex Morgan",
       "actor": {
-        "name": "Sam Taylor",
-        "initials": "ST"
+        "name": "Sam Taylor"
       }
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "footerLink": "Manage notification preferences",
     "person": {
-      "name": "Sam Taylor",
-      "initials": "ST"
+      "name": "Sam Taylor"
     },
+    "icon": "comment",
     "updates": [
       {
-        "title": "Sam replied to “Add saved views”",
-        "text": "Thanks for the suggestion. Which filters would you like to save?"
+        "title": "Add saved views",
+        "text": "Sam replied:",
+        "quote": "Thanks for the suggestion. Which filters would you like to save?"
       }
     ],
     "action": {
@@ -1713,7 +1674,7 @@
     },
     "html": "emails/feedback-comment.html",
     "text": "emails/feedback-comment.txt",
-    "bytes": 7698,
+    "bytes": 8091,
     "sender": "FortyOne <notifications@example.com>",
     "recipient": "Alex Morgan <alex@example.com>",
     "replyTo": "Not enabled in this preview"
@@ -1731,7 +1692,7 @@
       "workspace": "Acme",
       "recipient": "Alex Morgan"
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "footerLink": "Manage notification preferences",
     "updates": [
       {
@@ -1763,7 +1724,7 @@
       "workspace": "Acme",
       "recipient": "Alex Morgan"
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "footerLink": "Manage notification preferences",
     "updates": [
       {
@@ -1795,7 +1756,7 @@
       "workspace": "Acme",
       "recipient": "Alex Morgan"
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "footerLink": "Manage notification preferences",
     "updates": [
       {
@@ -1829,23 +1790,32 @@
       "workspace": "Acme",
       "recipient": "Alex Morgan"
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "footerLink": "Manage notification preferences",
     "updates": [
       {
         "id": "ACM-142",
         "title": "Improve the onboarding flow",
-        "text": "Sam moved this story to In review."
+        "text": "Sam moved this story to In review.",
+        "person": {
+          "name": "Sam Taylor"
+        }
       },
       {
         "id": "ACM-156",
         "title": "Add saved views",
-        "text": "Jordan assigned this story to you."
+        "text": "Jordan assigned this story to you.",
+        "person": {
+          "name": "Jordan Lee"
+        }
       },
       {
         "id": "ACM-161",
         "title": "Update the billing page",
-        "text": "Sam mentioned you in a comment."
+        "text": "Sam mentioned you in a comment.",
+        "person": {
+          "name": "Sam Taylor"
+        }
       }
     ],
     "action": {
@@ -1854,7 +1824,7 @@
     },
     "html": "emails/activity-digest.html",
     "text": "emails/activity-digest.txt",
-    "bytes": 8380,
+    "bytes": 9625,
     "sender": "FortyOne <notifications@example.com>",
     "recipient": "Alex Morgan <alex@example.com>",
     "replyTo": "Not enabled in this preview"
@@ -1874,7 +1844,7 @@
       "workspace": "Acme",
       "recipient": "Alex Morgan"
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "footerLink": "Manage notification preferences",
     "updates": [
       {
@@ -1912,7 +1882,7 @@
       "workspace": "Acme",
       "recipient": "Alex Morgan"
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "footerLink": "Manage notification preferences",
     "icon": "clock",
     "updates": [
@@ -1953,7 +1923,7 @@
       "workspace": "Acme",
       "recipient": "Alex Morgan"
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "footerLink": "Manage notification preferences",
     "icon": "clock",
     "updates": [
@@ -1989,7 +1959,7 @@
       "workspace": "Acme",
       "recipient": "Alex Morgan"
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "footerLink": "Manage notification preferences",
     "updates": [
       {
@@ -2069,7 +2039,7 @@
       "workspace": "Acme",
       "recipient": "Alex Morgan"
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "maya": true,
     "footer": "You’re receiving this reply in your conversation with Maya.",
     "action": {
@@ -2108,7 +2078,7 @@
         ]
       ]
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "maya": true,
     "footer": "You’re receiving this reply in your conversation with Maya.",
     "rows": [
@@ -2199,7 +2169,7 @@
       "workspace": "Acme",
       "recipient": "Alex Morgan"
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "maya": true,
     "footer": "You’re receiving this reply in your conversation with Maya.",
     "icon": "check",
@@ -2225,7 +2195,7 @@
       "workspace": "Acme",
       "recipient": "Alex Morgan"
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "maya": true,
     "footer": "You’re receiving this reply in your conversation with Maya.",
     "icon": "check",
@@ -2278,7 +2248,7 @@
       "workspace": "Acme",
       "recipient": "Alex Morgan"
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "maya": true,
     "footer": "You’re receiving this reply in your conversation with Maya.",
     "icon": "clock",
@@ -2305,7 +2275,7 @@
       "workspace": "Acme",
       "recipient": "Alex Morgan"
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "maya": true,
     "footer": "You’re receiving this reply in your conversation with Maya.",
     "html": "emails/maya-conflict.html",
@@ -2331,7 +2301,7 @@
       "workspace": "Acme",
       "recipient": "Alex Morgan"
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "maya": true,
     "footer": "You’re receiving this reply in your conversation with Maya.",
     "html": "emails/maya-preview-unavailable.html",
@@ -2391,7 +2361,7 @@
         ]
       ]
     },
-    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Initials are a preview treatment; profile photo data is not yet connected to email delivery.",
+    "note": "Proposed copy with fictional sample data. Production copy is unchanged. Avatars use the shared frontend color function and show a supplied image before falling back to initials. Photo fixtures use an existing landing-page sample portrait; live profile data is not yet connected to email delivery.",
     "maya": true,
     "footer": "You’re receiving this reply in your conversation with Maya.",
     "rows": [

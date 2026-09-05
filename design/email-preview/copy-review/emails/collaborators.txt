@@ -1,7 +1,5 @@
 A story’s collaborators changed
 
-Sam Taylor
-
 ACM-142
 Improve the onboarding flow
 Sam updated the collaborators on this story.

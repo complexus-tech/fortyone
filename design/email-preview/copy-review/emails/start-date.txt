@@ -1,7 +1,5 @@
 A story’s start date changed
 
-Sam Taylor
-
 ACM-142
 Improve the onboarding flow
 Sam moved the start date from 7 September to 8 September 2026.

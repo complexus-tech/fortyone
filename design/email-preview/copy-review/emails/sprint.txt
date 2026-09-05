@@ -1,7 +1,5 @@
 A story moved to another sprint
 
-Sam Taylor
-
 ACM-142
 Improve the onboarding flow
 Sam moved this story from Sprint 12 to Sprint 13.

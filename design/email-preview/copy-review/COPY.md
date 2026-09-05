@@ -90,8 +90,6 @@ Your team is ready for you
 
 Sam invited you to join Acme on FortyOne. Join your team to plan projects, track stories, and keep work moving.
 
-Sam Taylor
-
 Join Acme: https://example.com/fortyone/invitations/accept
 
 Your invitation expires in 7 days.
@@ -110,8 +108,6 @@ FortyOne by Complexus LLC
 Alex has joined Acme
 
 Alex accepted your invitation and is now part of your workspace.
-
-Alex Morgan
 
 Open Acme: https://example.com/fortyone/workspace
 
@@ -241,16 +237,14 @@ FortyOne by Complexus LLC
 ## Story assigned
 
 - Subject: Sam assigned you a story
-- Preheader: You’re now assigned to this story.
+- Preheader: Sam assigned this story to you.
 - Source: `apps/server/internal/modules/notifications/service/rules_story_updates.go`
 
 Sam assigned you a story
 
-Sam Taylor
-
 ACM-142
 Improve the onboarding flow
-You’re now assigned to this story.
+Sam assigned this story to you.
 
 View story: https://example.com/fortyone/stories/ACM-142
 
@@ -266,8 +260,6 @@ FortyOne by Complexus LLC
 - Source: `apps/server/internal/modules/notifications/service/rules_story_updates.go`
 
 Your story has a new assignee
-
-Sam Taylor
 
 ACM-142
 Improve the onboarding flow
@@ -288,8 +280,6 @@ FortyOne by Complexus LLC
 
 You’re no longer assigned
 
-Sam Taylor
-
 ACM-142
 Improve the onboarding flow
 Sam removed you as the assignee of this story.
@@ -308,8 +298,6 @@ FortyOne by Complexus LLC
 - Source: `apps/server/internal/modules/notifications/service/rules_story_updates.go`
 
 You’re now a collaborator
-
-Sam Taylor
 
 ACM-142
 Improve the onboarding flow
@@ -330,8 +318,6 @@ FortyOne by Complexus LLC
 
 Your collaboration role changed
 
-Sam Taylor
-
 ACM-142
 Improve the onboarding flow
 Sam removed you as a collaborator on this story.
@@ -350,8 +336,6 @@ FortyOne by Complexus LLC
 - Source: `apps/server/internal/modules/notifications/service/rules_story_updates.go`
 
 A story’s priority changed
-
-Sam Taylor
 
 ACM-142
 Improve the onboarding flow
@@ -372,8 +356,6 @@ FortyOne by Complexus LLC
 
 A story is ready for review
 
-Sam Taylor
-
 ACM-142
 Improve the onboarding flow
 Sam changed the status from In progress to In review.
@@ -392,8 +374,6 @@ FortyOne by Complexus LLC
 - Source: `apps/server/internal/modules/notifications/service/rules_story_updates.go`
 
 A story’s description changed
-
-Sam Taylor
 
 ACM-142
 Improve the onboarding flow
@@ -414,8 +394,6 @@ FortyOne by Complexus LLC
 
 A story now has a due date
 
-Sam Taylor
-
 ACM-142
 Improve the onboarding flow
 Sam set the due date to 11 September 2026.
@@ -434,8 +412,6 @@ FortyOne by Complexus LLC
 - Source: `apps/server/internal/modules/notifications/service/rules_story_updates.go`
 
 A story’s due date changed
-
-Sam Taylor
 
 ACM-142
 Improve the onboarding flow
@@ -456,8 +432,6 @@ FortyOne by Complexus LLC
 
 A story’s due date was removed
 
-Sam Taylor
-
 ACM-142
 Improve the onboarding flow
 Sam removed the due date. This story no longer has a deadline.
@@ -476,8 +450,6 @@ FortyOne by Complexus LLC
 - Source: `apps/server/internal/modules/notifications/service/rules_story_updates.go`
 
 A story’s start date changed
-
-Sam Taylor
 
 ACM-142
 Improve the onboarding flow
@@ -498,8 +470,6 @@ FortyOne by Complexus LLC
 
 A story moved to another sprint
 
-Sam Taylor
-
 ACM-142
 Improve the onboarding flow
 Sam moved this story from Sprint 12 to Sprint 13.
@@ -518,8 +488,6 @@ FortyOne by Complexus LLC
 - Source: `apps/server/internal/modules/notifications/service/rules_story_updates.go`
 
 A story’s estimate changed
-
-Sam Taylor
 
 ACM-142
 Improve the onboarding flow
@@ -540,8 +508,6 @@ FortyOne by Complexus LLC
 
 A story’s collaborators changed
 
-Sam Taylor
-
 ACM-142
 Improve the onboarding flow
 Sam updated the collaborators on this story.
@@ -561,8 +527,6 @@ FortyOne by Complexus LLC
 
 A story has a new name
 
-Sam Taylor
-
 ACM-142
 Improve the onboarding flow
 Sam renamed “Refresh onboarding” to “Improve the onboarding flow”.
@@ -577,16 +541,14 @@ FortyOne by Complexus LLC
 ## Other story updates
 
 - Subject: Sam updated a story
-- Preheader: Open the story to review the latest changes.
+- Preheader: Sam updated this story. Open it to review the latest changes.
 - Source: `apps/server/internal/modules/notifications/service/rules_story_updates.go`
 
 Sam updated a story
 
-Sam Taylor
-
 ACM-142
 Improve the onboarding flow
-Open the story to review the latest changes.
+Sam updated this story. Open it to review the latest changes.
 
 View story: https://example.com/fortyone/stories/ACM-142
 
@@ -736,10 +698,9 @@ FortyOne by Complexus LLC
 
 Sam commented on your story
 
-Sam Taylor
-
 ACM-142
 Improve the onboarding flow
+Sam commented:
 The updated screens are ready. Could you review the welcome step before we hand this over?
 
 View story: https://example.com/fortyone/stories/ACM-142
@@ -756,8 +717,6 @@ FortyOne by Complexus LLC
 - Source: `apps/server/internal/modules/notifications/service/rules.go`
 
 Sam replied to your comment
-
-Sam Taylor
 
 Your comment: Can we make the welcome step shorter?
 
@@ -778,10 +737,9 @@ FortyOne by Complexus LLC
 
 Sam mentioned you
 
-Sam Taylor
-
 ACM-142
 Improve the onboarding flow
+Sam mentioned you:
 Alex, could you confirm whether these screens cover the sign-in flow?
 
 View mention: https://example.com/fortyone/stories/ACM-142/comments
@@ -799,10 +757,8 @@ FortyOne by Complexus LLC
 
 Sam updated an objective
 
-Sam Taylor
-
 Improve activation
-Health changed from At risk to On track.
+Sam changed the health from At risk to On track.
 
 View objective: https://example.com/fortyone/objectives/activation
 
@@ -819,10 +775,8 @@ FortyOne by Complexus LLC
 
 A key result has new progress
 
-Sam Taylor
-
 Increase first-week activation to 60%
-Progress changed from 42% to 48%.
+Sam updated progress from 42% to 48%.
 
 View key result: https://example.com/fortyone/objectives/activation
 
@@ -904,9 +858,8 @@ FortyOne by Complexus LLC
 
 A new reply to your feedback
 
-Sam Taylor
-
-Sam replied to “Add saved views”
+Add saved views
+Sam replied:
 Thanks for the suggestion. Which filters would you like to save?
 
 View feedback: https://example.com/fortyone/feedback/saved-views

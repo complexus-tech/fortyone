@@ -3,18 +3,30 @@
 import type { ReactNode } from "react";
 import { useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { Box, Button, Skeleton, Tabs, Text } from "ui";
+import { useUserRole } from "@/hooks/role";
 import { useTerminology } from "@/hooks/use-terminology-display";
 import { useWorkspacePath } from "@/hooks/use-workspace-path";
 import { StoriesBoard } from "@/components/ui/stories-board";
 import type { StoriesViewOptions } from "@/components/ui/stories-view-options-button";
 import { WorkEmptyIllustration } from "@/components/ui/illustrations/empty-state-illustrations";
+import { useWorkTab } from "../hooks/use-work-tab";
 import { useRecentWork } from "../hooks/use-recent-work";
 import {
   MAYA_WORK_TABS,
   RECENT_WORK_LIMIT,
   type MayaWorkTab,
 } from "../utils/recent-work";
+import { WorkAttention } from "./work-attention";
+
+const NewStoryDialog = dynamic(
+  () =>
+    import("@/components/ui/new-story-dialog").then(
+      (module) => module.NewStoryDialog,
+    ),
+  { ssr: false },
+);
 
 const RECENT_TASK_VIEW_OPTIONS: StoriesViewOptions = {
   groupBy: "none",
@@ -29,19 +41,22 @@ const EmptySection = ({
   illustration,
   title,
   children,
+  action,
 }: {
+  action: ReactNode;
   illustration: ReactNode;
   title: string;
   children: ReactNode;
 }) => (
-  <Box className="flex flex-col items-center py-8 text-center">
+  <Box className="border-border/80 flex flex-col items-center border-t-[0.5px] px-5 py-8 text-center">
     {illustration}
-    <Text className="mt-3" fontSize="lg" fontWeight="medium">
+    <Text className="mt-3" fontSize="xl" fontWeight="medium">
       {title}
     </Text>
-    <Text className="mt-2 max-w-sm text-sm leading-6" color="muted">
+    <Text className="mt-2 max-w-sm text-base leading-7" color="muted">
       {children}
     </Text>
+    <Box className="mt-4">{action}</Box>
   </Box>
 );
 
@@ -64,7 +79,10 @@ const RecentRowsSkeleton = () => (
 export const RecentWork = () => {
   const { withWorkspace } = useWorkspacePath();
   const { getTermDisplay } = useTerminology();
-  const [tab, setTab] = useState<MayaWorkTab>("all");
+  const [tab, setTab] = useWorkTab();
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const { userRole } = useUserRole();
+  const canCreate = userRole === "admin" || userRole === "member";
   const { stories, isPending, isError, retry } = useRecentWork(tab);
   const storyTerm = getTermDisplay("storyTerm", { variant: "plural" });
 
@@ -86,7 +104,8 @@ export const RecentWork = () => {
   };
 
   return (
-    <Box className="mt-5 space-y-9 pb-6 md:mt-6 md:space-y-10">
+    <Box className="mt-5 space-y-4 pb-6 md:mt-6">
+      <WorkAttention />
       {isError ? (
         <Box className="flex items-center justify-between gap-3" role="alert">
           <Text color="muted" fontSize="sm">
@@ -157,6 +176,26 @@ export const RecentWork = () => {
           ) : null}
           {!isPending && !isError && stories.length === 0 ? (
             <EmptySection
+              action={
+                canCreate && tab !== "assigned" ? (
+                  <Button
+                    color="tertiary"
+                    onClick={() => {
+                      setIsCreateOpen(true);
+                    }}
+                    size="sm"
+                  >
+                    Create {getTermDisplay("storyTerm")}
+                  </Button>
+                ) : (
+                  <Link
+                    className="underline-offset-4 hover:underline focus-visible:underline"
+                    href={withWorkspace("/my-work?tab=all")}
+                  >
+                    Browse all {storyTerm}
+                  </Link>
+                )
+              }
               illustration={<WorkEmptyIllustration className="w-36" />}
               title={emptyTitle}
             >
@@ -165,6 +204,15 @@ export const RecentWork = () => {
           ) : null}
         </Tabs.Panel>
       </Tabs>
+      {isCreateOpen ? (
+        <NewStoryDialog
+          isOpen={isCreateOpen}
+          onCreated={() => {
+            setTab("created");
+          }}
+          setIsOpen={setIsCreateOpen}
+        />
+      ) : null}
     </Box>
   );
 };

@@ -2,8 +2,6 @@ Your team is ready for you
 
 Sam invited you to join Acme on FortyOne. Join your team to plan projects, track stories, and keep work moving.
 
-Sam Taylor
-
 Join Acme: https://example.com/fortyone/invitations/accept
 
 Your invitation expires in 7 days.

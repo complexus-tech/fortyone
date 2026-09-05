@@ -1,7 +1,5 @@
 A story’s description changed
 
-Sam Taylor
-
 ACM-142
 Improve the onboarding flow
 Sam updated the description. Open the story to see the latest requirements.

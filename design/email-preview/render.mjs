@@ -1,3 +1,5 @@
+import { getAvatarColor, getInitials, avatarImageURL } from "./avatar.mjs";
+
 const ink = "#25150e";
 const muted = "#72645d";
 const paper = "#fff6ef";
@@ -27,8 +29,8 @@ const escape = (value) =>
 const destination = (path) => `https://example.com/fortyone/${path}`;
 const table = (content, attrs = "") =>
   `<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" ${attrs}>${content}</table>`;
-const paragraph = (text, style = "") =>
-  `<p style="margin:0 0 12px;color:${ink};font-size:15px;line-height:21px;${style}">${escape(text)}</p>`;
+const paragraph = (text, style = "", actor) =>
+  `<p style="margin:0 0 12px;color:${ink};font-size:15px;line-height:21px;${style}">${actorText(text, actor)}</p>`;
 const label = (text) =>
   `<p style="margin:0 0 8px;color:${muted};font-size:11px;line-height:17px;font-weight:600;letter-spacing:1.6px;text-transform:uppercase;">${escape(text)}</p>`;
 const quote = (text, color = "#ffb18e") =>
@@ -50,11 +52,38 @@ function button(action, width) {
   return `<!--[if mso]><v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${url}" style="height:44px;v-text-anchor:middle;width:${width}px;" arcsize="13%" stroke="f" fillcolor="${ink}"><w:anchorlock/><center style="color:#ffffff;font-family:Arial,sans-serif;font-size:14px;font-weight:bold;">${escape(action.label)}</center></v:roundrect><![endif]--><!--[if !mso]><!--><a href="${url}" target="_blank" style="display:block;background-color:${ink};border:1px solid ${ink};border-radius:6px;color:#ffffff;font-family:${fontStack};font-size:14px;font-weight:600;line-height:22px;padding:10px 12px;text-align:center;text-decoration:none;mso-hide:all;">${escape(action.label)}</a><!--<![endif]-->`;
 }
 
-const person = ({ name, initials, role }) =>
-  table(
-    `<tr><td width="40" valign="middle" style="width:40px;padding:0 10px 0 0;"><div style="width:30px;height:30px;line-height:30px;border-radius:50%;background:#f6dfcf;color:${ink};font-size:11px;font-weight:600;text-align:center;">${escape(initials)}</div></td><td style="font-size:13px;line-height:18px;color:${muted};">${escape(name)}${role ? ` · ${escape(role)}` : ""}</td></tr>`,
-    'style="margin:0 0 14px;"',
-  );
+function avatar(actor) {
+  const { backgroundColor, foregroundColor } = getAvatarColor(actor.name);
+  const initials = getInitials(actor.name);
+  const imageURL = avatarImageURL(actor.avatarURL);
+  // Align to the text bottom to lift both photos and initials above the low x-height midpoint.
+  const style = `display:inline-block;width:20px;height:20px;line-height:20px;vertical-align:text-bottom;border-radius:50%;background-color:${backgroundColor};color:${foregroundColor};font-family:${fontStack};font-size:8px;font-weight:500;text-align:center;`;
+  return imageURL
+    ? `<img class="person-avatar" src="${escape(imageURL)}" width="20" height="20" alt="${escape(initials)}" style="${style}border:0;object-fit:cover;">`
+    : `<span class="person-avatar" aria-hidden="true" style="${style}">${escape(initials)}</span>`;
+}
+
+function inlinePerson(actor, displayName = actor.name) {
+  // Keep the avatar and first name together, while allowing long full names to wrap.
+  const [first, ...rest] = displayName.split(/\s+/);
+  return `<span style="white-space:nowrap;">${avatar(actor)}<span style="display:inline-block;width:4px;font-size:0;">&nbsp;</span>${escape(first)}</span>${rest.length ? ` ${escape(rest.join(" "))}` : ""}`;
+}
+
+function actorText(text, actor) {
+  if (!actor) return escape(text);
+  for (const name of [actor.name, actor.name.trim().split(/\s+/)[0]]) {
+    if (
+      text === name ||
+      text.startsWith(`${name} `) ||
+      text.startsWith(`${name}:`)
+    )
+      return inlinePerson(actor, name) + escape(text.slice(name.length));
+  }
+  return escape(text);
+}
+
+const person = (actor) =>
+  `<p style="margin:0 0 8px;font-size:15px;line-height:21px;color:${ink};">${inlinePerson(actor)}</p>`;
 
 function bodyContent(email, width) {
   let result = email.image
@@ -65,13 +94,14 @@ function bodyContent(email, width) {
     result =
       `<img src="../assets/icons/${escape(email.icon)}.png" width="32" height="32" alt="" style="display:block;width:32px;height:32px;margin:0 0 14px;">` +
       result;
-  if (email.person && !email.conversation) result += person(email.person);
   if (email.code)
     result += paragraph(
       email.code,
       "font-size:28px;line-height:36px;letter-spacing:6px;font-weight:600;margin:16px 0;",
     );
-  result += email.paragraphs.map((text) => paragraph(text)).join("");
+  result += email.paragraphs
+    .map((text) => paragraph(text, "", email.person))
+    .join("");
   if (email.details)
     result += table(
       `<tr><td style="padding:18px 0 0;">${columns(email.details)}</td></tr>`,
@@ -93,7 +123,7 @@ function bodyContent(email, width) {
       email.updates
         .map(
           (update) =>
-            `<tr><td style="padding:12px 0;border-top:1px solid ${rule};">${update.id ? label(update.id) : ""}<h2 style="margin:0 0 6px;font-size:15px;line-height:21px;font-weight:600;">${escape(update.title)}</h2>${paragraph(update.text, "margin:0;font-size:15px;line-height:21px;")}${update.quote ? `<div style="padding-top:10px;">${quote(update.quote)}</div>` : ""}</td></tr>`,
+            `<tr><td style="padding:12px 0;border-top:1px solid ${rule};">${update.id ? label(update.id) : ""}<h2 style="margin:0 0 6px;font-size:15px;line-height:21px;font-weight:600;">${escape(update.title)}</h2>${update.text ? paragraph(update.text, "margin:0;font-size:15px;line-height:21px;", update.person || email.person) : ""}${update.quote ? `<div style="padding-top:10px;">${quote(update.quote)}</div>` : ""}</td></tr>`,
         )
         .join(""),
       `style="margin-top:14px;"`,
@@ -146,7 +176,6 @@ ${table(`<tr><td class="outer" align="center" style="padding:32px 24px;backgroun
 export function plainText(email) {
   const parts = [email.title, ...email.paragraphs];
   if (email.code) parts.push(email.code);
-  if (email.person) parts.push(email.person.name);
   if (email.details) parts.push(...email.details.map(([k, v]) => `${k}: ${v}`));
   if (email.warning) parts.push(email.warning.title, email.warning.text);
   if (email.rows) parts.push(...email.rows.map(([k, v]) => `${k}: ${v}`));
