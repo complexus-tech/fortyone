@@ -1,0 +1,11 @@
+A story’s scheduled time changed
+
+ACM-142
+Improve the onboarding flow
+Moved from 09:00–10:30 to 11:00–12:30 on 8 September.
+
+View story: https://example.com/fortyone/stories/ACM-142
+
+Manage notification preferences: https://example.com/fortyone/settings/notifications
+
+FortyOne by Complexus LLC

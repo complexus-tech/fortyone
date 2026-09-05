@@ -1,0 +1,13 @@
+Sam mentioned you
+
+Sam Taylor
+
+ACM-142
+Improve the onboarding flow
+Alex, could you confirm whether these screens cover the sign-in flow?
+
+View mention: https://example.com/fortyone/stories/ACM-142/comments
+
+Manage notification preferences: https://example.com/fortyone/settings/notifications
+
+FortyOne by Complexus LLC

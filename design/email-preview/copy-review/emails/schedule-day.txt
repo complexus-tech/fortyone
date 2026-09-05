@@ -1,0 +1,11 @@
+A story moved to another day
+
+ACM-142
+Improve the onboarding flow
+Moved from 8 September to 9 September, 09:00–10:30.
+
+View story: https://example.com/fortyone/stories/ACM-142
+
+Manage notification preferences: https://example.com/fortyone/settings/notifications
+
+FortyOne by Complexus LLC

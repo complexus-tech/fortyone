@@ -1,0 +1,22 @@
+Your week in Acme
+
+Hi Alex,
+
+Your team completed 12 stories this week. The onboarding refresh is ready for review, and three stories still need attention.
+
+Ready for review
+Sam finished the onboarding screens. Your feedback will help move them into development.
+
+Needs attention
+Three stories are overdue. Review what’s blocked before planning next week.
+
+Reply with what you’d like to look into, and I’ll help you work through it.
+
+Maya
+Your AI agent at FortyOne
+
+Open Acme: https://example.com/fortyone/workspace
+
+You’re receiving this reply in your conversation with Maya.
+
+FortyOne by Complexus LLC

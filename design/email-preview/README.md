@@ -28,3 +28,11 @@ Inter is progressive enhancement. Custom font support varies by inbox, so Arial/
 ## Release boundary
 
 The production template source has been updated locally. Deploy the landing assets before releasing the API and worker. These changes have not been committed, deployed, or sent through an email provider as part of this task. Real destinations, expiration rules, sender identities, and Maya reply-thread headers remain supplied by the existing application.
+
+## Copy review collection
+
+Open `copy-review/index.html` through the local preview server for 65 proposed email specimens, with search, metadata, plain text, image-off mode, and mobile widths. `copy-review/COPY.md` contains all proposed copy and `copy-review/COVERAGE.md` maps the app sources. Production copy remains unchanged.
+
+Rebuild with `node build-copy-review.mjs`. The builder uses Sharp for three PNG icons; install/use a local Sharp module, or set `SHARP_MODULE` to its absolute module path. Fixtures live in `review-content.mjs`; `render.mjs` is shared with the original prototype builder. The original eight rendered prototypes remain byte-for-byte unchanged after extraction of the renderer.
+
+Browser checks covered all 65 specimens at 838px and 320px: no horizontal overflow and all images loaded. Search, viewport controls, and initials with images disabled were checked. These are local browser checks, not tests in Gmail, Outlook, or Apple Mail.

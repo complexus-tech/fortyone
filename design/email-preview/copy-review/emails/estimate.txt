@@ -1,0 +1,13 @@
+A story’s estimate changed
+
+Sam Taylor
+
+ACM-142
+Improve the onboarding flow
+Sam changed the estimate from 3 to 5 points.
+
+View story: https://example.com/fortyone/stories/ACM-142
+
+Manage notification preferences: https://example.com/fortyone/settings/notifications
+
+FortyOne by Complexus LLC

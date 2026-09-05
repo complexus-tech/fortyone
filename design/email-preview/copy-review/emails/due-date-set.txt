@@ -1,0 +1,13 @@
+A story now has a due date
+
+Sam Taylor
+
+ACM-142
+Improve the onboarding flow
+Sam set the due date to 11 September 2026.
+
+View story: https://example.com/fortyone/stories/ACM-142
+
+Manage notification preferences: https://example.com/fortyone/settings/notifications
+
+FortyOne by Complexus LLC

@@ -1,0 +1,1042 @@
+[
+  {
+    "card": 520,
+    "file": "/copy-review/emails/login-link.html",
+    "heading": "Sign in to FortyOne",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/login-link-only.html",
+    "heading": "Sign in to FortyOne",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/login-mobile.html",
+    "heading": "Your sign-in code",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/portal-verification.html",
+    "heading": "Verify your email",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 480,
+    "file": "/copy-review/emails/invitation.html",
+    "heading": "Your team is ready for you",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 480,
+    "file": "/copy-review/emails/invitation-accepted.html",
+    "heading": "Alex has joined Acme",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/account-inactivity.html",
+    "heading": "Keep your FortyOne account active",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/workspaces-inactivity_warning.html",
+    "heading": "Keep your Acme workspace",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/deletion-requested.html",
+    "heading": "Acme is scheduled for deletion",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/deletion-admin.html",
+    "heading": "Acme is scheduled for deletion",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/restored-requester.html",
+    "heading": "Acme has been restored",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/restored-admin.html",
+    "heading": "Acme has been restored",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/assigned.html",
+    "heading": "Sam assigned you a story",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/reassigned.html",
+    "heading": "Your story has a new assignee",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/unassigned.html",
+    "heading": "You’re no longer assigned",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/collaborator-added.html",
+    "heading": "You’re now a collaborator",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/collaborator-removed.html",
+    "heading": "Your collaboration role changed",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/priority.html",
+    "heading": "A story’s priority changed",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/status.html",
+    "heading": "A story is ready for review",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/description.html",
+    "heading": "A story’s description changed",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/due-date-set.html",
+    "heading": "A story now has a due date",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/due-date-changed.html",
+    "heading": "A story’s due date changed",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/due-date-removed.html",
+    "heading": "A story’s due date was removed",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/start-date.html",
+    "heading": "A story’s start date changed",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/sprint.html",
+    "heading": "A story moved to another sprint",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/estimate.html",
+    "heading": "A story’s estimate changed",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/collaborators.html",
+    "heading": "A story’s collaborators changed",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/renamed.html",
+    "heading": "A story has a new name",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/story-update.html",
+    "heading": "Sam updated a story",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/maya-assigned.html",
+    "heading": "Maya assigned you a story",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/scheduled.html",
+    "heading": "A story has been scheduled",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/schedule-day.html",
+    "heading": "A story moved to another day",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/schedule-time.html",
+    "heading": "A story’s scheduled time changed",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/needs-time.html",
+    "heading": "A story needs more time",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/at-risk.html",
+    "heading": "A story may miss its deadline",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/cannot-fit.html",
+    "heading": "A story couldn’t fit in your schedule",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/comment.html",
+    "heading": "Sam commented on your story",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/conversation.html",
+    "heading": "Sam replied to your comment",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/mention.html",
+    "heading": "Sam mentioned you",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/objective-update.html",
+    "heading": "Sam updated an objective",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/key-result-update.html",
+    "heading": "A key result has new progress",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/strategy-planning.html",
+    "heading": "Finish Acme’s strategy for Q4",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/strategy-check-in.html",
+    "heading": "Two objectives need a check-in",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/strategy-monthly.html",
+    "heading": "Acme’s August strategy review",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/feedback-comment.html",
+    "heading": "A new reply to your feedback",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/feedback-status.html",
+    "heading": "Your feedback is now planned",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/feedback-published.html",
+    "heading": "There’s an update on your feedback",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/feedback-merged.html",
+    "heading": "Your feedback was merged",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/activity-digest.html",
+    "heading": "Three updates in Acme",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/weekly-digest.html",
+    "heading": "Your week in Acme",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/overdue-stories.html",
+    "heading": "Two stories are overdue",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/overdue-objectives.html",
+    "heading": "An objective needs your attention",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/feedback-digest.html",
+    "heading": "Updates on your feedback",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/maya-weekly.html",
+    "heading": "Your week in Acme",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/maya-answer.html",
+    "heading": "Here’s where activation stands",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/maya-clarify.html",
+    "heading": "Which story should I update?",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/maya-confirmation.html",
+    "heading": "Ready for your confirmation",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/maya-applied.html",
+    "heading": "The objective is now on track",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/maya-already-applied.html",
+    "heading": "That change is already complete",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/maya-cancelled.html",
+    "heading": "The proposed change is cancelled",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/maya-expired.html",
+    "heading": "Let’s prepare a fresh preview",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/maya-conflict.html",
+    "heading": "I couldn’t apply that change",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/maya-preview-unavailable.html",
+    "heading": "I need to create a new preview",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/maya-refusal.html",
+    "heading": "I can’t do that by email",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 520,
+    "file": "/copy-review/emails/maya-resumed.html",
+    "heading": "Your proposed change is ready",
+    "images": true,
+    "scroll": 838,
+    "width": 838
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/login-link.html",
+    "heading": "Sign in to FortyOne",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/login-link-only.html",
+    "heading": "Sign in to FortyOne",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/login-mobile.html",
+    "heading": "Your sign-in code",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/portal-verification.html",
+    "heading": "Verify your email",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/invitation.html",
+    "heading": "Your team is ready for you",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/invitation-accepted.html",
+    "heading": "Alex has joined Acme",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/account-inactivity.html",
+    "heading": "Keep your FortyOne account active",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/workspaces-inactivity_warning.html",
+    "heading": "Keep your Acme workspace",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/deletion-requested.html",
+    "heading": "Acme is scheduled for deletion",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/deletion-admin.html",
+    "heading": "Acme is scheduled for deletion",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/restored-requester.html",
+    "heading": "Acme has been restored",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/restored-admin.html",
+    "heading": "Acme has been restored",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/assigned.html",
+    "heading": "Sam assigned you a story",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/reassigned.html",
+    "heading": "Your story has a new assignee",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/unassigned.html",
+    "heading": "You’re no longer assigned",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/collaborator-added.html",
+    "heading": "You’re now a collaborator",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/collaborator-removed.html",
+    "heading": "Your collaboration role changed",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/priority.html",
+    "heading": "A story’s priority changed",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/status.html",
+    "heading": "A story is ready for review",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/description.html",
+    "heading": "A story’s description changed",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/due-date-set.html",
+    "heading": "A story now has a due date",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/due-date-changed.html",
+    "heading": "A story’s due date changed",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/due-date-removed.html",
+    "heading": "A story’s due date was removed",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/start-date.html",
+    "heading": "A story’s start date changed",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/sprint.html",
+    "heading": "A story moved to another sprint",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/estimate.html",
+    "heading": "A story’s estimate changed",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/collaborators.html",
+    "heading": "A story’s collaborators changed",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/renamed.html",
+    "heading": "A story has a new name",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/story-update.html",
+    "heading": "Sam updated a story",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/maya-assigned.html",
+    "heading": "Maya assigned you a story",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/scheduled.html",
+    "heading": "A story has been scheduled",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/schedule-day.html",
+    "heading": "A story moved to another day",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/schedule-time.html",
+    "heading": "A story’s scheduled time changed",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/needs-time.html",
+    "heading": "A story needs more time",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/at-risk.html",
+    "heading": "A story may miss its deadline",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/cannot-fit.html",
+    "heading": "A story couldn’t fit in your schedule",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/comment.html",
+    "heading": "Sam commented on your story",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/conversation.html",
+    "heading": "Sam replied to your comment",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/mention.html",
+    "heading": "Sam mentioned you",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/objective-update.html",
+    "heading": "Sam updated an objective",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/key-result-update.html",
+    "heading": "A key result has new progress",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/strategy-planning.html",
+    "heading": "Finish Acme’s strategy for Q4",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/strategy-check-in.html",
+    "heading": "Two objectives need a check-in",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/strategy-monthly.html",
+    "heading": "Acme’s August strategy review",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/feedback-comment.html",
+    "heading": "A new reply to your feedback",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/feedback-status.html",
+    "heading": "Your feedback is now planned",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/feedback-published.html",
+    "heading": "There’s an update on your feedback",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/feedback-merged.html",
+    "heading": "Your feedback was merged",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/activity-digest.html",
+    "heading": "Three updates in Acme",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/weekly-digest.html",
+    "heading": "Your week in Acme",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/overdue-stories.html",
+    "heading": "Two stories are overdue",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/overdue-objectives.html",
+    "heading": "An objective needs your attention",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/feedback-digest.html",
+    "heading": "Updates on your feedback",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/maya-weekly.html",
+    "heading": "Your week in Acme",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/maya-answer.html",
+    "heading": "Here’s where activation stands",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/maya-clarify.html",
+    "heading": "Which story should I update?",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/maya-confirmation.html",
+    "heading": "Ready for your confirmation",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/maya-applied.html",
+    "heading": "The objective is now on track",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/maya-already-applied.html",
+    "heading": "That change is already complete",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/maya-cancelled.html",
+    "heading": "The proposed change is cancelled",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/maya-expired.html",
+    "heading": "Let’s prepare a fresh preview",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/maya-conflict.html",
+    "heading": "I couldn’t apply that change",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/maya-preview-unavailable.html",
+    "heading": "I need to create a new preview",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/maya-refusal.html",
+    "heading": "I can’t do that by email",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  },
+  {
+    "card": 288,
+    "file": "/copy-review/emails/maya-resumed.html",
+    "heading": "Your proposed change is ready",
+    "images": true,
+    "scroll": 320,
+    "width": 320
+  }
+]

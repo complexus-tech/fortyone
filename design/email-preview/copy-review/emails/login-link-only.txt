@@ -1,0 +1,9 @@
+Sign in to FortyOne
+
+Your sign-in link is ready. It expires in 10 minutes.
+
+Sign in: https://example.com/fortyone/auth/verify
+
+If you didn’t request this email, you can ignore it.
+
+FortyOne by Complexus LLC

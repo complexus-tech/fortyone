@@ -1,0 +1,13 @@
+Sam assigned you a story
+
+Sam Taylor
+
+ACM-142
+Improve the onboarding flow
+You’re now assigned to this story.
+
+View story: https://example.com/fortyone/stories/ACM-142
+
+Manage notification preferences: https://example.com/fortyone/settings/notifications
+
+FortyOne by Complexus LLC

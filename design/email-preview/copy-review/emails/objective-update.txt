@@ -1,0 +1,12 @@
+Sam updated an objective
+
+Sam Taylor
+
+Improve activation
+Health changed from At risk to On track.
+
+View objective: https://example.com/fortyone/objectives/activation
+
+Manage notification preferences: https://example.com/fortyone/settings/notifications
+
+FortyOne by Complexus LLC

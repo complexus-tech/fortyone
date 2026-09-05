@@ -1,0 +1,11 @@
+A story needs more time
+
+ACM-142
+Improve the onboarding flow
+There isn’t enough time allocated to finish this story. Review its estimate and schedule.
+
+View story: https://example.com/fortyone/stories/ACM-142
+
+Manage notification preferences: https://example.com/fortyone/settings/notifications
+
+FortyOne by Complexus LLC

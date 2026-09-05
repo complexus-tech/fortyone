@@ -1,0 +1,13 @@
+A story’s description changed
+
+Sam Taylor
+
+ACM-142
+Improve the onboarding flow
+Sam updated the description. Open the story to see the latest requirements.
+
+View story: https://example.com/fortyone/stories/ACM-142
+
+Manage notification preferences: https://example.com/fortyone/settings/notifications
+
+FortyOne by Complexus LLC

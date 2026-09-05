@@ -1,0 +1,1 @@
+Check and clock paths adapted from packages/icons/src/check.tsx and clock.tsx. Lock is a simple purpose-built vector. PNG files are rendered at 3x their 32px display size; SVG sources are retained for editing. Email markup uses PNG only. Icons are decorative; the adjacent text carries their meaning.

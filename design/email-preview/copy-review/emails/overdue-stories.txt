@@ -1,0 +1,17 @@
+Two stories are overdue
+
+Review these stories and update their status or due dates.
+
+ACM-142
+Improve the onboarding flow
+Due 3 September · In progress
+
+ACM-156
+Add saved views
+Due 4 September · In review
+
+Review stories: https://example.com/fortyone/my-work
+
+Manage notification preferences: https://example.com/fortyone/settings/notifications
+
+FortyOne by Complexus LLC

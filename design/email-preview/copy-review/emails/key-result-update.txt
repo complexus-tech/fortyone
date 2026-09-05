@@ -1,0 +1,12 @@
+A key result has new progress
+
+Sam Taylor
+
+Increase first-week activation to 60%
+Progress changed from 42% to 48%.
+
+View key result: https://example.com/fortyone/objectives/activation
+
+Manage notification preferences: https://example.com/fortyone/settings/notifications
+
+FortyOne by Complexus LLC

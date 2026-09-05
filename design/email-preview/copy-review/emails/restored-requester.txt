@@ -1,0 +1,9 @@
+Acme has been restored
+
+You restored Acme. The workspace is available again, and its scheduled deletion has been cancelled.
+
+Open Acme: https://example.com/fortyone/workspace
+
+Sent to you as an administrator of Acme.
+
+FortyOne by Complexus LLC

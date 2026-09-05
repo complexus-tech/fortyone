@@ -1,0 +1,13 @@
+Your story has a new assignee
+
+Sam Taylor
+
+ACM-142
+Improve the onboarding flow
+Sam reassigned this story from you to Jordan.
+
+View story: https://example.com/fortyone/stories/ACM-142
+
+Manage notification preferences: https://example.com/fortyone/settings/notifications
+
+FortyOne by Complexus LLC

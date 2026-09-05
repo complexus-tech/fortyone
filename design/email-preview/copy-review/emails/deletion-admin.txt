@@ -1,0 +1,13 @@
+Acme is scheduled for deletion
+
+Sam requested to delete Acme. Its data will be permanently deleted after the time below.
+
+As a workspace administrator, you can cancel the deletion in workspace settings before then.
+
+Deletion scheduled: 7 September 2026, 14:00 UTC
+
+Manage deletion: https://example.com/fortyone/settings/workspace
+
+Sent to you as an administrator of Acme.
+
+FortyOne by Complexus LLC
