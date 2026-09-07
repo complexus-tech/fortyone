@@ -61,7 +61,7 @@ const FeedbackSearch = ({
       }}
     >
       <Input
-        className="bg-foreground/10 dark:bg-foreground/15 h-10"
+        className="bg-foreground/6 dark:bg-foreground/8 h-10"
         leftIcon={<SearchIcon className="h-4" />}
         onChange={(event) => {
           setValue(event.target.value);
