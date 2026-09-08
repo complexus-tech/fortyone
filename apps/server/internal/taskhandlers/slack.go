@@ -50,15 +50,11 @@ func (h *handlers) HandleSlackEvent(ctx context.Context, task *asynq.Task) error
 	return nil
 }
 
-func (h *handlers) HandleSlackCredentialBackfill(ctx context.Context, task *asynq.Task) error {
-	if h.slackCredentials == nil {
-		return fmt.Errorf("slack credential backfiller is not configured: %w", asynq.SkipRetry)
-	}
-	upgraded, err := h.slackCredentials.BackfillLegacyCredentials(ctx)
-	if err != nil {
-		return fmt.Errorf("backfill legacy Slack credentials: %w", err)
-	}
-	h.log.Info(ctx, "Slack credential backfill completed", "upgraded", upgraded)
+// HandleSlackCredentialBackfill drains jobs scheduled by older workers. The
+// bounded legacy cutover now completes at startup before any tasks are served;
+// its key must not be retained or reconstructed for a recurring cleanup job.
+func (h *handlers) HandleSlackCredentialBackfill(ctx context.Context, _ *asynq.Task) error {
+	h.log.Info(ctx, "Retired Slack credential backfill task acknowledged; migration runs at worker startup")
 	return nil
 }
 

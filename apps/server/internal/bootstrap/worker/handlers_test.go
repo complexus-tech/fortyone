@@ -111,6 +111,8 @@ func TestBuildTaskMuxRegistersRetentionHandlers(t *testing.T) {
 		tasks.TypeWebhookCleanup,
 		tasks.TypeMessagingCleanup,
 		tasks.TypeDeleteFeedback,
+		tasks.TypeAttachmentObjectDeletions,
+		tasks.TypeSlackCredentialBackfill,
 	} {
 		handler, pattern := mux.Handler(asynq.NewTask(taskType, nil))
 		require.NotNil(t, handler)

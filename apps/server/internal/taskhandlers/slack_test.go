@@ -20,8 +20,6 @@ type slackEventProcessorStub struct {
 	provider            integrations.ProviderKey
 	inboxID             uuid.UUID
 	err                 error
-	backfilled          int
-	backfillErr         error
 	recovered           int
 	recoveryErr         error
 }
@@ -36,10 +34,6 @@ func (s *slackEventProcessorStub) ProcessEvent(_ context.Context, externalWorksp
 	s.externalWorkspaceID = externalWorkspaceID
 	s.eventID = eventID
 	return s.err
-}
-
-func (s *slackEventProcessorStub) BackfillLegacyCredentials(context.Context) (int, error) {
-	return s.backfilled, s.backfillErr
 }
 
 func (s *slackEventProcessorStub) RecoverPendingEvents(context.Context) (int, error) {
@@ -106,19 +100,9 @@ func TestHandleSlackEvent(t *testing.T) {
 	})
 }
 
-func TestHandleSlackCredentialBackfill(t *testing.T) {
-	processor := &slackEventProcessorStub{backfilled: 3}
-	handler := &handlers{
-		log:              logger.NewWithText(io.Discard, slog.LevelError, "test"),
-		slackCredentials: processor,
-	}
-
+func TestHandleSlackCredentialBackfillAcknowledgesRetiredTask(t *testing.T) {
+	handler := &handlers{log: logger.NewWithText(io.Discard, slog.LevelError, "test")}
 	require.NoError(t, handler.HandleSlackCredentialBackfill(context.Background(), asynq.NewTask("cleanup:slack_credentials", nil)))
-
-	expected := errors.New("database unavailable")
-	processor.backfillErr = expected
-	err := handler.HandleSlackCredentialBackfill(context.Background(), asynq.NewTask("cleanup:slack_credentials", nil))
-	require.ErrorIs(t, err, expected)
 }
 
 func TestHandleSlackInboxRecovery(t *testing.T) {

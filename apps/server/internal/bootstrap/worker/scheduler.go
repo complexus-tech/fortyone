@@ -305,15 +305,6 @@ func registerSchedules(scheduler scheduleRegistrar) error {
 	}
 
 	_, err = scheduler.Register(
-		"15 2 * * *", // Daily at 2:15 AM
-		asynq.NewTask(tasks.TypeSlackCredentialBackfill, nil),
-		asynq.Queue("cleanup"),
-	)
-	if err != nil {
-		return fmt.Errorf("failed to register Slack credential backfill task: %w", err)
-	}
-
-	_, err = scheduler.Register(
 		"*/1 * * * *", // Every minute
 		asynq.NewTask(tasks.TypeGitHubWebhookRecovery, nil),
 		asynq.Queue("cleanup"),

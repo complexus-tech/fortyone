@@ -37,10 +37,6 @@ type legacySlackEventProcessor interface {
 	ProcessEvent(ctx context.Context, externalWorkspaceID, eventID string) error
 }
 
-type SlackCredentialBackfiller interface {
-	BackfillLegacyCredentials(ctx context.Context) (int, error)
-}
-
 type SlackInboxRecoverer interface {
 	RecoverPendingEvents(ctx context.Context) (int, error)
 }
@@ -121,7 +117,6 @@ type handlers struct {
 	routineDeliveries      RoutineDeliveryStore
 	briefingSources        jobs.BriefingSources
 	slackEvents            SlackEventProcessor
-	slackCredentials       SlackCredentialBackfiller
 	slackRecovery          SlackInboxRecoverer
 	figmaWebhooks          FigmaWebhookProcessor
 	figmaRecovery          FigmaWebhookRecoverer
@@ -173,7 +168,6 @@ type WorkerHandlerDependencies struct {
 
 // NewWorkerHandlers initializes the central task handlers service.
 func NewWorkerHandlers(dependencies WorkerHandlerDependencies) *handlers {
-	slackCredentials, _ := dependencies.SlackEvents.(SlackCredentialBackfiller)
 	slackRecovery, _ := dependencies.SlackEvents.(SlackInboxRecoverer)
 	figmaRecovery, _ := dependencies.FigmaWebhooks.(FigmaWebhookRecoverer)
 	return &handlers{
@@ -192,7 +186,6 @@ func NewWorkerHandlers(dependencies WorkerHandlerDependencies) *handlers {
 		routineDeliveries:      dependencies.RoutineDeliveries,
 		briefingSources:        dependencies.BriefingSources,
 		slackEvents:            dependencies.SlackEvents,
-		slackCredentials:       slackCredentials,
 		slackRecovery:          slackRecovery,
 		figmaWebhooks:          dependencies.FigmaWebhooks,
 		figmaRecovery:          figmaRecovery,

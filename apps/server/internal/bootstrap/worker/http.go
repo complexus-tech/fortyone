@@ -34,7 +34,7 @@ func (a *App) newHTTPHandler() (http.Handler, monitorCloser, error) {
 		queueMonitor := asynqmon.New(asynqmon.Options{
 			RootPath:     workerMonitorPath,
 			RedisConnOpt: a.redisOpt,
-			ReadOnly:     true,
+			ReadOnly:     false,
 		})
 		monitor = queueMonitor
 		close = queueMonitor.Close

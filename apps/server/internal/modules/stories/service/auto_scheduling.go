@@ -315,7 +315,19 @@ func (s *Service) UpdateAutomationStateIfUnchanged(
 			return errors.New("schedule transition state does not match persisted auto-scheduling status")
 		}
 	}
-	story, err := s.getVisibleStory(ctx, storyID, workspaceID)
+	// Scheduling results are system mutations. Use the same authorized snapshot
+	// as the write instead of requiring an HTTP user's story-read context.
+	var story CoreSingleStory
+	var err error
+	if repository, migrated := s.mutationRepository(); migrated {
+		scope, scopeErr := mutationScope(ctx, workspaceID, actorID, auth.PrincipalSystem)
+		if scopeErr != nil {
+			return scopeErr
+		}
+		story, err = repository.GetStoryForMutation(ctx, scope, storyID)
+	} else {
+		story, err = s.getVisibleStory(ctx, storyID, workspaceID)
+	}
 	if err != nil {
 		return err
 	}

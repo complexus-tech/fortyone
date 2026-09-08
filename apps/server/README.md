@@ -144,7 +144,7 @@ The worker serves a small operational endpoint on
 | --------------- | ---------------------------------------------------------------------- |
 | `/health/live`  | Process liveness. It remains available while the worker is draining.   |
 | `/health/ready` | Readiness. It requires an active worker/scheduler and a healthy Redis. |
-| `/`            | Read-only Asynq queue console. Enabled by default; Cognito sign-in at the load balancer. |
+| `/`            | Asynq queue management console. Enabled by default; Cognito sign-in at the load balancer. |
 
 Queue monitoring is an operator surface served at `https://worker.fortyone.app/`
 behind the load balancer's Cognito authentication, which is the only sign-in.

@@ -17,6 +17,15 @@ type scheduledTask struct {
 	taskType string
 }
 
+func TestRegisterSchedulesDoesNotRepeatStartupSlackCredentialCutover(t *testing.T) {
+	t.Parallel()
+	scheduler := &scheduleCapture{}
+	require.NoError(t, registerSchedules(scheduler))
+	for _, entry := range scheduler.entries {
+		require.NotEqual(t, tasks.TypeSlackCredentialBackfill, entry.taskType)
+	}
+}
+
 func TestGuidanceHasNoSeparateEmailSchedules(t *testing.T) {
 	scheduler := &scheduleCapture{}
 	require.NoError(t, registerSchedules(scheduler))

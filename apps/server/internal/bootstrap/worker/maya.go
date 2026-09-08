@@ -28,7 +28,8 @@ func buildMayaService(
 	mayaActorID uuid.UUID,
 	eventPublisher *publisher.Publisher,
 ) *maya.Service {
-	storiesService := stories.New(log, storiesrepository.New(log, pool), eventPublisher, nil)
+	storyStore := storiesrepository.New(log, pool)
+	storiesService := stories.New(log, storyStore, eventPublisher, nil)
 	storiesService.ConfigureCommentCreator(buildStoryCommentCreator(log, pool))
 	storiesService.ConfigureMayaActor(mayaActorID)
 	storiesService.ConfigureAutoSchedulingEligibility(mayaRepository.WorkspaceCanUseMaya)
@@ -47,7 +48,7 @@ func buildMayaService(
 	return maya.New(maya.Dependencies{
 		Repository:        mayaRepository,
 		Realtime:          mayaRepository,
-		Stories:           storiesService,
+		Stories:           workerMayaStories{StoriesService: storiesService, reader: storyStore, actorID: mayaActorID},
 		Reports:           reportsService,
 		Calendar:          calendarService,
 		Users:             usersService,

@@ -5,9 +5,11 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync/atomic"
 	"testing"
 
+	"github.com/hibiken/asynq"
 	"github.com/stretchr/testify/require"
 )
 
@@ -75,6 +77,30 @@ func TestWorkerMonitorCanBeDisabled(t *testing.T) {
 	handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, workerMonitorPath, nil))
 
 	require.Equal(t, http.StatusNotFound, response.Code)
+}
+
+func TestWorkerMonitorEnablesQueueManagement(t *testing.T) {
+	t.Parallel()
+	app := App{
+		ready:         &atomic.Bool{},
+		pingRedis:     func(context.Context) error { return nil },
+		monitorConfig: MonitorConfig{Enabled: true},
+		redisOpt:      asynq.RedisClientOpt{Addr: "127.0.0.1:1"},
+	}
+	handler, close, err := app.newHTTPHandler()
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, close()) })
+
+	page := httptest.NewRecorder()
+	handler.ServeHTTP(page, httptest.NewRequest(http.MethodGet, "/", nil))
+	require.Equal(t, http.StatusOK, page.Code)
+	require.Contains(t, page.Body.String(), `window.FLAG_READ_ONLY="false"`)
+
+	// Invalid JSON is rejected before Redis access. A read-only monitor would
+	// reject the request with 403 before the mutation handler can validate it.
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, httptest.NewRequest(http.MethodPost, "/api/queues/test/pending_tasks:batch_delete", strings.NewReader("invalid json")))
+	require.Equal(t, http.StatusBadRequest, response.Code)
 }
 
 func TestWorkerMonitorRoutesThroughLoadBalancer(t *testing.T) {
