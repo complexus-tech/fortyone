@@ -98,7 +98,7 @@ func TestWorkerMonitorRequiresBasicAuthentication(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			request := httptest.NewRequest(http.MethodGet, workerMonitorPath, nil)
-			request.RemoteAddr = "127.0.0.1:43100"
+			request.RemoteAddr = "10.0.2.15:43100"
 			username, password := credentials[0], credentials[1]
 			if username != "" || password != "" {
 				request.SetBasicAuth(username, password)
@@ -112,7 +112,7 @@ func TestWorkerMonitorRequiresBasicAuthentication(t *testing.T) {
 		})
 	}
 
-	for _, remoteAddress := range []string{"127.0.0.1:43100", "[::1]:43100"} {
+	for _, remoteAddress := range []string{"127.0.0.1:43100", "[::1]:43100", "10.0.2.15:43100"} {
 		request := httptest.NewRequest(http.MethodGet, workerMonitorPath, nil)
 		request.RemoteAddr = remoteAddress
 		request.Header.Set("X-Forwarded-For", "203.0.113.10")
@@ -126,42 +126,65 @@ func TestWorkerMonitorRequiresBasicAuthentication(t *testing.T) {
 	}
 }
 
-func TestWorkerMonitorRejectsNonLoopbackPeersBeforeAuthentication(t *testing.T) {
+func TestWorkerMonitorRoutesThroughLoadBalancer(t *testing.T) {
 	t.Parallel()
 
-	monitorCalled := false
-	monitor := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		monitorCalled = true
-		w.WriteHeader(http.StatusNoContent)
-	})
 	config := MonitorConfig{
 		Enabled:  true,
 		Username: "operator",
-		Password: "a-long-monitor-password-used-only-in-tests",
+		Password: "test-monitor-password",
 	}
+	monitor := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(r.URL.Path))
+	})
 	handler, err := newWorkerHTTPHandler(&atomic.Bool{}, func(context.Context) error { return nil }, config, monitor)
 	require.NoError(t, err)
 
-	for _, remoteAddress := range []string{
-		"203.0.113.10:43100",
-		"10.0.2.15:43100",
-		"127.0.0.1",
-		"::1",
-		"malformed-address",
-	} {
-		request := httptest.NewRequest(http.MethodGet, workerMonitorPath, nil)
-		request.RemoteAddr = remoteAddress
-		request.Header.Set("X-Forwarded-For", "127.0.0.1")
-		request.Header.Set("X-Real-IP", "127.0.0.1")
-		request.SetBasicAuth(config.Username, config.Password)
-		response := httptest.NewRecorder()
+	for _, path := range []string{"/", "/static/js/main.js", "/api/queues"} {
+		t.Run(path, func(t *testing.T) {
+			request := httptest.NewRequest(http.MethodGet, "https://worker.fortyone.app"+path, nil)
+			request.RemoteAddr = "10.0.2.15:43100"
+			request.Header.Set("X-Forwarded-For", "127.0.0.1")
+			request.Header.Set("X-Amzn-Oidc-Identity", "operator")
+			response := httptest.NewRecorder()
+			handler.ServeHTTP(response, request)
+			require.Equal(t, http.StatusUnauthorized, response.Code)
 
-		handler.ServeHTTP(response, request)
-
-		require.Equal(t, http.StatusNotFound, response.Code, remoteAddress)
-		require.Empty(t, response.Header().Get("WWW-Authenticate"), remoteAddress)
+			request.SetBasicAuth(config.Username, config.Password)
+			response = httptest.NewRecorder()
+			handler.ServeHTTP(response, request)
+			require.Equal(t, http.StatusOK, response.Code)
+			require.Equal(t, path, response.Body.String())
+		})
 	}
-	require.False(t, monitorCalled)
+}
+
+func TestWorkerHealthChecksRemainAvailableWithMonitorEnabled(t *testing.T) {
+	t.Parallel()
+
+	ready := &atomic.Bool{}
+	ready.Store(true)
+	monitor := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		t.Error("health check reached the monitor")
+		w.WriteHeader(http.StatusInternalServerError)
+	})
+	handler, err := newWorkerHTTPHandler(ready, func(context.Context) error { return nil }, MonitorConfig{
+		Enabled:  true,
+		Username: "operator",
+		Password: "test-monitor-password",
+	}, monitor)
+	require.NoError(t, err)
+
+	for _, path := range []string{"/health/live", "/health/ready"} {
+		for _, method := range []string{http.MethodGet, http.MethodHead} {
+			request := httptest.NewRequest(method, path, nil)
+			request.RemoteAddr = "10.0.2.15:43100"
+			response := httptest.NewRecorder()
+			handler.ServeHTTP(response, request)
+			require.Equal(t, http.StatusOK, response.Code, "%s %s", method, path)
+		}
+	}
 }
 
 func TestWorkerHTTPHandlerRejectsMissingDependencies(t *testing.T) {

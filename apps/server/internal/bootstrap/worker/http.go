@@ -7,9 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net"
 	"net/http"
-	"strings"
 	"sync/atomic"
 	"time"
 
@@ -77,13 +75,10 @@ func newWorkerHTTPHandler(
 	mux.HandleFunc("HEAD /health/ready", readinessHandler(ready, pingRedis))
 
 	if monitorConfig.Enabled {
-		// The queue console is an operator-only surface. Keep its network
-		// boundary independent from the health endpoints on this listener: an
-		// operator must reach it through a local tunnel/exec session and then
-		// authenticate. Forwarded headers are intentionally ignored because a
-		// direct client can spoof them when no trusted-proxy boundary is present.
-		protectedMonitor := loopbackOnly(basicAuth(monitorConfig, monitor))
-		mux.Handle(workerMonitorPath, protectedMonitor)
+		// Deployment must restrict this listener to the HTTPS load balancer, which
+		// authenticates operators with Cognito. Require monitor credentials too;
+		// forwarded identity headers never substitute for Basic authentication.
+		mux.Handle(workerMonitorPath, basicAuth(monitorConfig, monitor))
 	}
 
 	return securityHeaders(mux), nil
@@ -131,24 +126,6 @@ func basicAuth(config MonitorConfig, next http.Handler) http.Handler {
 		if !ok || usernameMatches != 1 || passwordMatches != 1 {
 			w.Header().Set("WWW-Authenticate", `Basic realm="FortyOne worker monitor", charset="UTF-8"`)
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
-			return
-		}
-		next.ServeHTTP(w, r)
-	})
-}
-
-func loopbackOnly(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		host, _, err := net.SplitHostPort(strings.TrimSpace(r.RemoteAddr))
-		if err != nil {
-			http.NotFound(w, r)
-			return
-		}
-		ip := net.ParseIP(strings.TrimSpace(host))
-		if ip == nil || !ip.IsLoopback() {
-			// Return Not Found instead of advertising an operator console to
-			// network peers that are outside its trust boundary.
-			http.NotFound(w, r)
 			return
 		}
 		next.ServeHTTP(w, r)

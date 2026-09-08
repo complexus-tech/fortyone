@@ -146,14 +146,17 @@ The worker serves a small operational endpoint on
 | `/health/ready` | Readiness. It requires an active worker/scheduler and a healthy Redis. |
 | `/`            | Read-only Asynq queue console. Enabled by default; credentials required. |
 
-Queue monitoring is an internal operator surface, not a public application
-route. It is enabled by default and requires `APP_WORKER_MONITOR_USERNAME`
-plus `APP_WORKER_MONITOR_PASSWORD`, with a password of at least 8 characters.
+Queue monitoring is an operator surface served at `https://worker.fortyone.app/`
+behind the load balancer's Cognito authentication. It is enabled by default and
+requires `APP_WORKER_MONITOR_USERNAME` plus `APP_WORKER_MONITOR_PASSWORD`, with a
+password of at least 8 characters.
 Set `APP_WORKER_MONITOR_ENABLED=false` to disable it. The worker will not start
-if monitoring is enabled without valid credentials. The endpoint always requires HTTP
-Basic authentication, but credentials are only safe behind HTTPS; keep the
-entire worker port restricted by the deployment network policy or an internal
-authenticated proxy. Never expose it through the public API load balancer.
+if monitoring is enabled without valid credentials. The endpoint always requires
+HTTP Basic authentication in addition to Cognito. Use an HTTPS listener with a
+dedicated `worker.fortyone.app` host rule forwarding to the worker target group.
+Restrict inbound traffic on the worker port to the load balancer's security group;
+do not allow direct public access to the worker port. Health checks should use
+`/health/ready`, which does not require monitor credentials.
 
 `SIGTERM` and `SIGINT` mark readiness false, stop scheduling and reserving new
 tasks, let active tasks finish within `APP_WORKER_HTTP_SHUTDOWN_TIMEOUT`, shut
