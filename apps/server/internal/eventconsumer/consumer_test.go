@@ -10,6 +10,7 @@ import (
 
 	notificationsdomain "github.com/complexus-tech/projects-api/internal/modules/notifications/domain"
 	notifications "github.com/complexus-tech/projects-api/internal/modules/notifications/service"
+	storydomain "github.com/complexus-tech/projects-api/internal/modules/stories/domain"
 	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/google/uuid"
@@ -159,7 +160,7 @@ func TestHandleStoryUpdatedReturnsAggregatedNotificationFailures(t *testing.T) {
 	consumer := &Consumer{
 		log:               testLogger,
 		notifications:     creator,
-		notificationRules: notifications.NewRules(testLogger, nil, nil, nil),
+		notificationRules: notifications.NewRules(testLogger, eventStoryRulesStub{}, nil, nil),
 	}
 	event := events.Event{
 		Type:      events.StoryUpdated,
@@ -328,4 +329,13 @@ func TestCompletionUpdatesBroadcastForCalendarRefresh(t *testing.T) {
 	require.Equal(t, map[string]any{
 		"completedAt": completedAt,
 	}, frontendStoryChanges(updates))
+}
+
+type eventStoryRulesStub struct{}
+
+func (eventStoryRulesStub) GetEventStoryTitle(context.Context, uuid.UUID, uuid.UUID, uuid.UUID) (string, error) {
+	return "Task", nil
+}
+func (eventStoryRulesStub) RecordSystemActivity(context.Context, storydomain.Activity) error {
+	return nil
 }

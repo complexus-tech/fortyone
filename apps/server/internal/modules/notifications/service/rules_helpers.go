@@ -39,18 +39,6 @@ func (r *Rules) getUserTimezone(ctx context.Context, userID uuid.UUID, fallback 
 	return timezone
 }
 
-// getStoryTitle gets a story's title with fallback
-func (r *Rules) getStoryTitle(ctx context.Context, storyID, workspaceID uuid.UUID) string {
-	var storyTitle string
-	if r.stories == nil {
-		return storyTitle
-	}
-	if story, err := r.stories.Get(ctx, storyID, workspaceID); err == nil {
-		storyTitle = story.Title
-	}
-	return storyTitle
-}
-
 // getStatus gets a status
 func (r *Rules) getStatus(ctx context.Context, statusID uuid.UUID, workspaceID uuid.UUID) statesdomain.State {
 	status, _ := r.statuses.Get(ctx, workspaceID, statusID)

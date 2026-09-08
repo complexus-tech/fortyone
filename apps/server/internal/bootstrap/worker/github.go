@@ -100,7 +100,7 @@ func buildGitHubWorkerService(
 	service, err := github.New(
 		log,
 		repository,
-		githubadapter.NewStoryService(storyService),
+		githubadapter.NewStoryService(storyService, githubActorID),
 		compatibility.requestStore,
 		attachmentsService,
 		config,

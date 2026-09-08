@@ -114,7 +114,16 @@ func validateCreateCommand(command commentsdomain.CreateCommand) error {
 	if command.ParentID != nil && *command.ParentID == uuid.Nil {
 		return fmt.Errorf("%w: parent id is invalid", ErrInvalidComment)
 	}
-	if err := validateMutationActor(command.Actor, command.WorkspaceID); err != nil {
+	if command.Actor.Kind == platformauth.PrincipalSystem {
+		if err := command.Actor.Validate(); err != nil || command.Actor.WorkspaceID != command.WorkspaceID ||
+			!command.Actor.Scopes.Has(platformauth.ScopeCommentsWrite) {
+			return ErrForbidden
+		}
+		// Provider comments do not synthesize mentions on behalf of a system user.
+		if len(command.MentionedUserIDs) != 0 {
+			return ErrInvalidMention
+		}
+	} else if err := validateMutationActor(command.Actor, command.WorkspaceID); err != nil {
 		return err
 	}
 	return validateContentAndMentions(command.Content, command.MentionedUserIDs)

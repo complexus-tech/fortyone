@@ -1,4 +1,4 @@
-package workerbootstrap
+package mayaadapter
 
 import (
 	"context"
@@ -28,7 +28,7 @@ func TestWorkerMayaStoryReadsBindSystemIdentityForEachWorkspace(t *testing.T) {
 	t.Parallel()
 	reader := &workerMayaStoryReaderStub{}
 	systemID := uuid.New()
-	service := workerMayaStories{reader: reader, actorID: systemID}
+	service := storyService{reader: reader, actorID: systemID}
 	ctx := context.Background() // Queue tasks have no authenticated HTTP actor.
 	for _, workspaceID := range []uuid.UUID{uuid.New(), uuid.New()} {
 		storyID := uuid.New()
@@ -56,7 +56,7 @@ func TestWorkerMayaStoryReadsRejectMissingIdentity(t *testing.T) {
 	for _, missing := range []string{"reader", "actor", "workspace", "story"} {
 		t.Run(missing, func(t *testing.T) {
 			reader := &workerMayaStoryReaderStub{}
-			service := workerMayaStories{reader: reader, actorID: uuid.New()}
+			service := storyService{reader: reader, actorID: uuid.New()}
 			storyID, workspaceID := uuid.New(), uuid.New()
 			switch missing {
 			case "reader":
@@ -79,7 +79,7 @@ func TestWorkerMayaStoryReadsPreserveRepositoryErrors(t *testing.T) {
 	t.Parallel()
 	for _, expected := range []error{storydomain.ErrNotFound, storydomain.ErrMutationForbidden, errors.New("database unavailable")} {
 		reader := &workerMayaStoryReaderStub{err: expected}
-		service := workerMayaStories{reader: reader, actorID: uuid.New()}
+		service := storyService{reader: reader, actorID: uuid.New()}
 		_, err := service.Get(context.Background(), uuid.New(), uuid.New())
 		require.ErrorIs(t, err, expected)
 	}

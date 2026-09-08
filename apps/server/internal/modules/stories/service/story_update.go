@@ -8,6 +8,7 @@ import (
 	"time"
 
 	storydomain "github.com/complexus-tech/projects-api/internal/modules/stories/domain"
+	"github.com/complexus-tech/projects-api/internal/platform/auth"
 	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
@@ -40,6 +41,9 @@ func (s *Service) updatePatchWithOptions(ctx context.Context, storyID, workspace
 	var err error
 	if useTypedMutation {
 		scope, err = mutationScope(ctx, workspaceID, actorID, options.actorKind)
+		if err == nil {
+			ctx, err = auth.SetActor(ctx, scope.Actor)
+		}
 		if err == nil {
 			story, err = mutationRepo.GetStoryForMutation(ctx, scope, storyID)
 		}

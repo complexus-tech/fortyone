@@ -14,6 +14,10 @@ func (r *repo) GetWorkloadAnalysis(ctx context.Context, workspaceID uuid.UUID, f
 	if err != nil {
 		return reportdomain.CoreWorkloadAnalysis{}, err
 	}
+	return r.workloadAnalysis(ctx, query)
+}
+
+func (r *repo) workloadAnalysis(ctx context.Context, query queryFilters) (reportdomain.CoreWorkloadAnalysis, error) {
 	summary, err := r.queries.GetWorkloadSummary(ctx, reportssql.GetWorkloadSummaryParams{
 		WorkspaceID:  query.workspaceID,
 		TeamIds:      query.teamIDs,

@@ -100,7 +100,7 @@ func (s *Service) webhookActorContext(ctx context.Context, record webhooks.Recor
 		s.cfg.GitHubUserID,
 		platformauth.PrincipalSystem,
 		record.InstallationID,
-		platformauth.MustScopeSet(platformauth.ScopeStoriesRead, platformauth.ScopeStoriesWrite),
+		platformauth.MustScopeSet(platformauth.ScopeStoriesRead, platformauth.ScopeStoriesWrite, platformauth.ScopeCommentsRead, platformauth.ScopeCommentsWrite),
 		platformauth.UnrestrictedTeamAccess(),
 	)
 	if err != nil {

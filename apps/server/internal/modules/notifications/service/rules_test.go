@@ -419,7 +419,7 @@ func TestProcessCommentCreated(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rules := NewRules(nil, nil, nil, nil)
+			rules := NewRules(nil, &scheduleRulesStories{}, nil, nil)
 
 			notifications, err := rules.ProcessCommentCreated(context.Background(), tt.payload, tt.actorID)
 			assert.NoError(t, err)
@@ -452,7 +452,7 @@ func TestProcessFeedbackCommentCreated(t *testing.T) {
 		Content:       "We are working on this.",
 	}
 
-	rules := NewRules(nil, nil, nil, nil)
+	rules := NewRules(nil, &scheduleRulesStories{}, nil, nil)
 	result := rules.ProcessFeedbackCommentCreated(context.Background(), payload, actorID)
 
 	assert.Len(t, result, 1)
@@ -484,7 +484,7 @@ func TestProcessFeedbackStatusUpdated(t *testing.T) {
 		Status:        "in_progress",
 	}
 
-	rules := NewRules(nil, nil, nil, nil)
+	rules := NewRules(nil, &scheduleRulesStories{}, nil, nil)
 	result := rules.ProcessFeedbackStatusUpdated(context.Background(), payload, actorID)
 
 	assert.Len(t, result, 1)
@@ -499,7 +499,7 @@ func TestProcessFeedbackUpdatePublishedUsesRecipientDedupeKey(t *testing.T) {
 		PublicationEventID: uuid.New(), UpdateID: uuid.New(), LinkedItemID: uuid.New(), WorkspaceID: uuid.New(),
 		RecipientID: recipientID, UpdateTitle: "Dark mode shipped", UpdateSlug: "dark-mode-shipped",
 	}
-	rules := NewRules(nil, nil, nil, nil)
+	rules := NewRules(nil, &scheduleRulesStories{}, nil, nil)
 
 	result := rules.ProcessFeedbackUpdatePublished(context.Background(), payload, actorID)
 
@@ -518,7 +518,7 @@ func TestProcessFeedbackItemMergedUsesStableRecipientDedupeKey(t *testing.T) {
 		TargetItemTitle: "Canonical dark mode request", TargetItemSlug: "canonical-dark-mode-request",
 		WorkspaceID: uuid.New(), RecipientID: recipientID,
 	}
-	rules := NewRules(nil, nil, nil, nil)
+	rules := NewRules(nil, &scheduleRulesStories{}, nil, nil)
 
 	result := rules.ProcessFeedbackItemMerged(context.Background(), payload, actorID)
 
@@ -580,7 +580,7 @@ func TestProcessCommentReplied(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rules := NewRules(nil, nil, nil, nil)
+			rules := NewRules(nil, &scheduleRulesStories{}, nil, nil)
 
 			notifications, err := rules.ProcessCommentReplied(context.Background(), tt.payload, tt.actorID)
 			assert.NoError(t, err)
@@ -645,7 +645,7 @@ func TestProcessUserMentioned(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rules := NewRules(nil, nil, nil, nil)
+			rules := NewRules(nil, &scheduleRulesStories{}, nil, nil)
 
 			notifications, err := rules.ProcessUserMentioned(context.Background(), tt.payload, tt.actorID)
 			assert.NoError(t, err)
@@ -673,7 +673,7 @@ func TestPreventDuplicateNotifications(t *testing.T) {
 
 	// Create a rules instance with nil services for this test
 	// We'll test the logic by checking if the story lookup would prevent duplicates
-	rules := NewRules(nil, nil, nil, nil)
+	rules := NewRules(nil, &scheduleRulesStories{}, nil, nil)
 
 	// Test that when the story assignee is mentioned, we would need to check for duplicates
 	// This test verifies the logic exists, but we can't easily mock the full stories service

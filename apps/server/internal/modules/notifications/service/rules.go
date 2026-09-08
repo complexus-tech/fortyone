@@ -2,6 +2,7 @@ package notifications
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -21,8 +22,8 @@ type Rules struct {
 }
 
 type storyRulesService interface {
-	Get(ctx context.Context, storyID, workspaceID uuid.UUID) (storydomain.Story, error)
-	RecordActivity(ctx context.Context, activity storydomain.Activity) error
+	GetEventStoryTitle(ctx context.Context, actorID, storyID, workspaceID uuid.UUID) (string, error)
+	RecordSystemActivity(ctx context.Context, activity storydomain.Activity) error
 }
 
 type userRulesService interface {
@@ -126,6 +127,22 @@ func (r *Rules) ProcessStoryUpdate(ctx context.Context, payload events.StoryUpda
 	}
 	notifications = append(notifications, r.handleScheduleTransition(ctx, payload, actorID, directRecipients)...)
 
+	if len(notifications) > 0 {
+		if r.stories == nil {
+			return nil, errors.New("story event title reader is unavailable")
+		}
+		title, err := r.stories.GetEventStoryTitle(ctx, actorID, payload.StoryID, payload.WorkspaceID)
+		if errors.Is(err, storydomain.ErrNotFound) {
+			// The story was deleted or the event actor's access was revoked.
+			return nil, nil
+		}
+		if err != nil {
+			return nil, fmt.Errorf("resolve story update notification title: %w", err)
+		}
+		for i := range notifications {
+			notifications[i].Title = title
+		}
+	}
 	return notifications, nil
 }
 

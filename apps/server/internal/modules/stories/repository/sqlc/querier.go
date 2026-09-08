@@ -44,6 +44,10 @@ type Querier interface {
 	FailAttachmentObjectDeletion(ctx context.Context, arg FailAttachmentObjectDeletionParams) (int64, error)
 	FailStoryScheduleTransition(ctx context.Context, arg FailStoryScheduleTransitionParams) (int64, error)
 	FindVisibleFirstStatusByCategory(ctx context.Context, arg FindVisibleFirstStatusByCategoryParams) (uuid.UUID, error)
+	// Metadata for trusted asynchronous events. This is separate from interactive
+	// reads: the event actor is explicit, and notification creation rechecks the
+	// recipient independently. A system identity must be active in the database.
+	GetEventStoryTitle(ctx context.Context, arg GetEventStoryTitleParams) (string, error)
 	GetLatestStoryScheduleTransition(ctx context.Context, arg GetLatestStoryScheduleTransitionParams) (GetLatestStoryScheduleTransitionRow, error)
 	GetOAuthApplicationStoryCreationReplay(ctx context.Context, arg GetOAuthApplicationStoryCreationReplayParams) (GetOAuthApplicationStoryCreationReplayRow, error)
 	GetStoryIDByCreationKey(ctx context.Context, arg GetStoryIDByCreationKeyParams) (uuid.UUID, error)
@@ -52,6 +56,8 @@ type Querier interface {
 	// Credentials only narrow current product membership; they never replace it.
 	GetStoryMutationSnapshot(ctx context.Context, arg GetStoryMutationSnapshotParams) (GetStoryMutationSnapshotRow, error)
 	GetStoryWatchStateForUpdate(ctx context.Context, arg GetStoryWatchStateForUpdateParams) (GetStoryWatchStateForUpdateRow, error)
+	GetSystemStoryComment(ctx context.Context, arg GetSystemStoryCommentParams) (GetSystemStoryCommentRow, error)
+	GetSystemStoryStatusCategory(ctx context.Context, arg GetSystemStoryStatusCategoryParams) (string, error)
 	// Ordinary user-facing story reads require an active actor who is a current
 	// member of both the workspace and the story's team. The integration-only
 	// repository method can replace membership with a pre-authorized, restricted

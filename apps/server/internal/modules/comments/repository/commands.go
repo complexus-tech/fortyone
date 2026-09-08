@@ -28,7 +28,8 @@ func (r *Repository) CreateComment(
 	err := r.withinTransaction(ctx, func(queries commentsql.Querier) error {
 		row, err := queries.CreateCommentForActor(ctx, commentsql.CreateCommentForActorParams{
 			Content: command.Content, ActorID: command.Actor.PrincipalID,
-			ParentID: command.ParentID, StoryID: command.StoryID, WorkspaceID: command.WorkspaceID,
+			SystemActor: command.Actor.Kind == platformauth.PrincipalSystem,
+			ParentID:    command.ParentID, StoryID: command.StoryID, WorkspaceID: command.WorkspaceID,
 			TeamAccessUnrestricted: command.Actor.TeamAccess.IsUnrestricted(),
 			AllowedTeamIds:         command.Actor.TeamAccess.RestrictedTeamIDs(),
 		})
@@ -42,8 +43,12 @@ func (r *Repository) CreateComment(
 		scope := commentsdomain.ActorScope{
 			CommentID: created.ID, WorkspaceID: command.WorkspaceID, Actor: command.Actor,
 		}
-		if err := replaceMentions(ctx, queries, scope, command.MentionedUserIDs); err != nil {
-			return err
+		// A newly inserted comment has no mentions to clear. In particular, a
+		// provider comment must not enter the human-author mention mutation path.
+		if len(command.MentionedUserIDs) > 0 {
+			if err := replaceMentions(ctx, queries, scope, command.MentionedUserIDs); err != nil {
+				return err
+			}
 		}
 		return appendMutationEvent(ctx, queries, eventID, commentsdomain.EventCreated, command.WorkspaceID, command.Actor, created)
 	})

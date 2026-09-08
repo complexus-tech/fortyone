@@ -7,6 +7,7 @@ import (
 	github "github.com/complexus-tech/projects-api/internal/modules/github/service"
 	integrationrequests "github.com/complexus-tech/projects-api/internal/modules/integrationrequests/service"
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
+	"github.com/complexus-tech/projects-api/internal/platform/auth"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
@@ -51,7 +52,7 @@ func TestStoryServiceMapsActivityAndCommentCommands(t *testing.T) {
 	t.Parallel()
 
 	backend := &storyBackendStub{comment: stories.CoreComment{ID: uuid.New()}}
-	adapter := NewStoryService(backend)
+	adapter := NewStoryService(backend, uuid.New())
 	workspaceID, storyID, actorID := uuid.New(), uuid.New(), uuid.New()
 	reason := "provider automation"
 
@@ -94,15 +95,19 @@ func (stub *requestBackendStub) Get(
 }
 
 type storyBackendStub struct {
-	activity   stories.CoreActivity
-	newComment stories.CoreNewComment
-	comment    stories.CoreComment
+	actor        auth.Actor
+	systemReadID uuid.UUID
+	userReads    int
+	activity     stories.CoreActivity
+	newComment   stories.CoreNewComment
+	comment      stories.CoreComment
 }
 
 func (stub *storyBackendStub) Get(
 	_ context.Context,
 	storyID, workspaceID uuid.UUID,
 ) (stories.CoreSingleStory, error) {
+	stub.userReads++
 	return stories.CoreSingleStory{ID: storyID, Workspace: workspaceID}, nil
 }
 
@@ -117,16 +122,68 @@ func (stub *storyBackendStub) UpdateExternalWithReason(
 	return nil
 }
 
-func (stub *storyBackendStub) RecordActivity(_ context.Context, activity stories.CoreActivity) error {
+func (stub *storyBackendStub) RecordActivity(ctx context.Context, activity stories.CoreActivity) error {
+	stub.actor, _ = auth.GetActor(ctx)
 	stub.activity = activity
 	return nil
 }
 
 func (stub *storyBackendStub) CreateCommentExternal(
-	_ context.Context,
+	ctx context.Context,
 	_, _ uuid.UUID,
 	comment stories.CoreNewComment,
 ) (stories.CoreComment, error) {
+	stub.actor, _ = auth.GetActor(ctx)
 	stub.newComment = comment
 	return stub.comment, nil
+}
+
+func (backend *storyBackendStub) GetForSystem(ctx context.Context, actorID, storyID, workspaceID uuid.UUID) (stories.CoreSingleStory, error) {
+	backend.systemReadID = actorID
+	return stories.CoreSingleStory{ID: storyID, Workspace: workspaceID}, nil
+}
+
+func TestBackgroundGitHubReadsUseSystemAndInteractiveReadsKeepUser(t *testing.T) {
+	t.Parallel()
+	backend := &storyBackendStub{}
+	systemID, storyID, workspaceID := uuid.New(), uuid.New(), uuid.New()
+	adapter := NewStoryService(backend, systemID)
+	_, err := adapter.Get(context.Background(), storyID, workspaceID)
+	require.NoError(t, err)
+	require.Equal(t, systemID, backend.systemReadID)
+	require.Zero(t, backend.userReads)
+	_, err = adapter.Get(auth.SetUserID(context.Background(), uuid.New()), storyID, workspaceID)
+	require.NoError(t, err)
+	require.Equal(t, 1, backend.userReads)
+}
+
+func TestGitHubMappedAuthorPreservesAuthorityAndRejectsImpersonation(t *testing.T) {
+	t.Parallel()
+	systemID, authorID, workspaceID, teamID := uuid.New(), uuid.New(), uuid.New(), uuid.New()
+	teams, err := auth.RestrictedTeamAccess(teamID)
+	require.NoError(t, err)
+	system, err := auth.NewActor(systemID, auth.PrincipalSystem, uuid.Nil,
+		auth.MustScopeSet(auth.ScopeStoriesWrite, auth.ScopeCommentsWrite), teams)
+	require.NoError(t, err)
+	system, err = system.WithWorkspace(workspaceID)
+	require.NoError(t, err)
+	ctx, err := auth.SetActor(context.Background(), system)
+	require.NoError(t, err)
+	backend := &storyBackendStub{}
+	adapter := NewStoryService(backend, systemID)
+	activity := github.StoryActivity{UserID: authorID, WorkspaceID: workspaceID, StoryID: uuid.New()}
+	require.NoError(t, adapter.RecordActivity(ctx, activity))
+	require.Equal(t, authorID, backend.actor.PrincipalID)
+	require.Equal(t, auth.PrincipalHumanUser, backend.actor.Kind)
+	require.Equal(t, system.Scopes, backend.actor.Scopes)
+	require.Equal(t, teams, backend.actor.TeamAccess)
+	_, err = adapter.CreateCommentExternal(ctx, authorID, workspaceID, github.NewStoryComment{UserID: authorID, StoryID: activity.StoryID, Comment: "Reviewed"})
+	require.NoError(t, err)
+	require.Equal(t, authorID, backend.actor.PrincipalID)
+	original, err := auth.GetActor(ctx)
+	require.NoError(t, err)
+	require.Equal(t, system, original)
+	require.ErrorIs(t, adapter.RecordActivity(auth.SetUserID(context.Background(), uuid.New()), activity), stories.ErrStoryMutationForbidden)
+	activity.WorkspaceID = uuid.New()
+	require.ErrorIs(t, adapter.RecordActivity(ctx, activity), stories.ErrStoryMutationForbidden)
 }

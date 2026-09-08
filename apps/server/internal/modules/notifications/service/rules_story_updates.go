@@ -54,7 +54,6 @@ func (r *Rules) handleNewAssignment(ctx context.Context, payload events.StoryUpd
 	}
 
 	actorName := r.getUserName(ctx, actorID)
-	storyTitle := r.getStoryTitle(ctx, payload.StoryID, payload.WorkspaceID)
 
 	// Only notify the new assignee if they're not the actor
 	if shouldNotify(*newAssigneeID, actorID) {
@@ -73,7 +72,7 @@ func (r *Rules) handleNewAssignment(ctx context.Context, payload events.StoryUpd
 			}
 		}
 		return []CoreNewNotification{
-			r.createNotification(*newAssigneeID, payload, actorID, "story_update", storyTitle, message),
+			r.createNotification(*newAssigneeID, payload, actorID, "story_update", "", message),
 		}
 	}
 
@@ -91,7 +90,6 @@ func (r *Rules) handleReassignment(ctx context.Context, payload events.StoryUpda
 
 	actorName := r.getUserName(ctx, actorID)
 	newAssigneeName := r.getUserName(ctx, *newAssigneeID)
-	storyTitle := r.getStoryTitle(ctx, payload.StoryID, payload.WorkspaceID)
 
 	var notifications []CoreNewNotification
 
@@ -119,7 +117,7 @@ func (r *Rules) handleReassignment(ctx context.Context, payload events.StoryUpda
 			}
 		}
 
-		notifications = append(notifications, r.createNotification(*oldAssigneeID, payload, actorID, "story_update", storyTitle, message))
+		notifications = append(notifications, r.createNotification(*oldAssigneeID, payload, actorID, "story_update", "", message))
 	}
 
 	// Notify new assignee that they received the story (only if they're not the actor)
@@ -139,7 +137,7 @@ func (r *Rules) handleReassignment(ctx context.Context, payload events.StoryUpda
 			}
 		}
 
-		notifications = append(notifications, r.createNotification(*newAssigneeID, payload, actorID, "story_update", storyTitle, message))
+		notifications = append(notifications, r.createNotification(*newAssigneeID, payload, actorID, "story_update", "", message))
 	}
 
 	return notifications
@@ -153,7 +151,6 @@ func (r *Rules) handlePureUnassignment(ctx context.Context, payload events.Story
 	}
 
 	actorName := r.getUserName(ctx, actorID)
-	storyTitle := r.getStoryTitle(ctx, payload.StoryID, payload.WorkspaceID)
 
 	message := NotificationMessage{
 		Template: "{actor} removed your assignment",
@@ -163,7 +160,7 @@ func (r *Rules) handlePureUnassignment(ctx context.Context, payload events.Story
 	}
 
 	return []CoreNewNotification{
-		r.createNotification(*oldAssigneeID, payload, actorID, "story_update", storyTitle, message),
+		r.createNotification(*oldAssigneeID, payload, actorID, "story_update", "", message),
 	}
 }
 
@@ -178,7 +175,6 @@ func (r *Rules) handleStoryUpdates(ctx context.Context, payload events.StoryUpda
 		}
 	}
 	actorName := r.getUserName(ctx, actorID)
-	storyTitle := r.getStoryTitle(ctx, payload.StoryID, payload.WorkspaceID)
 	message := r.generateNonAssignmentUpdateMessage(actorName, payload.Updates)
 	recipients := storyAudience(payload.AudienceIDs, payload.AudienceResolved, payload.AssigneeID)
 	notifications := make([]CoreNewNotification, 0, len(recipients))
@@ -189,7 +185,7 @@ func (r *Rules) handleStoryUpdates(ctx context.Context, payload events.StoryUpda
 		if _, excluded := excludedRecipients[recipientID]; excluded {
 			continue
 		}
-		notifications = append(notifications, r.createNotification(recipientID, payload, actorID, "story_update", storyTitle, message))
+		notifications = append(notifications, r.createNotification(recipientID, payload, actorID, "story_update", "", message))
 	}
 	return notifications
 }
@@ -205,7 +201,6 @@ func (r *Rules) handleCollaboratorUpdates(ctx context.Context, payload events.St
 	current := uuidSet(currentCollaborators)
 	directRecipients := make(map[uuid.UUID]struct{})
 	notifications := make([]CoreNewNotification, 0)
-	storyTitle := r.getStoryTitle(ctx, payload.StoryID, payload.WorkspaceID)
 	actorName := r.getUserName(ctx, actorID)
 
 	for collaboratorID := range current {
@@ -219,7 +214,7 @@ func (r *Rules) handleCollaboratorUpdates(ctx context.Context, payload events.St
 				payload,
 				actorID,
 				"story_update",
-				storyTitle,
+				"",
 				NotificationMessage{
 					Template: "{actor} added you as a collaborator",
 					Variables: map[string]Variable{
@@ -241,7 +236,7 @@ func (r *Rules) handleCollaboratorUpdates(ctx context.Context, payload events.St
 				payload,
 				actorID,
 				"story_update",
-				storyTitle,
+				"",
 				NotificationMessage{
 					Template: "{actor} removed you as a collaborator",
 					Variables: map[string]Variable{

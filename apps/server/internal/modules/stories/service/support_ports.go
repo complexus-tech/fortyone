@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	storydomain "github.com/complexus-tech/projects-api/internal/modules/stories/domain"
+	"github.com/complexus-tech/projects-api/internal/platform/auth"
 	"github.com/google/uuid"
 )
 
@@ -82,6 +83,17 @@ func (s *Service) getStoryStatusCategory(
 	ctx context.Context,
 	workspaceID, statusID uuid.UUID,
 ) (string, error) {
+	if actor, err := auth.GetActor(ctx); err == nil && actor.Kind == auth.PrincipalSystem {
+		if repository, ok := s.repo.(interface {
+			GetSystemStatusCategory(context.Context, storydomain.MutationScope, uuid.UUID) (string, error)
+		}); ok {
+			scope, err := mutationScope(ctx, workspaceID, actor.PrincipalID, auth.PrincipalSystem)
+			if err != nil {
+				return "", err
+			}
+			return repository.GetSystemStatusCategory(ctx, scope, statusID)
+		}
+	}
 	repository, err := s.storySupportReads()
 	if err != nil {
 		legacy, ok := s.repo.(legacyStatusCategoryRepository)

@@ -16,18 +16,24 @@ WHERE comment.comment_id = sqlc.arg(comment_id)
 WITH scoped_story AS (
     SELECT story.id
     FROM public.stories AS story
-    INNER JOIN public.workspace_members AS actor_member
-        ON actor_member.workspace_id = story.workspace_id
-       AND actor_member.user_id = sqlc.arg(actor_id)
+    INNER JOIN public.workspaces AS workspace
+        ON workspace.workspace_id = story.workspace_id AND workspace.deleted_at IS NULL
     INNER JOIN public.users AS actor_user
-        ON actor_user.user_id = actor_member.user_id
-       AND actor_user.is_active = TRUE
-    INNER JOIN public.team_members AS actor_team_member
-        ON actor_team_member.team_id = story.team_id
-       AND actor_team_member.user_id = actor_member.user_id
+        ON actor_user.user_id = sqlc.arg(actor_id) AND actor_user.is_active = TRUE
     WHERE story.id = sqlc.arg(story_id)
       AND story.workspace_id = sqlc.arg(workspace_id)
       AND story.deleted_at IS NULL
+      AND (
+          (CAST(sqlc.arg(system_actor) AS boolean) AND actor_user.is_system = TRUE)
+          OR (NOT CAST(sqlc.arg(system_actor) AS boolean) AND EXISTS (
+              SELECT 1 FROM public.workspace_members AS actor_member
+              INNER JOIN public.team_members AS actor_team_member
+                  ON actor_team_member.team_id = story.team_id
+                 AND actor_team_member.user_id = actor_member.user_id
+              WHERE actor_member.workspace_id = story.workspace_id
+                AND actor_member.user_id = actor_user.user_id
+          ))
+      )
       AND (
           CAST(sqlc.arg(team_access_unrestricted) AS boolean)
           OR story.team_id = ANY(CAST(sqlc.arg(allowed_team_ids) AS uuid[]))

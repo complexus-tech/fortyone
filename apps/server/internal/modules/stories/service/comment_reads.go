@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 
+	storydomain "github.com/complexus-tech/projects-api/internal/modules/stories/domain"
+	"github.com/complexus-tech/projects-api/internal/platform/auth"
 	"github.com/google/uuid"
 )
 
@@ -43,6 +45,17 @@ func (s *Service) getVisibleComment(
 	ctx context.Context,
 	commentID, storyID, workspaceID uuid.UUID,
 ) (CoreComment, error) {
+	if actor, err := auth.GetActor(ctx); err == nil && actor.Kind == auth.PrincipalSystem {
+		if repository, ok := s.repo.(interface {
+			GetSystemComment(context.Context, storydomain.MutationScope, uuid.UUID, uuid.UUID) (CoreComment, error)
+		}); ok {
+			scope, err := mutationScope(ctx, workspaceID, actor.PrincipalID, auth.PrincipalSystem)
+			if err != nil {
+				return CoreComment{}, err
+			}
+			return repository.GetSystemComment(ctx, scope, commentID, storyID)
+		}
+	}
 	repository, migrated := s.repo.(scopedCommentReadRepository)
 	if !migrated {
 		legacy, ok := s.repo.(legacyCommentReadRepository)

@@ -3,6 +3,7 @@ package workerbootstrap
 import (
 	"strings"
 
+	"github.com/complexus-tech/projects-api/internal/bootstrap/mayaadapter"
 	calendar "github.com/complexus-tech/projects-api/internal/modules/calendar/service"
 	mayarepository "github.com/complexus-tech/projects-api/internal/modules/maya/repository"
 	maya "github.com/complexus-tech/projects-api/internal/modules/maya/service"
@@ -33,7 +34,8 @@ func buildMayaService(
 	storiesService.ConfigureCommentCreator(buildStoryCommentCreator(log, pool))
 	storiesService.ConfigureMayaActor(mayaActorID)
 	storiesService.ConfigureAutoSchedulingEligibility(mayaRepository.WorkspaceCanUseMaya)
-	reportsService := reports.New(log, reportsrepository.New(log, pool))
+	reportsRepo := reportsrepository.New(log, pool)
+	reportsService := reports.New(log, reportsRepo)
 	usersService := users.New(log, usersrepository.New(pool), nil)
 
 	planner := maya.NewPlanner()
@@ -48,8 +50,8 @@ func buildMayaService(
 	return maya.New(maya.Dependencies{
 		Repository:        mayaRepository,
 		Realtime:          mayaRepository,
-		Stories:           workerMayaStories{StoriesService: storiesService, reader: storyStore, actorID: mayaActorID},
-		Reports:           reportsService,
+		Stories:           mayaadapter.New(storiesService, storyStore, mayaActorID),
+		Reports:           mayaadapter.NewReports(reportsService, reportsRepo, mayaActorID),
 		Calendar:          calendarService,
 		Users:             usersService,
 		WorkspaceSettings: workspacesrepository.New(pool),

@@ -4,14 +4,17 @@ package githubadapter
 
 import (
 	"context"
+	"errors"
 
 	github "github.com/complexus-tech/projects-api/internal/modules/github/service"
 	integrationrequests "github.com/complexus-tech/projects-api/internal/modules/integrationrequests/service"
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
+	"github.com/complexus-tech/projects-api/internal/platform/auth"
 	"github.com/google/uuid"
 )
 
 type StoryBackend interface {
+	GetForSystem(context.Context, uuid.UUID, uuid.UUID, uuid.UUID) (stories.CoreSingleStory, error)
 	Get(ctx context.Context, id, workspaceID uuid.UUID) (stories.CoreSingleStory, error)
 	UpdateExternalWithReason(ctx context.Context, actorID, storyID, workspaceID uuid.UUID, updates map[string]any, reason string) error
 	RecordActivity(ctx context.Context, activity stories.CoreActivity) error
@@ -19,18 +22,26 @@ type StoryBackend interface {
 }
 
 type storyService struct {
-	backend StoryBackend
+	backend  StoryBackend
+	systemID uuid.UUID
 }
 
-func NewStoryService(backend StoryBackend) github.StoryService {
+func NewStoryService(backend StoryBackend, systemID uuid.UUID) github.StoryService {
 	if backend == nil {
 		return nil
 	}
-	return storyService{backend: backend}
+	return storyService{backend: backend, systemID: systemID}
 }
 
 func (adapter storyService) Get(ctx context.Context, id, workspaceID uuid.UUID) (stories.CoreSingleStory, error) {
-	return adapter.backend.Get(ctx, id, workspaceID)
+	actor, err := auth.GetActor(ctx)
+	if err == nil && actor.Kind != auth.PrincipalSystem {
+		return adapter.backend.Get(ctx, id, workspaceID)
+	}
+	if err != nil && !errors.Is(err, auth.ErrActorNotFound) {
+		return stories.CoreSingleStory{}, err
+	}
+	return adapter.backend.GetForSystem(ctx, adapter.systemID, id, workspaceID)
 }
 
 func (adapter storyService) UpdateExternalWithReason(
@@ -43,6 +54,10 @@ func (adapter storyService) UpdateExternalWithReason(
 }
 
 func (adapter storyService) RecordActivity(ctx context.Context, activity github.StoryActivity) error {
+	ctx, err := adapter.eventActorContext(ctx, activity.UserID, activity.WorkspaceID)
+	if err != nil {
+		return err
+	}
 	return adapter.backend.RecordActivity(ctx, stories.CoreActivity{
 		StoryID:      activity.StoryID,
 		UserID:       activity.UserID,
@@ -61,6 +76,10 @@ func (adapter storyService) CreateCommentExternal(
 	actorID, workspaceID uuid.UUID,
 	comment github.NewStoryComment,
 ) (stories.CoreComment, error) {
+	ctx, err := adapter.eventActorContext(ctx, actorID, workspaceID)
+	if err != nil {
+		return stories.CoreComment{}, err
+	}
 	return adapter.backend.CreateCommentExternal(ctx, actorID, workspaceID, stories.CoreNewComment{
 		StoryID:  comment.StoryID,
 		Parent:   comment.Parent,
@@ -178,3 +197,43 @@ var (
 	_ github.RequestStore                  = requestStore{}
 	_ integrationrequests.ProviderAccepter = ProviderAccepter{}
 )
+
+// eventActorContext preserves the author resolved from GitHub. Only the
+// verified GitHub system context may delegate to a mapped human author; normal
+// request actors cannot replace their identity through this adapter.
+func (adapter storyService) eventActorContext(ctx context.Context, actorID, workspaceID uuid.UUID) (context.Context, error) {
+	if actorID == uuid.Nil || workspaceID == uuid.Nil {
+		return nil, stories.ErrStoryMutationForbidden
+	}
+	teamAccess := auth.UnrestrictedTeamAccess()
+	scopes := auth.MustScopeSet(auth.ScopeStoriesRead, auth.ScopeStoriesWrite, auth.ScopeCommentsRead, auth.ScopeCommentsWrite)
+	if caller, err := auth.GetActor(ctx); err == nil {
+		if caller.WorkspaceID != uuid.Nil && caller.WorkspaceID != workspaceID {
+			return nil, stories.ErrStoryMutationForbidden
+		}
+		if caller.PrincipalID == actorID {
+			return ctx, nil
+		}
+		if caller.Kind != auth.PrincipalSystem || caller.PrincipalID != adapter.systemID {
+			return nil, stories.ErrStoryMutationForbidden
+		}
+		teamAccess = caller.TeamAccess
+		scopes = caller.Scopes
+	} else if !errors.Is(err, auth.ErrActorNotFound) {
+		return nil, err
+	}
+	kind := auth.PrincipalHumanUser
+	if actorID == adapter.systemID {
+		kind = auth.PrincipalSystem
+	}
+	actor, err := auth.NewActor(actorID, kind, uuid.Nil,
+		scopes, teamAccess)
+	if err != nil {
+		return nil, err
+	}
+	actor, err = actor.WithWorkspace(workspaceID)
+	if err != nil {
+		return nil, err
+	}
+	return auth.SetActor(ctx, actor)
+}

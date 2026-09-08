@@ -89,6 +89,10 @@ func (s *Service) createWithOptions(ctx context.Context, ns CoreNewStory, worksp
 		if err != nil {
 			return CoreSingleStory{}, mapStoryMutationError(err)
 		}
+		ctx, err = auth.SetActor(ctx, scope.Actor)
+		if err != nil {
+			return CoreSingleStory{}, err
+		}
 		mutationPreconditions, err = mutationRepo.PrepareStoryMutation(ctx, scope, ns.Team, ns.KeyResult)
 		if err != nil {
 			return CoreSingleStory{}, mapStoryMutationError(err)

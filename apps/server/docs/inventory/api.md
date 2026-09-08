@@ -19,7 +19,7 @@ Credential configuration is indexed in [`docs/configuration.md`](../configuratio
 | `attachments` | 0 | 9 / 25 | 15 | yes | 0 | [attachments.go](../../internal/modules/attachments/service/attachments.go#L1) (679) |
 | `calendar` | 15 | 16 / 98 | 86 | yes | 0 | [microsoft.go](../../internal/modules/calendar/service/microsoft.go#L1) (583) |
 | `chatsessions` | 16 | 15 / 61 | 35 | yes | 0 | [chatsessions.go](../../internal/modules/chatsessions/http/chatsessions.go#L1) (661) |
-| `comments` | 2 | 5 / 17 | 7 | yes | 0 | [commands.go](../../internal/modules/comments/repository/commands.go#L1) (216) |
+| `comments` | 2 | 5 / 17 | 7 | yes | 0 | [commands.go](../../internal/modules/comments/repository/commands.go#L1) (221) |
 | `developeraccess` | 0 | 1 / 5 | 0 | no | 0 | [resolver.go](../../internal/modules/developeraccess/resolver.go#L1) (137) |
 | `developercredentials` | 11 | 6 / 21 | 29 | yes | 0 | [service_accounts.go](../../internal/modules/developercredentials/service/service_accounts.go#L1) (284) |
 | `developeroauth` | 9 | 10 / 36 | 45 | yes | 0 | [application_management.go](../../internal/modules/developeroauth/service/application_management.go#L1) (517) |
@@ -40,18 +40,18 @@ Credential configuration is indexed in [`docs/configuration.md`](../configuratio
 | `links` | 3 | 5 / 10 | 3 | yes | 0 | [links.go](../../internal/modules/links/http/links.go#L1) (115) |
 | `maya` | 7 | 20 / 108 | 30 | yes | 0 | [realtime_capabilities.go](../../internal/modules/maya/http/realtime_capabilities.go#L1) (624) |
 | `messaging` | 0 | 24 / 126 | 72 | yes | 0 | [team_work.go](../../internal/modules/messaging/service/team_work.go#L1) (654) |
-| `notifications` | 14 | 15 / 60 | 27 | yes | 0 | [rules_story_updates.go](../../internal/modules/notifications/service/rules_story_updates.go#L1) (410) |
+| `notifications` | 14 | 16 / 62 | 30 | yes | 0 | [rules.go](../../internal/modules/notifications/service/rules.go#L1) (410) |
 | `objectives` | 15 | 18 / 54 | 36 | yes | 0 | [strategy_communications.go](../../internal/modules/objectives/repository/strategy_communications.go#L1) (442) |
 | `objectivestatus` | 4 | 3 / 3 | 15 | yes | 0 | [repository.go](../../internal/modules/objectivestatus/repository/repository.go#L1) (318) |
 | `okractivities` | 0 | 4 / 12 | 3 | yes | 0 | [repository.go](../../internal/modules/okractivities/repository/repository.go#L1) (201) |
 | `outboundwebhooks` | 5 | 10 / 25 | 24 | yes | 0 | [dispatcher.go](../../internal/modules/outboundwebhooks/service/dispatcher.go#L1) (337) |
-| `reports` | 15 | 8 / 23 | 44 | yes | 0 | [reports.go](../../internal/modules/reports/service/reports.go#L1) (318) |
+| `reports` | 15 | 8 / 23 | 45 | yes | 0 | [reports.go](../../internal/modules/reports/service/reports.go#L1) (318) |
 | `search` | 2 | 7 / 18 | 5 | yes | 0 | [models.go](../../internal/modules/search/http/models.go#L1) (227) |
 | `slack` | 16 | 68 / 296 | 79 | yes | 0 | [capability_models.go](../../internal/modules/slack/service/capability_models.go#L1) (555) |
 | `sprints` | 7 | 7 / 13 | 14 | yes | 0 | [models.go](../../internal/modules/sprints/http/models.go#L1) (270) |
 | `sse` | 1 | 0 / 0 | 0 | no | 0 | — |
 | `states` | 4 | 4 / 5 | 17 | yes | 0 | [repository.go](../../internal/modules/states/repository/repository.go#L1) (332) |
-| `stories` | 35 | 65 / 203 | 91 | yes | 0 | [secondary_mutations.go](../../internal/modules/stories/repository/secondary_mutations.go#L1) (470) |
+| `stories` | 35 | 67 / 207 | 94 | yes | 0 | [secondary_mutations.go](../../internal/modules/stories/repository/secondary_mutations.go#L1) (470) |
 | `subscriptions` | 7 | 9 / 28 | 18 | yes | 0 | [subscriptions.go](../../internal/modules/subscriptions/http/subscriptions.go#L1) (280) |
 | `teams` | 12 | 5 / 16 | 16 | yes | 0 | [teams.go](../../internal/modules/teams/http/teams.go#L1) (590) |
 | `teamsettings` | 4 | 14 / 33 | 27 | yes | 0 | [sprint_automation.go](../../internal/modules/teamsettings/repository/sprint_automation.go#L1) (394) |

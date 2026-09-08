@@ -7,6 +7,7 @@ import (
 
 	"github.com/complexus-tech/projects-api/internal/bootstrap/githubadapter"
 	"github.com/complexus-tech/projects-api/internal/bootstrap/integrationrequestsadapter"
+	"github.com/complexus-tech/projects-api/internal/bootstrap/mayaadapter"
 	bootstrapproviders "github.com/complexus-tech/projects-api/internal/bootstrap/providers"
 	"github.com/complexus-tech/projects-api/internal/bootstrap/slackadapter"
 	workspacebootstrap "github.com/complexus-tech/projects-api/internal/bootstrap/workspaces"
@@ -187,19 +188,13 @@ func buildServices(cfg mux.Config, dependencies Dependencies) services {
 	)
 	commentsService := comments.New(commentsrepository.New(cfg.Log, dependencies.DatabasePool))
 	mayaRepository := mayarepository.New(dependencies.DatabasePool)
-	storiesService := stories.New(
-		cfg.Log,
-		storiesrepository.New(
-			cfg.Log,
-			dependencies.DatabasePool,
-			storiesrepository.WithAttachmentObjectStorage(
-				cfg.StorageConfig.Provider,
-				cfg.StorageConfig.AttachmentsBucket,
-			),
+	storiesRepo := storiesrepository.New(cfg.Log, dependencies.DatabasePool,
+		storiesrepository.WithAttachmentObjectStorage(
+			cfg.StorageConfig.Provider,
+			cfg.StorageConfig.AttachmentsBucket,
 		),
-		cfg.Publisher,
-		cfg.TasksService,
 	)
+	storiesService := stories.New(cfg.Log, storiesRepo, cfg.Publisher, cfg.TasksService)
 	storyCommentCreator, err := bootstrapproviders.NewStoryCommentCreator(commentsService)
 	if err != nil {
 		panic("failed to initialize story comment adapter: " + err.Error())
@@ -294,7 +289,7 @@ func buildServices(cfg mux.Config, dependencies Dependencies) services {
 	githubService, err := github.New(
 		cfg.Log,
 		githubRepository,
-		githubadapter.NewStoryService(storiesService),
+		githubadapter.NewStoryService(storiesService, cfg.GitHubUserID),
 		githubadapter.NewRequestStore(integrationRequestsRepo),
 		attachmentsService,
 		githubConfig,
@@ -361,7 +356,8 @@ func buildServices(cfg mux.Config, dependencies Dependencies) services {
 	if err != nil {
 		panic("failed to resolve maya actor: " + err.Error())
 	}
-	reportsService := reports.New(cfg.Log, reportsrepository.New(cfg.Log, dependencies.DatabasePool))
+	reportsRepo := reportsrepository.New(cfg.Log, dependencies.DatabasePool)
+	reportsService := reports.New(cfg.Log, reportsRepo)
 	teamSettingsService := teamsettings.New(
 		cfg.Log,
 		teamsettingsrepository.New(dependencies.DatabasePool),
@@ -377,8 +373,8 @@ func buildServices(cfg mux.Config, dependencies Dependencies) services {
 	mayaService := maya.New(maya.Dependencies{
 		Repository:        mayaRepository,
 		Realtime:          mayaRepository,
-		Stories:           storiesService,
-		Reports:           reportsService,
+		Stories:           mayaadapter.New(storiesService, storiesRepo, mayaActorID),
+		Reports:           mayaadapter.NewReports(reportsService, reportsRepo, mayaActorID),
 		Calendar:          calendarService,
 		Users:             usersService,
 		WorkspaceSettings: workspacesService,

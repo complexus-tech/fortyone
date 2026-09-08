@@ -2,6 +2,7 @@ package stories
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/complexus-tech/projects-api/internal/platform/auth"
@@ -51,7 +52,30 @@ func (s *Service) createCommentWithOptions(
 	ctx, span := apptracing.AddSpan(ctx, storyServiceTracer, "business.core.stories.CreateComment")
 	defer span.End()
 
-	story, err := s.getVisibleStory(ctx, commentInput.StoryID, workspaceID)
+	actor, err := auth.GetActor(ctx)
+	if errors.Is(err, auth.ErrActorNotFound) {
+		actor = auth.NewHumanActor(options.actorID)
+	} else if err != nil {
+		return CoreComment{}, err
+	}
+	if actor.PrincipalID != options.actorID || (actor.WorkspaceID != uuid.Nil && actor.WorkspaceID != workspaceID) {
+		return CoreComment{}, ErrStoryMutationForbidden
+	}
+	actor, err = actor.WithWorkspace(workspaceID)
+	if err != nil {
+		return CoreComment{}, err
+	}
+	ctx, err = auth.SetActor(ctx, actor)
+	if err != nil {
+		return CoreComment{}, err
+	}
+
+	var story CoreSingleStory
+	if actor.Kind == auth.PrincipalSystem {
+		story, err = s.GetForSystem(ctx, actor.PrincipalID, commentInput.StoryID, workspaceID)
+	} else {
+		story, err = s.getVisibleStory(ctx, commentInput.StoryID, workspaceID)
+	}
 	if err != nil {
 		span.RecordError(err)
 		return CoreComment{}, err
@@ -69,14 +93,6 @@ func (s *Service) createCommentWithOptions(
 
 	if s.commentCreator == nil {
 		return CoreComment{}, ErrCommentWriterUnavailable
-	}
-	actor := auth.NewHumanActor(options.actorID)
-	if contextualActor, actorErr := auth.GetActor(ctx); actorErr == nil && contextualActor.PrincipalID == options.actorID {
-		actor = contextualActor
-	}
-	actor, err = actor.WithWorkspace(workspaceID)
-	if err != nil {
-		return CoreComment{}, err
 	}
 	created, err := s.commentCreator.CreateComment(ctx, CreateCommentCommand{
 		WorkspaceID: workspaceID, StoryID: commentInput.StoryID, ParentID: commentInput.Parent,

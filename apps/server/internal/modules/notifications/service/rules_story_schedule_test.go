@@ -16,11 +16,11 @@ type scheduleRulesStories struct {
 	activities []stories.CoreActivity
 }
 
-func (s *scheduleRulesStories) Get(context.Context, uuid.UUID, uuid.UUID) (stories.CoreSingleStory, error) {
-	return s.story, nil
+func (s *scheduleRulesStories) GetEventStoryTitle(context.Context, uuid.UUID, uuid.UUID, uuid.UUID) (string, error) {
+	return s.story.Title, nil
 }
 
-func (s *scheduleRulesStories) RecordActivity(_ context.Context, activity stories.CoreActivity) error {
+func (s *scheduleRulesStories) RecordSystemActivity(_ context.Context, activity stories.CoreActivity) error {
 	s.activities = append(s.activities, activity)
 	return nil
 }

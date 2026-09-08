@@ -55,6 +55,7 @@ type Querier interface {
 	ListWorkspaceEngagementBySurface(ctx context.Context, arg ListWorkspaceEngagementBySurfaceParams) ([]ListWorkspaceEngagementBySurfaceRow, error)
 	ListWorkspaceEngagementTopUsers(ctx context.Context, arg ListWorkspaceEngagementTopUsersParams) ([]ListWorkspaceEngagementTopUsersRow, error)
 	ListWorkspaceVelocityTrend(ctx context.Context, arg ListWorkspaceVelocityTrendParams) ([]ListWorkspaceVelocityTrendRow, error)
+	SystemCanReadTeamWorkload(ctx context.Context, arg SystemCanReadTeamWorkloadParams) (bool, error)
 }
 
 var _ Querier = (*Queries)(nil)

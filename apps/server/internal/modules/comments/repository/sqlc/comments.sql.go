@@ -139,21 +139,27 @@ const createCommentForActor = `-- name: CreateCommentForActor :one
 WITH scoped_story AS (
     SELECT story.id
     FROM public.stories AS story
-    INNER JOIN public.workspace_members AS actor_member
-        ON actor_member.workspace_id = story.workspace_id
-       AND actor_member.user_id = $2
+    INNER JOIN public.workspaces AS workspace
+        ON workspace.workspace_id = story.workspace_id AND workspace.deleted_at IS NULL
     INNER JOIN public.users AS actor_user
-        ON actor_user.user_id = actor_member.user_id
-       AND actor_user.is_active = TRUE
-    INNER JOIN public.team_members AS actor_team_member
-        ON actor_team_member.team_id = story.team_id
-       AND actor_team_member.user_id = actor_member.user_id
+        ON actor_user.user_id = $2 AND actor_user.is_active = TRUE
     WHERE story.id = $4
       AND story.workspace_id = $5
       AND story.deleted_at IS NULL
       AND (
-          CAST($6 AS boolean)
-          OR story.team_id = ANY(CAST($7 AS uuid[]))
+          (CAST($6 AS boolean) AND actor_user.is_system = TRUE)
+          OR (NOT CAST($6 AS boolean) AND EXISTS (
+              SELECT 1 FROM public.workspace_members AS actor_member
+              INNER JOIN public.team_members AS actor_team_member
+                  ON actor_team_member.team_id = story.team_id
+                 AND actor_team_member.user_id = actor_member.user_id
+              WHERE actor_member.workspace_id = story.workspace_id
+                AND actor_member.user_id = actor_user.user_id
+          ))
+      )
+      AND (
+          CAST($7 AS boolean)
+          OR story.team_id = ANY(CAST($8 AS uuid[]))
       )
       AND (
           CAST($3 AS uuid) IS NULL
@@ -193,6 +199,7 @@ type CreateCommentForActorParams struct {
 	ParentID               *uuid.UUID
 	StoryID                uuid.UUID
 	WorkspaceID            uuid.UUID
+	SystemActor            bool
 	TeamAccessUnrestricted bool
 	AllowedTeamIds         []uuid.UUID
 }
@@ -214,6 +221,7 @@ func (q *Queries) CreateCommentForActor(ctx context.Context, arg CreateCommentFo
 		arg.ParentID,
 		arg.StoryID,
 		arg.WorkspaceID,
+		arg.SystemActor,
 		arg.TeamAccessUnrestricted,
 		arg.AllowedTeamIds,
 	)

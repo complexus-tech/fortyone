@@ -324,6 +324,10 @@ func (s *Service) UpdateAutomationStateIfUnchanged(
 		if scopeErr != nil {
 			return scopeErr
 		}
+		ctx, err = auth.SetActor(ctx, scope.Actor)
+		if err != nil {
+			return err
+		}
 		story, err = repository.GetStoryForMutation(ctx, scope, storyID)
 	} else {
 		story, err = s.getVisibleStory(ctx, storyID, workspaceID)

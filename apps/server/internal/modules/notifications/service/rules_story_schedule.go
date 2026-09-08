@@ -35,13 +35,12 @@ func (r *Rules) handleScheduleTransition(
 
 	timezone := r.getUserTimezone(ctx, recipientID, transition.Timezone)
 	message := scheduleTransitionMessage(payload, timezone)
-	storyTitle := r.getStoryTitle(ctx, payload.StoryID, payload.WorkspaceID)
 	return []CoreNewNotification{r.createNotification(
 		recipientID,
 		payload,
 		actorID,
 		"story_update",
-		storyTitle,
+		"",
 		message,
 	)}
 }
@@ -66,7 +65,7 @@ func (r *Rules) RecordScheduleTransitionActivity(
 	if reason != "" {
 		activityReason = &reason
 	}
-	return r.stories.RecordActivity(ctx, storydomain.Activity{
+	return r.stories.RecordSystemActivity(ctx, storydomain.Activity{
 		ID:           scheduleTransitionActivityID(payload, actorID, eventTimestamp),
 		StoryID:      payload.StoryID,
 		UserID:       actorID,
