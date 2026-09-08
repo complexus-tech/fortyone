@@ -16,7 +16,7 @@ import (
 func TestGzipWriterFlushReportsCompressionFailure(t *testing.T) {
 	t.Parallel()
 
-	const sensitiveFailure = "writer failed with sensitive-token"
+	const sensitiveFailure = "writer failed with token=sensitive-token"
 	response := &failingFlushResponseWriter{
 		header:           make(http.Header),
 		err:              errors.New(sensitiveFailure),

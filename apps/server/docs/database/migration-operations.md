@@ -50,6 +50,7 @@ The machine-readable source of truth is [`internal/migrations/manifest.json`](..
 | `000183` | `feedback_rich_descriptions` | `forward-only` | `schema-first` | Old APIs continue reading and writing plain descriptions. Replacement APIs persist descriptionHTML and expose attachment upload and read paths. | Existing attachment scanning and optimization workers continue processing the shared attachment records without a new worker contract. |
 | `000184` | `routine_email_deliveries` | `forward-only` | `schema-first` | Old APIs remain compatible. | The consolidated email worker requires this schema. |
 | `000185` | `email_avatar_handles` | `forward-only` | `schema-first` | Deploy the avatar redirect endpoint before workers emit durable image URLs. | Worker must use the public HTTPS APP_API_PUBLIC_URL pointing to the API endpoint. |
+| `000186` | `notification_event_uniqueness` | `forward-only` | `schema-first` | Compatible with the current event-deduplicating notification writer. | Existing event retries can insert separate notifications after the repair. |
 
 ## `000152_harden_verification_tokens`
 
@@ -1034,6 +1035,32 @@ Operational notes:
 - Handles contain no expiry and survive authentication-key rotation and profile-image replacement.
 - Handles are bearer links limited to profile images. Deleted accounts or removed photos stop resolving.
 - Retain the handle table and public API origin for the lifetime of delivered emails.
+
+## `000186_notification_event_uniqueness`
+
+- **Classification:** `forward-only`
+- **Files:** `000186_notification_event_uniqueness.up.sql`, `000186_notification_event_uniqueness.down.sql`
+- **Schema:** Removes obsolete uniqueness on recipient/workspace/entity regardless of column order; retains event dedupe uniqueness and all notification history.
+- **API:** Compatible with the current event-deduplicating notification writer.
+- **Worker:** Existing event retries can insert separate notifications after the repair.
+- **Mixed versions:** Apply with APIs that use dedupe_key for notification identity.
+- **Rollout mode:** `schema-first`
+
+Rollout:
+
+1. Confirm the notification writer uses dedupe_key and apply migration 000186.
+2. Verify the legacy recipient/resource unique constraint is absent and idx_notifications_dedupe_key remains unique.
+3. Verify distinct priority and status changes create distinct notifications, and exact event retries remain deduplicated.
+
+Recovery (`forward-fix`):
+
+1. Preserve notification history and repair forward.
+2. The down migration intentionally does not recreate the obsolete key or delete distinct event notifications.
+
+Operational notes:
+
+- Dropping the constraint requires a brief table lock; use a bounded lock timeout.
+- Existing failed events remain eligible for the normal consumer retry loop.
 
 ## Adding the next migration
 

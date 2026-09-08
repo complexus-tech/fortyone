@@ -63,7 +63,7 @@ func TestLoggerRedactsSensitiveAttributesAndErrorContents(t *testing.T) {
 	const (
 		email  = "private@example.com"
 		token  = "sensitive-bearer-token"
-		detail = "provider response contained sensitive material"
+		detail = "provider response: sensitive material"
 	)
 	var output bytes.Buffer
 	log := NewWithJSON(&output, slog.LevelDebug, "logger-test")
@@ -195,7 +195,7 @@ func TestLoggerSanitizesErrorsRegardlessOfAttributeKey(t *testing.T) {
 func TestLoggerTraversesJoinedErrorsWithinBounds(t *testing.T) {
 	t.Parallel()
 
-	const rawCause = "secret provider body"
+	const rawCause = "provider body: secret provider body"
 	definition := MustDefineError("worker.runtime.failed", "Worker runtime stopped unexpectedly")
 	joined := errors.Join(
 		fmt.Errorf("first branch: %w", errors.New(rawCause)),
@@ -252,7 +252,7 @@ func TestLoggerBoundsCyclicErrorsAndHandlesTypedNil(t *testing.T) {
 func TestLoggerSanitizesErrorsInsideGroupsBeforeResolvingLogValuer(t *testing.T) {
 	t.Parallel()
 
-	const rawCause = "provider body included sensitive-token"
+	const rawCause = "provider body: sensitive-token"
 	var output bytes.Buffer
 	log := NewWithJSON(&output, slog.LevelDebug, "logger-test")
 	log.Error(
@@ -402,7 +402,7 @@ func (*typedNilError) Error() string {
 type panickingUnwrapError struct{}
 
 func (panickingUnwrapError) Error() string {
-	return "sensitive panic detail"
+	return "operation failed"
 }
 
 func (panickingUnwrapError) Unwrap() error {

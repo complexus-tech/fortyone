@@ -66,7 +66,8 @@ const redactedValue = "[REDACTED]"
 
 // replaceAttribute is the logger's final privacy boundary. Call sites should
 // still avoid sensitive fields, but a missed email/token/payload attribute or
-// arbitrary error value must not become durable log data.
+// credential or provider payload must not become durable log data. Error
+// messages pass through the bounded text redactor before they are emitted.
 func replaceAttribute(groups []string, attribute slog.Attr) slog.Attr {
 	if attribute.Key == slog.SourceKey {
 		if source, ok := attribute.Value.Any().(*slog.Source); ok {

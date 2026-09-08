@@ -18,11 +18,11 @@ func mapWriteError(operation string, err error) error {
 	}
 	switch platformdatabase.Classify(err) {
 	case platformdatabase.ErrorClassUniqueViolation:
-		return fmt.Errorf("%s: %w", operation, notificationsdomain.ErrConflict)
+		return fmt.Errorf("%s: %w", operation, errors.Join(notificationsdomain.ErrConflict, err))
 	case platformdatabase.ErrorClassForeignKeyViolation:
-		return fmt.Errorf("%s: %w", operation, notificationsdomain.ErrNotFound)
+		return fmt.Errorf("%s: %w", operation, errors.Join(notificationsdomain.ErrNotFound, err))
 	case platformdatabase.ErrorClassNotNullViolation, platformdatabase.ErrorClassCheckViolation:
-		return fmt.Errorf("%s: %w", operation, notificationsdomain.ErrInvalid)
+		return fmt.Errorf("%s: %w", operation, errors.Join(notificationsdomain.ErrInvalid, err))
 	default:
 		return fmt.Errorf("%s: %w", operation, err)
 	}

@@ -119,6 +119,7 @@ type errorLogDetails struct {
 func safeErrorAttribute(key string, err error) slog.Attr {
 	details := inspectError(err)
 	attributes := []slog.Attr{
+		slog.String("message", readableErrorMessage(err)),
 		slog.String("type", details.primaryType),
 		slog.Any("type_chain", details.typeChain),
 	}
@@ -128,6 +129,9 @@ func safeErrorAttribute(key string, err error) slog.Attr {
 			slog.String("code", details.code),
 			slog.String("safe_message", details.safeMessage),
 		)
+		if causes := readableErrorCauses(err); len(causes) > 0 {
+			attributes = append(attributes, slog.Any("causes", causes))
+		}
 	}
 	return slog.Attr{Key: key, Value: slog.GroupValue(attributes...)}
 }

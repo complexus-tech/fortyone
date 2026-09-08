@@ -40,9 +40,7 @@ func TestToolErrorsDoNotExposeBackendInternals(t *testing.T) {
 	require.True(t, ok, "error = %#v, want structured safe diagnostic", logRecord["error"])
 	require.Equal(t, "*errors.errorString", errorDetails["type"])
 	require.NotContains(t, errorDetails, "safe_message")
-	for _, internalDetail := range []string{"workspace_id", "ambiguous", "SQLSTATE", "42702", "column reference"} {
-		require.NotContains(t, logOutput, internalDetail)
-	}
+	require.Equal(t, rawError.Error(), errorDetails["message"], "server logs must retain the diagnostic hidden from clients")
 }
 
 func TestToolInputErrorsRemainActionableAndAreLogged(t *testing.T) {

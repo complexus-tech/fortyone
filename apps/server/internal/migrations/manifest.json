@@ -1302,6 +1302,41 @@
         "Handles are bearer links limited to profile images. Deleted accounts or removed photos stop resolving.",
         "Retain the handle table and public API origin for the lifetime of delivered emails."
       ]
+    },
+    {
+      "version": 186,
+      "slug": "notification_event_uniqueness",
+      "classification": "forward-only",
+      "files": {
+        "up": "000186_notification_event_uniqueness.up.sql",
+        "down": "000186_notification_event_uniqueness.down.sql"
+      },
+      "compatibility": {
+        "schema": "Removes obsolete uniqueness on recipient/workspace/entity regardless of column order; retains event dedupe uniqueness and all notification history.",
+        "api": "Compatible with the current event-deduplicating notification writer.",
+        "worker": "Existing event retries can insert separate notifications after the repair.",
+        "mixed_versions": "Apply with APIs that use dedupe_key for notification identity."
+      },
+      "rollout": {
+        "sequence": 35,
+        "mode": "schema-first",
+        "steps": [
+          "Confirm the notification writer uses dedupe_key and apply migration 000186.",
+          "Verify the legacy recipient/resource unique constraint is absent and idx_notifications_dedupe_key remains unique.",
+          "Verify distinct priority and status changes create distinct notifications, and exact event retries remain deduplicated."
+        ]
+      },
+      "recovery": {
+        "strategy": "forward-fix",
+        "procedure": [
+          "Preserve notification history and repair forward.",
+          "The down migration intentionally does not recreate the obsolete key or delete distinct event notifications."
+        ]
+      },
+      "operational_notes": [
+        "Dropping the constraint requires a brief table lock; use a bounded lock timeout.",
+        "Existing failed events remain eligible for the normal consumer retry loop."
+      ]
     }
   ]
 }

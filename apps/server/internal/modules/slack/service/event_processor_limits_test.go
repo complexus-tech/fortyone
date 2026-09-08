@@ -217,7 +217,8 @@ func TestEventProcessorReportsUnavailableAssistantWithoutRetry(t *testing.T) {
 	}
 	require.Contains(t, logs.String(), `"msg":"Slack Maya assistant response failed"`)
 	require.Contains(t, logs.String(), `"classification":"not_configured"`)
-	require.NotContains(t, logs.String(), "missing API key")
+	require.Contains(t, logs.String(), "missing API key")
+	require.NotContains(t, sender.messages[0].Text, "missing API key")
 	require.Contains(t, logs.String(), `"slack_event_id":"Ev-unavailable"`)
 }
 
