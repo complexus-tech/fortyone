@@ -693,3 +693,13 @@ func TestPreventDuplicateNotifications(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, notifications, 1, "Should create mention notification when stories service is nil")
 }
+
+func TestStatusChangeIncludesPreviousValueWhenKnown(t *testing.T) {
+	rules := &Rules{}
+	message := rules.generateNonAssignmentUpdateMessage("hector", map[string]any{
+		"status_id": uuid.New().String(), "status_name": "To Do", "previous_status_name": "Backlog",
+	})
+	require.Equal(t, "{actor} moved the task from {previous_value} to {value}", message.Template)
+	require.Equal(t, "Backlog", message.Variables["previous_value"].Value)
+	require.Equal(t, "To Do", message.Variables["value"].Value)
+}

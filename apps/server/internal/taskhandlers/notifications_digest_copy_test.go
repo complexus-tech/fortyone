@@ -408,3 +408,48 @@ func TestNotificationIconsMatchPersistedEvents(t *testing.T) {
 		})
 	}
 }
+
+func TestGeneratedActivityPreservesChangeValuesAndSeparatesReason(t *testing.T) {
+	message := NotificationMessage{Template: "{actor} moved this task to {scheduled_for}: {reason}", Variables: map[string]Variable{
+		"actor":         {Value: "Maya", Type: "actor"},
+		"scheduled_for": {Value: "8 Sep 2026 at 14:40–15:40 (UTC+02:00)", Type: "date"},
+		"reason":        {Value: "The assignee's availability or this story's scheduling constraints changed, so Maya moved it to the next safe slot.", Type: "value"},
+	}}
+	raw, err := json.Marshal(message)
+	require.NoError(t, err)
+	input, err := buildNotificationDigestCopyInput(NotificationEmailDigestData{WorkspaceName: "Art Circles", Items: []NotificationEmailDigestItem{{
+		NotificationID: uuid.New(), EntityID: uuid.New(), EntityType: "story", Title: "Scraping Segments Updates", Message: raw,
+	}}}, "https://art.fortyone.app")
+	require.NoError(t, err)
+	generated, err := buildGeneratedNotificationDigestCopy(input, emailcopy.Output{
+		Subject: emailcopy.GroundedText{Text: "Task updated"}, H1: emailcopy.GroundedText{Text: "Task updated"}, Intro: emailcopy.GroundedText{Text: "One update."},
+		Rows: []emailcopy.Row{{ReferenceID: "notification_1", Text: "Scraping Segments Updates — moved to the next safe slot."}},
+	})
+	require.NoError(t, err)
+	require.Equal(t, input.Fallback.Rows, generated.Rows)
+	digest := templateDigest(generated)
+	require.Equal(t, "Maya moved this task to 8 Sep 2026 at 14:40–15:40 (UTC+02:00)", digest.Rows[0].Text)
+	require.Equal(t, "The assignee's availability or the task's scheduling constraints changed.", digest.Rows[0].Detail)
+	require.Equal(t, []string{"8 Sep 2026 at 14:40–15:40 (UTC+02:00)"}, digest.Rows[0].Highlights)
+	require.NotContains(t, renderNotificationDigestPlainText(generated), "safe slot")
+	require.Contains(t, renderNotificationDigestPlainText(generated), "\nThe assignee's availability")
+}
+
+func TestNotificationChangeHighlightsExcludeCommentAndReason(t *testing.T) {
+	message := NotificationMessage{Template: "{actor} moved the task from {previous_value} to {value}: {reason}", Variables: map[string]Variable{
+		"actor": {Value: "hector", Type: "actor"}, "previous_value": {Value: "Backlog", Type: "value"}, "value": {Value: "To Do", Type: "value"},
+		"reason": {Value: "A plan is ready.", Type: "value"}, "content": {Value: "Don't bold a whole comment", Type: "value"},
+	}}
+	text, detail, highlights := notificationActivityCopy(message)
+	require.Equal(t, "hector moved the task from Backlog to To Do", text)
+	require.Equal(t, "A plan is ready.", detail)
+	require.ElementsMatch(t, []string{"Backlog", "To Do"}, highlights)
+	require.Equal(t, "status", notificationIcon(message, "story_update"))
+}
+
+func TestNotificationVariablesAreNotRecursivelyExpanded(t *testing.T) {
+	message := NotificationMessage{Template: "{actor} commented: {content}", Variables: map[string]Variable{
+		"actor": {Value: "Maya", Type: "actor"}, "content": {Value: "Keep {actor} as literal text", Type: "value"},
+	}}
+	require.Equal(t, "Maya commented: Keep {actor} as literal text", parseNotificationMessage(message).Text)
+}

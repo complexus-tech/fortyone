@@ -29,14 +29,15 @@ func emailTemplateFuncs() template.FuncMap {
 		"emailFont": func() template.CSS { return template.CSS(emailFontStack) },
 		// html/template strips literal comments. Fixed delimiters preserve
 		// Outlook conditionals while their contents remain contextually escaped.
-		"emailActorText": actorText,
-		"emailIcon":      func(name string) string { return emailAsset("icons/" + name + ".png") },
-		"msoOnly":        func() template.HTML { return template.HTML(`<!--[if mso]>`) },
-		"msoEnd":         func() template.HTML { return template.HTML(`<![endif]-->`) },
-		"notMSO":         func() template.HTML { return template.HTML(`<!--[if !mso]><!-->`) },
-		"notMSOEnd":      func() template.HTML { return template.HTML(`<!--<![endif]-->`) },
-		"formatDate":     func(t time.Time) string { return t.Format("January 2, 2006") },
-		"safeHTML":       safeEmailHTML, "emailStyle": emailStyle, "emailAsset": emailAsset,
+		"emailActorText":    actorText,
+		"emailActivityText": activityText,
+		"emailIcon":         func(name string) string { return emailAsset("icons/" + name + ".png") },
+		"msoOnly":           func() template.HTML { return template.HTML(`<!--[if mso]>`) },
+		"msoEnd":            func() template.HTML { return template.HTML(`<![endif]-->`) },
+		"notMSO":            func() template.HTML { return template.HTML(`<!--[if !mso]><!-->`) },
+		"notMSOEnd":         func() template.HTML { return template.HTML(`<!--<![endif]-->`) },
+		"formatDate":        func(t time.Time) string { return t.Format("January 2, 2006") },
+		"safeHTML":          safeEmailHTML, "emailStyle": emailStyle, "emailAsset": emailAsset,
 	}
 }
 

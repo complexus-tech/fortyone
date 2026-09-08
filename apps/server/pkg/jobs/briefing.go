@@ -42,7 +42,7 @@ func (s BriefingSources) BuildBriefing(ctx context.Context, recipient notificati
 	if len(stories) > 0 {
 		section := mailer.Digest{Intro: fmt.Sprintf("%d %s need your attention.", len(stories), pluralize(len(stories), "story", "stories"))}
 		for _, story := range stories[:min(len(stories), mailer.DigestDetailLimit)] {
-			section.Rows = append(section.Rows, mailer.DigestRow{Label: story.Title, Text: overdueStoryEmailCopyFact(story), URL: overdueStoryURL(base, story), Icon: "calendar"})
+			section.Rows = append(section.Rows, mailer.DigestRow{Label: story.Title, Text: strings.TrimPrefix(overdueStoryEmailCopyFact(story), "The task "+story.Title+" "), Highlights: append(deadlineSemanticFactTokens(story.DeadlineStatus, story.DaysDifference, story.EndDate.Format("January 2, 2006")), story.StatusName, story.EndDate.Format("January 2, 2006")), URL: overdueStoryURL(base, story), Icon: "calendar"})
 			content.Targets = append(content.Targets, emailthread.TargetContext{Kind: "story", ID: story.ID, TeamID: story.TeamID, DisplayName: story.Title})
 		}
 		section.Rows = appendBriefingMore(section.Rows, len(stories), base+"/my-work?tab=assigned", "stories")
@@ -60,7 +60,7 @@ func (s BriefingSources) BuildBriefing(ctx context.Context, recipient notificati
 	for _, objective := range objectiveItems {
 		url := fmt.Sprintf("%s/teams/%s/objectives/%s", base, objective.TeamID, objective.ID)
 		if objective.DeadlineStatus != "" && objective.DeadlineStatus != "not_due" && objective.DeadlineStatus != "other" && objective.DeadlineStatus != "future" && !objective.EndDate.IsZero() {
-			objectiveRows = append(objectiveRows, mailer.DigestRow{Label: objective.Name, Text: objectiveEmailCopyFactText(objective), URL: url, Icon: "calendar"})
+			objectiveRows = append(objectiveRows, mailer.DigestRow{Label: objective.Name, Text: strings.TrimPrefix(objectiveEmailCopyFactText(objective), "The objective "+objective.Name+" "), Highlights: objectiveDeadlineProtectedTokens(objective), URL: url, Icon: "calendar"})
 			targets = append(targets, emailthread.TargetContext{Kind: "objective", ID: objective.ID, TeamID: objective.TeamID, DisplayName: objective.Name})
 		}
 		var results []objectives.OverdueGuidanceKeyResult
@@ -73,7 +73,7 @@ func (s BriefingSources) BuildBriefing(ctx context.Context, recipient notificati
 			if result.IsCompleted {
 				continue
 			}
-			objectiveRows = append(objectiveRows, mailer.DigestRow{Label: result.Name, Text: keyResultEmailCopyFactText(result), URL: url, Icon: "calendar"})
+			objectiveRows = append(objectiveRows, mailer.DigestRow{Label: result.Name, Text: strings.TrimPrefix(keyResultEmailCopyFactText(result), "The key result "+result.Name+" "), Highlights: keyResultDeadlineProtectedTokens(result), URL: url, Icon: "calendar"})
 			targets = append(targets, emailthread.TargetContext{Kind: "key_result", ID: result.ID, TeamID: objective.TeamID, ParentID: objective.ID, DisplayName: result.Name})
 		}
 	}
@@ -97,7 +97,7 @@ func (s BriefingSources) BuildBriefing(ctx context.Context, recipient notificati
 			overview = append(overview, fmt.Sprintf("%d %s due this week", stats.DueThisWeekStories, pluralize(stats.DueThisWeekStories, "story is", "stories are")))
 		}
 		if len(overview) > 0 {
-			content.Sections = append([]mailer.Digest{{Intro: "Your week ahead", Rows: []mailer.DigestRow{{Text: strings.Join(overview, "; ") + ".", Label: "Review your assigned work", URL: base + "/my-work?tab=assigned"}}}}, content.Sections...)
+			content.Sections = append([]mailer.Digest{{Intro: "Your week ahead", Rows: []mailer.DigestRow{{Text: strings.Join(overview, "; ") + ".", Highlights: overview, Label: "Review your assigned work", URL: base + "/my-work?tab=assigned"}}}}, content.Sections...)
 		}
 	}
 	return content, nil

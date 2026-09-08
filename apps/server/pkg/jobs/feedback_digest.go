@@ -350,7 +350,7 @@ func sendFeedbackDigestEmail(
 		generated, err := copyGenerator.Generate(ctx, copyRequest)
 		if err != nil {
 			log.Info(ctx, "Using deterministic feedback digest copy", "reason", err)
-		} else if generatedMessage, renderErr := renderGeneratedEmailContent(generated, destinations); renderErr != nil {
+		} else if generatedMessage, renderErr := renderGeneratedEmailContent(generated, destinations, copyRequest.Facts...); renderErr != nil {
 			log.Info(ctx, "Using deterministic feedback digest copy after generated copy could not be rendered", "reason", renderErr)
 		} else {
 			subject = generated.Subject.Text

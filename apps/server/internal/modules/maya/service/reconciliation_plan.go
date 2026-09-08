@@ -259,7 +259,7 @@ func refineScheduleOutcomeReason(previousBlocks []ScheduleBlock, segments []Sche
 		return fallback
 	}
 	if scheduleSegmentsChanged(previousBlocks, segments) {
-		return "The assignee's availability or this story's scheduling constraints changed, so Maya moved it to the next safe slot."
+		return "The assignee's availability or the task's scheduling constraints changed."
 	}
 	return fallback
 }

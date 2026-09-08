@@ -190,7 +190,7 @@ func sendOverdueStoriesEmailForAssignee(ctx context.Context, log *logger.Logger,
 		generated, err := copyGenerator.Generate(ctx, request)
 		if err != nil {
 			log.Warn(ctx, "Falling back to deterministic task guidance copy", "assignee_id", firstStory.AssigneeID, "workspace_id", firstStory.WorkspaceID, "error", err)
-		} else if generatedContent, renderErr := renderGeneratedEmailContent(generated, destinations); renderErr != nil {
+		} else if generatedContent, renderErr := renderGeneratedEmailContent(generated, destinations, request.Facts...); renderErr != nil {
 			log.Warn(ctx, "Falling back to deterministic task guidance copy after render validation", "assignee_id", firstStory.AssigneeID, "workspace_id", firstStory.WorkspaceID, "error", renderErr)
 		} else if generatedCTALabel, generatedCTAURL, ok := generatedPrimaryCTA(generated, destinations); !ok {
 			log.Warn(ctx, "Falling back to deterministic task guidance copy because no trusted CTA was generated", "assignee_id", firstStory.AssigneeID, "workspace_id", firstStory.WorkspaceID)

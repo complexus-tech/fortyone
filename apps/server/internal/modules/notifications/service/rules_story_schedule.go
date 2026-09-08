@@ -177,6 +177,10 @@ func scheduleTransitionMessage(payload events.StoryUpdatedPayload, timezone stri
 	if reason != "" {
 		template += ": {reason}"
 	}
+	if payload.Source == events.StoryUpdateSourceMaya {
+		variables["actor"] = Variable{Value: "Maya", Type: "actor"}
+		template = "{actor} " + template
+	}
 	return NotificationMessage{Template: template, Variables: variables}
 }
 
@@ -229,7 +233,17 @@ func formatScheduleTransitionTime(transition *events.StoryScheduleTransition, ti
 			value = value.In(location)
 		}
 	}
-	return value.Format("2 Jan 2006 at 15:04")
+	// Move events identify the changed segment. Initial/state events can carry
+	// bounds across several segments, which must not look like one continuous slot.
+	moved := transition.Kind == events.StoryScheduleTransitionMoved || transition.Kind == events.StoryScheduleTransitionDayChanged
+	if moved && transition.EndAt != nil && transition.EndAt.After(*transition.StartAt) {
+		end := transition.EndAt.In(value.Location())
+		if value.Format("2006-01-02 -07:00") == end.Format("2006-01-02 -07:00") {
+			return value.Format("2 Jan 2006 at 15:04") + "–" + end.Format("15:04 (UTC-07:00)")
+		}
+		return value.Format("2 Jan 2006 at 15:04 (UTC-07:00)") + " – " + end.Format("2 Jan 2006 at 15:04 (UTC-07:00)")
+	}
+	return value.Format("2 Jan 2006 at 15:04 (UTC-07:00)")
 }
 
 func normalizedMayaReason(payload events.StoryUpdatedPayload) string {

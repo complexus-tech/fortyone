@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	stdhtml "html"
+	"regexp"
 	"strings"
 
 	notificationsdomain "github.com/complexus-tech/projects-api/internal/modules/notifications/domain"
@@ -14,37 +15,35 @@ import (
 	htmlparser "golang.org/x/net/html"
 )
 
-// parseNotificationMessage converts the template and variables into readable text
+var notificationPlaceholderPattern = regexp.MustCompile(`\{([a-zA-Z0-9_]+)\}`)
+
+// Substitute each template placeholder once; values containing braces are text,
+// never another round of template instructions.
 func parseNotificationMessage(msg NotificationMessage) ParsedMessage {
-	template := notificationPlainText(msg.Template, maxNotificationMessageRunes)
-	htmlTemplate := stdhtml.EscapeString(template)
-
-	// Replace template variables with actual values
-	for key, variable := range msg.Variables {
-		placeholder := "{" + key + "}"
-		value := notificationPlainText(variable.Value, maxNotificationMessageRunes)
-
-		// Create HTML version with styling based on variable type
-		var htmlValue string
-		switch variable.Type {
-		case "actor":
-			htmlValue = fmt.Sprintf("<strong style=\"%s\">%s</strong>", mailer.EmailStyleString("detailValue"), stdhtml.EscapeString(value))
-		case "field":
-			htmlValue = fmt.Sprintf("<em style=\"%s\">%s</em>", mailer.EmailStyleString("detailValue"), stdhtml.EscapeString(value))
-		case "assignee", "value", "date":
-			htmlValue = fmt.Sprintf("<strong style=\"%s\">%s</strong>", mailer.EmailStyleString("detailValue"), stdhtml.EscapeString(value))
-		default:
-			htmlValue = stdhtml.EscapeString(value)
+	text := notificationPlainText(msg.Template, maxNotificationMessageRunes)
+	plain := notificationPlaceholderPattern.ReplaceAllStringFunc(text, func(placeholder string) string {
+		variable, ok := msg.Variables[placeholder[1:len(placeholder)-1]]
+		if !ok {
+			return placeholder
 		}
-
-		template = strings.ReplaceAll(template, placeholder, value)
-		htmlTemplate = strings.ReplaceAll(htmlTemplate, placeholder, htmlValue)
-	}
-
-	return ParsedMessage{
-		Text: notificationPlainText(template, maxNotificationMessageRunes),
-		HTML: htmlTemplate,
-	}
+		return notificationPlainText(variable.Value, maxNotificationMessageRunes)
+	})
+	rich := notificationPlaceholderPattern.ReplaceAllStringFunc(stdhtml.EscapeString(text), func(placeholder string) string {
+		variable, ok := msg.Variables[placeholder[1:len(placeholder)-1]]
+		if !ok {
+			return placeholder
+		}
+		value := stdhtml.EscapeString(notificationPlainText(variable.Value, maxNotificationMessageRunes))
+		switch variable.Type {
+		case "actor", "assignee", "value", "date":
+			return fmt.Sprintf("<strong style=\"%s\">%s</strong>", mailer.EmailStyleString("detailValue"), value)
+		case "field":
+			return fmt.Sprintf("<em style=\"%s\">%s</em>", mailer.EmailStyleString("detailValue"), value)
+		default:
+			return value
+		}
+	})
+	return ParsedMessage{Text: notificationPlainText(plain, maxNotificationMessageRunes), HTML: rich}
 }
 
 func notificationPlainText(value string, maxRunes int) string {

@@ -185,11 +185,13 @@ type notificationDigestCopy struct {
 }
 
 type notificationDigestCopyRow struct {
-	Icon  string
-	Actor mailer.EmailActor
-	Text  string
-	Label string
-	URL   string
+	Highlights []string
+	Detail     string
+	Icon       string
+	Actor      mailer.EmailActor
+	Text       string
+	Label      string
+	URL        string
 }
 
 type notificationDigestCopyCTA struct {
@@ -198,6 +200,7 @@ type notificationDigestCopyCTA struct {
 }
 
 type notificationDigestCopyInput struct {
+	ActivityRows        map[string]notificationDigestCopyRow
 	Request             emailcopy.Request
 	Actions             map[string]string
 	FactActions         map[string]string

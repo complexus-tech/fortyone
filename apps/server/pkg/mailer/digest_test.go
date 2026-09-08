@@ -87,3 +87,26 @@ func TestNotificationDigestRendersActivityIcons(t *testing.T) {
 		})
 	}
 }
+
+func TestActivityEmphasisEscapesValuesAndPreservesActor(t *testing.T) {
+	text := "Sam moved Backlog to To Do; highest is not High. <script>run()</script>"
+	rendered := string(activityText(text, EmailActor{Name: "Sam Taylor"}, []string{"Backlog", "To Do", "High", "<script>run()</script>", ""}))
+	for _, want := range []string{"<strong>Backlog</strong>", `<strong style="white-space:nowrap;">To Do</strong>`, "highest is not <strong>High</strong>", "<strong>&lt;script&gt;run()&lt;/script&gt;</strong>", ">ST</span>"} {
+		assertContains(t, rendered, want)
+	}
+	assertNotContains(t, rendered, "<script>")
+	assertContains(t, string(EmphasizeValues("8 Sep 2026 at 14:40–15:40 (UTC+02:00)", []string{"8 Sep", "8 Sep 2026 at 14:40–15:40 (UTC+02:00)"})), "<strong>8 Sep 2026 at 14:40–15:40 (UTC+02:00)</strong>")
+	assertContains(t, string(EmphasizeValues("Résolu Résolution", []string{"Résolu"})), "<strong>Résolu</strong> Résolution")
+}
+
+func TestNotificationRendersChangeAndReasonSeparately(t *testing.T) {
+	rendered := renderTemplateForTest(t, "notifications/notification", map[string]any{
+		"NotificationTitle": "Task updated", "NotificationDigest": Digest{Rows: []DigestRow{{
+			Label: "Scraping Segments Updates", Text: "Maya moved this task to 8 Sep 2026 at 14:40–15:40 (UTC+02:00)",
+			Detail: "The assignee's availability changed. <img src=x>", Highlights: []string{"8 Sep 2026 at 14:40–15:40 (UTC+02:00)"},
+		}}},
+	})
+	assertContains(t, rendered, "<strong>8 Sep 2026 at 14:40–15:40 (UTC+02:00)</strong></p><p")
+	assertContains(t, rendered, "&lt;img src=x&gt;")
+	assertNotContains(t, rendered, "<img src=x>")
+}

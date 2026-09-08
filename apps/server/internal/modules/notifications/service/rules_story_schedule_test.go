@@ -117,8 +117,8 @@ func TestScheduleTransitionNotificationAndActivityPreserveReason(t *testing.T) {
 	notifications := rules.handleScheduleTransition(context.Background(), payload, actorID, nil)
 	require.Len(t, notifications, 1)
 	require.Equal(t, assigneeID, notifications[0].RecipientID, "calendar movement must notify only the affected calendar owner")
-	require.Equal(t, "moved this task to {scheduled_for}: {reason}", notifications[0].Message.Template)
-	require.Equal(t, "18 Aug 2026 at 09:30", notifications[0].Message.Variables["scheduled_for"].Value)
+	require.Equal(t, "{actor} moved this task to {scheduled_for}: {reason}", notifications[0].Message.Template)
+	require.Equal(t, "18 Aug 2026 at 09:30 (UTC+02:00)", notifications[0].Message.Variables["scheduled_for"].Value)
 	require.Equal(t, payload.Reason, notifications[0].Message.Variables["reason"].Value)
 
 	eventTimestamp := time.Date(2026, time.August, 18, 7, 0, 0, 0, time.UTC)
@@ -127,7 +127,7 @@ func TestScheduleTransitionNotificationAndActivityPreserveReason(t *testing.T) {
 	activity := storyService.activities[0]
 	require.NotEqual(t, uuid.Nil, activity.ID)
 	require.Equal(t, "auto_scheduling_time", activity.Field)
-	require.Equal(t, "18 Aug 2026 at 09:30", activity.CurrentValue)
+	require.Equal(t, "18 Aug 2026 at 09:30 (UTC+02:00)", activity.CurrentValue)
 	require.NotNil(t, activity.Reason)
 	require.Equal(t, payload.Reason, *activity.Reason)
 }
@@ -188,7 +188,7 @@ func TestFirstScheduleActivityShowsReservedTimeInsteadOfInternalState(t *testing
 	}, "Africa/Harare")
 
 	require.Equal(t, "auto_scheduling_time", field)
-	require.Equal(t, "18 Aug 2026 at 11:00", currentValue)
+	require.Equal(t, "18 Aug 2026 at 11:00 (UTC+02:00)", currentValue)
 	require.Nil(t, oldValue)
 	require.Equal(t, &start, newValue)
 }
@@ -221,9 +221,21 @@ func TestScheduleTransitionDisplayUsesUserTimezone(t *testing.T) {
 	field, currentValue, _, _ := scheduleTransitionActivityValues(transition, "Africa/Harare")
 
 	require.Equal(t, "auto_scheduling_time", field)
-	require.Equal(t, "20 Aug 2026 at 09:45", currentValue)
+	require.Equal(t, "20 Aug 2026 at 09:45 (UTC+02:00)", currentValue)
 }
 
 func timePointer(value time.Time) *time.Time {
 	return &value
+}
+
+func TestScheduleMoveDisplaysTheReservedSlotAndTimezone(t *testing.T) {
+	start := time.Date(2026, 9, 8, 12, 40, 0, 0, time.UTC)
+	end := start.Add(time.Hour)
+	transition := &events.StoryScheduleTransition{Kind: events.StoryScheduleTransitionMoved, StartAt: &start, EndAt: &end}
+	require.Equal(t, "8 Sep 2026 at 14:40–15:40 (UTC+02:00)", formatScheduleTransitionTime(transition, "Africa/Harare"))
+	require.Equal(t, "8 Sep 2026 at 12:40–13:40 (UTC+00:00)", formatScheduleTransitionTime(transition, "invalid"))
+	end = start.Add(24 * time.Hour)
+	require.Equal(t, "8 Sep 2026 at 14:40 (UTC+02:00) – 9 Sep 2026 at 14:40 (UTC+02:00)", formatScheduleTransitionTime(transition, "Africa/Harare"))
+	transition.Kind = events.StoryScheduleTransitionFirstSchedule
+	require.Equal(t, "8 Sep 2026 at 14:40 (UTC+02:00)", formatScheduleTransitionTime(transition, "Africa/Harare"), "initial bounds may span separate work blocks")
 }

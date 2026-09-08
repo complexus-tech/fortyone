@@ -152,3 +152,13 @@ func TestAppendGuidanceReplyPromptEscapesCopy(t *testing.T) {
 	require.Contains(t, rendered, "Launch &lt;beta&gt;")
 	require.NotContains(t, rendered, "Launch <beta>")
 }
+
+func TestGeneratedGuidanceEmphasizesFactsWithoutBreakingTitleLinks(t *testing.T) {
+	rendered, err := renderGeneratedEmailContent(emailcopy.Output{Rows: []emailcopy.Row{{ReferenceID: "task", Text: "September 8 release is due today, September 8."}}},
+		map[string]emailCopyDestination{"task": {Label: "September 8 release", URL: "https://art.fortyone.app/my-work"}},
+		emailcopy.Fact{ReferenceID: "task", ProtectedTokens: []string{"September 8", "due today, September 8"}},
+	)
+	require.NoError(t, err)
+	require.Contains(t, rendered, `>September 8 release</a>`)
+	require.Contains(t, rendered, `>due today, September 8</strong>`)
+}

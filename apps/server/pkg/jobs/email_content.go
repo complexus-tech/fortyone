@@ -234,7 +234,7 @@ func formatEmailLink(url string, label string) string {
 	return fmt.Sprintf(`<a href="%s" style="%s">%s</a>`, html.EscapeString(url), mailer.EmailStyleString("notificationLink"), html.EscapeString(label))
 }
 
-func renderGeneratedEmailContent(output emailcopy.Output, destinations map[string]emailCopyDestination) (string, error) {
+func renderGeneratedEmailContent(output emailcopy.Output, destinations map[string]emailCopyDestination, facts ...emailcopy.Fact) (string, error) {
 	if len(output.Rows) > maxGuidanceEmailRows {
 		return "", fmt.Errorf("generated digest exceeds its row limit")
 	}
@@ -265,13 +265,26 @@ func renderGeneratedEmailContent(output emailcopy.Output, destinations map[strin
 
 	content.WriteString(fmt.Sprintf(`<div style="%s">`, listStyle))
 	for index, row := range output.Rows {
-		rowHTML := html.EscapeString(row.Text)
+		var highlights []string
+		for _, fact := range facts {
+			if fact.ReferenceID == row.ReferenceID {
+				for _, value := range fact.ProtectedTokens {
+					if len([]rune(value)) <= 100 {
+						highlights = append(highlights, value)
+					}
+				}
+				break
+			}
+		}
+		rowHTML := string(mailer.EmphasizeValues(row.Text, highlights))
 		if destination, exists := destinations[row.ReferenceID]; exists && destination.URL != "" && destination.Label != "" {
-			escapedLabel := html.EscapeString(destination.Label)
-			if !strings.Contains(rowHTML, escapedLabel) {
+			index := strings.Index(row.Text, destination.Label)
+			if index < 0 {
 				return "", fmt.Errorf("generated row %q does not contain its destination label", row.ReferenceID)
 			}
-			rowHTML = strings.Replace(rowHTML, escapedLabel, formatEmailLink(destination.URL, destination.Label), 1)
+			rowHTML = string(mailer.EmphasizeValues(row.Text[:index], highlights)) +
+				formatEmailLink(destination.URL, destination.Label) +
+				string(mailer.EmphasizeValues(row.Text[index+len(destination.Label):], highlights))
 		}
 
 		itemStyle := mailer.EmailStyleString("notificationItem")

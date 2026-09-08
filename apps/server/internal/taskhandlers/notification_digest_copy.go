@@ -47,6 +47,7 @@ func buildNotificationDigestCopyInput(data NotificationEmailDigestData, workspac
 	factLabels := make(map[string]string, len(data.Items))
 	factActors := make(map[string]mailer.EmailActor, len(data.Items))
 	factIcons := make(map[string]string, len(data.Items))
+	activityRows := make(map[string]notificationDigestCopyRow, len(data.Items))
 	hasStrategySnapshot := false
 	detailCount := 0
 	omittedNotificationCount := 0
@@ -122,7 +123,14 @@ func buildNotificationDigestCopyInput(data NotificationEmailDigestData, workspac
 		factLabels[factReferenceID] = notificationPlainText(item.Title, 180)
 		factIcons[factReferenceID] = notificationIcon(message, item.NotificationType)
 		factActors[factReferenceID] = mailer.EmailActor{ID: item.ActorID, Name: item.ActorName, AvatarURL: item.ActorAvatarURL}
-		fallbackRows = append(fallbackRows, notificationDigestCopyRow{Text: factText, Label: factLabels[factReferenceID], URL: destination, Actor: factActors[factReferenceID], Icon: factIcons[factReferenceID]})
+		activity, detail, highlights := notificationActivityCopy(message)
+		activityRows[factReferenceID] = notificationDigestCopyRow{
+			Text:   strings.TrimSpace(factLabels[factReferenceID] + ": " + activity),
+			Detail: detail, Highlights: highlights,
+			Label: factLabels[factReferenceID], URL: destination,
+			Actor: factActors[factReferenceID], Icon: factIcons[factReferenceID],
+		}
+		fallbackRows = append(fallbackRows, activityRows[factReferenceID])
 		detailCount++
 	}
 	if omittedNotificationCount > 0 {
@@ -198,6 +206,7 @@ func buildNotificationDigestCopyInput(data NotificationEmailDigestData, workspac
 	}
 
 	return notificationDigestCopyInput{
+		ActivityRows: activityRows,
 		Request: emailcopy.Request{
 			SafetyIdentifier:   safetyIdentifier,
 			Purpose:            "persisted notification email digest",
@@ -339,7 +348,7 @@ func buildStrategyPlanningDigestFact(
 		ProtectedTokens: protectedTokens,
 		Required:        true,
 	}
-	return fact, actionReferenceID, destination, label, notificationDigestCopyRow{Text: factText, Label: label, URL: destination}
+	return fact, actionReferenceID, destination, label, notificationDigestCopyRow{Text: factText, Label: label, URL: destination, Highlights: notificationFactHighlights(fact.ProtectedTokens)}
 }
 
 func buildStrategyMonthlyDigestFact(
@@ -389,7 +398,7 @@ func buildStrategyMonthlyDigestFact(
 		),
 		Required: true,
 	}
-	return fact, actionReferenceID, destination, label, notificationDigestCopyRow{Text: factText, Label: label, URL: destination}
+	return fact, actionReferenceID, destination, label, notificationDigestCopyRow{Text: factText, Label: label, URL: destination, Highlights: notificationFactHighlights(fact.ProtectedTokens)}
 }
 
 func strategyMonthlyKeyResultSummary(monthly strategyMonthlySummarySnapshot) string {
@@ -468,7 +477,7 @@ func buildWeeklyStrategyDigestFacts(item NotificationEmailDigestItem, weekly str
 		Required:        true,
 	})
 	factActions[summaryReferenceID] = digestActionStrategy
-	fallbackRows = append(fallbackRows, notificationDigestCopyRow{Text: summaryText, URL: workspaceURL + "/strategy"})
+	fallbackRows = append(fallbackRows, notificationDigestCopyRow{Highlights: notificationFactHighlights(protectedSummaryTokens), Text: summaryText, URL: workspaceURL + "/strategy"})
 
 	for index, objective := range selectedObjectives {
 		factReferenceID := fmt.Sprintf("strategy_objective_%d_%s", index+1, objective.ID.String())
@@ -485,7 +494,7 @@ func buildWeeklyStrategyDigestFacts(item NotificationEmailDigestItem, weekly str
 		actionURLs[actionReferenceID] = destination
 		factActions[factReferenceID] = actionReferenceID
 		factLabels[factReferenceID] = objective.Name
-		fallbackRows = append(fallbackRows, notificationDigestCopyRow{Text: factText, Label: objective.Name, URL: destination})
+		fallbackRows = append(fallbackRows, notificationDigestCopyRow{Text: factText, Label: objective.Name, URL: destination, Highlights: notificationFactHighlights(strategyObjectiveProtectedTokens(objective))})
 	}
 
 	for index, keyResult := range selectedKeyResults {
@@ -503,7 +512,7 @@ func buildWeeklyStrategyDigestFacts(item NotificationEmailDigestItem, weekly str
 		actionURLs[actionReferenceID] = destination
 		factActions[factReferenceID] = actionReferenceID
 		factLabels[factReferenceID] = keyResult.Name
-		fallbackRows = append(fallbackRows, notificationDigestCopyRow{Text: factText, Label: keyResult.Name, URL: destination})
+		fallbackRows = append(fallbackRows, notificationDigestCopyRow{Text: factText, Label: keyResult.Name, URL: destination, Highlights: notificationFactHighlights(strategyKeyResultProtectedTokens(keyResult))})
 	}
 
 	return facts, actionURLs, factActions, factLabels, fallbackRows
@@ -656,12 +665,24 @@ func buildGeneratedNotificationDigestCopy(input notificationDigestCopyInput, out
 				return notificationDigestCopy{}, fmt.Errorf("email copy row %q has no trusted destination", row.ReferenceID)
 			}
 		}
+		if activity, exists := input.ActivityRows[row.ReferenceID]; exists {
+			rows = append(rows, activity)
+			continue
+		}
+		var highlights []string
+		for _, fact := range input.Request.Facts {
+			if fact.ReferenceID == row.ReferenceID {
+				highlights = notificationFactHighlights(fact.ProtectedTokens)
+				break
+			}
+		}
 		rows = append(rows, notificationDigestCopyRow{
-			Text:  notificationPlainText(row.Text, 360),
-			Actor: input.FactActors[row.ReferenceID],
-			Icon:  input.FactIcons[row.ReferenceID],
-			Label: input.FactLabels[row.ReferenceID],
-			URL:   destination,
+			Highlights: highlights,
+			Text:       notificationPlainText(row.Text, 360),
+			Actor:      input.FactActors[row.ReferenceID],
+			Icon:       input.FactIcons[row.ReferenceID],
+			Label:      input.FactLabels[row.ReferenceID],
+			URL:        destination,
 		})
 	}
 	if len(rows) == 0 {

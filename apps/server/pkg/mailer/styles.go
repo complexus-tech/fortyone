@@ -19,6 +19,7 @@ const (
 )
 
 var emailStyles = map[string]string{
+	"notificationDetail":    `margin: 6px 0 0; color: ` + emailColorTextMuted + `; font-family: ` + emailFontStack + `; font-size: 14.5px; line-height: 20px;`,
 	"replyList":             `margin: 0 0 12px; padding-left: 20px; color: ` + emailColorForeground + `; font-family: ` + emailFontStack + `; font-size: 14.5px; line-height: 20px;`,
 	"replyItem":             `margin: 0 0 6px;`,
 	"signature":             `margin: 16px 0 0; color: ` + emailColorForeground + `; font-family: ` + emailFontStack + `; font-size: 14.5px; line-height: 20px;`,

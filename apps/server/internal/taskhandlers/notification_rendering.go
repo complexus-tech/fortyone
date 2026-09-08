@@ -52,7 +52,7 @@ func renderNotificationDigestCopy(copy notificationDigestCopy) string {
 		if index == 0 {
 			itemStyle = firstItemStyle
 		}
-		rowHTML := stdhtml.EscapeString(row.Text)
+		rowHTML := string(mailer.EmphasizeValues(row.Text, row.Highlights))
 		if row.URL != "" && row.Label != "" {
 			escapedLabel := stdhtml.EscapeString(row.Label)
 			rowHTML = strings.Replace(rowHTML, escapedLabel, fmt.Sprintf(
@@ -61,6 +61,9 @@ func renderNotificationDigestCopy(copy notificationDigestCopy) string {
 				linkStyle,
 				escapedLabel,
 			), 1)
+		}
+		if row.Detail != "" {
+			rowHTML += `</p><p style="` + mailer.EmailStyleString("notificationDetail") + `">` + stdhtml.EscapeString(row.Detail)
 		}
 		content += fmt.Sprintf(`
 			<div style="%s">
@@ -148,6 +151,9 @@ func renderNotificationDigestPlainText(copy notificationDigestCopy) string {
 		rowText := strings.TrimSpace(row.Text)
 		if rowText == "" {
 			continue
+		}
+		if row.Detail != "" {
+			rowText += "\n" + row.Detail
 		}
 		if row.URL != "" {
 			rowText += "\n" + row.URL
@@ -273,7 +279,7 @@ func templateDigest(copy notificationDigestCopy) mailer.Digest {
 	result := mailer.Digest{Intro: copy.Intro, Rows: make([]mailer.DigestRow, 0, len(copy.Rows))}
 	for _, row := range copy.Rows {
 		text := strings.TrimPrefix(row.Text, row.Label+": ")
-		result.Rows = append(result.Rows, mailer.DigestRow{Label: row.Label, Text: text, URL: row.URL, Actor: row.Actor, Icon: row.Icon, More: row.Label == "Notifications" || (row.Label == "" && strings.Contains(row.Text, "more details in Strategy"))})
+		result.Rows = append(result.Rows, mailer.DigestRow{Label: row.Label, Text: text, Detail: row.Detail, Highlights: row.Highlights, URL: row.URL, Actor: row.Actor, Icon: row.Icon, More: row.Label == "Notifications" || (row.Label == "" && strings.Contains(row.Text, "more details in Strategy"))})
 	}
 	return result
 }
@@ -301,10 +307,10 @@ func notificationIcon(message NotificationMessage, notificationType string) stri
 	// Persisted task events do not always include typed field metadata. Match
 	// their producer-owned templates, never user-authored content or values.
 	if notificationType == "story_update" {
-		switch message.Template {
+		switch strings.TrimSuffix(message.Template, ": {reason}") {
 		case "{actor} changed the start date":
 			return "calendar"
-		case "{actor} moved the task to {value}":
+		case "{actor} moved the task to {value}", "{actor} moved the task from {previous_value} to {value}":
 			return "status"
 		case "{actor} changed priority to {value}":
 			return "priority"

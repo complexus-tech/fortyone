@@ -171,6 +171,10 @@ func (r *Rules) handleStoryUpdates(ctx context.Context, payload events.StoryUpda
 			if statusID, err := uuid.Parse(statusStr); err == nil {
 				status := r.getStatus(ctx, statusID, payload.WorkspaceID)
 				payload.Updates["status_name"] = status.Name
+				if payload.PreviousStatusID != nil && *payload.PreviousStatusID != statusID {
+					previousStatus := r.getStatus(ctx, *payload.PreviousStatusID, payload.WorkspaceID)
+					payload.Updates["previous_status_name"] = previousStatus.Name
+				}
 			}
 		}
 	}
@@ -270,6 +274,16 @@ func (r *Rules) generateNonAssignmentUpdateMessage(actorName string, updates map
 	// Status update
 	if _, exists := updates["status_id"]; exists {
 		if statusName, ok := updates["status_name"].(string); ok && statusName != "" {
+			if previous, ok := updates["previous_status_name"].(string); ok && previous != "" && previous != statusName {
+				return NotificationMessage{
+					Template: "{actor} moved the task from {previous_value} to {value}",
+					Variables: map[string]Variable{
+						"actor":          {Value: actorName, Type: "actor"},
+						"previous_value": {Value: previous, Type: "value"},
+						"value":          {Value: statusName, Type: "value"},
+					},
+				}
+			}
 			return NotificationMessage{
 				Template: "{actor} moved the task to {value}",
 				Variables: map[string]Variable{
