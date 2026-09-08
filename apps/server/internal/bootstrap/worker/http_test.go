@@ -65,7 +65,7 @@ func TestWorkerReadinessSucceedsOnlyWhenLifecycleAndRedisAreHealthy(t *testing.T
 	require.Equal(t, "no-store", response.Header().Get("Cache-Control"))
 }
 
-func TestWorkerMonitorIsDisabledByDefault(t *testing.T) {
+func TestWorkerMonitorCanBeDisabled(t *testing.T) {
 	t.Parallel()
 
 	handler, err := newWorkerHTTPHandler(&atomic.Bool{}, func(context.Context) error { return nil }, MonitorConfig{}, nil)

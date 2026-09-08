@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	workerMonitorPath     = "/admin/queues"
+	workerMonitorPath     = "/"
 	readinessCheckTimeout = 2 * time.Second
 )
 
@@ -84,7 +84,6 @@ func newWorkerHTTPHandler(
 		// direct client can spoof them when no trusted-proxy boundary is present.
 		protectedMonitor := loopbackOnly(basicAuth(monitorConfig, monitor))
 		mux.Handle(workerMonitorPath, protectedMonitor)
-		mux.Handle(workerMonitorPath+"/", protectedMonitor)
 	}
 
 	return securityHeaders(mux), nil

@@ -7,6 +7,7 @@ import (
 	"net"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	invitations "github.com/complexus-tech/projects-api/internal/modules/invitations/service"
 	"github.com/complexus-tech/projects-api/internal/platform/appkeys"
@@ -36,7 +37,7 @@ type HTTPConfig struct {
 }
 
 type MonitorConfig struct {
-	Enabled  bool   `default:"false" env:"APP_WORKER_MONITOR_ENABLED"`
+	Enabled  bool   `default:"true" env:"APP_WORKER_MONITOR_ENABLED"`
 	Username string `env:"APP_WORKER_MONITOR_USERNAME"`
 	Password string `env:"APP_WORKER_MONITOR_PASSWORD"`
 }
@@ -217,12 +218,6 @@ func validateRuntimeConfig(cfg Config) (deployment.Mode, error) {
 		Value:           cfg.InvitationTokens.HMACKey,
 		ForbiddenValues: []string{"development-only-invitation-hmac-key"},
 	}}
-	if cfg.Monitor.Enabled {
-		secretRequirements = append(secretRequirements, deployment.SecretRequirement{
-			Name:  "APP_WORKER_MONITOR_PASSWORD",
-			Value: cfg.Monitor.Password,
-		})
-	}
 	secretErr := deployment.ValidateProductionSecrets(mode, secretRequirements...)
 	transportErr := deployment.ValidateProductionTransports(mode, deployment.TransportSecurity{
 		PostgreSQLSSLMode: sslMode,
@@ -363,6 +358,8 @@ func validateHTTPConfig(httpConfig HTTPConfig, monitorConfig MonitorConfig) erro
 		}
 		if strings.TrimSpace(monitorConfig.Password) == "" {
 			validationErrors = append(validationErrors, errors.New("APP_WORKER_MONITOR_PASSWORD is required when queue monitoring is enabled"))
+		} else if utf8.RuneCountInString(monitorConfig.Password) < 8 {
+			validationErrors = append(validationErrors, errors.New("APP_WORKER_MONITOR_PASSWORD must contain at least 8 characters when queue monitoring is enabled"))
 		}
 	}
 	return errors.Join(validationErrors...)

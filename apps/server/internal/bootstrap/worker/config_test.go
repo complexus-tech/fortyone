@@ -1,6 +1,7 @@
 package workerbootstrap
 
 import (
+	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -17,6 +18,21 @@ func TestLoadConfigReadsSlackUninstallCredentials(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "worker-client-id", cfg.Slack.ClientID)
 	require.Equal(t, "worker-client-secret", cfg.Slack.ClientSecret)
+}
+
+func TestLoadConfigMonitorEnabledByDefaultWithExplicitOptOut(t *testing.T) {
+	t.Setenv("APP_GITHUB_APP_ID", "0")
+	t.Setenv("APP_WORKER_MONITOR_ENABLED", "")
+	require.NoError(t, os.Unsetenv("APP_WORKER_MONITOR_ENABLED"))
+
+	cfg, err := loadConfig()
+	require.NoError(t, err)
+	require.True(t, cfg.Monitor.Enabled)
+
+	t.Setenv("APP_WORKER_MONITOR_ENABLED", "false")
+	cfg, err = loadConfig()
+	require.NoError(t, err)
+	require.False(t, cfg.Monitor.Enabled)
 }
 
 func TestLoadConfigReadsFigmaWorkerConfiguration(t *testing.T) {
@@ -124,7 +140,7 @@ func TestValidateHTTPConfigRejectsEnabledMonitorWithoutCredentials(t *testing.T)
 	require.ErrorContains(t, err, "APP_WORKER_MONITOR_PASSWORD")
 }
 
-func TestValidateRuntimeConfigRejectsWeakProductionMonitorPassword(t *testing.T) {
+func TestValidateRuntimeConfigMonitorPasswordMinimum(t *testing.T) {
 	t.Parallel()
 
 	var cfg Config
@@ -134,14 +150,32 @@ func TestValidateRuntimeConfigRejectsWeakProductionMonitorPassword(t *testing.T)
 	cfg.DB.SSLMode = "verify-full"
 	cfg.HTTP = validWorkerHTTPConfig()
 	setValidWorkerSecurityConfig(&cfg)
-	cfg.Monitor = MonitorConfig{
-		Enabled:  true,
-		Username: "operator",
-		Password: "short",
+	for _, tc := range []struct {
+		name     string
+		password string
+		valid    bool
+	}{
+		{name: "missing"},
+		{name: "whitespace", password: "        "},
+		{name: "seven characters", password: "test123"},
+		{name: "eight characters", password: "test1234", valid: true},
+		{name: "seven multibyte characters", password: "ééééééé"},
+		{name: "eight multibyte characters", password: "éééééééé", valid: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg.Monitor = MonitorConfig{
+				Enabled:  true,
+				Username: "operator",
+				Password: tc.password,
+			}
+			_, err := validateRuntimeConfig(cfg)
+			if tc.valid {
+				require.NoError(t, err)
+			} else {
+				require.ErrorContains(t, err, "APP_WORKER_MONITOR_PASSWORD")
+			}
+		})
 	}
-
-	_, err := validateRuntimeConfig(cfg)
-	require.ErrorContains(t, err, "APP_WORKER_MONITOR_PASSWORD")
 }
 
 func TestWorkerHTTPConfigDefaults(t *testing.T) {

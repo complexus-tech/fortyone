@@ -25,14 +25,14 @@ A blank example means the deployment must choose a value when the enabled capabi
 | `APP_API_TELEMETRY_SHUTDOWN_TIMEOUT` | API | `time.Duration` | `5s` | no | [API Config.Web.TelemetryShutdownTimeout](../cmd/api/config.go#L96) |  |
 | `APP_API_WRITE_TIMEOUT` | API | `time.Duration` | `5m` | no | [API Config.Web.WriteTimeout](../cmd/api/config.go#L92) |  |
 | `APP_ENVIRONMENT` | API, worker | `string` | API: `development`<br>worker: `development` | no | [API Config.Environment](../cmd/api/config.go#L40)<br>[worker Config.Environment](../internal/bootstrap/worker/config.go#L45) | Runtime. Security decisions use this single mode; email delivery behavior has its own APP_EMAIL_ENVIRONMENT setting. |
-| `APP_WORKER_HTTP_HOST` | worker | `string` | `0.0.0.0:8080` | no | [worker Config.HTTP.Host](../internal/bootstrap/worker/config.go#L30) | Worker health server. Keep this port on a private network. Queue monitoring is disabled unless explicitly enabled and is mounted at /admin/queues. |
+| `APP_WORKER_HTTP_HOST` | worker | `string` | `0.0.0.0:8080` | no | [worker Config.HTTP.Host](../internal/bootstrap/worker/config.go#L30) | Worker health server. Keep this port on a private network. Queue monitoring is enabled by default and is mounted at /. Credentials are required unless monitoring is disabled. |
 | `APP_WORKER_HTTP_IDLE_TIMEOUT` | worker | `time.Duration` | `60s` | no | [worker Config.HTTP.IdleTimeout](../internal/bootstrap/worker/config.go#L34) |  |
 | `APP_WORKER_HTTP_READ_HEADER_TIMEOUT` | worker | `time.Duration` | `5s` | no | [worker Config.HTTP.ReadHeaderTimeout](../internal/bootstrap/worker/config.go#L31) |  |
 | `APP_WORKER_HTTP_READ_TIMEOUT` | worker | `time.Duration` | `10s` | no | [worker Config.HTTP.ReadTimeout](../internal/bootstrap/worker/config.go#L32) |  |
 | `APP_WORKER_HTTP_SHUTDOWN_TIMEOUT` | worker | `time.Duration` | `15s` | no | [worker Config.HTTP.ShutdownTimeout](../internal/bootstrap/worker/config.go#L35) |  |
 | `APP_WORKER_HTTP_WRITE_TIMEOUT` | worker | `time.Duration` | `15s` | no | [worker Config.HTTP.WriteTimeout](../internal/bootstrap/worker/config.go#L33) |  |
-| `APP_WORKER_MONITOR_ENABLED` | worker | `bool` | `false` | no | [worker Config.Monitor.Enabled](../internal/bootstrap/worker/config.go#L39) |  |
-| `APP_WORKER_MONITOR_PASSWORD` | worker | `string` | — | yes | [worker Config.Monitor.Password](../internal/bootstrap/worker/config.go#L41) | Required and at least 32 random bytes in production when monitoring is enabled. |
+| `APP_WORKER_MONITOR_ENABLED` | worker | `bool` | `true` | no | [worker Config.Monitor.Enabled](../internal/bootstrap/worker/config.go#L39) |  |
+| `APP_WORKER_MONITOR_PASSWORD` | worker | `string` | — | yes | [worker Config.Monitor.Password](../internal/bootstrap/worker/config.go#L41) | Required and at least 8 characters when monitoring is enabled. |
 | `APP_WORKER_MONITOR_USERNAME` | worker | `string` | — | no | [worker Config.Monitor.Username](../internal/bootstrap/worker/config.go#L40) |  |
 
 ## Authentication and security

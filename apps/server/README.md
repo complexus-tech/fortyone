@@ -144,12 +144,13 @@ The worker serves a small operational endpoint on
 | --------------- | ---------------------------------------------------------------------- |
 | `/health/live`  | Process liveness. It remains available while the worker is draining.   |
 | `/health/ready` | Readiness. It requires an active worker/scheduler and a healthy Redis. |
-| `/admin/queues` | Read-only Asynq queue console. Disabled unless explicitly configured.  |
+| `/`            | Read-only Asynq queue console. Enabled by default; credentials required. |
 
 Queue monitoring is an internal operator surface, not a public application
-route. To enable it, set `APP_WORKER_MONITOR_ENABLED=true` and supply
-`APP_WORKER_MONITOR_USERNAME` plus `APP_WORKER_MONITOR_PASSWORD`. Production
-requires a password of at least 32 bytes. The endpoint always requires HTTP
+route. It is enabled by default and requires `APP_WORKER_MONITOR_USERNAME`
+plus `APP_WORKER_MONITOR_PASSWORD`, with a password of at least 8 characters.
+Set `APP_WORKER_MONITOR_ENABLED=false` to disable it. The worker will not start
+if monitoring is enabled without valid credentials. The endpoint always requires HTTP
 Basic authentication, but credentials are only safe behind HTTPS; keep the
 entire worker port restricted by the deployment network policy or an internal
 authenticated proxy. Never expose it through the public API load balancer.
