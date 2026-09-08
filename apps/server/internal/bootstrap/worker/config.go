@@ -7,7 +7,6 @@ import (
 	"net"
 	"strings"
 	"time"
-	"unicode/utf8"
 
 	invitations "github.com/complexus-tech/projects-api/internal/modules/invitations/service"
 	"github.com/complexus-tech/projects-api/internal/platform/appkeys"
@@ -37,9 +36,7 @@ type HTTPConfig struct {
 }
 
 type MonitorConfig struct {
-	Enabled  bool   `default:"true" env:"APP_WORKER_MONITOR_ENABLED"`
-	Username string `env:"APP_WORKER_MONITOR_USERNAME"`
-	Password string `env:"APP_WORKER_MONITOR_PASSWORD"`
+	Enabled bool `default:"true" env:"APP_WORKER_MONITOR_ENABLED"`
 }
 
 type Config struct {
@@ -228,7 +225,7 @@ func validateRuntimeConfig(cfg Config) (deployment.Mode, error) {
 		cfg.AWS.AccessKeyID,
 		cfg.AWS.SecretAccessKey,
 	)
-	httpErr := validateHTTPConfig(cfg.HTTP, cfg.Monitor)
+	httpErr := validateHTTPConfig(cfg.HTTP)
 	_, integrationKeyErr := appkeys.NewIntegrationKeys(cfg.Auth.SecretKey)
 	invitationConfig, invitationConfigErr := workerInvitationTokenConfig(cfg)
 	var invitationTokenErr error
@@ -329,7 +326,7 @@ func validateWorkerSecurityKeySeparation(
 	return nil
 }
 
-func validateHTTPConfig(httpConfig HTTPConfig, monitorConfig MonitorConfig) error {
+func validateHTTPConfig(httpConfig HTTPConfig) error {
 	var validationErrors []error
 	host := strings.TrimSpace(httpConfig.Host)
 	if host == "" {
@@ -351,16 +348,6 @@ func validateHTTPConfig(httpConfig HTTPConfig, monitorConfig MonitorConfig) erro
 	}
 	if httpConfig.ShutdownTimeout <= 0 {
 		validationErrors = append(validationErrors, errors.New("APP_WORKER_HTTP_SHUTDOWN_TIMEOUT must be positive"))
-	}
-	if monitorConfig.Enabled {
-		if strings.TrimSpace(monitorConfig.Username) == "" {
-			validationErrors = append(validationErrors, errors.New("APP_WORKER_MONITOR_USERNAME is required when queue monitoring is enabled"))
-		}
-		if strings.TrimSpace(monitorConfig.Password) == "" {
-			validationErrors = append(validationErrors, errors.New("APP_WORKER_MONITOR_PASSWORD is required when queue monitoring is enabled"))
-		} else if utf8.RuneCountInString(monitorConfig.Password) < 8 {
-			validationErrors = append(validationErrors, errors.New("APP_WORKER_MONITOR_PASSWORD must contain at least 8 characters when queue monitoring is enabled"))
-		}
 	}
 	return errors.Join(validationErrors...)
 }

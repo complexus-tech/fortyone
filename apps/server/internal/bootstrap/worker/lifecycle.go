@@ -168,7 +168,7 @@ func (a *App) validateRuntime() error {
 	if a.pingRedis == nil {
 		return errors.New("worker Redis health check is required")
 	}
-	if err := validateHTTPConfig(a.httpConfig, a.monitorConfig); err != nil {
+	if err := validateHTTPConfig(a.httpConfig); err != nil {
 		return fmt.Errorf("validate worker runtime: %w", err)
 	}
 	return nil

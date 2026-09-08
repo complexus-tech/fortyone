@@ -132,15 +132,7 @@ func TestValidateRuntimeConfigRejectsStaticProductionAWSCredentials(t *testing.T
 	require.NotContains(t, err.Error(), cfg.AWS.SecretAccessKey)
 }
 
-func TestValidateHTTPConfigRejectsEnabledMonitorWithoutCredentials(t *testing.T) {
-	t.Parallel()
-
-	err := validateHTTPConfig(validWorkerHTTPConfig(), MonitorConfig{Enabled: true})
-	require.ErrorContains(t, err, "APP_WORKER_MONITOR_USERNAME")
-	require.ErrorContains(t, err, "APP_WORKER_MONITOR_PASSWORD")
-}
-
-func TestValidateRuntimeConfigMonitorPasswordMinimum(t *testing.T) {
+func TestValidateRuntimeConfigAcceptsMonitorWithoutLocalCredentials(t *testing.T) {
 	t.Parallel()
 
 	var cfg Config
@@ -149,33 +141,11 @@ func TestValidateRuntimeConfigMonitorPasswordMinimum(t *testing.T) {
 	cfg.Feedback.SecurityKey = "a-unique-feedback-security-key-with-32-bytes"
 	cfg.DB.SSLMode = "verify-full"
 	cfg.HTTP = validWorkerHTTPConfig()
+	cfg.Monitor.Enabled = true
 	setValidWorkerSecurityConfig(&cfg)
-	for _, tc := range []struct {
-		name     string
-		password string
-		valid    bool
-	}{
-		{name: "missing"},
-		{name: "whitespace", password: "        "},
-		{name: "seven characters", password: "test123"},
-		{name: "eight characters", password: "test1234", valid: true},
-		{name: "seven multibyte characters", password: "ééééééé"},
-		{name: "eight multibyte characters", password: "éééééééé", valid: true},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			cfg.Monitor = MonitorConfig{
-				Enabled:  true,
-				Username: "operator",
-				Password: tc.password,
-			}
-			_, err := validateRuntimeConfig(cfg)
-			if tc.valid {
-				require.NoError(t, err)
-			} else {
-				require.ErrorContains(t, err, "APP_WORKER_MONITOR_PASSWORD")
-			}
-		})
-	}
+
+	_, err := validateRuntimeConfig(cfg)
+	require.NoError(t, err)
 }
 
 func TestWorkerHTTPConfigDefaults(t *testing.T) {

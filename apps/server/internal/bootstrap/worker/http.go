@@ -2,8 +2,6 @@ package workerbootstrap
 
 import (
 	"context"
-	"crypto/sha256"
-	"crypto/subtle"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -75,10 +73,10 @@ func newWorkerHTTPHandler(
 	mux.HandleFunc("HEAD /health/ready", readinessHandler(ready, pingRedis))
 
 	if monitorConfig.Enabled {
-		// Deployment must restrict this listener to the HTTPS load balancer, which
-		// authenticates operators with Cognito. Require monitor credentials too;
-		// forwarded identity headers never substitute for Basic authentication.
-		mux.Handle(workerMonitorPath, basicAuth(monitorConfig, monitor))
+		// Cognito authentication is enforced by the HTTPS load balancer.
+		// Deployment must restrict this listener to that load balancer's security
+		// group so clients cannot reach the console without authenticating.
+		mux.Handle(workerMonitorPath, monitor)
 	}
 
 	return securityHeaders(mux), nil
@@ -111,25 +109,6 @@ func writeHealthResponse(w http.ResponseWriter, status int, state string) {
 	w.Header().Set("Cache-Control", "no-store")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(healthResponse{Status: state})
-}
-
-func basicAuth(config MonitorConfig, next http.Handler) http.Handler {
-	expectedUsername := sha256.Sum256([]byte(config.Username))
-	expectedPassword := sha256.Sum256([]byte(config.Password))
-
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		username, password, ok := r.BasicAuth()
-		actualUsername := sha256.Sum256([]byte(username))
-		actualPassword := sha256.Sum256([]byte(password))
-		usernameMatches := subtle.ConstantTimeCompare(actualUsername[:], expectedUsername[:])
-		passwordMatches := subtle.ConstantTimeCompare(actualPassword[:], expectedPassword[:])
-		if !ok || usernameMatches != 1 || passwordMatches != 1 {
-			w.Header().Set("WWW-Authenticate", `Basic realm="FortyOne worker monitor", charset="UTF-8"`)
-			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
-			return
-		}
-		next.ServeHTTP(w, r)
-	})
 }
 
 func securityHeaders(next http.Handler) http.Handler {
