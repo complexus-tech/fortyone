@@ -3,6 +3,7 @@
 - `wordmark.svg`: exact Wordmark path from `src/components/ui/logo.tsx`, filled espresso (#25150e).
 - `wordmark.png`: transparent 504 × 123 PNG rasterized from that SVG; emails display it at 94px wide with proportional height.
 - `invitation.png` and `invitation-accepted.png`: approved original illustrations, 1040 × 520 PNGs. Display size: 416 × 208 on desktop, fluid on phones.
+- `icons/`: calendar, comment, status, and priority icons share the warm peach/terracotta style. The 96 × 96 PNGs are rasterized from their SVG sources and displayed at 24 × 24 in notification emails. Status and priority describe the kind of change; the accompanying text carries the actual status or priority value.
 - `fonts/`: legacy Inter v4.1 files and SIL Open Font License, retained for already-delivered emails. New emails do not reference them.
 
 Public URL prefix: https://fortyone.app/email-assets/v1/

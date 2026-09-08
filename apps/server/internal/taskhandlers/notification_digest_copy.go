@@ -21,6 +21,9 @@ func buildNotificationDigestSubject(workspaceName string, count int) string {
 }
 
 func buildNotificationDigestCopyInput(data NotificationEmailDigestData, workspaceURL string) (notificationDigestCopyInput, error) {
+	// Coalesce only the presentation copy. Delivery coverage and message IDs
+	// must still include every notification in the original batch.
+	data.Items = latestTaskDigestItems(data.Items)
 	notificationsURL := workspaceURL + "/notifications"
 	fallbackRows := make([]notificationDigestCopyRow, 0, maxNotificationDigestDetailRows+1)
 	facts := []emailcopy.Fact{{
@@ -165,6 +168,13 @@ func buildNotificationDigestCopyInput(data NotificationEmailDigestData, workspac
 
 	fallbackSubject := buildNotificationDigestSubject(data.WorkspaceName, len(data.Items))
 	fallbackIntro := "Review the activity below and choose the next useful action."
+	if taskOnlyDigest(data.Items) {
+		fallbackSubject = fmt.Sprintf("%d %s updated in %s", len(data.Items), pluralWord(len(data.Items), "task", "tasks"), data.WorkspaceName)
+		fallbackIntro = "Here is the latest update for each task."
+		if len(data.Items) == 1 {
+			fallbackIntro = "Here is the latest update for this task."
+		}
+	}
 	if hasStrategySnapshot {
 		fallbackSubject = "Your strategy check-in"
 		fallbackIntro = "Here are the objectives, key results, and strategy updates that need your attention. I’m Maya, your AI agent. Reply to this email with what changed or what you want updated."
@@ -206,6 +216,43 @@ func buildNotificationDigestCopyInput(data NotificationEmailDigestData, workspac
 		HasStrategySnapshot: hasStrategySnapshot,
 		NotificationsURL:    notificationsURL,
 	}, nil
+}
+
+// latestTaskDigestItems selects by event time, with the repository's notification
+// ID ordering as a deterministic tie-breaker. Distinct tasks with the same title
+// remain separate; non-task notifications retain their existing behavior.
+func latestTaskDigestItems(items []NotificationEmailDigestItem) []NotificationEmailDigestItem {
+	latest := make(map[uuid.UUID]int)
+	for index, item := range items {
+		if item.EntityType != "story" || item.EntityID == uuid.Nil {
+			continue
+		}
+		previous, exists := latest[item.EntityID]
+		if !exists || item.CreatedAt.After(items[previous].CreatedAt) ||
+			(item.CreatedAt.Equal(items[previous].CreatedAt) && item.NotificationID.String() > items[previous].NotificationID.String()) {
+			latest[item.EntityID] = index
+		}
+	}
+	result := make([]NotificationEmailDigestItem, 0, len(items))
+	for index, item := range items {
+		if item.EntityType == "story" && item.EntityID != uuid.Nil && latest[item.EntityID] != index {
+			continue
+		}
+		result = append(result, item)
+	}
+	return result
+}
+
+func taskOnlyDigest(items []NotificationEmailDigestItem) bool {
+	if len(items) == 0 {
+		return false
+	}
+	for _, item := range items {
+		if item.EntityType != "story" {
+			return false
+		}
+	}
+	return true
 }
 
 func notificationVariableValues(variables map[string]Variable) []string {

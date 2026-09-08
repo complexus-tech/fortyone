@@ -279,13 +279,36 @@ func templateDigest(copy notificationDigestCopy) mailer.Digest {
 }
 
 func notificationIcon(message NotificationMessage, notificationType string) string {
+	if strings.Contains(notificationType, "comment") || strings.Contains(notificationType, "reply") || strings.Contains(notificationType, "conversation") {
+		return "comment"
+	}
 	for _, variable := range message.Variables {
-		if variable.Type == "date" || (variable.Type == "field" && strings.Contains(strings.ToLower(variable.Value), "date")) {
+		field := strings.ToLower(strings.TrimSpace(variable.Value))
+		if variable.Type == "date" || (variable.Type == "field" && (strings.Contains(field, "date") || field == "deadline")) {
 			return "calendar"
 		}
 	}
-	if strings.Contains(notificationType, "comment") || strings.Contains(notificationType, "reply") || strings.Contains(notificationType, "conversation") {
-		return "comment"
+	for _, variable := range message.Variables {
+		if variable.Type == "field" {
+			switch strings.ToLower(strings.TrimSpace(variable.Value)) {
+			case "status":
+				return "status"
+			case "priority":
+				return "priority"
+			}
+		}
+	}
+	// Persisted task events do not always include typed field metadata. Match
+	// their producer-owned templates, never user-authored content or values.
+	if notificationType == "story_update" {
+		switch message.Template {
+		case "{actor} changed the start date":
+			return "calendar"
+		case "{actor} moved the task to {value}":
+			return "status"
+		case "{actor} changed priority to {value}":
+			return "priority"
+		}
 	}
 	return ""
 }

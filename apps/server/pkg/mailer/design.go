@@ -17,7 +17,7 @@ const emailAssetBaseURL = "https://fortyone.app/email-assets/v1/"
 
 func emailAsset(name string) string {
 	switch name {
-	case "icons/calendar.png", "icons/comment.png", "wordmark.png", "invitation.png", "invitation-accepted.png":
+	case "icons/calendar.png", "icons/comment.png", "icons/status.png", "icons/priority.png", "wordmark.png", "invitation.png", "invitation-accepted.png":
 		return emailAssetBaseURL + name
 	default:
 		return ""

@@ -319,3 +319,92 @@ func TestSelectWeeklyStrategyDetailsBalancesObjectivesAndKeyResults(t *testing.T
 	require.Len(t, selectedObjectives, 5)
 	require.Len(t, selectedKeyResults, 5)
 }
+
+func TestTaskDigestKeepsLatestEventBeforeApplyingDetailLimit(t *testing.T) {
+	now := time.Date(2026, 9, 8, 10, 0, 0, 0, time.UTC)
+	taskID := uuid.New()
+	items := make([]NotificationEmailDigestItem, 0, 10)
+	for i := range 7 {
+		items = append(items, NotificationEmailDigestItem{
+			NotificationID: uuid.New(), EntityType: "story", EntityID: taskID,
+			Title: "Ticketing system mobile app", CreatedAt: now.Add(time.Duration(i) * time.Minute),
+			Message: json.RawMessage(`{"template":"hector changed priority to High"}`),
+		})
+	}
+	latest := &items[6]
+	latest.Message = json.RawMessage(`{"template":"{actor} changed the start date","variables":{"actor":{"type":"actor","value":"hector"}}}`)
+	latest.NotificationType, latest.ActorName = "story_update", "hector"
+	latestID := latest.NotificationID
+	// A different task can have exactly the same title.
+	items = append(items, NotificationEmailDigestItem{
+		NotificationID: uuid.New(), EntityType: "story", EntityID: uuid.New(),
+		Title: "Ticketing system mobile app", CreatedAt: now,
+		Message: json.RawMessage(`{"template":"Another task was assigned to you"}`),
+	})
+	// Input order must not decide which event is newest.
+	items[0], items[6] = items[6], items[0]
+	original := append([]NotificationEmailDigestItem(nil), items...)
+	input, err := buildNotificationDigestCopyInput(NotificationEmailDigestData{WorkspaceName: "Art Circles", Items: items}, "https://art.fortyone.app")
+	require.NoError(t, err)
+	require.Equal(t, original, items, "presentation must not mutate delivery coverage")
+	require.Len(t, input.Fallback.Rows, 2)
+	require.Equal(t, "2 tasks updated in Art Circles", input.Fallback.Subject)
+	require.Contains(t, input.Request.Facts[0].Text, "2 unread product updates")
+	require.Len(t, input.Request.Facts, 3)
+	row := input.Fallback.Rows[0]
+	require.Contains(t, row.Text, "changed the start date")
+	require.Contains(t, row.URL, latestID.String())
+	require.Equal(t, "calendar", row.Icon)
+	require.Equal(t, "hector", row.Actor.Name)
+	for _, fact := range input.Request.Facts {
+		require.NotContains(t, fact.Text, "High")
+	}
+	generated, err := buildGeneratedNotificationDigestCopy(input, emailcopy.Output{
+		Subject: emailcopy.GroundedText{Text: "Task updates"}, H1: emailcopy.GroundedText{Text: "Task updates"},
+		Intro: emailcopy.GroundedText{Text: "Here are the latest task updates."},
+		Rows:  []emailcopy.Row{{ReferenceID: "notification_1", Text: row.Text}},
+	})
+	require.NoError(t, err)
+	require.Equal(t, row.Icon, templateDigest(generated).Rows[0].Icon)
+	require.Equal(t, row.Actor, templateDigest(generated).Rows[0].Actor)
+}
+
+func TestLatestTaskDigestItemsPreservesOtherEntitiesAndUsesStableTies(t *testing.T) {
+	entityID := uuid.New()
+	older := NotificationEmailDigestItem{EntityType: "story", EntityID: entityID, NotificationID: uuid.MustParse("00000000-0000-0000-0000-000000000001")}
+	newer := older
+	newer.NotificationID = uuid.MustParse("00000000-0000-0000-0000-000000000002")
+	feedback := older
+	feedback.EntityType = "feedback"
+	unknown := older
+	unknown.EntityID = uuid.Nil
+	items := []NotificationEmailDigestItem{newer, older, feedback, feedback, unknown, unknown}
+	require.Equal(t, []NotificationEmailDigestItem{newer, feedback, feedback, unknown, unknown}, latestTaskDigestItems(items))
+}
+
+func TestNotificationIconsMatchPersistedEvents(t *testing.T) {
+	for _, tc := range []struct {
+		name, kind, message, want string
+	}{
+		{"start date", "story_update", `{"template":"{actor} changed the start date"}`, "calendar"},
+		{"deadline removed", "story_update", `{"variables":{"field":{"type":"field","value":"deadline"}}}`, "calendar"},
+		{"deadline set", "story_update", `{"variables":{"value":{"type":"date","value":"8 Sep"}}}`, "calendar"},
+		{"comment", "story_comment", `{"template":"{actor} commented: {content}"}`, "comment"},
+		{"reply", "comment_reply", `{}`, "comment"},
+		{"feedback comment", "feedback_comment", `{}`, "comment"},
+		{"comment mentioning date", "story_comment", `{"variables":{"content":{"type":"value","value":"Change the start date"}}}`, "comment"},
+		{"priority", "story_update", `{"template":"{actor} changed priority to {value}"}`, "priority"},
+		{"status field fallback", "story_update", `{"template":"{actor} updated {field}","variables":{"field":{"type":"field","value":"Status"}}}`, "status"},
+		{"priority field", "story_update", `{"variables":{"field":{"type":"field","value":"Priority"}}}`, "priority"},
+		{"comment mentioning priority", "story_comment", `{"variables":{"content":{"type":"value","value":"Please change priority and status"}}}`, "comment"},
+		{"title mentioning status", "story_update", `{"template":"{actor} renamed the story to {value}","variables":{"value":{"type":"value","value":"Fix priority status"}}}`, ""},
+		{"assignment", "story_update", `{"template":"{actor} assigned you a task"}`, ""},
+		{"status", "story_update", `{"template":"{actor} moved the task to {value}"}`, "status"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var message NotificationMessage
+			require.NoError(t, json.Unmarshal([]byte(tc.message), &message))
+			require.Equal(t, tc.want, notificationIcon(message, tc.kind))
+		})
+	}
+}

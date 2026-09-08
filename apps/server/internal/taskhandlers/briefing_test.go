@@ -176,3 +176,46 @@ func TestGuidanceUsesRecipientDate(t *testing.T) {
 		require.Equal(t, tc.eligible, eligible)
 	}
 }
+
+func TestTaskDigestSendsLatestUpdateAndCoversEveryEvent(t *testing.T) {
+	recipient, workspace, story := uuid.New(), uuid.New(), uuid.New()
+	now := time.Date(2026, 9, 8, 10, 0, 0, 0, time.UTC)
+	store := &notificationDeliveryStoreStub{digest: &notifications.EmailDigest{
+		RecipientID: recipient, WorkspaceID: workspace, UserEmail: "person@example.com",
+		WorkspaceSlug: "art", WorkspaceName: "Art Circles", WorkspaceRole: "admin",
+	}}
+	ids := make([]uuid.UUID, 0, 4)
+	for i, activity := range []string{
+		"hector changed priority to High", "hector assigned you a task",
+		"hector moved the task to To Do", "hector changed priority to Urgent",
+	} {
+		id := uuid.New()
+		ids = append(ids, id)
+		message, err := json.Marshal(map[string]string{"template": activity})
+		require.NoError(t, err)
+		store.digest.Items = append(store.digest.Items, notifications.EmailDigestItem{
+			NotificationID: id, EntityID: story, EntityType: notifications.EntityTypeStory,
+			NotificationType: notifications.NotificationTypeStoryUpdate,
+			Title:            "Ticketing system mobile app", Message: message, ActorName: "hector",
+			CreatedAt: now.Add(time.Duration(i) * time.Minute),
+		})
+	}
+	routine, sender := &routineStoreStub{}, &briefingMailerStub{}
+	h := &handlers{log: logger.NewWithText(io.Discard, slog.LevelError, "test"), notificationDeliveries: store, routineDeliveries: routine, mailerService: sender}
+	payload, err := json.Marshal(tasks.NotificationEmailDigestPayload{RecipientID: recipient, WorkspaceID: workspace})
+	require.NoError(t, err)
+	task := asynq.NewTask(tasks.TypeNotificationEmailDigest, payload)
+	require.NoError(t, h.handleNotificationEmailDigestAt(t.Context(), task, now))
+	require.Len(t, sender.emails, 1)
+	email := sender.emails[0]
+	require.Equal(t, "1 task updated in Art Circles", email.Subject)
+	digest := email.Data.(map[string]any)["NotificationDigest"].(mailer.Digest)
+	require.Len(t, digest.Rows, 1)
+	require.Equal(t, "Here is the latest update for this task.", digest.Intro)
+	require.Equal(t, "hector changed priority to Urgent", digest.Rows[0].Text)
+	require.Contains(t, digest.Rows[0].URL, ids[3].String())
+	require.NotContains(t, email.PlainTextBody, "High")
+	require.ElementsMatch(t, ids, routine.completions[0].NotificationIDs)
+	require.NoError(t, h.handleNotificationEmailDigestAt(t.Context(), task, now))
+	require.Len(t, sender.emails, 1)
+}

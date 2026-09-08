@@ -71,3 +71,19 @@ func TestConsolidatedEmailRenderingAndFooter(t *testing.T) {
 	}
 	assertContains(t, response, base+"/settings/account/notifications")
 }
+
+func TestNotificationDigestRendersActivityIcons(t *testing.T) {
+	for _, icon := range []string{"calendar", "comment", "status", "priority"} {
+		t.Run(icon, func(t *testing.T) {
+			rendered := renderTemplateForTest(t, "notifications/notification", map[string]any{
+				"NotificationTitle": "1 task updated in Art Circles",
+				"NotificationDigest": Digest{Intro: "Here is the latest update for this task.", Rows: []DigestRow{{
+					Icon: icon, Label: "Ticketing system mobile app", Text: "hector updated this task",
+					URL: "https://art.fortyone.app/notifications/example", Actor: EmailActor{Name: "hector"},
+				}}},
+			})
+			assertContains(t, rendered, `src="https://fortyone.app/email-assets/v1/icons/`+icon+`.png" width="24" height="24" alt=""`)
+			assertContains(t, rendered, ">HE</span>")
+		})
+	}
+}
