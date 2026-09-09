@@ -49,6 +49,7 @@ func buildNotificationDigestCopyInput(data NotificationEmailDigestData, workspac
 	factIcons := make(map[string]string, len(data.Items))
 	activityRows := make(map[string]notificationDigestCopyRow, len(data.Items))
 	hasStrategySnapshot := false
+	introFactID := ""
 	detailCount := 0
 	omittedNotificationCount := 0
 
@@ -73,6 +74,9 @@ func buildNotificationDigestCopyInput(data NotificationEmailDigestData, workspac
 				maxNotificationDigestDetailRows-detailCount,
 			)
 			facts = append(facts, weeklyFacts...)
+			if len(data.Items) == 1 {
+				introFactID = weeklyFacts[0].ReferenceID
+			}
 			for referenceID, destination := range weeklyURLs {
 				actionURLs[referenceID] = destination
 			}
@@ -81,6 +85,9 @@ func buildNotificationDigestCopyInput(data NotificationEmailDigestData, workspac
 			}
 			for referenceID, label := range weeklyFactLabels {
 				factLabels[referenceID] = label
+			}
+			for index, fact := range weeklyFacts {
+				factIcons[fact.ReferenceID] = weeklyFallbackRows[index].Icon
 			}
 			fallbackRows = append(fallbackRows, weeklyFallbackRows...)
 			detailCount += len(weeklyFallbackRows)
@@ -185,7 +192,7 @@ func buildNotificationDigestCopyInput(data NotificationEmailDigestData, workspac
 	}
 	if hasStrategySnapshot {
 		fallbackSubject = "Your strategy check-in"
-		fallbackIntro = "Here are the objectives, key results, and strategy updates that need your attention. I’m Maya, your AI agent. Reply to this email with what changed or what you want updated."
+		fallbackIntro = "Here's where your strategy needs attention. Have a progress update or a blocker? Reply to this email and I’ll help you update your strategy."
 	}
 	fallback := notificationDigestCopy{
 		Subject:             fallbackSubject,
@@ -199,21 +206,32 @@ func buildNotificationDigestCopyInput(data NotificationEmailDigestData, workspac
 	if hasStrategySnapshot {
 		fallback.Sender = mailer.SenderProfileMaya
 	}
+	if introFactID != "" {
+		// A standalone check-in opens with its grounded summary, once. The AI
+		// still writes this fact's prose; a second generic intro adds repetition.
+		fallback.Intro = fallback.Rows[0].Text + " Have a progress update or a blocker? Reply to this email and I’ll help you update your strategy."
+		fallback.Rows = fallback.Rows[1:]
+	}
 
 	safetyIdentifier := data.RecipientID.String()
 	if data.RecipientID == uuid.Nil {
 		safetyIdentifier = "unknown-notification-recipient"
 	}
+	productVoice := "Help the recipient understand what changed, why it matters, and choose the next useful action. Keep activity factual; make strategy guidance warm and calm."
+	if hasStrategySnapshot {
+		productVoice += " Summarize the main takeaway in one short opening sentence without repeating the counts in the summary row. Keep each strategy row to one or two short sentences about what needs attention. Labels appear separately: do not repeat objective or key-result names. Explain the update window only in the summary row. Do not repeat parent objective health or status under each key result. Invite a progress update or blocker in a natural reply prompt without introducing Maya again."
+	}
 
 	return notificationDigestCopyInput{
+		IntroFactID:  introFactID,
 		ActivityRows: activityRows,
 		Request: emailcopy.Request{
 			SafetyIdentifier:   safetyIdentifier,
 			Purpose:            "persisted notification email digest",
-			ProductVoice:       "Help the recipient understand what changed, why it matters, and choose the next useful action. Keep activity factual; make strategy guidance warm and calm.",
+			ProductVoice:       productVoice,
 			Facts:              facts,
 			Actions:            actions,
-			IncludeSenderProse: hasStrategySnapshot,
+			IncludeSenderProse: false,
 			IncludeReplyPrompt: hasStrategySnapshot,
 		},
 		Actions:             actionURLs,
@@ -448,19 +466,29 @@ func buildWeeklyStrategyDigestFacts(item NotificationEmailDigestItem, weekly str
 	fallbackRows := make([]notificationDigestCopyRow, 0, rowLimit)
 
 	summaryReferenceID := fmt.Sprintf("strategy_summary_%s", item.NotificationID.String())
-	summaryText := fmt.Sprintf(
-		"The weekly strategy check-in has %d at-risk objectives, %d objectives without a recent update, and %d incomplete key results without a recent update; recent means within %d days.",
-		weekly.Counts.AtRiskObjectives,
-		weekly.Counts.StaleObjectives,
-		weekly.Counts.StaleKeyResults,
-		weekly.StaleAfterDays,
-	)
-	protectedSummaryTokens := nonEmptyStrings(
-		fmt.Sprintf("%d at-risk objectives", weekly.Counts.AtRiskObjectives),
-		fmt.Sprintf("%d objectives without a recent update", weekly.Counts.StaleObjectives),
-		fmt.Sprintf("%d incomplete key results without a recent update", weekly.Counts.StaleKeyResults),
-		fmt.Sprintf("within %d days", weekly.StaleAfterDays),
-	)
+	var signals []string
+	for _, signal := range []struct {
+		count                    int
+		singular, plural, reason string
+	}{
+		{weekly.Counts.AtRiskObjectives, "objective", "objectives", "at risk"},
+		{weekly.Counts.StaleObjectives, "objective", "objectives", "awaiting an update"},
+		{weekly.Counts.StaleKeyResults, "key result", "key results", "awaiting an update"},
+	} {
+		if signal.count > 0 {
+			signals = append(signals, fmt.Sprintf("%d %s %s", signal.count, pluralWord(signal.count, signal.singular, signal.plural), signal.reason))
+		}
+	}
+	summaryText := strings.Join(signals, "; ") + "."
+	if len(signals) == 0 {
+		summaryText = "No strategy follow-ups are listed in this check-in."
+	}
+	protectedSummaryTokens := append([]string(nil), signals...)
+	if weekly.Counts.StaleObjectives > 0 || weekly.Counts.StaleKeyResults > 0 {
+		window := fmt.Sprintf("at least %d days", weekly.StaleAfterDays)
+		summaryText += " Items awaiting an update have not changed in " + window + "."
+		protectedSummaryTokens = append(protectedSummaryTokens, window)
+	}
 	selectedObjectives, selectedKeyResults := selectWeeklyStrategyDetails(weekly.Objectives, weekly.KeyResults, rowLimit-1)
 	omitted := len(weekly.Objectives) + len(weekly.KeyResults) - len(selectedObjectives) - len(selectedKeyResults)
 	if weekly.OmittedDetails != nil {
@@ -482,37 +510,37 @@ func buildWeeklyStrategyDigestFacts(item NotificationEmailDigestItem, weekly str
 	for index, objective := range selectedObjectives {
 		factReferenceID := fmt.Sprintf("strategy_objective_%d_%s", index+1, objective.ID.String())
 		actionReferenceID := fmt.Sprintf("strategy_objective_action_%d_%s", index+1, objective.ID.String())
-		factText := strategyObjectiveFactText(objective, weekly.StaleAfterDays)
+		factText := strategyObjectiveFactText(objective)
 		destination := strategyObjectiveNotificationURL(workspaceURL, item.NotificationID, objective.ID)
 		facts = append(facts, emailcopy.Fact{
 			ReferenceID:     factReferenceID,
 			Text:            factText,
-			EntityTokens:    nonEmptyStrings(objective.Name),
+			Label:           objective.Name,
 			ProtectedTokens: strategyObjectiveProtectedTokens(objective),
 			Required:        true,
 		})
 		actionURLs[actionReferenceID] = destination
 		factActions[factReferenceID] = actionReferenceID
 		factLabels[factReferenceID] = objective.Name
-		fallbackRows = append(fallbackRows, notificationDigestCopyRow{Text: factText, Label: objective.Name, URL: destination, Highlights: notificationFactHighlights(strategyObjectiveProtectedTokens(objective))})
+		fallbackRows = append(fallbackRows, notificationDigestCopyRow{Text: factText, Label: objective.Name, URL: destination, Icon: strategyObjectiveIcon(objective), Highlights: notificationFactHighlights(strategyObjectiveProtectedTokens(objective))})
 	}
 
 	for index, keyResult := range selectedKeyResults {
 		factReferenceID := fmt.Sprintf("strategy_key_result_%d_%s", index+1, keyResult.ID.String())
 		actionReferenceID := fmt.Sprintf("strategy_key_result_action_%d_%s", index+1, keyResult.ID.String())
-		factText := strategyKeyResultFactText(keyResult, weekly.StaleAfterDays)
+		factText := strategyKeyResultFactText(keyResult)
 		destination := strategyKeyResultNotificationURL(workspaceURL, item.NotificationID, keyResult.ID, keyResult.ObjectiveID)
 		facts = append(facts, emailcopy.Fact{
 			ReferenceID:     factReferenceID,
 			Text:            factText,
-			EntityTokens:    nonEmptyStrings(keyResult.Name, keyResult.ObjectiveName),
+			Label:           keyResult.Name,
 			ProtectedTokens: strategyKeyResultProtectedTokens(keyResult),
 			Required:        true,
 		})
 		actionURLs[actionReferenceID] = destination
 		factActions[factReferenceID] = actionReferenceID
 		factLabels[factReferenceID] = keyResult.Name
-		fallbackRows = append(fallbackRows, notificationDigestCopyRow{Text: factText, Label: keyResult.Name, URL: destination, Highlights: notificationFactHighlights(strategyKeyResultProtectedTokens(keyResult))})
+		fallbackRows = append(fallbackRows, notificationDigestCopyRow{Text: factText, Label: keyResult.Name, URL: destination, Icon: "status", Highlights: notificationFactHighlights(strategyKeyResultProtectedTokens(keyResult))})
 	}
 
 	return facts, actionURLs, factActions, factLabels, fallbackRows
@@ -535,92 +563,68 @@ func selectWeeklyStrategyDetails(
 	return objectives[:objectiveLimit], keyResults[:keyResultLimit]
 }
 
-func strategyObjectiveFactText(objective strategyObjectiveSnapshot, staleAfterDays int) string {
-	parts := []string{objective.Name}
-	if objective.Health != nil && strings.TrimSpace(*objective.Health) != "" {
-		parts = append(parts, "health is "+strings.TrimSpace(*objective.Health))
+// Labels are rendered separately. Keep facts small enough for the AI to
+// summarize without copying entity names, parent metadata, or storage values.
+func strategyObjectiveFactText(objective strategyObjectiveSnapshot) string {
+	parts := strategyObjectiveProtectedTokens(objective)
+	for index, part := range parts {
+		if part == "needs an update" {
+			parts[index] = "This objective " + part
+		}
 	}
-	if objective.Status != nil && strings.TrimSpace(objective.Status.Name) != "" {
-		parts = append(parts, "status is "+strings.TrimSpace(objective.Status.Name))
-	}
-	if containsValue(objective.Reasons, "stale") {
-		parts = append(parts, fmt.Sprintf("has not had a recent update; recent means within %d days", staleAfterDays))
-	}
-	if !objective.UpdatedAt.IsZero() {
-		parts = append(parts, "last updated on "+objective.UpdatedAt.UTC().Format("January 2, 2006"))
-	}
-	if objective.EndDate != nil {
-		parts = append(parts, "ends on "+objective.EndDate.UTC().Format("January 2, 2006"))
-	}
-	return strings.Join(parts, "; ") + "."
+	return strings.Join(parts, ". ") + "."
 }
 
 func strategyObjectiveProtectedTokens(objective strategyObjectiveSnapshot) []string {
-	values := make([]string, 0, 6)
+	var values []string
 	if objective.Health != nil {
-		values = append(values, "health is "+strings.TrimSpace(*objective.Health))
+		values = append(values, strings.TrimSpace(*objective.Health))
 	}
 	if objective.Status != nil {
-		values = append(values, "status is "+strings.TrimSpace(objective.Status.Name))
+		values = append(values, strings.TrimSpace(objective.Status.Name))
 	}
 	if containsValue(objective.Reasons, "stale") {
-		values = append(values, "has not had a recent update")
+		values = append(values, "needs an update")
 	}
 	if !objective.UpdatedAt.IsZero() {
-		values = append(values, "last updated on "+objective.UpdatedAt.UTC().Format("January 2, 2006"))
+		values = append(values, "Last updated on "+objective.UpdatedAt.UTC().Format("January 2, 2006"))
 	}
 	if objective.EndDate != nil {
-		values = append(values, "ends on "+objective.EndDate.UTC().Format("January 2, 2006"))
+		values = append(values, "Due "+objective.EndDate.UTC().Format("January 2, 2006"))
+	}
+	values = nonEmptyStrings(values...)
+	if len(values) == 0 {
+		values = append(values, "Ready for a progress update")
 	}
 	return nonEmptyStrings(values...)
 }
 
-func strategyKeyResultFactText(keyResult strategyKeyResultSnapshot, staleAfterDays int) string {
-	parts := []string{fmt.Sprintf("%s under %s", keyResult.Name, keyResult.ObjectiveName)}
-	if keyResult.ObjectiveHealth != nil && strings.TrimSpace(*keyResult.ObjectiveHealth) != "" {
-		parts = append(parts, "objective health is "+strings.TrimSpace(*keyResult.ObjectiveHealth))
+func strategyObjectiveIcon(objective strategyObjectiveSnapshot) string {
+	if containsValue(objective.Reasons, "at_risk") {
+		return "priority"
 	}
-	if keyResult.ObjectiveStatus != nil && strings.TrimSpace(keyResult.ObjectiveStatus.Name) != "" {
-		parts = append(parts, "objective status is "+strings.TrimSpace(keyResult.ObjectiveStatus.Name))
-	}
-	if strings.TrimSpace(keyResult.MeasurementType) != "" {
-		parts = append(parts, "measurement is "+strings.TrimSpace(keyResult.MeasurementType))
-	}
-	if keyResult.CurrentValue != nil && keyResult.TargetValue != nil {
-		parts = append(parts, fmt.Sprintf("current value is %s and target value is %s", strategyValue(keyResult.CurrentValue), strategyValue(keyResult.TargetValue)))
-	}
-	parts = append(parts, fmt.Sprintf("is incomplete and has not had a recent update; recent means within %d days", staleAfterDays))
-	if !keyResult.UpdatedAt.IsZero() {
-		parts = append(parts, "last updated on "+keyResult.UpdatedAt.UTC().Format("January 2, 2006"))
-	}
-	if keyResult.EndDate != nil {
-		parts = append(parts, "ends on "+keyResult.EndDate.UTC().Format("January 2, 2006"))
-	}
-	return strings.Join(parts, "; ") + "."
+	return "status"
+}
+
+func strategyKeyResultFactText(keyResult strategyKeyResultSnapshot) string {
+	return strings.Join(strategyKeyResultProtectedTokens(keyResult), ". ") + "."
 }
 
 func strategyKeyResultProtectedTokens(keyResult strategyKeyResultSnapshot) []string {
-	values := []string{"is incomplete", "has not had a recent update"}
-	if keyResult.ObjectiveHealth != nil {
-		values = append(values, "objective health is "+strings.TrimSpace(*keyResult.ObjectiveHealth))
-	}
-	if keyResult.ObjectiveStatus != nil {
-		values = append(values, "objective status is "+strings.TrimSpace(keyResult.ObjectiveStatus.Name))
-	}
-	if measurementType := strings.TrimSpace(keyResult.MeasurementType); measurementType != "" {
-		values = append(values, "measurement is "+measurementType)
-	}
-	if keyResult.CurrentValue != nil && keyResult.TargetValue != nil {
-		values = append(values,
-			"current value is "+strategyValue(keyResult.CurrentValue),
-			"target value is "+strategyValue(keyResult.TargetValue),
-		)
+	values := []string{"Not complete"}
+	// A boolean target is an outcome, not a user-facing 0/1 measurement.
+	if keyResult.MeasurementType != "boolean" && keyResult.CurrentValue != nil && keyResult.TargetValue != nil {
+		unit := ""
+		if keyResult.MeasurementType == "percentage" {
+			unit = "%"
+		}
+		values = append(values, "Progress: "+strategyValue(keyResult.CurrentValue)+unit+" of "+strategyValue(keyResult.TargetValue)+unit)
 	}
 	if !keyResult.UpdatedAt.IsZero() {
-		values = append(values, "last updated on "+keyResult.UpdatedAt.UTC().Format("January 2, 2006"))
+		values = append(values, "Last updated on "+keyResult.UpdatedAt.UTC().Format("January 2, 2006"))
 	}
 	if keyResult.EndDate != nil {
-		values = append(values, "ends on "+keyResult.EndDate.UTC().Format("January 2, 2006"))
+		values = append(values, "Due "+keyResult.EndDate.UTC().Format("January 2, 2006"))
 	}
 	return nonEmptyStrings(values...)
 }
@@ -653,9 +657,14 @@ func buildGeneratedNotificationDigestCopy(input notificationDigestCopyInput, out
 		knownFacts[fact.ReferenceID] = struct{}{}
 	}
 	rows := make([]notificationDigestCopyRow, 0, len(output.Rows))
+	introText := notificationPlainText(output.Intro.Text, 420)
 	for _, row := range output.Rows {
 		if _, exists := knownFacts[row.ReferenceID]; !exists {
 			return notificationDigestCopy{}, fmt.Errorf("email copy row %q cites an unknown fact", row.ReferenceID)
+		}
+		if row.ReferenceID == input.IntroFactID {
+			introText = notificationPlainText(row.Text, 360)
+			continue
 		}
 		destination := ""
 		if actionReferenceID := input.FactActions[row.ReferenceID]; actionReferenceID != "" {
@@ -707,7 +716,7 @@ func buildGeneratedNotificationDigestCopy(input notificationDigestCopyInput, out
 		primaryCTA = input.Fallback.CTA
 	}
 
-	introParts := []string{notificationPlainText(output.Intro.Text, 420)}
+	introParts := []string{introText}
 	if output.SenderProse != nil {
 		introParts = append(introParts, notificationPlainText(output.SenderProse.Text, 320))
 	}
@@ -726,6 +735,10 @@ func buildGeneratedNotificationDigestCopy(input notificationDigestCopyInput, out
 	}
 	if input.HasStrategySnapshot {
 		copy.Sender = mailer.SenderProfileMaya
+	}
+	if input.IntroFactID != "" {
+		copy.Subject = input.Fallback.Subject
+		copy.Heading = input.Fallback.Heading
 	}
 	if copy.Subject == "" || copy.Heading == "" || copy.Intro == "" {
 		return notificationDigestCopy{}, errors.New("email copy has an empty visible field")

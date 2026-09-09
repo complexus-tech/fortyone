@@ -53,6 +53,9 @@ func renderNotificationDigestCopy(copy notificationDigestCopy) string {
 			itemStyle = firstItemStyle
 		}
 		rowHTML := string(mailer.EmphasizeValues(row.Text, row.Highlights))
+		if row.Label != "" && !strings.Contains(row.Text, row.Label) {
+			rowHTML = stdhtml.EscapeString(row.Label) + "<br>" + rowHTML
+		}
 		if row.URL != "" && row.Label != "" {
 			escapedLabel := stdhtml.EscapeString(row.Label)
 			rowHTML = strings.Replace(rowHTML, escapedLabel, fmt.Sprintf(
@@ -151,6 +154,9 @@ func renderNotificationDigestPlainText(copy notificationDigestCopy) string {
 		rowText := strings.TrimSpace(row.Text)
 		if rowText == "" {
 			continue
+		}
+		if row.Label != "" && !strings.Contains(rowText, row.Label) {
+			rowText = row.Label + "\n" + rowText
 		}
 		if row.Detail != "" {
 			rowText += "\n" + row.Detail

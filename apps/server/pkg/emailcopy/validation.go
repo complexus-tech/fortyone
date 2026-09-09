@@ -96,7 +96,7 @@ func validateOutput(request Request, output Output) error {
 	}
 	if request.IncludeReplyPrompt {
 		prompt := strings.ToLower(output.ReplyPrompt.Text)
-		for _, requiredPhrase := range []string{"maya", "ai agent", "reply", "email"} {
+		for _, requiredPhrase := range []string{"reply", "email"} {
 			if !strings.Contains(prompt, requiredPhrase) {
 				return fmt.Errorf("reply prompt must include %q", requiredPhrase)
 			}
@@ -212,6 +212,8 @@ func validateGroundedText(name string, value GroundedText, maxRunes int, facts m
 			return fmt.Errorf("%s repeats fact reference %q", name, referenceID)
 		}
 		seen[referenceID] = struct{}{}
+		sourceText.WriteString(fact.Label)
+		sourceText.WriteByte(' ')
 		sourceText.WriteString(fact.Text)
 		sourceText.WriteByte(' ')
 	}

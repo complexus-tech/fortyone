@@ -390,20 +390,20 @@ func TestBuildNotificationDigestCopyInputExpandsWeeklyStrategyLinks(t *testing.T
 
 	require.NoError(t, err)
 	require.True(t, input.HasStrategySnapshot)
-	require.True(t, input.Request.IncludeSenderProse)
+	require.False(t, input.Request.IncludeSenderProse)
 	require.True(t, input.Request.IncludeReplyPrompt)
 	require.Len(t, input.Request.Facts, 4)
 	require.Len(t, input.Request.Actions, 1)
 	require.Equal(t, workspaceURL+"/strategy", input.Actions[digestActionStrategy])
 	require.Equal(t, mailer.SenderProfileMaya, input.Fallback.Sender)
 	require.Equal(t, "Your strategy check-in", input.Fallback.Subject)
-	require.Contains(t, input.Fallback.Intro, "need your attention")
+	require.Contains(t, input.Fallback.Intro, "1 objective awaiting an update")
 
 	objectiveFact := input.Request.Facts[2]
 	keyResultFact := input.Request.Facts[3]
-	require.Equal(t, "Grow enterprise revenue", objectiveFact.EntityTokens[0])
-	require.Contains(t, objectiveFact.Text, "health is At Risk")
-	require.Contains(t, keyResultFact.Text, "current value is 42 and target value is 100")
+	require.Equal(t, "Grow enterprise revenue", objectiveFact.Label)
+	require.Contains(t, objectiveFact.Text, "At Risk")
+	require.Contains(t, keyResultFact.Text, "Progress: 42 of 100")
 	require.True(t, objectiveFact.Required)
 	require.True(t, keyResultFact.Required)
 

@@ -309,7 +309,7 @@ func TestValidateOutputAllowsCreativeProseAroundProtectedFacts(t *testing.T) {
 	require.NoError(t, validateOutput(request, output))
 }
 
-func TestValidateOutputRequiresExplicitAIEmailReplyPrompt(t *testing.T) {
+func TestValidateOutputAcceptsNaturalEmailReplyPrompt(t *testing.T) {
 	request := Request{
 		Purpose:            "task guidance",
 		IncludeReplyPrompt: true,
@@ -323,7 +323,7 @@ func TestValidateOutputRequiresExplicitAIEmailReplyPrompt(t *testing.T) {
 		H1:      GroundedText{Text: "Choose the next step", ReferenceIDs: []string{"task"}},
 		Intro:   GroundedText{Text: "There is a decision to make.", ReferenceIDs: []string{"task"}},
 		ReplyPrompt: &GroundedText{
-			Text:         "I’m Maya, your AI agent. Reply to this email with the update you want.",
+			Text:         "Have a progress update or a blocker? Reply to this email and I’ll help you update your strategy.",
 			ReferenceIDs: []string{"task"},
 		},
 	}
@@ -332,7 +332,24 @@ func TestValidateOutputRequiresExplicitAIEmailReplyPrompt(t *testing.T) {
 
 	output.ReplyPrompt.Text = "Tell me what you want updated."
 	err := validateOutput(request, output)
-	require.ErrorContains(t, err, `reply prompt must include "maya"`)
+	require.ErrorContains(t, err, `reply prompt must include "reply"`)
+}
+
+func TestLabeledFactCanBeSummarizedWithoutRepeatingItsHeading(t *testing.T) {
+	request := Request{Purpose: "strategy check-in", Facts: []Fact{{
+		ReferenceID: "key_result", Label: "Reduce page load time to under 2 seconds (P95)",
+		Text: "Not complete. Progress: 42 of 100.", ProtectedTokens: []string{"Not complete", "Progress: 42 of 100"}, Required: true,
+	}}}
+	output := Output{
+		Subject: GroundedText{Text: "Your strategy check-in", ReferenceIDs: []string{"key_result"}},
+		H1:      GroundedText{Text: "A quick progress check", ReferenceIDs: []string{"key_result"}},
+		Intro:   GroundedText{Text: "Your page speed goal needs an update.", ReferenceIDs: []string{"key_result"}},
+		Rows:    []Row{{ReferenceID: "key_result", Text: "Not complete yet. Progress: 42 of 100."}},
+	}
+	require.NoError(t, validateRequest(request))
+	require.NoError(t, validateOutput(request, output))
+	output.Rows[0].Text = "Not complete yet. Progress: 100 of 42."
+	require.Error(t, validateOutput(request, output), "summarization must not swap current and target values")
 }
 
 func TestValidateOutputRejectsSwappedProtectedActorAndStatusRoles(t *testing.T) {

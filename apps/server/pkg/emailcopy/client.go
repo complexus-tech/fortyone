@@ -17,7 +17,7 @@ import (
 const (
 	defaultBaseURL         = "https://api.openai.com/v1"
 	defaultModel           = "gpt-5.6-luna"
-	defaultTimeout         = 4 * time.Second
+	defaultTimeout         = 20 * time.Second
 	defaultMaxOutputTokens = 1600
 	maxResponseBytes       = 1 << 20
 )
@@ -103,7 +103,7 @@ func (c *Client) Generate(ctx context.Context, input Request) (Output, error) {
 			{Role: "developer", Content: []responsesContent{{Type: "input_text", Text: developerPrompt}}},
 			{Role: "user", Content: []responsesContent{{Type: "input_text", Text: marshalPrompt(input)}}},
 		},
-		Text:             responsesText{Format: responseFormat()},
+		Text:             responsesText{Format: responseFormat(input)},
 		SafetyIdentifier: safetyIdentifier(input),
 	}
 	if strings.HasPrefix(strings.ToLower(c.model), "gpt-5.6") {
@@ -160,12 +160,13 @@ Grounding rules:
 - Cite the supporting fact reference IDs for every grounded text field.
 - Required facts each need exactly one row with the same referenceId. Do not create rows for context-only facts. Put every entityToken, protectedToken, and numeric/date token from that fact in its row.
 - Outside rows, when you use a numeric/date token that appears inside an entityToken or protectedToken, include one full matching token exactly. Otherwise omit that number/date and write the useful implication instead.
+- If a fact has a label, the product renders it above the row. Do not repeat the label in the row text.
 - A row's ctaReferenceId must be empty or one of the supplied action reference IDs.
 - CTAs may reference only supplied actions. You write labels; the product resolves URLs.
 - Return plain text only: no HTML, Markdown, URLs, emoji, signatures, or claims that the message was written by AI.
 - Sender prose, feedback theme summary, and reply prompt must be null unless explicitly requested.
 - If a feedback theme summary is requested, synthesize recurring needs cautiously from the supplied feedback descriptions and cite every fact used. Do not overstate frequency or customer intent.
-- If a reply prompt is requested, identify Maya naturally as the recipient's AI agent and explicitly ask them to reply to the email. Ask a short, specific question that fits the email's facts and helps the recipient move the work forward. Invite them to say what changed, what is blocked, or what they want updated. Sound like a thoughtful colleague continuing the conversation. Never say "reply in natural language", mention commands or technical processing, or promise that an action has already been performed.
+- If a reply prompt is requested, include the exact phrase "Reply to this email" so the response channel is clear. Maya is already identified in the sender and footer; do not introduce yourself again or repeat "your AI agent". Invite one useful response, such as a progress update or a blocker, and offer to help. For example: "Have a progress update or a blocker? Reply to this email and I’ll help you update your strategy." Adapt the subject to the email's facts. Avoid the stock list "what changed, what is blocked, or what you want updated". Sound like a thoughtful colleague continuing the conversation. Never say "reply in natural language", mention commands or technical processing, or promise that an action has already been performed.
 - Subjects and headings should be useful and specific, not clickbait.
 
 Return only the strict JSON object required by the schema.`
@@ -245,13 +246,32 @@ func extractOutputText(data []byte) (string, error) {
 	return "", errors.New("email copy response did not contain output text")
 }
 
-func responseFormat() map[string]any {
+func responseFormat(input Request) map[string]any {
+	// Restrict references at generation time as well as validating afterward.
+	// Long strategy IDs are easy to transpose, which otherwise discards valid copy.
+	factIDs, rowIDs := make([]string, 0, len(input.Facts)), make([]string, 0, len(input.Facts))
+	for _, fact := range input.Facts {
+		factIDs = append(factIDs, fact.ReferenceID)
+		if fact.Required {
+			rowIDs = append(rowIDs, fact.ReferenceID)
+		}
+	}
+	actionIDs := make([]string, 0, len(input.Actions))
+	for _, action := range input.Actions {
+		actionIDs = append(actionIDs, action.ReferenceID)
+	}
+	stringEnum := func(values []string) map[string]any {
+		if len(values) == 0 {
+			values = []string{""}
+		}
+		return map[string]any{"type": "string", "enum": values}
+	}
 	groundedText := map[string]any{
 		"type":                 "object",
 		"additionalProperties": false,
 		"properties": map[string]any{
 			"text":         map[string]any{"type": "string"},
-			"referenceIds": map[string]any{"type": "array", "items": map[string]any{"type": "string"}},
+			"referenceIds": map[string]any{"type": "array", "items": stringEnum(factIDs)},
 		},
 		"required": []string{"text", "referenceIds"},
 	}
@@ -268,21 +288,21 @@ func responseFormat() map[string]any {
 				"h1":          groundedText,
 				"intro":       groundedText,
 				"senderProse": nullableGroundedText,
-				"rows": map[string]any{"type": "array", "items": map[string]any{
+				"rows": map[string]any{"type": "array", "maxItems": len(rowIDs), "items": map[string]any{
 					"type":                 "object",
 					"additionalProperties": false,
 					"properties": map[string]any{
-						"referenceId":    map[string]any{"type": "string"},
+						"referenceId":    stringEnum(rowIDs),
 						"text":           map[string]any{"type": "string"},
-						"ctaReferenceId": map[string]any{"type": "string"},
+						"ctaReferenceId": stringEnum(append([]string{""}, actionIDs...)),
 					},
 					"required": []string{"referenceId", "text", "ctaReferenceId"},
 				}},
-				"ctas": map[string]any{"type": "array", "items": map[string]any{
+				"ctas": map[string]any{"type": "array", "maxItems": len(actionIDs), "items": map[string]any{
 					"type":                 "object",
 					"additionalProperties": false,
 					"properties": map[string]any{
-						"referenceId": map[string]any{"type": "string"},
+						"referenceId": stringEnum(actionIDs),
 						"label":       map[string]any{"type": "string"},
 					},
 					"required": []string{"referenceId", "label"},

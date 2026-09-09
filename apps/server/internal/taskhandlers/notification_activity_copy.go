@@ -43,9 +43,10 @@ func notificationFactHighlights(values []string) []string {
 			"objective health is ", "objective status is ", "current value is ", "target value is ",
 			"last updated on ", "generated on ", "missing elements are ", "strategy foundation ",
 			"health is ", "status is ", "measurement is ", "ends on ", "including ", "has ", "in ",
+			"due ", "progress: ",
 		} {
-			if strings.HasPrefix(value, prefix) {
-				value = strings.TrimPrefix(value, prefix)
+			if strings.HasPrefix(strings.ToLower(value), prefix) {
+				value = value[len(prefix):]
 				break
 			}
 		}

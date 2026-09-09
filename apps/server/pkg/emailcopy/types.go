@@ -28,6 +28,8 @@ type Request struct {
 // categorical values whose meaning must not be paraphrased, such as status,
 // health, measurement units, or reporting periods.
 type Fact struct {
+	// Label is rendered separately by the caller; it need not be repeated in prose.
+	Label           string   `json:"label,omitempty"`
 	ReferenceID     string   `json:"referenceId"`
 	Text            string   `json:"text"`
 	EntityTokens    []string `json:"entityTokens"`

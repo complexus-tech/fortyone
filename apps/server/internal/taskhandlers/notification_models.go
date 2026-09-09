@@ -200,6 +200,7 @@ type notificationDigestCopyCTA struct {
 }
 
 type notificationDigestCopyInput struct {
+	IntroFactID         string
 	ActivityRows        map[string]notificationDigestCopyRow
 	Request             emailcopy.Request
 	Actions             map[string]string

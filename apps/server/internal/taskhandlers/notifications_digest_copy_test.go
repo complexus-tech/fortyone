@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -12,6 +13,81 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
+
+func strategyCheckInTestInput(t *testing.T) notificationDigestCopyInput {
+	t.Helper()
+	health, zero, one := "On Track", 0.0, 1.0
+	objectiveID := uuid.New()
+	weekly := &strategyWeeklyCheckInSnapshot{
+		StaleAfterDays: 7,
+		Counts:         strategyWeeklyCheckInCounts{StaleObjectives: 1, StaleKeyResults: 3, UniqueObjectives: 1},
+		Objectives: []strategyObjectiveSnapshot{{
+			ID: objectiveID, Name: "Launch the customer portal", Health: &health,
+			Reasons: []string{"stale"}, UpdatedAt: time.Date(2026, 8, 20, 0, 0, 0, 0, time.UTC),
+		}},
+	}
+	for _, name := range []string{"Complete the onboarding flow", "Reduce page load time to under 2 seconds (P95)", "Publish the help center"} {
+		weekly.KeyResults = append(weekly.KeyResults, strategyKeyResultSnapshot{
+			ID: uuid.New(), ObjectiveID: objectiveID, ObjectiveName: "Launch the customer portal",
+			Name: name, MeasurementType: "boolean", CurrentValue: &zero, TargetValue: &one,
+			ObjectiveHealth: &health, UpdatedAt: time.Date(2026, 8, 5, 0, 0, 0, 0, time.UTC),
+		})
+	}
+	message, err := json.Marshal(NotificationMessage{Strategy: &strategyNotificationSnapshot{
+		Version: 1, Kind: "weekly_check_in", WeeklyCheckIn: weekly,
+	}})
+	require.NoError(t, err)
+	input, err := buildNotificationDigestCopyInput(NotificationEmailDigestData{
+		RecipientID: uuid.New(), WorkspaceID: uuid.New(), WorkspaceName: "Product",
+		Items: []NotificationEmailDigestItem{{NotificationID: uuid.New(), EntityType: "strategy", Message: message}},
+	}, "https://product.fortyone.app")
+	require.NoError(t, err)
+	return input
+}
+
+func TestStrategyCheckInIsConciseInGeneratedAndFallbackCopy(t *testing.T) {
+	input := strategyCheckInTestInput(t)
+	require.False(t, input.Request.IncludeSenderProse)
+	require.True(t, input.Request.IncludeReplyPrompt)
+	require.Contains(t, input.Request.ProductVoice, "do not repeat objective or key-result names")
+	fallback := templateDigest(input.Fallback)
+	require.Len(t, fallback.Rows, 4)
+	require.Equal(t, 1, strings.Count(renderNotificationDigestPlainText(input.Fallback), "7 days"))
+	require.NotContains(t, renderNotificationDigestPlainText(input.Fallback), "recent means")
+	require.NotContains(t, input.Fallback.Intro, "I’m Maya")
+	generated := emailcopy.Output{
+		Subject:     emailcopy.GroundedText{Text: "Your strategy check-in"},
+		H1:          emailcopy.GroundedText{Text: "A quick progress check"},
+		Intro:       emailcopy.GroundedText{Text: "Your portal launch needs a progress update."},
+		ReplyPrompt: &emailcopy.GroundedText{Text: "Have an update or a blocker? Reply to this email and I’ll help you update your strategy."},
+	}
+	for _, fact := range input.Request.Facts {
+		if fact.Required {
+			generated.Rows = append(generated.Rows, emailcopy.Row{ReferenceID: fact.ReferenceID, Text: fact.Text})
+		}
+	}
+	copy, err := buildGeneratedNotificationDigestCopy(input, generated)
+	require.NoError(t, err)
+	require.Equal(t, "Your strategy check-in", copy.Heading)
+	for _, row := range copy.Rows {
+		require.Equal(t, 1, strings.Count(renderNotificationDigestPlainText(copy), row.Label))
+		require.Contains(t, renderNotificationDigestCopy(copy), row.Label)
+	}
+	for _, digest := range []mailer.Digest{fallback, templateDigest(copy)} {
+		for _, row := range digest.Rows {
+			require.NotContains(t, row.Text, row.Label)
+			require.Equal(t, "status", row.Icon)
+			require.NotContains(t, row.Text, "7 days")
+			require.Less(t, len([]rune(row.Text)), 180)
+		}
+		for _, row := range digest.Rows[1:] {
+			require.Contains(t, row.Text, "Not complete")
+			require.NotContains(t, row.Text, "boolean")
+			require.NotContains(t, row.Text, "On Track")
+		}
+	}
+	require.Equal(t, "priority", strategyObjectiveIcon(strategyObjectiveSnapshot{Reasons: []string{"at_risk"}}))
+}
 
 func TestBuildNotificationDigestCopyInputSummarizesOmittedMixedDigestItems(t *testing.T) {
 	strategyNotificationID := uuid.New()

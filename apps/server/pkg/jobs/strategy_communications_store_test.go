@@ -143,7 +143,7 @@ func TestStrategyWeeklyCheckInsAdvancePastRecipientsWithoutSignals(t *testing.T)
 	teamID := uuid.MustParse("40000000-0000-0000-0000-000000000001")
 	firstRecipient := objectivesdomain.StrategyCommunicationRecipient{UserID: firstUserID, WorkspaceID: workspaceID, Timezone: "UTC"}
 	secondRecipient := objectivesdomain.StrategyCommunicationRecipient{UserID: secondUserID, WorkspaceID: workspaceID, Timezone: "UTC"}
-	now := time.Date(2026, time.August, 26, 9, 0, 0, 0, time.UTC)
+	now := time.Date(2026, time.August, 5, 9, 0, 0, 0, time.UTC)
 	stub := &strategyCommunicationsStoreStub{
 		weeklyPages: []objectivesdomain.StrategyCommunicationRecipientPage{
 			{Recipients: []objectivesdomain.StrategyCommunicationRecipient{firstRecipient}, HasMore: true},
@@ -163,7 +163,7 @@ func TestStrategyWeeklyCheckInsAdvancePastRecipientsWithoutSignals(t *testing.T)
 	}
 	notifier := &strategyNotificationCreatorStub{}
 
-	err := processStrategyWeeklyCheckIns(context.Background(), stub, notifier, uuid.New(), now)
+	err := processStrategyCheckIns(context.Background(), stub, notifier, uuid.New(), now)
 
 	require.NoError(t, err)
 	require.Len(t, stub.weeklyCursors, 2)

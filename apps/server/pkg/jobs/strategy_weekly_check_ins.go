@@ -12,10 +12,10 @@ import (
 	"github.com/google/uuid"
 )
 
-func processStrategyWeeklyCheckIns(ctx context.Context, store StrategyCommunicationsStore, notifier StrategyNotificationCreator, systemUserID uuid.UUID, now time.Time) error {
+func processStrategyCheckIns(ctx context.Context, store StrategyCommunicationsStore, notifier StrategyNotificationCreator, systemUserID uuid.UUID, now time.Time) error {
 	staleBefore := now.UTC().Add(-time.Duration(strategyStaleAfterDays) * 24 * time.Hour)
 	return processStrategyRecipientPages(ctx, store.ListStrategyWeeklyCommunicationRecipients, func(recipient objectivesdomain.StrategyCommunicationRecipient) error {
-		localNow, due := strategyWeeklyLocalTime(now, recipient.Timezone)
+		localNow, due := strategyCheckInLocalTime(now, recipient.Timezone)
 		if !due {
 			return nil
 		}
@@ -30,25 +30,26 @@ func processStrategyWeeklyCheckIns(ctx context.Context, store StrategyCommunicat
 				continue
 			}
 
-			isoYear, week := localNow.ISOWeek()
 			summary := strategyCheckInSummary(checkIn)
 			objectives, keyResults, omittedDetails := boundedStrategyCheckInDetails(checkIn, strategyWeeklyDetailLimit)
 			notification := notifications.CoreNewNotification{
-				DedupeKey:   strategyWeeklyCheckInDedupeKey(checkIn.WorkspaceID, checkIn.UserID, isoYear, week),
+				DedupeKey:   strategyCheckInDedupeKey(checkIn.WorkspaceID, checkIn.UserID, localNow),
 				RecipientID: checkIn.UserID,
 				WorkspaceID: checkIn.WorkspaceID,
 				Type:        "strategy_update",
 				EntityType:  "strategy",
 				EntityID:    checkIn.WorkspaceID,
 				ActorID:     systemUserID,
-				Title:       "Your weekly strategy check-in",
+				Title:       "Your monthly strategy check-in",
 				Message: notifications.NotificationMessage{
 					Template: "A quick review will keep execution connected to strategy: {summary}.",
 					Variables: map[string]notifications.Variable{
 						"summary": {Value: summary, Type: "value"},
 					},
 					Strategy: &notifications.StrategyNotificationSnapshot{
-						Version:     strategySnapshotVersion,
+						Version: strategySnapshotVersion,
+						// Retain the persisted snapshot kind for queued emails and replies;
+						// cadence is controlled by strategyCheckInLocalTime.
 						Kind:        notifications.StrategyNotificationKindWeeklyCheckIn,
 						GeneratedAt: now.UTC(),
 						WeeklyCheckIn: &notifications.StrategyWeeklyCheckInSnapshot{
@@ -75,13 +76,14 @@ func processStrategyWeeklyCheckIns(ctx context.Context, store StrategyCommunicat
 	})
 }
 
-func strategyWeeklyLocalTime(now time.Time, timezone string) (time.Time, bool) {
+func strategyCheckInLocalTime(now time.Time, timezone string) (time.Time, bool) {
 	localNow := now.UTC().In(strategyLocation(timezone))
-	return localNow, localNow.Hour() == strategyCommunicationHour && localNow.Weekday() == time.Wednesday
+	// First Wednesday of each month, at 09:00 in the recipient's timezone.
+	return localNow, localNow.Hour() == strategyCommunicationHour && localNow.Weekday() == time.Wednesday && localNow.Day() <= 7
 }
 
-func strategyWeeklyCheckInDedupeKey(workspaceID, userID uuid.UUID, isoYear, isoWeek int) string {
-	return fmt.Sprintf("strategy:check-in:%s:%s:%d-%02d", workspaceID, userID, isoYear, isoWeek)
+func strategyCheckInDedupeKey(workspaceID, userID uuid.UUID, localNow time.Time) string {
+	return fmt.Sprintf("strategy:check-in:monthly:%s:%s:%s", workspaceID, userID, localNow.Format("2006-01"))
 }
 
 type strategyWeeklyTeamCountAccumulator struct {

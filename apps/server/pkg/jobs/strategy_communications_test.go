@@ -45,25 +45,36 @@ func TestCalendarDaysBetweenIgnoresDaylightSavingTransitions(t *testing.T) {
 	require.Equal(t, 2, calendarDaysBetween(beforeTransition, afterTransition))
 }
 
-func TestStrategyWeeklyCheckInDedupeKeyUsesISOWeekYearAcrossCalendarBoundary(t *testing.T) {
-	workspaceID := uuid.MustParse("10000000-0000-0000-0000-000000000001")
-	userID := uuid.MustParse("20000000-0000-0000-0000-000000000001")
-	december31 := time.Date(2025, time.December, 31, 9, 0, 0, 0, time.UTC)
-	january1 := time.Date(2026, time.January, 1, 9, 0, 0, 0, time.UTC)
+func TestStrategyCheckInDedupeKeyUsesRecipientCalendarMonth(t *testing.T) {
+	workspaceID, userID := uuid.New(), uuid.New()
+	first := time.Date(2026, time.September, 2, 9, 0, 0, 0, time.UTC)
+	later := first.AddDate(0, 0, 14)
+	require.Equal(t, strategyCheckInDedupeKey(workspaceID, userID, first), strategyCheckInDedupeKey(workspaceID, userID, later))
+	require.NotEqual(t, strategyCheckInDedupeKey(workspaceID, userID, first), strategyCheckInDedupeKey(workspaceID, userID, first.AddDate(0, 1, 0)))
+	require.Contains(t, strategyCheckInDedupeKey(workspaceID, userID, first), ":monthly:")
+	require.Contains(t, strategyCheckInDedupeKey(workspaceID, userID, first), ":2026-09")
+}
 
-	decemberISOYear, decemberISOWeek := december31.ISOWeek()
-	januaryISOYear, januaryISOWeek := january1.ISOWeek()
-
-	require.Equal(t, 2026, decemberISOYear)
-	require.Equal(t, 1, decemberISOWeek)
-	require.Equal(t, decemberISOYear, januaryISOYear)
-	require.Equal(t, decemberISOWeek, januaryISOWeek)
-	require.Equal(
-		t,
-		strategyWeeklyCheckInDedupeKey(workspaceID, userID, decemberISOYear, decemberISOWeek),
-		strategyWeeklyCheckInDedupeKey(workspaceID, userID, januaryISOYear, januaryISOWeek),
-	)
-	require.Contains(t, strategyWeeklyCheckInDedupeKey(workspaceID, userID, decemberISOYear, decemberISOWeek), ":2026-01")
+func TestStrategyCheckInRunsOnlyOnFirstWednesdayInRecipientTimezone(t *testing.T) {
+	for _, tc := range []struct {
+		at, zone string
+		due      bool
+	}{
+		{"2026-09-02T07:00:00Z", "Africa/Harare", true},
+		{"2026-09-09T07:00:00Z", "Africa/Harare", false},
+		{"2026-09-16T07:00:00Z", "Africa/Harare", false},
+		{"2026-09-02T06:00:00Z", "Africa/Harare", false},
+		{"2026-10-07T07:00:00Z", "Africa/Harare", true},
+		{"2026-09-01T21:00:00Z", "Pacific/Auckland", true},
+		{"2027-01-06T09:00:00Z", "UTC", true},
+	} {
+		t.Run(tc.at+tc.zone, func(t *testing.T) {
+			now, err := time.Parse(time.RFC3339, tc.at)
+			require.NoError(t, err)
+			_, due := strategyCheckInLocalTime(now, tc.zone)
+			require.Equal(t, tc.due, due)
+		})
+	}
 }
 
 func TestMissingStrategyElements(t *testing.T) {
@@ -240,22 +251,22 @@ func TestBuildStrategyCheckInsDeduplicatesAndPreservesSignalCounts(t *testing.T)
 	)
 }
 
-func TestStrategyWeeklyLocalTimeFallsBackToUTCForInvalidTimezone(t *testing.T) {
-	now := time.Date(2026, time.August, 26, 9, 0, 0, 0, time.UTC)
+func TestStrategyCheckInLocalTimeFallsBackToUTCForInvalidTimezone(t *testing.T) {
+	now := time.Date(2026, time.August, 5, 9, 0, 0, 0, time.UTC)
 
-	localNow, due := strategyWeeklyLocalTime(now, "not/a-timezone")
+	localNow, due := strategyCheckInLocalTime(now, "not/a-timezone")
 
 	require.True(t, due)
 	require.Equal(t, time.UTC, localNow.Location())
 	require.Equal(t, now, localNow)
 }
 
-func TestStrategyWeeklyLocalTimeTracksDaylightSavingBoundary(t *testing.T) {
+func TestStrategyCheckInLocalTimeTracksDaylightSavingBoundary(t *testing.T) {
 	beforeDST := time.Date(2026, time.March, 4, 14, 0, 0, 0, time.UTC)
-	afterDST := time.Date(2026, time.March, 11, 13, 0, 0, 0, time.UTC)
+	afterDST := time.Date(2026, time.April, 1, 13, 0, 0, 0, time.UTC)
 
-	beforeLocal, beforeDue := strategyWeeklyLocalTime(beforeDST, "America/New_York")
-	afterLocal, afterDue := strategyWeeklyLocalTime(afterDST, "America/New_York")
+	beforeLocal, beforeDue := strategyCheckInLocalTime(beforeDST, "America/New_York")
+	afterLocal, afterDue := strategyCheckInLocalTime(afterDST, "America/New_York")
 
 	require.True(t, beforeDue)
 	require.True(t, afterDue)

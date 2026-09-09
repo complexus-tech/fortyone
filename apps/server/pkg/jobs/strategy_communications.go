@@ -130,7 +130,7 @@ type strategyMonthlySummary struct {
 }
 
 // ProcessStrategyCommunications creates due local-time planning reminders,
-// weekly owner check-ins, and monthly leadership summaries.
+// monthly owner check-ins, and monthly leadership summaries.
 func ProcessStrategyCommunications(
 	ctx context.Context,
 	store StrategyCommunicationsStore,
@@ -173,8 +173,8 @@ func processStrategyCommunicationsAt(
 	if err := processStrategyPlanningReminders(ctx, store, notifier, systemUserID, now); err != nil {
 		processingErrors = append(processingErrors, fmt.Errorf("planning reminders: %w", err))
 	}
-	if err := processStrategyWeeklyCheckIns(ctx, store, notifier, systemUserID, now); err != nil {
-		processingErrors = append(processingErrors, fmt.Errorf("weekly check-ins: %w", err))
+	if err := processStrategyCheckIns(ctx, store, notifier, systemUserID, now); err != nil {
+		processingErrors = append(processingErrors, fmt.Errorf("monthly check-ins: %w", err))
 	}
 	if err := processStrategyMonthlySummaries(ctx, store, notifier, systemUserID, now); err != nil {
 		processingErrors = append(processingErrors, fmt.Errorf("monthly summaries: %w", err))
