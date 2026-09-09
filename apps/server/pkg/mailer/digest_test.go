@@ -19,7 +19,7 @@ func TestAvatarColorsMatchFrontendUnicodeFixtures(t *testing.T) {
 func TestAvatarMarkupEscapesTextAndUsesPhotoOrInitials(t *testing.T) {
 	actor := EmailActor{Name: "Sam Taylor", AvatarURL: `https://example.com/avatar.png?a=1&b=2`}
 	rendered := string(actorText("Sam changed the start date <script>alert(1)</script>.", actor))
-	for _, expected := range []string{`width="20" height="20"`, `font-size:8px`, `width:4px`, `vertical-align:text-bottom`, `alt="ST"`, `a=1&amp;b=2`, `&lt;script&gt;`} {
+	for _, expected := range []string{`width="20" height="20"`, `font-size:8px`, `width:4px`, `vertical-align:middle`, `alt="ST"`, `a=1&amp;b=2`, `&lt;script&gt;`} {
 		assertContains(t, rendered, expected)
 	}
 	assertNotContains(t, rendered, "<script>")
@@ -46,7 +46,7 @@ func TestConsolidatedEmailRenderingAndFooter(t *testing.T) {
 	section.Rows = append(section.Rows, DigestRow{Text: "View 5 more updates →", URL: base + "/notifications", More: true})
 	data := map[string]any{"NotificationTitle": "10 updates to review in Product", "NotificationDigest": section, "WorkspaceURL": base, "NotificationCTAURL": base + "/notifications", "NotificationCTALabel": "View notifications"}
 	rendered := renderTemplateForTest(t, "notifications/notification", data)
-	for _, expected := range []string{"Manage notifications", base + "/settings/account/notifications", "View 5 more updates", "icons/calendar.png", `align="left"`, `align="right"`, `vertical-align:text-bottom`, `font-size:8px`, "A product of Complexus"} {
+	for _, expected := range []string{"Manage notifications", base + "/settings/account/notifications", "View 5 more updates", "icons/calendar.png", `align="left"`, `align="right"`, `vertical-align:middle`, `font-size:8px`, "A product of Complexus"} {
 		assertContains(t, rendered, expected)
 	}
 	if strings.Index(rendered, "Manage notifications") > strings.Index(rendered, "A product of Complexus") {
@@ -95,18 +95,18 @@ func TestActivityEmphasisEscapesValuesAndPreservesActor(t *testing.T) {
 		assertContains(t, rendered, want)
 	}
 	assertNotContains(t, rendered, "<script>")
-	assertContains(t, string(EmphasizeValues("8 Sep 2026 at 14:40–15:40 (UTC+02:00)", []string{"8 Sep", "8 Sep 2026 at 14:40–15:40 (UTC+02:00)"})), "<strong>8 Sep 2026 at 14:40–15:40 (UTC+02:00)</strong>")
+	assertContains(t, string(EmphasizeValues("8 Sep 2026 at 14:40–15:40", []string{"8 Sep", "8 Sep 2026 at 14:40–15:40"})), "<strong>8 Sep 2026 at 14:40–15:40</strong>")
 	assertContains(t, string(EmphasizeValues("Résolu Résolution", []string{"Résolu"})), "<strong>Résolu</strong> Résolution")
 }
 
 func TestNotificationRendersChangeAndReasonSeparately(t *testing.T) {
 	rendered := renderTemplateForTest(t, "notifications/notification", map[string]any{
 		"NotificationTitle": "Task updated", "NotificationDigest": Digest{Rows: []DigestRow{{
-			Label: "Scraping Segments Updates", Text: "Maya moved this task to 8 Sep 2026 at 14:40–15:40 (UTC+02:00)",
-			Detail: "The assignee's availability changed. <img src=x>", Highlights: []string{"8 Sep 2026 at 14:40–15:40 (UTC+02:00)"},
+			Label: "Scraping Segments Updates", Text: "Maya moved this task to 8 Sep 2026 at 14:40–15:40",
+			Detail: "Your availability changed. <img src=x>", Highlights: []string{"8 Sep 2026 at 14:40–15:40"},
 		}}},
 	})
-	assertContains(t, rendered, "<strong>8 Sep 2026 at 14:40–15:40 (UTC+02:00)</strong></p><p")
+	assertContains(t, rendered, "<strong>8 Sep 2026 at 14:40–15:40</strong></p><p")
 	assertContains(t, rendered, "&lt;img src=x&gt;")
 	assertNotContains(t, rendered, "<img src=x>")
 }

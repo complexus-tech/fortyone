@@ -63,7 +63,7 @@ func (r *Rules) handleNewAssignment(ctx context.Context, payload events.StoryUpd
 				"actor": {Value: actorName, Type: "actor"},
 			},
 		}
-		if reason := normalizedMayaReason(payload); reason != "" {
+		if reason := r.mayaReasonForRecipient(ctx, payload, *newAssigneeID, *newAssigneeID); reason != "" {
 			message = NotificationMessage{
 				Template: "Maya assigned you this task: {reason}",
 				Variables: map[string]Variable{
@@ -107,7 +107,7 @@ func (r *Rules) handleReassignment(ctx context.Context, payload events.StoryUpda
 				"assignee": {Value: newAssigneeName, Type: "assignee"},
 			},
 		}
-		if reason := normalizedMayaReason(payload); reason != "" {
+		if reason := r.mayaReasonForRecipient(ctx, payload, *oldAssigneeID, *newAssigneeID); reason != "" {
 			message = NotificationMessage{
 				Template: "Maya reassigned this task to {assignee}: {reason}",
 				Variables: map[string]Variable{
@@ -128,7 +128,7 @@ func (r *Rules) handleReassignment(ctx context.Context, payload events.StoryUpda
 				"actor": {Value: actorName, Type: "actor"},
 			},
 		}
-		if reason := normalizedMayaReason(payload); reason != "" {
+		if reason := r.mayaReasonForRecipient(ctx, payload, *newAssigneeID, *newAssigneeID); reason != "" {
 			message = NotificationMessage{
 				Template: "Maya assigned you this task: {reason}",
 				Variables: map[string]Variable{

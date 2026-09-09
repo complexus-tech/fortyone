@@ -34,7 +34,8 @@ func (r *Rules) handleScheduleTransition(
 	}
 
 	timezone := r.getUserTimezone(ctx, recipientID, transition.Timezone)
-	message := scheduleTransitionMessage(payload, timezone)
+	reason := r.mayaReasonForRecipient(ctx, payload, recipientID, transition.UserID)
+	message := scheduleTransitionMessage(payload, timezone, reason)
 	return []CoreNewNotification{r.createNotification(
 		recipientID,
 		payload,
@@ -60,7 +61,8 @@ func (r *Rules) RecordScheduleTransitionActivity(
 
 	timezone := r.getUserTimezone(ctx, transition.UserID, transition.Timezone)
 	field, currentValue, oldValue, newValue := scheduleTransitionActivityValues(transition, timezone)
-	reason := normalizedMayaReason(payload)
+	// Activity is shared, so name the calendar owner instead of saying "your".
+	reason := r.mayaReasonForRecipient(ctx, payload, uuid.Nil, transition.UserID)
 	var activityReason *string
 	if reason != "" {
 		activityReason = &reason
@@ -145,9 +147,8 @@ func scheduleShiftMinutes(transition *events.StoryScheduleTransition) int {
 	return minutes
 }
 
-func scheduleTransitionMessage(payload events.StoryUpdatedPayload, timezone string) NotificationMessage {
+func scheduleTransitionMessage(payload events.StoryUpdatedPayload, timezone, reason string) NotificationMessage {
 	transition := payload.Schedule
-	reason := normalizedMayaReason(payload)
 	variables := map[string]Variable{}
 	if reason != "" {
 		variables["reason"] = Variable{Value: safeNotificationText(reason), Type: "value"}
@@ -239,11 +240,46 @@ func formatScheduleTransitionTime(transition *events.StoryScheduleTransition, ti
 	if moved && transition.EndAt != nil && transition.EndAt.After(*transition.StartAt) {
 		end := transition.EndAt.In(value.Location())
 		if value.Format("2006-01-02 -07:00") == end.Format("2006-01-02 -07:00") {
-			return value.Format("2 Jan 2006 at 15:04") + "–" + end.Format("15:04 (UTC-07:00)")
+			return value.Format("2 Jan 2006 at 15:04") + "–" + end.Format("15:04")
 		}
-		return value.Format("2 Jan 2006 at 15:04 (UTC-07:00)") + " – " + end.Format("2 Jan 2006 at 15:04 (UTC-07:00)")
+		return value.Format("2 Jan 2006 at 15:04") + " – " + end.Format("2 Jan 2006 at 15:04")
 	}
-	return value.Format("2 Jan 2006 at 15:04 (UTC-07:00)")
+	return value.Format("2 Jan 2006 at 15:04")
+}
+
+// Personalize the known availability wording using the affected assignee's
+// identity. Specific planner explanations remain intact, including references
+// to other people or events; they must not be guessed from the recipient.
+func (r *Rules) mayaReasonForRecipient(ctx context.Context, payload events.StoryUpdatedPayload, recipientID, assigneeID uuid.UUID) string {
+	reason := normalizedMayaReason(payload)
+	if !strings.Contains(strings.ToLower(reason), "the assignee's availability") || assigneeID == uuid.Nil {
+		return reason
+	}
+	possessive, sentencePossessive := "your", "Your"
+	if recipientID != assigneeID {
+		if r.users == nil {
+			return reason
+		}
+		user, err := r.users.GetUser(ctx, assigneeID)
+		if err != nil {
+			return reason
+		}
+		name := strings.TrimSpace(user.FullName)
+		if name == "" {
+			name = strings.TrimSpace(user.Username)
+		}
+		if name == "" {
+			return reason
+		}
+		possessive, sentencePossessive = name+"'s", name+"'s"
+	}
+	if reason == "Maya scheduled this story around the assignee's availability." {
+		return "This time fits " + possessive + " availability."
+	}
+	return strings.NewReplacer(
+		"The assignee's availability", sentencePossessive+" availability",
+		"the assignee's availability", possessive+" availability",
+	).Replace(reason)
 }
 
 func normalizedMayaReason(payload events.StoryUpdatedPayload) string {

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
+	usersdomain "github.com/complexus-tech/projects-api/internal/modules/users/domain"
 	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
@@ -118,7 +119,7 @@ func TestScheduleTransitionNotificationAndActivityPreserveReason(t *testing.T) {
 	require.Len(t, notifications, 1)
 	require.Equal(t, assigneeID, notifications[0].RecipientID, "calendar movement must notify only the affected calendar owner")
 	require.Equal(t, "{actor} moved this task to {scheduled_for}: {reason}", notifications[0].Message.Template)
-	require.Equal(t, "18 Aug 2026 at 09:30 (UTC+02:00)", notifications[0].Message.Variables["scheduled_for"].Value)
+	require.Equal(t, "18 Aug 2026 at 09:30", notifications[0].Message.Variables["scheduled_for"].Value)
 	require.Equal(t, payload.Reason, notifications[0].Message.Variables["reason"].Value)
 
 	eventTimestamp := time.Date(2026, time.August, 18, 7, 0, 0, 0, time.UTC)
@@ -127,7 +128,7 @@ func TestScheduleTransitionNotificationAndActivityPreserveReason(t *testing.T) {
 	activity := storyService.activities[0]
 	require.NotEqual(t, uuid.Nil, activity.ID)
 	require.Equal(t, "auto_scheduling_time", activity.Field)
-	require.Equal(t, "18 Aug 2026 at 09:30 (UTC+02:00)", activity.CurrentValue)
+	require.Equal(t, "18 Aug 2026 at 09:30", activity.CurrentValue)
 	require.NotNil(t, activity.Reason)
 	require.Equal(t, payload.Reason, *activity.Reason)
 }
@@ -188,7 +189,7 @@ func TestFirstScheduleActivityShowsReservedTimeInsteadOfInternalState(t *testing
 	}, "Africa/Harare")
 
 	require.Equal(t, "auto_scheduling_time", field)
-	require.Equal(t, "18 Aug 2026 at 11:00 (UTC+02:00)", currentValue)
+	require.Equal(t, "18 Aug 2026 at 11:00", currentValue)
 	require.Nil(t, oldValue)
 	require.Equal(t, &start, newValue)
 }
@@ -221,21 +222,110 @@ func TestScheduleTransitionDisplayUsesUserTimezone(t *testing.T) {
 	field, currentValue, _, _ := scheduleTransitionActivityValues(transition, "Africa/Harare")
 
 	require.Equal(t, "auto_scheduling_time", field)
-	require.Equal(t, "20 Aug 2026 at 09:45 (UTC+02:00)", currentValue)
+	require.Equal(t, "20 Aug 2026 at 09:45", currentValue)
 }
 
 func timePointer(value time.Time) *time.Time {
 	return &value
 }
 
-func TestScheduleMoveDisplaysTheReservedSlotAndTimezone(t *testing.T) {
+func TestScheduleMoveDisplaysTheReservedSlotInLocalTime(t *testing.T) {
 	start := time.Date(2026, 9, 8, 12, 40, 0, 0, time.UTC)
 	end := start.Add(time.Hour)
 	transition := &events.StoryScheduleTransition{Kind: events.StoryScheduleTransitionMoved, StartAt: &start, EndAt: &end}
-	require.Equal(t, "8 Sep 2026 at 14:40–15:40 (UTC+02:00)", formatScheduleTransitionTime(transition, "Africa/Harare"))
-	require.Equal(t, "8 Sep 2026 at 12:40–13:40 (UTC+00:00)", formatScheduleTransitionTime(transition, "invalid"))
+	require.Equal(t, "8 Sep 2026 at 14:40–15:40", formatScheduleTransitionTime(transition, "Africa/Harare"))
+	require.Equal(t, "8 Sep 2026 at 12:40–13:40", formatScheduleTransitionTime(transition, "invalid"))
 	end = start.Add(24 * time.Hour)
-	require.Equal(t, "8 Sep 2026 at 14:40 (UTC+02:00) – 9 Sep 2026 at 14:40 (UTC+02:00)", formatScheduleTransitionTime(transition, "Africa/Harare"))
+	require.Equal(t, "8 Sep 2026 at 14:40 – 9 Sep 2026 at 14:40", formatScheduleTransitionTime(transition, "Africa/Harare"))
 	transition.Kind = events.StoryScheduleTransitionFirstSchedule
-	require.Equal(t, "8 Sep 2026 at 14:40 (UTC+02:00)", formatScheduleTransitionTime(transition, "Africa/Harare"), "initial bounds may span separate work blocks")
+	require.Equal(t, "8 Sep 2026 at 14:40", formatScheduleTransitionTime(transition, "Africa/Harare"), "initial bounds may span separate work blocks")
+}
+
+type scheduleRulesUsers map[uuid.UUID]usersdomain.User
+
+func (s scheduleRulesUsers) GetUser(_ context.Context, id uuid.UUID) (usersdomain.User, error) {
+	if user, ok := s[id]; ok {
+		return user, nil
+	}
+	return usersdomain.User{}, usersdomain.ErrNotFound
+}
+
+func TestScheduleNotificationUsesRecipientProfileAndPersonalizesAvailability(t *testing.T) {
+	t.Parallel()
+
+	assigneeID := uuid.New()
+	actorID := uuid.New()
+	start := time.Date(2026, 9, 9, 0, 30, 0, 0, time.UTC)
+	end := start.Add(40 * time.Minute)
+	for _, test := range []struct {
+		timezone string
+		want     string
+	}{
+		{"Africa/Harare", "9 Sep 2026 at 02:30–03:10"},
+		{"America/New_York", "8 Sep 2026 at 20:30–21:10"},
+		{"Asia/Kolkata", "9 Sep 2026 at 06:00–06:40"},
+	} {
+		t.Run(test.timezone, func(t *testing.T) {
+			storyService := &scheduleRulesStories{}
+			rules := NewRules(nil, storyService, scheduleRulesUsers{
+				assigneeID: {FullName: "Sam Taylor", Timezone: test.timezone},
+			}, nil)
+			payload := events.StoryUpdatedPayload{
+				StoryID: uuid.New(), WorkspaceID: uuid.New(), AssigneeID: &assigneeID,
+				Source: events.StoryUpdateSourceMaya,
+				Reason: "The assignee's availability or the task's scheduling constraints changed.",
+				Schedule: &events.StoryScheduleTransition{
+					UserID: assigneeID, Kind: events.StoryScheduleTransitionDayChanged,
+					State: events.StoryScheduleStateScheduled, StartAt: &start, EndAt: &end,
+					Timezone: "Pacific/Auckland",
+				},
+			}
+			notifications := rules.handleScheduleTransition(context.Background(), payload, actorID, nil)
+			require.Len(t, notifications, 1)
+			require.Equal(t, test.want, notifications[0].Message.Variables["scheduled_for"].Value)
+			require.Equal(t, "Your availability or the task's scheduling constraints changed.", notifications[0].Message.Variables["reason"].Value)
+			require.NoError(t, rules.RecordScheduleTransitionActivity(context.Background(), payload, actorID, start))
+			require.Len(t, storyService.activities, 1)
+			require.Equal(t, "Sam Taylor's availability or the task's scheduling constraints changed.", *storyService.activities[0].Reason)
+		})
+	}
+}
+
+func TestMayaAvailabilityReasonUsesTheNewAssigneeForEachRecipient(t *testing.T) {
+	t.Parallel()
+
+	oldAssigneeID, newAssigneeID := uuid.New(), uuid.New()
+	rules := NewRules(nil, nil, scheduleRulesUsers{
+		oldAssigneeID: {FullName: "Alex Lee"},
+		newAssigneeID: {FullName: "Sam Taylor"},
+	}, nil)
+	payload := events.StoryUpdatedPayload{
+		StoryID: uuid.New(), WorkspaceID: uuid.New(), Source: events.StoryUpdateSourceMaya,
+		AssigneeID: &oldAssigneeID, Updates: map[string]any{"assignee_id": newAssigneeID},
+		Reason: "This task fits the assignee's availability.",
+	}
+	notifications := rules.handleReassignment(context.Background(), payload, uuid.New())
+	require.Len(t, notifications, 2)
+	require.Equal(t, oldAssigneeID, notifications[0].RecipientID)
+	require.Equal(t, "This task fits Sam Taylor's availability.", notifications[0].Message.Variables["reason"].Value)
+	require.Equal(t, newAssigneeID, notifications[1].RecipientID)
+	require.Equal(t, "This task fits your availability.", notifications[1].Message.Variables["reason"].Value)
+
+	payload.AssigneeID = nil
+	notifications = rules.handleNewAssignment(context.Background(), payload, uuid.New())
+	require.Len(t, notifications, 1)
+	require.Equal(t, "This task fits your availability.", notifications[0].Message.Variables["reason"].Value)
+}
+
+func TestMayaInitialScheduleReasonAndUnavailableNames(t *testing.T) {
+	t.Parallel()
+
+	assigneeID := uuid.New()
+	payload := events.StoryUpdatedPayload{Source: events.StoryUpdateSourceMaya, Reason: "Maya scheduled this story around the assignee's availability."}
+	rules := NewRules(nil, nil, scheduleRulesUsers{assigneeID: {Username: "sam"}}, nil)
+	require.Equal(t, "This time fits your availability.", rules.mayaReasonForRecipient(context.Background(), payload, assigneeID, assigneeID))
+	require.Equal(t, "This time fits sam's availability.", rules.mayaReasonForRecipient(context.Background(), payload, uuid.Nil, assigneeID))
+	// Never attribute availability to the reader when the owner is unknown.
+	require.Equal(t, payload.Reason, rules.mayaReasonForRecipient(context.Background(), payload, uuid.New(), uuid.New()))
+	require.Equal(t, payload.Reason, rules.mayaReasonForRecipient(context.Background(), payload, uuid.Nil, uuid.Nil))
 }
