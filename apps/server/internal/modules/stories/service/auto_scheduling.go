@@ -395,7 +395,6 @@ func (s *Service) UpdateAutomationStateIfUnchanged(
 		}
 		outbox, err := buildScheduleTransitionOutboxInput(
 			event,
-			expectedUpdatedAt,
 			status,
 			reason,
 			locked,

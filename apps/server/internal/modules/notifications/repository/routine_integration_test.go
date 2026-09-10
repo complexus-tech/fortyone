@@ -70,3 +70,45 @@ func TestRoutineEmailClaimsSerializeAndFenceDeliveryAttempts(t *testing.T) {
 	completion.ID = reclaimed
 	require.NoError(t, f.repo.CompleteRoutine(ctx, completion))
 }
+
+func TestSentNotificationsStayOutOfLaterDigests(t *testing.T) {
+	ctx := t.Context()
+	f := newNotificationIntegrationFixture(t, ctx)
+	scope := notifications.DeliveryScope{RecipientID: f.recipientA, WorkspaceID: f.workspaceA}
+	now := time.Now().UTC()
+	var inputs []notifications.NewNotification
+	var ids []uuid.UUID
+	for range 4 {
+		input := f.storyNotification(f.recipientA, notificationDedupeKey("digest-update"))
+		item, inserted, err := f.repo.Create(ctx, input)
+		require.NoError(t, err)
+		require.True(t, inserted)
+		inputs = append(inputs, input)
+		ids = append(ids, item.ID)
+	}
+	claim, err := f.repo.ClaimRoutine(ctx, notifications.RoutineClaim{
+		RecipientID: scope.RecipientID, WorkspaceID: scope.WorkspaceID, Key: "activity:first",
+		Kind: "activity", LocalDate: now, Now: now,
+	})
+	require.NoError(t, err)
+	require.NoError(t, f.repo.CompleteRoutine(ctx, notifications.RoutineCompletion{
+		ID: claim, Scope: scope, NotificationIDs: ids, Sent: true, Now: now,
+	}))
+	for hour := 1; hour <= 3; hour++ {
+		for _, input := range inputs {
+			_, inserted, err := f.repo.Create(ctx, input)
+			require.NoError(t, err)
+			require.False(t, inserted)
+		}
+		digest, err := f.repo.ListEmailDigest(ctx, scope)
+		require.NoError(t, err)
+		require.Nil(t, digest, "later queue runs must remain empty even while sent notifications are unread")
+	}
+	item, _, err := f.repo.Create(ctx, f.storyNotification(f.recipientA, notificationDedupeKey("new-update")))
+	require.NoError(t, err)
+	digest, err := f.repo.ListEmailDigest(ctx, scope)
+	require.NoError(t, err)
+	require.NotNil(t, digest)
+	require.Len(t, digest.Items, 1, "the next digest must contain only new information")
+	require.Equal(t, item.ID, digest.Items[0].NotificationID)
+}

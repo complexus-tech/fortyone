@@ -123,6 +123,13 @@ func selectMeaningfulScheduleChange(
 	selectedFound := false
 	selectedDayChanged := false
 	consider := func(previous ScheduleBlock, segment ScheduleSegmentInput) {
+		// Segment indexes can change when earlier work is removed or split. A
+		// slot that already existed has not moved, even if its index is new.
+		for _, existing := range previousBlocks {
+			if existing.StartAt.Equal(segment.StartAt) && existing.EndAt.Equal(segment.EndAt) {
+				return
+			}
+		}
 		previousLocalDate := previous.StartAt.In(location).Format(time.DateOnly)
 		localDateValue := segment.StartAt.In(location).Format(time.DateOnly)
 		startShiftMinutes := int(segment.StartAt.Sub(previous.StartAt).Minutes())

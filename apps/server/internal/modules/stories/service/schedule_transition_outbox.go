@@ -23,7 +23,7 @@ const (
 	scheduleTransitionOutboxMaxDelay       = 15 * time.Minute
 	scheduleTransitionOutboxRetention      = 30 * 24 * time.Hour
 	scheduleTransitionOutboxRetentionBatch = 500
-	scheduleTransitionOutboxSchemaVersion  = 1
+	scheduleTransitionOutboxSchemaVersion  = 2
 )
 
 // CoreScheduleTransitionOutboxInput preserves the existing service-facing name
@@ -205,7 +205,6 @@ func (d *ScheduleTransitionOutboxDispatcher) DispatchReadyScheduleTransitionOutb
 
 func buildScheduleTransitionOutboxInput(
 	event events.Event,
-	expectedUpdatedAt time.Time,
 	status string,
 	reason *string,
 	locked *bool,
@@ -220,26 +219,45 @@ func buildScheduleTransitionOutboxInput(
 	if !ok || schedule == nil {
 		return CoreScheduleTransitionOutboxInput{}, errors.New("story schedule transition payload is required")
 	}
+	// Deduplicate the latest outcome, not the planner's changing inputs. A new
+	// story version or previous slot must not announce the same destination
+	// again. The repository compares only the latest fingerprint under the
+	// story lock, so moving A -> B -> A still produces all three decisions.
+	outcome := *schedule
+	outcome.PreviousState = ""
+	outcome.PreviousStartAt = nil
+	outcome.PreviousEndAt = nil
+	outcome.PreviousLocalDate = ""
+	outcome.ShiftMinutes = 0
+	if outcome.Kind == events.StoryScheduleTransitionDayChanged || outcome.Kind == events.StoryScheduleTransitionFirstSchedule {
+		outcome.Kind = events.StoryScheduleTransitionMoved
+	}
+	if outcome.StartAt != nil {
+		start := outcome.StartAt.UTC()
+		outcome.StartAt = &start
+	}
+	if outcome.EndAt != nil {
+		end := outcome.EndAt.UTC()
+		outcome.EndAt = &end
+	}
 	fingerprintPayload := struct {
-		SchemaVersion     int                             `json:"schemaVersion"`
-		StoryID           uuid.UUID                       `json:"storyId"`
-		WorkspaceID       uuid.UUID                       `json:"workspaceId"`
-		ActorID           uuid.UUID                       `json:"actorId"`
-		ExpectedUpdatedAt time.Time                       `json:"expectedUpdatedAt"`
-		Status            string                          `json:"status"`
-		Reason            *string                         `json:"reason"`
-		Locked            *bool                           `json:"locked"`
-		Schedule          *events.StoryScheduleTransition `json:"schedule"`
+		SchemaVersion int                             `json:"schemaVersion"`
+		StoryID       uuid.UUID                       `json:"storyId"`
+		WorkspaceID   uuid.UUID                       `json:"workspaceId"`
+		ActorID       uuid.UUID                       `json:"actorId"`
+		Status        string                          `json:"status"`
+		Reason        *string                         `json:"reason"`
+		Locked        *bool                           `json:"locked"`
+		Schedule      *events.StoryScheduleTransition `json:"schedule"`
 	}{
-		SchemaVersion:     scheduleTransitionOutboxSchemaVersion,
-		StoryID:           storyPayload.StoryID,
-		WorkspaceID:       storyPayload.WorkspaceID,
-		ActorID:           event.ActorID,
-		ExpectedUpdatedAt: expectedUpdatedAt.UTC(),
-		Status:            status,
-		Reason:            reason,
-		Locked:            locked,
-		Schedule:          schedule,
+		SchemaVersion: scheduleTransitionOutboxSchemaVersion,
+		StoryID:       storyPayload.StoryID,
+		WorkspaceID:   storyPayload.WorkspaceID,
+		ActorID:       event.ActorID,
+		Status:        status,
+		Reason:        reason,
+		Locked:        locked,
+		Schedule:      &outcome,
 	}
 	semanticPayload, err := json.Marshal(fingerprintPayload)
 	if err != nil {

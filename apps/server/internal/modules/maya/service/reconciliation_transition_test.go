@@ -140,6 +140,41 @@ func TestBuildStoryScheduleTransitionDoesNotTreatPlanningReplanAsFirstSchedule(t
 	}
 }
 
+func TestScheduleTransitionDoesNotAnnounceAnExistingSlotAgain(t *testing.T) {
+	userID := uuid.New()
+	start := time.Date(2026, 9, 10, 9, 0, 0, 0, time.UTC)
+	block := func(index int, offset time.Duration) ScheduleBlock {
+		return ScheduleBlock{UserID: userID, SegmentIndex: index, StartAt: start.Add(offset), EndAt: start.Add(offset + time.Hour)}
+	}
+	segment := func(index int, offset time.Duration) ScheduleSegmentInput {
+		return ScheduleSegmentInput{SegmentIndex: index, StartAt: start.Add(offset), EndAt: start.Add(offset + time.Hour)}
+	}
+	story := Story{AutoSchedulingStatus: AutoSchedulingStatusScheduled}
+	for _, test := range []struct {
+		name     string
+		segments []ScheduleSegmentInput
+	}{
+		{"earlier block removed", []ScheduleSegmentInput{segment(1, 24*time.Hour)}},
+		{"remaining block renumbered", []ScheduleSegmentInput{segment(0, 24*time.Hour)}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			transition := buildStoryScheduleTransition(story, userID,
+				[]ScheduleBlock{block(0, 0), block(1, 24*time.Hour)}, test.segments,
+				"UTC", AutoSchedulingStatusScheduled, "Availability changed.")
+			if transition != nil {
+				t.Fatalf("unchanged destination must not generate another alert: %#v", transition)
+			}
+		})
+	}
+	transition := buildStoryScheduleTransition(story, userID,
+		[]ScheduleBlock{block(0, 0), block(1, 24*time.Hour)},
+		[]ScheduleSegmentInput{segment(0, 24*time.Hour), segment(1, 48*time.Hour)},
+		"UTC", AutoSchedulingStatusScheduled, "Availability changed.")
+	if transition == nil || !transition.StartAt.Equal(start.Add(48*time.Hour)) {
+		t.Fatalf("a genuinely new slot must still generate an alert: %#v", transition)
+	}
+}
+
 func TestRefineScheduleOutcomeReasonKeepsFirstScheduleCopy(t *testing.T) {
 	fallback := "Maya scheduled this story around the assignee's availability."
 	startAt := time.Now().UTC().Add(24 * time.Hour)

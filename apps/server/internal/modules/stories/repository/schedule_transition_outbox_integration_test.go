@@ -131,6 +131,30 @@ func TestStoryScheduleTransitionOutboxIsAtomicSequencedAndConcurrentlyClaimed(t 
 	if completed != 2 || maximumSequence != 2 {
 		t.Fatalf("completed schedule transitions=%d max sequence=%d, want 2 and 2", completed, maximumSequence)
 	}
+	for hour := 1; hour <= 3; hour++ {
+		repeated := scheduleTransitionInput(t, fixture, storyID, second.SemanticFingerprint, baseTime.Add(time.Duration(hour)*time.Hour))
+		applied, claimed, err := repository.UpdateAutoSchedulingStateAndClaimTransitionIfUnchanged(
+			ctx, storyID, fixture.workspaceID, expectedUpdatedAt,
+			"scheduled", &reason, baseTime.Add(time.Duration(hour)*time.Hour), nil, repeated,
+		)
+		if err != nil || !applied || claimed != nil {
+			t.Fatalf("repeat completed outcome: applied=%v claimed=%#v error=%v", applied, claimed, err)
+		}
+		assertScheduleTransitionCount(t, ctx, postgres, storyID, 2)
+	}
+	// The guard compares only the latest decision, not every historical slot:
+	// a real move away and then back must still be announced.
+	for index, fingerprint := range []string{"another-slot", second.SemanticFingerprint} {
+		next := scheduleTransitionInput(t, fixture, storyID, fingerprint, baseTime.Add(4*time.Hour))
+		applied, _, err := repository.UpdateAutoSchedulingStateAndClaimTransitionIfUnchanged(
+			ctx, storyID, fixture.workspaceID, expectedUpdatedAt,
+			"scheduled", &reason, baseTime.Add(4*time.Hour), nil, next,
+		)
+		if err != nil || !applied {
+			t.Fatalf("persist genuinely changed outcome: applied=%v error=%v", applied, err)
+		}
+		assertScheduleTransitionCount(t, ctx, postgres, storyID, 3+index)
+	}
 }
 
 func scheduleTransitionInput(

@@ -293,3 +293,52 @@ func newScheduleTransitionOutboxFixture() scheduleTransitionOutboxFixture {
 		},
 	}
 }
+
+func TestScheduleTransitionFingerprintTracksOutcomeInsteadOfReconciliationInputs(t *testing.T) {
+	f := newScheduleTransitionOutboxFixture()
+	reason := "Your availability changed."
+	event := events.Event{Type: events.StoryUpdated, ActorID: f.actorID, Timestamp: f.expectedUpdatedAt,
+		Payload: events.StoryUpdatedPayload{StoryID: f.storyID, WorkspaceID: f.workspaceID, Schedule: f.transition}}
+	first, err := buildScheduleTransitionOutboxInput(event, AutoSchedulingStatusScheduled, &reason, nil, f.transition, true)
+	require.NoError(t, err)
+	for hour := 1; hour <= 3; hour++ {
+		repeated := *f.transition
+		previous := f.transition.StartAt.Add(-time.Duration(hour) * time.Hour)
+		repeated.PreviousStartAt, repeated.PreviousEndAt = &previous, f.transition.StartAt
+		repeated.PreviousState = events.StoryScheduleStatePlanning
+		repeated.PreviousLocalDate = "2026-08-14"
+		repeated.ShiftMinutes = hour * 60
+		repeated.Kind = events.StoryScheduleTransitionDayChanged
+		event.Timestamp = event.Timestamp.Add(time.Hour)
+		event.Payload = events.StoryUpdatedPayload{StoryID: f.storyID, WorkspaceID: f.workspaceID, Schedule: &repeated,
+			Updates: map[string]any{"auto_scheduling_updated_at": event.Timestamp}}
+		next, err := buildScheduleTransitionOutboxInput(event, AutoSchedulingStatusScheduled, &reason, nil, &repeated, true)
+		require.NoError(t, err)
+		require.Equal(t, first.SemanticFingerprint, next.SemanticFingerprint, "hourly reconciliation must not announce the same outcome")
+		var preserved events.Event
+		require.NoError(t, json.Unmarshal(next.EventPayload, &preserved))
+		require.Equal(t, event.Timestamp, preserved.Timestamp, "normalization must not rewrite the original event")
+		require.NotNil(t, repeated.PreviousStartAt)
+	}
+	for _, test := range []struct {
+		name   string
+		change func(*events.StoryScheduleTransition)
+	}{
+		{"new destination", func(s *events.StoryScheduleTransition) { value := s.StartAt.Add(time.Hour); s.StartAt = &value }},
+		{"new end", func(s *events.StoryScheduleTransition) { value := s.EndAt.Add(time.Hour); s.EndAt = &value }},
+		{"new assignee", func(s *events.StoryScheduleTransition) { s.UserID = uuid.New() }},
+		{"new risk", func(s *events.StoryScheduleTransition) { s.State = events.StoryScheduleStateAtRisk }},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			changed := *f.transition
+			test.change(&changed)
+			next, err := buildScheduleTransitionOutboxInput(event, string(changed.State), &reason, nil, &changed, true)
+			require.NoError(t, err)
+			require.NotEqual(t, first.SemanticFingerprint, next.SemanticFingerprint)
+		})
+	}
+	newReason := "A calendar conflict needs your attention."
+	next, err := buildScheduleTransitionOutboxInput(event, AutoSchedulingStatusScheduled, &newReason, nil, f.transition, true)
+	require.NoError(t, err)
+	require.NotEqual(t, first.SemanticFingerprint, next.SemanticFingerprint)
+}
