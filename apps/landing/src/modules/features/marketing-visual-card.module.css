@@ -1,0 +1,8 @@
+/* Let the illustration fit its content on narrow phones without shrinking text. */
+@media (max-width: 24rem) {
+  .gallery > article > div:first-child {
+    display: grid;
+    aspect-ratio: auto;
+    min-height: 20rem;
+  }
+}

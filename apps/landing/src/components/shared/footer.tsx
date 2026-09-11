@@ -71,9 +71,9 @@ const resources = [
 ];
 
 const integrations = [
-  { title: "Google Calendar", href: "/integrations/google-calendar" },
-  { title: "Slack", href: "/integrations/slack" },
-  { title: "GitHub", href: "/integrations/github" },
+  { title: "Google Calendar", href: "/features/integrations#google-calendar" },
+  { title: "Slack", href: "/features/integrations#slack" },
+  { title: "GitHub", href: "/features/integrations#github" },
 ];
 
 const socialLinks = [

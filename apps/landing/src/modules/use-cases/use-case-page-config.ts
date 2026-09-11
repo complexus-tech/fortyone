@@ -65,7 +65,7 @@ const USE_CASE_PAGE_CONFIGS = {
       description:
         "Turn recurring requests, handoffs, meetings, and delivery risks into owned work that teams can follow.",
       lightImage: mayaDeliveryBriefLight,
-      title: "Turn operational requests into work teams can actually deliver.",
+      title: "Keep operations moving with a clear plan.",
       url: "https://fortyone.app/maya",
     },
     keywords: [
@@ -120,7 +120,7 @@ const USE_CASE_PAGE_CONFIGS = {
       description:
         "Connect customer feedback, product priorities, roadmap decisions, and delivery work in one plan.",
       lightImage: publicFeedbackRoadmapLight,
-      title: "Turn customer signals into a roadmap teams can deliver.",
+      title: "Turn customer signals into a clear roadmap.",
       url: "https://fortyone.app/feedback/roadmap",
     },
     keywords: [
@@ -175,7 +175,7 @@ const USE_CASE_PAGE_CONFIGS = {
       description:
         "Keep GitHub context, technical decisions, estimates, owners, and project priorities connected from request to release.",
       lightImage: myWorkBoardLight,
-      title: "Keep engineering context connected from request to release.",
+      title: "Keep engineering moving from code to release.",
       url: "https://fortyone.app/my-work",
     },
     keywords: [
@@ -230,7 +230,7 @@ const USE_CASE_PAGE_CONFIGS = {
       description:
         "Capture recurring customer needs, connect accepted requests to delivery, and show customers what changed.",
       lightImage: feedbackPortalLight,
-      title: "Turn recurring customer issues into visible product work.",
+      title: "Turn customer issues into product progress.",
       url: "https://fortyone.app/feedback",
     },
     keywords: [
@@ -284,7 +284,7 @@ const USE_CASE_PAGE_CONFIGS = {
       description:
         "Connect site requests, office coordination, assignments, dependencies, and schedules in one delivery plan.",
       lightImage: calendarWeekLight,
-      title: "Keep field work moving from office plan to site handoff.",
+      title: "Connect the office plan to field work.",
       url: "https://fortyone.app/calendar",
     },
     keywords: [
@@ -328,7 +328,7 @@ const USE_CASE_PAGE_CONFIGS = {
   government: {
     ctaDescription:
       "Start with a conversation about the deployment, governance, and workflow requirements behind your program.",
-    ctaTitle: "Connect public priorities to accountable delivery.",
+    ctaTitle: "Turn public priorities into accountable work.",
     decisionDescription:
       "Give leaders and delivery teams a traceable view of program outcomes, ownership, risk, and the work behind each update.",
     decisionHeading:
@@ -339,7 +339,7 @@ const USE_CASE_PAGE_CONFIGS = {
       description:
         "Connect policy priorities, programs, department handoffs, delivery work, and reporting in a governed workspace.",
       lightImage: strategyMapLight,
-      title: "Connect public priorities to accountable delivery.",
+      title: "Turn public priorities into accountable work.",
       url: "https://fortyone.app/strategy-map",
     },
     keywords: [
@@ -393,7 +393,7 @@ const USE_CASE_PAGE_CONFIGS = {
       description:
         "Connect briefs, creative work, approvals, owners, dependencies, and launch timing in one campaign plan.",
       lightImage: myWorkBoardLight,
-      title: "Plan campaigns around real owners, dependencies, and capacity.",
+      title: "Bring every campaign into one clear plan.",
       url: "https://fortyone.app/my-work",
     },
     keywords: [
@@ -448,7 +448,7 @@ const USE_CASE_PAGE_CONFIGS = {
       description:
         "Connect company priorities to live work, owners, progress, capacity, and the decisions that keep outcomes moving.",
       lightImage: mayaObjectiveRisksLight,
-      title: "See where strategy is moving—and where it needs a decision.",
+      title: "See where strategy needs your next move.",
       url: "https://fortyone.app/maya",
     },
     keywords: [

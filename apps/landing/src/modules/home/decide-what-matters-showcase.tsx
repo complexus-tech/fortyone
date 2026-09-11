@@ -124,6 +124,38 @@ export const ShowcaseCard = ({
   );
 };
 
+export function ShowcaseHeading({
+  title,
+  description,
+  id,
+  titleClassName,
+}: {
+  title: string;
+  description: string;
+  id: string;
+  titleClassName?: string;
+}) {
+  return (
+    <Box
+      className="grid gap-6 md:grid-cols-[1.2fr_1fr] md:items-end md:gap-24"
+      data-landing-reveal
+    >
+      <Box>
+        <Text
+          as="h2"
+          className={cn("text-3xl md:text-5xl", titleClassName)}
+          id={id}
+        >
+          {title}
+        </Text>
+      </Box>
+      <Text className="text-text-description max-w-lg text-base leading-relaxed text-pretty">
+        {description}
+      </Text>
+    </Box>
+  );
+}
+
 export const DecideWhatMattersShowcase = () => {
   return (
     <Container
@@ -133,24 +165,11 @@ export const DecideWhatMattersShowcase = () => {
       id="ai-planning"
     >
       <Box>
-        <Box
-          className="grid gap-6 md:grid-cols-[1.2fr_1fr] md:items-end md:gap-24"
-          data-landing-reveal
-        >
-          <Box>
-            <Text
-              as="h2"
-              className="text-3xl md:text-5xl"
-              id="ai-planning-title"
-            >
-              Decide with evidence. Plan around real capacity.
-            </Text>
-          </Box>
-          <Text className="text-text-description max-w-lg text-base leading-relaxed text-pretty">
-            Connect goals to customer demand, then let Maya recommend ownership
-            and a delivery window before the team commits.
-          </Text>
-        </Box>
+        <ShowcaseHeading
+          description="Connect goals to customer demand, then let Maya recommend ownership and a delivery window before the team commits."
+          id="ai-planning-title"
+          title="Decide with evidence. Plan around real capacity."
+        />
 
         <Box className="mt-14 grid grid-cols-1 gap-x-8 gap-y-16 md:grid-cols-2 xl:grid-cols-3 xl:gap-x-10">
           <ShowcaseCard

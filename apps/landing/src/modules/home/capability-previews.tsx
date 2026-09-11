@@ -24,31 +24,72 @@ function GlassFrame({
   );
 }
 
-export function FeedbackPreview() {
+export type EvidencePreviewContent = {
+  title: ReactNode;
+  icon: ReactNode;
+  request: string;
+  context: string;
+  workLabel: string;
+  workReference?: string;
+  workTitle: string;
+  status?: string;
+  note: string;
+  footer: ReactNode;
+};
+
+// The same preview is used on the homepage and detail pages; only content varies.
+export function EvidencePreview({
+  title,
+  icon,
+  request,
+  context,
+  workLabel,
+  workReference,
+  workTitle,
+  status,
+  note,
+  footer,
+}: EvidencePreviewContent) {
   return (
-    <GlassFrame
-      footer={<span className={styles.goal}>Goal · Activation</span>}
-      title="Customer feedback"
-    >
+    <GlassFrame footer={footer} title={title}>
       <div className={styles.row}>
         <span className={cn("rounded-lg", styles.icon, styles.coral)}>
-          <RequestsIcon className="size-4 text-current" />
+          {icon}
         </span>
         <div>
-          <p className={styles.strong}>Make onboarding easier</p>
-          <p className={styles.meta}>12 votes</p>
+          <p className={styles.strong}>{request}</p>
+          <p className={styles.meta}>{context}</p>
         </div>
       </div>
       <div className={styles.work}>
         <div className={styles.rowBetween}>
-          <span className={styles.meta}>Planned task</span>
-          <span className={styles.meta}>PRD-142</span>
+          <span className={styles.meta}>{workLabel}</span>
+          <span className={styles.meta}>{workReference}</span>
         </div>
-        <p className={styles.task}>Redesign onboarding flow</p>
-        <span className={cn("rounded-lg", styles.status)}>Planned</span>
+        <p className={styles.task}>{workTitle}</p>
+        {status ? (
+          <span className={cn("rounded-lg", styles.status)}>{status}</span>
+        ) : null}
       </div>
-      <p className={cn(styles.meta, styles.note)}>Original request attached</p>
+      <p className={cn(styles.meta, styles.note)}>{note}</p>
     </GlassFrame>
+  );
+}
+
+export function FeedbackPreview() {
+  return (
+    <EvidencePreview
+      context="12 votes"
+      footer={<span className={styles.goal}>Goal · Activation</span>}
+      icon={<RequestsIcon className="size-4 text-current" />}
+      note="Original request attached"
+      request="Make onboarding easier"
+      status="Planned"
+      title="Customer feedback"
+      workLabel="Planned task"
+      workReference="PRD-142"
+      workTitle="Redesign onboarding flow"
+    />
   );
 }
 
@@ -117,42 +158,77 @@ export function PlanningPreview() {
   );
 }
 
+type ContextPreviewItem = {
+  id?: string;
+  label: string;
+  icon: ReactNode;
+  detail?: string;
+  trailing?: string;
+  coral?: boolean;
+};
+
+export function ContextListPreview({
+  title,
+  footer,
+  items,
+}: {
+  title: ReactNode;
+  footer: ReactNode;
+  items: readonly ContextPreviewItem[];
+}) {
+  return (
+    <GlassFrame footer={footer} title={title}>
+      {items.map(({ id, label, icon, detail, trailing, coral }) => (
+        <div className={styles.integration} key={id ?? label}>
+          <span
+            className={cn("rounded-lg", styles.icon, coral && styles.coral)}
+          >
+            {icon}
+          </span>
+          <div>
+            <p className={styles.strong}>{label}</p>
+            {detail ? <p className={styles.meta}>{detail}</p> : null}
+          </div>
+          {trailing ? (
+            <span className={cn(styles.meta, styles.connect)}>{trailing}</span>
+          ) : null}
+        </div>
+      ))}
+    </GlassFrame>
+  );
+}
+
 export function ContextPreview() {
   return (
-    <GlassFrame
+    <ContextListPreview
       footer="Manage tools"
+      items={[
+        { label: "GitHub", icon: <GitHubIcon className="size-5" /> },
+        {
+          label: "Google Calendar",
+          icon: (
+            <Image
+              alt=""
+              className="size-5 object-contain"
+              height={20}
+              src="/integrations/google-calendar-2026.svg"
+              width={20}
+            />
+          ),
+        },
+        {
+          label: "Slack",
+          icon: <SlackIcon className="size-5" />,
+          trailing: "Connect",
+          coral: true,
+        },
+      ]}
       title={
         <>
           <span>Add context from</span>
           <span>@</span>
         </>
       }
-    >
-      <div className={styles.integration}>
-        <span className={cn("rounded-lg", styles.icon)}>
-          <GitHubIcon className="size-5" />
-        </span>
-        <p className={styles.strong}>GitHub</p>
-      </div>
-      <div className={styles.integration}>
-        <span className={cn("rounded-lg", styles.icon)}>
-          <Image
-            alt=""
-            className="size-5 object-contain"
-            height={20}
-            src="/integrations/google-calendar-2026.svg"
-            width={20}
-          />
-        </span>
-        <p className={styles.strong}>Google Calendar</p>
-      </div>
-      <div className={styles.integration}>
-        <span className={cn("rounded-lg", styles.icon, styles.coral)}>
-          <SlackIcon className="size-5" />
-        </span>
-        <p className={styles.strong}>Slack</p>
-        <span className={cn(styles.meta, styles.connect)}>Connect</span>
-      </div>
-    </GlassFrame>
+    />
   );
 }

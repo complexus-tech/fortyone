@@ -81,7 +81,7 @@ const FEATURE_PAGE_CONFIGS = {
       description:
         "Collect requests, understand demand, turn accepted ideas into owned work, and show customers what changed.",
       lightImage: publicFeedbackRoadmapLight,
-      title: "Turn customer feedback into progress people can follow.",
+      title: "Turn customer feedback into progress.",
       url: "https://fortyone.app/feedback/roadmap",
     },
     keywords: [
@@ -167,7 +167,7 @@ const FEATURE_PAGE_CONFIGS = {
       description:
         "Connect company direction to measurable objectives, owned work, and the decisions that keep progress moving.",
       lightImage: strategyMapLight,
-      title: "Turn company goals into work teams can follow.",
+      title: "Turn company goals into shared progress.",
       url: "https://fortyone.app/strategy-map",
     },
     keywords: [
@@ -337,7 +337,7 @@ const FEATURE_PAGE_CONFIGS = {
       description:
         "Connect priorities to goals, tasks, owners, capacity, and customer-facing progress in one delivery system.",
       lightImage: roadmapTimelineLight,
-      title: "Build roadmaps your team can actually deliver.",
+      title: "Build a roadmap your team can deliver.",
       url: "https://fortyone.app/roadmap",
     },
     keywords: [
@@ -422,7 +422,7 @@ const FEATURE_PAGE_CONFIGS = {
       description:
         "Connect Slack, GitHub, calendars, and MCP-compatible AI clients to the work your team plans and delivers.",
       lightImage: calendarWeekLight,
-      title: "Keep project context connected across every tool.",
+      title: "Your tools. One connected plan.",
       url: "https://fortyone.app/calendar",
     },
     keywords: [

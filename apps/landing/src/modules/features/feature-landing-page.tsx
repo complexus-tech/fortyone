@@ -1,13 +1,20 @@
 import type { FAQPage, WebPage, WithContext } from "schema-dts";
-import { Box, Text } from "ui";
+import { Box } from "ui";
 import { CallToAction } from "@/components/shared/cta";
 import { FeatureDetailHero } from "@/components/shared/feature-detail-hero";
 import type { MarketingDetail } from "@/components/shared/marketing-detail-page";
 import { Container } from "@/components/ui";
 import { Faqs } from "@/components/ui/faqs";
-import { ShowcaseCard } from "@/modules/home/decide-what-matters-showcase";
+import {
+  ShowcaseCard,
+  ShowcaseHeading,
+} from "@/modules/home/decide-what-matters-showcase";
+import { IntegrationDirectory } from "@/modules/integrations/integration-directory";
+import { CustomerStories } from "@/modules/home/customer-stories";
+import previewStyles from "./marketing-visual-card.module.css";
 import type { FeatureLandingConfig } from "./feature-page-config";
 import { FeatureProductWorkflow } from "./feature-product-workflow";
+import { getFeatureIllustrations } from "./feature-illustrations";
 import { MarketingVisualCard } from "./marketing-visual-card";
 
 const FEATURE_CARD_TEXTURE = "/images/textures/decide-risograph.webp";
@@ -19,14 +26,11 @@ function FeatureDecisions({
   config: FeatureLandingConfig;
   detail: MarketingDetail;
 }) {
-  const sectionVisuals = detail.sections.flatMap(
-    (section) => section.cards ?? [],
-  );
-  const visuals = [...detail.previewCards, ...sectionVisuals].slice(0, 3);
+  const illustrations = getFeatureIllustrations(detail.slug);
   const cards = config.decisionCards.map(({ description, title }, index) => ({
     description,
     title,
-    visual: visuals[index],
+    illustration: illustrations?.[index],
   }));
 
   return (
@@ -35,22 +39,18 @@ function FeatureDecisions({
       as="section"
       className="scroll-mt-24 py-16 md:py-36"
     >
-      <Box className="max-w-3xl" data-landing-reveal>
-        <Text
-          as="h2"
-          className="text-3xl md:text-5xl"
-          id={`${detail.slug}-decisions-title`}
-        >
-          {config.decisionHeading}
-        </Text>
-        <Text className="text-text-description mt-6 max-w-xl text-base text-pretty">
-          {config.decisionDescription}
-        </Text>
-      </Box>
+      <ShowcaseHeading
+        description={config.decisionDescription}
+        id={`${detail.slug}-decisions-title`}
+        title={config.decisionHeading}
+        titleClassName="max-w-xl text-balance"
+      />
 
-      <Box className="mt-14 grid grid-cols-1 gap-x-6 gap-y-14 md:grid-cols-2 xl:grid-cols-3">
-        {cards.map(({ description, title, visual }, index) =>
-          visual ? (
+      <Box
+        className={`${previewStyles.gallery} mt-14 grid grid-cols-1 gap-x-8 gap-y-16 md:grid-cols-2 xl:grid-cols-3 xl:gap-x-10`}
+      >
+        {cards.map(({ description, title, illustration }, index) =>
+          illustration ? (
             <ShowcaseCard
               className={
                 index === 2
@@ -59,12 +59,13 @@ function FeatureDecisions({
               }
               delay={index * 70}
               description={description}
-              illustrationClassName="max-w-[22rem]"
+              illustrationClassName="max-w-[20rem]"
               imageSrc={FEATURE_CARD_TEXTURE}
               key={title}
               title={title}
+              tone={(["sky", "sage", "amber"] as const)[index % 3]}
             >
-              <MarketingVisualCard visual={visual} />
+              <MarketingVisualCard {...illustration} />
             </ShowcaseCard>
           ) : null,
         )}
@@ -124,8 +125,10 @@ export function FeatureLandingPage({
           title={config.hero.title}
           url={config.hero.url}
         />
+        {detail.slug === "integrations" ? <IntegrationDirectory /> : null}
         <FeatureProductWorkflow {...config.workflow} />
         <FeatureDecisions config={config} detail={detail} />
+        <CustomerStories />
         <Faqs
           heading={config.faqHeading}
           headingClassName="mx-auto max-w-2xl text-balance"
