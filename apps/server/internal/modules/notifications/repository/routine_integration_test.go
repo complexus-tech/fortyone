@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/complexus-tech/projects-api/internal/migrations"
 	notifications "github.com/complexus-tech/projects-api/internal/modules/notifications/domain"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
@@ -161,4 +162,26 @@ func TestIdenticalContentWithFreshEventIDsIsCoveredAfterTwoHours(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, single, change)
 	}
+}
+
+func TestEmailReceiptMigrationBackfillsExistingDeliveries(t *testing.T) {
+	ctx := t.Context()
+	f := newNotificationIntegrationFixture(t, ctx)
+	scope := notifications.DeliveryScope{RecipientID: f.recipientA, WorkspaceID: f.workspaceA}
+	original, _, err := f.repo.Create(ctx, f.storyNotification(f.recipientA, notificationDedupeKey("legacy")))
+	require.NoError(t, err)
+	// Recreate the pre-migration state inside this disposable test database.
+	_, err = f.postgres.Pool.Exec(ctx, "UPDATE public.notifications SET email_sent_at = now() WHERE notification_id = $1", original.ID)
+	require.NoError(t, err)
+	_, err = f.postgres.Pool.Exec(ctx, "DROP TABLE public.notification_email_receipts")
+	require.NoError(t, err)
+	migration, err := migrations.FS.ReadFile("000187_notification_email_receipts.up.sql")
+	require.NoError(t, err)
+	_, err = f.postgres.Pool.Exec(ctx, string(migration))
+	require.NoError(t, err)
+	_, _, err = f.repo.Create(ctx, f.storyNotification(f.recipientA, notificationDedupeKey("post-migration")))
+	require.NoError(t, err)
+	digest, err := f.repo.ListEmailDigest(ctx, scope)
+	require.NoError(t, err)
+	require.Nil(t, digest, "existing sent mail must protect against fresh event IDs after rollout")
 }
