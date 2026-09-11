@@ -41,6 +41,9 @@ func (repository *Repository) GetEmailDelivery(ctx context.Context, query notifi
 	if err := query.Validate(); err != nil {
 		return nil, err
 	}
+	if err := repository.coverPreviouslyEmailedNotifications(ctx, query.Scope); err != nil {
+		return nil, err
+	}
 	row, err := repository.queries.GetNotificationEmailDelivery(ctx, notificationssql.GetNotificationEmailDeliveryParams{
 		NotificationID: query.NotificationID,
 		RecipientID:    query.Scope.RecipientID,
@@ -80,6 +83,9 @@ func (repository *Repository) GetEmailDelivery(ctx context.Context, query notifi
 
 func (repository *Repository) ListEmailDigest(ctx context.Context, scope notificationsdomain.DeliveryScope) (*notificationsdomain.EmailDigest, error) {
 	if err := scope.Validate(); err != nil {
+		return nil, err
+	}
+	if err := repository.coverPreviouslyEmailedNotifications(ctx, scope); err != nil {
 		return nil, err
 	}
 	rows, err := repository.queries.ListNotificationEmailDigestDeliveries(ctx, notificationssql.ListNotificationEmailDigestDeliveriesParams{
@@ -175,4 +181,14 @@ func deliveryTypes(
 		)
 	}
 	return mappedNotificationType, mappedEntityType, nil
+}
+
+// Coverage belongs to the recipient and exact notification content, not just
+// the producer's event ID. The routine claim serializes the subsequent send.
+func (repository *Repository) coverPreviouslyEmailedNotifications(ctx context.Context, scope notificationsdomain.DeliveryScope) error {
+	err := repository.queries.CoverPreviouslyEmailedNotifications(ctx, notificationssql.CoverPreviouslyEmailedNotificationsParams{
+		RecipientID: scope.RecipientID,
+		WorkspaceID: scope.WorkspaceID,
+	})
+	return mapWriteError("cover previously emailed notifications", err)
 }

@@ -52,7 +52,8 @@ html:not(.dark) .landing-light-contrast .landing-team-panel {
   );
 }
 
-html:not(.dark) footer .landing-light-contrast {
+html:not(.dark) footer .landing-light-contrast,
+html:not(.dark) .landing-footer-gradient {
   background: radial-gradient(
       ellipse at 100% 100%,
       color-mix(in oklab, var(--landing-espresso) 65%, transparent),

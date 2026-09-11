@@ -104,11 +104,61 @@ func TestSentNotificationsStayOutOfLaterDigests(t *testing.T) {
 		require.NoError(t, err)
 		require.Nil(t, digest, "later queue runs must remain empty even while sent notifications are unread")
 	}
-	item, _, err := f.repo.Create(ctx, f.storyNotification(f.recipientA, notificationDedupeKey("new-update")))
+	newUpdate := f.storyNotification(f.recipientA, notificationDedupeKey("new-update"))
+	newUpdate.Message.Template = "{actor} changed the deadline"
+	item, _, err := f.repo.Create(ctx, newUpdate)
 	require.NoError(t, err)
 	digest, err := f.repo.ListEmailDigest(ctx, scope)
 	require.NoError(t, err)
 	require.NotNil(t, digest)
 	require.Len(t, digest.Items, 1, "the next digest must contain only new information")
 	require.Equal(t, item.ID, digest.Items[0].NotificationID)
+}
+
+func TestIdenticalContentWithFreshEventIDsIsCoveredAfterTwoHours(t *testing.T) {
+	ctx := t.Context()
+	f := newNotificationIntegrationFixture(t, ctx)
+	scope := notifications.DeliveryScope{RecipientID: f.recipientA, WorkspaceID: f.workspaceA}
+	original, _, err := f.repo.Create(ctx, f.storyNotification(f.recipientA, notificationDedupeKey("original")))
+	require.NoError(t, err)
+	sentAt := time.Now().UTC().Add(-2 * time.Hour).Truncate(time.Microsecond)
+	require.NoError(t, f.repo.MarkEmailSent(ctx, notifications.MarkEmailSent{Scope: scope, NotificationIDs: []uuid.UUID{original.ID}, At: sentAt}))
+	// Removing an inbox item must not remove its delivery receipt.
+	_, err = f.postgres.Pool.Exec(ctx, "DELETE FROM public.notifications WHERE notification_id = $1", original.ID)
+	require.NoError(t, err)
+	for range 3 {
+		repeated, inserted, err := f.repo.Create(ctx, f.storyNotification(f.recipientA, notificationDedupeKey("repeated")))
+		require.NoError(t, err)
+		require.True(t, inserted)
+		digest, err := f.repo.ListEmailDigest(ctx, scope)
+		require.NoError(t, err)
+		require.Nil(t, digest)
+		var coveredAt time.Time
+		require.NoError(t, f.postgres.Pool.QueryRow(ctx, "SELECT email_sent_at FROM public.notifications WHERE notification_id = $1", repeated.ID).Scan(&coveredAt))
+		require.True(t, sentAt.Equal(coveredAt))
+		single, err := f.repo.GetEmailDelivery(ctx, notifications.EmailNotificationQuery{Scope: scope, NotificationID: repeated.ID})
+		require.NoError(t, err)
+		require.Nil(t, single)
+	}
+	// Content coverage is specific to a recipient, actor, entity and message.
+	for _, change := range []string{"recipient", "actor", "entity", "message"} {
+		input := f.storyNotification(f.recipientA, notificationDedupeKey(change))
+		switch change {
+		case "recipient":
+			input.RecipientID = f.guestA
+		case "actor":
+			input.ActorID = f.revocableA
+		case "entity":
+			input.EntityID = uuid.New()
+			insertNotificationStory(t, ctx, f.postgres.Pool, input.EntityID, f.teamA, f.workspaceA, "Another task")
+		case "message":
+			input.Message.Variables["date"] = notifications.Variable{Value: "15 Sep 2026", Type: "date"}
+			input.Message.Template = "{actor} moved this task to {date}"
+		}
+		item, _, err := f.repo.Create(ctx, input)
+		require.NoError(t, err)
+		single, err := f.repo.GetEmailDelivery(ctx, notifications.EmailNotificationQuery{Scope: notifications.DeliveryScope{RecipientID: input.RecipientID, WorkspaceID: input.WorkspaceID}, NotificationID: item.ID})
+		require.NoError(t, err)
+		require.NotNil(t, single, change)
+	}
 }

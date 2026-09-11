@@ -375,9 +375,31 @@ WHERE recipient.user_id = CAST(sqlc.arg(recipient_id) AS uuid)
   AND recipient.is_active = TRUE
 ORDER BY team_membership.team_id;
 
+-- Sent timestamps and content receipts are committed in the same statement.
 -- name: MarkNotificationEmailsSent :execrows
-UPDATE public.notifications AS notification
-SET email_sent_at = COALESCE(notification.email_sent_at, CAST(sqlc.arg(sent_at) AS timestamptz))
-WHERE notification.recipient_id = CAST(sqlc.arg(recipient_id) AS uuid)
-  AND notification.workspace_id = CAST(sqlc.arg(workspace_id) AS uuid)
-  AND notification.notification_id = ANY(CAST(sqlc.arg(notification_ids) AS uuid[]));
+WITH covered AS (
+    UPDATE public.notifications AS notification
+    SET email_sent_at = COALESCE(notification.email_sent_at, CAST(sqlc.arg(sent_at) AS timestamptz))
+    WHERE notification.recipient_id = CAST(sqlc.arg(recipient_id) AS uuid)
+      AND notification.workspace_id = CAST(sqlc.arg(workspace_id) AS uuid)
+      AND notification.notification_id = ANY(CAST(sqlc.arg(notification_ids) AS uuid[]))
+    RETURNING notification.*
+)
+INSERT INTO public.notification_email_receipts (recipient_id, workspace_id, content_hash, sent_at)
+SELECT covered.recipient_id, covered.workspace_id, sha256(convert_to(CAST(jsonb_build_array(covered.type, covered.entity_type, covered.entity_id, covered.actor_id, covered.title, covered.message) AS text), 'UTF8')), MIN(covered.email_sent_at)
+FROM covered
+GROUP BY covered.recipient_id, covered.workspace_id, sha256(convert_to(CAST(jsonb_build_array(covered.type, covered.entity_type, covered.entity_id, covered.actor_id, covered.title, covered.message) AS text), 'UTF8'))
+ON CONFLICT (recipient_id, workspace_id, content_hash) DO NOTHING;
+
+-- A fresh event ID must not resend previously covered content, even after the
+-- original inbox row is deleted. JSONB normalizes object key ordering.
+-- name: CoverPreviouslyEmailedNotifications :exec
+UPDATE public.notifications AS pending
+SET email_sent_at = receipt.sent_at
+FROM public.notification_email_receipts AS receipt
+WHERE pending.recipient_id = CAST(sqlc.arg(recipient_id) AS uuid)
+  AND pending.workspace_id = CAST(sqlc.arg(workspace_id) AS uuid)
+  AND pending.email_sent_at IS NULL
+  AND receipt.recipient_id = pending.recipient_id
+  AND receipt.workspace_id = pending.workspace_id
+  AND receipt.content_hash = sha256(convert_to(CAST(jsonb_build_array(pending.type, pending.entity_type, pending.entity_id, pending.actor_id, pending.title, pending.message) AS text), 'UTF8'));

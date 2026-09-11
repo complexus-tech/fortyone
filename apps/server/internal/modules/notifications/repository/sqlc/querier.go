@@ -15,6 +15,9 @@ type Querier interface {
 	CompleteRoutineEmail(ctx context.Context, arg CompleteRoutineEmailParams) (int64, error)
 	CountUnreadPortalFeedbackNotifications(ctx context.Context, arg CountUnreadPortalFeedbackNotificationsParams) (int64, error)
 	CountUnreadWorkspaceNotifications(ctx context.Context, arg CountUnreadWorkspaceNotificationsParams) (int64, error)
+	// A fresh event ID must not resend previously covered content, even after the
+	// original inbox row is deleted. JSONB normalizes object key ordering.
+	CoverPreviouslyEmailedNotifications(ctx context.Context, arg CoverPreviouslyEmailedNotificationsParams) error
 	// CreateNotification persists a notification only while its recipient can
 	// still access the owning workspace resource. The notification row is the
 	// durable email-delivery intent; dedupe replays return the original row without
@@ -59,6 +62,7 @@ type Querier interface {
 	ListWorkspaceNotifications(ctx context.Context, arg ListWorkspaceNotificationsParams) ([]ListWorkspaceNotificationsRow, error)
 	LockRoutineEmailRecipient(ctx context.Context, arg LockRoutineEmailRecipientParams) error
 	MarkAllPortalFeedbackNotificationsRead(ctx context.Context, arg MarkAllPortalFeedbackNotificationsReadParams) (int64, error)
+	// Sent timestamps and content receipts are committed in the same statement.
 	MarkNotificationEmailsSent(ctx context.Context, arg MarkNotificationEmailsSentParams) (int64, error)
 	MarkPortalFeedbackNotificationRead(ctx context.Context, arg MarkPortalFeedbackNotificationReadParams) (uuid.UUID, error)
 	// MutateWorkspaceNotification performs one finite notification mutation. The

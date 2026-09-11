@@ -125,7 +125,7 @@ export const AppCommandBar = () => {
                   <Menu.Item
                     onSelect={() => {
                       window.open(
-                        "mailto:hello@complexus.tech",
+                        "mailto:info@fortyone.app",
                         "_blank",
                         "noopener,noreferrer",
                       );

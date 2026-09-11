@@ -225,7 +225,7 @@ const packages = [
   {
     name: "Enterprise",
     cta: "Talk to sales",
-    href: "mailto:info@complexus.app",
+    href: "mailto:info@fortyone.app",
     overview:
       "For organizations with security, compliance, deployment, or integration requirements.",
     features: [

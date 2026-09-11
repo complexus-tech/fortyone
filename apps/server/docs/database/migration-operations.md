@@ -51,6 +51,7 @@ The machine-readable source of truth is [`internal/migrations/manifest.json`](..
 | `000184` | `routine_email_deliveries` | `forward-only` | `schema-first` | Old APIs remain compatible. | The consolidated email worker requires this schema. |
 | `000185` | `email_avatar_handles` | `forward-only` | `schema-first` | Deploy the avatar redirect endpoint before workers emit durable image URLs. | Worker must use the public HTTPS APP_API_PUBLIC_URL pointing to the API endpoint. |
 | `000186` | `notification_event_uniqueness` | `forward-only` | `schema-first` | Compatible with the current event-deduplicating notification writer. | Existing event retries can insert separate notifications after the repair. |
+| `000187` | `notification_email_receipts` | `forward-only` | `schema-first` | Inbox deletion preserves email receipts. | Updated workers require the receipt table and atomically record coverage with sent timestamps. |
 
 ## `000152_harden_verification_tokens`
 
@@ -1061,6 +1062,31 @@ Operational notes:
 
 - Dropping the constraint requires a brief table lock; use a bounded lock timeout.
 - Existing failed events remain eligible for the normal consumer retry loop.
+
+## `000187_notification_email_receipts`
+
+- **Classification:** `forward-only`
+- **Files:** `000187_notification_email_receipts.up.sql`, `000187_notification_email_receipts.down.sql`
+- **Schema:** Adds durable recipient/workspace content receipts and backfills existing email coverage.
+- **API:** Inbox deletion preserves email receipts.
+- **Worker:** Updated workers require the receipt table and atomically record coverage with sent timestamps.
+- **Mixed versions:** Pause and drain notification workers before migrating; resume with the updated worker so all new deliveries record receipts.
+- **Rollout mode:** `schema-first`
+
+Rollout:
+
+1. Pause and drain notification workers.
+2. Apply migration 000187 to backfill receipts from existing sent notifications.
+3. Deploy the updated worker and resume notification delivery.
+
+Recovery (`forward-fix`):
+
+1. Preserve email receipts and repair forward; deleting receipts permits duplicate mail.
+
+Operational notes:
+
+- Receipts store SHA-256 content hashes, not message bodies, and survive inbox deletion.
+- User and workspace deletion cascade to their receipts.
 
 ## Adding the next migration
 

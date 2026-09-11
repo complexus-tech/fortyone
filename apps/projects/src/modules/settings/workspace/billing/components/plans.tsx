@@ -407,7 +407,7 @@ export const Plans = () => {
                 color="tertiary"
                 disabled={tier === "enterprise"}
                 fullWidth
-                href="mailto:info@complexus.app"
+                href="mailto:info@fortyone.app"
               >
                 {tier === "enterprise" ? "Current plan" : "Contact sales"}
               </Button>

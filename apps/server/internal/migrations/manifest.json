@@ -1337,6 +1337,40 @@
         "Dropping the constraint requires a brief table lock; use a bounded lock timeout.",
         "Existing failed events remain eligible for the normal consumer retry loop."
       ]
+    },
+    {
+      "version": 187,
+      "slug": "notification_email_receipts",
+      "classification": "forward-only",
+      "files": {
+        "up": "000187_notification_email_receipts.up.sql",
+        "down": "000187_notification_email_receipts.down.sql"
+      },
+      "compatibility": {
+        "schema": "Adds durable recipient/workspace content receipts and backfills existing email coverage.",
+        "api": "Inbox deletion preserves email receipts.",
+        "worker": "Updated workers require the receipt table and atomically record coverage with sent timestamps.",
+        "mixed_versions": "Pause and drain notification workers before migrating; resume with the updated worker so all new deliveries record receipts."
+      },
+      "rollout": {
+        "sequence": 36,
+        "mode": "schema-first",
+        "steps": [
+          "Pause and drain notification workers.",
+          "Apply migration 000187 to backfill receipts from existing sent notifications.",
+          "Deploy the updated worker and resume notification delivery."
+        ]
+      },
+      "recovery": {
+        "strategy": "forward-fix",
+        "procedure": [
+          "Preserve email receipts and repair forward; deleting receipts permits duplicate mail."
+        ]
+      },
+      "operational_notes": [
+        "Receipts store SHA-256 content hashes, not message bodies, and survive inbox deletion.",
+        "User and workspace deletion cascade to their receipts."
+      ]
     }
   ]
 }

@@ -64,7 +64,7 @@ Fees do not include any taxes, levies, duties or similar governmental assessment
 
 ### 5.1. Agreement Term and Renewals
 
-Subscriptions to access and use the Service commence on the start date stated on the applicable Order ("Subscription Start Date") and continue for the duration of the Subscription Period. Customer may choose not to renew its Subscription Period by notifying FortyOne at hello@complexus.tech or by modifying its subscription through Customer's account within the Service.
+Subscriptions to access and use the Service commence on the start date stated on the applicable Order ("Subscription Start Date") and continue for the duration of the Subscription Period. Customer may choose not to renew its Subscription Period by notifying FortyOne at info@fortyone.app or by modifying its subscription through Customer's account within the Service.
 
 ### 5.2. Termination
 
@@ -120,7 +120,7 @@ Customer acknowledges that the Service is an on-line, subscription-based product
 
 ### 10.2. Email Communications
 
-Notices under this Agreement will be provided as follows: (a) all notices regarding the Service will be sent by email, although FortyOne may instead choose to provide notice to Customer through the Service, (b) notices to FortyOne must be sent to hello@complexus.tech, and (c) all notices to Customer will be sent to the email(s) provided through the Service.
+Notices under this Agreement will be provided as follows: (a) all notices regarding the Service will be sent by email, although FortyOne may instead choose to provide notice to Customer through the Service, (b) notices to FortyOne must be sent to info@fortyone.app, and (c) all notices to Customer will be sent to the email(s) provided through the Service.
 
 ### 10.3. Governing Law and Venue
 
@@ -134,10 +134,10 @@ This Agreement, including all referenced pages and Orders, if applicable, consti
 
 For questions about these Terms, please contact us at:
 
-Legal Department: hello@complexus.tech
+Legal Department: info@fortyone.app
 
 For general inquiries:
-Support: hello@complexus.tech
+Support: info@fortyone.app
 
 For billing questions:
-Billing: hello@complexus.tech
+Billing: info@fortyone.app

@@ -12,6 +12,30 @@ import (
 	"github.com/google/uuid"
 )
 
+const coverPreviouslyEmailedNotifications = `-- name: CoverPreviouslyEmailedNotifications :exec
+UPDATE public.notifications AS pending
+SET email_sent_at = receipt.sent_at
+FROM public.notification_email_receipts AS receipt
+WHERE pending.recipient_id = CAST($1 AS uuid)
+  AND pending.workspace_id = CAST($2 AS uuid)
+  AND pending.email_sent_at IS NULL
+  AND receipt.recipient_id = pending.recipient_id
+  AND receipt.workspace_id = pending.workspace_id
+  AND receipt.content_hash = sha256(convert_to(CAST(jsonb_build_array(pending.type, pending.entity_type, pending.entity_id, pending.actor_id, pending.title, pending.message) AS text), 'UTF8'))
+`
+
+type CoverPreviouslyEmailedNotificationsParams struct {
+	RecipientID uuid.UUID
+	WorkspaceID uuid.UUID
+}
+
+// A fresh event ID must not resend previously covered content, even after the
+// original inbox row is deleted. JSONB normalizes object key ordering.
+func (q *Queries) CoverPreviouslyEmailedNotifications(ctx context.Context, arg CoverPreviouslyEmailedNotificationsParams) error {
+	_, err := q.db.Exec(ctx, coverPreviouslyEmailedNotifications, arg.RecipientID, arg.WorkspaceID)
+	return err
+}
+
 const getNotificationEmailDelivery = `-- name: GetNotificationEmailDelivery :one
 WITH eligible_notification AS (
     SELECT
@@ -536,11 +560,19 @@ func (q *Queries) ListNotificationEmailDigestDeliveries(ctx context.Context, arg
 }
 
 const markNotificationEmailsSent = `-- name: MarkNotificationEmailsSent :execrows
-UPDATE public.notifications AS notification
-SET email_sent_at = COALESCE(notification.email_sent_at, CAST($1 AS timestamptz))
-WHERE notification.recipient_id = CAST($2 AS uuid)
-  AND notification.workspace_id = CAST($3 AS uuid)
-  AND notification.notification_id = ANY(CAST($4 AS uuid[]))
+WITH covered AS (
+    UPDATE public.notifications AS notification
+    SET email_sent_at = COALESCE(notification.email_sent_at, CAST($1 AS timestamptz))
+    WHERE notification.recipient_id = CAST($2 AS uuid)
+      AND notification.workspace_id = CAST($3 AS uuid)
+      AND notification.notification_id = ANY(CAST($4 AS uuid[]))
+    RETURNING notification.notification_id, notification.recipient_id, notification.workspace_id, notification.type, notification.entity_type, notification.entity_id, notification.actor_id, notification.title, notification.created_at, notification.read_at, notification.message, notification.email_sent_at, notification.dedupe_key, notification.in_app_enabled
+)
+INSERT INTO public.notification_email_receipts (recipient_id, workspace_id, content_hash, sent_at)
+SELECT covered.recipient_id, covered.workspace_id, sha256(convert_to(CAST(jsonb_build_array(covered.type, covered.entity_type, covered.entity_id, covered.actor_id, covered.title, covered.message) AS text), 'UTF8')), MIN(covered.email_sent_at)
+FROM covered
+GROUP BY covered.recipient_id, covered.workspace_id, sha256(convert_to(CAST(jsonb_build_array(covered.type, covered.entity_type, covered.entity_id, covered.actor_id, covered.title, covered.message) AS text), 'UTF8'))
+ON CONFLICT (recipient_id, workspace_id, content_hash) DO NOTHING
 `
 
 type MarkNotificationEmailsSentParams struct {
@@ -550,6 +582,7 @@ type MarkNotificationEmailsSentParams struct {
 	NotificationIds []uuid.UUID
 }
 
+// Sent timestamps and content receipts are committed in the same statement.
 func (q *Queries) MarkNotificationEmailsSent(ctx context.Context, arg MarkNotificationEmailsSentParams) (int64, error) {
 	result, err := q.db.Exec(ctx, markNotificationEmailsSent,
 		arg.SentAt,

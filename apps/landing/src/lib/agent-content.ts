@@ -55,7 +55,7 @@ Read the [documentation](https://docs.fortyone.app) or [contact FortyOne](${SITE
 
 Contact FortyOne for product support, demos, pricing, implementation guidance, integrations, privacy questions, or help deciding whether the platform fits your team.
 
-- Email: hello@complexus.tech
+- Email: info@fortyone.app
 - Documentation: https://docs.fortyone.app
 - Website: ${SITE_URL}
 `,

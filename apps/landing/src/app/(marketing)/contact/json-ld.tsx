@@ -14,7 +14,7 @@ const contactPage: WithContext<ContactPage> = {
     contactPoint: {
       "@type": "ContactPoint",
       contactType: "customer support",
-      email: "hello@complexus.tech",
+      email: "info@fortyone.app",
       availableLanguage: ["English"],
       contactOption: "TollFree",
       areaServed: "Worldwide",

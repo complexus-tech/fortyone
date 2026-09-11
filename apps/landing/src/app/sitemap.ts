@@ -1,5 +1,4 @@
 import type { MetadataRoute } from "next";
-import { comparisons } from "@/lib/comparisons";
 import { features } from "@/lib/features";
 import { getAllPosts } from "@/lib/posts";
 import { getCanonicalUrl } from "@/lib/seo";
@@ -11,10 +10,6 @@ const useCaseRoutes: MetadataRoute.Sitemap = useCases.map(({ slug }) => ({
 
 const featureRoutes: MetadataRoute.Sitemap = features.map(({ slug }) => ({
   url: getCanonicalUrl(`/features/${slug}`),
-}));
-
-const comparisonRoutes: MetadataRoute.Sitemap = comparisons.map(({ slug }) => ({
-  url: getCanonicalUrl(`/compare/${slug}`),
 }));
 
 const routes: MetadataRoute.Sitemap = [
@@ -35,11 +30,5 @@ const blogRoutes: MetadataRoute.Sitemap = getAllPosts().map(
 );
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  return [
-    ...routes,
-    ...featureRoutes,
-    ...useCaseRoutes,
-    ...comparisonRoutes,
-    ...blogRoutes,
-  ];
+  return [...routes, ...featureRoutes, ...useCaseRoutes, ...blogRoutes];
 }

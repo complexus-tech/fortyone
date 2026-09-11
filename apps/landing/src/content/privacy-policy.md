@@ -199,10 +199,10 @@ You are advised to review this Privacy Policy periodically for any changes. Chan
 
 If you have any questions about this Privacy Policy, You can contact us:
 
-By email: info@complexus.app
+By email: info@fortyone.app
 
 For data protection inquiries:
-Data Protection Officer: hello@complexus.tech
+Data Protection Officer: info@fortyone.app
 
 For general support:
-Support: hello@complexus.tech
+Support: info@fortyone.app

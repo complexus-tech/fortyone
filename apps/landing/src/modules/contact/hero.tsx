@@ -1,35 +1,52 @@
-"use client";
-import { Text } from "ui";
-import { motion } from "framer-motion";
-import { Container } from "@/components/ui";
+import { Button } from "ui";
+import { MarketingHero } from "@/components/shared/marketing-surface";
 
-export const Hero = () => {
-  return (
-    <Container className="relative pt-28 pb-10">
-      <motion.div
-        initial={{ y: 20, opacity: 0 }}
-        transition={{
-          duration: 1,
-          delay: 0,
-        }}
-        viewport={{ once: true, amount: 0.5 }}
-        whileInView={{ y: 0, opacity: 1 }}
+const CONTACT_EMAIL = "info@fortyone.app";
+
+function contactHref(subject: string, body: string) {
+  return `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
+const salesHref = contactHref(
+  "FortyOne — product and pricing",
+  "Hi FortyOne team,\n\nI'd like to learn more about FortyOne.\n\nThe work our team manages:\nTeam size:\nTools we want to connect:\nRollout timeline or requirements:\n",
+);
+
+const supportHref = contactHref(
+  "FortyOne — support request",
+  "Hi FortyOne team,\n\nI need help with:\n\nWorkspace:\nWhat I was trying to do:\nWhat happened:\n",
+);
+
+export const Hero = () => (
+  <MarketingHero
+    description="Ask about pricing, implementation, integrations, support, or whether FortyOne is the right fit for the way your team plans and tracks work."
+    eyebrow="Contact us"
+    id="contact-title"
+    title="Talk to the team behind FortyOne."
+  >
+    <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+      <Button
+        className="focus-visible:outline-ring w-full justify-center focus-visible:outline-2 focus-visible:outline-offset-4 sm:w-auto"
+        color="invert"
+        href={salesHref}
+        rounded="md"
+        size="lg"
       >
-        <Text
-          as="h1"
-          className="mb-6 max-w-4xl pb-2 text-5xl font-medium text-balance md:text-[3.5rem]"
-        >
-          Talk to the team behind FortyOne.
-        </Text>
-      </motion.div>
-      <Text
-        as="h2"
-        className="text-text-muted max-w-2xl text-lg leading-8 md:text-xl"
-        fontWeight="normal"
+        Contact sales
+      </Button>
+      <Button
+        className="focus-visible:outline-ring w-full justify-center focus-visible:outline-2 focus-visible:outline-offset-4 sm:w-auto"
+        color="invert"
+        href={supportHref}
+        rounded="md"
+        size="lg"
+        variant="outline"
       >
-        Ask about pricing, implementation, integrations, support, or whether
-        FortyOne is the right fit for the way your team plans and tracks work.
-      </Text>
-    </Container>
-  );
-};
+        Contact support
+      </Button>
+    </div>
+    <p className="text-text-muted mt-6 text-sm">
+      We respond to support requests within two business days.
+    </p>
+  </MarketingHero>
+);

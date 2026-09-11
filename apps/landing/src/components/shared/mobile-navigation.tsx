@@ -191,6 +191,16 @@ export const MobileNavigation = () => {
                     Pricing
                   </Link>
                 </li>
+                <li>
+                  <Link
+                    className="focus-visible:outline-primary flex min-h-12 items-center rounded-md px-2 text-base font-semibold outline-none focus-visible:outline-2 focus-visible:outline-offset-[-2px]"
+                    href="/contact"
+                    onClick={closeMenu}
+                    prefetch
+                  >
+                    Contact
+                  </Link>
+                </li>
               </ul>
             </nav>
           </div>

@@ -332,7 +332,7 @@ const planCtas: Record<string, { href: string; label: string }> = {
   Hobby: { href: SIGNUP_URL, label: "Start free" },
   Professional: { href: SIGNUP_URL, label: "Try Professional" },
   Business: { href: SIGNUP_URL, label: "Try Business" },
-  Enterprise: { href: "mailto:info@complexus.app", label: "Talk to sales" },
+  Enterprise: { href: "mailto:info@fortyone.app", label: "Talk to sales" },
 };
 
 const COMPARISON_DOCK_TOP = 80;

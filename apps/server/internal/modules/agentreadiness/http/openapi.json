@@ -4,7 +4,7 @@
     "title": "FortyOne Agent API",
     "version": "1.0.0",
     "description": "Machine-readable contract for FortyOne discovery, health, and OAuth-protected MCP and developer API audiences.",
-    "contact": { "name": "FortyOne", "email": "hello@complexus.tech", "url": "https://www.fortyone.app/contact" }
+    "contact": { "name": "FortyOne", "email": "info@fortyone.app", "url": "https://www.fortyone.app/contact" }
   },
   "servers": [{ "url": "https://api.fortyone.app", "description": "Production" }],
   "externalDocs": { "description": "FortyOne developer resources", "url": "https://www.fortyone.app/developers" },

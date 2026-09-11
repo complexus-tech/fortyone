@@ -411,6 +411,9 @@ export const Navigation = () => {
               <li className="flex items-center">
                 <DesktopNavItem href="/pricing" title="Pricing" />
               </li>
+              <li className="flex items-center">
+                <DesktopNavItem href="/contact" title="Contact" />
+              </li>
             </ul>
           </nav>
         </Flex>

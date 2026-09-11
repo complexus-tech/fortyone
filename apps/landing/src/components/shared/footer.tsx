@@ -15,7 +15,6 @@ import { cn } from "lib";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import { Tooltip } from "ui";
-import { comparisons } from "@/lib/comparisons";
 import { featureLinks } from "@/lib/feature-links";
 import { useCaseLinks } from "@/lib/use-case-links";
 import { ParticleVector } from "@/modules/home/particle-text";
@@ -47,16 +46,6 @@ const company = [
   { title: "Pricing", href: "/pricing" },
   { title: "Contact", href: "/contact" },
 ];
-
-const comparisonFooterOrder = ["asana", "jira", "clickup", "trello", "monday"];
-
-const comparisonLinks = comparisonFooterOrder
-  .map((slug) => comparisons.find((comparison) => comparison.slug === slug))
-  .filter((comparison) => comparison !== undefined)
-  .map(({ competitor, slug }) => ({
-    href: `/compare/${slug}`,
-    title: competitor,
-  }));
 
 const legal = [
   { title: "Privacy Policy", href: "/privacy" },
@@ -204,7 +193,6 @@ export const Footer = () => {
 
             <div className="col-span-2 grid grid-cols-2 gap-x-6 gap-y-10 lg:col-span-1 lg:block lg:space-y-10">
               <FooterGroup links={resources} title="Resources" />
-              <FooterGroup links={comparisonLinks} title="Compare" />
               <FooterGroup links={legal} title="Legal" />
             </div>
           </div>

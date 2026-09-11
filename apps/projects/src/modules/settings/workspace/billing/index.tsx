@@ -69,7 +69,7 @@ export const Billing = () => {
         <Flex align="center" className="mb-6" justify="between">
           <Text color="muted">
             For questions about billing,{" "}
-            <a className="text-foreground" href="mailto:info@complexus.app">
+            <a className="text-foreground" href="mailto:info@fortyone.app">
               contact us.
             </a>{" "}
             Your workspace has {totalValidMembers} users.
@@ -137,7 +137,7 @@ export const Billing = () => {
       <Flex align="center" className="mb-4" justify="between">
         <Text color="muted">
           For questions about billing,{" "}
-          <a className="text-foreground" href="mailto:info@complexus.app">
+          <a className="text-foreground" href="mailto:info@fortyone.app">
             contact us.
           </a>{" "}
           Your plan has {totalValidMembers} users.

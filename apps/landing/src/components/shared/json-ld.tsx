@@ -84,7 +84,7 @@ const organization: WithContext<Organization> = {
   contactPoint: {
     "@type": "ContactPoint",
     contactType: "customer support",
-    email: "hello@complexus.tech",
+    email: "info@fortyone.app",
   },
   address: {
     "@type": "PostalAddress",
