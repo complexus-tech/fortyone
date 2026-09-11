@@ -2,14 +2,16 @@ import type { Metadata } from "next";
 import { ArrowLeft2Icon } from "icons";
 import Image from "next/image";
 import Link from "next/link";
-import { MDXRemote } from "next-mdx-remote/rsc";
+import { compileMDX } from "next-mdx-remote/rsc";
 import { notFound } from "next/navigation";
-import { Box, Flex, Text } from "ui";
 import { CallToAction } from "@/components/shared";
 import { Container } from "@/components/ui";
 import { getAllPosts, getPostBySlug } from "@/lib/posts";
 import { getCanonicalUrl } from "@/lib/seo";
-import { mdxComponents } from "@/mdx-components";
+import { PostCard, PostMeta } from "../post-card";
+import { articleMdxComponents } from "./article-components";
+import { ArticleMap } from "./article-map";
+import { createArticleMarkdown } from "./article-markdown";
 import styles from "./article.module.css";
 
 export function generateStaticParams() {
@@ -52,12 +54,6 @@ export async function generateMetadata({
   };
 }
 
-const dateFormatter = new Intl.DateTimeFormat("en-US", {
-  month: "long",
-  day: "numeric",
-  year: "numeric",
-});
-
 export default async function BlogPost({
   params,
 }: {
@@ -69,11 +65,17 @@ export default async function BlogPost({
     return notFound();
   }
 
+  const markdown = createArticleMarkdown();
+  const { content } = await compileMDX({
+    source: post.content,
+    components: articleMdxComponents,
+    options: markdown.options,
+  });
   const canonicalUrl = getCanonicalUrl(`/blog/${slug}`);
   const featuredImageUrl = getCanonicalUrl(post.metadata.featuredImage);
   const relatedPosts = getAllPosts()
     .filter((candidate) => candidate.slug !== post.slug)
-    .slice(0, 2);
+    .slice(0, 3);
   const articleJsonLd = {
     "@context": "https://schema.org",
     "@type": "Article",
@@ -103,92 +105,70 @@ export default async function BlogPost({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
         type="application/ld+json"
       />
-      <article className="bg-background text-foreground pt-28 pb-24 md:pt-36 md:pb-32">
+      <article
+        className="bg-background text-foreground pt-24 pb-24 md:pb-32"
+      >
         <Container>
-          <Link
-            className="text-text-muted hover:text-foreground inline-flex items-center gap-1.5 text-sm transition-colors"
-            href="/blog"
-          >
-            <ArrowLeft2Icon className="size-4" />
-            All posts
-          </Link>
-
-          <header className="mt-12 max-w-5xl">
-            <Flex align="center" className="flex-wrap gap-2 text-sm">
-              <Text color="muted">{post.metadata.category}</Text>
-              <span aria-hidden="true">·</span>
-              <Text color="muted">
-                {dateFormatter.format(new Date(post.metadata.date))}
-              </Text>
-              <span aria-hidden="true">·</span>
-              <Text color="muted">{post.readingTime} min read</Text>
-            </Flex>
-            <Text
-              as="h1"
-              className="mt-6 max-w-6xl text-[clamp(2.75rem,6vw,5rem)] leading-[0.98] font-semibold tracking-[-0.045em] text-balance"
+          <header className={styles.articleHeader} id="article-top">
+            <Link
+              className="text-text-muted hover:text-foreground focus-visible:outline-ring inline-flex items-center gap-1.5 rounded-md text-sm transition-colors focus-visible:outline-2"
+              href="/blog"
             >
-              {post.metadata.title}
-            </Text>
-            <Text className="text-text-description mt-7 max-w-2xl text-base leading-7 text-pretty md:text-lg">
+              <ArrowLeft2Icon className="size-4" />
+              All posts
+            </Link>
+            <div className="mt-8 flex justify-center">
+              <PostMeta appearance="plain" post={post} />
+            </div>
+            <h1 className={styles.articleTitle}>{post.metadata.title}</h1>
+            <p className="text-text-description mx-auto mt-6 max-w-2xl text-pretty">
               {post.metadata.description}
-            </Text>
-            <Text className="text-text-muted mt-6 text-sm">
-              By {post.metadata.author}
-            </Text>
+            </p>
+            <p className="text-text-muted mt-7 text-sm">
+              {post.metadata.author}
+              <span aria-hidden="true"> · </span>
+              {post.readingTime} min read
+            </p>
           </header>
-
-          <Box className="bg-surface-muted relative mt-12 aspect-[16/9] overflow-hidden rounded-[2rem] md:mt-16 md:rounded-[3rem]">
+          <div
+            className={`${styles.articleCover} bg-surface-muted relative overflow-hidden rounded-2xl sm:rounded-[2rem]`}
+          >
             <Image
               alt=""
               className="object-cover"
               fill
               priority
-              sizes="(max-width: 1279px) 100vw, 1200px"
+              sizes="(max-width: 1023px) 100vw, 960px"
               src={post.metadata.featuredImage}
             />
-            <Box className="absolute inset-0 bg-gradient-to-t from-black/15 to-transparent" />
-          </Box>
-
-          <Box
-            className={`${styles.articleBody} mx-auto mt-14 max-w-[720px] md:mt-20`}
-          >
-            <MDXRemote components={mdxComponents} source={post.content} />
-          </Box>
+          </div>
+          <div className={styles.readingLayout}>
+            <ArticleMap headings={markdown.headings} />
+            <div className={styles.articleBody}>{content}</div>
+          </div>
 
           {relatedPosts.length > 0 ? (
-            <Box className="border-border mt-20 border-t pt-10 md:mt-28 md:pt-12">
-              <Text as="h2" className="text-3xl font-semibold">
-                Keep reading
-              </Text>
-              <Box className="mt-7 grid gap-5 md:grid-cols-2">
+            <section
+              aria-labelledby="keep-reading-title"
+              className="border-border mt-20 border-t pt-10 md:mt-28 md:pt-12"
+            >
+              <div className="flex items-center justify-between gap-4">
+                <h2 className="text-3xl font-semibold" id="keep-reading-title">
+                  Keep reading
+                </h2>
+                <Link
+                  className="text-text-muted hover:text-foreground text-sm underline underline-offset-4"
+                  href="/blog"
+                >
+                  All posts
+                </Link>
+              </div>
+              <div className="mt-8 grid gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
                 {relatedPosts.map((relatedPost) => (
-                  <Link
-                    className="group bg-surface-elevated border-border grid grid-cols-[7rem_minmax(0,1fr)] overflow-hidden rounded-2xl border transition-transform duration-200 hover:-translate-y-0.5 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
-                    href={`/blog/${relatedPost.slug}`}
-                    key={relatedPost.slug}
-                  >
-                    <Box className="bg-surface-muted relative min-h-32">
-                      <Image
-                        alt=""
-                        className="object-cover"
-                        fill
-                        sizes="112px"
-                        src={relatedPost.metadata.featuredImage}
-                      />
-                    </Box>
-                    <Box className="p-4">
-                      <Text className="text-text-muted text-xs">
-                        {relatedPost.metadata.category} ·{" "}
-                        {relatedPost.readingTime}m
-                      </Text>
-                      <Text as="h3" className="mt-2 font-semibold text-pretty">
-                        {relatedPost.metadata.title}
-                      </Text>
-                    </Box>
-                  </Link>
+                  <PostCard key={relatedPost.slug} post={relatedPost} />
                 ))}
-              </Box>
-            </Box>
+              </div>
+            </section>
           ) : null}
         </Container>
       </article>

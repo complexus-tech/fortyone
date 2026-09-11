@@ -174,12 +174,14 @@ const NavigationMenuLink = ({
   description,
   href,
   icon,
+  onSelect,
   title,
   tone,
-}: NavigationMenuItem) => (
+}: NavigationMenuItem & { onSelect: () => void }) => (
   <Link
     className="group hover:bg-accent/70 focus:bg-accent/70 focus-visible:bg-accent/70 focus-visible:ring-ring dark:hover:bg-surface-prominent/75 dark:focus:bg-surface-prominent/75 dark:focus-visible:bg-surface-prominent/75 flex min-w-0 items-start gap-3 rounded-xl px-2.5 py-2.5 transition-colors outline-none select-none focus-visible:ring-2 focus-visible:outline-none"
     href={href}
+    onClick={onSelect}
     prefetch={!isExternalLink(href)}
     rel={isExternalLink(href) ? "noreferrer" : undefined}
     target={isExternalLink(href) ? "_blank" : undefined}
@@ -216,7 +218,7 @@ const NavigationDropdown = ({
   value: string;
 }) => (
   <li
-    className="group/dropdown relative"
+    className="relative flex items-center"
     onBlur={(event) => {
       if (
         !(event.relatedTarget instanceof Node) ||
@@ -224,6 +226,9 @@ const NavigationDropdown = ({
       ) {
         onOpenChange("");
       }
+    }}
+    onMouseEnter={() => {
+      onOpenChange(value);
     }}
     onMouseLeave={() => {
       onOpenChange("");
@@ -234,21 +239,29 @@ const NavigationDropdown = ({
       aria-expanded={isOpen}
       className="hover:bg-state-hover focus-visible:bg-state-hover focus-visible:ring-ring flex cursor-pointer items-center gap-1 rounded-md px-3 py-1.5 text-[0.95rem] transition outline-none select-none focus:outline-none focus-visible:ring-2 focus-visible:outline-none"
       onClick={() => {
-        onOpenChange(isOpen ? "" : value);
+        onOpenChange(value);
+      }}
+      onFocus={() => {
+        onOpenChange(value);
       }}
       type="button"
     >
       {label}
       <ArrowDown2Icon
         aria-hidden="true"
-        className="h-3 w-auto transition-transform duration-200 group-focus-within/dropdown:rotate-180 group-hover/dropdown:rotate-180 motion-reduce:transition-none"
+        className={cn(
+          "h-3 w-auto transition-transform duration-200 motion-reduce:transition-none",
+          isOpen && "rotate-180",
+        )}
         strokeWidth={3}
       />
     </button>
     <div
       className={cn(
-        "pointer-events-none invisible absolute top-full z-50 translate-y-1 pt-2 opacity-0 transition-[transform,opacity,visibility] delay-150 duration-[160ms] [transition-timing-function:var(--landing-ease-out)] group-focus-within/dropdown:pointer-events-auto group-focus-within/dropdown:visible group-focus-within/dropdown:translate-y-0 group-focus-within/dropdown:opacity-100 group-focus-within/dropdown:delay-0 group-hover/dropdown:pointer-events-auto group-hover/dropdown:visible group-hover/dropdown:translate-y-0 group-hover/dropdown:opacity-100 group-hover/dropdown:delay-0 motion-reduce:transition-none",
-        isOpen && "pointer-events-auto visible translate-y-0 opacity-100",
+        "absolute top-full z-50 pt-[calc(0.75rem+3px)] transition-[transform,opacity,visibility] duration-[160ms] [transition-timing-function:var(--landing-ease-out)] motion-reduce:transition-none",
+        isOpen
+          ? "pointer-events-auto visible translate-y-0 opacity-100"
+          : "pointer-events-none invisible translate-y-1 opacity-0",
         contentClassName,
       )}
       id={`${value}-navigation-menu`}
@@ -265,7 +278,13 @@ const NavigationDropdown = ({
         ) : null}
         <div className={cn("grid gap-1", gridClassName)}>
           {items.map((item) => (
-            <NavigationMenuLink key={item.href} {...item} />
+            <NavigationMenuLink
+              key={item.href}
+              {...item}
+              onSelect={() => {
+                onOpenChange("");
+              }}
+            />
           ))}
         </div>
       </Box>
@@ -353,14 +372,14 @@ export const Navigation = () => {
           isDocked ? "translate-y-2 md:translate-y-3" : "translate-y-0",
         )}
       >
-        <Flex align="center" className="min-w-0 gap-8">
+        <Flex align="center" className="min-w-0 gap-8 self-stretch">
           <Logo className="h-6 sm:h-7" />
           <nav
             aria-label="Main"
-            className="landing-desktop-navigation relative z-10"
+            className="landing-desktop-navigation relative z-10 self-stretch"
             ref={navigationRef}
           >
-            <ul className="flex list-none items-center gap-1">
+            <ul className="flex h-full list-none items-stretch gap-1">
               <NavigationDropdown
                 contentClassName="w-[46rem] max-w-[calc(100vw-3rem)]"
                 gridClassName="grid-cols-3"
@@ -389,7 +408,7 @@ export const Navigation = () => {
                 onOpenChange={setActiveMenu}
                 value="resources"
               />
-              <li>
+              <li className="flex items-center">
                 <DesktopNavItem href="/pricing" title="Pricing" />
               </li>
             </ul>

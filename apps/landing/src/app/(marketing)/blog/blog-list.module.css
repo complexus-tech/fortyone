@@ -1,31 +1,54 @@
-.bodyFont {
-  font-family: var(--font-body), sans-serif;
+.featured {
+  display: grid;
+  align-items: center;
+  gap: 2rem;
+}
+.category {
+  background: var(--color-surface-muted);
+  color: var(--color-foreground);
+  padding: 0.35rem 0.65rem;
+}
+.category[data-category="Operations"] {
+  background: light-dark(#e7eddf, #293329);
+  color: light-dark(#354d32, #c9dfbd);
+}
+.category[data-category="Workflows"] {
+  background: light-dark(#e2ebf2, #22313e);
+  color: light-dark(#30516c, #bfd8ef);
+}
+.category[data-category="Planning"] {
+  background: light-dark(#f4e7dc, #3b2e24);
+  color: light-dark(#80502d, #eed0b0);
+}
+.category[data-category="Strategy"] {
+  background: light-dark(#eee6f2, #352c3c);
+  color: light-dark(#654975, #ddc9e9);
+}
+.title {
+  text-decoration-color: transparent;
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.17em;
+  transition: text-decoration-color 160ms ease-out;
 }
 
-.writingLinkTitle {
-  -webkit-box-decoration-break: clone;
-  background-image: linear-gradient(currentcolor, currentcolor);
-  background-position: right calc(100% - 1px);
-  background-repeat: no-repeat;
-  background-size: 0 1px;
-  box-decoration-break: clone;
-  transition: background-size 180ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-a:focus-visible .writingLinkTitle {
-  background-position: left calc(100% - 1px);
-  background-size: 100% 1px;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  a:hover .writingLinkTitle {
-    background-position: left calc(100% - 1px);
-    background-size: 100% 1px;
-  }
+.postLink:hover .title {
+  text-decoration-color: currentColor;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .writingLinkTitle {
+  .title {
     transition: none;
   }
+}
+
+@media (min-width: 48rem) {
+  .featured {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: clamp(2rem, 4vw, 4.5rem);
+  }
+}
+.featured .title {
+  font-family: var(--font-serif);
+  letter-spacing: -0.025em;
 }
