@@ -17,6 +17,48 @@
 :root {
   --nprogress-color: var(--color-primary);
   --landing-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --landing-espresso: oklch(0.27 0.055 40);
+}
+
+/* Warm contrast panels belong to light mode; dark mode keeps shared tokens. */
+html:not(.dark) .landing-light-contrast {
+  --color-background: var(--landing-espresso);
+  --color-surface: oklch(0.3 0.05 40);
+  --color-surface-elevated: oklch(0.33 0.045 40);
+  --color-surface-muted: var(--color-surface-elevated);
+  --color-surface-prominent: oklch(0.37 0.04 40);
+  --color-popover: var(--color-surface-elevated);
+  --color-muted: var(--color-surface);
+  --color-accent: var(--color-surface-prominent);
+  --color-shadow: oklch(0.19 0.028 40 / 25%);
+  background: radial-gradient(
+      ellipse at 100% 100%,
+      var(--landing-espresso),
+      transparent 65%
+    ),
+    radial-gradient(
+      ellipse at 0% 15%,
+      color-mix(in oklab, var(--landing-espresso) 40%, transparent),
+      transparent 45%
+    ),
+    var(--brand-ink);
+}
+
+html:not(.dark) .landing-light-contrast .landing-team-panel {
+  background: color-mix(
+    in oklab,
+    var(--color-surface-prominent) 30%,
+    transparent
+  );
+}
+
+html:not(.dark) footer .landing-light-contrast {
+  background: radial-gradient(
+      ellipse at 100% 100%,
+      color-mix(in oklab, var(--landing-espresso) 65%, transparent),
+      transparent 42%
+    ),
+    var(--brand-ink);
 }
 
 .landing-page-frame {

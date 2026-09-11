@@ -1,0 +1,31 @@
+.sky {
+  background: radial-gradient(ellipse at 15% 80%, #dae8e6, transparent 48%),
+    radial-gradient(ellipse at 75% 65%, #335779, transparent 55%),
+    radial-gradient(ellipse at 10% 45%, #c1a29a, transparent 38%), #a4d1df;
+}
+
+.sage {
+  background: radial-gradient(ellipse at 65% 10%, #eaf3ef, transparent 48%),
+    radial-gradient(ellipse at 12% 15%, #abc365, transparent 48%),
+    radial-gradient(ellipse at 30% 70%, #adcaad, transparent 45%), #36664b;
+}
+
+.amber {
+  background: radial-gradient(ellipse at 90% 20%, #414943, transparent 55%),
+    radial-gradient(ellipse at 35% 90%, #803c22, transparent 52%),
+    radial-gradient(ellipse at 5% 10%, #f6b240, transparent 55%), #d57522;
+}
+
+.illustration {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  stroke: rgb(255 255 255 / 20%);
+  stroke-width: 1;
+}
+
+.illustration circle {
+  fill: none;
+}

@@ -282,7 +282,7 @@ export const FeatureOverview = () => {
               role="tabpanel"
               tabIndex={0}
             >
-              <Box className="bg-surface-muted/85 dark:bg-surface-prominent/60 grid overflow-hidden rounded p-3 md:min-h-[30rem] md:grid-cols-2 md:gap-5 dark:backdrop-blur-xl">
+              <Box className="landing-team-panel bg-surface-muted/85 dark:bg-surface-prominent/60 grid overflow-hidden rounded p-3 md:min-h-[30rem] md:grid-cols-2 md:gap-5 dark:backdrop-blur-xl">
                 <Box className="flex items-center px-6 py-10 sm:px-8 md:px-6 md:py-12 md:pr-12">
                   <Box className="max-w-md">
                     <Text as="h3" className="text-2xl md:text-3xl">

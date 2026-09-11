@@ -176,7 +176,7 @@ export const Footer = () => {
 
   return (
     <footer className="bg-background py-2 sm:py-3 md:py-6">
-      <div className="landing-hero-shell landing-page-frame overflow-hidden rounded-2xl sm:rounded-[3rem] md:rounded-[4rem]">
+      <div className="dark landing-light-contrast landing-hero-shell landing-page-frame text-foreground overflow-hidden rounded-2xl sm:rounded-[3rem] md:rounded-[4rem]">
         <div className="px-5 py-8 sm:px-10 sm:py-12 lg:px-14 lg:py-16 xl:px-20 xl:py-20">
           <div className="grid grid-cols-2 gap-x-6 gap-y-10 sm:gap-y-14 lg:grid-cols-[minmax(18rem,1.45fr)_repeat(3,minmax(0,1fr))] lg:gap-x-10 xl:gap-x-16">
             <div className="col-span-2 flex flex-col justify-between gap-10 lg:col-span-1 lg:min-h-[34rem]">

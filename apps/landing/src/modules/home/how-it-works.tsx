@@ -14,7 +14,7 @@ import {
   FEATURE_STORY_TEXT_CLASS as CARD_TEXT_CLASS,
 } from "./feature-story-section";
 
-function SlackIcon({ className }: { className?: string }) {
+export function SlackIcon({ className }: { className?: string }) {
   return (
     <svg
       className={className}
@@ -181,14 +181,13 @@ export function RequestToWorkCard({
         )}
       >
         <CommentIcon className="text-text-muted size-4 shrink-0" />
-        <Text className={cn(CARD_TEXT_CLASS, "text-text-muted")}>
+        <Text className={cn(CARD_TEXT_CLASS, "text-text-muted min-w-0 flex-1")}>
           {isComfortable ? "Feedback linked" : "Original request attached"}
         </Text>
         <Text
           className={cn(
             CARD_META_TEXT_CLASS,
-            "bg-accent text-text-secondary ml-auto rounded-lg px-2 py-1 font-semibold",
-            isComfortable && "shrink-0 whitespace-nowrap",
+            "bg-accent text-foreground ml-auto shrink-0 rounded-lg px-2 py-1 font-semibold whitespace-nowrap",
           )}
         >
           Goal · Activation

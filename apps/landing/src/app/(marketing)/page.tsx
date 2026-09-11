@@ -52,11 +52,13 @@ export default function Page() {
             styles.heroShell,
           )}
         >
-          <section className="pt-px pb-6 md:pb-10">
+          <section className={cn("pt-px pb-6 md:pb-10", styles.heroSection)}>
             <Hero />
             <HeroProductScreenshot />
           </section>
-          <DecideWhatMattersShowcase />
+          <div className={styles.capabilities}>
+            <DecideWhatMattersShowcase />
+          </div>
         </div>
         <div
           className={cn(
@@ -66,7 +68,14 @@ export default function Page() {
         >
           <ProductWorkflowShowcase />
           <CustomerStories />
-          <FeatureOverview />
+          <div
+            className={cn(
+              "dark landing-light-contrast landing-page-frame rounded-2xl sm:rounded-[3rem] md:rounded-[4rem]",
+              styles.darkSection,
+            )}
+          >
+            <FeatureOverview />
+          </div>
           <Integrations />
         </div>
         <CallToAction className="border-t-0" />

@@ -37,11 +37,11 @@ const HERO_PARTICLE_KEYWORDS: Partial<Record<string, HeroParticleConfig>> = {
 export const Hero = () => {
   return (
     <Box>
-      <Container className="pt-8">
+      <Container className="pt-8 text-center md:pt-14">
         <Box className="mt-10 mb-6">
           <Text
             as="h1"
-            className="relative z-1 text-[2.75rem] leading-[0.98] font-semibold tracking-tight text-balance sm:text-5xl sm:leading-none md:max-w-6xl md:text-6xl"
+            className="relative z-1 mx-auto text-[2.75rem] leading-[0.98] font-semibold tracking-tight text-balance sm:text-5xl sm:leading-none md:max-w-6xl md:text-6xl"
           >
             {HERO_TITLE_WORDS.map((word, index) => {
               const particleConfig = HERO_PARTICLE_KEYWORDS[word];
@@ -86,13 +86,13 @@ export const Hero = () => {
               );
             })}
           </Text>
-          <Text className="text-text-description mt-6 max-w-xl text-base text-pretty">
+          <Text className="text-text-description mx-auto mt-6 max-w-xl text-base text-pretty">
             {HERO_DESCRIPTION}
           </Text>
         </Box>
 
-        <Box className="landing-hero-action relative z-1 flex w-full flex-col items-start gap-3">
-          <Box className="flex w-full max-w-[18rem] flex-col items-stretch gap-2 sm:max-w-none sm:flex-row sm:items-start sm:gap-3">
+        <Box className="landing-hero-action relative z-1 flex w-full flex-col items-center gap-3">
+          <Box className="flex w-full max-w-[18rem] flex-col items-stretch gap-2 sm:max-w-none sm:flex-row sm:items-start sm:justify-center sm:gap-3">
             <SignupProviderButton
               className="w-full justify-center px-3 sm:w-max md:px-3"
               emphasized
@@ -106,7 +106,7 @@ export const Hero = () => {
               provider="microsoft"
             />
           </Box>
-          <Text className="mt-1 ml-0.5 text-left text-[0.9rem]" color="muted">
+          <Text className="mt-1 ml-0.5 text-center text-[0.9rem]" color="muted">
             <Link
               className="text-foreground underline underline-offset-2"
               href={SIGNUP_URL}

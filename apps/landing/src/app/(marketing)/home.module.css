@@ -131,3 +131,50 @@
   content: "";
   pointer-events: none;
 }
+
+.darkSection {
+  display: contents;
+}
+
+:global(html:not(.dark)) .heroShell {
+  background: none;
+}
+
+:global(html:not(.dark)) .heroSection {
+  overflow: clip;
+  background: radial-gradient(
+      ellipse at 15% 90%,
+      color-mix(in oklab, var(--color-info) 16%, transparent),
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse at 90% 30%,
+      color-mix(in oklab, var(--color-primary) 10%, transparent),
+      transparent 60%
+    ),
+    var(--color-surface-muted);
+}
+
+:global(html:not(.dark)) .progressBand {
+  padding-top: clamp(4rem, 8vw, 8rem);
+  background: var(--color-background);
+}
+
+:global(html:not(.dark)) .capabilities {
+  padding-bottom: clamp(3rem, 6vw, 6rem);
+}
+
+:global(html:not(.dark)) .darkSection {
+  display: block;
+  overflow: clip;
+  color: var(--color-foreground);
+}
+
+:global(html:not(.dark)) .heroSection {
+  border-radius: inherit;
+  corner-shape: inherit;
+}
+
+:global(html:not(.dark)) .progressBand::before {
+  display: none;
+}
