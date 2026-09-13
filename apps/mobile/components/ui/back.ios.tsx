@@ -2,8 +2,13 @@ import React from "react";
 import { useRouter } from "expo-router";
 import { colors } from "@/constants";
 import { useTheme } from "@/hooks";
-import { Host, HStack, Image } from "@expo/ui/swift-ui";
-import { frame, glassEffect } from "@expo/ui/swift-ui/modifiers";
+import { Host, Button, Image } from "@expo/ui/swift-ui";
+import {
+  frame,
+  glassEffect,
+  accessibilityLabel,
+  buttonStyle,
+} from "@expo/ui/swift-ui/modifiers";
 
 export const Back = () => {
   const { resolvedTheme } = useTheme();
@@ -20,8 +25,10 @@ export const Back = () => {
 
   return (
     <Host matchContents style={{ width: 40, height: 40 }}>
-      <HStack
+      <Button
         modifiers={[
+          accessibilityLabel("Back"),
+          buttonStyle("plain"),
           frame({ width: 40, height: 40 }),
           glassEffect({
             glass: {
@@ -37,7 +44,7 @@ export const Back = () => {
           size={20}
           color={resolvedTheme === "light" ? colors.dark[50] : colors.gray[200]}
         />
-      </HStack>
+      </Button>
     </Host>
   );
 };

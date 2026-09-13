@@ -1,8 +1,14 @@
 import { Back, Badge, Row, Text } from "@/components/ui";
 import React from "react";
-import { ActivityIndicator } from "react-native";
-import { Host, HStack, Image } from "@expo/ui/swift-ui";
-import { frame, glassEffect } from "@expo/ui/swift-ui/modifiers";
+import { Button, Host, Image, ProgressView } from "@expo/ui/swift-ui";
+import {
+  accessibilityLabel,
+  disabled as disabledModifier,
+  frame,
+  glassEffect,
+  opacity,
+  tint,
+} from "@expo/ui/swift-ui/modifiers";
 import { colors } from "@/constants";
 
 type HeaderProps = {
@@ -20,10 +26,13 @@ export const Header = ({ disabled, loading, onSubmit }: HeaderProps) => {
         <Text>Create task</Text>
       </Badge>
 
-      <Host matchContents style={{ width: 40, height: 40 }}>
-        <HStack
+      <Host matchContents style={{ width: 44, height: 44 }}>
+        <Button
           modifiers={[
-            frame({ width: 40, height: 40 }),
+            frame({ width: 44, height: 44 }),
+            accessibilityLabel(loading ? "Creating task" : "Create task"),
+            disabledModifier(Boolean(disabled || loading)),
+            opacity(disabled ? 0.45 : 1),
             glassEffect({
               glass: {
                 interactive: true,
@@ -34,11 +43,11 @@ export const Header = ({ disabled, loading, onSubmit }: HeaderProps) => {
           onPress={disabled || loading ? undefined : onSubmit}
         >
           {loading ? (
-            <ActivityIndicator size="small" color={colors.primary} />
+            <ProgressView modifiers={[tint(colors.primary)]} />
           ) : (
             <Image systemName="checkmark" size={18} />
           )}
-        </HStack>
+        </Button>
       </Host>
     </Row>
   );

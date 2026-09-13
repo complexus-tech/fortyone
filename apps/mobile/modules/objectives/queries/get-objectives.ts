@@ -2,28 +2,40 @@ import { get } from "@/lib/http";
 import type { ApiResponse } from "@/types";
 import type { Objective, ObjectiveStatus } from "../types";
 
-export const getObjectives = async () => {
-  const response = await get<ApiResponse<Objective[]>>("objectives");
+export const getObjectives = async (signal?: AbortSignal) => {
+  const response = await get<ApiResponse<Objective[]>>("objectives", {
+    signal,
+  });
   return response.data ?? [];
 };
 
-export const getTeamObjectives = async (teamId: string) => {
+export const getTeamObjectives = async (
+  teamId: string,
+  signal?: AbortSignal,
+) => {
   if (!teamId) return [];
   const response = await get<ApiResponse<Objective[]>>(
-    `objectives?teamId=${teamId}`
+    `objectives?teamId=${teamId}`,
+    { signal },
   );
   return response.data ?? [];
 };
 
-export const getObjectiveStatuses = async () => {
-  const response =
-    await get<ApiResponse<ObjectiveStatus[]>>("objective-statuses");
+export const getObjectiveStatuses = async (signal?: AbortSignal) => {
+  const response = await get<ApiResponse<ObjectiveStatus[]>>(
+    "objective-statuses",
+    { signal },
+  );
   return response.data ?? [];
 };
 
-export const getObjective = async (objectiveId: string) => {
+export const getObjective = async (
+  objectiveId: string,
+  signal?: AbortSignal,
+) => {
   const response = await get<ApiResponse<Objective>>(
-    `objectives/${objectiveId}`
+    `objectives/${objectiveId}`,
+    { signal },
   );
   return response.data;
 };

@@ -5,6 +5,6 @@ import { teamKeys } from "@/constants/keys";
 export const useTeams = () => {
   return useQuery({
     queryKey: teamKeys.lists(),
-    queryFn: getTeams,
+    queryFn: ({ signal }) => getTeams(signal),
   });
 };

@@ -52,6 +52,7 @@ The machine-readable source of truth is [`internal/migrations/manifest.json`](..
 | `000185` | `email_avatar_handles` | `forward-only` | `schema-first` | Deploy the avatar redirect endpoint before workers emit durable image URLs. | Worker must use the public HTTPS APP_API_PUBLIC_URL pointing to the API endpoint. |
 | `000186` | `notification_event_uniqueness` | `forward-only` | `schema-first` | Compatible with the current event-deduplicating notification writer. | Existing event retries can insert separate notifications after the repair. |
 | `000187` | `notification_email_receipts` | `forward-only` | `schema-first` | Inbox deletion preserves email receipts. | Updated workers require the receipt table and atomically record coverage with sent timestamps. |
+| `000188` | `internal_slack_alerts` | `forward-only` | `schema-first` | Updated signup and invoice writers require the outbox and capture alerts atomically. | Internal alert dispatch is disabled by default and reuses the configured existing Slack installation. |
 
 ## `000152_harden_verification_tokens`
 
@@ -1087,6 +1088,33 @@ Operational notes:
 
 - Receipts store SHA-256 content hashes, not message bodies, and survive inbox deletion.
 - User and workspace deletion cascade to their receipts.
+
+## `000188_internal_slack_alerts`
+
+- **Classification:** `forward-only`
+- **Files:** `000188_internal_slack_alerts.up.sql`, `000188_internal_slack_alerts.down.sql`
+- **Schema:** Adds an operations-only signup and payment outbox with durable delivery receipts.
+- **API:** Updated signup and invoice writers require the outbox and capture alerts atomically.
+- **Worker:** Internal alert dispatch is disabled by default and reuses the configured existing Slack installation.
+- **Mixed versions:** Apply schema first, then deploy updated API and worker; older APIs do not capture alerts.
+- **Rollout mode:** `schema-first`
+
+Rollout:
+
+1. Apply migration 000188 without backfilling historical accounts or invoices.
+2. Deploy updated API and worker; subscribe the existing live Stripe endpoint to invoice.payment_succeeded.
+3. Configure the internal Slack team and general channel IDs, enable the worker dispatcher, and verify delivery.
+
+Recovery (`forward-fix`):
+
+1. Disable internal Slack dispatch to pause sends while preserving pending alerts and deduplication receipts.
+2. Remove application producers before retiring the outbox through a new forward migration.
+
+Operational notes:
+
+- No new Slack app or token is required. Customer Slack notification settings do not govern internal alerts.
+- Pending payloads are cleared after delivery; source user or workspace deletion cascades to the corresponding alerts.
+- Disabling pauses delivery while capture continues. Enabling resumes queued alerts.
 
 ## Adding the next migration
 

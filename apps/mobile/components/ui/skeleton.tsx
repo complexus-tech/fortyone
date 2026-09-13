@@ -1,5 +1,6 @@
-import React, { useEffect, useRef } from "react";
-import { ViewProps, Animated } from "react-native";
+import React, { useEffect } from "react";
+import { ViewProps, Animated, useAnimatedValue } from "react-native";
+import { useReducedMotion } from "react-native-reanimated";
 import { cn } from "@/lib/utils/classnames";
 
 export interface SkeletonProps extends ViewProps {
@@ -7,9 +8,14 @@ export interface SkeletonProps extends ViewProps {
 }
 
 export const Skeleton = ({ className, style, ...props }: SkeletonProps) => {
-  const opacity = useRef(new Animated.Value(0.3)).current;
+  const opacity = useAnimatedValue(0.3);
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
+    if (reduceMotion) {
+      opacity.setValue(0.6);
+      return;
+    }
     const animation = Animated.loop(
       Animated.sequence([
         Animated.timing(opacity, {
@@ -22,13 +28,13 @@ export const Skeleton = ({ className, style, ...props }: SkeletonProps) => {
           duration: 800,
           useNativeDriver: true,
         }),
-      ])
+      ]),
     );
 
     animation.start();
 
     return () => animation.stop();
-  }, [opacity]);
+  }, [opacity, reduceMotion]);
 
   return (
     <Animated.View

@@ -12,7 +12,7 @@ import { useTheme } from "@/hooks";
 import { colors } from "@/constants/colors";
 import { useCurrentWorkspace } from "@/lib/hooks/use-workspaces";
 import { truncateText } from "@/lib/utils";
-import { HStack } from "@expo/ui/swift-ui";
+import { HStack, RNHostView } from "@expo/ui/swift-ui";
 import { frame } from "@expo/ui/swift-ui/modifiers";
 import { useProfile } from "@/modules/users/hooks/use-profile";
 import { useRouter } from "expo-router";
@@ -45,7 +45,11 @@ export const Header = () => {
   return (
     <>
       <Row align="end" justify="between" className="mb-5" asContainer>
-        <Pressable onPress={() => setIsWorkspaceSwitcherOpened(true)}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Switch workspace"
+          onPress={() => setIsWorkspaceSwitcherOpened(true)}
+        >
           <Row align="center" gap={1}>
             <Avatar
               name={workspace?.name}
@@ -85,12 +89,14 @@ export const Header = () => {
           hostStyle={{ width: 36, height: 36 }}
         >
           <HStack modifiers={[frame({ width: 36, height: 36 })]}>
-            <Avatar
-              name={profile?.fullName || profile?.username}
-              className="size-[36px]"
-              color={profile?.avatarUrl ? "tertiary" : "primary"}
-              src={profile?.avatarUrl}
-            />
+            <RNHostView matchContents>
+              <Avatar
+                name={profile?.fullName || profile?.username}
+                className="size-[36px]"
+                color={profile?.avatarUrl ? "tertiary" : "primary"}
+                src={profile?.avatarUrl}
+              />
+            </RNHostView>
           </HStack>
         </ContextMenuButton>
       </Row>

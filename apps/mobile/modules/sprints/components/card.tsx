@@ -6,7 +6,7 @@ import { colors } from "@/constants/colors";
 import { format } from "date-fns";
 import { Pressable } from "react-native";
 import { useTheme } from "@/hooks";
-import { useGlobalSearchParams, router } from "expo-router";
+import { useLocalSearchParams, router } from "expo-router";
 
 type SprintStatus = "completed" | "in progress" | "upcoming";
 
@@ -18,7 +18,7 @@ const statusColors = {
 
 export const Card = ({ sprint }: { sprint: Sprint }) => {
   const { resolvedTheme } = useTheme();
-  const { teamId } = useGlobalSearchParams<{ teamId: string }>();
+  const { teamId } = useLocalSearchParams<{ teamId: string }>();
   const startDateObj = new Date(sprint.startDate);
   const endDateObj = new Date(sprint.endDate);
   const now = new Date();

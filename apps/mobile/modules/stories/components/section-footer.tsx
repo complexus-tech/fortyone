@@ -27,7 +27,13 @@ export const SectionFooter = ({
 
   return (
     <Row asContainer className="py-3">
-      <Pressable className="flex-1" onPress={onLoadMore} disabled={isLoading}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ busy: isLoading, disabled: isLoading }}
+        className="flex-1 min-h-11 justify-center"
+        onPress={onLoadMore}
+        disabled={isLoading}
+      >
         {isLoading ? (
           <Row align="center" gap={2}>
             <ActivityIndicator size="small" color={colors.gray.DEFAULT} />

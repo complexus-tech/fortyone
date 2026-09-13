@@ -14,17 +14,17 @@ export function htmlToText(html: string): string {
 }
 
 export const renderTemplate = (
-  message: AppNotification["message"]
+  message: AppNotification["message"],
 ): TemplateResult => {
-  const { template, variables } = message;
+  const { template = "", variables } = message ?? {};
 
   // Helper function to replace variables in template
   const replaceVariables = (template: string, wrapInSpan = false): string => {
     return template.replace(/\{\w+\}/g, (match) => {
       const key = match.slice(1, -1); // Remove { and }
-      const variable = variables[key as keyof typeof variables];
+      const variable = variables?.[key];
 
-      if (variable.value) {
+      if (variable?.value) {
         if (wrapInSpan) {
           return `<span class="font-semibold antialiased text-black/80 dark:text-gray-200/95">${variable.value}</span>`;
         }
@@ -42,9 +42,9 @@ export const renderTemplate = (
 
 export const renderTemplateJSX = (
   message: AppNotification["message"],
-  storyTerm: string
+  storyTerm: string,
 ): React.ReactElement => {
-  const { template, variables } = message;
+  const { template = "", variables } = message ?? {};
 
   // Split template by variable placeholders and create JSX elements
   const parts = template.replace("story", storyTerm).split(/(\{\w+\})/g);
@@ -54,9 +54,9 @@ export const renderTemplateJSX = (
       if (part.match(/^\{\w+\}$/)) {
         // This is a variable placeholder
         const key = part.slice(1, -1); // Remove { and }
-        const variable = variables[key as keyof typeof variables];
+        const variable = variables?.[key];
 
-        if (variable.value) {
+        if (variable?.value) {
           return (
             <Text key={index} fontSize="sm" fontWeight="medium">
               {htmlToText(variable.value)}

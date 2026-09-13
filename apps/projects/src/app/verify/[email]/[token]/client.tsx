@@ -4,7 +4,7 @@ import { Text, Flex } from "ui";
 import { useParams } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { Logo } from "@/components/ui";
-import { getAuthCallbackPath } from "@/utils/callback-url";
+import { withCallbackUrl } from "@/utils/callback-url";
 import { logIn } from "./actions";
 
 export const EmailVerificationCallback = ({
@@ -28,16 +28,15 @@ export const EmailVerificationCallback = ({
       const res = await logIn(validatedEmail, validatedToken);
 
       if (res.error) {
-        const errorPath = `/?error=${encodeURIComponent(res.error)}`;
-        window.location.href = callbackUrl
-          ? `${errorPath}&callbackUrl=${encodeURIComponent(callbackUrl)}`
-          : errorPath;
+        const errorPath = `/?error=${encodeURIComponent(res.error)}${isMobileApp ? "&mobileApp=true" : ""}`;
+        window.location.href = withCallbackUrl(errorPath, callbackUrl);
         return;
       }
 
-      window.location.href = isMobileApp
-        ? "/auth-callback?mobileApp=true"
-        : getAuthCallbackPath(callbackUrl);
+      window.location.href = withCallbackUrl(
+        isMobileApp ? "/auth-callback?mobileApp=true" : "/auth-callback",
+        callbackUrl,
+      );
     };
 
     void validate();

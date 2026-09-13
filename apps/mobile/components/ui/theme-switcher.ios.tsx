@@ -1,8 +1,15 @@
 import React from "react";
 import { BottomSheetModal } from "./bottom-sheet-modal";
 import { colors } from "@/constants";
-import { HStack, Image, Spacer, Text, VStack } from "@expo/ui/swift-ui";
-import { frame } from "@expo/ui/swift-ui/modifiers";
+import { Button, HStack, Image, Spacer, Text, VStack } from "@expo/ui/swift-ui";
+import {
+  frame,
+  font,
+  foregroundStyle,
+  lineLimit,
+  buttonStyle,
+  accessibilityLabel,
+} from "@expo/ui/swift-ui/modifiers";
 import { SFSymbol } from "expo-symbols";
 import { useTheme } from "@/hooks";
 
@@ -21,27 +28,35 @@ const ThemeItem = ({
 }) => {
   const { resolvedTheme } = useTheme();
   return (
-    <HStack spacing={8} onPress={onPress}>
-      <Image
-        systemName={theme.icon}
-        color={resolvedTheme === "light" ? "black" : "white"}
-        size={18}
-        modifiers={[frame({ width: 28, height: 28 })]}
-      />
-      <VStack alignment="leading">
-        <Text lineLimit={1} size={15}>
-          {theme.label}
-        </Text>
-      </VStack>
-      <Spacer />
-      {isActive && (
+    <Button
+      onPress={onPress}
+      modifiers={[
+        buttonStyle("plain"),
+        accessibilityLabel(`${theme.label}${isActive ? ", selected" : ""}`),
+      ]}
+    >
+      <HStack spacing={8}>
         <Image
-          systemName="checkmark.circle.fill"
+          systemName={theme.icon}
           color={resolvedTheme === "light" ? "black" : "white"}
           size={18}
+          modifiers={[frame({ width: 28, height: 28 })]}
         />
-      )}
-    </HStack>
+        <VStack alignment="leading">
+          <Text modifiers={[lineLimit(1), font({ size: 15 })]}>
+            {theme.label}
+          </Text>
+        </VStack>
+        <Spacer />
+        {isActive && (
+          <Image
+            systemName="checkmark.circle.fill"
+            color={resolvedTheme === "light" ? "black" : "white"}
+            size={18}
+          />
+        )}
+      </HStack>
+    </Button>
   );
 };
 
@@ -77,14 +92,21 @@ export const ThemeSwitcher = ({
   ];
 
   return (
-    <BottomSheetModal isOpen={isOpened} onClose={() => setIsOpened(false)}>
+    <BottomSheetModal
+      nativeContent
+      isOpen={isOpened}
+      onClose={() => setIsOpened(false)}
+    >
       <HStack>
         <Text
-          weight="medium"
-          color={
-            resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
-          }
-          size={14}
+          modifiers={[
+            font({ size: 14, weight: "medium" }),
+            foregroundStyle(
+              resolvedTheme === "light"
+                ? colors.gray.DEFAULT
+                : colors.gray[300],
+            ),
+          ]}
         >
           Appearance
         </Text>

@@ -12,6 +12,7 @@ export type CreateStoryPayload = {
   priority: StoryPriority;
   labelIds?: string[];
   autoSchedulingEnabled?: boolean;
+  idempotencyKey?: string;
 };
 
 export const createStory = async (payload: CreateStoryPayload) => {
@@ -19,6 +20,10 @@ export const createStory = async (payload: CreateStoryPayload) => {
     "stories",
     payload,
   );
+
+  if (response.error || !response.data) {
+    throw new Error(response.error?.message ?? "Your task was not saved.");
+  }
 
   return response;
 };

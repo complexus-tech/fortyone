@@ -6,7 +6,7 @@ import type { GroupedStoryParams } from "../types";
 export const useObjectiveStoriesGrouped = (
   objectiveId: string,
   groupBy: GroupedStoryParams["groupBy"] = "status",
-  options?: Partial<GroupedStoryParams>
+  options?: Partial<GroupedStoryParams>,
 ) => {
   const params: GroupedStoryParams = {
     groupBy,
@@ -18,7 +18,7 @@ export const useObjectiveStoriesGrouped = (
 
   return useQuery({
     queryKey,
-    queryFn: () => getGroupedStories(params),
+    queryFn: ({ signal }) => getGroupedStories(params, signal),
     enabled: Boolean(objectiveId),
     staleTime: 1000 * 60 * 2,
   });

@@ -26,41 +26,54 @@ func (q *Queries) AcquireExternalIdentityLock(ctx context.Context, arg AcquireEx
 }
 
 const createExternalIdentityUser = `-- name: CreateExternalIdentityUser :one
-INSERT INTO public.users (
-    username,
-    email,
-    full_name,
-    avatar_url,
-    timezone,
-    last_login_at
+WITH created_account AS (
+    INSERT INTO public.users (
+        username,
+        email,
+        full_name,
+        avatar_url,
+        timezone,
+        last_login_at
+    )
+    VALUES (
+        CAST($1 AS text),
+        CAST($2 AS text),
+        CAST($3 AS text),
+        CAST($4 AS text),
+        CAST($5 AS text),
+        CURRENT_TIMESTAMP
+    )
+    RETURNING
+        user_id,
+        username,
+        email,
+        full_name,
+        avatar_url,
+        is_active,
+        is_system,
+        is_internal,
+        has_seen_walkthrough,
+        timezone,
+        working_days,
+        working_start_minute,
+        working_end_minute,
+        last_login_at,
+        last_used_workspace_id,
+        github_username,
+        created_at,
+        updated_at
+), account_alert AS (
+    INSERT INTO public.internal_slack_alerts (dedupe_key, kind, user_id, payload)
+    SELECT 'account_created:' || CAST(user_id AS text), 'account_created', user_id,
+           jsonb_build_object('name', full_name, 'email', email, 'occurred_at', created_at)
+    FROM created_account
+    WHERE NOT is_system AND NOT is_internal
+    ON CONFLICT (dedupe_key) DO NOTHING
 )
-VALUES (
-    CAST($1 AS text),
-    CAST($2 AS text),
-    CAST($3 AS text),
-    CAST($4 AS text),
-    CAST($5 AS text),
-    CURRENT_TIMESTAMP
-)
-RETURNING
-    user_id,
-    username,
-    email,
-    full_name,
-    avatar_url,
-    is_active,
-    is_system,
-    is_internal,
-    has_seen_walkthrough,
-    timezone,
-    working_days,
-    working_start_minute,
-    working_end_minute,
-    last_login_at,
-    last_used_workspace_id,
-    github_username,
-    created_at,
-    updated_at
+SELECT user_id, username, email, full_name, avatar_url, is_active, is_system, is_internal,
+       has_seen_walkthrough, timezone, working_days, working_start_minute, working_end_minute,
+       last_login_at, last_used_workspace_id, github_username, created_at, updated_at
+FROM created_account
 `
 
 type CreateExternalIdentityUserParams struct {

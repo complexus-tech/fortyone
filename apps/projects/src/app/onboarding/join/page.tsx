@@ -12,9 +12,9 @@ export const metadata: Metadata = {
 export default async function JoinWorkspacePage({
   searchParams,
 }: {
-  searchParams: Promise<{ token: string }>;
+  searchParams: Promise<{ token: string; callbackUrl?: string }>;
 }) {
-  const { token } = await searchParams;
+  const { token, callbackUrl } = await searchParams;
   const res = await verifyInvitation(token);
 
   if (res.error?.message) {
@@ -47,5 +47,11 @@ export default async function JoinWorkspacePage({
     );
   }
 
-  return <JoinWorkspace invitation={res.data!} token={token} />;
+  return (
+    <JoinWorkspace
+      callbackUrl={callbackUrl}
+      invitation={res.data!}
+      token={token}
+    />
+  );
 }

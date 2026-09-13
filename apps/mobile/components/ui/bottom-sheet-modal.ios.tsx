@@ -1,12 +1,18 @@
 import React from "react";
-import { Host, BottomSheet, VStack } from "@expo/ui/swift-ui";
-import { padding as paddingModifier } from "@expo/ui/swift-ui/modifiers";
+import { Host, BottomSheet, Group, VStack } from "@expo/ui/swift-ui";
+import {
+  padding as paddingModifier,
+  presentationDragIndicator,
+} from "@expo/ui/swift-ui/modifiers";
+import { BottomSheetModal as ReactNativeSheet } from "./bottom-sheet-modal-shared";
+import { useTheme } from "@/hooks";
 
 type BottomSheetModalProps = {
   isOpen: boolean;
   onClose: () => void;
   children: React.ReactNode;
   showDragIndicator?: boolean;
+  nativeContent?: boolean;
   spacing?: number;
   padding?: {
     leading?: number;
@@ -21,6 +27,7 @@ export const BottomSheetModal = ({
   onClose,
   children,
   showDragIndicator = true,
+  nativeContent = false,
   spacing = 20,
   padding = {
     leading: 24,
@@ -29,27 +36,53 @@ export const BottomSheetModal = ({
     bottom: 5,
   },
 }: BottomSheetModalProps) => {
-  return (
-    <Host matchContents style={{ position: "absolute" }}>
-      <BottomSheet
-        isOpened={isOpen}
-        onIsOpenedChange={onClose}
-        presentationDragIndicator={showDragIndicator ? "visible" : "hidden"}
+  const { resolvedTheme } = useTheme();
+  if (!nativeContent) {
+    return (
+      <ReactNativeSheet
+        isOpen={isOpen}
+        onClose={onClose}
+        showDragIndicator={showDragIndicator}
+        spacing={spacing}
+        padding={padding}
       >
-        <VStack
-          spacing={spacing}
+        {children}
+      </ReactNativeSheet>
+    );
+  }
+  return (
+    <Host
+      matchContents
+      colorScheme={resolvedTheme}
+      style={{ position: "absolute" }}
+    >
+      <BottomSheet
+        isPresented={isOpen}
+        onIsPresentedChange={(presented) => {
+          if (!presented) onClose();
+        }}
+        fitToContents
+      >
+        <Group
           modifiers={[
-            paddingModifier({
-              leading: padding.leading,
-              trailing: padding.trailing,
-              top: padding.top,
-              bottom: padding.bottom,
-            }),
+            presentationDragIndicator(showDragIndicator ? "visible" : "hidden"),
           ]}
-          alignment="leading"
         >
-          {children}
-        </VStack>
+          <VStack
+            spacing={spacing}
+            modifiers={[
+              paddingModifier({
+                leading: padding.leading,
+                trailing: padding.trailing,
+                top: padding.top,
+                bottom: padding.bottom,
+              }),
+            ]}
+            alignment="leading"
+          >
+            {children}
+          </VStack>
+        </Group>
       </BottomSheet>
     </Host>
   );

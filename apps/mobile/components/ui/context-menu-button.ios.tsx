@@ -1,8 +1,19 @@
 import React from "react";
 import { useTheme } from "@/hooks";
 import { colors } from "@/constants";
-import { ContextMenu, Host, HStack, Button, Image } from "@expo/ui/swift-ui";
-import { frame, glassEffect } from "@expo/ui/swift-ui/modifiers";
+import {
+  Menu as NativeMenu,
+  Host,
+  HStack,
+  Button,
+  Image,
+} from "@expo/ui/swift-ui";
+import {
+  frame,
+  glassEffect,
+  tint,
+  accessibilityLabel,
+} from "@expo/ui/swift-ui/modifiers";
 import { SFSymbol } from "expo-symbols";
 import { StyleProp, ViewStyle } from "react-native";
 
@@ -23,23 +34,10 @@ type ContextMenuButtonProps = {
 const Menu = ({ actions, children }: ContextMenuButtonProps) => {
   const { resolvedTheme } = useTheme();
   return (
-    <ContextMenu>
-      <ContextMenu.Items>
-        {actions.map((action, index) => (
-          <Button
-            key={index}
-            systemImage={action.systemImage}
-            color={action.color}
-            onPress={action.onPress}
-          >
-            {action.label}
-          </Button>
-        ))}
-      </ContextMenu.Items>
-      <ContextMenu.Trigger>
-        {children ? (
-          children
-        ) : (
+    <NativeMenu
+      modifiers={children ? [] : [accessibilityLabel("Options")]}
+      label={
+        children ?? (
           <HStack
             modifiers={[
               frame({ width: 40, height: 40 }),
@@ -58,9 +56,19 @@ const Menu = ({ actions, children }: ContextMenuButtonProps) => {
               }
             />
           </HStack>
-        )}
-      </ContextMenu.Trigger>
-    </ContextMenu>
+        )
+      }
+    >
+      {actions.map((action) => (
+        <Button
+          key={action.label}
+          label={action.label}
+          systemImage={action.systemImage}
+          modifiers={action.color ? [tint(action.color)] : []}
+          onPress={action.onPress}
+        />
+      ))}
+    </NativeMenu>
   );
 };
 

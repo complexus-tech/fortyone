@@ -4,7 +4,7 @@ import { SafeContainer, Tabs, StoriesListSkeleton } from "@/components/ui";
 import { StoriesBoard } from "@/modules/stories/components";
 import { useTeamStoriesGrouped } from "@/modules/stories/hooks";
 import { useViewOptions } from "@/hooks/use-view-options";
-import { useGlobalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useTerminology } from "@/hooks/use-terminology";
 import { useQueryClient } from "@tanstack/react-query";
 import { storyKeys } from "@/constants/keys";
@@ -12,7 +12,7 @@ import type { TeamStoriesTab } from "../types";
 
 export const TeamStories = () => {
   const queryClient = useQueryClient();
-  const { teamId } = useGlobalSearchParams<{ teamId: string }>();
+  const { teamId } = useLocalSearchParams<{ teamId: string }>();
   const [activeTab, setActiveTab] = useState<TeamStoriesTab>("all");
   const {
     viewOptions,
@@ -55,6 +55,7 @@ export const TeamStories = () => {
   const {
     data: groupedStories,
     isPending,
+    error,
     refetch,
     isRefetching,
   } = useTeamStoriesGrouped(teamId!, viewOptions.groupBy, queryOptions);
@@ -99,10 +100,13 @@ export const TeamStories = () => {
             groupedStories={groupedStories}
             groupFilters={queryOptions}
             isLoading={isPending}
+            error={error}
+            onRetry={() => {
+              void refetch();
+            }}
             visibleColumns={viewOptions.displayColumns}
-            onRefresh={() => {
-              refetch();
-              queryClient.invalidateQueries({ queryKey: storyKeys.all });
+            onRefresh={async () => {
+              await queryClient.invalidateQueries({ queryKey: storyKeys.all });
             }}
             isRefreshing={isRefetching}
           />
@@ -112,10 +116,13 @@ export const TeamStories = () => {
             groupedStories={groupedStories}
             groupFilters={queryOptions}
             isLoading={isPending}
+            error={error}
+            onRetry={() => {
+              void refetch();
+            }}
             visibleColumns={viewOptions.displayColumns}
-            onRefresh={() => {
-              refetch();
-              queryClient.invalidateQueries({ queryKey: storyKeys.all });
+            onRefresh={async () => {
+              await queryClient.invalidateQueries({ queryKey: storyKeys.all });
             }}
             isRefreshing={isRefetching}
           />
@@ -125,10 +132,13 @@ export const TeamStories = () => {
             groupedStories={groupedStories}
             groupFilters={queryOptions}
             isLoading={isPending}
+            error={error}
+            onRetry={() => {
+              void refetch();
+            }}
             visibleColumns={viewOptions.displayColumns}
-            onRefresh={() => {
-              refetch();
-              queryClient.invalidateQueries({ queryKey: storyKeys.all });
+            onRefresh={async () => {
+              await queryClient.invalidateQueries({ queryKey: storyKeys.all });
             }}
             isRefreshing={isRefetching}
           />

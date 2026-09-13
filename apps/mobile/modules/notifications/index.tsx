@@ -1,49 +1,43 @@
 import React from "react";
 import { SafeContainer } from "@/components/ui";
+import { QueryState } from "@/components/ui/query-state";
 import { Header } from "./components/header";
 import { useNotifications } from "./hooks/use-notifications";
-import {
-  NotificationList,
-  NotificationsSkeleton,
-  EmptyState,
-} from "./components";
-import { useQueryClient } from "@tanstack/react-query";
-import { notificationKeys } from "@/constants/keys";
+import { NotificationList, NotificationsSkeleton } from "./components";
 
 export const Notifications = () => {
-  const queryClient = useQueryClient();
-  const { data: notifications = [], isPending, refetch } = useNotifications();
-
-  if (isPending) {
-    return (
-      <SafeContainer isFull>
-        <Header />
-        <NotificationsSkeleton />
-      </SafeContainer>
-    );
-  }
-
-  if (notifications.length === 0) {
-    return (
-      <SafeContainer isFull>
-        <Header />
-        <EmptyState />
-      </SafeContainer>
-    );
-  }
+  const query = useNotifications();
+  const notifications =
+    query.data?.pages.flatMap((page) => page.notifications) ?? [];
 
   return (
     <SafeContainer isFull>
       <Header />
-      <NotificationList
-        notifications={notifications}
-        onRefresh={() => {
-          refetch();
-          queryClient.invalidateQueries({
-            queryKey: notificationKeys.all,
-          });
-        }}
-      />
+      {query.isPending ? (
+        <NotificationsSkeleton />
+      ) : query.isError && !query.data ? (
+        <QueryState
+          title="Could not load your inbox"
+          message={query.error.message}
+          onRetry={() => {
+            void query.refetch();
+          }}
+        />
+      ) : (
+        <NotificationList
+          notifications={notifications}
+          isLoading={query.isRefetching && !query.isFetchingNextPage}
+          onRefresh={() => {
+            void query.refetch();
+          }}
+          hasMore={query.hasNextPage}
+          isLoadingMore={query.isFetchingNextPage}
+          onLoadMore={() => {
+            void query.fetchNextPage();
+          }}
+          error={query.isError ? query.error : null}
+        />
+      )}
     </SafeContainer>
   );
 };

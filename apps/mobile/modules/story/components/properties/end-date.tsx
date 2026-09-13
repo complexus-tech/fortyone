@@ -1,89 +1,18 @@
-import React, { useState } from "react";
-import { Badge, Text, BottomSheetModal } from "@/components/ui";
-import { Story } from "@/modules/stories/types";
-import { Pressable, View, Text as RNText } from "react-native";
-import { SymbolView } from "expo-symbols";
-import { useTheme } from "@/hooks";
-import { colors } from "@/constants";
-import { format } from "date-fns";
-// import DateTimePicker from "@react-native-community/datetimepicker";
+import type { Story } from "@/modules/stories/types";
+import { DateField } from "@/components/ui/date-field";
 
-export const EndDateBadge = ({
+export function EndDateBadge({
   story,
   onEndDateChange,
 }: {
   story: Story;
-  onEndDateChange: (endDate: Date | null) => void;
-}) => {
-  const { resolvedTheme } = useTheme();
-  const [isOpen, setIsOpen] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(
-    story.endDate ? new Date(story.endDate) : new Date()
-  );
-  const [hasUserInteracted, setHasUserInteracted] = useState(false);
-
-  const iconColor =
-    resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
-
-  const handleDateSelected = (event: any, date?: Date) => {
-    if (date) {
-      setSelectedDate(date);
-
-      // Only call the callback if user has actually interacted
-      if (hasUserInteracted) {
-        onEndDateChange(date);
-        setIsOpen(false);
-      } else {
-        // First time opening, just mark as interacted
-        setHasUserInteracted(true);
-      }
-    }
-  };
-
-  const handlePress = () => {
-    setHasUserInteracted(false); // Reset interaction flag when opening
-    setIsOpen(true);
-  };
-
-  const handleClose = () => {
-    setIsOpen(false);
-  };
-
+  onEndDateChange: (date: Date | null) => void;
+}) {
   return (
-    <>
-      <Pressable onPress={handlePress}>
-        <Badge color="tertiary">
-          <SymbolView name="calendar" size={16} tintColor={iconColor} />
-          <Text>
-            {story.endDate
-              ? format(new Date(story.endDate), "MMM d")
-              : "Add deadline"}
-          </Text>
-        </Badge>
-      </Pressable>
-
-      <BottomSheetModal isOpen={isOpen} spacing={10} onClose={handleClose}>
-        <View style={{ padding: 16 }}>
-          <RNText
-            style={{
-              fontSize: 18,
-              fontWeight: "600",
-              marginBottom: 16,
-              color: resolvedTheme === "light" ? colors.black : colors.white,
-            }}
-          >
-            Select End Date
-          </RNText>
-          {/* <DateTimePicker
-            value={selectedDate}
-            mode="date"
-            display="default"
-            onChange={handleDateSelected}
-            textColor={resolvedTheme === "light" ? colors.black : colors.white}
-            themeVariant={resolvedTheme}
-          /> */}
-        </View>
-      </BottomSheetModal>
-    </>
+    <DateField
+      label="Deadline"
+      value={story.endDate}
+      onChange={onEndDateChange}
+    />
   );
-};
+}

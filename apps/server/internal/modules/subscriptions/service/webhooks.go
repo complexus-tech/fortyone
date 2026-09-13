@@ -92,7 +92,7 @@ func (p serviceWebhookEventProcessor) ProcessWebhookEvent(
 		return p.service.handleSubscriptionCreated(ctx, event)
 	case "customer.subscription.deleted":
 		return p.service.handleSubscriptionDeleted(ctx, event)
-	case "invoice.paid":
+	case "invoice.paid", "invoice.payment_succeeded":
 		return p.service.handleInvoicePaid(ctx, event)
 	default:
 		return WebhookOutcome{Result: WebhookResultIgnored}, nil

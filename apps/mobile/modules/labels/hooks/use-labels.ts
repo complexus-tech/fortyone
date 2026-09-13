@@ -6,13 +6,13 @@ import type { Label } from "@/types";
 export const useLabels = () => {
   return useQuery<Label[]>({
     queryKey: labelKeys.lists(),
-    queryFn: () => getLabels(),
+    queryFn: ({ signal }) => getLabels({}, signal),
   });
 };
 
 export const useTeamLabels = (teamId: string) => {
   return useQuery<Label[]>({
     queryKey: labelKeys.team(teamId),
-    queryFn: () => getLabels({ teamId }),
+    queryFn: ({ signal }) => getLabels({ teamId }, signal),
   });
 };

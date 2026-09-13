@@ -1,44 +1,33 @@
 import { colors } from "@/constants";
 import { useUnreadNotifications } from "@/modules/notifications/hooks/use-unread-notifications";
-import {
-  NativeTabs,
-  Icon,
-  Label,
-  Badge,
-} from "expo-router/unstable-native-tabs";
+import { NativeTabs } from "expo-router/unstable-native-tabs";
 
 export default function TabsLayout() {
   const { data: unreadNotifications = 0 } = useUnreadNotifications();
-  const getBadgeLabel = () => {
-    if (unreadNotifications > 9) {
-      return "9+";
-    } else if (unreadNotifications > 20) {
-      return "20+";
-    }
-    return unreadNotifications.toString();
-  };
+  const badgeLabel =
+    unreadNotifications > 99 ? "99+" : String(unreadNotifications);
   return (
     <NativeTabs tintColor={colors.primary} minimizeBehavior="onScrollDown">
       <NativeTabs.Trigger name="index">
-        <Icon sf="circle.grid.2x2.fill" />
-        <Label>Home</Label>
+        <NativeTabs.Trigger.Icon sf="circle.grid.2x2.fill" md="dashboard" />
+        <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="my-work">
-        <Label>My Work</Label>
-        <Icon sf="person.fill" />
+        <NativeTabs.Trigger.Label>My Work</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="person.fill" md="person" />
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="maya">
-        <Label>Maya</Label>
-        <Icon sf="sparkles" />
-      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="maya" hidden />
       <NativeTabs.Trigger name="inbox">
-        <Label>Inbox</Label>
-        <Icon sf="bell.fill" />
-        {unreadNotifications > 0 && <Badge>{getBadgeLabel()}</Badge>}
+        <NativeTabs.Trigger.Label>Inbox</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="bell.fill" md="notifications" />
+        {unreadNotifications > 0 && (
+          <NativeTabs.Trigger.Badge>{badgeLabel}</NativeTabs.Trigger.Badge>
+        )}
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="search" role="search">
-        <Label>Search</Label>
+        <NativeTabs.Trigger.Label>Search</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="magnifyingglass" md="search" />
       </NativeTabs.Trigger>
     </NativeTabs>
   );

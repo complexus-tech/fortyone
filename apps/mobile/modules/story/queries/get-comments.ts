@@ -13,10 +13,12 @@ type CommentsResponse = {
 
 export const getStoryComments = async (
   id: string,
-  page = 1
+  page = 1,
+  signal?: AbortSignal,
 ): Promise<CommentsResponse> => {
   const response = await get<ApiResponse<CommentsResponse>>(
-    `stories/${id}/comments?page=${page}`
+    `stories/${id}/comments?page=${page}`,
+    { signal },
   );
   return response.data!;
 };

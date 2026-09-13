@@ -4,7 +4,8 @@ import type { ApiResponse } from "@/types";
 export const updateLabelsAction = async (storyId: string, labels: string[]) => {
   const response = await put<{ labels: string[] }, ApiResponse<null>>(
     `stories/${storyId}/labels`,
-    { labels }
+    { labels },
   );
+  if (response?.error?.message) throw new Error(response.error.message);
   return response;
 };

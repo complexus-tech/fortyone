@@ -55,6 +55,7 @@ export const MyWork = () => {
   const {
     data: groupedStories,
     isPending,
+    error,
     refetch,
     isRefetching,
   } = useMyStoriesGrouped(viewOptions.groupBy, queryOptions);
@@ -95,10 +96,13 @@ export const MyWork = () => {
             groupedStories={groupedStories}
             groupFilters={queryOptions}
             isLoading={isPending}
+            error={error}
+            onRetry={() => {
+              void refetch();
+            }}
             visibleColumns={viewOptions.displayColumns}
-            onRefresh={() => {
-              refetch();
-              queryClient.invalidateQueries({ queryKey: storyKeys.all });
+            onRefresh={async () => {
+              await queryClient.invalidateQueries({ queryKey: storyKeys.all });
             }}
             isRefreshing={isRefetching}
           />
@@ -108,10 +112,13 @@ export const MyWork = () => {
             groupedStories={groupedStories}
             groupFilters={queryOptions}
             isLoading={isPending}
+            error={error}
+            onRetry={() => {
+              void refetch();
+            }}
             visibleColumns={viewOptions.displayColumns}
-            onRefresh={() => {
-              refetch();
-              queryClient.invalidateQueries({ queryKey: storyKeys.all });
+            onRefresh={async () => {
+              await queryClient.invalidateQueries({ queryKey: storyKeys.all });
             }}
             isRefreshing={isRefetching}
           />
@@ -121,10 +128,13 @@ export const MyWork = () => {
             groupedStories={groupedStories}
             groupFilters={queryOptions}
             isLoading={isPending}
+            error={error}
+            onRetry={() => {
+              void refetch();
+            }}
             visibleColumns={viewOptions.displayColumns}
-            onRefresh={() => {
-              refetch();
-              queryClient.invalidateQueries({ queryKey: storyKeys.all });
+            onRefresh={async () => {
+              await queryClient.invalidateQueries({ queryKey: storyKeys.all });
             }}
             isRefreshing={isRefetching}
           />

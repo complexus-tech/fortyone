@@ -6,7 +6,7 @@ import type { SearchQueryParams } from "../types";
 export const useSearch = (params: SearchQueryParams = {}) => {
   return useQuery({
     queryKey: searchKeys.query(params),
-    queryFn: () => searchQuery(params),
+    queryFn: ({ signal }) => searchQuery(params, signal),
     enabled: Boolean(params.query),
     staleTime: 1000 * 60 * 3, // 3 minutes
   });

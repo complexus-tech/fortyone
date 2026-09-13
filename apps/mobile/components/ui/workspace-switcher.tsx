@@ -1,6 +1,5 @@
 import React from "react";
 import { Avatar } from "./avatar";
-import * as Updates from "expo-updates";
 import { BottomSheetModal } from "./bottom-sheet-modal";
 import { colors } from "@/constants";
 import { Pressable, View, Text as RNText } from "react-native";
@@ -8,33 +7,21 @@ import { Ionicons } from "@expo/vector-icons";
 import { Workspace } from "@/types/workspace";
 import { useWorkspaces, useCurrentWorkspace } from "@/lib/hooks";
 import { useTheme } from "@/hooks";
-import { useAuthStore } from "@/store/auth";
-import { useQueryClient } from "@tanstack/react-query";
-import { switchWorkspace } from "@/lib/actions/auth";
+import { useSwitchWorkspace } from "@/lib/hooks/use-switch-workspace";
 
 const WorkspaceItem = ({
   isActive,
   workspace,
-  setIsOpened,
+  pendingId,
+  onSelect,
 }: {
   isActive?: boolean;
   workspace: Workspace;
-  setIsOpened: (isOpened: boolean) => void;
+  pendingId: string | null;
+  onSelect: (workspace: Workspace) => Promise<void>;
 }) => {
-  const queryClient = useQueryClient();
-  const setWorkspace = useAuthStore((state) => state.setWorkspace);
-
-  const handleSwitchWorkspace = async () => {
-    if (isActive) {
-      setIsOpened(false);
-      return;
-    }
-
-    queryClient.clear();
-    await switchWorkspace(workspace.id);
-    setWorkspace(workspace.slug);
-    setIsOpened(false);
-    await Updates.reloadAsync();
+  const handleSwitchWorkspace = () => {
+    if (!pendingId) void onSelect(workspace);
   };
 
   const { resolvedTheme } = useTheme();
@@ -43,6 +30,13 @@ const WorkspaceItem = ({
   return (
     <Pressable
       onPress={handleSwitchWorkspace}
+      disabled={pendingId !== null}
+      accessibilityRole="button"
+      accessibilityState={{
+        disabled: pendingId !== null,
+        selected: !!isActive,
+        busy: pendingId === workspace.id,
+      }}
       style={{
         flexDirection: "row",
         alignItems: "center",
@@ -79,7 +73,7 @@ const WorkspaceItem = ({
             color: mutedTextColor,
           }}
         >
-          {workspace.userRole}
+          {pendingId === workspace.id ? "Switching…" : workspace.userRole}
         </RNText>
       </View>
       {isActive && (
@@ -102,6 +96,9 @@ export const WorkspaceSwitcher = ({
   isOpened: boolean;
   setIsOpened: (isOpened: boolean) => void;
 }) => {
+  const { pendingId, selectWorkspace } = useSwitchWorkspace(() =>
+    setIsOpened(false),
+  );
   const { resolvedTheme } = useTheme();
   const { data: workspaces = [] } = useWorkspaces();
   const { workspace } = useCurrentWorkspace();
@@ -129,7 +126,8 @@ export const WorkspaceSwitcher = ({
             key={wk.id}
             isActive={wk.id === workspace?.id}
             workspace={wk}
-            setIsOpened={setIsOpened}
+            pendingId={pendingId}
+            onSelect={selectWorkspace}
           />
         ))}
       </View>

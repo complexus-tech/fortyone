@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { getMyInvitationsForCurrentRequest } from "@/modules/invitations/public/server";
-import { getAuthCode } from "@/lib/queries/get-auth-code";
+import { isMobileAuthPath } from "@/lib/mobile-auth";
 import { getWorkspaces } from "@/lib/queries/get-workspaces";
 import { getProfile } from "@/lib/queries/profile";
 import { getLoginUrl } from "@/utils/callback-url";
@@ -35,15 +35,13 @@ export default async function AuthCallback({
     getProfile(),
   ]);
 
-  if (isMobileApp && workspaces.length > 0) {
-    const authCodeResponse = await getAuthCode();
-    if (authCodeResponse.error || !authCodeResponse.data) {
-      redirect("/?mobileApp=true&error=Failed to generate auth code");
-    } else {
-      redirect(
-        `fortyone://login?code=${authCodeResponse.data.code}&email=${authCodeResponse.data.email}`,
-      );
-    }
+  if (isMobileAuthPath(callbackUrl)) {
+    redirect(callbackUrl!);
+  }
+  if (isMobileApp) {
+    redirect(
+      "/?error=Please%20restart%20sign-in%20from%20the%20latest%20FortyOne%20app.",
+    );
   }
   return (
     <ClientPage

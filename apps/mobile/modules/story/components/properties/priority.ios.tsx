@@ -5,8 +5,15 @@ import { StoryPriority } from "@/modules/stories/types";
 import { Pressable } from "react-native";
 import { colors } from "@/constants";
 import { useTheme } from "@/hooks";
-import { HStack, Image, Spacer, Text } from "@expo/ui/swift-ui";
-import { frame } from "@expo/ui/swift-ui/modifiers";
+import {
+  Button,
+  HStack,
+  Image,
+  RNHostView,
+  Spacer,
+  Text,
+} from "@expo/ui/swift-ui";
+import { accessibilityLabel, font, frame } from "@expo/ui/swift-ui/modifiers";
 
 const Item = ({
   priority,
@@ -19,20 +26,27 @@ const Item = ({
 }) => {
   const { resolvedTheme } = useTheme();
   return (
-    <HStack key={priority} onPress={onPress} spacing={6}>
-      <HStack modifiers={[frame({ width: 20, height: 20 })]}>
-        <PriorityIcon size={20} priority={priority} />
+    <Button
+      onPress={onPress}
+      modifiers={[
+        accessibilityLabel(`${priority}${isSelected ? ", selected" : ""}`),
+      ]}
+    >
+      <HStack spacing={6} modifiers={[frame({ minHeight: 44 })]}>
+        <RNHostView matchContents>
+          <PriorityIcon size={20} priority={priority} />
+        </RNHostView>
+        <Text modifiers={[font({ textStyle: "body" })]}>{priority}</Text>
+        <Spacer />
+        {isSelected && (
+          <Image
+            systemName="checkmark.circle.fill"
+            size={17}
+            color={resolvedTheme === "light" ? colors.black : colors.white}
+          />
+        )}
       </HStack>
-      <Text size={16}>{priority}</Text>
-      <Spacer />
-      {isSelected && (
-        <Image
-          systemName="checkmark.circle.fill"
-          size={17}
-          color={resolvedTheme === "light" ? colors.black : colors.white}
-        />
-      )}
-    </HStack>
+    </Button>
   );
 };
 
@@ -61,6 +75,7 @@ export const PriorityBadge = ({
         </Badge>
       </Pressable>
       <BottomSheetModal
+        nativeContent
         spacing={24}
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}

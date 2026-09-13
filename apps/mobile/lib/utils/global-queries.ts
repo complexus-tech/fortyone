@@ -19,30 +19,30 @@ import { getMembers } from "@/modules/members/queries/get-members";
 export const fetchGlobalQueries = async (queryClient: QueryClient) => {
   queryClient.prefetchQuery({
     queryKey: userKeys.profile(),
-    queryFn: getProfile,
+    queryFn: ({ signal }) => getProfile(signal),
   });
   queryClient.prefetchQuery({
     queryKey: workspaceKeys.lists(),
-    queryFn: getWorkspaces,
+    queryFn: ({ signal }) => getWorkspaces(signal),
   });
   queryClient.prefetchQuery({
     queryKey: teamKeys.lists(),
-    queryFn: getTeams,
+    queryFn: ({ signal }) => getTeams(signal),
   });
   queryClient.prefetchQuery({
     queryKey: subscriptionKeys.details,
-    queryFn: getSubscription,
+    queryFn: ({ signal }) => getSubscription(signal),
   });
   queryClient.prefetchQuery({
     queryKey: memberKeys.lists(),
-    queryFn: getMembers,
+    queryFn: ({ signal }) => getMembers(signal),
   });
   queryClient.prefetchQuery({
     queryKey: objectiveKeys.statuses(),
-    queryFn: getObjectiveStatuses,
+    queryFn: ({ signal }) => getObjectiveStatuses(signal),
   });
   queryClient.prefetchQuery({
     queryKey: statusKeys.lists(),
-    queryFn: getStatuses,
+    queryFn: ({ signal }) => getStatuses(signal),
   });
 };

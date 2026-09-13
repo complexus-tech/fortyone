@@ -1,19 +1,18 @@
-import { Stack } from "expo-router";
+import { Stack, type ErrorBoundaryProps } from "expo-router";
 import {
-  QueryClient,
   useQueryClient,
   focusManager,
   onlineManager,
 } from "@tanstack/react-query";
-import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
-import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
-import { createMMKV } from "react-native-mmkv";
 import "../styles/global.css";
 import "react-native-svg";
 import { useAuthStore } from "@/store";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { SessionQueryProvider } from "@/lib/query-provider";
+import { QueryState } from "@/components/ui/query-state";
 import { KeyboardProvider } from "react-native-keyboard-controller";
-import { AppState } from "react-native";
+import { AppState, Pressable, Text as NativeText, View } from "react-native";
+import { Text, Button } from "@/components/ui";
 import NetInfo from "@react-native-community/netinfo";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Toaster } from "sonner-native";
@@ -23,26 +22,65 @@ import { SymbolView } from "expo-symbols";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "@/constants";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
+import { captureAppError, initializeObservability } from "@/lib/observability";
 
-const storage = createMMKV();
+initializeObservability();
 
-const clientStorage = {
-  setItem: (key: string, value: string) => {
-    storage.set(key, value);
-  },
-  getItem: (key: string) => {
-    const value = storage.getString(key);
-    return value === undefined ? null : value;
-  },
-  removeItem: (key: string) => {
-    storage.remove(key);
-  },
-};
+// Keep the recovery screen independent of the theme, auth and query providers:
+// a failure in one of those providers must not break the fallback as well.
+export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
+  useEffect(() => {
+    captureAppError(error);
+  }, [error]);
+
+  return (
+    <View
+      style={{
+        flex: 1,
+        justifyContent: "center",
+        padding: 28,
+        gap: 16,
+        backgroundColor: "#141414",
+      }}
+    >
+      <NativeText
+        accessibilityRole="header"
+        style={{ color: "white", fontSize: 24, fontWeight: "600" }}
+      >
+        Something went wrong
+      </NativeText>
+      <NativeText style={{ color: "#d4d4d4", fontSize: 16 }}>
+        Please try reopening this screen.
+      </NativeText>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Try reopening this screen"
+        onPress={retry}
+        style={{
+          minHeight: 48,
+          alignItems: "center",
+          justifyContent: "center",
+          borderRadius: 12,
+          backgroundColor: "white",
+        }}
+      >
+        <NativeText
+          style={{ color: "#141414", fontSize: 16, fontWeight: "600" }}
+        >
+          Try again
+        </NativeText>
+      </Pressable>
+    </View>
+  );
+}
 
 function useReactQueryAppLifecycle() {
   useEffect(() => {
+    focusManager.setFocused(AppState.currentState === "active");
     const unsubscribeNetInfo = NetInfo.addEventListener((state) => {
-      onlineManager.setOnline(!!state.isConnected);
+      onlineManager.setOnline(
+        state.isConnected === true && state.isInternetReachable !== false,
+      );
     });
 
     const subscription = AppState.addEventListener("change", (status) => {
@@ -59,57 +97,88 @@ const RenderApp = () => {
   const queryClient = useQueryClient();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const isLoading = useAuthStore((state) => state.isLoading);
+  const workspace = useAuthStore((state) => state.workspace);
+  const sessionError = useAuthStore((state) => state.sessionError);
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && workspace) {
       fetchGlobalQueries(queryClient);
     }
-  }, [isAuthenticated, queryClient]);
+  }, [isAuthenticated, workspace, queryClient]);
 
   if (isLoading) {
-    return null;
+    return <QueryState loading title="Restoring your session" />;
+  }
+
+  if (isAuthenticated && !workspace) {
+    return (
+      <QueryState
+        title="No workspace available"
+        message="Create or join a workspace on the FortyOne website, then sign in again."
+        onRetry={() => {
+          void useAuthStore.getState().clearAuth();
+        }}
+        retryLabel="Sign out"
+      />
+    );
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Protected guard={isAuthenticated}>
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="teams/[teamId]" />
-        <Stack.Screen name="story/[storyId]" />
-        <Stack.Screen
-          name="settings"
-          options={{
-            presentation: "formSheet",
-            gestureDirection: "vertical",
-            animation: "slide_from_bottom",
-            sheetGrabberVisible: true,
-            sheetCornerRadius: 28,
-            sheetExpandsWhenScrolledToEdge: true,
-            sheetElevation: 24,
-            sheetInitialDetentIndex: 0,
-            sheetAllowedDetents: [1],
-          }}
-        />
-        <Stack.Screen
-          name="new"
-          options={{
-            presentation: "formSheet",
-            gestureDirection: "vertical",
-            animation: "slide_from_bottom",
-            sheetGrabberVisible: true,
-            sheetCornerRadius: 28,
-            sheetExpandsWhenScrolledToEdge: true,
-            sheetElevation: 24,
-            sheetInitialDetentIndex: 0,
-            sheetAllowedDetents: [0.95],
-          }}
-        />
-      </Stack.Protected>
+    <View className="flex-1">
+      {isAuthenticated && sessionError ? (
+        <View className="gap-2 px-4 py-3" accessibilityLiveRegion="polite">
+          <Text color="muted">{sessionError}</Text>
+          <Button
+            onPress={() => {
+              void useAuthStore.getState().loadAuthData();
+            }}
+          >
+            Retry connection
+          </Button>
+        </View>
+      ) : null}
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Protected guard={isAuthenticated}>
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="teams/[teamId]" />
+          <Stack.Screen name="team/[teamId]/objectives/[objectiveId]" />
+          <Stack.Screen name="team/[teamId]/sprints/[sprintId]" />
+          <Stack.Screen name="story/[storyId]" />
+          <Stack.Screen
+            name="settings"
+            options={{
+              presentation: "formSheet",
+              gestureDirection: "vertical",
+              animation: "slide_from_bottom",
+              sheetGrabberVisible: true,
+              sheetCornerRadius: 28,
+              sheetExpandsWhenScrolledToEdge: true,
+              sheetElevation: 24,
+              sheetInitialDetentIndex: 0,
+              sheetAllowedDetents: [1],
+            }}
+          />
+          <Stack.Screen
+            name="new"
+            options={{
+              presentation: "formSheet",
+              gestureDirection: "vertical",
+              animation: "slide_from_bottom",
+              sheetGrabberVisible: true,
+              sheetCornerRadius: 28,
+              sheetExpandsWhenScrolledToEdge: true,
+              sheetElevation: 24,
+              sheetInitialDetentIndex: 0,
+              sheetAllowedDetents: [0.95],
+            }}
+          />
+        </Stack.Protected>
 
-      <Stack.Protected guard={!isAuthenticated}>
-        <Stack.Screen name="login" />
-      </Stack.Protected>
-    </Stack>
+        <Stack.Protected guard={!isAuthenticated}>
+          <Stack.Screen name="login" />
+        </Stack.Protected>
+      </Stack>
+    </View>
   );
 };
 
@@ -118,22 +187,9 @@ export default function RootLayout() {
   const iconColor =
     resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
 
-  const [queryClient] = useState(() => new QueryClient({
-    defaultOptions: {
-      queries: {
-        retry: 1,
-        refetchOnMount: true,
-        refetchOnReconnect: true,
-        refetchOnWindowFocus: true,
-      },
-    },
-  }));
-
-  const [persister] = useState(() =>
-    createAsyncStoragePersister({
-      storage: clientStorage,
-    })
-  );
+  const userId = useAuthStore((state) => state.userId);
+  const workspace = useAuthStore((state) => state.workspace);
+  const sessionEpoch = useAuthStore((state) => state.sessionEpoch);
   const loadAuthData = useAuthStore((state) => state.loadAuthData);
   useReactQueryAppLifecycle();
 
@@ -142,9 +198,9 @@ export default function RootLayout() {
   }, [loadAuthData]);
 
   return (
-    <PersistQueryClientProvider
-      persistOptions={{ persister }}
-      client={queryClient}
+    <SessionQueryProvider
+      key={JSON.stringify([userId, workspace, sessionEpoch])}
+      scope={{ userId, workspace }}
     >
       <KeyboardProvider>
         <GestureHandlerRootView>
@@ -213,6 +269,6 @@ export default function RootLayout() {
           />
         </GestureHandlerRootView>
       </KeyboardProvider>
-    </PersistQueryClientProvider>
+    </SessionQueryProvider>
   );
 }

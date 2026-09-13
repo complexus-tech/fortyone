@@ -3,7 +3,13 @@ import { BottomSheetModal } from "./bottom-sheet-modal";
 import { ContextMenuButton } from "./context-menu-button";
 import { Text, HStack, Spacer, Button, Image, VStack } from "@expo/ui/swift-ui";
 import { colors } from "@/constants";
-import { opacity } from "@expo/ui/swift-ui/modifiers";
+import {
+  opacity,
+  font,
+  foregroundStyle,
+  buttonStyle,
+  tint,
+} from "@expo/ui/swift-ui/modifiers";
 import type {
   DisplayColumn,
   StoriesViewOptions,
@@ -80,25 +86,28 @@ export const StoriesOptionsSheet = ({
 
   return (
     <BottomSheetModal
+      nativeContent
       isOpen={isOpened}
       onClose={() => setIsOpened(false)}
       spacing={40}
     >
       <VStack spacing={20}>
         <HStack>
-          <Text size={15} weight="medium">
+          <Text modifiers={[font({ size: 15, weight: "medium" })]}>
             Grouping
           </Text>
           <Spacer />
           <ContextMenuButton actions={groupByOptions} withNoHost>
             <HStack spacing={3}>
               <Text
-                color={
-                  resolvedTheme === "light"
-                    ? colors.dark.DEFAULT
-                    : colors.gray[200]
-                }
-                size={15}
+                modifiers={[
+                  font({ size: 15 }),
+                  foregroundStyle(
+                    resolvedTheme === "light"
+                      ? colors.dark.DEFAULT
+                      : colors.gray[200],
+                  ),
+                ]}
               >
                 {viewOptions.groupBy === "status"
                   ? "Status"
@@ -120,19 +129,21 @@ export const StoriesOptionsSheet = ({
           </ContextMenuButton>
         </HStack>
         <HStack>
-          <Text size={15} weight="medium">
+          <Text modifiers={[font({ size: 15, weight: "medium" })]}>
             Ordering
           </Text>
           <Spacer />
           <ContextMenuButton actions={orderByOptions} withNoHost>
             <HStack spacing={3}>
               <Text
-                color={
-                  resolvedTheme === "light"
-                    ? colors.dark.DEFAULT
-                    : colors.gray[200]
-                }
-                size={15}
+                modifiers={[
+                  font({ size: 15 }),
+                  foregroundStyle(
+                    resolvedTheme === "light"
+                      ? colors.dark.DEFAULT
+                      : colors.gray[200],
+                  ),
+                ]}
               >
                 {viewOptions.orderBy === "created"
                   ? "Created"
@@ -156,19 +167,21 @@ export const StoriesOptionsSheet = ({
           </ContextMenuButton>
         </HStack>
         <HStack>
-          <Text size={15} weight="medium">
+          <Text modifiers={[font({ size: 15, weight: "medium" })]}>
             Order direction
           </Text>
           <Spacer />
           <ContextMenuButton actions={orderDirectionOptions} withNoHost>
             <HStack spacing={3}>
               <Text
-                color={
-                  resolvedTheme === "light"
-                    ? colors.dark.DEFAULT
-                    : colors.gray[200]
-                }
-                size={15}
+                modifiers={[
+                  font({ size: 15 }),
+                  foregroundStyle(
+                    resolvedTheme === "light"
+                      ? colors.dark.DEFAULT
+                      : colors.gray[200],
+                  ),
+                ]}
               >
                 {viewOptions.orderDirection === "desc"
                   ? "Descending"
@@ -189,53 +202,36 @@ export const StoriesOptionsSheet = ({
         </HStack>
       </VStack>
       <VStack spacing={16} alignment="leading">
-        <Text modifiers={[opacity(0.65)]} size={15} weight="medium">
+        <Text modifiers={[opacity(0.65), font({ size: 15, weight: "medium" })]}>
           Display columns
         </Text>
         <HStack spacing={12}>
-          <Button
-            variant={displayColumns.includes("ID") ? "bordered" : "plain"}
-            color={
-              resolvedTheme === "light" ? colors.dark.DEFAULT : colors.gray[200]
-            }
-            onPress={() => toggleDisplayColumn("ID")}
-          >
-            ID
-          </Button>
-          <Button
-            variant={displayColumns.includes("Status") ? "bordered" : "plain"}
-            color={
-              resolvedTheme === "light" ? colors.dark.DEFAULT : colors.gray[200]
-            }
-            onPress={() => toggleDisplayColumn("Status")}
-          >
-            Status
-          </Button>
-          <Button
-            color={
-              resolvedTheme === "light" ? colors.dark.DEFAULT : colors.gray[200]
-            }
-            variant={displayColumns.includes("Assignee") ? "bordered" : "plain"}
-            onPress={() => toggleDisplayColumn("Assignee")}
-          >
-            Assignee
-          </Button>
-          <Button
-            color={
-              resolvedTheme === "light" ? colors.dark.DEFAULT : colors.gray[200]
-            }
-            variant={displayColumns.includes("Priority") ? "bordered" : "plain"}
-            onPress={() => toggleDisplayColumn("Priority")}
-          >
-            Priority
-          </Button>
+          {(["ID", "Status", "Assignee", "Priority"] as const).map((column) => (
+            <Button
+              key={column}
+              label={column}
+              modifiers={[
+                buttonStyle(
+                  displayColumns.includes(column) ? "bordered" : "plain",
+                ),
+                tint(
+                  resolvedTheme === "light"
+                    ? colors.dark.DEFAULT
+                    : colors.gray[200],
+                ),
+              ]}
+              onPress={() => toggleDisplayColumn(column)}
+            />
+          ))}
         </HStack>
       </VStack>
       <HStack>
         <Spacer />
-        <Button variant="glass" color="primary" onPress={resetViewOptions}>
-          Reset default
-        </Button>
+        <Button
+          label="Reset defaults"
+          modifiers={[buttonStyle("bordered"), tint(colors.primary)]}
+          onPress={resetViewOptions}
+        />
       </HStack>
     </BottomSheetModal>
   );

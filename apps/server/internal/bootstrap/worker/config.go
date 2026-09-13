@@ -9,6 +9,7 @@ import (
 	"time"
 
 	invitations "github.com/complexus-tech/projects-api/internal/modules/invitations/service"
+	slack "github.com/complexus-tech/projects-api/internal/modules/slack/service"
 	"github.com/complexus-tech/projects-api/internal/platform/appkeys"
 	platformdatabase "github.com/complexus-tech/projects-api/internal/platform/database"
 	"github.com/complexus-tech/projects-api/internal/platform/deployment"
@@ -144,6 +145,11 @@ type Config struct {
 		WorkspaceCallsPerMinute int64 `default:"120" env:"OPENAI_ASSISTANT_WORKSPACE_CALLS_PER_MINUTE"`
 		WorkspaceTokensPerDay   int64 `default:"1000000" env:"OPENAI_ASSISTANT_WORKSPACE_TOKENS_PER_DAY"`
 	}
+	InternalSlack struct {
+		Enabled   bool   `default:"false" env:"APP_INTERNAL_SLACK_ENABLED"`
+		TeamID    string `env:"APP_INTERNAL_SLACK_TEAM_ID"`
+		ChannelID string `env:"APP_INTERNAL_SLACK_CHANNEL_ID"`
+	}
 	Slack struct {
 		ClientID      string `env:"SLACK_CLIENT_ID"`
 		ClientSecret  string `env:"SLACK_CLIENT_SECRET"`
@@ -172,6 +178,9 @@ func loadConfig() (Config, error) {
 	}
 	if cfg.Queues == nil {
 		cfg.Queues = cloneQueueConfig(defaultQueues)
+	}
+	if err := slack.InternalAlertConfig(cfg.InternalSlack).Validate(); err != nil {
+		return Config{}, err
 	}
 	cfg.Feedback.SecurityKey = strings.TrimSpace(cfg.Feedback.SecurityKey)
 	return cfg, nil

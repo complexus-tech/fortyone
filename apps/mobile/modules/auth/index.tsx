@@ -5,8 +5,14 @@ import { useAuthStore } from "@/store";
 import { Logo } from "@/components/icons";
 import { colors } from "@/constants";
 import * as WebBrowser from "expo-web-browser";
-import { authenticateWithCode } from "@/lib/actions/auth";
-import { useState } from "react";
+import {
+  authenticateWithCode,
+  beginMobileSignIn,
+  MOBILE_REDIRECT_URI,
+} from "@/lib/actions/auth";
+import { clearSignInTransaction } from "@/lib/auth";
+import { useEffect, useRef, useState } from "react";
+import { useLocalSearchParams } from "expo-router";
 import { useTheme } from "@/hooks";
 const lightMesh = require("@/assets/images/mesh.webp");
 const darkMesh = require("@/assets/images/mesh-dark.webp");
@@ -14,33 +20,61 @@ const darkMesh = require("@/assets/images/mesh-dark.webp");
 export const Auth = () => {
   const { resolvedTheme } = useTheme();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const sessionError = useAuthStore((state) => state.sessionError);
+  const loadAuthData = useAuthStore((state) => state.loadAuthData);
   const setAuthData = useAuthStore((state) => state.setAuthData);
+  const callback = useLocalSearchParams<{ code?: string; state?: string }>();
+  const handledCallback = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (typeof callback.code !== "string" || typeof callback.state !== "string")
+      return;
+    const url = new URL(MOBILE_REDIRECT_URI);
+    url.searchParams.set("code", callback.code);
+    url.searchParams.set("state", callback.state);
+    if (handledCallback.current === url.toString()) return;
+    handledCallback.current = url.toString();
+    setLoading(true);
+    setError(null);
+    void authenticateWithCode(url.toString())
+      .then(setAuthData)
+      .catch((cause: unknown) => {
+        setError(
+          cause instanceof Error
+            ? cause.message
+            : "Unable to complete sign-in. Please try again.",
+        );
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [callback.code, callback.state, setAuthData]);
 
   const handleGetStarted = async () => {
+    if (loading) return;
     try {
       setLoading(true);
+      setError(null);
       const result = await WebBrowser.openAuthSessionAsync(
-        "https://www.fortyone.app/?mobileApp=true",
-        "fortyone://login"
+        await beginMobileSignIn(),
+        MOBILE_REDIRECT_URI,
       );
 
       if (result.type === "success" && result.url) {
-        const url = new URL(result.url);
-        const code = url.searchParams.get("code") ?? "";
-        const email = url.searchParams.get("email") ?? "";
-
-        if (!code || !email) {
-          console.error("Authentication callback is missing required values");
-          setLoading(false);
-          return;
-        }
-
-        const res = await authenticateWithCode(email, code);
-        setAuthData(res.workspace);
+        const res = await authenticateWithCode(result.url);
+        await setAuthData(res);
       }
     } catch (error) {
-      console.error("Authentication error:", error);
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Unable to sign in. Please try again.",
+      );
     }
+    await clearSignInTransaction().catch(() => {
+      setError("Unable to clear the sign-in request. Please try again.");
+    });
     setLoading(false);
   };
 
@@ -78,6 +112,11 @@ export const Auth = () => {
           color={resolvedTheme === "dark" ? colors.white : colors.black}
         />
         <Col>
+          {error || sessionError ? (
+            <Text accessibilityRole="alert" align="center" className="mb-4">
+              {error ?? sessionError}
+            </Text>
+          ) : null}
           <Text
             className="mb-6 uppercase text-[14px] tracking-wider"
             fontSize="sm"
@@ -100,6 +139,17 @@ export const Auth = () => {
           >
             Get Started
           </Button>
+          {sessionError ? (
+            <Button
+              onPress={() => {
+                void loadAuthData();
+              }}
+              disabled={loading}
+              className="mt-3"
+            >
+              Retry connection
+            </Button>
+          ) : null}
           <Text
             align="center"
             className="mt-4 opacity-80 text-[15px] dark:opacity-100"

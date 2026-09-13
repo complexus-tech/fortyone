@@ -1,5 +1,6 @@
 import { DEFAULT_WORKSPACE_PATH } from "@/shared/routing/workspace";
 import { buildWorkspaceUrl } from "@/utils/workspace-url";
+import { isMobileAuthPath } from "@/lib/mobile-auth";
 import { getOnboardingCallbackPath } from "./routing";
 
 export type OnboardingStart = "task" | "import" | "examples" | "empty";
@@ -20,7 +21,9 @@ export const getOnboardingStartUrl = (
   start: OnboardingStart,
   callbackUrl?: string,
 ): string =>
-  buildWorkspaceUrl(
-    workspaceSlug,
-    getOnboardingCallbackPath(callbackUrl) ?? START_PATHS[start],
-  );
+  isMobileAuthPath(callbackUrl)
+    ? callbackUrl!
+    : buildWorkspaceUrl(
+        workspaceSlug,
+        getOnboardingCallbackPath(callbackUrl) ?? START_PATHS[start],
+      );

@@ -5,7 +5,7 @@ import type { GroupedStoryParams } from "@/modules/stories/types";
 
 export const useMyStoriesGrouped = (
   groupBy: GroupedStoryParams["groupBy"] = "status",
-  options?: Partial<GroupedStoryParams>
+  options?: Partial<GroupedStoryParams>,
 ) => {
   const params: GroupedStoryParams = {
     groupBy,
@@ -16,6 +16,6 @@ export const useMyStoriesGrouped = (
 
   return useQuery({
     queryKey,
-    queryFn: () => getMyStoriesGrouped(params),
+    queryFn: ({ signal }) => getMyStoriesGrouped(params, signal),
   });
 };

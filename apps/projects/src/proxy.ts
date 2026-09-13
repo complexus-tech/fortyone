@@ -18,6 +18,7 @@ const RESERVED_SUBDOMAINS = new Set(["cloud"]);
 const AUTH_ONLY_PREFIXES = new Set([
   "/signup",
   "/auth-callback",
+  "/auth/mobile",
   "/verify",
   "/onboarding",
   "/unauthorized",

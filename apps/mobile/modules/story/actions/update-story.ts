@@ -4,11 +4,12 @@ import type { DetailedStory } from "@/modules/stories/types";
 
 export const updateStoryAction = async (
   storyId: string,
-  payload: Partial<DetailedStory>
+  payload: Partial<DetailedStory>,
 ) => {
   const response = await put<Partial<DetailedStory>, ApiResponse<null>>(
     `stories/${storyId}`,
-    payload
+    payload,
   );
+  if (response?.error?.message) throw new Error(response.error.message);
   return response;
 };

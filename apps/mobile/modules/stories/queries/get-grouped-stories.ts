@@ -12,10 +12,14 @@ const buildGroupedStoriesQuery = (params: GroupedStoryParams) => {
   });
 };
 
-export const getGroupedStories = async (params: GroupedStoryParams) => {
+export const getGroupedStories = async (
+  params: GroupedStoryParams,
+  signal?: AbortSignal,
+) => {
   const query = buildGroupedStoriesQuery(params);
   const response = await get<ApiResponse<GroupedStoriesResponse>>(
-    `stories/grouped${query}`
+    `stories/grouped${query}`,
+    { signal },
   );
   return response.data;
 };

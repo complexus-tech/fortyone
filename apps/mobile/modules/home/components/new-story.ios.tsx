@@ -1,7 +1,12 @@
 import React from "react";
 import { View } from "react-native";
-import { Host, HStack, Image } from "@expo/ui/swift-ui";
-import { frame, glassEffect } from "@expo/ui/swift-ui/modifiers";
+import { Host, Button, Image } from "@expo/ui/swift-ui";
+import {
+  frame,
+  glassEffect,
+  accessibilityLabel,
+  buttonStyle,
+} from "@expo/ui/swift-ui/modifiers";
 import { useRouter } from "expo-router";
 
 export const NewStoryButton = () => {
@@ -22,12 +27,14 @@ export const NewStoryButton = () => {
       <Host
         matchContents
         style={{
-          width: 50,
-          height: 50,
+          width: 60,
+          height: 60,
         }}
       >
-        <HStack
+        <Button
           modifiers={[
+            accessibilityLabel("Create task"),
+            buttonStyle("plain"),
             frame({ width: 60, height: 60 }),
             glassEffect({
               glass: {
@@ -39,7 +46,7 @@ export const NewStoryButton = () => {
           onPress={handleNewStory}
         >
           <Image systemName="plus" size={23} />
-        </HStack>
+        </Button>
       </Host>
     </View>
   );

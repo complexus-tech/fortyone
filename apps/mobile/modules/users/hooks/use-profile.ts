@@ -5,6 +5,6 @@ import { userKeys } from "@/constants/keys";
 export const useProfile = () => {
   return useQuery({
     queryKey: userKeys.profile(),
-    queryFn: getProfile,
+    queryFn: ({ signal }) => getProfile(signal),
   });
 };

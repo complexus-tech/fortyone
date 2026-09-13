@@ -1,3 +1,4 @@
+import { QueryState } from "@/components/ui/query-state";
 import React from "react";
 import { View } from "react-native";
 import { StatCard } from "./stat-card";
@@ -11,7 +12,7 @@ import { useTerminology, useTheme } from "@/hooks";
 export const Overview = () => {
   const { resolvedTheme } = useTheme();
   const { getTermDisplay } = useTerminology();
-  const { data: summary, isPending } = useOverviewStats();
+  const { data: summary, isPending, error, refetch } = useOverviewStats();
   const storyTerm = getTermDisplay("storyTerm", {
     variant: "plural",
     capitalize: true,
@@ -19,6 +20,17 @@ export const Overview = () => {
   if (isPending) {
     return <OverviewSkeleton />;
   }
+  if (error)
+    return (
+      <QueryState
+        title="Could not load your overview"
+        message={error.message}
+        onRetry={() => {
+          void refetch();
+        }}
+      />
+    );
+
   const overviewItems = [
     {
       count: summary?.closed,

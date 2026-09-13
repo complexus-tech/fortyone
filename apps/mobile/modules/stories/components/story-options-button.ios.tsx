@@ -3,8 +3,13 @@ import { StoriesOptionsSheet } from "@/components/ui";
 import { colors } from "@/constants";
 import { useTheme } from "@/hooks";
 import type { StoriesViewOptions } from "@/types/stories-view-options";
-import { Host, HStack, Image } from "@expo/ui/swift-ui";
-import { frame, glassEffect } from "@expo/ui/swift-ui/modifiers";
+import { Host, Button, Image } from "@expo/ui/swift-ui";
+import {
+  frame,
+  glassEffect,
+  accessibilityLabel,
+  buttonStyle,
+} from "@expo/ui/swift-ui/modifiers";
 
 type StoryOptionsButtonProps = {
   viewOptions: StoriesViewOptions;
@@ -23,8 +28,10 @@ export const StoryOptionsButton = ({
   return (
     <>
       <Host matchContents style={{ width: 40, height: 40 }}>
-        <HStack
+        <Button
           modifiers={[
+            accessibilityLabel("View options"),
+            buttonStyle("plain"),
             frame({ width: 40, height: 40 }),
             glassEffect({
               glass: {
@@ -43,7 +50,7 @@ export const StoryOptionsButton = ({
             }
             modifiers={[]}
           />
-        </HStack>
+        </Button>
       </Host>
       <StoriesOptionsSheet
         isOpened={isOpened}

@@ -4,7 +4,7 @@ import { SafeContainer, StoriesListSkeleton } from "@/components/ui";
 import { StoriesBoard } from "@/modules/stories/components";
 import { useObjectiveStoriesGrouped } from "@/modules/stories/hooks";
 
-import { useGlobalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useTerminology } from "@/hooks/use-terminology";
 import { useViewOptions } from "@/hooks/use-view-options";
 import { useQueryClient } from "@tanstack/react-query";
@@ -13,7 +13,7 @@ import { Header } from "./components";
 
 export const ObjectiveStories = () => {
   const queryClient = useQueryClient();
-  const { objectiveId, teamId } = useGlobalSearchParams<{
+  const { objectiveId, teamId } = useLocalSearchParams<{
     objectiveId: string;
     teamId: string;
   }>();
@@ -44,12 +44,13 @@ export const ObjectiveStories = () => {
   const {
     data: groupedStories,
     isPending,
+    error,
     refetch,
     isRefetching,
   } = useObjectiveStoriesGrouped(
     objectiveId!,
     viewOptions.groupBy,
-    queryOptions
+    queryOptions,
   );
 
   if (!viewOptionsLoaded) {
@@ -76,12 +77,15 @@ export const ObjectiveStories = () => {
         groupedStories={groupedStories}
         groupFilters={queryOptions}
         isLoading={isPending}
+        error={error}
+        onRetry={() => {
+          void refetch();
+        }}
         visibleColumns={viewOptions.displayColumns}
         emptyTitle={`No ${getTermDisplay("storyTerm", { variant: "plural" })} found for this ${getTermDisplay("objectiveTerm", { variant: "singular" })}`}
         emptyMessage={`There are no ${getTermDisplay("storyTerm", { variant: "plural" })} for this ${getTermDisplay("objectiveTerm", { variant: "singular" })} at the moment.`}
-        onRefresh={() => {
-          refetch();
-          queryClient.invalidateQueries({ queryKey: storyKeys.all });
+        onRefresh={async () => {
+          await queryClient.invalidateQueries({ queryKey: storyKeys.all });
         }}
         isRefreshing={isRefetching}
       />

@@ -1,10 +1,10 @@
 import { colors } from "@/constants";
 import { useFeatures, useSprintsEnabled, useTerminology } from "@/hooks";
-import { useGlobalSearchParams } from "expo-router";
-import { NativeTabs, Icon, Label } from "expo-router/unstable-native-tabs";
+import { useLocalSearchParams } from "expo-router";
+import { NativeTabs } from "expo-router/unstable-native-tabs";
 
 export default function TeamLayout() {
-  const { teamId } = useGlobalSearchParams<{ teamId: string }>();
+  const { teamId } = useLocalSearchParams<{ teamId: string }>();
   const { getTermDisplay } = useTerminology();
   const { objectiveEnabled } = useFeatures();
   const sprintsEnabled = useSprintsEnabled(teamId);
@@ -23,16 +23,19 @@ export default function TeamLayout() {
   return (
     <NativeTabs tintColor={colors.primary} minimizeBehavior="onScrollDown">
       <NativeTabs.Trigger name="index">
-        <Icon sf="rectangle.fill.on.rectangle.angled.fill" />
-        <Label>{storyTerm}</Label>
+        <NativeTabs.Trigger.Icon
+          sf="rectangle.fill.on.rectangle.angled.fill"
+          md="view_list"
+        />
+        <NativeTabs.Trigger.Label>{storyTerm}</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="sprints" hidden={!sprintsEnabled}>
-        <Icon sf="play.circle" />
-        <Label>{sprintsTerm}</Label>
+        <NativeTabs.Trigger.Icon sf="play.circle" md="play_circle" />
+        <NativeTabs.Trigger.Label>{sprintsTerm}</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="objectives" hidden={!objectiveEnabled}>
-        <Icon sf="square.grid.2x2.fill" />
-        <Label>{objectivesTerm}</Label>
+        <NativeTabs.Trigger.Icon sf="square.grid.2x2.fill" md="grid_view" />
+        <NativeTabs.Trigger.Label>{objectivesTerm}</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
     </NativeTabs>
   );

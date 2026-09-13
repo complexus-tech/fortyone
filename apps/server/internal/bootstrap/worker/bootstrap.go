@@ -423,6 +423,9 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 	if err := registerOutboundWebhookTask(taskMux, log, storyMutationEventDispatcher, outboundWebhookDispatcher); err != nil {
 		return App{}, fmt.Errorf("register outbound webhook worker: %w", err)
 	}
+	if err := registerInternalSlackAlerts(taskMux, scheduler, slack.InternalAlertConfig(cfg.InternalSlack), connections.Pool, credentialVault, log); err != nil {
+		return App{}, fmt.Errorf("initialize internal Slack alerts: %w", err)
+	}
 	resourcesTransferred = true
 	databaseTransferred = true
 

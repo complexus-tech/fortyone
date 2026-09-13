@@ -1,19 +1,174 @@
-import React from "react";
-import { Text, Badge, Col } from "@/components/ui";
+import React, { useState } from "react";
+import { colors } from "../../../constants/colors";
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  TextInput,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Text, Badge, Col, Row, Button } from "@/components/ui";
 import { DetailedStory } from "@/modules/stories/types";
-import { differenceInDays, addDays } from "date-fns";
+import { differenceInCalendarDays, addDays } from "date-fns";
+import { useDraft } from "@/components/rich-text/use-draft";
+import { DiscardDraftButton } from "@/components/rich-text/draft-recovery";
+import { useTheme } from "@/hooks";
+import { useUpdateStoryMutation } from "../hooks/use-update-story-mutation";
+import { getStory } from "@/modules/stories/queries/get-story";
+
+type TitleDraft = { title: string; baseline: string };
+const isTitleDraft = (value: unknown): value is TitleDraft =>
+  Boolean(
+    value &&
+      typeof value === "object" &&
+      typeof (value as TitleDraft).title === "string" &&
+      typeof (value as TitleDraft).baseline === "string",
+  );
+
+const EditTitle = ({
+  story,
+  onClose,
+}: {
+  story: DetailedStory;
+  onClose: () => void;
+}) => {
+  const { resolvedTheme } = useTheme();
+  const draft = useDraft(
+    `story:${story.id}:title`,
+    { title: story.title, baseline: story.title },
+    isTitleDraft,
+  );
+  const mutation = useUpdateStoryMutation();
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const save = async () => {
+    if (saving || !draft.value.title.trim()) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const latest = await getStory(story.id);
+      const nextTitle = draft.value.title.trim();
+      if (latest.title !== draft.value.baseline && latest.title !== nextTitle) {
+        setError(
+          "This title changed elsewhere. Your draft is preserved; review the latest title before replacing it.",
+        );
+      } else {
+        if (latest.title !== nextTitle) {
+          await mutation.mutateAsync({
+            storyId: story.id,
+            payload: { title: nextTitle },
+          });
+        }
+        await draft.clear();
+        onClose();
+      }
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Your title was not saved. Try again.",
+      );
+    }
+    setSaving(false);
+  };
+  return (
+    <Modal
+      visible
+      presentationStyle="pageSheet"
+      animationType="slide"
+      onRequestClose={() => {
+        if (!saving) onClose();
+      }}
+    >
+      <SafeAreaView
+        style={{
+          flex: 1,
+          backgroundColor:
+            resolvedTheme === "dark" ? colors.dark.DEFAULT : colors.white,
+        }}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          style={{ flex: 1, padding: 20 }}
+        >
+          <Row justify="between" align="center" className="mb-6">
+            <Pressable
+              accessibilityRole="button"
+              disabled={saving}
+              onPress={onClose}
+              className="min-h-11 justify-center"
+            >
+              <Text>Close</Text>
+            </Pressable>
+            <Text fontSize="lg">Edit title</Text>
+            <Button
+              fullWidth={false}
+              disabled={!draft.ready || !draft.value.title.trim()}
+              loading={saving}
+              onPress={() => void save()}
+            >
+              Save
+            </Button>
+          </Row>
+          {!draft.ready && (
+            <ActivityIndicator accessibilityLabel="Restoring title draft" />
+          )}
+          {draft.ready && (
+            <TextInput
+              accessibilityLabel="Task title"
+              autoFocus
+              multiline
+              value={draft.value.title}
+              editable={!saving}
+              onChangeText={(title) =>
+                draft.update({ ...draft.valueRef.current, title })
+              }
+              style={{
+                fontSize: 28,
+                lineHeight: 34,
+                fontWeight: "600",
+                minHeight: 120,
+                color: resolvedTheme === "dark" ? "white" : "#282620",
+              }}
+            />
+          )}
+          {(error || draft.error) && (
+            <Text color="danger" accessibilityRole="alert">
+              {error || draft.error}
+            </Text>
+          )}
+          <DiscardDraftButton
+            onDiscard={async () => {
+              await draft.clear();
+              onClose();
+            }}
+          />
+          <View style={{ marginTop: 16 }}>
+            <Text color="muted" fontSize="sm">
+              Changes are kept as a draft on this device.
+            </Text>
+          </View>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </Modal>
+  );
+};
 
 export const Title = ({ story }: { story: DetailedStory }) => {
+  const [editing, setEditing] = useState(false);
   const isDeleted = story.deletedAt !== null;
   const isArchived = story.archivedAt !== null;
 
   const getDaysLeft = () => {
     if (!story.deletedAt) return 0;
-    const daysLeft = differenceInDays(
+    const daysLeft = differenceInCalendarDays(
       addDays(new Date(story.deletedAt!), 30),
-      new Date(story.deletedAt)
+      new Date(),
     );
-    return daysLeft;
+    return Math.max(0, daysLeft);
   };
 
   return (
@@ -28,9 +183,17 @@ export const Title = ({ story }: { story: DetailedStory }) => {
           <Text>Archived</Text>
         </Badge>
       )}
-      <Text fontSize="2xl" fontWeight="semibold">
-        {story.title}
-      </Text>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Edit title: ${story.title}`}
+        disabled={isDeleted}
+        onPress={() => setEditing(true)}
+      >
+        <Text fontSize="2xl" fontWeight="semibold">
+          {story.title}
+        </Text>
+      </Pressable>
+      {editing && <EditTitle story={story} onClose={() => setEditing(false)} />}
     </Col>
   );
 };

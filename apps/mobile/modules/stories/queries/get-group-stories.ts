@@ -12,10 +12,15 @@ const buildGroupStoriesQuery = (params: GroupStoryParams): string => {
   });
 };
 
-export const getGroupStories = async (params: GroupStoryParams) => {
+export const getGroupStories = async (
+  params: GroupStoryParams,
+  signal?: AbortSignal,
+) => {
   const query = buildGroupStoriesQuery(params);
   const response = await get<ApiResponse<GroupStoriesResponse>>(
-    `stories/group${query}`
+    `stories/group${query}`,
+    { signal },
   );
+  if (!response.data) throw new Error("The story page response is missing");
   return response.data;
 };

@@ -170,6 +170,13 @@ func (s *Service) handleInvoicePaid(ctx context.Context, event stripe.Event) (We
 		Status: string(invoice.Status), SeatsCount: seatCount,
 		HostedURL: &invoice.HostedInvoiceURL, CustomerName: &customer.Name,
 	}
+	// invoice.paid also includes manual/out-of-band settlement. Only a live,
+	// nonzero successful collection produces an internal revenue alert.
+	if event.Type == "invoice.payment_succeeded" && event.Livemode && invoice.AmountPaid > 0 {
+		paid.CollectedPayment = &subscriptionsdomain.CollectedPayment{
+			AmountMinor: invoice.AmountPaid, Currency: string(invoice.Currency), Email: customer.Email,
+		}
+	}
 	if err := s.repo.UpsertStripeInvoice(ctx, customer.ID, paid); err != nil {
 		return WebhookOutcome{}, fmt.Errorf("upsert paid Stripe invoice: %w", err)
 	}

@@ -1,4 +1,4 @@
-import { useColorScheme } from "nativewind";
+import { Appearance, useColorScheme } from "react-native";
 import { useEffect, useCallback } from "react";
 import { useMMKVString } from "react-native-mmkv";
 
@@ -7,26 +7,29 @@ type Theme = "light" | "dark" | "system";
 const THEME_STORAGE_KEY = "app-theme";
 
 export function useTheme() {
-  const { colorScheme, setColorScheme } = useColorScheme();
+  const colorScheme = useColorScheme();
   const [theme, setTheme] = useMMKVString(THEME_STORAGE_KEY);
 
   useEffect(() => {
-    if (theme === "system") {
-      setColorScheme("system");
-    }
-  }, [theme, setColorScheme]);
+    Appearance.setColorScheme(
+      theme === "light" || theme === "dark" ? theme : "unspecified",
+    );
+  }, [theme]);
 
   const changeTheme = useCallback(
     (newTheme: Theme) => {
       setTheme(newTheme);
-      setColorScheme(newTheme);
+      Appearance.setColorScheme(
+        newTheme === "system" ? "unspecified" : newTheme,
+      );
     },
-    [setColorScheme, setTheme]
+    [setTheme],
   );
 
   return {
-    theme: (theme || "system") as Theme,
-    resolvedTheme: colorScheme,
+    theme: theme === "light" || theme === "dark" ? theme : "system",
+    resolvedTheme:
+      colorScheme === "dark" ? ("dark" as const) : ("light" as const),
     setTheme: changeTheme,
   };
 }

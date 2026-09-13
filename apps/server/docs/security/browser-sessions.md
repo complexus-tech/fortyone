@@ -83,3 +83,45 @@ workspace request must carry an origin that matches the configured policy.
 Requests without the browser cookie (provider webhooks and versioned API
 credentials) continue through their dedicated authentication and signature
 checks.
+
+## Native mobile sessions
+
+The mobile app reuses opaque first-party sessions without reviving legacy JWT
+bearers. `/auth/mobile` on the Projects authentication host carries the app's
+random state and S256 PKCE challenge through provider/email sign-in and workspace
+onboarding. After an explicit browser confirmation, the cookie-authenticated
+`POST /auth/mobile/authorize` issues a random 256-bit code. Codes are indexed by
+SHA-256 digest in Redis, expire after two minutes, and bind state, PKCE challenge,
+the fixed `fortyone://login` redirect, and the browser session's account epoch.
+
+`POST /auth/mobile/exchange` requires the code, matching state, verifier and
+redirect URI. It validates the binding before atomically taking the code,
+revalidates account activation/epoch, and issues an independent 30-day cookie.
+The epoch captured by browser authorization is retained, so revocation during
+the exchange cannot mint a session at a newer epoch. Neither the browser cookie
+nor a session credential is included in a redirect or JSON response. The old
+unbound `/users/session/code` handoff is removed; unlaunched legacy mobile builds
+must update. Ordinary browser authentication is unchanged.
+
+On Expo SDK 57, the app deliberately uses `expo/fetch` with credentials omitted
+and redirects rejected. Its transport sends only `fortyone_session`, persisted
+in SecureStore with its expiry and API origin, to the configured API origin and
+path. This avoids relying on browser/native cookie-store sharing or residual
+native cookies after logout. Cookie changes are read from the direct exchange
+response. The configured `EXPO_PUBLIC_APP_URL` (default
+`https://cloud.fortyone.app`) supplies the Origin required by the existing
+server policy. That origin must be present in the API's allowlist. It is request
+metadata, not an app identity assertion; missing or untrusted browser origins
+remain forbidden. HTTPS is required outside local development.
+
+Local logout removes the credential, account caches and drafts before attempting
+remote revocation. If revocation is unavailable, the UI states that only local
+sign-out is confirmed. Timeouts, offline operation and API failures do not
+otherwise erase a valid saved session. Expiry and authoritative 401 responses
+invalidate it. Sessions have a fixed 30-day lifetime; no silent renewal or
+refresh-token family is introduced.
+
+Protocol/unit tests do not establish device behavior. Before release, exercise
+cookie capture and requests, app termination/relaunch, browser cancellation,
+PKCE callback delivery, sign-out online/offline, account switching, expiry and
+revocation in actual iOS and Android development/release builds.

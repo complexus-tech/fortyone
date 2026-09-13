@@ -9,274 +9,59 @@ import {
   duplicateStory,
 } from "../actions/story-actions";
 import type { DetailedStory } from "../types";
+import { optimisticallyUpdateStories, restoreStoryCache } from "../utils/cache";
 
-// Archive mutation
-export const useArchiveStoryMutation = () => {
-  const queryClient = useQueryClient();
+type StoryUpdate = { storyId: string; patch: Partial<DetailedStory> };
 
-  const mutation = useMutation({
-    mutationFn: archiveStory,
-
-    onMutate: async (storyIds) => {
-      // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: storyKeys.all });
-
-      // Store previous stories for rollback
-      const previousStories: Record<string, DetailedStory> = {};
-
-      // Update each story optimistically
-      storyIds.forEach((storyId) => {
-        const previousStory = queryClient.getQueryData<DetailedStory>(
-          storyKeys.detail(storyId)
-        );
-
-        if (previousStory) {
-          previousStories[storyId] = previousStory;
-          queryClient.setQueryData<DetailedStory>(storyKeys.detail(storyId), {
-            ...previousStory,
-            archivedAt: new Date().toISOString(),
-          });
-        }
-      });
-
-      return { previousStories };
+const useStoryActionMutation = <TVariables, TData>(
+  mutationFn: (variables: TVariables) => Promise<TData>,
+  message: string,
+  updates?: (variables: TVariables) => StoryUpdate[],
+) => {
+  const client = useQueryClient();
+  const queryKey = storyKeys.all;
+  return useMutation({
+    mutationFn,
+    onMutate: (variables) =>
+      updates
+        ? optimisticallyUpdateStories(client, queryKey, updates(variables))
+        : Promise.resolve([]),
+    onError: (error, _variables, snapshots) => {
+      if (snapshots) restoreStoryCache(client, snapshots);
+      toast.error("Could not save this change", { description: error.message });
     },
-
-    onError: (error, storyIds, context) => {
-      // Rollback optimistic updates
-      if (context?.previousStories) {
-        Object.entries(context.previousStories).forEach(
-          ([storyId, previousStory]) => {
-            queryClient.setQueryData<DetailedStory>(
-              storyKeys.detail(storyId),
-              previousStory
-            );
-          }
-        );
-      }
-
-      queryClient.invalidateQueries({ queryKey: storyKeys.all });
-      toast.error("Failed to archive story");
+    onSuccess: () => {
+      toast.success(message);
     },
-
-    onSuccess: (res, storyIds) => {
-      if (res.error?.message) {
-        toast.error(res.error.message);
-        return;
-      }
-
-      // Invalidate specific story detail queries
-      storyIds.forEach((storyId) => {
-        queryClient.invalidateQueries({ queryKey: storyKeys.detail(storyId) });
-      });
-
-      queryClient.invalidateQueries({ queryKey: storyKeys.all });
-      toast.success("Story archived successfully");
-    },
+    onSettled: () => client.invalidateQueries({ queryKey }),
   });
-
-  return mutation;
 };
 
-// Unarchive mutation
-export const useUnarchiveStoryMutation = () => {
-  const queryClient = useQueryClient();
+export const useArchiveStoryMutation = () =>
+  useStoryActionMutation(archiveStory, "Task archived", (storyIds) =>
+    storyIds.map((storyId) => ({
+      storyId,
+      patch: { archivedAt: new Date().toISOString() },
+    })),
+  );
 
-  const mutation = useMutation({
-    mutationFn: unarchiveStory,
+export const useUnarchiveStoryMutation = () =>
+  useStoryActionMutation(unarchiveStory, "Task unarchived", (storyIds) =>
+    storyIds.map((storyId) => ({
+      storyId,
+      patch: { archivedAt: null },
+    })),
+  );
 
-    onMutate: async (storyIds) => {
-      await queryClient.cancelQueries({ queryKey: storyKeys.all });
+export const useDeleteStoryMutation = () =>
+  useStoryActionMutation(deleteStory, "Task deleted", (storyId) => [
+    { storyId, patch: { deletedAt: new Date().toISOString() } },
+  ]);
 
-      // Store previous stories for rollback
-      const previousStories: Record<string, DetailedStory> = {};
+export const useRestoreStoryMutation = () =>
+  useStoryActionMutation(restoreStory, "Task restored", (storyId) => [
+    { storyId, patch: { deletedAt: null } },
+  ]);
 
-      storyIds.forEach((storyId) => {
-        const previousStory = queryClient.getQueryData<DetailedStory>(
-          storyKeys.detail(storyId)
-        );
-
-        if (previousStory) {
-          previousStories[storyId] = previousStory;
-          queryClient.setQueryData<DetailedStory>(storyKeys.detail(storyId), {
-            ...previousStory,
-            archivedAt: null,
-          });
-        }
-      });
-
-      return { previousStories };
-    },
-
-    onError: (error, storyIds, context) => {
-      // Rollback optimistic updates
-      if (context?.previousStories) {
-        Object.entries(context.previousStories).forEach(
-          ([storyId, previousStory]) => {
-            queryClient.setQueryData<DetailedStory>(
-              storyKeys.detail(storyId),
-              previousStory
-            );
-          }
-        );
-      }
-
-      queryClient.invalidateQueries({ queryKey: storyKeys.all });
-      toast.error("Failed to unarchive story");
-    },
-
-    onSuccess: (res, storyIds) => {
-      if (res.error?.message) {
-        toast.error(res.error.message);
-        return;
-      }
-
-      // Invalidate specific story detail queries
-      storyIds.forEach((storyId) => {
-        queryClient.invalidateQueries({ queryKey: storyKeys.detail(storyId) });
-      });
-
-      queryClient.invalidateQueries({ queryKey: storyKeys.all });
-      toast.success("Story unarchived successfully");
-    },
-  });
-
-  return mutation;
-};
-
-// Delete mutation
-export const useDeleteStoryMutation = () => {
-  const queryClient = useQueryClient();
-
-  const mutation = useMutation({
-    mutationFn: deleteStory,
-
-    onMutate: async (storyId) => {
-      await queryClient.cancelQueries({ queryKey: storyKeys.all });
-
-      // Store previous story for rollback
-      const previousStory = queryClient.getQueryData<DetailedStory>(
-        storyKeys.detail(storyId)
-      );
-
-      if (previousStory) {
-        queryClient.setQueryData<DetailedStory>(storyKeys.detail(storyId), {
-          ...previousStory,
-          deletedAt: new Date().toISOString(),
-        });
-      }
-
-      return { previousStory };
-    },
-
-    onError: (error, storyId, context) => {
-      // Rollback optimistic update
-      if (context?.previousStory) {
-        queryClient.setQueryData<DetailedStory>(
-          storyKeys.detail(storyId),
-          context.previousStory
-        );
-      }
-
-      queryClient.invalidateQueries({ queryKey: storyKeys.all });
-      toast.error("Failed to delete story");
-    },
-
-    onSuccess: (res, storyId) => {
-      if (res.error?.message) {
-        toast.error(res.error.message);
-        return;
-      }
-
-      // Refetch specific story detail query immediately
-      queryClient.refetchQueries({ queryKey: storyKeys.detail(storyId) });
-
-      queryClient.invalidateQueries({ queryKey: storyKeys.all });
-      toast.success("Story deleted successfully");
-    },
-  });
-
-  return mutation;
-};
-
-// Restore mutation
-export const useRestoreStoryMutation = () => {
-  const queryClient = useQueryClient();
-
-  const mutation = useMutation({
-    mutationFn: restoreStory,
-
-    onMutate: async (storyId) => {
-      await queryClient.cancelQueries({ queryKey: storyKeys.all });
-
-      const previousStory = queryClient.getQueryData<DetailedStory>(
-        storyKeys.detail(storyId)
-      );
-
-      if (previousStory) {
-        queryClient.setQueryData<DetailedStory>(storyKeys.detail(storyId), {
-          ...previousStory,
-          deletedAt: null,
-        });
-      }
-
-      return { previousStory };
-    },
-
-    onError: (error, storyId, context) => {
-      if (context?.previousStory) {
-        queryClient.setQueryData<DetailedStory>(
-          storyKeys.detail(storyId),
-          context.previousStory
-        );
-      }
-
-      queryClient.invalidateQueries({ queryKey: storyKeys.all });
-      toast.error("Failed to restore story");
-    },
-
-    onSuccess: (res, storyId) => {
-      if (res.error?.message) {
-        toast.error(res.error.message);
-        return;
-      }
-
-      // Invalidate specific story detail query
-      queryClient.invalidateQueries({ queryKey: storyKeys.detail(storyId) });
-
-      queryClient.invalidateQueries({ queryKey: storyKeys.all });
-      toast.success("Story restored successfully");
-    },
-  });
-
-  return mutation;
-};
-
-// Duplicate mutation
-export const useDuplicateStoryMutation = () => {
-  const queryClient = useQueryClient();
-
-  const mutation = useMutation({
-    mutationFn: duplicateStory,
-
-    onError: (error) => {
-      queryClient.invalidateQueries({ queryKey: storyKeys.all });
-      toast.error("Failed to duplicate story");
-    },
-
-    onSuccess: (res, storyId) => {
-      if (res.error?.message) {
-        toast.error(res.error.message);
-        return;
-      }
-
-      // Invalidate specific story detail query
-      queryClient.invalidateQueries({ queryKey: storyKeys.detail(storyId) });
-
-      queryClient.invalidateQueries({ queryKey: storyKeys.all });
-      toast.success("Story duplicated successfully");
-    },
-  });
-
-  return mutation;
-};
+export const useDuplicateStoryMutation = () =>
+  useStoryActionMutation(duplicateStory, "Task duplicated");

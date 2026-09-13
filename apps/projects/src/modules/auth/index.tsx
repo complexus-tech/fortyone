@@ -10,11 +10,7 @@ import { Logo, GoogleIcon, MicrosoftIcon } from "@/components/ui";
 import { OTPInput } from "@/components/ui/otp-input";
 import { requestMagicEmail } from "@/lib/actions/request-magic-email";
 import { signInWithGoogle, signInWithMicrosoft } from "@/lib/actions/sign-in";
-import {
-  getAuthCallbackPath,
-  getSafeCallbackUrl,
-  withCallbackUrl,
-} from "@/utils/callback-url";
+import { getSafeCallbackUrl, withCallbackUrl } from "@/utils/callback-url";
 
 const COPYRIGHT_NOTICE =
   "\u00a9 2026 \u2022 Product of Complexus LLC \u2022 All Rights Reserved.";
@@ -61,12 +57,10 @@ export const AuthLayout = ({
   };
 
   const handleOTPSubmit = async () => {
-    let url = `/verify/${email}/${otp}`;
-    if (isMobileApp) {
-      url += "?mobileApp=true";
-    } else {
-      url = withCallbackUrl(url, safeCallbackUrl);
-    }
+    const url = withCallbackUrl(
+      `/verify/${encodeURIComponent(email)}/${encodeURIComponent(otp)}${isMobileApp ? "?mobileApp=true" : ""}`,
+      safeCallbackUrl,
+    );
 
     if (otp.length !== 6) {
       toast.error("Please enter a valid 6-digit code");
@@ -144,7 +138,10 @@ export const AuthLayout = ({
                   Don&apos;t have an account?{" "}
                   <Link
                     className="text-primary underline"
-                    href={withCallbackUrl("/signup", safeCallbackUrl)}
+                    href={withCallbackUrl(
+                      "/signup",
+                      safeCallbackUrl,
+                    )}
                   >
                     Create one
                   </Link>
@@ -156,7 +153,10 @@ export const AuthLayout = ({
               Already have an account?{" "}
               <Link
                 className="text-primary underline"
-                href={withCallbackUrl("/", safeCallbackUrl)}
+                href={withCallbackUrl(
+                  isMobileApp ? "/?mobileApp=true" : "/",
+                  safeCallbackUrl,
+                )}
               >
                 Sign in
               </Link>
@@ -203,9 +203,12 @@ export const AuthLayout = ({
               leftIcon={<GoogleIcon />}
               onClick={async () => {
                 await signInWithGoogle(
-                  isMobileApp
-                    ? "/auth-callback?mobileApp=true"
-                    : getAuthCallbackPath(safeCallbackUrl),
+                  withCallbackUrl(
+                    isMobileApp
+                      ? "/auth-callback?mobileApp=true"
+                      : "/auth-callback",
+                    safeCallbackUrl,
+                  ),
                 ).catch((error) => {
                   toast.error("Google sign-in failed", {
                     description:
@@ -229,9 +232,12 @@ export const AuthLayout = ({
               onClick={async () => {
                 try {
                   await signInWithMicrosoft(
-                    isMobileApp
-                      ? "/auth-callback?mobileApp=true"
-                      : getAuthCallbackPath(safeCallbackUrl),
+                    withCallbackUrl(
+                      isMobileApp
+                        ? "/auth-callback?mobileApp=true"
+                        : "/auth-callback",
+                      safeCallbackUrl,
+                    ),
                   );
                 } catch (error) {
                   toast.error("Microsoft sign-in failed", {

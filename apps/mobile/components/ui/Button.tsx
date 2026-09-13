@@ -49,7 +49,7 @@ export const buttonVariants = cva(
       color: "primary",
       fullWidth: true,
     },
-  }
+  },
 );
 
 export interface ButtonProps
@@ -72,7 +72,7 @@ export const Button = ({
   fullWidth,
   ...rest
 }: ButtonProps) => {
-  const isDisabled = disabled || loading;
+  const isDisabled = Boolean(disabled || loading);
 
   const classes = cn(
     buttonVariants({
@@ -83,13 +83,16 @@ export const Button = ({
       color,
       fullWidth,
     }),
-    className
+    className,
   );
 
   return (
     <TouchableOpacity
+      accessibilityRole="button"
+      accessibilityState={{ disabled: isDisabled, busy: Boolean(loading) }}
+      accessibilityLabel={typeof children === "string" ? children : undefined}
       className={classes}
-      disabled={isDisabled as boolean}
+      disabled={isDisabled}
       activeOpacity={0.7}
       {...rest}
     >

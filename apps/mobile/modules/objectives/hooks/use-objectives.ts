@@ -10,14 +10,14 @@ import {
 export const useObjectives = () => {
   return useQuery({
     queryKey: objectiveKeys.lists(),
-    queryFn: getObjectives,
+    queryFn: ({ signal }) => getObjectives(signal),
   });
 };
 
 export const useTeamObjectives = (teamId: string) => {
   return useQuery({
     queryKey: objectiveKeys.team(teamId),
-    queryFn: () => getTeamObjectives(teamId),
+    queryFn: ({ signal }) => getTeamObjectives(teamId, signal),
     enabled: Boolean(teamId),
   });
 };
@@ -25,7 +25,7 @@ export const useTeamObjectives = (teamId: string) => {
 export const useObjective = (objectiveId: string) => {
   return useQuery({
     queryKey: objectiveKeys.detail(objectiveId),
-    queryFn: () => getObjective(objectiveId),
+    queryFn: ({ signal }) => getObjective(objectiveId, signal),
     enabled: Boolean(objectiveId),
     staleTime: 1000 * 60 * 2, // 2 minutes
   });
@@ -34,6 +34,6 @@ export const useObjective = (objectiveId: string) => {
 export const useObjectiveStatuses = () => {
   return useQuery({
     queryKey: objectiveKeys.statuses(),
-    queryFn: getObjectiveStatuses,
+    queryFn: ({ signal }) => getObjectiveStatuses(signal),
   });
 };

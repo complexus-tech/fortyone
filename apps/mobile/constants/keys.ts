@@ -1,21 +1,36 @@
+import { useAuthStore } from "@/store/auth";
+import { scopedQueryKey } from "@/lib/query-scope";
+
+// The session provider remounts all observers when this scope changes.
+const resourceKey = (resource: string) =>
+  scopedQueryKey(useAuthStore.getState(), resource);
+
 export const homeKeys = {
-  all: ["home"] as const,
+  get all() {
+    return resourceKey("home");
+  },
   overview: () => [...homeKeys.all, "overview"] as const,
 };
 
 export const teamKeys = {
-  all: ["teams"] as const,
+  get all() {
+    return resourceKey("teams");
+  },
   lists: () => [...teamKeys.all, "list"] as const,
   detail: (id: string) => [...teamKeys.all, "detail", id] as const,
 };
 
 export const userKeys = {
-  all: ["users"] as const,
+  get all() {
+    return resourceKey("users");
+  },
   profile: () => [...userKeys.all, "profile"] as const,
 };
 
 export const memberKeys = {
-  all: ["members"] as const,
+  get all() {
+    return resourceKey("members");
+  },
   lists: () => [...memberKeys.all, "list"] as const,
   details: () => [...memberKeys.all, "detail"] as const,
   detail: (id: string) => [...memberKeys.details(), id] as const,
@@ -23,7 +38,9 @@ export const memberKeys = {
 };
 
 export const storyKeys = {
-  all: ["stories"] as const,
+  get all() {
+    return resourceKey("stories");
+  },
   lists: () => [...storyKeys.all, "list"] as const,
   mine: () => [...storyKeys.lists(), "mine"] as const,
   team: (teamId: string) => [...storyKeys.lists(), "team", teamId] as const,
@@ -50,19 +67,26 @@ export const storyKeys = {
 };
 
 export const notificationKeys = {
-  all: ["notifications"] as const,
+  get all() {
+    return resourceKey("notifications");
+  },
+  lists: () => [...notificationKeys.all, "list"] as const,
   unread: () => [...notificationKeys.all, "unread"] as const,
   preferences: () => [...notificationKeys.all, "preferences"] as const,
 };
 
 export const workspaceKeys = {
-  all: ["workspace"] as const,
+  get all() {
+    return resourceKey("workspace");
+  },
   lists: () => [...workspaceKeys.all, "list"] as const,
   settings: () => [...workspaceKeys.all, "settings"] as const,
 };
 
 export const sprintKeys = {
-  all: ["sprints"] as const,
+  get all() {
+    return resourceKey("sprints");
+  },
   lists: () => [...sprintKeys.all, "list"] as const,
   details: () => [...sprintKeys.all, "detail"] as const,
   detail: (id: string) => [...sprintKeys.details(), id] as const,
@@ -71,7 +95,9 @@ export const sprintKeys = {
 };
 
 export const objectiveKeys = {
-  all: ["objectives"] as const,
+  get all() {
+    return resourceKey("objectives");
+  },
   lists: () => [...objectiveKeys.all, "list"] as const,
   details: () => [...objectiveKeys.all, "detail"] as const,
   detail: (id: string) => [...objectiveKeys.details(), id] as const,
@@ -80,13 +106,17 @@ export const objectiveKeys = {
 };
 
 export const statusKeys = {
-  all: ["statuses"] as const,
+  get all() {
+    return resourceKey("statuses");
+  },
   lists: () => [...statusKeys.all, "list"] as const,
   team: (teamId: string) => [...statusKeys.lists(), "team", teamId] as const,
 };
 
 export const labelKeys = {
-  all: ["labels"] as const,
+  get all() {
+    return resourceKey("labels");
+  },
   lists: () => [...labelKeys.all, "list"] as const,
   details: () => [...labelKeys.all, "detail"] as const,
   detail: (id: string) => [...labelKeys.details(), id] as const,
@@ -94,10 +124,14 @@ export const labelKeys = {
 };
 
 export const searchKeys = {
-  all: ["search"] as const,
+  get all() {
+    return resourceKey("search");
+  },
   query: (params: Record<string, any>) => [...searchKeys.all, params] as const,
 };
 
 export const subscriptionKeys = {
-  details: ["subscriptions"] as const,
+  get details() {
+    return resourceKey("subscriptions");
+  },
 };

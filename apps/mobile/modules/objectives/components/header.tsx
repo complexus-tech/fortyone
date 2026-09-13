@@ -1,12 +1,12 @@
 import React from "react";
 import { Row, Text, Back, ContextMenuButton } from "@/components/ui";
-import { useGlobalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useTeams } from "@/modules/teams/hooks/use-teams";
 import { useTerminology } from "@/hooks/use-terminology";
 import { truncateText } from "@/lib/utils";
 
 export const Header = () => {
-  const { teamId } = useGlobalSearchParams<{ teamId: string }>();
+  const { teamId } = useLocalSearchParams<{ teamId: string }>();
   const { data: teams = [] } = useTeams();
   const team = teams.find((team) => team.id === teamId)!;
   const { getTermDisplay } = useTerminology();

@@ -13,8 +13,10 @@ import (
 type Querier interface {
 	CancelSlackInboundEvents(ctx context.Context, arg CancelSlackInboundEventsParams) (int64, error)
 	CancelSlackOutboundDeliveries(ctx context.Context, arg CancelSlackOutboundDeliveriesParams) (int64, error)
+	ClaimInternalSlackAlert(ctx context.Context, arg ClaimInternalSlackAlertParams) (ClaimInternalSlackAlertRow, error)
 	ClaimRecoverableSlackUninstalls(ctx context.Context, arg ClaimRecoverableSlackUninstallsParams) ([]SlackUninstallOutbox, error)
 	ClaimSlackUninstall(ctx context.Context, arg ClaimSlackUninstallParams) (SlackUninstallOutbox, error)
+	CompleteInternalSlackAlert(ctx context.Context, arg CompleteInternalSlackAlertParams) (int64, error)
 	CompleteSlackUninstall(ctx context.Context, arg CompleteSlackUninstallParams) (int64, error)
 	CompleteSupersededSlackUninstalls(ctx context.Context, arg CompleteSupersededSlackUninstallsParams) (int64, error)
 	CreateStoryLink(ctx context.Context, arg CreateStoryLinkParams) error
@@ -75,6 +77,7 @@ type Querier interface {
 	LockSlackWorkspaceAdmin(ctx context.Context, arg LockSlackWorkspaceAdminParams) (uuid.UUID, error)
 	MarkSlackChannelsInactive(ctx context.Context, arg MarkSlackChannelsInactiveParams) (int64, error)
 	RebindSlackRequestThreads(ctx context.Context, arg RebindSlackRequestThreadsParams) (int64, error)
+	RetryInternalSlackAlert(ctx context.Context, arg RetryInternalSlackAlertParams) (int64, error)
 	RewrapSlackCredential(ctx context.Context, arg RewrapSlackCredentialParams) (int64, error)
 	RewrapSlackUninstallCredential(ctx context.Context, arg RewrapSlackUninstallCredentialParams) (int64, error)
 	ScrubVersionedLegacySlackCredentials(ctx context.Context, arg ScrubVersionedLegacySlackCredentialsParams) (int64, error)

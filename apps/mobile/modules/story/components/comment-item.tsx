@@ -4,6 +4,8 @@ import { View } from "react-native";
 import { formatDistanceToNow } from "date-fns";
 import { useMembers } from "@/modules/members/hooks/use-members";
 import type { Comment } from "@/types";
+import { RichTextViewer } from "@/components/rich-text/viewer";
+import { plainTextToHtml } from "@/components/rich-text/content";
 
 export const CommentItem = ({ userId, comment, createdAt }: Comment) => {
   const { data: members = [] } = useMembers();
@@ -25,9 +27,17 @@ export const CommentItem = ({ userId, comment, createdAt }: Comment) => {
           {formatDistanceToNow(new Date(createdAt), { addSuffix: true })}
         </Text>
       </Row>
-      <Text fontSize="sm" className="mt-1 pl-7">
-        {comment}
-      </Text>
+      <View className="mt-1 pl-7">
+        <RichTextViewer
+          html={
+            /<(?:p|ul|ol|blockquote|h[1-6]|pre|a|strong|em|span)(?:\s|>)/i.test(
+              comment,
+            )
+              ? comment
+              : plainTextToHtml(comment)
+          }
+        />
+      </View>
     </View>
   );
 };

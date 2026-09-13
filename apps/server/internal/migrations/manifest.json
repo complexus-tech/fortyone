@@ -1371,6 +1371,42 @@
         "Receipts store SHA-256 content hashes, not message bodies, and survive inbox deletion.",
         "User and workspace deletion cascade to their receipts."
       ]
+    },
+    {
+      "version": 188,
+      "slug": "internal_slack_alerts",
+      "classification": "forward-only",
+      "files": {
+        "up": "000188_internal_slack_alerts.up.sql",
+        "down": "000188_internal_slack_alerts.down.sql"
+      },
+      "compatibility": {
+        "schema": "Adds an operations-only signup and payment outbox with durable delivery receipts.",
+        "api": "Updated signup and invoice writers require the outbox and capture alerts atomically.",
+        "worker": "Internal alert dispatch is disabled by default and reuses the configured existing Slack installation.",
+        "mixed_versions": "Apply schema first, then deploy updated API and worker; older APIs do not capture alerts."
+      },
+      "rollout": {
+        "sequence": 37,
+        "mode": "schema-first",
+        "steps": [
+          "Apply migration 000188 without backfilling historical accounts or invoices.",
+          "Deploy updated API and worker; subscribe the existing live Stripe endpoint to invoice.payment_succeeded.",
+          "Configure the internal Slack team and general channel IDs, enable the worker dispatcher, and verify delivery."
+        ]
+      },
+      "recovery": {
+        "strategy": "forward-fix",
+        "procedure": [
+          "Disable internal Slack dispatch to pause sends while preserving pending alerts and deduplication receipts.",
+          "Remove application producers before retiring the outbox through a new forward migration."
+        ]
+      },
+      "operational_notes": [
+        "No new Slack app or token is required. Customer Slack notification settings do not govern internal alerts.",
+        "Pending payloads are cleared after delivery; source user or workspace deletion cascades to the corresponding alerts.",
+        "Disabling pauses delivery while capture continues. Enabling resumes queued alerts."
+      ]
     }
   ]
 }

@@ -1,7 +1,7 @@
 import React from "react";
 import { Row, Text, Back } from "@/components/ui";
 import { StoryOptionsButton } from "@/modules/stories/components";
-import { useGlobalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useObjective } from "@/modules/objectives/hooks/use-objectives";
 import { useTerminology } from "@/hooks/use-terminology";
 import type { StoriesViewOptions } from "@/types/stories-view-options";
@@ -18,7 +18,7 @@ export const Header = ({
   setViewOptions,
   resetViewOptions,
 }: HeaderProps) => {
-  const { objectiveId } = useGlobalSearchParams<{
+  const { objectiveId } = useLocalSearchParams<{
     objectiveId: string;
   }>();
   const { data: objective } = useObjective(objectiveId);

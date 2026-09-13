@@ -6,7 +6,7 @@ import type { GroupedStoryParams } from "../types";
 export const useSprintStoriesGrouped = (
   sprintId: string,
   groupBy: GroupedStoryParams["groupBy"] = "status",
-  options?: Partial<GroupedStoryParams>
+  options?: Partial<GroupedStoryParams>,
 ) => {
   const params: GroupedStoryParams = {
     groupBy,
@@ -18,7 +18,7 @@ export const useSprintStoriesGrouped = (
 
   return useQuery({
     queryKey,
-    queryFn: () => getGroupedStories(params),
+    queryFn: ({ signal }) => getGroupedStories(params, signal),
     enabled: Boolean(sprintId),
     staleTime: 1000 * 60 * 2,
   });

@@ -1,62 +1,10 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner-native";
-import { notificationKeys } from "@/constants/keys";
 import { deleteAllNotifications } from "../actions/delete-all";
-import type { AppNotification } from "../types";
+import { useNotificationMutation } from "./use-notification-mutation";
 
-export const useDeleteAllMutation = () => {
-  const queryClient = useQueryClient();
-
-  const mutation = useMutation({
+export const useDeleteAllMutation = () =>
+  useNotificationMutation<void>({
     mutationFn: deleteAllNotifications,
-
-    onMutate: async () => {
-      await queryClient.cancelQueries({ queryKey: notificationKeys.all });
-
-      const previousNotifications = queryClient.getQueryData<AppNotification[]>(
-        notificationKeys.all
-      );
-      const previousUnreadCount = queryClient.getQueryData<number>(
-        notificationKeys.unread()
-      );
-
-      // Optimistically clear all notifications
-      queryClient.setQueryData<AppNotification[]>(notificationKeys.all, []);
-      queryClient.setQueryData(notificationKeys.unread(), 0);
-
-      return { previousNotifications, previousUnreadCount };
-    },
-
-    onError: (error, _, context) => {
-      if (context?.previousNotifications) {
-        queryClient.setQueryData(
-          notificationKeys.all,
-          context.previousNotifications
-        );
-      }
-
-      if (context?.previousUnreadCount !== undefined) {
-        queryClient.setQueryData<number>(
-          notificationKeys.unread(),
-          context.previousUnreadCount
-        );
-      }
-
-      toast.error("Failed to delete all notifications", {
-        description: error.message || "Please try again",
-        action: {
-          label: "Retry",
-          onClick: () => mutation.mutate(),
-        },
-      });
-    },
-
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: notificationKeys.all });
-      queryClient.invalidateQueries({ queryKey: notificationKeys.unread() });
-      toast.success("All notifications deleted");
-    },
+    change: () => ({ type: "delete-all" }),
+    errorTitle: "Failed to delete all notifications",
+    successTitle: "All notifications deleted",
   });
-
-  return mutation;
-};

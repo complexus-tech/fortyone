@@ -6,7 +6,7 @@ import { useAuthStore } from "@/store/auth";
 export const useWorkspaces = () => {
   return useQuery({
     queryKey: workspaceKeys.lists(),
-    queryFn: getWorkspaces,
+    queryFn: ({ signal }) => getWorkspaces(signal),
   });
 };
 

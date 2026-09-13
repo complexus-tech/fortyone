@@ -1,7 +1,7 @@
 import React from "react";
 import { Row, Text, Back } from "@/components/ui";
 import { StoryOptionsButton } from "@/modules/stories/components";
-import { useGlobalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useSprint } from "@/modules/sprints/hooks/use-sprints";
 import { useTerminology } from "@/hooks/use-terminology";
 import type { StoriesViewOptions } from "@/types/stories-view-options";
@@ -18,7 +18,7 @@ export const Header = ({
   setViewOptions,
   resetViewOptions,
 }: HeaderProps) => {
-  const { sprintId } = useGlobalSearchParams<{ sprintId: string }>();
+  const { sprintId } = useLocalSearchParams<{ sprintId: string }>();
   const { data: sprint } = useSprint(sprintId);
   const { getTermDisplay } = useTerminology();
 

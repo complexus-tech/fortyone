@@ -1,8 +1,16 @@
-import React from "react";
+import React, { useState } from "react";
 import { useTheme } from "@/hooks";
 import { colors } from "@/constants";
-import { Pressable, StyleProp, View, ViewStyle } from "react-native";
+import {
+  Pressable,
+  ScrollView,
+  StyleProp,
+  Text,
+  View,
+  ViewStyle,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { BottomSheetModal } from "./bottom-sheet-modal";
 
 type ContextMenuAction = {
   systemImage?: string;
@@ -20,48 +28,93 @@ type ContextMenuButtonProps = {
 
 const Menu = ({ actions, children }: ContextMenuButtonProps) => {
   const { resolvedTheme } = useTheme();
-
-  // For Android, we'll use a simple pressable with basic styling
-  // In a real implementation, you might want to use a proper menu library
+  const [isOpen, setIsOpen] = useState(false);
+  const foreground =
+    resolvedTheme === "light" ? colors.dark[50] : colors.gray[200];
   return (
-    <Pressable
-      style={{
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor:
-          resolvedTheme === "light"
-            ? "rgba(255, 255, 255, 0.8)"
-            : "rgba(0, 0, 0, 0.8)",
-        justifyContent: "center",
-        alignItems: "center",
-        shadowColor: "#000",
-        shadowOffset: {
-          width: 0,
-          height: 2,
-        },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
-      }}
-      onPress={() => {
-        // For Android, we'll trigger the first action for now
-        // In a real implementation, you'd show a proper menu
-        if (actions.length > 0) {
-          actions[0].onPress();
-        }
-      }}
-    >
-      {children ? (
-        children
-      ) : (
-        <Ionicons
-          name="ellipsis-horizontal"
-          size={20}
-          color={resolvedTheme === "light" ? colors.dark[50] : colors.gray[200]}
-        />
-      )}
-    </Pressable>
+    <>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="More options"
+        accessibilityState={{
+          expanded: isOpen,
+          disabled: actions.length === 0,
+        }}
+        disabled={actions.length === 0}
+        hitSlop={6}
+        style={{
+          width: 40,
+          height: 40,
+          borderRadius: 20,
+          backgroundColor:
+            resolvedTheme === "light"
+              ? "rgba(255, 255, 255, 0.8)"
+              : "rgba(0, 0, 0, 0.8)",
+          justifyContent: "center",
+          alignItems: "center",
+          shadowColor: "#000",
+          shadowOffset: {
+            width: 0,
+            height: 2,
+          },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+          elevation: 3,
+        }}
+        onPress={() => setIsOpen(true)}
+      >
+        {children ? (
+          children
+        ) : (
+          <Ionicons name="ellipsis-horizontal" size={20} color={foreground} />
+        )}
+      </Pressable>
+      <BottomSheetModal
+        isOpen={isOpen}
+        onClose={() => setIsOpen(false)}
+        spacing={8}
+      >
+        <Text
+          accessibilityRole="header"
+          style={{ color: foreground, fontSize: 18, fontWeight: "600" }}
+        >
+          Options
+        </Text>
+        <ScrollView keyboardShouldPersistTaps="handled">
+          {actions.map((action) => (
+            <Pressable
+              key={action.label}
+              accessibilityRole="button"
+              accessibilityLabel={action.label}
+              onPress={() => {
+                setIsOpen(false);
+                action.onPress();
+              }}
+              style={({ pressed }) => ({
+                minHeight: 48,
+                paddingVertical: 14,
+                opacity: pressed ? 0.6 : 1,
+              })}
+            >
+              <Text style={{ fontSize: 16, color: action.color ?? foreground }}>
+                {action.label}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => setIsOpen(false)}
+          style={{
+            minHeight: 44,
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <Text style={{ fontSize: 16, color: foreground }}>Cancel</Text>
+        </Pressable>
+      </BottomSheetModal>
+    </>
   );
 };
 

@@ -1,3 +1,4 @@
+import { QueryState } from "@/components/ui/query-state";
 import React from "react";
 
 import { Row, Text } from "@/components/ui";
@@ -7,11 +8,22 @@ import { TeamsSkeleton } from "./teams-skeleton";
 import { View } from "react-native";
 
 export const Teams = () => {
-  const { data: teams = [], isPending } = useTeams();
+  const { data: teams = [], isPending, error, refetch } = useTeams();
 
   if (isPending) {
     return <TeamsSkeleton />;
   }
+  if (error)
+    return (
+      <QueryState
+        title="Could not load your teams"
+        message={error.message}
+        onRetry={() => {
+          void refetch();
+        }}
+      />
+    );
+
   return (
     <View>
       <Row asContainer>

@@ -14,10 +14,12 @@ type ActivitiesResponse = {
 
 export const getStoryActivities = async (
   id: string,
-  page = 1
+  page = 1,
+  signal?: AbortSignal,
 ): Promise<ActivitiesResponse> => {
   const response = await get<ApiResponse<ActivitiesResponse>>(
-    `stories/${id}/activities?page=${page}`
+    `stories/${id}/activities?page=${page}`,
+    { signal },
   );
   return response.data!;
 };

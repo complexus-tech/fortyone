@@ -8,7 +8,6 @@ import (
 	"time"
 
 	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
-	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/complexus-tech/projects-api/pkg/validate"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -144,28 +143,6 @@ func (h *Handlers) VerifyEmail(ctx context.Context, w http.ResponseWriter, r *ht
 	h.setSessionCookie(w, r, tokenString, expiresAt)
 	h.resolveUserAvatar(ctx, &user)
 	return web.Respond(ctx, w, toAppUser(user), http.StatusOK)
-}
-
-func (h *Handlers) GenerateSessionCode(ctx context.Context, w http.ResponseWriter, _ *http.Request) error {
-	userID, err := mid.GetUserID(ctx)
-	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
-	}
-
-	user, err := h.users.GetUser(ctx, userID)
-	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
-	}
-
-	token, err := h.users.CreateVerificationToken(ctx, user.Email, users.TokenTypeLogin, time.Now().Add(5*time.Minute))
-	if err != nil {
-		return respondVerificationTokenCreationError(ctx, w, err)
-	}
-
-	return web.Respond(ctx, w, GenerateSessionCodeResponse{
-		Code:  token.Token,
-		Email: user.Email,
-	}, http.StatusOK)
 }
 
 func respondVerificationTokenCreationError(ctx context.Context, w http.ResponseWriter, err error) error {

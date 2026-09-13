@@ -131,9 +131,6 @@ export const Form = () => {
         >
           Send Feedback
         </Button>
-        <Button rounded="full" color="tertiary">
-          Rate App
-        </Button>
         <Button
           rounded="full"
           color="tertiary"

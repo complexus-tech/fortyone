@@ -5,14 +5,14 @@ import { statusKeys } from "@/constants/keys";
 export const useStatuses = () => {
   return useQuery({
     queryKey: statusKeys.lists(),
-    queryFn: getStatuses,
+    queryFn: ({ signal }) => getStatuses(signal),
   });
 };
 
 export const useTeamStatuses = (teamId: string) => {
   return useQuery({
     queryKey: statusKeys.team(teamId),
-    queryFn: () => getTeamStatuses(teamId),
+    queryFn: ({ signal }) => getTeamStatuses(teamId, signal),
     enabled: Boolean(teamId),
   });
 };

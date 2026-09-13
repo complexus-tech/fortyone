@@ -5,7 +5,7 @@ import { memberKeys } from "@/constants/keys";
 export const useTeamMembers = (teamId?: string) => {
   return useQuery({
     queryKey: memberKeys.team(teamId ?? ""),
-    queryFn: () => getTeamMembers(teamId!),
+    queryFn: ({ signal }) => getTeamMembers(teamId!, signal),
     enabled: Boolean(teamId),
   });
 };

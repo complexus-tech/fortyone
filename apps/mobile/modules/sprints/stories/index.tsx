@@ -4,14 +4,14 @@ import { SafeContainer, StoriesListSkeleton } from "@/components/ui";
 import { StoriesBoard } from "@/modules/stories/components";
 import { useSprintStoriesGrouped } from "@/modules/stories/hooks";
 import { useViewOptions } from "@/hooks/use-view-options";
-import { useGlobalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useTerminology } from "@/hooks/use-terminology";
 import { useQueryClient } from "@tanstack/react-query";
 import { storyKeys } from "@/constants/keys";
 
 export const SprintStories = () => {
   const queryClient = useQueryClient();
-  const { sprintId, teamId } = useGlobalSearchParams<{
+  const { sprintId, teamId } = useLocalSearchParams<{
     sprintId: string;
     teamId: string;
   }>();
@@ -42,6 +42,7 @@ export const SprintStories = () => {
   const {
     data: groupedStories,
     isPending,
+    error,
     refetch,
     isRefetching,
   } = useSprintStoriesGrouped(sprintId!, viewOptions.groupBy, queryOptions);
@@ -71,11 +72,14 @@ export const SprintStories = () => {
         groupFilters={queryOptions}
         visibleColumns={viewOptions.displayColumns}
         isLoading={isPending}
+        error={error}
+        onRetry={() => {
+          void refetch();
+        }}
         emptyTitle={`No ${getTermDisplay("storyTerm", { variant: "plural" })} found in this sprint`}
         emptyMessage={`There are no ${getTermDisplay("storyTerm", { variant: "plural" })} in this sprint at the moment.`}
-        onRefresh={() => {
-          refetch();
-          queryClient.invalidateQueries({ queryKey: storyKeys.all });
+        onRefresh={async () => {
+          await queryClient.invalidateQueries({ queryKey: storyKeys.all });
         }}
         isRefreshing={isRefetching}
       />

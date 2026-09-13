@@ -52,17 +52,26 @@ type WorkspaceSubscription struct {
 	UpdatedAt                time.Time
 }
 
+// CollectedPayment is present only for a verified, live, nonzero Stripe payment.
+// AmountMinor preserves the provider amount without floating-point conversion.
+type CollectedPayment struct {
+	AmountMinor int64  `json:"amount_minor"`
+	Currency    string `json:"currency"`
+	Email       string `json:"email"`
+}
+
 type SubscriptionInvoice struct {
-	InvoiceID       int64
-	WorkspaceID     uuid.UUID
-	StripeInvoiceID string
-	AmountPaid      float64
-	InvoiceDate     time.Time
-	Status          string
-	SeatsCount      int
-	CreatedAt       time.Time
-	HostedURL       *string
-	CustomerName    *string
+	CollectedPayment *CollectedPayment `json:"-"`
+	InvoiceID        int64
+	WorkspaceID      uuid.UUID
+	StripeInvoiceID  string
+	AmountPaid       float64
+	InvoiceDate      time.Time
+	Status           string
+	SeatsCount       int
+	CreatedAt        time.Time
+	HostedURL        *string
+	CustomerName     *string
 }
 
 // StripeEventCursor establishes deterministic arbitration for provider state

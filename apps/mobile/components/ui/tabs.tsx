@@ -76,6 +76,8 @@ const Tab = ({ children, value, leftIcon, rightIcon, className }: TabProps) => {
 
   return (
     <Pressable
+      accessibilityRole="tab"
+      accessibilityState={{ selected: isActive }}
       onPress={() => onTabChange(value)}
       className={cn(
         "active:bg-gray-50 px-4 dark:active:bg-dark py-[7px] rounded-full flex-row justify-center gap-2",
@@ -83,7 +85,7 @@ const Tab = ({ children, value, leftIcon, rightIcon, className }: TabProps) => {
           "bg-gray-50 dark:bg-dark-200/80 border dark:border-dark-50/70 border-gray-200/60":
             isActive,
         },
-        className
+        className,
       )}
     >
       {leftIcon}

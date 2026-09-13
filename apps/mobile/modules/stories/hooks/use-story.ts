@@ -5,7 +5,7 @@ import { getStory } from "../queries/get-story";
 export const useStory = (id: string) => {
   return useQuery({
     queryKey: storyKeys.detail(id),
-    queryFn: () => getStory(id),
+    queryFn: ({ signal }) => getStory(id, signal),
     enabled: Boolean(id),
   });
 };

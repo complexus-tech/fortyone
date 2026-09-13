@@ -5,8 +5,8 @@ import { Story } from "@/modules/stories/types";
 import { Pressable } from "react-native";
 import { colors } from "@/constants";
 import { useTheme } from "@/hooks";
-import { HStack, Image, Spacer, Text } from "@expo/ui/swift-ui";
-import { frame } from "@expo/ui/swift-ui/modifiers";
+import { Button, HStack, Image, Spacer, Text } from "@expo/ui/swift-ui";
+import { accessibilityLabel, font, frame } from "@expo/ui/swift-ui/modifiers";
 import { useTeamStatuses } from "@/modules/statuses/hooks/use-statuses";
 import { hexToRgba } from "@/lib/utils/colors";
 import { truncateText } from "@/lib/utils";
@@ -22,20 +22,27 @@ const Item = ({
 }) => {
   const { resolvedTheme } = useTheme();
   return (
-    <HStack key={status.id} onPress={onPress} spacing={6}>
-      <HStack modifiers={[frame({ width: 12, height: 12 })]}>
-        <Dot color={status.color} size={4} />
+    <Button
+      onPress={onPress}
+      modifiers={[
+        accessibilityLabel(`${status.name}${isSelected ? ", selected" : ""}`),
+      ]}
+    >
+      <HStack spacing={6} modifiers={[frame({ minHeight: 44 })]}>
+        <HStack modifiers={[frame({ width: 12, height: 12 })]}>
+          <Image systemName="circle.fill" color={status.color} size={12} />
+        </HStack>
+        <Text modifiers={[font({ textStyle: "body" })]}>{status.name}</Text>
+        <Spacer />
+        {isSelected && (
+          <Image
+            systemName="checkmark.circle.fill"
+            size={17}
+            color={resolvedTheme === "light" ? colors.black : colors.white}
+          />
+        )}
       </HStack>
-      <Text size={16}>{status.name}</Text>
-      <Spacer />
-      {isSelected && (
-        <Image
-          systemName="checkmark.circle.fill"
-          size={17}
-          color={resolvedTheme === "light" ? colors.black : colors.white}
-        />
-      )}
-    </HStack>
+    </Button>
   );
 };
 
@@ -66,6 +73,7 @@ export const StatusBadge = ({
         </Badge>
       </Pressable>
       <BottomSheetModal
+        nativeContent
         spacing={24}
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}

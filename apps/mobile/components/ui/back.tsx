@@ -20,6 +20,9 @@ export const Back = () => {
 
   return (
     <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Back"
+      hitSlop={6}
       onPress={handleBack}
       style={{
         width: 40,

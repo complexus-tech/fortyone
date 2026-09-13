@@ -157,13 +157,18 @@ func (h *Handlers) CreateSession(ctx context.Context, w http.ResponseWriter, r *
 
 // ClearSession clears the auth session cookie.
 func (h *Handlers) ClearSession(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	h.clearSessionCookie(w, r)
 	if h.cache != nil {
 		if cookie, err := r.Cookie(sessionCookieName); err == nil && cookie.Value != "" {
-			_ = h.cache.Delete(ctx, cache.AuthSessionCacheKey(cookie.Value))
-			_ = h.cache.Delete(ctx, cache.LegacyAuthSessionCacheKey(cookie.Value))
+			err := errors.Join(
+				h.cache.Delete(ctx, cache.AuthSessionCacheKey(cookie.Value)),
+				h.cache.Delete(ctx, cache.LegacyAuthSessionCacheKey(cookie.Value)),
+			)
+			if err != nil {
+				return web.RespondError(ctx, w, errors.New("session revocation is temporarily unavailable"), http.StatusServiceUnavailable)
+			}
 		}
 	}
-	h.clearSessionCookie(w, r)
 	return web.Respond(ctx, w, nil, http.StatusNoContent)
 }
 

@@ -6,15 +6,20 @@ import { useRef, useState } from "react";
 import { redirect } from "next/navigation";
 import { acceptInvitation } from "@/modules/invitations/public/onboarding";
 import type { Invitation } from "@/modules/invitations/public/types";
-import { buildWorkspaceUrl } from "@/utils";
 import { useWorkspaces } from "@/lib/hooks/workspaces";
+import {
+  getOnboardingWorkspaceUrl,
+  withOnboardingCallbackUrl,
+} from "../../routing";
 
 export const JoinForm = ({
   invitation,
   token,
+  callbackUrl,
 }: {
   invitation: Invitation;
   token: string;
+  callbackUrl?: string;
 }) => {
   const { workspaceName, workspaceSlug } = invitation;
   const [isLoading, setIsLoading] = useState(false);
@@ -39,11 +44,13 @@ export const JoinForm = ({
         }
 
         if (workspaces.length === 0) {
-          redirect("/onboarding/account");
+          redirect(
+            withOnboardingCallbackUrl("/onboarding/account", callbackUrl),
+          );
           return;
         }
 
-        redirect(buildWorkspaceUrl(workspaceSlug));
+        redirect(getOnboardingWorkspaceUrl(workspaceSlug, callbackUrl));
       })
       .finally(() => {
         if (requestVersion === latestRequestVersionRef.current) {
@@ -94,7 +101,7 @@ export const JoinForm = ({
         className="opacity-80"
         color="tertiary"
         fullWidth
-        href="/onboarding/create"
+        href={withOnboardingCallbackUrl("/onboarding/create", callbackUrl)}
         variant="naked"
       >
         Create your own workspace

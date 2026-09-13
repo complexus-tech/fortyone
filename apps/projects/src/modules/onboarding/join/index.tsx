@@ -6,14 +6,18 @@ import {
 import { Logo } from "@/components/ui/logo";
 import type { Invitation } from "@/modules/invitations/public/types";
 import { auth } from "@/auth";
+import { withCallbackUrl } from "@/utils/callback-url";
+import { withOnboardingCallbackUrl } from "../routing";
 import { JoinForm } from "./components/join-form";
 
 export const JoinWorkspace = async ({
   invitation,
   token,
+  callbackUrl,
 }: {
   invitation: Invitation;
   token: string;
+  callbackUrl?: string;
 }) => {
   const session = await auth();
   const { email, workspaceName, role } = invitation;
@@ -42,9 +46,24 @@ export const JoinWorkspace = async ({
         ) : null}
       </Text>
       {canJoin ? (
-        <JoinForm invitation={invitation} token={token} />
+        <JoinForm
+          callbackUrl={callbackUrl}
+          invitation={invitation}
+          token={token}
+        />
       ) : (
-        <Button align="center" color="invert" fullWidth href="/">
+        <Button
+          align="center"
+          color="invert"
+          fullWidth
+          href={withCallbackUrl(
+            "/",
+            withOnboardingCallbackUrl(
+              `/onboarding/join?token=${encodeURIComponent(token)}`,
+              callbackUrl,
+            ),
+          )}
+        >
           Sign in
         </Button>
       )}

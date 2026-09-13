@@ -2,24 +2,29 @@ export type AppNotification = {
   id: string;
   recipientId: string;
   workspaceId: string;
-  type: "story_update" | "story_comment" | "mention";
-  entityType: "story" | "objective";
+  type: string;
+  entityType:
+    | "story"
+    | "comment"
+    | "objective"
+    | "key_result"
+    | "strategy"
+    | "feedback"
+    | "sprint";
   entityId: string;
   actorId: string;
+  actor?: {
+    id: string;
+    username: string;
+    fullName: string;
+    avatarUrl: string;
+    isActive: boolean;
+    isSystem: boolean;
+  };
   title: string;
   message: {
     template: string;
-    variables: {
-      actor: {
-        value: string;
-      };
-      field: {
-        value: string;
-      };
-      value: {
-        value: string;
-      };
-    };
+    variables: Record<string, { value: string; type?: string }> | null;
   };
   createdAt: string;
   readAt: string | null;
@@ -59,4 +64,14 @@ export type NotificationType =
 export type UpdateNotificationPreferences = {
   emailEnabled?: boolean;
   inAppEnabled?: boolean;
+};
+
+export type NotificationsPage = {
+  notifications: AppNotification[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    hasMore: boolean;
+    nextPage: number;
+  };
 };

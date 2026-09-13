@@ -5,14 +5,14 @@ import { getSprint, getSprints, getTeamSprints } from "../queries/get-sprints";
 export const useSprints = () => {
   return useQuery({
     queryKey: sprintKeys.lists(),
-    queryFn: getSprints,
+    queryFn: ({ signal }) => getSprints(signal),
   });
 };
 
 export const useTeamSprints = (teamId: string) => {
   return useQuery({
     queryKey: sprintKeys.team(teamId),
-    queryFn: () => getTeamSprints(teamId),
+    queryFn: ({ signal }) => getTeamSprints(teamId, signal),
     enabled: Boolean(teamId),
   });
 };
@@ -20,7 +20,7 @@ export const useTeamSprints = (teamId: string) => {
 export const useSprint = (sprintId: string) => {
   return useQuery({
     queryKey: sprintKeys.detail(sprintId),
-    queryFn: () => getSprint(sprintId),
+    queryFn: ({ signal }) => getSprint(sprintId, signal),
     enabled: Boolean(sprintId),
   });
 };

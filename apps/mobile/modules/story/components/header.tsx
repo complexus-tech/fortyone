@@ -1,5 +1,5 @@
 import { Text, Row, Back, ContextMenuButton } from "@/components/ui";
-import { useGlobalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useStory } from "@/modules/stories/hooks";
 import { useTeams } from "@/modules/teams/hooks/use-teams";
 import { Alert, Share } from "react-native";
@@ -15,7 +15,7 @@ import { toast } from "sonner-native";
 import { useTerminology } from "@/hooks/use-terminology";
 
 export const Header = () => {
-  const { storyId } = useGlobalSearchParams<{ storyId: string }>();
+  const { storyId } = useLocalSearchParams<{ storyId: string }>();
   const { getTermDisplay } = useTerminology();
   const { workspace } = useCurrentWorkspace();
   const { data: story } = useStory(storyId);

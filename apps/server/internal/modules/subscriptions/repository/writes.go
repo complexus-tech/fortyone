@@ -2,6 +2,7 @@ package subscriptionsrepository
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -143,8 +144,19 @@ func (repository *Repository) UpsertStripeInvoice(ctx context.Context, customerI
 	if err != nil {
 		return err
 	}
+	var paymentPayload []byte
+	if invoice.CollectedPayment != nil {
+		if invoice.CollectedPayment.AmountMinor <= 0 || invoice.CollectedPayment.Currency == "" {
+			return errors.New("invalid collected invoice payment")
+		}
+		paymentPayload, err = json.Marshal(invoice.CollectedPayment)
+		if err != nil {
+			return fmt.Errorf("encode collected payment: %w", err)
+		}
+	}
 	_, err = repository.queries.UpsertWorkspaceInvoice(ctx, subscriptionssql.UpsertWorkspaceInvoiceParams{
-		WorkspaceID: invoice.WorkspaceID, StripeInvoiceID: invoice.StripeInvoiceID, AmountPaid: invoice.AmountPaid,
+		PaymentPayload: paymentPayload,
+		WorkspaceID:    invoice.WorkspaceID, StripeInvoiceID: invoice.StripeInvoiceID, AmountPaid: invoice.AmountPaid,
 		InvoiceDate: invoice.InvoiceDate, Status: invoice.Status, SeatsCount: seatsCount,
 		HostedURL: invoice.HostedURL, CustomerName: invoice.CustomerName, StripeCustomerID: customerID,
 	})
