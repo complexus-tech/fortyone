@@ -146,7 +146,7 @@ type Config struct {
 		WorkspaceTokensPerDay   int64 `default:"1000000" env:"OPENAI_ASSISTANT_WORKSPACE_TOKENS_PER_DAY"`
 	}
 	InternalSlack struct {
-		Enabled   bool   `default:"false" env:"APP_INTERNAL_SLACK_ENABLED"`
+		Enabled   bool   `default:"true" env:"APP_INTERNAL_SLACK_ENABLED"`
 		TeamID    string `env:"APP_INTERNAL_SLACK_TEAM_ID"`
 		ChannelID string `env:"APP_INTERNAL_SLACK_CHANNEL_ID"`
 	}

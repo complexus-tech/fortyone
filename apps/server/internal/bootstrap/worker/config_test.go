@@ -11,6 +11,7 @@ import (
 
 func TestLoadConfigReadsSlackUninstallCredentials(t *testing.T) {
 	t.Setenv("APP_GITHUB_APP_ID", "0")
+	t.Setenv("APP_INTERNAL_SLACK_ENABLED", "false")
 	t.Setenv("SLACK_CLIENT_ID", "worker-client-id")
 	t.Setenv("SLACK_CLIENT_SECRET", "worker-client-secret")
 
@@ -22,6 +23,7 @@ func TestLoadConfigReadsSlackUninstallCredentials(t *testing.T) {
 
 func TestLoadConfigMonitorEnabledByDefaultWithExplicitOptOut(t *testing.T) {
 	t.Setenv("APP_GITHUB_APP_ID", "0")
+	t.Setenv("APP_INTERNAL_SLACK_ENABLED", "false")
 	t.Setenv("APP_WORKER_MONITOR_ENABLED", "")
 	require.NoError(t, os.Unsetenv("APP_WORKER_MONITOR_ENABLED"))
 
@@ -37,6 +39,7 @@ func TestLoadConfigMonitorEnabledByDefaultWithExplicitOptOut(t *testing.T) {
 
 func TestLoadConfigReadsFigmaWorkerConfiguration(t *testing.T) {
 	t.Setenv("APP_GITHUB_APP_ID", "0")
+	t.Setenv("APP_INTERNAL_SLACK_ENABLED", "false")
 	t.Setenv("FIGMA_CLIENT_ID", "figma-client-id")
 	t.Setenv("FIGMA_CLIENT_SECRET", "figma-client-secret")
 	t.Setenv("FIGMA_REDIRECT_URL", "https://api.example.com/integrations/figma/callback")
@@ -188,6 +191,7 @@ func TestWorkerDatabasePoolConfigMatchesAPIRuntimeControls(t *testing.T) {
 
 func TestLoadConfigReadsMessagingAssistantBudgets(t *testing.T) {
 	t.Setenv("APP_GITHUB_APP_ID", "0")
+	t.Setenv("APP_INTERNAL_SLACK_ENABLED", "false")
 	t.Setenv("OPENAI_ASSISTANT_USER_CALLS_PER_MINUTE", "18")
 	t.Setenv("OPENAI_ASSISTANT_WORKSPACE_CALLS_PER_MINUTE", "240")
 	t.Setenv("OPENAI_ASSISTANT_WORKSPACE_TOKENS_PER_DAY", "1500000")

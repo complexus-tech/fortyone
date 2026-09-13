@@ -17,7 +17,7 @@ registration and new external-identity accounts.
 1. Apply migration `000188_internal_slack_alerts` before deploying the API or
    worker changes. Signup and invoice writes persist their pending alerts in the
    same database statement/transaction as the business change.
-2. Ensure the existing Slack app is connected to internal team `T015B85FC6R`
+2. Ensure the existing Slack app is connected to your internal Slack workspace
    through FortyOne's Slack integration. The worker uses that installation's
    existing encrypted credential; no additional bot token is needed.
 3. Add `invoice.payment_succeeded` to the existing **live** Stripe webhook
@@ -28,10 +28,15 @@ registration and new external-identity accounts.
 4. Set these variables on the worker and restart it:
 
    ```dotenv
-   APP_INTERNAL_SLACK_ENABLED=true
-   APP_INTERNAL_SLACK_TEAM_ID=T015B85FC6R
-   APP_INTERNAL_SLACK_CHANNEL_ID=C014XSVSRF1
+   APP_INTERNAL_SLACK_TEAM_ID=<internal-team-id>
+   APP_INTERNAL_SLACK_CHANNEL_ID=<general-channel-id>
    ```
+
+Internal alerts are enabled by default; `APP_INTERNAL_SLACK_ENABLED` can be
+omitted. The worker requires both destination IDs when enabled. Supply them
+through your deployment configuration so they reach the worker container at
+runtime; CI variables alone do not automatically become ECS environment
+variables. The release workflow preserves the existing task definition settings.
 
 The worker must consume the `notifications` queue. The existing app's requested
 `chat:write`, `chat:write.public`, and `channels:read` permissions cover delivery

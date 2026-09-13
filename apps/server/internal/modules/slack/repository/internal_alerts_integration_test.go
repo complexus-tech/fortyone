@@ -58,7 +58,7 @@ func TestInternalAlertSignupTransactionsAndConcurrentClaims(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			alert, err := store.ClaimInternalAlert(ctx, "T015B85FC6R", "C014XSVSRF1")
+			alert, err := store.ClaimInternalAlert(ctx, "T0000000001", "C0000000001")
 			results <- alert
 			errs <- err
 		}()
@@ -84,7 +84,7 @@ func TestInternalAlertSignupTransactionsAndConcurrentClaims(t *testing.T) {
 		wrongDestination, err := store.ClaimInternalAlert(ctx, "TOTHER", "COTHER")
 		require.NoError(t, err)
 		require.Nil(t, wrongDestination)
-		recovered, err := store.ClaimInternalAlert(ctx, "T015B85FC6R", "C014XSVSRF1")
+		recovered, err := store.ClaimInternalAlert(ctx, "T0000000001", "C0000000001")
 		require.NoError(t, err)
 		require.NotNil(t, recovered)
 		require.Equal(t, alert.ID, recovered.ID)
@@ -94,7 +94,7 @@ func TestInternalAlertSignupTransactionsAndConcurrentClaims(t *testing.T) {
 		require.NoError(t, db.Pool.QueryRow(ctx, `SELECT CAST(payload AS text) FROM internal_slack_alerts WHERE id=$1`, alert.ID).Scan(&payload))
 		require.Equal(t, "{}", payload)
 	}
-	empty, err := store.ClaimInternalAlert(ctx, "T015B85FC6R", "C014XSVSRF1")
+	empty, err := store.ClaimInternalAlert(ctx, "T0000000001", "C0000000001")
 	require.NoError(t, err)
 	require.Nil(t, empty)
 }
@@ -141,11 +141,11 @@ func TestInternalAlertPaymentAtomicityAndInvoiceDeduplication(t *testing.T) {
 	require.Contains(t, payload, `"currency": "usd"`)
 	require.Contains(t, payload, "Customer Workspace")
 	store := New(db.Pool)
-	alert, err := store.ClaimInternalAlert(ctx, "T015B85FC6R", "C014XSVSRF1")
+	alert, err := store.ClaimInternalAlert(ctx, "T0000000001", "C0000000001")
 	require.NoError(t, err)
 	require.NotNil(t, alert)
 	require.NoError(t, store.RetryInternalAlert(ctx, *alert, time.Now().Add(time.Hour)))
-	pending, err := store.ClaimInternalAlert(ctx, "T015B85FC6R", "C014XSVSRF1")
+	pending, err := store.ClaimInternalAlert(ctx, "T0000000001", "C0000000001")
 	require.NoError(t, err)
 	require.Nil(t, pending)
 }

@@ -64,7 +64,7 @@ func (s *internalAlertInstallationStub) GetSlackWorkspaceByTeamID(_ context.Cont
 func TestInternalAlertsUseOnlyConfiguredGeneralAndExistingInstallation(t *testing.T) {
 	for _, scenario := range []string{"success", "wrong_team", "wrong_channel", "not_general", "shared", "archived", "disconnected", "rate_limited", "receipt_failure", "disabled"} {
 		t.Run(scenario, func(t *testing.T) {
-			cfg := InternalAlertConfig{Enabled: scenario != "disabled", TeamID: "T015B85FC6R", ChannelID: "C014XSVSRF1"}
+			cfg := InternalAlertConfig{Enabled: scenario != "disabled", TeamID: "T0000000001", ChannelID: "C0000000001"}
 			alert := &slackdomain.InternalAlert{ID: uuid.New(), LeaseToken: uuid.New(), Kind: "account_created", DedupeKey: "account_created:" + uuid.NewString(), Attempts: 1,
 				Payload: json.RawMessage(`{"name":"A <!channel>","email":"person@example.test","occurred_at":"2026-09-13T10:00:00Z"}`)}
 			store := &internalAlertStoreStub{alert: alert}

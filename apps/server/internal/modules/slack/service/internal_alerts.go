@@ -17,7 +17,7 @@ import (
 // InternalAlertConfig selects one operator-controlled destination independently
 // of every source customer workspace. Disabled workers never claim alerts.
 type InternalAlertConfig struct {
-	Enabled   bool   `default:"false" env:"APP_INTERNAL_SLACK_ENABLED"`
+	Enabled   bool   `default:"true" env:"APP_INTERNAL_SLACK_ENABLED"`
 	TeamID    string `env:"APP_INTERNAL_SLACK_TEAM_ID"`
 	ChannelID string `env:"APP_INTERNAL_SLACK_CHANNEL_ID"`
 }
