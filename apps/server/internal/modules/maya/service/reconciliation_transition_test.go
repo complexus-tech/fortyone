@@ -189,6 +189,67 @@ func TestRefineScheduleOutcomeReasonKeepsFirstScheduleCopy(t *testing.T) {
 	}
 }
 
+func TestScheduleTransitionMatchesRetainedTimeAfterEarlierSegmentExpires(t *testing.T) {
+	userID := uuid.New()
+	activeStart := time.Date(2026, 9, 14, 14, 40, 0, 0, time.UTC)
+	tomorrowStart := time.Date(2026, 9, 15, 11, 38, 0, 0, time.UTC)
+	previousBlocks := []ScheduleBlock{
+		{UserID: userID, SegmentIndex: 0, StartAt: activeStart, EndAt: activeStart.Add(20 * time.Minute)},
+		{UserID: userID, SegmentIndex: 1, StartAt: tomorrowStart, EndAt: tomorrowStart.Add(40 * time.Minute)},
+	}
+	for _, test := range []struct {
+		name       string
+		startShift time.Duration
+		endShift   time.Duration
+		wantShift  int
+	}{
+		{name: "twenty minute extension", endShift: 20 * time.Minute},
+		{name: "twenty minute shift", startShift: 20 * time.Minute, endShift: 20 * time.Minute},
+		{name: "forty minute non-overlapping shift", startShift: 40 * time.Minute, endShift: 40 * time.Minute},
+		{name: "fifty-nine minute non-overlapping shift", startShift: 59 * time.Minute, endShift: 59 * time.Minute},
+		{name: "material extension", endShift: time.Hour, wantShift: 60},
+		{name: "material earlier start", startShift: -time.Hour, wantShift: -60},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			transition := buildStoryScheduleTransition(
+				Story{AutoSchedulingStatus: AutoSchedulingStatusScheduled}, userID, previousBlocks,
+				[]ScheduleSegmentInput{{
+					SegmentIndex: 0,
+					StartAt:      tomorrowStart.Add(test.startShift),
+					EndAt:        tomorrowStart.Add(40*time.Minute + test.endShift),
+				}},
+				"Africa/Harare", AutoSchedulingStatusScheduled, "Availability changed.",
+			)
+			if test.wantShift == 0 {
+				if transition != nil {
+					t.Fatalf("a minor change to retained tomorrow work must not look like today's block moved a day: %#v", transition)
+				}
+				return
+			}
+			if transition == nil || transition.Kind != events.StoryScheduleTransitionMoved ||
+				transition.ShiftMinutes != test.wantShift || transition.PreviousStartAt == nil ||
+				!transition.PreviousStartAt.Equal(tomorrowStart) || transition.PreviousEndAt == nil ||
+				!transition.PreviousEndAt.Equal(previousBlocks[1].EndAt) {
+				t.Fatalf("a material retained-slot change must compare with its own prior time: %#v", transition)
+			}
+		})
+	}
+	t.Run("non-overlapping hour shift remains meaningful", func(t *testing.T) {
+		transition := buildStoryScheduleTransition(
+			Story{AutoSchedulingStatus: AutoSchedulingStatusScheduled}, userID, previousBlocks,
+			[]ScheduleSegmentInput{{
+				SegmentIndex: 0,
+				StartAt:      tomorrowStart.Add(time.Hour),
+				EndAt:        tomorrowStart.Add(100 * time.Minute),
+			}},
+			"Africa/Harare", AutoSchedulingStatusScheduled, "Availability changed.",
+		)
+		if transition == nil {
+			t.Fatal("a non-overlapping hour-long move must still produce a schedule transition")
+		}
+	})
+}
+
 func TestLockedScheduleRisk(t *testing.T) {
 	baseStart := time.Date(2026, 8, 18, 9, 0, 0, 0, time.UTC)
 	asOf := baseStart.Add(-time.Hour)

@@ -17,6 +17,21 @@ func buildStoryScheduleTransition(
 	status string,
 	reason string,
 ) *events.StoryScheduleTransition {
+	return buildStoryScheduleTransitionAt(story, userID, previousBlocks, segments, timezone, status, reason, time.Time{})
+}
+
+// Reconciliation supplies its planning clock to keep expired same-day rollovers
+// quiet. Explicit scheduling actions leave it unset so their moves stay visible.
+func buildStoryScheduleTransitionAt(
+	story Story,
+	userID uuid.UUID,
+	previousBlocks []ScheduleBlock,
+	segments []ScheduleSegmentInput,
+	timezone string,
+	status string,
+	reason string,
+	asOf time.Time,
+) *events.StoryScheduleTransition {
 	if userID == uuid.Nil {
 		return nil
 	}
@@ -46,7 +61,10 @@ func buildStoryScheduleTransition(
 	previousLocalDate := localDate(previousStart, location)
 	localDateValue := localDate(startAt, location)
 	shiftMinutes := 0
-	if change, ok := selectMeaningfulScheduleChange(previousBlocks, segments, location); ok {
+	if previousState != events.StoryScheduleStateScheduled || state != events.StoryScheduleStateScheduled {
+		asOf = time.Time{} // Changes into or out of a risk state remain actionable.
+	}
+	if change, ok := selectMeaningfulScheduleChange(previousBlocks, segments, location, asOf); ok {
 		kind = change.Kind
 		previousStart = &change.PreviousStartAt
 		previousEnd = &change.PreviousEndAt
@@ -105,6 +123,7 @@ func selectMeaningfulScheduleChange(
 	previousBlocks []ScheduleBlock,
 	segments []ScheduleSegmentInput,
 	location *time.Location,
+	asOf time.Time,
 ) (meaningfulScheduleChange, bool) {
 	if scheduleTimesEqual(previousBlocks, segments) {
 		return meaningfulScheduleChange{}, false
@@ -130,11 +149,23 @@ func selectMeaningfulScheduleChange(
 				return
 			}
 		}
+		if retained, ok := retainedScheduleBlock(previousBlocks, segment, location); ok {
+			// Expired segments are removed and later segments are renumbered.
+			// Compare a continuing slot with its own prior time, even when its
+			// duration changes, rather than the expired block that had its index.
+			previous = retained
+		}
 		previousLocalDate := previous.StartAt.In(location).Format(time.DateOnly)
 		localDateValue := segment.StartAt.In(location).Format(time.DateOnly)
 		startShiftMinutes := int(segment.StartAt.Sub(previous.StartAt).Minutes())
 		endShiftMinutes := int(segment.EndAt.Sub(previous.EndAt).Minutes())
 		dayChanged := previousLocalDate != localDateValue
+		// Filter before ranking: an expired block's large rollover must not hide
+		// a smaller but meaningful move of another reservation still ahead.
+		if !asOf.IsZero() && !dayChanged && !previous.EndAt.After(asOf) &&
+			!segment.StartAt.Before(asOf.Truncate(time.Minute)) {
+			return
+		}
 		shiftMinutes := startShiftMinutes
 		if !dayChanged && absoluteInt(startShiftMinutes) < 60 {
 			if absoluteInt(endShiftMinutes) < 60 {
@@ -190,6 +221,52 @@ func selectMeaningfulScheduleChange(
 	}
 
 	return selected, selectedFound
+}
+
+func retainedScheduleBlock(blocks []ScheduleBlock, segment ScheduleSegmentInput, location *time.Location) (ScheduleBlock, bool) {
+	var retained ScheduleBlock
+	var longestOverlap time.Duration
+	var nearest ScheduleBlock
+	var nearestShift time.Duration
+	hasNearest := false
+	for _, block := range blocks {
+		if block.StartAt.Equal(segment.StartAt) {
+			return block, true
+		}
+		startAt := block.StartAt
+		if segment.StartAt.After(startAt) {
+			startAt = segment.StartAt
+		}
+		endAt := block.EndAt
+		if segment.EndAt.Before(endAt) {
+			endAt = segment.EndAt
+		}
+		overlap := endAt.Sub(startAt)
+		if overlap > longestOverlap ||
+			(overlap > 0 && overlap == longestOverlap && block.SegmentIndex < retained.SegmentIndex) {
+			retained = block
+			longestOverlap = overlap
+		}
+		startShift := segment.StartAt.Sub(block.StartAt).Abs()
+		endShift := segment.EndAt.Sub(block.EndAt).Abs()
+		if startShift >= time.Hour || endShift >= time.Hour ||
+			block.StartAt.In(location).Format(time.DateOnly) != segment.StartAt.In(location).Format(time.DateOnly) {
+			continue
+		}
+		shift := startShift + endShift
+		if !hasNearest || shift < nearestShift ||
+			(shift == nearestShift && block.SegmentIndex < nearest.SegmentIndex) {
+			nearest = block
+			nearestShift = shift
+			hasNearest = true
+		}
+	}
+	if longestOverlap > 0 {
+		return retained, true
+	}
+	// Short slots can move by less than the alert threshold without overlapping.
+	// Preserve their same-day continuity when an earlier segment was removed.
+	return nearest, hasNearest
 }
 
 func scheduleTimesEqual(previousBlocks []ScheduleBlock, segments []ScheduleSegmentInput) bool {

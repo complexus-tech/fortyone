@@ -456,7 +456,7 @@ func (s *Service) reconcileStorySchedule(ctx context.Context, ref ScheduleStoryR
 				Locked: story.AutoSchedulingLocked,
 			})
 			if stateErr == nil {
-				transition := buildStoryScheduleTransition(story, desiredOwner, previousBlocks, desiredSegments, planTimezone, outcomeStatus, outcomeReason)
+				transition := buildStoryScheduleTransitionAt(story, desiredOwner, previousBlocks, desiredSegments, planTimezone, outcomeStatus, outcomeReason, asOf)
 				stateErr = s.stories.UpdateAutomationStateIfUnchanged(
 					ctx, s.mayaActorID, story.ID, story.Workspace, story.UpdatedAt,
 					outcomeStatus, &outcomeReason, nil, transition,
@@ -532,7 +532,7 @@ func (s *Service) reconcileStorySchedule(ctx context.Context, ref ScheduleStoryR
 	if _, err := s.repo.CompleteRun(ctx, run.ID, RunStatusSucceeded, summary, nil); err != nil {
 		return affectedUsers, err
 	}
-	transition := buildStoryScheduleTransition(story, desiredOwner, previousBlocks, desiredSegments, planTimezone, outcomeStatus, outcomeReason)
+	transition := buildStoryScheduleTransitionAt(story, desiredOwner, previousBlocks, desiredSegments, planTimezone, outcomeStatus, outcomeReason, asOf)
 	if err := s.stories.UpdateAutomationStateIfUnchanged(
 		ctx, s.mayaActorID, story.ID, story.Workspace, story.UpdatedAt,
 		outcomeStatus, &outcomeReason, nil, transition,

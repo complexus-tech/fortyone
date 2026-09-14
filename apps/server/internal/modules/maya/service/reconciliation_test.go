@@ -352,7 +352,8 @@ func TestReconcileScheduleMovesElapsedUnlockedWorkIntoFuture(t *testing.T) {
 	storyID := uuid.New()
 	ownerID := uuid.New()
 	duration := 60
-	pastStart := time.Now().UTC().Add(-2 * time.Hour)
+	asOf := time.Date(2026, time.September, 14, 12, 0, 0, 500_000_000, time.UTC)
+	pastStart := asOf.Truncate(time.Minute).Add(-2 * time.Hour)
 	storyIDCopy := storyID
 	pastBlock := calendar.CoreScheduleBlock{
 		ID: uuid.New(), WorkspaceID: workspaceID, UserID: ownerID, StoryID: &storyIDCopy,
@@ -371,10 +372,10 @@ func TestReconcileScheduleMovesElapsedUnlockedWorkIntoFuture(t *testing.T) {
 	}
 	service := New(Dependencies{
 		Repository: repo, Stories: storiesService, Reports: &fakeMayaReports{}, Calendar: calendarService,
-		Users: &fakeMayaUsers{}, Planner: NewPlanner(), MayaActorID: uuid.New(),
+		Users: &fakeMayaUsers{}, Planner: NewPlanner(), Clock: fixedClock{now: asOf}, MayaActorID: uuid.New(),
 	})
 
-	startedAt := time.Now().UTC()
+	startedAt := asOf
 	if err := service.ReconcileSchedule(context.Background(), ReconcileScheduleInput{WorkspaceID: &workspaceID, StoryID: &storyID}); err != nil {
 		t.Fatalf("ReconcileSchedule returned error: %v", err)
 	}
@@ -383,6 +384,11 @@ func TestReconcileScheduleMovesElapsedUnlockedWorkIntoFuture(t *testing.T) {
 	}
 	if !calendarService.reconciliations[0].Segments[0].EndAt.After(startedAt) {
 		t.Fatalf("replacement work must end in the future: %#v", calendarService.reconciliations[0].Segments)
+	}
+	for _, transition := range storiesService.scheduleTransitions {
+		if transition != nil {
+			t.Fatalf("same-day expired-slot rollover must not create another notification: %#v", transition)
+		}
 	}
 }
 
