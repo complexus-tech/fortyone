@@ -4,7 +4,7 @@ import { VariantProps, cva } from "cva";
 import { cn } from "@/lib/utils/classnames";
 
 const badgeVariants = cva(
-  "flex-row items-center justify-center border gap-1 font-medium",
+  "flex-row items-center justify-center gap-[4px] border",
   {
     variants: {
       variant: {
@@ -14,7 +14,7 @@ const badgeVariants = cva(
       rounded: {
         none: "rounded-none",
         sm: "rounded-sm",
-        md: "rounded-[10px]",
+        md: "rounded-[8px]",
         lg: "rounded-xl",
         xl: "rounded-2xl",
         full: "rounded-full",
@@ -26,55 +26,31 @@ const badgeVariants = cva(
         info: "bg-info border-info",
         warning: "bg-warning border-warning",
         tertiary:
-          "bg-gray-50 border-gray-100 dark:bg-dark-300 dark:border-dark-100",
-        secondary: "bg-secondary border-secondary",
-        invert: "bg-black border-black",
+          "border-border bg-surface-muted dark:border-border-dark dark:bg-surface-muted-dark",
+        secondary:
+          "bg-secondary border-secondary dark:bg-secondary-dark dark:border-secondary-dark",
+        invert:
+          "bg-background-inverse border-background-inverse dark:bg-background-inverse-dark dark:border-background-inverse-dark",
       },
       size: {
-        sm: "px-1.5 h-7 gap-1",
-        md: "px-2 h-[28px]",
-        lg: "px-3.5 h-10",
+        sm: "min-h-[24px] px-[6px] py-[2px]",
+        md: "min-h-[28px] px-[8px] py-[3px]",
+        lg: "min-h-[36px] px-[12px] py-[5px]",
       },
     },
     compoundVariants: [
       {
         variant: "outline",
-        color: "tertiary",
-        className: "bg-white",
-      },
-      {
-        variant: "outline",
-        color: "primary",
-        className: "bg-transparent",
-      },
-      {
-        variant: "outline",
-        color: "secondary",
-        className: "bg-transparent",
-      },
-      {
-        variant: "outline",
-        color: "danger",
-        className: "bg-transparent",
-      },
-      {
-        variant: "outline",
-        color: "info",
-        className: "bg-transparent",
-      },
-      {
-        variant: "outline",
-        color: "warning",
-        className: "bg-transparent",
+        className: "bg-transparent dark:bg-transparent",
       },
     ],
     defaultVariants: {
       size: "md",
       variant: "solid",
-      color: "primary",
-      rounded: "full",
+      color: "tertiary",
+      rounded: "md",
     },
-  }
+  },
 );
 
 export interface BadgeProps
@@ -96,7 +72,7 @@ export const Badge = ({
     <View
       className={cn(
         badgeVariants({ variant, color, size, rounded }),
-        className
+        className,
       )}
       {...props}
     >

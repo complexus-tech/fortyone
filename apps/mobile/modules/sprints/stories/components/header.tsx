@@ -1,49 +1,30 @@
-import React from "react";
-import { Row, Text, Back } from "@/components/ui";
-import { StoryOptionsButton } from "@/modules/stories/components";
-import { useLocalSearchParams } from "expo-router";
-import { useSprint } from "@/modules/sprints/hooks/use-sprints";
-import { useTerminology } from "@/hooks/use-terminology";
 import type { StoriesViewOptions } from "@/types/stories-view-options";
-import { truncateText } from "@/lib/utils";
+import type { Sprint } from "../../types";
+import { Back, ScreenHeader } from "@/components/ui";
+import { StoryOptionsButton } from "@/modules/stories/components";
+import { useTerminology } from "@/hooks/use-terminology";
+import { formatContextDates } from "@/modules/teams/stories/context-dates";
 
 type HeaderProps = {
+  sprint?: Sprint;
   viewOptions: StoriesViewOptions;
   setViewOptions: (options: Partial<StoriesViewOptions>) => void;
   resetViewOptions: () => void;
 };
 
-export const Header = ({
-  viewOptions,
-  setViewOptions,
-  resetViewOptions,
-}: HeaderProps) => {
-  const { sprintId } = useLocalSearchParams<{ sprintId: string }>();
-  const { data: sprint } = useSprint(sprintId);
+export const Header = ({ sprint, ...props }: HeaderProps) => {
   const { getTermDisplay } = useTerminology();
-
   return (
-    <Row className="mb-3" asContainer justify="between" align="center">
-      <Back />
-      <Text fontSize="2xl" fontWeight="semibold">
-        {truncateText(sprint?.name ?? "", 12)} /{" "}
-        <Text
-          fontSize="2xl"
-          color="muted"
-          fontWeight="semibold"
-          className="opacity-80"
-        >
-          {getTermDisplay("storyTerm", {
-            variant: "plural",
-            capitalize: true,
-          })}
-        </Text>
-      </Text>
-      <StoryOptionsButton
-        viewOptions={viewOptions}
-        setViewOptions={setViewOptions}
-        resetViewOptions={resetViewOptions}
-      />
-    </Row>
+    <ScreenHeader
+      title={sprint?.name || getTermDisplay("sprintTerm", { capitalize: true })}
+      subtitle={
+        sprint
+          ? `${getTermDisplay("storyTerm", { variant: "plural", capitalize: true })} · ${formatContextDates(sprint.startDate, sprint.endDate)}`
+          : undefined
+      }
+      leading={<Back />}
+      trailing={<StoryOptionsButton {...props} />}
+      compact
+    />
   );
 };

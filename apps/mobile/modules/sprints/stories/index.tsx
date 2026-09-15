@@ -1,3 +1,5 @@
+import { useSprint } from "../hooks/use-sprints";
+import { QueryState } from "@/components/ui/query-state";
 import React, { useMemo } from "react";
 import { Header } from "./components";
 import { SafeContainer, StoriesListSkeleton } from "@/components/ui";
@@ -22,6 +24,7 @@ export const SprintStories = () => {
     isLoaded: viewOptionsLoaded,
   } = useViewOptions(`sprint-${sprintId}:view-options`);
   const { getTermDisplay } = useTerminology();
+  const context = useSprint(sprintId);
 
   const queryOptions = useMemo(() => {
     return {
@@ -47,10 +50,44 @@ export const SprintStories = () => {
     isRefetching,
   } = useSprintStoriesGrouped(sprintId!, viewOptions.groupBy, queryOptions);
 
+  if (context.isPending || context.error || !context.data) {
+    return (
+      <SafeContainer isFull>
+        <Header
+          viewOptions={viewOptions}
+          setViewOptions={setViewOptions}
+          resetViewOptions={resetViewOptions}
+        />
+        <QueryState
+          loading={context.isPending}
+          title={
+            context.isPending
+              ? `Loading ${getTermDisplay("sprintTerm")}`
+              : `${getTermDisplay("sprintTerm", { capitalize: true })} unavailable`
+          }
+          message={
+            context.error?.message ||
+            (context.isPending
+              ? undefined
+              : "This item may have been removed or you may no longer have access.")
+          }
+          onRetry={
+            context.isPending
+              ? undefined
+              : () => {
+                  void context.refetch();
+                }
+          }
+        />
+      </SafeContainer>
+    );
+  }
+
   if (!viewOptionsLoaded) {
     return (
       <SafeContainer isFull>
         <Header
+          sprint={context.data}
           viewOptions={viewOptions}
           setViewOptions={setViewOptions}
           resetViewOptions={resetViewOptions}
@@ -63,6 +100,7 @@ export const SprintStories = () => {
   return (
     <SafeContainer isFull>
       <Header
+        sprint={context.data}
         viewOptions={viewOptions}
         setViewOptions={setViewOptions}
         resetViewOptions={resetViewOptions}

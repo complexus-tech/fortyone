@@ -1,347 +1,122 @@
-import React from "react";
-import { BottomSheetModal } from "./bottom-sheet-modal";
-import { ContextMenuButton } from "./context-menu-button";
-import { View, Text as RNText, Pressable } from "react-native";
+import type { StoriesOptionsSheetProps } from "./stories-options-sheet.shared";
+import { useState } from "react";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { colors } from "@/constants";
-import type {
-  DisplayColumn,
-  StoriesViewOptions,
-} from "@/types/stories-view-options";
-import { useTheme } from "@/hooks";
+import { themeColors } from "@/constants/colors";
+import { useTheme } from "@/hooks/theme";
+import { BottomSheetModal } from "./bottom-sheet-modal";
+import { Text } from "./Text";
+import {
+  getStoriesOptionRows,
+  StoriesDisplayOptions,
+} from "./stories-options-sheet.shared";
 
-export const StoriesOptionsSheet = ({
-  isOpened,
-  setIsOpened,
-  viewOptions,
-  setViewOptions,
-  resetViewOptions,
-}: {
-  isOpened: boolean;
-  setIsOpened: (isOpened: boolean) => void;
-  viewOptions: StoriesViewOptions;
-  setViewOptions: (options: Partial<StoriesViewOptions>) => void;
-  resetViewOptions: () => void;
-}) => {
+export const StoriesOptionsSheet = (props: StoriesOptionsSheetProps) => {
+  const { isOpened, setIsOpened } = props;
   const { resolvedTheme } = useTheme();
-  const displayColumns = viewOptions.displayColumns || [];
-  const groupByOptions = [
-    {
-      label: "Status",
-      onPress: () => setViewOptions({ groupBy: "status" }),
-    },
-    {
-      label: "Priority",
-      onPress: () => setViewOptions({ groupBy: "priority" }),
-    },
-    {
-      label: "Assignee",
-      onPress: () => setViewOptions({ groupBy: "assignee" }),
-    },
-  ];
-
-  const orderByOptions = [
-    {
-      label: "Created",
-      onPress: () => setViewOptions({ orderBy: "created" }),
-    },
-    {
-      label: "Updated",
-      onPress: () => setViewOptions({ orderBy: "updated" }),
-    },
-    {
-      label: "Deadline",
-      onPress: () => setViewOptions({ orderBy: "deadline" }),
-    },
-    {
-      label: "Priority",
-      onPress: () => setViewOptions({ orderBy: "priority" }),
-    },
-  ];
-
-  const orderDirectionOptions = [
-    {
-      label: "Descending",
-      onPress: () => setViewOptions({ orderDirection: "desc" }),
-    },
-    {
-      label: "Ascending",
-      onPress: () => setViewOptions({ orderDirection: "asc" }),
-    },
-  ];
-
-  const toggleDisplayColumn = (column: DisplayColumn) => {
-    setViewOptions({
-      displayColumns: displayColumns.includes(column)
-        ? displayColumns.filter((c) => c !== column)
-        : [...displayColumns, column],
-    });
-  };
+  const [activeOptionId, setActiveOptionId] = useState<string | null>(null);
+  const rows = getStoriesOptionRows(props);
+  const activeOption = rows.find((row) => row.id === activeOptionId);
+  const isDark = resolvedTheme === "dark";
+  const muted = themeColors[isDark ? "dark" : "light"].textMuted;
+  const foreground = themeColors[isDark ? "dark" : "light"].foreground;
 
   return (
-    <BottomSheetModal
-      isOpen={isOpened}
-      onClose={() => setIsOpened(false)}
-      spacing={40}
-    >
-      <View style={{ gap: 20 }}>
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
+    <>
+      <BottomSheetModal
+        isOpen={isOpened}
+        onClose={() => {
+          setActiveOptionId(null);
+          setIsOpened(false);
+        }}
+        spacing={16}
+        padding={{ leading: 20, trailing: 20, top: 12, bottom: 24 }}
+      >
+        <ScrollView
+          style={{ flexShrink: 1 }}
+          contentContainerStyle={{ gap: 24 }}
+          keyboardShouldPersistTaps="handled"
         >
-          <RNText style={{ fontSize: 16, fontWeight: "500" }}>Grouping</RNText>
-          <ContextMenuButton actions={groupByOptions} withNoHost>
-            <View
-              style={{ flexDirection: "row", alignItems: "center", gap: 3 }}
-            >
-              <RNText
-                style={{
-                  color:
-                    resolvedTheme === "light"
-                      ? colors.dark.DEFAULT
-                      : colors.gray[200],
-                  fontSize: 16,
-                }}
+          <View>
+            {rows.map((row, index) => (
+              <Pressable
+                key={row.id}
+                accessibilityRole="button"
+                accessibilityLabel={`${row.label}, ${row.value}`}
+                accessibilityHint="Choose an option"
+                onPress={() => setActiveOptionId(row.id)}
+                style={({ pressed }) => [
+                  styles.row,
+                  {
+                    opacity: pressed ? 0.6 : 1,
+                    borderTopWidth: index > 0 ? StyleSheet.hairlineWidth : 0,
+                    borderTopColor: themeColors[resolvedTheme].border,
+                  },
+                ]}
               >
-                {viewOptions.groupBy === "status"
-                  ? "Status"
-                  : viewOptions.groupBy === "priority"
-                    ? "Priority"
-                    : "Assignee"}
-              </RNText>
-              <Ionicons
-                name="chevron-expand"
-                size={11}
-                color={
-                  resolvedTheme === "light"
-                    ? colors.dark.DEFAULT
-                    : colors.gray[200]
-                }
-                style={{ opacity: 0.6 }}
-              />
-            </View>
-          </ContextMenuButton>
-        </View>
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <RNText style={{ fontSize: 16, fontWeight: "500" }}>Ordering</RNText>
-          <ContextMenuButton actions={orderByOptions} withNoHost>
-            <View
-              style={{ flexDirection: "row", alignItems: "center", gap: 3 }}
-            >
-              <RNText
-                style={{
-                  color:
-                    resolvedTheme === "light"
-                      ? colors.dark.DEFAULT
-                      : colors.gray[200],
-                  fontSize: 16,
-                }}
-              >
-                {viewOptions.orderBy === "created"
-                  ? "Created"
-                  : viewOptions.orderBy === "updated"
-                    ? "Updated"
-                    : viewOptions.orderBy === "deadline"
-                      ? "Deadline"
-                      : "Priority"}
-              </RNText>
-              <Ionicons
-                name="chevron-expand"
-                size={11}
-                color={
-                  resolvedTheme === "light"
-                    ? colors.dark.DEFAULT
-                    : colors.gray[200]
-                }
-                style={{ opacity: 0.6 }}
-              />
-            </View>
-          </ContextMenuButton>
-        </View>
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <RNText style={{ fontSize: 16, fontWeight: "500" }}>
-            Order direction
-          </RNText>
-          <ContextMenuButton actions={orderDirectionOptions} withNoHost>
-            <View
-              style={{ flexDirection: "row", alignItems: "center", gap: 3 }}
-            >
-              <RNText
-                style={{
-                  color:
-                    resolvedTheme === "light"
-                      ? colors.dark.DEFAULT
-                      : colors.gray[200],
-                  fontSize: 16,
-                }}
-              >
-                {viewOptions.orderDirection === "desc"
-                  ? "Descending"
-                  : "Ascending"}
-              </RNText>
-              <Ionicons
-                name="chevron-expand"
-                size={11}
-                color={
-                  resolvedTheme === "light"
-                    ? colors.dark.DEFAULT
-                    : colors.gray[200]
-                }
-                style={{ opacity: 0.6 }}
-              />
-            </View>
-          </ContextMenuButton>
-        </View>
-      </View>
-      <View style={{ gap: 16, alignItems: "flex-start" }}>
-        <RNText style={{ opacity: 0.65, fontSize: 15, fontWeight: "500" }}>
-          Display columns
-        </RNText>
-        <View style={{ flexDirection: "row", gap: 12, flexWrap: "wrap" }}>
-          <Pressable
-            onPress={() => toggleDisplayColumn("ID")}
-            style={{
-              paddingHorizontal: 12,
-              paddingVertical: 6,
-              borderRadius: 8,
-              borderWidth: displayColumns.includes("ID") ? 1 : 0,
-              borderColor:
-                resolvedTheme === "light"
-                  ? colors.dark.DEFAULT
-                  : colors.gray[200],
-              backgroundColor: displayColumns.includes("ID")
-                ? "transparent"
-                : "transparent",
-            }}
-          >
-            <RNText
-              style={{
-                color:
-                  resolvedTheme === "light"
-                    ? colors.dark.DEFAULT
-                    : colors.gray[200],
-                fontSize: 14,
+                <Text style={{ flex: 1 }}>{row.label}</Text>
+                <View style={styles.value}>
+                  <Text color="muted" style={{ flexShrink: 1 }}>
+                    {row.value}
+                  </Text>
+                  <Ionicons name="chevron-expand" size={16} color={muted} />
+                </View>
+              </Pressable>
+            ))}
+          </View>
+          <StoriesDisplayOptions {...props} />
+        </ScrollView>
+      </BottomSheetModal>
+      <BottomSheetModal
+        isOpen={isOpened && Boolean(activeOption)}
+        onClose={() => setActiveOptionId(null)}
+        spacing={12}
+        padding={{ leading: 20, trailing: 20, top: 12, bottom: 24 }}
+      >
+        <Text accessibilityRole="header" fontSize="lg" fontWeight="medium">
+          {activeOption?.label}
+        </Text>
+        <ScrollView style={{ flexShrink: 1 }}>
+          {activeOption?.actions.map((action) => (
+            <Pressable
+              key={action.label}
+              accessibilityRole="radio"
+              accessibilityState={{ checked: action.selected }}
+              onPress={() => {
+                setActiveOptionId(null);
+                action.onPress();
               }}
+              style={({ pressed }) => [
+                styles.row,
+                { paddingHorizontal: 0, opacity: pressed ? 0.6 : 1 },
+              ]}
             >
-              ID
-            </RNText>
-          </Pressable>
-          <Pressable
-            onPress={() => toggleDisplayColumn("Status")}
-            style={{
-              paddingHorizontal: 12,
-              paddingVertical: 6,
-              borderRadius: 8,
-              borderWidth: displayColumns.includes("Status") ? 1 : 0,
-              borderColor:
-                resolvedTheme === "light"
-                  ? colors.dark.DEFAULT
-                  : colors.gray[200],
-              backgroundColor: displayColumns.includes("Status")
-                ? "transparent"
-                : "transparent",
-            }}
-          >
-            <RNText
-              style={{
-                color:
-                  resolvedTheme === "light"
-                    ? colors.dark.DEFAULT
-                    : colors.gray[200],
-                fontSize: 14,
-              }}
-            >
-              Status
-            </RNText>
-          </Pressable>
-          <Pressable
-            onPress={() => toggleDisplayColumn("Assignee")}
-            style={{
-              paddingHorizontal: 12,
-              paddingVertical: 6,
-              borderRadius: 8,
-              borderWidth: displayColumns.includes("Assignee") ? 1 : 0,
-              borderColor:
-                resolvedTheme === "light"
-                  ? colors.dark.DEFAULT
-                  : colors.gray[200],
-              backgroundColor: displayColumns.includes("Assignee")
-                ? "transparent"
-                : "transparent",
-            }}
-          >
-            <RNText
-              style={{
-                color:
-                  resolvedTheme === "light"
-                    ? colors.dark.DEFAULT
-                    : colors.gray[200],
-                fontSize: 14,
-              }}
-            >
-              Assignee
-            </RNText>
-          </Pressable>
-          <Pressable
-            onPress={() => toggleDisplayColumn("Priority")}
-            style={{
-              paddingHorizontal: 12,
-              paddingVertical: 6,
-              borderRadius: 8,
-              borderWidth: displayColumns.includes("Priority") ? 1 : 0,
-              borderColor:
-                resolvedTheme === "light"
-                  ? colors.dark.DEFAULT
-                  : colors.gray[200],
-              backgroundColor: displayColumns.includes("Priority")
-                ? "transparent"
-                : "transparent",
-            }}
-          >
-            <RNText
-              style={{
-                color:
-                  resolvedTheme === "light"
-                    ? colors.dark.DEFAULT
-                    : colors.gray[200],
-                fontSize: 14,
-              }}
-            >
-              Priority
-            </RNText>
-          </Pressable>
-        </View>
-      </View>
-      <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-        <Pressable
-          onPress={resetViewOptions}
-          style={{
-            paddingHorizontal: 16,
-            paddingVertical: 8,
-            borderRadius: 8,
-            backgroundColor: "rgba(0,0,0,0.1)",
-          }}
-        >
-          <RNText style={{ color: colors.primary, fontSize: 14 }}>
-            Reset default
-          </RNText>
-        </Pressable>
-      </View>
-    </BottomSheetModal>
+              <Text style={{ flex: 1 }}>{action.label}</Text>
+              {action.selected ? (
+                <Ionicons name="checkmark" size={20} color={foreground} />
+              ) : null}
+            </Pressable>
+          ))}
+        </ScrollView>
+      </BottomSheetModal>
+    </>
   );
 };
+
+const styles = StyleSheet.create({
+  row: {
+    minHeight: 52,
+    paddingHorizontal: 0,
+    paddingVertical: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+  },
+  value: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: 8,
+    maxWidth: "55%",
+  },
+});

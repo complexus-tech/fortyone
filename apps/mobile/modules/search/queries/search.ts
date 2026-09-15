@@ -15,5 +15,7 @@ export const searchQuery = async (
   const response = await get<ApiResponse<SearchResponse>>(`search${query}`, {
     signal,
   });
+  if (!response.data)
+    throw new Error("Search returned no response. Please try again.");
   return response.data;
 };

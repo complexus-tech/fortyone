@@ -1,4 +1,5 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
+import { useSessionMutation } from "@/lib/use-session-mutation";
 import { toast } from "sonner-native";
 import { storyKeys } from "@/constants/keys";
 import { createStory } from "../actions/create-story";
@@ -6,7 +7,7 @@ import { createStory } from "../actions/create-story";
 export const useCreateStoryMutation = () => {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  return useSessionMutation({
     mutationFn: createStory,
     onSuccess: (response) => {
       if (response.error?.message) {

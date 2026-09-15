@@ -9,7 +9,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { NotificationCard } from "./card";
 import type { AppNotification } from "../types";
 import { useTheme } from "@/hooks";
-import { colors } from "@/constants/colors";
+import { themeColors } from "@/constants/colors";
 import { Button, Text } from "@/components/ui";
 import { EmptyState } from "./empty-state";
 
@@ -23,6 +23,11 @@ type NotificationListProps = {
   error?: Error | null;
 };
 
+const renderNotification = ({ item }: { item: AppNotification }) => (
+  <NotificationCard {...item} />
+);
+const notificationKey = (item: AppNotification) => item.id;
+
 export const NotificationList = ({
   notifications,
   isLoading = false,
@@ -34,30 +39,34 @@ export const NotificationList = ({
 }: NotificationListProps) => {
   const insets = useSafeAreaInsets();
   const { resolvedTheme } = useTheme();
-  const renderNotification = ({
-    item,
-    index,
-  }: {
-    item: AppNotification;
-    index: number;
-  }) => <NotificationCard {...item} index={index} />;
 
   return (
     <View className="flex-1">
       <FlatList
         data={notifications}
         renderItem={renderNotification}
-        keyExtractor={(item) => item.id}
+        keyExtractor={notificationKey}
+        keyboardShouldPersistTaps="handled"
+        initialNumToRender={12}
+        maxToRenderPerBatch={10}
         ListEmptyComponent={<EmptyState />}
         ListFooterComponent={
-          <View className="items-center gap-3 px-4 py-4">
-            {error ? <Text color="muted">{error.message}</Text> : null}
+          <View className="items-center gap-3 px-[20px] py-4">
+            {error ? (
+              <Text color="muted" fontSize="sm" align="center">
+                {error.message}
+              </Text>
+            ) : null}
             {isLoadingMore ? (
               <ActivityIndicator />
             ) : hasMore ? (
-              <Button onPress={onLoadMore}>Load more</Button>
+              <Button color="tertiary" onPress={onLoadMore}>
+                Load more
+              </Button>
             ) : error ? (
-              <Button onPress={onRefresh}>Try again</Button>
+              <Button color="tertiary" onPress={onRefresh}>
+                Try again
+              </Button>
             ) : null}
           </View>
         }
@@ -65,9 +74,7 @@ export const NotificationList = ({
           <RefreshControl
             refreshing={isLoading}
             onRefresh={onRefresh}
-            tintColor={
-              resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[200]
-            }
+            tintColor={themeColors[resolvedTheme].textMuted}
             size="default"
           />
         }

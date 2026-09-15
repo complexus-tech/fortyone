@@ -12,22 +12,22 @@ export const CommentItem = ({ userId, comment, createdAt }: Comment) => {
   const member = members.find((m) => m.id === userId);
 
   return (
-    <View className="my-2.5 pl-0.5">
-      <Row align="center">
+    <View className="my-[6px] rounded-[20px] bg-gray-50 p-[14px] dark:bg-dark-100">
+      <Row align="center" wrap>
         <Avatar
           name={member?.fullName || member?.username}
           src={member?.avatarUrl}
           size="xs"
           className="mr-2"
         />
-        <Text fontSize="sm" className="opacity-90" fontWeight="medium">
+        <Text fontSize="sm" fontWeight="semibold">
           {member?.username || "Unknown"}
         </Text>
-        <Text fontSize="sm" color="muted" className="ml-2">
+        <Text fontSize="xs" color="muted" className="ml-2">
           {formatDistanceToNow(new Date(createdAt), { addSuffix: true })}
         </Text>
       </Row>
-      <View className="mt-1 pl-7">
+      <View className="mt-[6px]">
         <RichTextViewer
           html={
             /<(?:p|ul|ol|blockquote|h[1-6]|pre|a|strong|em|span)(?:\s|>)/i.test(

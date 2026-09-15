@@ -3,7 +3,7 @@ import {
   SafeAreaViewProps,
 } from "react-native-safe-area-context";
 import { StyleSheet } from "react-native";
-import { colors } from "@/constants/colors";
+import { themeColors } from "@/constants/colors";
 import { useTheme } from "@/hooks";
 
 export interface ContainerProps extends SafeAreaViewProps {
@@ -24,7 +24,7 @@ export const SafeContainer = ({
     styles.container,
     isFull && styles.full,
     {
-      backgroundColor: resolvedTheme === "dark" ? colors.black : colors.white,
+      backgroundColor: themeColors[resolvedTheme].background,
     },
     style,
   ];
@@ -39,7 +39,7 @@ export const SafeContainer = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 18,
+    paddingHorizontal: 20,
   },
   full: {
     paddingHorizontal: 0,

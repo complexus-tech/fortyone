@@ -1,6 +1,6 @@
 import React from "react";
 import { View } from "react-native";
-import { Text } from "./text";
+import { Text } from "./Text";
 
 interface SectionProps {
   title?: string;

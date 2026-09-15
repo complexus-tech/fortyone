@@ -1,29 +1,33 @@
-import React from "react";
-import { Row, Text } from "@/components/ui";
-import { StoryOptionsButton } from "@/modules/stories/components";
 import type { StoriesViewOptions } from "@/types/stories-view-options";
+import { ScreenHeader } from "@/components/ui/screen-header";
+import { StoryOptionsButton } from "@/modules/stories/components";
+import { StoryListActions } from "@/modules/stories/components/story-list-actions";
 
 type HeaderProps = {
   viewOptions: StoriesViewOptions;
   setViewOptions: (options: Partial<StoriesViewOptions>) => void;
   resetViewOptions: () => void;
+  onFilters: () => void;
+  filterCount: number;
 };
-
 export const Header = ({
-  viewOptions,
-  setViewOptions,
-  resetViewOptions,
-}: HeaderProps) => {
-  return (
-    <Row className="mb-3" asContainer justify="between" align="center">
-      <Text fontSize="3xl" fontWeight="semibold">
-        My Work
-      </Text>
+  onFilters,
+  filterCount,
+  ...displayProps
+}: HeaderProps) => (
+  <ScreenHeader
+    title="My Work"
+    trailing={
       <StoryOptionsButton
-        viewOptions={viewOptions}
-        setViewOptions={setViewOptions}
-        resetViewOptions={resetViewOptions}
+        {...displayProps}
+        renderTrigger={(onDisplay) => (
+          <StoryListActions
+            onFilters={onFilters}
+            onDisplay={onDisplay}
+            filterCount={filterCount}
+          />
+        )}
       />
-    </Row>
-  );
-};
+    }
+  />
+);

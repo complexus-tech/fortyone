@@ -6,9 +6,9 @@ import { ActivityIndicator, FlatList, View } from "react-native";
 import { Button, Tabs, Text } from "@/components/ui";
 import { useStoryActivitiesInfinite } from "../hooks/use-story-activities";
 import { useStoryCommentsInfinite } from "../hooks/use-story-comments";
+import { useActivityDisplayContext } from "../hooks/use-activity-display-context";
 import { ActivityItem } from "./activity-item";
 import { CommentItem } from "./comment-item";
-import { CommentComposer } from "./comment-composer";
 
 type FeedTab = "updates" | "comments";
 type FeedRow =
@@ -41,7 +41,7 @@ const FeedFooter = ({
   onRetry: () => void;
   onLoadMore: () => void;
 }) => (
-  <View className="px-4.5 gap-3 py-3">
+  <View className="px-[20px] gap-3 py-4">
     {loading ? (
       <ActivityIndicator accessibilityLabel={`Loading ${tab}`} />
     ) : error ? (
@@ -56,7 +56,7 @@ const FeedFooter = ({
     ) : (
       <>
         {empty ? (
-          <Text>
+          <Text color="muted" fontSize="sm">
             {tab === "comments" ? "No comments yet" : "No updates available"}
           </Text>
         ) : null}
@@ -80,6 +80,7 @@ export const Activity = ({
   children: React.ReactNode;
 }) => {
   const [activeTab, setActiveTab] = useState<FeedTab>("updates");
+  const activityDisplayContext = useActivityDisplayContext(story);
   const activities = useStoryActivitiesInfinite(
     story.id,
     activeTab === "updates",
@@ -107,13 +108,13 @@ export const Activity = ({
   }, [activeTab, activities.data, comments.data]);
 
   const renderItem = ({ item, index }: ListRenderItemInfo<FeedRow>) => (
-    <View className="px-4.5">
+    <View className="px-[20px]">
       {item.type === "comment" ? (
         <CommentItem {...item.comment} />
       ) : (
         <ActivityItem
           {...item.activity}
-          teamId={story.teamId}
+          context={activityDisplayContext}
           isTimeShown={index === 0 || index === rows.length - 1}
         />
       )}
@@ -141,7 +142,7 @@ export const Activity = ({
         data={rows}
         keyExtractor={rowKey}
         renderItem={renderItem}
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{ paddingBottom: 24 }}
         keyboardShouldPersistTaps="handled"
         initialNumToRender={4}
         maxToRenderPerBatch={4}
@@ -152,15 +153,10 @@ export const Activity = ({
         ListHeaderComponent={
           <>
             {children}
-            <Tabs.List className="mb-2">
+            <Tabs.List className="mb-[8px] pt-[8px] border-t border-gray-100 dark:border-dark-100">
               <Tabs.Tab value="updates">Updates</Tabs.Tab>
               <Tabs.Tab value="comments">Comments</Tabs.Tab>
             </Tabs.List>
-            {activeTab === "comments" ? (
-              <View className="px-4.5">
-                <CommentComposer storyId={story.id} />
-              </View>
-            ) : null}
           </>
         }
         ListFooterComponent={

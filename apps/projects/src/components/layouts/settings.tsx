@@ -95,7 +95,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
               return (
                 <Link
                   className={cn(
-                    "h-16 shrink-0 border-b border-transparent px-3 leading-16",
+                    "leading-16 h-16 shrink-0 border-b border-transparent px-3",
                     {
                       "border-primary text-primary": isActive,
                     },
@@ -110,13 +110,13 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
             })}
           </Flex>
         </Box>
-        <Box className="settings-card-borders h-[calc(100dvh-8rem)] overflow-y-auto pt-6 pb-8">
+        <Box className="settings-card-borders h-[calc(100dvh-8rem)] overflow-y-auto pb-8 pt-6">
           <Container>{children}</Container>
         </Box>
       </Box>
       <Box className="hidden h-dvh md:flex" data-settings-shell>
-        <Box className="flex w-(--sidebar-width) shrink-0 flex-col">
-          <Box className="flex h-(--app-shell-header-height) shrink-0 items-center px-4">
+        <Box className="w-(--sidebar-width) flex shrink-0 flex-col">
+          <Box className="h-(--app-shell-header-height) flex shrink-0 items-center px-4">
             <Tooltip
               title={
                 <span className="flex items-center gap-1">
@@ -186,13 +186,13 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
             </Flex>
           </Box>
         </Box>
-        <Box className="h-dvh min-w-0 flex-1 pt-(--app-content-inset) pr-(--app-content-inset) pb-(--app-content-inset) pl-2">
+        <Box className="pt-(--app-content-inset) h-dvh min-w-0 flex-1 pl-2">
           <Box
-            className="app-content-canvas-gradient border-border/80 bg-surface-muted/60 dark:bg-surface-muted/40 settings-card-borders h-full min-w-0 overflow-y-auto rounded-2xl border-[0.5px]"
+            className="app-content-canvas-gradient border-border/80 bg-surface-muted/60 dark:bg-surface-muted/40 settings-card-borders h-full min-w-0 overflow-y-auto rounded-tl-2xl border-l-[0.5px] border-t-[0.5px]"
             data-settings-content-canvas
           >
             <Container
-              className={cn("max-w-216 pt-16 pb-12", {
+              className={cn("max-w-216 pb-12 pt-16", {
                 "max-w-[80rem]": pathname.includes("billing"),
               })}
             >

@@ -1,139 +1,21 @@
-import React from "react";
-import Svg, { Rect, Path } from "react-native-svg";
-import { colors } from "@/constants";
+import type { StoryPriority } from "@/modules/stories/types";
+import { useColorScheme } from "react-native";
+import { themeColors } from "@/constants/colors";
+import { priorityIconGeometry } from "./task-icon-geometry";
+import { TaskIcon } from "./task-icon";
 
-type Priority = "Urgent" | "High" | "Medium" | "Low" | "No Priority";
-
-interface PriorityIconProps {
-  priority: Priority;
+type PriorityIconProps = {
+  priority: StoryPriority;
   size?: number;
-}
+};
 
-export const PriorityIcon = ({
+export function PriorityIcon({
   priority = "No Priority",
   size = 16,
-}: PriorityIconProps) => {
-  if (priority === "No Priority") {
-    return (
-      <Svg
-        width={size}
-        height={size}
-        viewBox="0 0 16 16"
-        color={colors.gray.DEFAULT}
-      >
-        <Rect x="1" y="8" width="3" height="6" rx="1" fill="currentColor" />
-        <Rect
-          x="6"
-          y="5"
-          width="3"
-          height="9"
-          rx="1"
-          fill="currentColor"
-          opacity={0.2}
-        />
-        <Rect
-          x="11"
-          y="2"
-          width="3"
-          height="12"
-          rx="1"
-          fill="currentColor"
-          opacity={0.2}
-        />
-      </Svg>
-    );
-  }
-
-  if (priority === "Urgent") {
-    return (
-      <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-        <Path
-          d="M2.5 12C2.5 7.52166 2.5 5.28249 3.89124 3.89124C5.28249 2.5 7.52166 2.5 12 2.5C16.4783 2.5 18.7175 2.5 20.1088 3.89124C21.5 5.28249 21.5 7.52166 21.5 12C21.5 16.4783 21.5 18.7175 20.1088 20.1088C18.7175 21.5 16.4783 21.5 12 21.5C7.52166 21.5 5.28249 21.5 3.89124 20.1088C2.5 18.7175 2.5 16.4783 2.5 12Z"
-          stroke={colors.danger}
-          strokeWidth="2.5"
-          fill={colors.danger}
-        />
-        <Path
-          d="M11.9998 16H12.0088"
-          stroke="white"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="2.5"
-        />
-        <Path
-          d="M12 13L12 7"
-          stroke="white"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="2.5"
-        />
-      </Svg>
-    );
-  }
-
-  if (priority === "High") {
-    return (
-      <Svg
-        width={size}
-        height={size}
-        viewBox="0 0 16 16"
-        color={colors.warning}
-      >
-        <Rect x="1" y="8" width="3" height="6" rx="1" fill="currentColor" />
-        <Rect x="6" y="5" width="3" height="9" rx="1" fill="currentColor" />
-        <Rect x="11" y="2" width="3" height="12" rx="1" fill="currentColor" />
-      </Svg>
-    );
-  }
-
-  if (priority === "Medium") {
-    return (
-      <Svg
-        width={size}
-        height={size}
-        viewBox="0 0 16 16"
-        color={colors.success}
-      >
-        <Rect x="1" y="8" width="3" height="6" rx="1" fill="currentColor" />
-        <Rect x="6" y="5" width="3" height="9" rx="1" fill="currentColor" />
-        <Rect
-          x="11"
-          y="2"
-          width="3"
-          height="12"
-          rx="1"
-          opacity={0.2}
-          fill="currentColor"
-        />
-      </Svg>
-    );
-  }
-
-  if (priority === "Low") {
-    return (
-      <Svg width={size} height={size} viewBox="0 0 16 16" color={colors.info}>
-        <Rect x="1" y="8" width="3" height="6" rx="1" fill="currentColor" />
-        <Rect
-          x="6"
-          y="5"
-          width="3"
-          height="9"
-          rx="1"
-          opacity={0.2}
-          fill="currentColor"
-        />
-        <Rect
-          x="11"
-          y="2"
-          width="3"
-          height="12"
-          rx="1"
-          opacity={0.2}
-          fill="currentColor"
-        />
-      </Svg>
-    );
-  }
-
-  return null;
-};
+}: PriorityIconProps) {
+  const dark = useColorScheme() === "dark";
+  const color = themeColors[dark ? "dark" : "light"].textMuted;
+  return (
+    <TaskIcon size={size} geometry={priorityIconGeometry(priority, color)} />
+  );
+}

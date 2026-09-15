@@ -1,7 +1,7 @@
 import React from "react";
 import { Col, Row, Text } from "@/components/ui";
 import { SymbolView } from "expo-symbols";
-import { colors } from "@/constants";
+import { themeColors } from "@/constants/colors";
 import { useTheme } from "@/hooks";
 
 type EmptyStateProps = {
@@ -11,8 +11,7 @@ type EmptyStateProps = {
 
 export const EmptyState = ({ title, message }: EmptyStateProps) => {
   const { resolvedTheme } = useTheme();
-  const iconColor =
-    resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
+  const iconColor = themeColors[resolvedTheme].textMuted;
   const defaultTitle = "No links found";
   const defaultMessage = "This story doesn't have any links yet.";
 

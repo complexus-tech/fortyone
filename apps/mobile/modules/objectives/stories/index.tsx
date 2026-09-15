@@ -1,3 +1,5 @@
+import { useObjective } from "../hooks/use-objectives";
+import { QueryState } from "@/components/ui/query-state";
 import React, { useMemo } from "react";
 
 import { SafeContainer, StoriesListSkeleton } from "@/components/ui";
@@ -24,6 +26,7 @@ export const ObjectiveStories = () => {
     isLoaded: viewOptionsLoaded,
   } = useViewOptions(`objective-${objectiveId}:view-options`);
   const { getTermDisplay } = useTerminology();
+  const context = useObjective(objectiveId);
 
   const queryOptions = useMemo(() => {
     return {
@@ -53,10 +56,44 @@ export const ObjectiveStories = () => {
     queryOptions,
   );
 
+  if (context.isPending || context.error || !context.data) {
+    return (
+      <SafeContainer isFull>
+        <Header
+          viewOptions={viewOptions}
+          setViewOptions={setViewOptions}
+          resetViewOptions={resetViewOptions}
+        />
+        <QueryState
+          loading={context.isPending}
+          title={
+            context.isPending
+              ? `Loading ${getTermDisplay("objectiveTerm")}`
+              : `${getTermDisplay("objectiveTerm", { capitalize: true })} unavailable`
+          }
+          message={
+            context.error?.message ||
+            (context.isPending
+              ? undefined
+              : "This item may have been removed or you may no longer have access.")
+          }
+          onRetry={
+            context.isPending
+              ? undefined
+              : () => {
+                  void context.refetch();
+                }
+          }
+        />
+      </SafeContainer>
+    );
+  }
+
   if (!viewOptionsLoaded) {
     return (
       <SafeContainer isFull>
         <Header
+          objective={context.data}
           viewOptions={viewOptions}
           setViewOptions={setViewOptions}
           resetViewOptions={resetViewOptions}
@@ -69,6 +106,7 @@ export const ObjectiveStories = () => {
   return (
     <SafeContainer isFull>
       <Header
+        objective={context.data}
         viewOptions={viewOptions}
         setViewOptions={setViewOptions}
         resetViewOptions={resetViewOptions}

@@ -79,3 +79,38 @@ test("delete and read-all preserve pagination and count unloaded notifications c
   assert.equal(all.unreadCount, 0);
   assert.equal(all.data?.pages[1].notifications[0].readAt, "earlier");
 });
+
+test("deleting a duplicate notification removes every copy but decrements unread only once", () => {
+  const repeated = {
+    ...data,
+    pages: [
+      data.pages[0],
+      {
+        ...data.pages[1],
+        notifications: [item("one", null), item("two", "earlier")],
+      },
+    ],
+  };
+  const deleted = updateNotificationsCache(repeated, 8, {
+    type: "delete",
+    id: "one",
+  });
+  assert.equal(deleted.unreadCount, 7);
+  assert.deepEqual(
+    deleted.data?.pages.flatMap((page) =>
+      page.notifications.map((notification) => notification.id),
+    ),
+    ["two"],
+  );
+  assert.deepEqual(deleted.data?.pageParams, data.pageParams);
+  assert.equal(
+    updateNotificationsCache(deleted.data, 7, { type: "delete", id: "one" })
+      .unreadCount,
+    7,
+  );
+  assert.equal(
+    updateNotificationsCache(deleted.data, 7, { type: "delete", id: "two" })
+      .unreadCount,
+    7,
+  );
+});

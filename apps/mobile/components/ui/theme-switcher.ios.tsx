@@ -1,6 +1,6 @@
 import React from "react";
 import { BottomSheetModal } from "./bottom-sheet-modal";
-import { colors } from "@/constants";
+import { themeColors } from "@/constants/colors";
 import { Button, HStack, Image, Spacer, Text, VStack } from "@expo/ui/swift-ui";
 import {
   frame,
@@ -38,7 +38,7 @@ const ThemeItem = ({
       <HStack spacing={8}>
         <Image
           systemName={theme.icon}
-          color={resolvedTheme === "light" ? "black" : "white"}
+          color={themeColors[resolvedTheme].foreground}
           size={18}
           modifiers={[frame({ width: 28, height: 28 })]}
         />
@@ -51,7 +51,7 @@ const ThemeItem = ({
         {isActive && (
           <Image
             systemName="checkmark.circle.fill"
-            color={resolvedTheme === "light" ? "black" : "white"}
+            color={themeColors[resolvedTheme].foreground}
             size={18}
           />
         )}
@@ -101,11 +101,7 @@ export const ThemeSwitcher = ({
         <Text
           modifiers={[
             font({ size: 14, weight: "medium" }),
-            foregroundStyle(
-              resolvedTheme === "light"
-                ? colors.gray.DEFAULT
-                : colors.gray[300],
-            ),
+            foregroundStyle(themeColors[resolvedTheme].textMuted),
           ]}
         >
           Appearance

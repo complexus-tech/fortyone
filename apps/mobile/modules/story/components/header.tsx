@@ -1,5 +1,5 @@
-import { Text, Row, Back, ContextMenuButton } from "@/components/ui";
-import { useLocalSearchParams } from "expo-router";
+import { Row, Back, HeaderActions, Text } from "@/components/ui";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useStory } from "@/modules/stories/hooks";
 import { useTeams } from "@/modules/teams/hooks/use-teams";
 import { Alert, Share } from "react-native";
@@ -15,16 +15,21 @@ import { toast } from "sonner-native";
 import { useTerminology } from "@/hooks/use-terminology";
 
 export const Header = () => {
+  const router = useRouter();
   const { storyId } = useLocalSearchParams<{ storyId: string }>();
   const { getTermDisplay } = useTerminology();
   const { workspace } = useCurrentWorkspace();
   const { data: story } = useStory(storyId);
   const { data: teams = [] } = useTeams();
   const team = teams.find((team) => team.id === story?.teamId);
+  const teamCode = team?.code?.trim().toUpperCase();
   const storyReference =
-    team?.code && story?.sequenceId
-      ? `${team.code.trim().toUpperCase()}-${story.sequenceId}`
-      : storyId;
+    teamCode && story?.sequenceId ? `${teamCode}-${story.sequenceId}` : storyId;
+  const displayReference = story
+    ? teamCode
+      ? `${teamCode}-${story.sequenceId}`
+      : `#${story.sequenceId}`
+    : "";
   const storyUrl = `https://${workspace?.slug}.fortyone.app/work/${encodeURIComponent(storyReference)}`;
 
   const archiveMutation = useArchiveStoryMutation();
@@ -175,15 +180,27 @@ export const Header = () => {
   };
 
   return (
-    <Row className="mb-4" justify="between" align="center" asContainer>
+    <Row
+      style={{ minHeight: 60, paddingVertical: 6, gap: 8 }}
+      justify="between"
+      align="center"
+      asContainer
+    >
       <Back />
-      <Text fontSize="lg" fontWeight="semibold">
-        {team?.code}-
-        <Text fontSize="lg" fontWeight="semibold" color="muted">
-          {story?.sequenceId}
-        </Text>
+      <Text
+        accessibilityRole="header"
+        fontWeight="semibold"
+        numberOfLines={1}
+        ellipsizeMode="tail"
+        style={{ flex: 1, minWidth: 0, fontSize: 17, lineHeight: 20 }}
+      >
+        {displayReference}
       </Text>
-      <ContextMenuButton actions={getActions()} />
+      <HeaderActions
+        createLabel={`Create ${getTermDisplay("storyTerm")}`}
+        onCreate={() => router.push("/new")}
+        actions={getActions()}
+      />
     </Row>
   );
 };

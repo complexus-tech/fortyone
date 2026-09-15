@@ -35,12 +35,24 @@ export const isStoredSession = (value: unknown): value is StoredSession => {
 // Parse only the one first-party session cookie. Other cookies are never stored
 // or replayed, and SecureStore owns expiry and deletion instead of a native jar.
 export const parseSessionCookie = (
-  header: string | null,
+  header: string | readonly string[] | null,
   apiURL: URL,
   now = Date.now(),
 ) => {
-  if (!header) throw new Error("Sign-in did not return a session cookie.");
-  const [cookie, ...attributes] = header.split(";").map((part) => part.trim());
+  const headers = typeof header === "string" ? [header] : header ?? [];
+  const sessionCookies = headers
+    // iOS may combine Set-Cookie headers, including load-balancer cookies.
+    // A separator introduces another name=value; an Expires date's comma does not.
+    .flatMap((value) => value.split(/,(?=\s*[^=;,\s]+=)/))
+    .map((value) => value.trim())
+    .filter((value) => value.split("=", 1)[0].trim() === SESSION_COOKIE_NAME);
+  if (sessionCookies.length === 0)
+    throw new Error("Sign-in did not return a session cookie.");
+  if (sessionCookies.length !== 1)
+    throw new Error("Sign-in returned multiple session cookies.");
+  const [cookie, ...attributes] = sessionCookies[0]
+    .split(";")
+    .map((part) => part.trim());
   if (
     !cookie.startsWith(`${SESSION_COOKIE_NAME}=`) ||
     !RANDOM_VALUE.test(cookie.slice(SESSION_COOKIE_NAME.length + 1))

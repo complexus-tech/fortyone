@@ -1,82 +1,82 @@
+import { Pressable, View, useWindowDimensions } from "react-native";
+import { useRouter } from "expo-router";
+import { Text } from "@/components/ui";
+import { ScreenHeader } from "@/components/ui/screen-header";
 import { QueryState } from "@/components/ui/query-state";
-import React from "react";
-import { View } from "react-native";
+import { useOverviewStats } from "@/modules/home/hooks/use-overview-stats";
 import { StatCard } from "./stat-card";
 import { OverviewSkeleton } from "./overview-skeleton";
-import type { SFSymbol } from "expo-symbols";
-import { colors } from "@/constants";
-import { Col, Row, Text } from "@/components/ui";
-import { useOverviewStats } from "@/modules/home/hooks/use-overview-stats";
-import { useTerminology, useTheme } from "@/hooks";
 
 export const Overview = () => {
-  const { resolvedTheme } = useTheme();
-  const { getTermDisplay } = useTerminology();
+  const router = useRouter();
+  const { width, fontScale } = useWindowDimensions();
+  const stacked = fontScale >= 1.4 || width < 340;
   const { data: summary, isPending, error, refetch } = useOverviewStats();
-  const storyTerm = getTermDisplay("storyTerm", {
-    variant: "plural",
-    capitalize: true,
-  });
-  if (isPending) {
-    return <OverviewSkeleton />;
-  }
-  if (error)
-    return (
-      <QueryState
-        title="Could not load your overview"
-        message={error.message}
-        onRetry={() => {
-          void refetch();
-        }}
-      />
-    );
-
-  const overviewItems = [
-    {
-      count: summary?.closed,
-      label: `${storyTerm} closed`,
-      icon: "checkmark.circle.fill",
-      iconColor: colors.success,
-    },
-    {
-      count: summary?.overdue,
-      label: `${storyTerm} overdue`,
-      icon: "exclamationmark.circle.fill",
-      iconColor: colors.danger,
-    },
-    {
-      count: summary?.inProgress,
-      label: "In progress",
-      icon: "clock.fill",
-      iconColor: colors.warning,
-    },
-    {
-      count: summary?.assigned,
-      label: "Assigned to you",
-      icon: "person.crop.circle.dashed",
-      iconColor:
-        resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[300],
-    },
-  ];
 
   return (
-    <Col asContainer>
-      <Text color="muted" fontSize="lg" className="mb-4">
-        Here&apos;s what&apos;s happening with your{" "}
-        {getTermDisplay("storyTerm", { variant: "plural" })}.
-      </Text>
-      <Row gap={3} wrap className="mb-6">
-        {overviewItems.map((item) => (
-          <View key={item.label} className="w-[48.5%]">
+    <View>
+      <ScreenHeader
+        title="Your work"
+        trailing={
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="View My Work"
+            onPress={() => router.push("/my-work")}
+            style={{ minHeight: 44, justifyContent: "center", paddingLeft: 12 }}
+          >
+            <Text
+              color="muted"
+              numberOfLines={1}
+              style={{ fontSize: 15, lineHeight: 20 }}
+            >
+              View all
+            </Text>
+          </Pressable>
+        }
+      />
+      {isPending ? (
+        <OverviewSkeleton />
+      ) : error ? (
+        <QueryState
+          title="Could not load your overview"
+          message={error.message}
+          onRetry={() => {
+            void refetch();
+          }}
+        />
+      ) : (
+        <View style={{ paddingHorizontal: 20, gap: 10 }}>
+          <View style={{ flexDirection: stacked ? "column" : "row", gap: 10 }}>
             <StatCard
-              count={item.count}
-              label={item.label}
-              icon={item.icon as SFSymbol}
-              iconColor={item.iconColor}
+              count={summary?.assigned}
+              label="Assigned to you"
+              icon="person-outline"
+              systemImage="person.crop.circle"
+            />
+            <StatCard
+              count={summary?.inProgress}
+              label="In progress"
+              icon="contrast-outline"
+              systemImage="circle.lefthalf.filled"
             />
           </View>
-        ))}
-      </Row>
-    </Col>
+          <View style={{ flexDirection: stacked ? "column" : "row", gap: 10 }}>
+            <StatCard
+              count={summary?.overdue}
+              label="Overdue"
+              icon="alert-circle-outline"
+              systemImage="clock.badge.exclamationmark"
+              attention
+            />
+            <StatCard
+              count={summary?.closed}
+              label="Closed"
+              icon="checkmark-circle-outline"
+              systemImage="checkmark.circle"
+            />
+          </View>
+        </View>
+      )}
+    </View>
   );
 };

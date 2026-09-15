@@ -1,9 +1,10 @@
-import React, { useState } from "react";
-import { Badge, BottomSheetModal, Text as UIText } from "@/components/ui";
+import { PropertyChip } from "./property-chip";
+import React, { useState, useRef } from "react";
+import { BottomSheetModal, Text as UIText } from "@/components/ui";
 import { PriorityIcon } from "@/components/icons";
 import { StoryPriority } from "@/modules/stories/types";
 import { Pressable } from "react-native";
-import { colors } from "@/constants";
+import { themeColors } from "@/constants/colors";
 import { useTheme } from "@/hooks";
 import {
   Button,
@@ -13,22 +14,33 @@ import {
   Spacer,
   Text,
 } from "@expo/ui/swift-ui";
-import { accessibilityLabel, font, frame } from "@expo/ui/swift-ui/modifiers";
+import {
+  accessibilityLabel,
+  buttonStyle,
+  disabled as disabledModifier,
+  font,
+  foregroundStyle,
+  frame,
+} from "@expo/ui/swift-ui/modifiers";
 
 const Item = ({
   priority,
   onPress,
   isSelected,
+  disabled = false,
 }: {
   priority: StoryPriority;
   onPress: () => void;
   isSelected: boolean;
+  disabled?: boolean;
 }) => {
   const { resolvedTheme } = useTheme();
   return (
     <Button
       onPress={onPress}
       modifiers={[
+        buttonStyle("plain"),
+        disabledModifier(disabled),
         accessibilityLabel(`${priority}${isSelected ? ", selected" : ""}`),
       ]}
     >
@@ -36,13 +48,20 @@ const Item = ({
         <RNHostView matchContents>
           <PriorityIcon size={20} priority={priority} />
         </RNHostView>
-        <Text modifiers={[font({ textStyle: "body" })]}>{priority}</Text>
+        <Text
+          modifiers={[
+            font({ textStyle: "body" }),
+            foregroundStyle(themeColors[resolvedTheme].foreground),
+          ]}
+        >
+          {priority}
+        </Text>
         <Spacer />
         {isSelected && (
           <Image
             systemName="checkmark.circle.fill"
             size={17}
-            color={resolvedTheme === "light" ? colors.black : colors.white}
+            color={themeColors[resolvedTheme].foreground}
           />
         )}
       </HStack>
@@ -53,11 +72,35 @@ const Item = ({
 export const PriorityBadge = ({
   priority,
   onPriorityChange,
+  disabled = false,
 }: {
   priority: StoryPriority;
-  onPriorityChange: (priority: StoryPriority) => void;
+  onPriorityChange: (priority: StoryPriority) => Promise<void>;
+  disabled?: boolean;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const pending = useRef(false);
+  const select = (value: StoryPriority) => {
+    if (pending.current) return;
+    pending.current = true;
+    setSaving(true);
+    setError(null);
+    void onPriorityChange(value)
+      .then(() => setIsOpen(false))
+      .catch((cause: unknown) =>
+        setError(
+          cause instanceof Error
+            ? cause.message
+            : "Could not update this property. Try again.",
+        ),
+      )
+      .finally(() => {
+        pending.current = false;
+        setSaving(false);
+      });
+  };
   const priorities: StoryPriority[] = [
     "No Priority",
     "Low",
@@ -68,17 +111,38 @@ export const PriorityBadge = ({
 
   return (
     <>
-      <Pressable onPress={() => setIsOpen(true)}>
-        <Badge color="tertiary">
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Change priority: ${priority}`}
+        disabled={disabled}
+        accessibilityState={{ disabled }}
+        onPress={() => {
+          setError(null);
+          setIsOpen(true);
+        }}
+        style={({ pressed }) => ({
+          minHeight: 44,
+          maxWidth: "100%",
+          minWidth: 0,
+          flexShrink: 1,
+          justifyContent: "center",
+          opacity: pressed ? 0.6 : 1,
+        })}
+      >
+        <PropertyChip color="tertiary">
           <PriorityIcon priority={priority || "No Priority"} />
-          <UIText>{priority || "No Priority"}</UIText>
-        </Badge>
+          <UIText fontSize="sm" numberOfLines={1} style={{ flexShrink: 1 }}>
+            {priority || "No Priority"}
+          </UIText>
+        </PropertyChip>
       </Pressable>
       <BottomSheetModal
         nativeContent
         spacing={24}
         isOpen={isOpen}
-        onClose={() => setIsOpen(false)}
+        onClose={() => {
+          if (!pending.current) setIsOpen(false);
+        }}
         padding={{
           leading: 24,
           trailing: 24,
@@ -86,14 +150,13 @@ export const PriorityBadge = ({
           bottom: 5,
         }}
       >
+        {error && <Text>{error}</Text>}
         {priorities.map((p) => (
           <Item
             key={p}
             priority={p}
-            onPress={() => {
-              onPriorityChange(p);
-              setIsOpen(false);
-            }}
+            disabled={saving}
+            onPress={() => select(p)}
             isSelected={priority === p}
           />
         ))}

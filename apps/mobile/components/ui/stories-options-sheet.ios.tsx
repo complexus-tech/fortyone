@@ -1,238 +1,189 @@
-import React from "react";
-import { BottomSheetModal } from "./bottom-sheet-modal";
-import { ContextMenuButton } from "./context-menu-button";
-import { Text, HStack, Spacer, Button, Image, VStack } from "@expo/ui/swift-ui";
-import { colors } from "@/constants";
+import type { StoriesOptionsSheetProps } from "./stories-options-sheet.shared";
+import { useState } from "react";
+import { useWindowDimensions, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
-  opacity,
+  Button,
+  Divider,
+  HStack,
+  Image,
+  Menu,
+  RNHostView,
+  ScrollView,
+  Spacer,
+  Text,
+  VStack,
+} from "@expo/ui/swift-ui";
+import {
+  accessibilityLabel,
+  buttonStyle,
+  contentShape,
   font,
   foregroundStyle,
-  buttonStyle,
-  tint,
+  frame,
+  onGeometryChange,
+  padding,
+  shapes,
 } from "@expo/ui/swift-ui/modifiers";
-import type {
-  DisplayColumn,
-  StoriesViewOptions,
-} from "@/types/stories-view-options";
-import { useTheme } from "@/hooks";
+import { themeColors } from "@/constants/colors";
+import { useTheme } from "@/hooks/theme";
+import { BottomSheetModal } from "./bottom-sheet-modal";
+import {
+  getStoriesOptionRows,
+  StoriesDisplayOptions,
+} from "./stories-options-sheet.shared";
 
-export const StoriesOptionsSheet = ({
-  isOpened,
-  setIsOpened,
-  viewOptions,
-  setViewOptions,
-  resetViewOptions,
-}: {
-  isOpened: boolean;
-  setIsOpened: (isOpened: boolean) => void;
-  viewOptions: StoriesViewOptions;
-  setViewOptions: (options: Partial<StoriesViewOptions>) => void;
-  resetViewOptions: () => void;
-}) => {
+const SHEET_GUTTER = 20;
+const SHEET_TOP_PADDING = 24;
+const CONTENT_GAP = 24;
+const CONTENT_BOTTOM_PADDING = 20;
+
+export const StoriesOptionsSheet = (props: StoriesOptionsSheetProps) => {
+  const { isOpened, setIsOpened } = props;
   const { resolvedTheme } = useTheme();
-  const displayColumns = viewOptions.displayColumns || [];
-  const groupByOptions = [
-    {
-      label: "Status",
-      onPress: () => setViewOptions({ groupBy: "status" }),
-    },
-    {
-      label: "Priority",
-      onPress: () => setViewOptions({ groupBy: "priority" }),
-    },
-    {
-      label: "Assignee",
-      onPress: () => setViewOptions({ groupBy: "assignee" }),
-    },
-  ];
-
-  const orderByOptions = [
-    {
-      label: "Created",
-      onPress: () => setViewOptions({ orderBy: "created" }),
-    },
-    {
-      label: "Updated",
-      onPress: () => setViewOptions({ orderBy: "updated" }),
-    },
-    {
-      label: "Deadline",
-      onPress: () => setViewOptions({ orderBy: "deadline" }),
-    },
-    {
-      label: "Priority",
-      onPress: () => setViewOptions({ orderBy: "priority" }),
-    },
-  ];
-
-  const orderDirectionOptions = [
-    {
-      label: "Descending",
-      onPress: () => setViewOptions({ orderDirection: "desc" }),
-    },
-    {
-      label: "Ascending",
-      onPress: () => setViewOptions({ orderDirection: "asc" }),
-    },
-  ];
-
-  const toggleDisplayColumn = (column: DisplayColumn) => {
-    setViewOptions({
-      displayColumns: displayColumns.includes(column)
-        ? displayColumns.filter((c) => c !== column)
-        : [...displayColumns, column],
-    });
-  };
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const availableWidth = Math.max(1, windowWidth - SHEET_GUTTER * 2);
+  const [contentSize, setContentSize] = useState({
+    width: availableWidth,
+    menuHeight: 0,
+    propertiesHeight: 0,
+  });
+  const contentHeight =
+    contentSize.menuHeight > 0 && contentSize.propertiesHeight > 0
+      ? Math.ceil(
+          contentSize.menuHeight +
+            CONTENT_GAP +
+            contentSize.propertiesHeight +
+            CONTENT_BOTTOM_PADDING,
+        )
+      : 360;
+  const maximumHeight = Math.max(
+    1,
+    (windowHeight - insets.top - insets.bottom) * 0.85 - SHEET_TOP_PADDING,
+  );
+  const rows = getStoriesOptionRows(props);
+  const isDark = resolvedTheme === "dark";
+  const foreground = themeColors[isDark ? "dark" : "light"].foreground;
+  const muted = themeColors[isDark ? "dark" : "light"].textMuted;
 
   return (
     <BottomSheetModal
       nativeContent
       isOpen={isOpened}
       onClose={() => setIsOpened(false)}
-      spacing={40}
+      spacing={0}
+      padding={{
+        leading: SHEET_GUTTER,
+        trailing: SHEET_GUTTER,
+        top: SHEET_TOP_PADDING,
+        bottom: 0,
+      }}
     >
-      <VStack spacing={20}>
-        <HStack>
-          <Text modifiers={[font({ size: 15, weight: "medium" })]}>
-            Grouping
-          </Text>
-          <Spacer />
-          <ContextMenuButton actions={groupByOptions} withNoHost>
-            <HStack spacing={3}>
-              <Text
-                modifiers={[
-                  font({ size: 15 }),
-                  foregroundStyle(
-                    resolvedTheme === "light"
-                      ? colors.dark.DEFAULT
-                      : colors.gray[200],
-                  ),
-                ]}
-              >
-                {viewOptions.groupBy === "status"
-                  ? "Status"
-                  : viewOptions.groupBy === "priority"
-                    ? "Priority"
-                    : "Assignee"}
-              </Text>
-              <Image
-                systemName="chevron.up.chevron.down"
-                modifiers={[opacity(0.6)]}
-                color={
-                  resolvedTheme === "light"
-                    ? colors.dark.DEFAULT
-                    : colors.gray[200]
-                }
-                size={11}
-              />
-            </HStack>
-          </ContextMenuButton>
-        </HStack>
-        <HStack>
-          <Text modifiers={[font({ size: 15, weight: "medium" })]}>
-            Ordering
-          </Text>
-          <Spacer />
-          <ContextMenuButton actions={orderByOptions} withNoHost>
-            <HStack spacing={3}>
-              <Text
-                modifiers={[
-                  font({ size: 15 }),
-                  foregroundStyle(
-                    resolvedTheme === "light"
-                      ? colors.dark.DEFAULT
-                      : colors.gray[200],
-                  ),
-                ]}
-              >
-                {viewOptions.orderBy === "created"
-                  ? "Created"
-                  : viewOptions.orderBy === "updated"
-                    ? "Updated"
-                    : viewOptions.orderBy === "deadline"
-                      ? "Deadline"
-                      : "Priority"}
-              </Text>
-              <Image
-                systemName="chevron.up.chevron.down"
-                modifiers={[opacity(0.6)]}
-                color={
-                  resolvedTheme === "light"
-                    ? colors.dark.DEFAULT
-                    : colors.gray[200]
-                }
-                size={11}
-              />
-            </HStack>
-          </ContextMenuButton>
-        </HStack>
-        <HStack>
-          <Text modifiers={[font({ size: 15, weight: "medium" })]}>
-            Order direction
-          </Text>
-          <Spacer />
-          <ContextMenuButton actions={orderDirectionOptions} withNoHost>
-            <HStack spacing={3}>
-              <Text
-                modifiers={[
-                  font({ size: 15 }),
-                  foregroundStyle(
-                    resolvedTheme === "light"
-                      ? colors.dark.DEFAULT
-                      : colors.gray[200],
-                  ),
-                ]}
-              >
-                {viewOptions.orderDirection === "desc"
-                  ? "Descending"
-                  : "Ascending"}
-              </Text>
-              <Image
-                systemName="chevron.up.chevron.down"
-                modifiers={[opacity(0.6)]}
-                color={
-                  resolvedTheme === "light"
-                    ? colors.dark.DEFAULT
-                    : colors.gray[200]
-                }
-                size={11}
-              />
-            </HStack>
-          </ContextMenuButton>
-        </HStack>
-      </VStack>
-      <VStack spacing={16} alignment="leading">
-        <Text modifiers={[opacity(0.65), font({ size: 15, weight: "medium" })]}>
-          Display columns
-        </Text>
-        <HStack spacing={12}>
-          {(["ID", "Status", "Assignee", "Priority"] as const).map((column) => (
-            <Button
-              key={column}
-              label={column}
-              modifiers={[
-                buttonStyle(
-                  displayColumns.includes(column) ? "bordered" : "plain",
-                ),
-                tint(
-                  resolvedTheme === "light"
-                    ? colors.dark.DEFAULT
-                    : colors.gray[200],
-                ),
-              ]}
-              onPress={() => toggleDisplayColumn(column)}
-            />
-          ))}
-        </HStack>
-      </VStack>
-      <HStack>
-        <Spacer />
-        <Button
-          label="Reset defaults"
-          modifiers={[buttonStyle("bordered"), tint(colors.primary)]}
-          onPress={resetViewOptions}
-        />
-      </HStack>
+      <ScrollView
+        showsIndicators={contentHeight > maximumHeight}
+        modifiers={[
+          frame({ minWidth: 0, maxWidth: availableWidth }),
+          frame({ height: Math.min(contentHeight, maximumHeight) }),
+          onGeometryChange(({ width }) => {
+            if (width <= 0) return;
+            setContentSize((current) =>
+              current.width === width ? current : { ...current, width },
+            );
+          }),
+        ]}
+      >
+        <VStack
+          spacing={CONTENT_GAP}
+          alignment="leading"
+          modifiers={[padding({ bottom: CONTENT_BOTTOM_PADDING })]}
+        >
+          <VStack
+            spacing={0}
+            modifiers={[
+              onGeometryChange(({ height }) => {
+                if (height <= 0) return;
+                setContentSize((current) =>
+                  current.menuHeight === height
+                    ? current
+                    : { ...current, menuHeight: height },
+                );
+              }),
+            ]}
+          >
+            {rows.map((row, index) => (
+              <VStack key={row.id} spacing={0}>
+                {index > 0 ? <Divider /> : null}
+                <Menu
+                  modifiers={[
+                    buttonStyle("plain"),
+                    accessibilityLabel(`${row.label}, ${row.value}`),
+                  ]}
+                  label={
+                    <HStack
+                      spacing={16}
+                      modifiers={[
+                        padding({ vertical: 14 }),
+                        frame({ minHeight: 52 }),
+                        contentShape(shapes.rectangle()),
+                      ]}
+                    >
+                      <Text
+                        modifiers={[
+                          font({ textStyle: "callout", weight: "regular" }),
+                          foregroundStyle(foreground),
+                        ]}
+                      >
+                        {row.label}
+                      </Text>
+                      <Spacer />
+                      <HStack spacing={8}>
+                        <Text
+                          modifiers={[
+                            font({ textStyle: "callout", weight: "regular" }),
+                            foregroundStyle(muted),
+                          ]}
+                        >
+                          {row.value}
+                        </Text>
+                        <Image
+                          systemName="chevron.up.chevron.down"
+                          size={12}
+                          color={muted}
+                        />
+                      </HStack>
+                    </HStack>
+                  }
+                >
+                  {row.actions.map((action) => (
+                    <Button
+                      key={action.label}
+                      label={action.label}
+                      systemImage={action.selected ? "checkmark" : undefined}
+                      onPress={action.onPress}
+                    />
+                  ))}
+                </Menu>
+              </VStack>
+            ))}
+          </VStack>
+          <RNHostView matchContents>
+            <View
+              style={{ width: Math.min(contentSize.width, availableWidth) }}
+              onLayout={({ nativeEvent: { layout } }) => {
+                if (layout.height <= 0) return;
+                setContentSize((current) =>
+                  current.propertiesHeight === layout.height
+                    ? current
+                    : { ...current, propertiesHeight: layout.height },
+                );
+              }}
+            >
+              <StoriesDisplayOptions {...props} />
+            </View>
+          </RNHostView>
+        </VStack>
+      </ScrollView>
     </BottomSheetModal>
   );
 };

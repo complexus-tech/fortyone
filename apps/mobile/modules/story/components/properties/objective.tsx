@@ -1,173 +1,65 @@
-import React, { useState, useMemo } from "react";
-import { Badge, Text, Row } from "@/components/ui";
-import { Story } from "@/modules/stories/types";
-import { Pressable, TextInput } from "react-native";
+import type { Story } from "@/modules/stories/types";
+import { useColorScheme } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { SymbolView } from "expo-symbols";
-import { colors } from "@/constants";
-import { truncateText } from "@/lib/utils";
-import { PropertyBottomSheet } from "./property-bottom-sheet";
+import { Text } from "@/components/ui";
+import { themeColors } from "@/constants/colors";
+import { useTerminology } from "@/hooks";
 import { useTeamObjectives } from "@/modules/objectives/hooks/use-objectives";
-import { useTerminology, useTheme } from "@/hooks";
-
-const Item = ({
-  objective,
-  onPress,
-  isSelected,
-}: {
-  objective: { id: string; name: string };
-  onPress: () => void;
-  isSelected: boolean;
-}) => {
-  const { resolvedTheme } = useTheme();
-  return (
-    <Pressable
-      key={objective.id}
-      onPress={onPress}
-      className="flex-row items-center px-4.5 py-3.5 gap-2"
-    >
-      <SymbolView
-        name="square.grid.2x2.fill"
-        size={20}
-        tintColor={
-          resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
-        }
-        fallback={
-          <Ionicons
-            name="grid"
-            size={20}
-            color={
-              resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
-            }
-          />
-        }
-      />
-      <Text className="flex-1">{objective.name}</Text>
-      {isSelected && (
-        <SymbolView
-          name="checkmark.circle.fill"
-          size={20}
-          tintColor={resolvedTheme === "light" ? colors.black : colors.white}
-          fallback={
-            <Ionicons
-              name="checkmark-circle"
-              size={20}
-              color={resolvedTheme === "light" ? colors.black : colors.white}
-            />
-          }
-        />
-      )}
-    </Pressable>
-  );
-};
+import { PropertyChip } from "./property-chip";
+import { PropertyBottomSheet } from "./property-bottom-sheet";
 
 export const ObjectiveBadge = ({
   story,
+  disabled,
   onObjectiveChange,
 }: {
   story: Story;
-  onObjectiveChange: (objectiveId: string | null) => void;
+  disabled?: boolean;
+  onObjectiveChange: (id: string | null) => Promise<void>;
 }) => {
   const { getTermDisplay } = useTerminology();
-  const { resolvedTheme } = useTheme();
-  const { data: objectives = [] } = useTeamObjectives(story.teamId);
-  const [searchQuery, setSearchQuery] = useState("");
-  const currentObjective = objectives.find((o) => o.id === story.objectiveId);
-  const iconColor =
-    resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
-
-  const filteredObjectives = useMemo(() => {
-    let filtered = objectives;
-
-    if (searchQuery.trim()) {
-      filtered = filtered.filter((objective) =>
-        objective.name.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-
-    // Limit to maximum 8 objectives
-    return filtered.slice(0, 8);
-  }, [objectives, searchQuery]);
-
+  const dark = useColorScheme() === "dark";
+  const {
+    data: items = [],
+    isPending,
+    error,
+    refetch,
+  } = useTeamObjectives(story.teamId);
+  const current = items.find((item) => item.id === story.objectiveId);
+  const title = getTermDisplay("objectiveTerm", { capitalize: true });
+  const icon = (
+    <Ionicons
+      name="grid-outline"
+      size={16}
+      color={themeColors[dark ? "dark" : "light"].textMuted}
+    />
+  );
   return (
     <PropertyBottomSheet
+      title={title}
+      disabled={disabled}
+      loading={isPending}
+      error={error}
+      onRetry={() => {
+        void refetch();
+      }}
       trigger={
-        <Badge color="tertiary">
-          <SymbolView
-            name="square.grid.2x2.fill"
-            size={15}
-            tintColor={iconColor}
-            fallback={<Ionicons name="grid" size={15} color={iconColor} />}
-          />
-          <Text>
-            {truncateText(currentObjective?.name || "Add Objective", 16)}
-          </Text>
-        </Badge>
-      }
-      snapPoints={["93%"]}
-    >
-      <Text className="font-semibold mb-3 text-center">Objective</Text>
-      <Row
-        className="bg-gray-100/60 dark:bg-dark-100 rounded-xl pl-3 pr-2.5 mx-3.5 mb-1"
-        align="center"
-        gap={2}
-      >
-        <SymbolView
-          name="magnifyingglass"
-          size={20}
-          tintColor={
-            resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[200]
-          }
-        />
-        <TextInput
-          className="flex-1 h-11 font-medium text-[16px] dark:text-white"
-          placeholder="Search objectives..."
-          placeholderTextColor={
-            resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[200]
-          }
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          autoFocus
-        />
-        {searchQuery.length > 0 && (
-          <Pressable
-            onPress={() => {
-              setSearchQuery("");
-            }}
-            className="p-1"
+        <PropertyChip>
+          {icon}
+          <Text
+            fontSize="sm"
+            numberOfLines={1}
+            style={{ maxWidth: 150, flexShrink: 1 }}
           >
-            <SymbolView
-              name="xmark.circle.fill"
-              size={20}
-              tintColor={
-                resolvedTheme === "light"
-                  ? colors.gray.DEFAULT
-                  : colors.gray[200]
-              }
-            />
-          </Pressable>
-        )}
-      </Row>
-
-      {filteredObjectives.length > 0 ? (
-        filteredObjectives.map((objective) => (
-          <Item
-            key={objective.id}
-            objective={objective}
-            onPress={() => onObjectiveChange(objective.id)}
-            isSelected={story.objectiveId === objective.id}
-          />
-        ))
-      ) : objectives.length === 0 ? (
-        <Text className="text-center py-8 px-4" color="muted">
-          No {getTermDisplay("objectiveTerm", { variant: "plural" })} available
-        </Text>
-      ) : (
-        <Text className="text-center py-8 px-4" color="muted">
-          No {getTermDisplay("objectiveTerm", { variant: "plural" })} found
-          matching &quot;{searchQuery}&quot;
-        </Text>
-      )}
-    </PropertyBottomSheet>
+            {current?.name || `Add ${title.toLowerCase()}`}
+          </Text>
+        </PropertyChip>
+      }
+      options={items.map((item) => ({ id: item.id, label: item.name, icon }))}
+      selectedIds={story.objectiveId ? [story.objectiveId] : []}
+      onSelect={onObjectiveChange}
+      clearLabel={`No ${title.toLowerCase()}`}
+      onClear={() => onObjectiveChange(null)}
+    />
   );
 };

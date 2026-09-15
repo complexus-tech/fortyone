@@ -1,26 +1,31 @@
-import React from "react";
-import { Avatar, Col, Text } from "@/components/ui";
-import { useProfile } from "@/modules/users/hooks/use-profile";
+import { useRouter } from "expo-router";
+import { ScreenHeader } from "@/components/ui";
+import { GlassIconButton } from "@/components/ui/glass-icon-button";
 
-export const Header = () => {
-  const { data: user } = useProfile();
+export const Header = ({ onClose }: { onClose?: () => void }) => {
+  const router = useRouter();
+
+  const close = () => {
+    if (onClose) {
+      onClose();
+      return;
+    }
+    if (router.canGoBack()) router.back();
+    else router.replace("/");
+  };
+
   return (
-    <Col asContainer justify="center" align="center" className="mb-6">
-      <Avatar
-        name={user?.fullName || user?.username}
-        className="size-24"
-        textClassName="text-xl"
-        src={user?.avatarUrl}
-      />
-      <Text
-        fontSize="2xl"
-        fontWeight="semibold"
-        className="mt-4 mb-1"
-        numberOfLines={1}
-      >
-        {user?.fullName || user?.username}
-      </Text>
-      <Text color="muted" numberOfLines={1}>{`@${user?.username}`}</Text>
-    </Col>
+    <ScreenHeader
+      title="Settings"
+      compact
+      trailing={
+        <GlassIconButton
+          icon="close"
+          systemImage="xmark"
+          label="Close settings"
+          onPress={close}
+        />
+      }
+    />
   );
 };

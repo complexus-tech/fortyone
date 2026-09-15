@@ -89,14 +89,14 @@ export const Description = ({ story }: { story: DetailedStory }) => {
   const [editing, setEditing] = useState(false);
   const html = getDescriptionHtml(story.descriptionHTML, story.description);
   return (
-    <Col asContainer className="mb-6 mt-2">
+    <Col asContainer align="stretch" className="mb-[12px]">
       {html ? <RichTextViewer html={html} /> : null}
       {!story.deletedAt && (
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={html ? "Edit description" : "Add description"}
           onPress={() => setEditing(true)}
-          className="min-h-11 justify-center py-2"
+          className="min-h-[44px] justify-center py-[4px]"
         >
           <Text color="muted">
             {html ? "Edit description" : "Add description…"}

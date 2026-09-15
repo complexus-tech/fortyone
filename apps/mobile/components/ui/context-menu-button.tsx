@@ -1,6 +1,7 @@
+import type { ContextMenuAction } from "./context-menu.types";
 import React, { useState } from "react";
 import { useTheme } from "@/hooks";
-import { colors } from "@/constants";
+import { themeColors } from "@/constants/colors";
 import {
   Pressable,
   ScrollView,
@@ -12,55 +13,42 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { BottomSheetModal } from "./bottom-sheet-modal";
 
-type ContextMenuAction = {
-  systemImage?: string;
-  label: string;
-  onPress: () => void;
-  color?: string;
-};
-
 type ContextMenuButtonProps = {
   actions: ContextMenuAction[];
   children?: React.ReactNode;
   withNoHost?: boolean;
   hostStyle?: StyleProp<ViewStyle>;
+  menuLabel?: string;
 };
 
-const Menu = ({ actions, children }: ContextMenuButtonProps) => {
+const Menu = ({
+  actions,
+  children,
+  menuLabel = "More options",
+}: ContextMenuButtonProps) => {
   const { resolvedTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
-  const foreground =
-    resolvedTheme === "light" ? colors.dark[50] : colors.gray[200];
+  const theme = themeColors[resolvedTheme];
+  const foreground = theme.foreground;
   return (
     <>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="More options"
+        accessibilityLabel={menuLabel}
         accessibilityState={{
           expanded: isOpen,
           disabled: actions.length === 0,
         }}
         disabled={actions.length === 0}
         hitSlop={6}
-        style={{
-          width: 40,
-          height: 40,
-          borderRadius: 20,
-          backgroundColor:
-            resolvedTheme === "light"
-              ? "rgba(255, 255, 255, 0.8)"
-              : "rgba(0, 0, 0, 0.8)",
+        style={({ pressed }) => ({
+          width: 44,
+          height: 44,
+          borderRadius: 12,
+          backgroundColor: pressed ? theme.stateActive : "transparent",
           justifyContent: "center",
           alignItems: "center",
-          shadowColor: "#000",
-          shadowOffset: {
-            width: 0,
-            height: 2,
-          },
-          shadowOpacity: 0.1,
-          shadowRadius: 4,
-          elevation: 3,
-        }}
+        })}
         onPress={() => setIsOpen(true)}
       >
         {children ? (
@@ -86,6 +74,7 @@ const Menu = ({ actions, children }: ContextMenuButtonProps) => {
               key={action.label}
               accessibilityRole="button"
               accessibilityLabel={action.label}
+              accessibilityState={{ selected: action.selected }}
               onPress={() => {
                 setIsOpen(false);
                 action.onPress();
@@ -93,12 +82,29 @@ const Menu = ({ actions, children }: ContextMenuButtonProps) => {
               style={({ pressed }) => ({
                 minHeight: 48,
                 paddingVertical: 14,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 12,
                 opacity: pressed ? 0.6 : 1,
               })}
             >
-              <Text style={{ fontSize: 16, color: action.color ?? foreground }}>
+              <Text
+                style={{
+                  flex: 1,
+                  fontSize: 16,
+                  color: action.color ?? foreground,
+                }}
+              >
                 {action.label}
               </Text>
+              {action.selected ? (
+                <Ionicons
+                  accessible={false}
+                  name="checkmark"
+                  size={20}
+                  color={foreground}
+                />
+              ) : null}
             </Pressable>
           ))}
         </ScrollView>
@@ -122,21 +128,22 @@ export const ContextMenuButton = ({
   actions,
   children,
   withNoHost,
+  menuLabel,
   hostStyle = {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
   },
 }: ContextMenuButtonProps) => {
   if (withNoHost) {
     return (
-      <Menu actions={actions} withNoHost={withNoHost}>
+      <Menu actions={actions} withNoHost={withNoHost} menuLabel={menuLabel}>
         {children}
       </Menu>
     );
   }
   return (
     <View style={hostStyle}>
-      <Menu actions={actions} withNoHost={withNoHost}>
+      <Menu actions={actions} withNoHost={withNoHost} menuLabel={menuLabel}>
         {children}
       </Menu>
     </View>

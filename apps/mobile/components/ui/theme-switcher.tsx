@@ -1,7 +1,7 @@
 import React from "react";
 import type { ComponentProps } from "react";
 import { BottomSheetModal } from "./bottom-sheet-modal";
-import { colors } from "@/constants";
+import { themeColors } from "@/constants/colors";
 import { Pressable, View, Text as RNText } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/hooks";
@@ -44,14 +44,14 @@ const ThemeItem = ({
         <Ionicons
           name={theme.icon}
           size={20}
-          color={resolvedTheme === "light" ? "black" : "white"}
+          color={themeColors[resolvedTheme].foreground}
         />
       </View>
       <View style={{ flex: 1 }}>
         <RNText
           style={{
             fontSize: 16,
-            color: resolvedTheme === "light" ? "black" : "white",
+            color: themeColors[resolvedTheme].foreground,
           }}
         >
           {theme.label}
@@ -61,7 +61,7 @@ const ThemeItem = ({
         <Ionicons
           name="checkmark-circle"
           size={18}
-          color={resolvedTheme === "light" ? "black" : "white"}
+          color={themeColors[resolvedTheme].foreground}
         />
       )}
     </Pressable>
@@ -105,10 +105,7 @@ export const ThemeSwitcher = ({
         <RNText
           style={{
             fontWeight: "500",
-            color:
-              resolvedTheme === "light"
-                ? colors.gray.DEFAULT
-                : colors.gray[300],
+            color: themeColors[resolvedTheme].textMuted,
             fontSize: 14,
             marginBottom: 8,
           }}

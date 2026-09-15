@@ -1,7 +1,8 @@
 import React from "react";
 import { Pressable, ActivityIndicator } from "react-native";
 import { Text, Row } from "@/components/ui";
-import { colors } from "@/constants";
+import { themeColors } from "@/constants/colors";
+import { useTheme } from "@/hooks/theme";
 import { useTerminology } from "@/hooks/use-terminology";
 
 type SectionFooterProps = {
@@ -20,6 +21,7 @@ export const SectionFooter = ({
   onLoadMore,
 }: SectionFooterProps) => {
   const { getTermDisplay } = useTerminology();
+  const { resolvedTheme } = useTheme();
 
   if (!hasMore) {
     return null;
@@ -36,7 +38,10 @@ export const SectionFooter = ({
       >
         {isLoading ? (
           <Row align="center" gap={2}>
-            <ActivityIndicator size="small" color={colors.gray.DEFAULT} />
+            <ActivityIndicator
+              size="small"
+              color={themeColors[resolvedTheme].textMuted}
+            />
             <Text fontSize="sm" color="muted">
               Loading...
             </Text>

@@ -1,8 +1,9 @@
+import type { Workspace } from "@/types/workspace";
 import React from "react";
 import { useWindowDimensions } from "react-native";
-import { Avatar } from "./avatar";
+import { Avatar } from "./Avatar";
 import { BottomSheetModal } from "./bottom-sheet-modal";
-import { colors } from "@/constants";
+import { themeColors } from "@/constants/colors";
 import {
   Button,
   HStack,
@@ -21,8 +22,10 @@ import {
   buttonStyle,
   disabled,
   accessibilityLabel,
+  padding,
+  contentShape,
+  shapes,
 } from "@expo/ui/swift-ui/modifiers";
-import { Workspace } from "@/types/workspace";
 import { useWorkspaces, useCurrentWorkspace } from "@/lib/hooks";
 import { useTheme } from "@/hooks";
 import { useSwitchWorkspace } from "@/lib/hooks/use-switch-workspace";
@@ -43,22 +46,24 @@ const WorkspaceItem = ({
   };
 
   const { resolvedTheme } = useTheme();
-  const mutedTextColor =
-    resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
+  const mutedTextColor = themeColors[resolvedTheme].textMuted;
   return (
     <Button
       onPress={handleSwitchWorkspace}
       modifiers={[
         buttonStyle("plain"),
-        frame({ minHeight: 44 }),
+        frame({ minHeight: 68 }),
         disabled(Boolean(pendingId)),
         accessibilityLabel(
           `${workspace.name}, ${isActive ? "current workspace" : workspace.userRole}`,
         ),
       ]}
     >
-      <HStack spacing={8}>
-        <HStack modifiers={[frame({ width: 38, height: 38 })]}>
+      <HStack
+        spacing={12}
+        modifiers={[padding({ vertical: 8 }), contentShape(shapes.rectangle())]}
+      >
+        <HStack modifiers={[frame({ width: 40, height: 40 })]}>
           <RNHostView matchContents>
             <Avatar
               style={{
@@ -67,34 +72,38 @@ const WorkspaceItem = ({
                   : workspace.color,
               }}
               name={workspace.name}
-              className="size-[38px]"
+              className="size-[40px]"
               rounded="xl"
               src={workspace.avatarUrl}
             />
           </RNHostView>
         </HStack>
-        <VStack alignment="leading">
+        <VStack alignment="leading" spacing={3}>
           <Text
-            modifiers={[lineLimit(1), font({ size: 15, weight: "medium" })]}
+            modifiers={[
+              lineLimit(1),
+              font({ textStyle: "callout", weight: "medium" }),
+            ]}
           >
             {workspace.name}
           </Text>
           <Text
             modifiers={[
-              font({ size: 14, weight: "medium" }),
+              lineLimit(1),
+              font({ textStyle: "subheadline", weight: "regular" }),
               foregroundStyle(mutedTextColor),
             ]}
           >
-            {pendingId === workspace.id ? "Switching…" : workspace.userRole}
+            {pendingId === workspace.id
+              ? "Switching…"
+              : `${workspace.slug} · ${workspace.userRole}`}
           </Text>
         </VStack>
         <Spacer />
         {isActive && (
           <Image
-            systemName="checkmark.circle.fill"
-            color={
-              resolvedTheme === "light" ? colors.dark.DEFAULT : colors.gray[200]
-            }
+            systemName="checkmark"
+            color={themeColors[resolvedTheme].foreground}
             size={18}
           />
         )}
@@ -117,33 +126,41 @@ export const WorkspaceSwitcher = ({
   const { resolvedTheme } = useTheme();
   const { data: workspaces = [] } = useWorkspaces();
   const { workspace } = useCurrentWorkspace();
-  const mutedTextColor =
-    resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
+  const mutedTextColor = themeColors[resolvedTheme].textMuted;
   return (
     <BottomSheetModal
       nativeContent
       isOpen={isOpened}
       onClose={() => setIsOpened(false)}
-      spacing={18}
+      spacing={16}
+      padding={{ leading: 20, trailing: 20, top: 32, bottom: 16 }}
     >
-      <HStack>
+      <VStack alignment="leading" spacing={6}>
         <Text
           modifiers={[
-            font({ size: 14, weight: "semibold" }),
+            lineLimit(1),
+            font({ textStyle: "title3", weight: "semibold" }),
+          ]}
+        >
+          Choose a workspace
+        </Text>
+        <Text
+          modifiers={[
+            font({ textStyle: "callout" }),
             foregroundStyle(mutedTextColor),
           ]}
         >
-          Switch Workspace
+          Select the workspace you want to use.
         </Text>
-      </HStack>
+      </VStack>
       <ScrollView
         modifiers={[
           frame({
-            height: Math.min(Math.max(workspaces.length, 1) * 64, height * 0.6),
+            height: Math.min(Math.max(workspaces.length, 1) * 72, height * 0.6),
           }),
         ]}
       >
-        <VStack spacing={18}>
+        <VStack spacing={4}>
           {workspaces.map((wk) => (
             <WorkspaceItem
               key={wk.id}

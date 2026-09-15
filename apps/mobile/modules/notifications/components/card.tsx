@@ -1,5 +1,4 @@
-import React, { useRef, useState } from "react";
-import { Pressable } from "react-native";
+import React, { memo, useRef, useState } from "react";
 import { Row, Col, Text, Avatar } from "@/components/ui";
 import { colors } from "@/constants";
 import type { AppNotification } from "../types";
@@ -16,7 +15,12 @@ import { renderTemplate, renderTemplateJSX } from "../utils/render-template";
 import { useRouter } from "expo-router";
 import { Dot } from "@/components/icons";
 import { useTerminology } from "@/hooks";
-import { useReadNotificationMutation } from "../hooks";
+import { SwipeableRow } from "@/components/ui/swipeable-row";
+import {
+  useReadNotificationMutation,
+  useMarkUnreadMutation,
+  useDeleteMutation,
+} from "../hooks";
 
 const openNotificationDestination = async (
   notification: Pick<AppNotification, "id" | "entityId" | "entityType">,
@@ -53,20 +57,8 @@ const openNotificationDestination = async (
         params: { storyId: destination.storyId },
       });
       break;
-    case "objective":
-      router.push({
-        pathname: "/team/[teamId]/objectives/[objectiveId]",
-        params: {
-          teamId: destination.teamId,
-          objectiveId: destination.objectiveId,
-        },
-      });
-      break;
-    case "sprint":
-      router.push({
-        pathname: "/team/[teamId]/sprints/[sprintId]",
-        params: { teamId: destination.teamId, sprintId: destination.sprintId },
-      });
+    case "teamStories":
+      router.push(destination.href);
       break;
     case "web":
       await openBrowserAsync(destination.url);
@@ -82,14 +74,13 @@ const formatTimeAgo = (timestamp: string) => {
   if (diffInMinutes < 1) return "now";
   if (diffInMinutes < 60) return `${diffInMinutes}m`;
   if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h`;
-  return `${Math.floor(diffInMinutes / 1440)}d`;
+  const days = Math.floor(diffInMinutes / 1440);
+  if (days < 30) return `${days}d`;
+  if (days < 365) return `${Math.floor(days / 30)}mo`;
+  return `${Math.floor(days / 365)}y`;
 };
 
-type NotificationCardProps = AppNotification & {
-  index: number;
-};
-
-export const NotificationCard = ({
+export const NotificationCard = memo(function NotificationCard({
   id,
   title,
   message,
@@ -98,14 +89,23 @@ export const NotificationCard = ({
   readAt,
   createdAt,
   actor,
-}: NotificationCardProps) => {
+}: AppNotification) {
   const router = useRouter();
   const { getTermDisplay } = useTerminology();
   const client = useQueryClient();
   const openingRef = useRef(false);
+  const actionInFlight = useRef(false);
   const [isOpening, setIsOpening] = useState(false);
   // Mark read only after opening a valid destination.
-  const { mutate: readNotification } = useReadNotificationMutation();
+  const readMutation = useReadNotificationMutation();
+  const { mutate: readNotification } = readMutation;
+  const unreadMutation = useMarkUnreadMutation();
+  const deleteMutation = useDeleteMutation();
+  const sessionEpoch = useAuthStore((state) => state.sessionEpoch);
+  const isUpdating =
+    readMutation.isPending ||
+    unreadMutation.isPending ||
+    deleteMutation.isPending;
   const isUnread = !readAt;
   const storyTerm = getTermDisplay("storyTerm");
 
@@ -126,7 +126,7 @@ export const NotificationCard = ({
   );
 
   const handlePress = () => {
-    if (openingRef.current) return;
+    if (openingRef.current || actionInFlight.current) return;
     openingRef.current = true;
     setIsOpening(true);
     const { workspace, sessionEpoch } = useAuthStore.getState();
@@ -159,13 +159,59 @@ export const NotificationCard = ({
       });
   };
 
+  const handleAction = (action: "read" | "unread" | "delete") => {
+    if (
+      openingRef.current ||
+      actionInFlight.current ||
+      useAuthStore.getState().sessionEpoch !== sessionEpoch
+    )
+      return;
+    actionInFlight.current = true;
+    const mutation =
+      action === "read"
+        ? readMutation
+        : action === "unread"
+          ? unreadMutation
+          : deleteMutation;
+    mutation.mutate(id, {
+      onSettled: () => {
+        actionInFlight.current = false;
+      },
+    });
+  };
+
   return (
-    <Pressable
-      className="py-3.5 px-4 active:bg-gray-50 dark:active:bg-dark-200"
+    <SwipeableRow
+      className="px-[20px] py-[16px] active:bg-gray-50 dark:active:bg-dark-200"
       onPress={() => {
         void handlePress();
       }}
-      disabled={isOpening}
+      disabled={isOpening || isUpdating}
+      actionAppearance="flush"
+      actionScope={`${sessionEpoch}:${id}`}
+      actions={[
+        {
+          id: isUnread ? "read" : "unread",
+          label: isUnread ? "Read" : "Unread",
+          accessibilityLabel: isUnread ? "Mark as read" : "Mark as unread",
+          icon: isUnread ? "mail-open-outline" : "mail-unread-outline",
+          backgroundColor: colors.primary,
+          foregroundColor: colors.primaryForeground,
+          disabled: isOpening || isUpdating,
+          onPress: () => handleAction(isUnread ? "read" : "unread"),
+        },
+        {
+          id: "delete",
+          label: "Delete",
+          accessibilityLabel: "Delete notification",
+          icon: "trash-outline",
+          backgroundColor: colors.danger,
+          foregroundColor: colors.dangerForeground,
+          destructive: true,
+          disabled: isOpening || isUpdating,
+          onPress: () => handleAction("delete"),
+        },
+      ]}
       accessibilityRole="button"
       accessibilityLabel={`${isUnread ? "Unread. " : ""}${title}. ${spokenMessage}`}
       accessibilityHint={
@@ -173,42 +219,43 @@ export const NotificationCard = ({
           ? "Opens notification details"
           : "Opens the FortyOne website"
       }
-      accessibilityState={{ busy: isOpening, disabled: isOpening }}
+      accessibilityState={{
+        busy: isOpening || isUpdating,
+        disabled: isOpening || isUpdating,
+      }}
     >
-      <Row align="center" gap={2}>
+      <Row align="start" gap={3}>
         <Avatar
           name={actor?.fullName || actor?.username || "Someone"}
           src={actor?.avatarUrl}
-          className="shrink-0 relative top-0.5"
-          size="lg"
+          className="shrink-0 mt-0.5"
+          size="md"
+          style={{ width: 40, height: 40 }}
         />
         <Col flex={1} className="gap-1">
-          <Row justify="between" align="center" gap={2}>
+          <Row justify="between" align="start" gap={2}>
             <Text
+              className="flex-1"
+              fontWeight="medium"
               color={isUnread ? undefined : "muted"}
-              className="flex-1 mr-2"
-              fontWeight={isUnread ? "medium" : undefined}
               numberOfLines={1}
+              ellipsizeMode="tail"
             >
               {title}
             </Text>
-            <Text
-              fontSize="sm"
-              color={isUnread ? undefined : "muted"}
-              fontWeight={isUnread ? "medium" : undefined}
-              className="shrink-0"
-            >
-              {isOpening ? "Opening…" : formatTimeAgo(createdAt)}
-            </Text>
+            {isUnread ? <Dot color={colors.primary} size={7} /> : null}
           </Row>
-          <Row align="center" justify="between" gap={2}>
-            <Text numberOfLines={1} align="center" className="flex-1">
-              {renderTemplateJSX(messageWithActor, storyTerm)}
-            </Text>
-            {isUnread && <Dot color={colors.primary} size={10} />}
-          </Row>
+          <Text
+            fontSize="sm"
+            color="muted"
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {renderTemplateJSX(messageWithActor, storyTerm)}
+            {` · ${isOpening ? "Opening…" : formatTimeAgo(createdAt)}`}
+          </Text>
         </Col>
       </Row>
-    </Pressable>
+    </SwipeableRow>
   );
-};
+});

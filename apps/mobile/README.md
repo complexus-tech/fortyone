@@ -23,6 +23,8 @@ SENTRY_DISABLE_AUTO_UPLOAD=true pnpm --filter mobile ios
 SENTRY_DISABLE_AUTO_UPLOAD=true pnpm --filter mobile android
 ```
 
+To launch the iPhone 17 Pro simulator, run `pnpm ios26` from the repository root or `apps/mobile` (`pn ios26` if `pn` is your pnpm alias). This local development command disables Sentry uploads and uses Metro port 8082 so another app can keep using port 8081. The iPhone 17 Pro simulator and its iOS runtime must be installed in Xcode.
+
 The native commands generate/build local native projects and require working platform tooling. `web` starts a browser development target, but native authentication and platform behavior must be tested in the development client. Generated `ios/`, `android/`, `.expo/`, and `dist/` output are not source-controlled.
 
 ## Implemented behavior

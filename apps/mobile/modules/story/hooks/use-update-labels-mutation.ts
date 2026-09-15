@@ -1,4 +1,5 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
+import { useSessionMutation } from "@/lib/use-session-mutation";
 import { toast } from "sonner-native";
 import { updateLabelsAction } from "../actions/update-labels";
 import { storyKeys } from "@/constants/keys";
@@ -10,7 +11,7 @@ import {
 export const useUpdateLabelsMutation = () => {
   const client = useQueryClient();
   const queryKey = storyKeys.all;
-  return useMutation({
+  return useSessionMutation({
     mutationFn: ({ storyId, labels }: { storyId: string; labels: string[] }) =>
       updateLabelsAction(storyId, labels),
     onMutate: ({ storyId, labels }) =>

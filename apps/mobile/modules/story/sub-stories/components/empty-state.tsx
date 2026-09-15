@@ -1,7 +1,7 @@
 import React from "react";
 import { Col, Row, Text } from "@/components/ui";
 import { SymbolView } from "expo-symbols";
-import { colors } from "@/constants";
+import { themeColors } from "@/constants/colors";
 import { useTerminology } from "@/hooks/use-terminology";
 import { useTheme } from "@/hooks";
 
@@ -13,8 +13,7 @@ type EmptyStateProps = {
 export const EmptyState = ({ title, message }: EmptyStateProps) => {
   const { resolvedTheme } = useTheme();
   const { getTermDisplay } = useTerminology();
-  const iconColor =
-    resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
+  const iconColor = themeColors[resolvedTheme].textMuted;
 
   const defaultTitle = `No sub ${getTermDisplay("storyTerm", { variant: "plural" })} found`;
   const defaultMessage = `This ${getTermDisplay("storyTerm", { variant: "singular" })} doesn't have any sub ${getTermDisplay("storyTerm", { variant: "plural" })} yet.`;

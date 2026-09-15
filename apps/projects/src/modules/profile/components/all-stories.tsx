@@ -7,10 +7,7 @@ import { StoriesBoard } from "@/components/ui";
 import { StoriesFilterBar } from "@/components/ui/stories-filter-bar";
 import { getGroupedStoryFilterParams } from "@/components/ui/stories-filter-query";
 import { useGroupedStories } from "@/modules/stories/hooks/use-grouped-stories";
-import {
-  hasActiveProfileStoriesFilters,
-  PROFILE_HIDDEN_FILTER_FIELDS,
-} from "./filter-fields";
+import { PROFILE_HIDDEN_FILTER_FIELDS } from "./filter-fields";
 import { useProfile } from "./provider";
 import { Skeleton } from "./skeleton";
 
@@ -25,11 +22,6 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
   );
   const { viewOptions, setViewOptions, filters, resetFilters, setFilters } =
     useProfile();
-  const hasAppliedFilters = hasActiveProfileStoriesFilters(filters);
-  const boardHeightClassName = hasAppliedFilters
-    ? "h-[calc(100dvh-11.3rem)]"
-    : "h-[calc(100dvh-7.7rem)]";
-
   const { data: groupedStories, isPending } = useGroupedStories({
     groupBy: viewOptions.groupBy,
     ...getGroupedStoryFilterParams(filters),
@@ -43,9 +35,13 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
   if (isPending) return <Skeleton layout={layout} />;
 
   return (
-    <Box className="h-[calc(100dvh-7.6rem)]">
-      <Tabs onValueChange={(v) => setTab(v as typeof tab)} value={tab}>
-        <Box className="border-border d/40 sticky top-0 z-10 flex h-[3.7rem] w-full flex-col justify-center border-b-[0.5px] backdrop-blur-lg">
+    <Box className="h-(--app-page-content-height) min-h-0">
+      <Tabs
+        className="flex h-full min-h-0 flex-col"
+        onValueChange={(v) => setTab(v as typeof tab)}
+        value={tab}
+      >
+        <Box className="border-border d/40 sticky top-0 z-10 flex h-[3.7rem] w-full shrink-0 flex-col justify-center border-b-[0.5px] backdrop-blur-lg">
           <Tabs.List>
             <Tabs.Tab value="assigned">Assigned</Tabs.Tab>
             <Tabs.Tab value="created">Created</Tabs.Tab>
@@ -57,18 +53,18 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
           resetFilters={resetFilters}
           setFilters={setFilters}
         />
-        <Tabs.Panel value="assigned">
+        <Tabs.Panel className="min-h-0 flex-1" value="assigned">
           <StoriesBoard
-            className={boardHeightClassName}
+            className="h-full"
             groupedStories={groupedStories}
             layout={layout}
             setViewOptions={setViewOptions}
             viewOptions={viewOptions}
           />
         </Tabs.Panel>
-        <Tabs.Panel value="created">
+        <Tabs.Panel className="min-h-0 flex-1" value="created">
           <StoriesBoard
-            className={boardHeightClassName}
+            className="h-full"
             groupedStories={groupedStories}
             layout={layout}
             setViewOptions={setViewOptions}

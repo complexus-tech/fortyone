@@ -1,63 +1,87 @@
-import React, { useState } from "react";
-import { Avatar, Row, Text, WorkspaceSwitcher } from "@/components/ui";
+import { useState } from "react";
+import { Pressable, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { Avatar, Text, WorkspaceSwitcher } from "@/components/ui";
 import { useProfile } from "@/modules/users/hooks/use-profile";
-import { Pressable } from "react-native";
-import { SymbolView } from "expo-symbols";
-import { useTheme } from "@/hooks";
-import { colors } from "@/constants/colors";
 import { useCurrentWorkspace } from "@/lib/hooks/use-workspaces";
-import { truncateText } from "@/lib/utils";
+import { useTheme } from "@/hooks";
+import { themeColors } from "@/constants/colors";
+import { NewStoryButton } from "./new-story";
+import { GlassIconButton } from "@/components/ui/glass-icon-button";
 
 export const Header = () => {
-  const { data: user } = useProfile();
+  const router = useRouter();
+  const { data: profile } = useProfile();
   const { workspace } = useCurrentWorkspace();
   const { resolvedTheme } = useTheme();
-  const [isWorkspaceSwitcherOpened, setIsWorkspaceSwitcherOpened] =
-    useState(false);
-  const iconColor =
-    resolvedTheme === "light" ? colors.dark.DEFAULT : colors.white;
+  const [switcherOpen, setSwitcherOpen] = useState(false);
+  const muted = themeColors[resolvedTheme].textMuted;
 
   return (
     <>
-      <Row align="end" justify="between" className="mb-5" asContainer>
-        <Pressable onPress={() => setIsWorkspaceSwitcherOpened(true)}>
-          <Row align="center" gap={1}>
-            <Avatar
-              name={workspace?.name}
-              className="size-[34px] mr-0.5"
-              rounded="xl"
-              style={{
-                backgroundColor: workspace?.color,
-              }}
-              src={workspace?.avatarUrl}
-            />
-            <Text fontSize="xl" fontWeight="semibold">
-              {truncateText(workspace?.name, 18)}
-            </Text>
-            <SymbolView
-              name="chevron.down"
-              weight="semibold"
-              size={13}
-              tintColor={iconColor}
-            />
-          </Row>
-        </Pressable>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          paddingHorizontal: 20,
+          minHeight: 64,
+          gap: 8,
+        }}
+      >
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Switch workspace${workspace?.name ? `, ${workspace.name}` : ""}`}
+          onPress={() => setSwitcherOpen(true)}
           style={{
-            zIndex: 1,
+            flex: 1,
+            minWidth: 0,
+            minHeight: 44,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 8,
           }}
         >
           <Avatar
-            name={user?.fullName || user?.username}
-            className="size-[36px]"
-            color={user?.avatarUrl ? "tertiary" : "primary"}
-            src={user?.avatarUrl}
+            name={workspace?.name}
+            src={workspace?.avatarUrl}
+            rounded="md"
+            style={{
+              width: 26,
+              height: 26,
+              backgroundColor: workspace?.avatarUrl
+                ? undefined
+                : workspace?.color,
+            }}
           />
+          <Text
+            numberOfLines={1}
+            style={{
+              flexShrink: 1,
+              fontSize: 18,
+              lineHeight: 24,
+              fontWeight: "600",
+            }}
+          >
+            {workspace?.name || "Workspace"}
+          </Text>
+          <Ionicons name="chevron-down" size={14} color={muted} />
         </Pressable>
-      </Row>
+        <NewStoryButton />
+        <GlassIconButton
+          label="Open settings"
+          onPress={() => router.push("/settings")}
+        >
+          <Avatar
+            name={profile?.fullName || profile?.username}
+            src={profile?.avatarUrl}
+            style={{ width: 30, height: 30 }}
+          />
+        </GlassIconButton>
+      </View>
       <WorkspaceSwitcher
-        isOpened={isWorkspaceSwitcherOpened}
-        setIsOpened={setIsWorkspaceSwitcherOpened}
+        isOpened={switcherOpen}
+        setIsOpened={setSwitcherOpen}
       />
     </>
   );

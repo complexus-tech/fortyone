@@ -15,6 +15,8 @@ import { mergeStoryPages } from "../utils/pages";
 import { StoryRow } from "./story-row";
 import { EmptyState } from "./empty-state";
 import { SectionFooter } from "./section-footer";
+import { GroupHeader } from "./group-header";
+import { getCompletionStatus } from "../utils/quick-actions";
 
 type StoriesBoardProps = {
   groupedStories?: GroupedStoriesResponse | null;
@@ -75,6 +77,13 @@ function GroupedStoriesList({
     () => new Map(teams.map((team) => [team.id, team])),
     [teams],
   );
+  const completionByTeam = useMemo(
+    () =>
+      new Map(
+        teams.map((team) => [team.id, getCompletionStatus(statuses, team.id)]),
+      ),
+    [teams, statuses],
+  );
 
   const sections = groups.map((group) => {
     const queries = requests.flatMap((request, index) =>
@@ -131,11 +140,20 @@ function GroupedStoriesList({
         story={item}
         visibleColumns={visibleColumns}
         status={statusById.get(item.statusId)}
+        completionStatus={completionByTeam.get(item.teamId)}
         assignee={memberById.get(item.assigneeId ?? "")}
         team={teamById.get(item.teamId)}
+        statusInGroupHeader={groupFilters.groupBy === "status"}
       />
     ),
-    [visibleColumns, statusById, memberById, teamById],
+    [
+      visibleColumns,
+      statusById,
+      completionByTeam,
+      memberById,
+      teamById,
+      groupFilters.groupBy,
+    ],
   );
 
   if (isLoading && !groupedStories) return <StoriesListSkeleton />;
@@ -184,15 +202,7 @@ function GroupedStoriesList({
         />
       }
       renderSectionHeader={({ section }) => (
-        <Text
-          accessibilityRole="header"
-          className="px-4.5 pt-3 pb-1"
-          fontSize="sm"
-          fontWeight="semibold"
-          color="muted"
-        >
-          {section.title}
-        </Text>
+        <GroupHeader title={section.title} count={section.totalCount} />
       )}
       renderSectionFooter={({ section }) =>
         section.failed ? (

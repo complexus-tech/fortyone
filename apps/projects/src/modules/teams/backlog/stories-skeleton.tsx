@@ -7,7 +7,7 @@ export const StoriesSkeleton = ({ layout }: { layout: StoriesLayout }) => {
   return (
     <BoardSkeleton
       className={cn({
-        "h-[calc(100dvh-4rem)]": layout === "kanban",
+        "h-(--app-page-content-height)": layout === "kanban",
       })}
       layout={layout}
     />

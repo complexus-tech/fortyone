@@ -67,8 +67,13 @@ const exchangeCode = async (callbackURL: string) => {
   );
   const result = (await response.json()) as ApiResponse<User>;
   if (!result.data?.id) throw new Error("Sign-in did not return an account.");
+  const headers = response.headers;
+  const cookies =
+    typeof headers.getSetCookie === "function"
+      ? headers.getSetCookie()
+      : headers.get("set-cookie");
   const session = {
-    ...parseSessionCookie(response.headers.get("set-cookie"), getApiURL()),
+    ...parseSessionCookie(cookies, getApiURL()),
     apiOrigin: getApiURL().origin,
     userId: result.data.id,
     workspace: null as string | null,

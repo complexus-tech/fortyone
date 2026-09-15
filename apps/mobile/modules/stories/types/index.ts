@@ -62,13 +62,27 @@ export type DetailedStory = Story & {
   relatedId: string | null;
 };
 
+export type StoryActivityUser = {
+  id: string;
+  username: string;
+  fullName: string;
+  avatarUrl: string;
+  isActive: boolean;
+  isSystem: boolean;
+};
+
 export type StoryActivity = {
   id: string;
   storyId: string;
   userId: string;
-  type: "update" | "create";
+  type: "update" | "create" | "link";
   field: string;
   currentValue: string;
+  // Optional for activity pages persisted by earlier mobile versions.
+  user?: StoryActivityUser | null;
+  oldValue?: unknown;
+  newValue?: unknown;
+  reason?: string | null;
   createdAt: string;
 };
 

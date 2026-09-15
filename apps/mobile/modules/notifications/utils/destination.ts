@@ -1,9 +1,9 @@
 import type { AppNotification } from "../types";
+import { teamStoriesHref } from "@/modules/teams/stories/team-story-navigation";
 
 export type NotificationDestination =
   | { type: "story"; storyId: string }
-  | { type: "objective"; objectiveId: string; teamId: string }
-  | { type: "sprint"; sprintId: string; teamId: string }
+  | { type: "teamStories"; href: ReturnType<typeof teamStoriesHref> }
   | { type: "web"; url: string };
 
 export const notificationWebURL = (
@@ -54,9 +54,14 @@ export const resolveNotificationDestination = async (
     if (!entity || entity.id !== notification.entityId || !entity.teamId) {
       throw new Error("This item is no longer available in your workspace.");
     }
-    return notification.entityType === "objective"
-      ? { type: "objective", objectiveId: entity.id, teamId: entity.teamId }
-      : { type: "sprint", sprintId: entity.id, teamId: entity.teamId };
+    return {
+      type: "teamStories",
+      href: teamStoriesHref(
+        notification.entityType === "objective"
+          ? { objectiveId: entity.id, teamId: entity.teamId }
+          : { sprintId: entity.id, teamId: entity.teamId },
+      ),
+    };
   }
   return {
     type: "web",

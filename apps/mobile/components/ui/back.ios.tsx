@@ -1,6 +1,6 @@
 import React from "react";
 import { useRouter } from "expo-router";
-import { colors } from "@/constants";
+import { themeColors } from "@/constants/colors";
 import { useTheme } from "@/hooks";
 import { Host, Button, Image } from "@expo/ui/swift-ui";
 import {
@@ -24,12 +24,12 @@ export const Back = () => {
   };
 
   return (
-    <Host matchContents style={{ width: 40, height: 40 }}>
+    <Host matchContents style={{ width: 44, height: 44 }}>
       <Button
         modifiers={[
           accessibilityLabel("Back"),
           buttonStyle("plain"),
-          frame({ width: 40, height: 40 }),
+          frame({ width: 44, height: 44 }),
           glassEffect({
             glass: {
               interactive: true,
@@ -42,7 +42,7 @@ export const Back = () => {
         <Image
           systemName="chevron.backward"
           size={20}
-          color={resolvedTheme === "light" ? colors.dark[50] : colors.gray[200]}
+          color={themeColors[resolvedTheme].foreground}
         />
       </Button>
     </Host>

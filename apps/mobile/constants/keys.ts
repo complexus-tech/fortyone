@@ -32,6 +32,7 @@ export const memberKeys = {
     return resourceKey("members");
   },
   lists: () => [...memberKeys.all, "list"] as const,
+  maya: () => [...memberKeys.all, "maya"] as const,
   details: () => [...memberKeys.all, "detail"] as const,
   detail: (id: string) => [...memberKeys.details(), id] as const,
   team: (teamId: string) => [...memberKeys.lists(), teamId] as const,

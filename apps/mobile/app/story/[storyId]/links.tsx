@@ -5,7 +5,7 @@ import { Header } from "@/modules/story/components/header";
 
 export default function LinksPage() {
   return (
-    <SafeContainer isFull>
+    <SafeContainer isFull edges={["top", "bottom"]}>
       <Header />
       <Links />
     </SafeContainer>

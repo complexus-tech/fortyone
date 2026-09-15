@@ -11,7 +11,13 @@ import { useEffect } from "react";
 import { SessionQueryProvider } from "@/lib/query-provider";
 import { QueryState } from "@/components/ui/query-state";
 import { KeyboardProvider } from "react-native-keyboard-controller";
-import { AppState, Pressable, Text as NativeText, View } from "react-native";
+import {
+  AppState,
+  Platform,
+  Pressable,
+  Text as NativeText,
+  View,
+} from "react-native";
 import { Text, Button } from "@/components/ui";
 import NetInfo from "@react-native-community/netinfo";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -20,7 +26,7 @@ import { fetchGlobalQueries } from "@/lib/utils";
 import { useTheme } from "@/hooks";
 import { SymbolView } from "expo-symbols";
 import { Ionicons } from "@expo/vector-icons";
-import { colors } from "@/constants";
+import { themeColors } from "@/constants/colors";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { captureAppError, initializeObservability } from "@/lib/observability";
 
@@ -40,16 +46,22 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
         justifyContent: "center",
         padding: 28,
         gap: 16,
-        backgroundColor: "#141414",
+        backgroundColor: themeColors.dark.background,
       }}
     >
       <NativeText
         accessibilityRole="header"
-        style={{ color: "white", fontSize: 24, fontWeight: "600" }}
+        style={{
+          color: themeColors.dark.foreground,
+          fontSize: 24,
+          fontWeight: "600",
+        }}
       >
         Something went wrong
       </NativeText>
-      <NativeText style={{ color: "#d4d4d4", fontSize: 16 }}>
+      <NativeText
+        style={{ color: themeColors.dark.textSecondary, fontSize: 16 }}
+      >
         Please try reopening this screen.
       </NativeText>
       <Pressable
@@ -61,11 +73,15 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
           alignItems: "center",
           justifyContent: "center",
           borderRadius: 12,
-          backgroundColor: "white",
+          backgroundColor: themeColors.dark.backgroundInverse,
         }}
       >
         <NativeText
-          style={{ color: "#141414", fontSize: 16, fontWeight: "600" }}
+          style={{
+            color: themeColors.dark.foregroundInverse,
+            fontSize: 16,
+            fontWeight: "600",
+          }}
         >
           Try again
         </NativeText>
@@ -146,17 +162,25 @@ const RenderApp = () => {
           <Stack.Screen name="story/[storyId]" />
           <Stack.Screen
             name="settings"
-            options={{
-              presentation: "formSheet",
-              gestureDirection: "vertical",
-              animation: "slide_from_bottom",
-              sheetGrabberVisible: true,
-              sheetCornerRadius: 28,
-              sheetExpandsWhenScrolledToEdge: true,
-              sheetElevation: 24,
-              sheetInitialDetentIndex: 0,
-              sheetAllowedDetents: [1],
-            }}
+            options={
+              Platform.OS === "ios"
+                ? {
+                    presentation: "transparentModal",
+                    animation: "none",
+                    gestureEnabled: false,
+                    contentStyle: { backgroundColor: "transparent" },
+                  }
+                : {
+                    presentation: "formSheet",
+                    gestureDirection: "vertical",
+                    animation: "slide_from_bottom",
+                    sheetGrabberVisible: true,
+                    sheetExpandsWhenScrolledToEdge: true,
+                    sheetElevation: 24,
+                    sheetInitialDetentIndex: 0,
+                    sheetAllowedDetents: [0.8, 1],
+                  }
+            }
           />
           <Stack.Screen
             name="new"
@@ -164,12 +188,12 @@ const RenderApp = () => {
               presentation: "formSheet",
               gestureDirection: "vertical",
               animation: "slide_from_bottom",
-              sheetGrabberVisible: true,
+              sheetGrabberVisible: false,
               sheetCornerRadius: 28,
               sheetExpandsWhenScrolledToEdge: true,
               sheetElevation: 24,
               sheetInitialDetentIndex: 0,
-              sheetAllowedDetents: [0.95],
+              sheetAllowedDetents: [1],
             }}
           />
         </Stack.Protected>
@@ -184,8 +208,7 @@ const RenderApp = () => {
 
 export default function RootLayout() {
   const { resolvedTheme } = useTheme();
-  const iconColor =
-    resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
+  const iconColor = themeColors[resolvedTheme].textMuted;
 
   const userId = useAuthStore((state) => state.userId);
   const workspace = useAuthStore((state) => state.workspace);
@@ -212,8 +235,7 @@ export default function RootLayout() {
             closeButton
             toastOptions={{
               style: {
-                backgroundColor:
-                  resolvedTheme === "dark" ? colors.dark[200] : colors.white,
+                backgroundColor: themeColors[resolvedTheme].surface,
               },
             }}
             icons={{

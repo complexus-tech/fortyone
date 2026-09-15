@@ -7,4 +7,22 @@ module.exports = defineConfig([
   {
     ignores: ["dist/**", ".expo/**", "ios/**", "android/**", "coverage/**"],
   },
+  {
+    files: ["modules/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "@tanstack/react-query",
+              importNames: ["useMutation"],
+              message:
+                "Use useSessionMutation so writes cannot cross an account or workspace change.",
+            },
+          ],
+        },
+      ],
+    },
+  },
 ]);

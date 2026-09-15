@@ -2,10 +2,11 @@ import React from "react";
 import { View, ViewProps } from "react-native";
 import { Image } from "expo-image";
 import { VariantProps, cva } from "cva";
-import { Text } from "./text";
+import { Text } from "./Text";
 import { cn } from "@/lib/utils";
-import { SymbolView } from "expo-symbols";
-import { colors } from "@/constants";
+import { AssigneeIcon } from "../icons/assignee";
+import { getAvatarInitials } from "./avatar-initials";
+import { themeColors } from "@/constants/colors";
 import { useTheme } from "@/hooks";
 
 const avatarVariants = cva(
@@ -22,9 +23,9 @@ const avatarVariants = cva(
         "2xl": "rounded-2xl",
       },
       color: {
-        primary: "text-white bg-primary",
-        secondary: "text-white bg-secondary",
-        tertiary: "bg-gray-100 dark:bg-dark-50",
+        primary: "bg-primary",
+        secondary: "bg-secondary dark:bg-secondary-dark",
+        tertiary: "bg-accent dark:bg-accent-dark",
         naked: "bg-transparent",
       },
       size: {
@@ -40,7 +41,7 @@ const avatarVariants = cva(
       rounded: "full",
       color: "tertiary",
     },
-  }
+  },
 );
 
 export interface AvatarProps
@@ -50,28 +51,6 @@ export interface AvatarProps
   name?: string;
   textClassName?: string;
 }
-
-const getInitials = (name: string) => {
-  if (!name) {
-    return "U";
-  }
-
-  const names = name.split(" ");
-
-  // If single word with 2 or more characters, return first two characters
-  if (names.length === 1 && names[0].length >= 2) {
-    return names[0].slice(0, 2).toUpperCase();
-  }
-
-  let initials = "";
-  initials += names[0][0]; // First initial of the first name
-
-  if (names.length > 1) {
-    initials += names[names.length - 1][0]; // First initial of the last name
-  }
-
-  return initials.toUpperCase();
-};
 
 export const Avatar = ({
   className,
@@ -84,8 +63,7 @@ export const Avatar = ({
   ...props
 }: AvatarProps) => {
   const { resolvedTheme } = useTheme();
-  const iconColor =
-    resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
+  const iconColor = themeColors[resolvedTheme].icon;
   const classes = avatarVariants({ rounded, color, size });
   const asIcon = !src && !name;
 
@@ -96,7 +74,7 @@ export const Avatar = ({
         {
           "bg-transparent dark:bg-transparent": asIcon,
         },
-        className
+        className,
       )}
       {...props}
     >
@@ -119,6 +97,13 @@ export const Avatar = ({
       )}
       {!src && name && (
         <Text
+          color={
+            color === "primary"
+              ? "primaryForeground"
+              : color === "secondary"
+                ? "secondaryForeground"
+                : undefined
+          }
           className={cn(
             {
               "text-[0.6rem]": size === "xs",
@@ -126,16 +111,15 @@ export const Avatar = ({
               "text-md": size === "md",
               "text-lg": size === "lg",
             },
-            textClassName
+            textClassName,
           )}
           fontWeight="semibold"
         >
-          {getInitials(name)}
+          {getAvatarInitials(name)}
         </Text>
       )}
       {asIcon && (
-        <SymbolView
-          name="person.crop.circle.dashed"
+        <AssigneeIcon
           size={
             size === "xs"
               ? 18
@@ -147,7 +131,7 @@ export const Avatar = ({
                     ? 30
                     : 25
           }
-          tintColor={iconColor}
+          color={iconColor}
         />
       )}
     </View>

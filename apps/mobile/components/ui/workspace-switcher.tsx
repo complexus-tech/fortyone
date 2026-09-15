@@ -1,12 +1,18 @@
-import React from "react";
-import { Avatar } from "./avatar";
-import { BottomSheetModal } from "./bottom-sheet-modal";
-import { colors } from "@/constants";
-import { Pressable, View, Text as RNText } from "react-native";
+import type { Workspace } from "@/types/workspace";
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+  useColorScheme,
+  useWindowDimensions,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Workspace } from "@/types/workspace";
+import { Avatar } from "./Avatar";
+import { Text } from "./Text";
+import { BottomSheetModal } from "./bottom-sheet-modal";
+import { themeColors } from "@/constants/colors";
 import { useWorkspaces, useCurrentWorkspace } from "@/lib/hooks";
-import { useTheme } from "@/hooks";
 import { useSwitchWorkspace } from "@/lib/hooks/use-switch-workspace";
 
 const WorkspaceItem = ({
@@ -20,71 +26,55 @@ const WorkspaceItem = ({
   pendingId: string | null;
   onSelect: (workspace: Workspace) => Promise<void>;
 }) => {
-  const handleSwitchWorkspace = () => {
-    if (!pendingId) void onSelect(workspace);
-  };
-
-  const { resolvedTheme } = useTheme();
-  const mutedTextColor =
-    resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
+  const dark = useColorScheme() === "dark";
   return (
     <Pressable
-      onPress={handleSwitchWorkspace}
+      onPress={() => {
+        if (!pendingId) void onSelect(workspace);
+      }}
       disabled={pendingId !== null}
       accessibilityRole="button"
+      accessibilityLabel={`${workspace.name}, ${isActive ? "current workspace" : workspace.userRole}`}
       accessibilityState={{
         disabled: pendingId !== null,
         selected: !!isActive,
         busy: pendingId === workspace.id,
       }}
-      style={{
-        flexDirection: "row",
-        alignItems: "center",
-        paddingVertical: 12,
-        paddingHorizontal: 16,
-        gap: 8,
-      }}
+      style={({ pressed }) => [
+        styles.row,
+        pressed && {
+          backgroundColor: themeColors[dark ? "dark" : "light"].surfaceMuted,
+        },
+      ]}
     >
-      <View style={{ width: 38, height: 38 }}>
-        <Avatar
-          style={{
-            backgroundColor: workspace.avatarUrl ? undefined : workspace.color,
-          }}
-          name={workspace.name}
-          className="size-[38px]"
-          rounded="xl"
-          src={workspace.avatarUrl}
-        />
-      </View>
-      <View style={{ flex: 1 }}>
-        <RNText
-          style={{
-            fontSize: 16,
-            fontWeight: "500",
-            color: resolvedTheme === "light" ? "black" : "white",
-          }}
-        >
+      <Avatar
+        style={{
+          width: 40,
+          height: 40,
+          backgroundColor: workspace.avatarUrl ? undefined : workspace.color,
+        }}
+        name={workspace.name}
+        rounded="xl"
+        src={workspace.avatarUrl}
+      />
+      <View style={styles.details}>
+        <Text fontWeight="medium" numberOfLines={1}>
           {workspace.name}
-        </RNText>
-        <RNText
-          style={{
-            fontSize: 14,
-            fontWeight: "500",
-            color: mutedTextColor,
-          }}
-        >
-          {pendingId === workspace.id ? "Switching…" : workspace.userRole}
-        </RNText>
+        </Text>
+        <Text fontSize="sm" color="muted" numberOfLines={1}>
+          {pendingId === workspace.id
+            ? "Switching…"
+            : `${workspace.slug} · ${workspace.userRole}`}
+        </Text>
       </View>
-      {isActive && (
+      {isActive ? (
         <Ionicons
-          name="checkmark-circle"
+          accessible={false}
+          name="checkmark"
           size={20}
-          color={
-            resolvedTheme === "light" ? colors.dark.DEFAULT : colors.gray[200]
-          }
+          color={themeColors[dark ? "dark" : "light"].foreground}
         />
-      )}
+      ) : null}
     </Pressable>
   );
 };
@@ -96,41 +86,56 @@ export const WorkspaceSwitcher = ({
   isOpened: boolean;
   setIsOpened: (isOpened: boolean) => void;
 }) => {
+  const { height } = useWindowDimensions();
   const { pendingId, selectWorkspace } = useSwitchWorkspace(() =>
     setIsOpened(false),
   );
-  const { resolvedTheme } = useTheme();
   const { data: workspaces = [] } = useWorkspaces();
   const { workspace } = useCurrentWorkspace();
-  const mutedTextColor =
-    resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
   return (
     <BottomSheetModal
       isOpen={isOpened}
       onClose={() => setIsOpened(false)}
-      spacing={18}
+      spacing={16}
+      padding={{ leading: 20, trailing: 20, top: 20, bottom: 16 }}
     >
-      <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
-        <RNText
-          style={{
-            fontWeight: "600",
-            color: mutedTextColor,
-            fontSize: 14,
-            marginBottom: 8,
-          }}
-        >
-          Switch Workspace
-        </RNText>
-        {workspaces.map((wk) => (
+      <View style={styles.heading}>
+        <Text fontSize="xl" fontWeight="semibold">
+          Choose a workspace
+        </Text>
+        <Text fontSize="sm" color="muted">
+          Select the workspace you want to use.
+        </Text>
+      </View>
+      <ScrollView
+        style={{ maxHeight: height * 0.6 }}
+        contentContainerStyle={styles.list}
+        showsVerticalScrollIndicator={false}
+      >
+        {workspaces.map((item) => (
           <WorkspaceItem
-            key={wk.id}
-            isActive={wk.id === workspace?.id}
-            workspace={wk}
+            key={item.id}
+            isActive={item.id === workspace?.id}
+            workspace={item}
             pendingId={pendingId}
             onSelect={selectWorkspace}
           />
         ))}
-      </View>
+      </ScrollView>
     </BottomSheetModal>
   );
 };
+
+const styles = StyleSheet.create({
+  heading: { gap: 6 },
+  list: { gap: 4 },
+  row: {
+    minHeight: 68,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    gap: 12,
+    borderRadius: 10,
+  },
+  details: { flex: 1, minWidth: 0, gap: 3 },
+});

@@ -1,5 +1,7 @@
-import React from "react";
-import { Row, Text, Col } from "@/components/ui";
+import React, { useState } from "react";
+import { View } from "react-native";
+import { PropertyExpandButton } from "./properties/property-expand-button";
+import { Row, Col } from "@/components/ui";
 import { DetailedStory, Story } from "@/modules/stories/types";
 import { useFeatures, useSprintsEnabled } from "@/hooks";
 import { PriorityBadge } from "./properties/priority";
@@ -12,84 +14,111 @@ import { StartDateBadge } from "./properties/start-date";
 import { EndDateBadge } from "./properties/end-date";
 import { useUpdateStoryMutation } from "../hooks/use-update-story-mutation";
 import { useUpdateLabelsMutation } from "../hooks/use-update-labels-mutation";
-import { useBottomSheetModal } from "@gorhom/bottom-sheet";
 import { formatISO } from "date-fns";
 
 export const Properties = ({ story }: { story: Story }) => {
-  const { dismiss } = useBottomSheetModal();
+  const [expanded, setExpanded] = useState(false);
   const sprintsEnabled = useSprintsEnabled(story.teamId);
   const { objectiveEnabled } = useFeatures();
 
   const updateStoryMutation = useUpdateStoryMutation();
   const updateLabelsMutation = useUpdateLabelsMutation();
 
-  const handleUpdate = (data: Partial<DetailedStory>) => {
-    updateStoryMutation.mutate({
+  const disabled =
+    updateStoryMutation.isPending ||
+    updateLabelsMutation.isPending ||
+    Boolean(story.deletedAt);
+
+  const handleUpdate = async (data: Partial<DetailedStory>) => {
+    await updateStoryMutation.mutateAsync({
       storyId: story.id,
       payload: data,
     });
-    dismiss();
   };
 
-  const onLabelsChange = (labelIds: string[]) => {
-    updateLabelsMutation.mutate({
+  const onLabelsChange = async (labelIds: string[]) => {
+    await updateLabelsMutation.mutateAsync({
       storyId: story.id,
       labels: labelIds,
     });
   };
 
   return (
-    <Row asContainer>
-      <Col className="my-4 ">
-        <Text className="mb-2.5 opacity-80">Properties</Text>
-        <Row wrap gap={2}>
+    <Col asContainer align="stretch" className="my-[8px]">
+      <View className="rounded-[20px] bg-surface-muted p-[8px] dark:bg-surface-muted-dark">
+        <Row
+          wrap
+          align="center"
+          style={{ columnGap: 4, rowGap: 0, minWidth: 0, maxWidth: "100%" }}
+        >
           <StatusBadge
+            disabled={disabled}
             story={story}
             onStatusChange={(statusId) => handleUpdate({ statusId })}
           />
           <PriorityBadge
+            disabled={disabled}
             priority={story.priority || "No Priority"}
             onPriorityChange={(priority) => handleUpdate({ priority })}
           />
           <AssigneeBadge
+            disabled={disabled}
             story={story}
             onAssigneeChange={(assigneeId) => handleUpdate({ assigneeId })}
           />
-          <LabelsBadge story={story} onLabelsChange={onLabelsChange} />
-          {sprintsEnabled && (
+          {(expanded || Boolean(story.labels?.length)) && (
+            <LabelsBadge
+              disabled={disabled}
+              story={story}
+              onLabelsChange={onLabelsChange}
+            />
+          )}
+          {sprintsEnabled && (expanded || story.sprintId) && (
             <SprintBadge
+              disabled={disabled}
               story={story}
               onSprintChange={(sprintId) => handleUpdate({ sprintId })}
             />
           )}
-          {objectiveEnabled && (
+          {objectiveEnabled && (expanded || story.objectiveId) && (
             <ObjectiveBadge
+              disabled={disabled}
               story={story}
               onObjectiveChange={(objectiveId) => handleUpdate({ objectiveId })}
             />
           )}
-          <StartDateBadge
-            story={story}
-            onStartDateChange={(startDate) =>
-              handleUpdate({
-                startDate: startDate
-                  ? formatISO(startDate, { representation: "date" })
-                  : null,
-              })
-            }
-          />
-          <EndDateBadge
-            story={story}
-            onEndDateChange={(endDate) =>
-              handleUpdate({
-                endDate: endDate
-                  ? formatISO(endDate, { representation: "date" })
-                  : null,
-              })
-            }
+          {(expanded || story.startDate) && (
+            <StartDateBadge
+              disabled={disabled}
+              story={story}
+              onStartDateChange={(startDate) =>
+                handleUpdate({
+                  startDate: startDate
+                    ? formatISO(startDate, { representation: "date" })
+                    : null,
+                })
+              }
+            />
+          )}
+          {(expanded || story.endDate) && (
+            <EndDateBadge
+              disabled={disabled}
+              story={story}
+              onEndDateChange={(endDate) =>
+                handleUpdate({
+                  endDate: endDate
+                    ? formatISO(endDate, { representation: "date" })
+                    : null,
+                })
+              }
+            />
+          )}
+          <PropertyExpandButton
+            expanded={expanded}
+            onPress={() => setExpanded((value) => !value)}
           />
         </Row>
-      </Col>
-    </Row>
+      </View>
+    </Col>
   );
 };

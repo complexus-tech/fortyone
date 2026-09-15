@@ -2,7 +2,7 @@ import React from "react";
 import { View, Modal, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/hooks";
-import { colors } from "@/constants";
+import { themeColors } from "@/constants/colors";
 
 type BottomSheetModalProps = {
   isOpen: boolean;
@@ -52,8 +52,7 @@ export const BottomSheetModal = ({
         <View
           accessibilityViewIsModal
           style={{
-            backgroundColor:
-              resolvedTheme === "dark" ? colors.dark[100] : colors.white,
+            backgroundColor: themeColors[resolvedTheme].popover,
             maxHeight: "85%",
             borderTopLeftRadius: 20,
             borderTopRightRadius: 20,
@@ -71,7 +70,7 @@ export const BottomSheetModal = ({
                 width: 36,
                 height: 4,
                 borderRadius: 2,
-                backgroundColor: colors.gray[300],
+                backgroundColor: themeColors[resolvedTheme].textMuted,
               }}
             />
           ) : null}

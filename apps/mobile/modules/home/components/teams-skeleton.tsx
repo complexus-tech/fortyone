@@ -1,22 +1,22 @@
-import React from "react";
 import { View } from "react-native";
-import { Col, Skeleton } from "@/components/ui";
+import { Skeleton } from "@/components/ui";
 
-export const TeamsSkeleton = () => {
-  return (
-    <Col asContainer>
-      <Skeleton className="h-5 w-24 mb-4" />
-      {Array.from({ length: 3 }).map((_, index) => (
-        <View key={index} className="py-3.5 pl-0.5 min-h-[44px]">
-          <View className="flex-row items-center gap-2 justify-between">
-            <View className="flex-row items-center">
-              <Skeleton className="size-3 rounded-full mr-2" />
-              <Skeleton className="h-4 w-24" />
-            </View>
-            <Skeleton className="size-3" />
-          </View>
-        </View>
-      ))}
-    </Col>
-  );
-};
+export const TeamsSkeleton = () => (
+  <View style={{ paddingHorizontal: 20, paddingTop: 24 }}>
+    <Skeleton style={{ width: 62, height: 16, marginBottom: 6 }} />
+    {[0, 1, 2].map((row) => (
+      <View
+        key={row}
+        style={{
+          minHeight: 56,
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 12,
+        }}
+      >
+        <Skeleton style={{ width: 10, height: 10, borderRadius: 3 }} />
+        <Skeleton style={{ width: 100, height: 18 }} />
+      </View>
+    ))}
+  </View>
+);

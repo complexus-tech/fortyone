@@ -4,3 +4,80 @@
 
 @import "nativewind/theme";
 @import "tailwind-config/mobile-theme";
+
+/* Keep native utility colors aligned with constants/colors.ts. */
+@theme {
+  --color-primary: #f54e00;
+  --color-primary-action: #f54e00;
+  --color-primary-action-dark: #e74000;
+  --color-primary-foreground: #1f0f0a;
+  --color-secondary: #072a4c;
+  --color-secondary-dark: #f3e9e2;
+  --color-secondary-foreground: #f3e9e2;
+  --color-secondary-foreground-dark: #1f0f0a;
+  --color-black: #000000;
+  --color-white: #ffffff;
+  --color-success: #1f8a65;
+  --color-warning: #f54e00;
+  --color-danger: #cf2d56;
+  --color-danger-text-dark: #dd6a87;
+  --color-danger-foreground: #f3e9e2;
+  --color-info: #00bebf;
+  --color-gray: #6c605b;
+  --color-gray-50: #f7f7f4;
+  --color-gray-100: #e5e4e2;
+  --color-gray-200: #dcdbd7;
+  --color-gray-300: #9a938c;
+  --color-gray-400: #8c8480;
+  --color-dark: #14120b;
+  --color-dark-50: #2b2923;
+  --color-dark-100: #201e18;
+  --color-dark-200: #1b1913;
+  --color-dark-300: #14120b;
+
+  /* Explicit dark counterparts work in both native utilities and Expo web. */
+  --color-background: #fefefd;
+  --color-background-dark: #14120b;
+  --color-foreground: #3d1c10;
+  --color-foreground-dark: #f3e9e2;
+  --color-foreground-inverse: #f3e9e2;
+  --color-foreground-inverse-dark: #1f0f0a;
+  --color-background-inverse: #3d1c10;
+  --color-background-inverse-dark: #f3e9e2;
+  --color-surface: #fefefd;
+  --color-surface-dark: #1b1913;
+  --color-surface-elevated: #fefefd;
+  --color-surface-elevated-dark: #201e18;
+  --color-surface-muted: #f7f7f4;
+  --color-surface-muted-dark: #201e18;
+  --color-surface-prominent: #dcdbd7;
+  --color-surface-prominent-dark: #2b2923;
+  --color-popover: #fefefd;
+  --color-popover-dark: #201e18;
+  --color-accent: #ecece9;
+  --color-accent-dark: #2b2923;
+  --color-text-description: rgba(61, 28, 16, 0.85);
+  --color-text-description-dark: rgba(243, 233, 226, 0.85);
+  --color-text-secondary: #4d3f39;
+  --color-text-secondary-dark: rgba(243, 233, 226, 0.64);
+  --color-text-muted: #6c605b;
+  --color-text-muted-dark: rgba(243, 233, 226, 0.6);
+  --color-text-disabled: #8c8480;
+  --color-text-disabled-dark: rgba(243, 233, 226, 0.4);
+  --color-icon: #685a55;
+  --color-icon-dark: rgba(243, 233, 226, 0.6);
+  --color-border: #e5e4e2;
+  --color-border-dark: rgba(243, 233, 226, 0.1);
+  --color-border-strong: #dcdbd7;
+  --color-border-strong-dark: rgba(243, 233, 226, 0.16);
+  --color-input: #e6e5e2;
+  --color-input-dark: rgba(243, 233, 226, 0.08);
+  --color-state-hover: rgba(31, 15, 10, 0.04);
+  --color-state-hover-dark: rgba(243, 233, 226, 0.05);
+  --color-state-active: rgba(31, 15, 10, 0.08);
+  --color-state-active-dark: rgba(243, 233, 226, 0.1);
+  --color-state-selected: rgba(31, 15, 10, 0.12);
+  --color-state-selected-dark: rgba(243, 233, 226, 0.15);
+  --color-skeleton: #e6e5e2;
+  --color-skeleton-dark: #2b2923;
+}

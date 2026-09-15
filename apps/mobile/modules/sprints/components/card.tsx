@@ -1,83 +1,29 @@
-import React from "react";
-import { Sprint } from "../types";
-import { Badge, Col, Row, Text } from "@/components/ui";
-import { SymbolView } from "expo-symbols";
-import { colors } from "@/constants/colors";
-import { format } from "date-fns";
-import { Pressable } from "react-native";
-import { useTheme } from "@/hooks";
-import { useLocalSearchParams, router } from "expo-router";
-
-type SprintStatus = "completed" | "in progress" | "upcoming";
-
-const statusColors = {
-  completed: "tertiary",
-  "in progress": "success",
-  upcoming: "tertiary",
-} as const;
+import type { Sprint } from "../types";
+import { useRouter } from "expo-router";
+import { useTerminology } from "@/hooks/use-terminology";
+import { CollectionRow } from "@/modules/teams/stories/components/collection-row";
+import {
+  formatContextDates,
+  getSprintTiming,
+} from "@/modules/teams/stories/context-dates";
 
 export const Card = ({ sprint }: { sprint: Sprint }) => {
-  const { resolvedTheme } = useTheme();
-  const { teamId } = useLocalSearchParams<{ teamId: string }>();
-  const startDateObj = new Date(sprint.startDate);
-  const endDateObj = new Date(sprint.endDate);
-  const now = new Date();
-
-  // Calculate sprint status
-  let sprintStatus: SprintStatus = "completed";
-  if (startDateObj <= now && endDateObj >= now) {
-    sprintStatus = "in progress";
-  } else if (startDateObj > now) {
-    sprintStatus = "upcoming";
-  }
-
-  const handlePress = () => {
-    router.push(`/team/${teamId}/sprints/${sprint.id}`);
-  };
-
+  const router = useRouter();
+  const { getTermDisplay } = useTerminology();
+  const context = getSprintTiming(sprint.startDate, sprint.endDate);
+  const subtitle = [
+    formatContextDates(sprint.startDate, sprint.endDate),
+    context,
+  ]
+    .filter(Boolean)
+    .join(" · ");
   return (
-    <Pressable
-      className="active:bg-gray-50 dark:active:bg-dark-300"
-      onPress={handlePress}
-    >
-      <Row
-        align="center"
-        justify="between"
-        className="p-4 border-b border-gray-50 dark:border-dark"
-        gap={3}
-      >
-        <Row align="center" gap={3} className="w-8/12">
-          <Row className="bg-gray-100 dark:bg-dark-200 rounded-lg p-1.5">
-            <SymbolView
-              name="play.circle"
-              size={20}
-              weight="bold"
-              tintColor={
-                resolvedTheme === "light"
-                  ? colors.gray.DEFAULT
-                  : colors.gray[300]
-              }
-            />
-          </Row>
-          <Col gap={1}>
-            <Text numberOfLines={1} fontWeight="semibold">
-              {sprint.name}
-            </Text>
-            <Text fontSize="sm" numberOfLines={1}>
-              {format(startDateObj, "MMM d")} → {format(endDateObj, "MMM d")}
-            </Text>
-          </Col>
-        </Row>
-        <Badge color={statusColors[sprintStatus]} rounded="md">
-          <Text
-            fontSize="sm"
-            className="capitalize"
-            color={sprintStatus === "in progress" ? "white" : undefined}
-          >
-            {sprintStatus}
-          </Text>
-        </Badge>
-      </Row>
-    </Pressable>
+    <CollectionRow
+      title={sprint.name}
+      subtitle={subtitle}
+      icon="play-circle-outline"
+      accessibilityHint={`View ${getTermDisplay("storyTerm", { variant: "plural" })}`}
+      onPress={() => router.push(`/team/${sprint.teamId}/sprints/${sprint.id}`)}
+    />
   );
 };

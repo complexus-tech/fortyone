@@ -5,7 +5,7 @@ import { Header } from "@/modules/story/components/header";
 
 export default function SubStoriesPage() {
   return (
-    <SafeContainer isFull>
+    <SafeContainer isFull edges={["top", "bottom"]}>
       <Header />
       <SubStories />
     </SafeContainer>

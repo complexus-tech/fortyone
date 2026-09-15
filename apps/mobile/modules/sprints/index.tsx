@@ -1,29 +1,44 @@
-import { QueryState } from "@/components/ui/query-state";
-import React from "react";
 import { useLocalSearchParams } from "expo-router";
+import { SafeContainer } from "@/components/ui";
+import { QueryState } from "@/components/ui/query-state";
+import { useTerminology } from "@/hooks/use-terminology";
 import { useTeamSprints } from "./hooks";
+import { Header } from "./components/header";
 import { List } from "./components/list";
 
 export const Sprints = () => {
   const { teamId } = useLocalSearchParams<{ teamId: string }>();
+  const { getTermDisplay } = useTerminology();
   const {
-    data: sprints = [],
+    data: items = [],
     isPending,
+    isRefetching,
     error,
     refetch,
   } = useTeamSprints(teamId);
-
-  if (isPending) return <QueryState loading title="Loading sprints" />;
-  if (error)
-    return (
-      <QueryState
-        title="Could not load sprints"
-        message={error.message}
-        onRetry={() => {
-          void refetch();
-        }}
-      />
-    );
-
-  return <List sprints={sprints} />;
+  const term = getTermDisplay("sprintTerm", { variant: "plural" });
+  return (
+    <SafeContainer isFull>
+      <Header />
+      {isPending ? (
+        <QueryState loading title={`Loading ${term}`} />
+      ) : error ? (
+        <QueryState
+          title={`Could not load ${term}`}
+          message={error.message}
+          onRetry={() => {
+            void refetch();
+          }}
+        />
+      ) : (
+        <List
+          sprints={items}
+          refreshing={isRefetching}
+          onRefresh={() => {
+            void refetch();
+          }}
+        />
+      )}
+    </SafeContainer>
+  );
 };

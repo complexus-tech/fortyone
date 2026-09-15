@@ -1,84 +1,42 @@
-import React from "react";
-import { Badge, Text } from "@/components/ui";
+import type { StoryPriority } from "@/modules/stories/types";
+import { Text } from "@/components/ui";
 import { PriorityIcon } from "@/components/icons";
-import { StoryPriority } from "@/modules/stories/types";
-import { Pressable } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { SymbolView } from "expo-symbols";
-import { colors } from "@/constants";
+import { PropertyChip } from "./property-chip";
 import { PropertyBottomSheet } from "./property-bottom-sheet";
-import { useTheme } from "@/hooks";
-
-const Item = ({
-  priority,
-  onPress,
-  isSelected,
-}: {
-  priority: StoryPriority;
-  onPress: () => void;
-  isSelected: boolean;
-}) => {
-  const { resolvedTheme } = useTheme();
-  return (
-    <Pressable
-      key={priority}
-      onPress={onPress}
-      className="flex-row items-center px-4.5 py-4 gap-2"
-    >
-      <PriorityIcon size={20} priority={priority} />
-      <Text className="flex-1">{priority}</Text>
-      {isSelected && (
-        <SymbolView
-          name="checkmark.circle.fill"
-          size={20}
-          tintColor={resolvedTheme === "light" ? colors.black : colors.white}
-          fallback={
-            <Ionicons
-              name="checkmark-circle"
-              size={20}
-              color={resolvedTheme === "light" ? colors.black : colors.white}
-            />
-          }
-        />
-      )}
-    </Pressable>
-  );
-};
-
+const PRIORITIES: StoryPriority[] = [
+  "No Priority",
+  "Low",
+  "Medium",
+  "High",
+  "Urgent",
+];
 export const PriorityBadge = ({
   priority,
+  disabled,
   onPriorityChange,
 }: {
   priority: StoryPriority;
-  onPriorityChange: (priority: StoryPriority) => void;
-}) => {
-  const priorities: StoryPriority[] = [
-    "No Priority",
-    "Low",
-    "Medium",
-    "High",
-    "Urgent",
-  ];
-
-  return (
-    <PropertyBottomSheet
-      trigger={
-        <Badge color="tertiary">
-          <PriorityIcon priority={priority || "No Priority"} />
-          <Text>{priority || "No Priority"}</Text>
-        </Badge>
-      }
-      snapPoints={["35%"]}
-    >
-      <Text className="font-semibold text-center">Priority</Text>
-      {priorities.map((p) => (
-        <Item
-          key={p}
-          priority={p}
-          onPress={() => onPriorityChange(p)}
-          isSelected={priority === p}
-        />
-      ))}
-    </PropertyBottomSheet>
-  );
-};
+  disabled?: boolean;
+  onPriorityChange: (priority: StoryPriority) => Promise<void>;
+}) => (
+  <PropertyBottomSheet
+    title="Priority"
+    searchable={false}
+    disabled={disabled}
+    trigger={
+      <PropertyChip>
+        <PriorityIcon priority={priority} />
+        <Text fontSize="sm" numberOfLines={1} style={{ flexShrink: 1 }}>
+          {priority}
+        </Text>
+      </PropertyChip>
+    }
+    options={PRIORITIES.map((value) => ({
+      id: value,
+      label: value,
+      icon: <PriorityIcon size={20} priority={value} />,
+    }))}
+    selectedIds={[priority]}
+    onSelect={(value) => onPriorityChange(value as StoryPriority)}
+  />
+);

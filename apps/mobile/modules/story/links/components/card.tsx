@@ -3,7 +3,7 @@ import { Linking, Pressable } from "react-native";
 import { Link } from "@/types/link";
 import { Row, Text } from "@/components/ui";
 import { SymbolView } from "expo-symbols";
-import { colors } from "@/constants";
+import { themeColors } from "@/constants/colors";
 import { useTheme } from "@/hooks";
 
 type CardProps = {
@@ -29,9 +29,7 @@ export const Card = ({ link }: CardProps) => {
           name="globe"
           size={20}
           weight="semibold"
-          tintColor={
-            resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
-          }
+          tintColor={themeColors[resolvedTheme].textMuted}
         />
         <Text numberOfLines={1} className="flex-1">
           {link.title || link.url}

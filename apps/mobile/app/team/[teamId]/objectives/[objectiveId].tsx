@@ -1,6 +1,10 @@
-import React from "react";
-import { ObjectiveStories } from "@/modules/objectives/stories";
+import { Redirect, useLocalSearchParams } from "expo-router";
+import { legacyTeamStoriesHref } from "@/modules/teams/stories/team-story-navigation";
 
 export default function ObjectiveDetailPage() {
-  return <ObjectiveStories />;
+  const params = useLocalSearchParams<{
+    teamId: string;
+    objectiveId: string;
+  }>();
+  return <Redirect href={legacyTeamStoriesHref(params, "objective")} />;
 }

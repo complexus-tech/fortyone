@@ -21,9 +21,9 @@ export const ApplicationLayout = ({ children }: { children: ReactNode }) => {
               <Sidebar />
               <SidebarEdgeToggle />
             </Box>
-            <Box className="h-dvh min-w-0 flex-1 md:h-full md:pr-(--app-content-inset) md:pb-(--app-content-inset) md:pl-2">
+            <Box className="h-dvh min-w-0 flex-1 md:h-full md:pl-2">
               <Box
-                className="app-content-canvas-gradient border-border/80 bg-surface-muted/60 dark:bg-surface-muted/40 h-full min-w-0 overflow-hidden md:rounded-2xl md:border-[0.5px]"
+                className="app-content-canvas-gradient border-border/80 bg-surface-muted/60 dark:bg-surface-muted/40 h-full min-w-0 overflow-hidden md:rounded-tl-2xl md:border-l-[0.5px] md:border-t-[0.5px]"
                 data-app-content-canvas
                 data-walkthrough-target={walkthroughTargets.workspaceContent}
               >

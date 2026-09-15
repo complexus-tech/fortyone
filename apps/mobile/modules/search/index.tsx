@@ -1,52 +1,135 @@
 import { QueryState } from "@/components/ui/query-state";
-import React, { useEffect, useState } from "react";
-import { SafeContainer, StoriesSkeleton } from "@/components/ui";
+import React, { useEffect, useMemo, useState } from "react";
+import { ScrollView, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { SafeContainer, StoriesSkeleton, Text } from "@/components/ui";
+import { useFeatures, useTheme, useTerminology } from "@/hooks";
+import { themeColors } from "@/constants/colors";
 import { Header } from "./components/header";
 import { SearchResults } from "./components/search-results";
 import { useSearch } from "./hooks";
-import type { SearchQueryParams } from "./types";
+import { mergeSearchPages } from "./pagination";
 
 import { ObjectivesSkeleton } from "@/modules/objectives/components";
 import {
-  KeyboardAwareScrollView,
   KeyboardToolbar,
   KeyboardController,
+  KeyboardAvoidingView,
 } from "react-native-keyboard-controller";
 
+const keyboardToolbarTheme = {
+  light: {
+    primary: themeColors.light.foreground,
+    disabled: themeColors.light.textDisabled,
+    background: themeColors.light.surfaceMuted,
+    ripple: themeColors.light.stateActive,
+  },
+  dark: {
+    primary: themeColors.dark.foreground,
+    disabled: themeColors.dark.textDisabled,
+    background: themeColors.dark.surfaceMuted,
+    ripple: themeColors.dark.stateActive,
+  },
+};
+
 export const Search = () => {
+  const { resolvedTheme } = useTheme();
+  const { getTermDisplay } = useTerminology();
   const [searchType, setSearchType] = useState<"stories" | "objectives">(
     "stories",
   );
+  const [input, setInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [keyboardToolbarHeight, setKeyboardToolbarHeight] = useState(0);
+  const { objectiveEnabled } = useFeatures();
+  const effectiveType = objectiveEnabled ? searchType : "stories";
+  const trimmedInput = input.trim();
+  const effectiveQuery = trimmedInput ? searchQuery : "";
+  const debouncing = trimmedInput !== effectiveQuery;
+  useEffect(() => {
+    const timer = setTimeout(() => setSearchQuery(trimmedInput), 300);
+    return () => clearTimeout(timer);
+  }, [trimmedInput]);
   const {
-    data: results,
+    data,
+    isFetching,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+    isFetchNextPageError,
     isPending,
     error,
     refetch,
-  } = useSearch({ query: searchQuery, type: searchType });
+  } = useSearch({ query: effectiveQuery, type: effectiveType, pageSize: 20 });
+  const results = useMemo(() => mergeSearchPages(data?.pages), [data?.pages]);
 
   useEffect(() => {
     KeyboardController.preload(); // warms up keyboard before it opens
   }, []);
 
-  const handleSearch = (params: SearchQueryParams) => {
-    setSearchQuery(params.query || "");
-  };
-
   return (
     <SafeContainer isFull>
       <Header
-        onSearch={handleSearch}
-        searchType={searchType}
+        value={input}
+        onChangeText={setInput}
+        onSubmit={() => setSearchQuery(trimmedInput)}
+        searching={Boolean(trimmedInput) && (debouncing || isFetching)}
+        objectivesEnabled={objectiveEnabled}
+        searchType={effectiveType}
         setSearchType={setSearchType}
       />
-      {isPending && searchQuery ? (
-        searchType === "stories" ? (
-          <StoriesSkeleton count={8} />
+      {!trimmedInput ? (
+        <KeyboardAvoidingView
+          automaticOffset
+          behavior="padding"
+          keyboardVerticalOffset={keyboardToolbarHeight}
+          style={{ flex: 1 }}
+        >
+          <ScrollView
+            contentInsetAdjustmentBehavior="automatic"
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{
+              flexGrow: 1,
+              alignItems: "center",
+              paddingHorizontal: 20,
+              paddingVertical: 24,
+            }}
+          >
+            <View style={{ flex: 1 }} />
+            <View
+              className="mb-[16px] size-[48px] items-center justify-center rounded-2xl"
+              style={{
+                backgroundColor: themeColors[resolvedTheme].surfaceMuted,
+              }}
+            >
+              <Ionicons
+                name="search-outline"
+                size={24}
+                color={themeColors[resolvedTheme].textMuted}
+              />
+            </View>
+            <Text fontSize="xl" fontWeight="semibold" className="mb-2">
+              Find your way
+            </Text>
+            <Text color="muted" align="center" style={{ maxWidth: 290 }}>
+              Search {getTermDisplay("storyTerm", { variant: "plural" })}
+              {objectiveEnabled
+                ? ` and ${getTermDisplay("objectiveTerm", { variant: "plural" })}`
+                : ""}{" "}
+              by name or keyword.
+            </Text>
+            <View style={{ flex: 3 }} />
+          </ScrollView>
+        </KeyboardAvoidingView>
+      ) : debouncing || isPending ? (
+        effectiveType === "stories" ? (
+          <StoriesSkeleton count={5} />
         ) : (
-          <ObjectivesSkeleton count={8} />
+          <ObjectivesSkeleton count={5} />
         )
-      ) : error ? (
+      ) : error && !results ? (
         <QueryState
           title="Search could not be completed"
           message={error.message}
@@ -54,19 +137,32 @@ export const Search = () => {
             void refetch();
           }}
         />
+      ) : results ? (
+        <SearchResults
+          key={`${effectiveType}:${effectiveQuery}`}
+          results={results}
+          type={effectiveType}
+          query={effectiveQuery}
+          hasMore={hasNextPage}
+          loadingMore={isFetchingNextPage}
+          error={error}
+          onRetry={() => {
+            void refetch();
+          }}
+          loadMoreError={isFetchNextPageError}
+          onLoadMore={() => {
+            if (!isFetching && hasNextPage) void fetchNextPage();
+          }}
+        />
       ) : null}
-      <KeyboardAwareScrollView
-        contentContainerStyle={{
-          paddingBottom: 80,
-        }}
-        bottomOffset={62}
-        style={{ flex: 1 }}
-      >
-        {!isPending && !error && results ? (
-          <SearchResults results={results} type={searchType} />
-        ) : null}
-      </KeyboardAwareScrollView>
-      <KeyboardToolbar doneText="Close" showArrows={false} />
+      <KeyboardToolbar
+        doneText="Close"
+        showArrows={false}
+        theme={keyboardToolbarTheme}
+        onLayout={({ nativeEvent }) =>
+          setKeyboardToolbarHeight(nativeEvent.layout.height)
+        }
+      />
     </SafeContainer>
   );
 };

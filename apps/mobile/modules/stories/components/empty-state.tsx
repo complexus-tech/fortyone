@@ -1,7 +1,7 @@
 import React from "react";
 import { Col, Row, Text } from "@/components/ui";
 import { SymbolView } from "expo-symbols";
-import { colors } from "@/constants";
+import { themeColors } from "@/constants/colors";
 import { useTerminology } from "@/hooks/use-terminology";
 import { useTheme } from "@/hooks";
 
@@ -27,9 +27,7 @@ export const EmptyState = ({ title, message }: EmptyStateProps) => {
         <SymbolView
           name="checklist.unchecked"
           size={36}
-          tintColor={
-            resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
-          }
+          tintColor={themeColors[resolvedTheme].textMuted}
         />
       </Row>
       <Text fontSize="xl" fontWeight="semibold" className="mb-4 text-center">

@@ -1,36 +1,44 @@
-import { QueryState } from "@/components/ui/query-state";
-import React from "react";
-import { SafeContainer } from "@/components/ui";
-import { Header } from "./components/header";
 import { useLocalSearchParams } from "expo-router";
+import { SafeContainer } from "@/components/ui";
+import { QueryState } from "@/components/ui/query-state";
+import { useTerminology } from "@/hooks/use-terminology";
 import { useTeamObjectives } from "./hooks";
+import { Header } from "./components/header";
 import { List } from "./components/list";
 
 export const Objectives = () => {
   const { teamId } = useLocalSearchParams<{ teamId: string }>();
+  const { getTermDisplay } = useTerminology();
   const {
-    data: objectives = [],
+    data: items = [],
     isPending,
+    isRefetching,
     error,
     refetch,
   } = useTeamObjectives(teamId);
-
-  if (isPending) return <QueryState loading title="Loading objectives" />;
-  if (error)
-    return (
-      <QueryState
-        title="Could not load objectives"
-        message={error.message}
-        onRetry={() => {
-          void refetch();
-        }}
-      />
-    );
-
+  const term = getTermDisplay("objectiveTerm", { variant: "plural" });
   return (
     <SafeContainer isFull>
       <Header />
-      <List objectives={objectives} />
+      {isPending ? (
+        <QueryState loading title={`Loading ${term}`} />
+      ) : error ? (
+        <QueryState
+          title={`Could not load ${term}`}
+          message={error.message}
+          onRetry={() => {
+            void refetch();
+          }}
+        />
+      ) : (
+        <List
+          objectives={items}
+          refreshing={isRefetching}
+          onRefresh={() => {
+            void refetch();
+          }}
+        />
+      )}
     </SafeContainer>
   );
 };

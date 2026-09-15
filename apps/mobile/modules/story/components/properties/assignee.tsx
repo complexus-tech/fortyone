@@ -1,162 +1,69 @@
-import React, { useState, useMemo } from "react";
-import { Badge, Text, Avatar, Row } from "@/components/ui";
-import { Story } from "@/modules/stories/types";
-import { Pressable, TextInput } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { SymbolView } from "expo-symbols";
-import { colors } from "@/constants";
-import { PropertyBottomSheet } from "./property-bottom-sheet";
+import type { Story } from "@/modules/stories/types";
+import { Text, Avatar } from "@/components/ui";
 import { useMembers } from "@/modules/members/hooks/use-members";
-import { truncateText } from "@/lib/utils";
-import { useTheme } from "@/hooks";
-
-const Item = ({
-  member,
-  onPress,
-  isSelected,
-}: {
-  member: {
-    id: string;
-    username: string;
-    fullName?: string;
-    avatarUrl?: string;
-  };
-  onPress: () => void;
-  isSelected: boolean;
-}) => {
-  const { resolvedTheme } = useTheme();
-  return (
-    <Pressable
-      key={member.id}
-      onPress={onPress}
-      className="flex-row items-center px-4.5 py-3.5 gap-2"
-    >
-      <Avatar
-        size="sm"
-        color="primary"
-        name={member.fullName || member.username}
-        src={member.avatarUrl}
-      />
-      <Text className="flex-1">
-        {truncateText(member.fullName || member.username, 16)}
-      </Text>
-      {isSelected && (
-        <SymbolView
-          name="checkmark.circle.fill"
-          size={20}
-          tintColor={resolvedTheme === "light" ? colors.black : colors.white}
-          fallback={
-            <Ionicons
-              name="checkmark-circle"
-              size={20}
-              color={resolvedTheme === "light" ? colors.black : colors.white}
-            />
-          }
-        />
-      )}
-    </Pressable>
-  );
-};
+import { PropertyChip } from "./property-chip";
+import { PropertyBottomSheet } from "./property-bottom-sheet";
+import { memberDisplayName } from "./picker-utils";
 
 export const AssigneeBadge = ({
   story,
+  disabled,
   onAssigneeChange,
 }: {
   story: Story;
-  onAssigneeChange: (assigneeId: string | null) => void;
+  disabled?: boolean;
+  onAssigneeChange: (id: string | null) => Promise<void>;
 }) => {
-  const { resolvedTheme } = useTheme();
-  const { data: members = [] } = useMembers();
-  const eleigibleMembers = members.filter((m) => m.role !== "system");
-  const [searchQuery, setSearchQuery] = useState("");
-  const currentAssignee = members.find((m) => m.id === story.assigneeId);
-
-  const filteredMembers = useMemo(() => {
-    if (!searchQuery.trim()) return eleigibleMembers;
-    return eleigibleMembers.filter((member) =>
-      (member.fullName || member.username)
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase())
-    );
-  }, [eleigibleMembers, searchQuery]);
-
+  const { data: members = [], isPending, error, refetch } = useMembers();
+  const current = members.find((member) => member.id === story.assigneeId);
+  const name = current ? memberDisplayName(current) : "Unassigned";
   return (
     <PropertyBottomSheet
+      title="Assignee"
+      disabled={disabled}
+      loading={isPending}
+      error={error}
+      onRetry={() => {
+        void refetch();
+      }}
       trigger={
-        <Badge color="tertiary" className="pl-1.5">
+        <PropertyChip>
           <Avatar
             size="xs"
-            name={currentAssignee?.fullName || currentAssignee?.username}
-            src={currentAssignee?.avatarUrl}
+            name={current ? name : undefined}
+            src={current?.avatarUrl}
           />
-          <Text>{currentAssignee?.username || "No Assignee"}</Text>
-        </Badge>
-      }
-      snapPoints={["93%"]}
-    >
-      <Text className="font-semibold mb-3 text-center">Assignee</Text>
-      <Row
-        className="bg-gray-100/60 dark:bg-dark-100 rounded-xl pl-3 pr-2.5 mx-3.5 mb-1"
-        align="center"
-        gap={2}
-      >
-        <SymbolView
-          name="magnifyingglass"
-          size={20}
-          tintColor={
-            resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[200]
-          }
-        />
-        <TextInput
-          className="flex-1 h-11 font-medium text-[16px] dark:text-white"
-          placeholder="Search members..."
-          placeholderTextColor={
-            resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[200]
-          }
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          autoFocus
-        />
-        {searchQuery.length > 0 && (
-          <Pressable
-            onPress={() => {
-              setSearchQuery("");
-            }}
-            className="p-1"
+          <Text
+            fontSize="sm"
+            numberOfLines={1}
+            style={{ maxWidth: 150, flexShrink: 1 }}
           >
-            <SymbolView
-              name="xmark.circle.fill"
-              size={20}
-              tintColor={
-                resolvedTheme === "light"
-                  ? colors.gray.DEFAULT
-                  : colors.gray[200]
-              }
+            {name}
+          </Text>
+        </PropertyChip>
+      }
+      options={members
+        .filter(
+          (member) =>
+            member.role !== "system" &&
+            (member.isActive || member.id === story.assigneeId),
+        )
+        .map((member) => ({
+          id: member.id,
+          label: memberDisplayName(member),
+          description: member.email,
+          icon: (
+            <Avatar
+              size="sm"
+              name={memberDisplayName(member)}
+              src={member.avatarUrl}
             />
-          </Pressable>
-        )}
-      </Row>
-
-      {filteredMembers.slice(0, 8).length > 0 ? (
-        filteredMembers
-          .slice(0, 8)
-          .map((member) => (
-            <Item
-              key={member.id}
-              member={member}
-              onPress={() => onAssigneeChange(member.id)}
-              isSelected={story.assigneeId === member.id}
-            />
-          ))
-      ) : eleigibleMembers.length === 0 ? (
-        <Text className="text-center py-8 px-4" color="muted">
-          No members available
-        </Text>
-      ) : (
-        <Text className="text-center py-8 px-4" color="muted">
-          No members found matching &quot;{searchQuery}&quot;
-        </Text>
-      )}
-    </PropertyBottomSheet>
+          ),
+        }))}
+      selectedIds={story.assigneeId ? [story.assigneeId] : []}
+      onSelect={onAssigneeChange}
+      clearLabel="Unassigned"
+      onClear={() => onAssigneeChange(null)}
+    />
   );
 };

@@ -1,11 +1,13 @@
 import React from "react";
 import { Host, BottomSheet, Group, VStack } from "@expo/ui/swift-ui";
 import {
+  foregroundStyle,
   padding as paddingModifier,
   presentationDragIndicator,
 } from "@expo/ui/swift-ui/modifiers";
 import { BottomSheetModal as ReactNativeSheet } from "./bottom-sheet-modal-shared";
 import { useTheme } from "@/hooks";
+import { themeColors } from "@/constants/colors";
 
 type BottomSheetModalProps = {
   isOpen: boolean;
@@ -71,6 +73,7 @@ export const BottomSheetModal = ({
           <VStack
             spacing={spacing}
             modifiers={[
+              foregroundStyle(themeColors[resolvedTheme].foreground),
               paddingModifier({
                 leading: padding.leading,
                 trailing: padding.trailing,

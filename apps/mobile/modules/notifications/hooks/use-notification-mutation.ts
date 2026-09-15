@@ -1,4 +1,5 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
+import { useSessionMutation } from "@/lib/use-session-mutation";
 import { toast } from "sonner-native";
 import { notificationKeys } from "@/constants/keys";
 import { updateNotificationsCache } from "../utils/cache";
@@ -22,7 +23,7 @@ export const useNotificationMutation = <TVariables>({
   const listKey = notificationKeys.lists();
   const unreadKey = notificationKeys.unread();
 
-  return useMutation({
+  return useSessionMutation({
     mutationFn,
     onMutate: async (variables) => {
       await client.cancelQueries({ queryKey: allKey });

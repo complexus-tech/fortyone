@@ -1,6 +1,7 @@
-import React from "react";
-import { Sprints } from "@/modules/sprints";
+import { Redirect, useLocalSearchParams } from "expo-router";
+import { legacyTeamStoriesHref } from "@/modules/teams/stories/team-story-navigation";
 
 export default function SprintsScreen() {
-  return <Sprints />;
+  const params = useLocalSearchParams<{ teamId: string }>();
+  return <Redirect href={legacyTeamStoriesHref(params, "sprint", true)} />;
 }

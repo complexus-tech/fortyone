@@ -26,7 +26,8 @@ export const RichTextViewer = ({ html }: { html: string }) => {
       dom={{
         matchContents: true,
         scrollEnabled: false,
-        style: { backgroundColor: "transparent" },
+        containerStyle: { width: "100%", flex: 0 },
+        style: { backgroundColor: "transparent", minHeight: 1 },
       }}
     />
   );

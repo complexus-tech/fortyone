@@ -1,4 +1,5 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
+import { useSessionMutation } from "@/lib/use-session-mutation";
 import { toast } from "sonner-native";
 import { userKeys } from "@/constants/keys";
 import { updateProfile } from "../actions/update-profile";
@@ -8,13 +9,13 @@ import type { UpdateProfile } from "../actions/update-profile";
 export const useUpdateProfileMutation = () => {
   const queryClient = useQueryClient();
 
-  const mutation = useMutation({
+  const mutation = useSessionMutation({
     mutationFn: (updates: UpdateProfile) => updateProfile(updates),
 
     onMutate: async (updates) => {
       await queryClient.cancelQueries({ queryKey: userKeys.profile() });
       const previousProfile = queryClient.getQueryData<User>(
-        userKeys.profile()
+        userKeys.profile(),
       );
 
       if (previousProfile) {

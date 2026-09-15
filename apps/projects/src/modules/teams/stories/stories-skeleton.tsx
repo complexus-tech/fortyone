@@ -14,7 +14,7 @@ export const StoriesSkeleton = ({
     <BoardSkeleton
       className={cn(
         {
-          "h-[calc(100dvh-4rem)]": layout === "kanban" && !className,
+          "h-(--app-page-content-height)": layout === "kanban" && !className,
         },
         className,
       )}

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { colors } from "../../../constants/colors";
+import { themeColors } from "@/constants/colors";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -9,8 +9,9 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { Text, Badge, Col, Row, Button } from "@/components/ui";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { Text, Badge, Col, Row, IconButton } from "@/components/ui";
+import { Ionicons } from "@expo/vector-icons";
 import { DetailedStory } from "@/modules/stories/types";
 import { differenceInCalendarDays, addDays } from "date-fns";
 import { useDraft } from "@/components/rich-text/use-draft";
@@ -83,76 +84,102 @@ const EditTitle = ({
         if (!saving) onClose();
       }}
     >
-      <SafeAreaView
-        style={{
-          flex: 1,
-          backgroundColor:
-            resolvedTheme === "dark" ? colors.dark.DEFAULT : colors.white,
-        }}
-      >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-          style={{ flex: 1, padding: 20 }}
+      <SafeAreaProvider>
+        <SafeAreaView
+          style={{
+            flex: 1,
+            backgroundColor: themeColors[resolvedTheme].background,
+          }}
         >
-          <Row justify="between" align="center" className="mb-6">
-            <Pressable
-              accessibilityRole="button"
-              disabled={saving}
-              onPress={onClose}
-              className="min-h-11 justify-center"
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
+            style={{ flex: 1, padding: 20 }}
+          >
+            <Row
+              justify="between"
+              align="center"
+              className="mb-[16px] gap-[12px]"
             >
-              <Text>Close</Text>
-            </Pressable>
-            <Text fontSize="lg">Edit title</Text>
-            <Button
-              fullWidth={false}
-              disabled={!draft.ready || !draft.value.title.trim()}
-              loading={saving}
-              onPress={() => void save()}
-            >
-              Save
-            </Button>
-          </Row>
-          {!draft.ready && (
-            <ActivityIndicator accessibilityLabel="Restoring title draft" />
-          )}
-          {draft.ready && (
-            <TextInput
-              accessibilityLabel="Task title"
-              autoFocus
-              multiline
-              value={draft.value.title}
-              editable={!saving}
-              onChangeText={(title) =>
-                draft.update({ ...draft.valueRef.current, title })
-              }
-              style={{
-                fontSize: 28,
-                lineHeight: 34,
-                fontWeight: "600",
-                minHeight: 120,
-                color: resolvedTheme === "dark" ? "white" : "#282620",
+              <IconButton
+                icon="close"
+                label="Close title editor"
+                disabled={saving}
+                onPress={onClose}
+                style={{
+                  borderRadius: 22,
+                  backgroundColor: themeColors[resolvedTheme].surfaceMuted,
+                }}
+              />
+              <Text fontWeight="semibold" className="flex-1 text-center">
+                Edit title
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={saving ? "Saving title" : "Save title"}
+                accessibilityState={{
+                  disabled: !draft.ready || !draft.value.title.trim() || saving,
+                  busy: saving,
+                }}
+                disabled={!draft.ready || !draft.value.title.trim() || saving}
+                onPress={() => void save()}
+                className="size-[44px] items-center justify-center rounded-full bg-gray-50 dark:bg-dark-100 active:opacity-60"
+              >
+                {saving ? (
+                  <ActivityIndicator accessibilityLabel="Saving title" />
+                ) : (
+                  <Ionicons
+                    name="arrow-up"
+                    size={24}
+                    color={
+                      !draft.ready || !draft.value.title.trim()
+                        ? themeColors[resolvedTheme].textDisabled
+                        : themeColors[resolvedTheme].foreground
+                    }
+                  />
+                )}
+              </Pressable>
+            </Row>
+            {!draft.ready && (
+              <ActivityIndicator accessibilityLabel="Restoring title draft" />
+            )}
+            {draft.ready && (
+              <TextInput
+                accessibilityLabel="Task title"
+                autoFocus
+                multiline
+                value={draft.value.title}
+                editable={!saving}
+                onChangeText={(title) =>
+                  draft.update({ ...draft.valueRef.current, title })
+                }
+                style={{
+                  fontSize: 24,
+                  lineHeight: 30,
+                  fontWeight: "600",
+                  minHeight: 120,
+                  color: themeColors[resolvedTheme].foreground,
+                }}
+              />
+            )}
+            {(error || draft.error) && (
+              <Text color="danger" accessibilityRole="alert">
+                {error || draft.error}
+              </Text>
+            )}
+            <DiscardDraftButton
+              onDiscard={async () => {
+                await draft.clear();
+                onClose();
               }}
             />
-          )}
-          {(error || draft.error) && (
-            <Text color="danger" accessibilityRole="alert">
-              {error || draft.error}
-            </Text>
-          )}
-          <DiscardDraftButton
-            onDiscard={async () => {
-              await draft.clear();
-              onClose();
-            }}
-          />
-          <View style={{ marginTop: 16 }}>
-            <Text color="muted" fontSize="sm">
-              Changes are kept as a draft on this device.
-            </Text>
-          </View>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
+            <View style={{ marginTop: 16 }}>
+              <Text color="muted" fontSize="sm">
+                Changes are kept as a draft on this device.
+              </Text>
+            </View>
+          </KeyboardAvoidingView>
+        </SafeAreaView>
+      </SafeAreaProvider>
     </Modal>
   );
 };
@@ -172,7 +199,7 @@ export const Title = ({ story }: { story: DetailedStory }) => {
   };
 
   return (
-    <Col asContainer>
+    <Col asContainer className="pt-[4px]" align="stretch">
       {isDeleted && (
         <Badge color="tertiary" className="mb-3">
           <Text>{getDaysLeft()} days left in bin</Text>
@@ -189,7 +216,11 @@ export const Title = ({ story }: { story: DetailedStory }) => {
         disabled={isDeleted}
         onPress={() => setEditing(true)}
       >
-        <Text fontSize="2xl" fontWeight="semibold">
+        <Text
+          fontSize="2xl"
+          fontWeight="semibold"
+          style={{ fontSize: 24, lineHeight: 31, letterSpacing: -0.5 }}
+        >
           {story.title}
         </Text>
       </Pressable>

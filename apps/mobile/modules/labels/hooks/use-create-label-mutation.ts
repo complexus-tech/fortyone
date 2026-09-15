@@ -1,4 +1,5 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
+import { useSessionMutation } from "@/lib/use-session-mutation";
 import { toast } from "sonner-native";
 import { labelKeys } from "@/constants/keys";
 import type { Label } from "@/types";
@@ -7,13 +8,13 @@ import { createLabel } from "../actions/create-label";
 export const useCreateLabelMutation = () => {
   const queryClient = useQueryClient();
 
-  const mutation = useMutation({
+  const mutation = useSessionMutation({
     mutationFn: createLabel,
 
     onMutate: async (newLabel) => {
       await queryClient.cancelQueries({ queryKey: labelKeys.lists() });
       const previousLabels = queryClient.getQueryData<Label[]>(
-        labelKeys.lists()
+        labelKeys.lists(),
       );
 
       if (previousLabels) {

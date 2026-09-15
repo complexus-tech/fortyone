@@ -1,8 +1,10 @@
 import React, { createContext, useContext, useState, ReactNode } from "react";
 import { View, Pressable, ViewProps } from "react-native";
-import { Text } from "./text";
+import { Text } from "./Text";
 import { Row } from "./row";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/classnames";
+import { themeColors } from "@/constants/colors";
+import { useTheme } from "@/hooks/theme";
 
 type TabsContextValue = {
   activeTab: string;
@@ -56,7 +58,15 @@ type TabsListProps = ViewProps & {
 
 const TabsList = ({ children, ...props }: TabsListProps) => {
   return (
-    <Row gap={1} asContainer className="mb-1" {...props}>
+    <Row
+      gap={1}
+      align="center"
+      wrap
+      asContainer
+      accessibilityRole="tablist"
+      className="mb-[4px]"
+      {...props}
+    >
       {children}
     </Row>
   );
@@ -68,28 +78,58 @@ type TabProps = {
   leftIcon?: ReactNode;
   rightIcon?: ReactNode;
   className?: string;
+  disabled?: boolean;
+  accessibilityLabel?: string;
 };
 
-const Tab = ({ children, value, leftIcon, rightIcon, className }: TabProps) => {
+const Tab = ({
+  children,
+  value,
+  leftIcon,
+  rightIcon,
+  className,
+  disabled = false,
+  accessibilityLabel,
+}: TabProps) => {
   const { activeTab, onTabChange } = useTabsContext();
+  const { resolvedTheme } = useTheme();
   const isActive = activeTab === value;
+  const isDark = resolvedTheme === "dark";
 
   return (
     <Pressable
       accessibilityRole="tab"
-      accessibilityState={{ selected: isActive }}
+      accessibilityLabel={accessibilityLabel}
+      accessibilityState={{ selected: isActive, disabled }}
+      disabled={disabled}
       onPress={() => onTabChange(value)}
       className={cn(
-        "active:bg-gray-50 px-4 dark:active:bg-dark py-[7px] rounded-full flex-row justify-center gap-2",
+        "min-h-[44px] flex-row items-center justify-center gap-[8px] rounded-full px-[16px] py-[10px]",
         {
-          "bg-gray-50 dark:bg-dark-200/80 border dark:border-dark-50/70 border-gray-200/60":
-            isActive,
+          "opacity-40": disabled,
         },
         className,
       )}
+      style={({ pressed }) => ({
+        opacity: disabled ? 0.4 : pressed ? 0.65 : 1,
+        backgroundColor: isActive
+          ? themeColors[resolvedTheme].surfaceElevated
+          : "transparent",
+        boxShadow: isActive
+          ? isDark
+            ? "0 0 0 1px rgba(255, 255, 255, 0.06), 0 3px 12px rgba(0, 0, 0, 0.18)"
+            : "0 3px 16px rgba(0, 0, 0, 0.06)"
+          : undefined,
+      })}
     >
       {leftIcon}
-      <Text color={isActive ? undefined : "muted"}>{children}</Text>
+      <Text
+        fontSize="sm"
+        fontWeight={isActive ? "medium" : "normal"}
+        color={isActive ? undefined : "muted"}
+      >
+        {children}
+      </Text>
       {rightIcon}
     </Pressable>
   );

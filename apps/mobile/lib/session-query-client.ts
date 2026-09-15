@@ -24,15 +24,17 @@ export const createSessionClient = (
 ) => {
   let active = true;
   let disposed = false;
+  const assertCanMutate = () => {
+    if (!active) throw new Error("Your session changed. Please try again.");
+    if (!scope.userId) throw new Error("Sign in before saving changes.");
+    if (!onlineManager.isOnline()) {
+      throw new Error("You are offline. Reconnect before saving changes.");
+    }
+  };
   const key = queryPersistenceKey(scope);
   const client = new QueryClient({
     mutationCache: new MutationCache({
-      onMutate: () => {
-        if (!active) throw new Error("Your session changed. Please try again.");
-        if (!onlineManager.isOnline()) {
-          throw new Error("You are offline. Reconnect before saving changes.");
-        }
-      },
+      onMutate: assertCanMutate,
     }),
     defaultOptions: {
       queries: {
@@ -82,6 +84,8 @@ export const createSessionClient = (
     client,
     persister,
     reset,
+    assertCanMutate,
+    isActive: () => active,
     activate: () => {
       if (!disposed) active = true;
     },

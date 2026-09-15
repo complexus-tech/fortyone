@@ -1,5 +1,12 @@
 import { useState } from "react";
-import { ActivityIndicator, View } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  View,
+  useColorScheme,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { themeColors } from "@/constants/colors";
 import { Button, Text } from "@/components/ui";
 import { RichTextEditor } from "@/components/rich-text/editor";
 import {
@@ -9,6 +16,7 @@ import {
 import { useDraft } from "@/components/rich-text/use-draft";
 import { DiscardDraftButton } from "@/components/rich-text/draft-recovery";
 import { useCreateCommentMutation } from "../hooks/use-create-comment-mutation";
+import { createCommentFinalizer } from "./comment-submission";
 
 const ComposeComment = ({
   storyId,
@@ -23,7 +31,10 @@ const ComposeComment = ({
     isRichTextValue,
   );
   const mutation = useCreateCommentMutation();
-  const [saved, setSaved] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [finalizer] = useState(() =>
+    createCommentFinalizer(() => setSent(true)),
+  );
   if (!draft.ready)
     return (
       <View>
@@ -41,29 +52,30 @@ const ComposeComment = ({
     );
   return (
     <RichTextEditor
-      title="Add comment"
-      saveLabel="Send"
+      title={sent ? "Comment sent" : "Add comment"}
+      saveLabel={sent ? "Finish" : "Send"}
+      readOnly={sent}
       initialHtml={draft.value.html}
       placeholder="Share an update or mention someone…"
-      onDraft={draft.persist}
-      onClose={onClose}
+      onDraft={(value) => finalizer.persistDraft(() => draft.persist(value))}
+      onClose={async () => {
+        await finalizer.close(draft.clear);
+        onClose();
+      }}
       onDiscard={async () => {
-        await draft.clear();
+        await finalizer.discard(draft.clear);
         onClose();
       }}
       onSave={async (value) => {
-        if (!value.text.trim())
-          throw new Error("Write a comment before sending.");
-        // A failed local draft cleanup must not send the comment a second time.
-        if (!saved) {
+        await finalizer.send(async () => {
+          if (!value.text.trim())
+            throw new Error("Write a comment before sending.");
           await mutation.mutateAsync({
             storyId,
             comment: value.html,
             mentions: value.mentions,
           });
-          setSaved(true);
-        }
-        await draft.clear();
+        }, draft.clear);
         onClose();
       }}
     />
@@ -72,11 +84,27 @@ const ComposeComment = ({
 
 export const CommentComposer = ({ storyId }: { storyId: string }) => {
   const [editing, setEditing] = useState(false);
+  const dark = useColorScheme() === "dark";
   return (
-    <View className="my-3">
-      <Button color="tertiary" onPress={() => setEditing(true)}>
-        Add a comment
-      </Button>
+    <View>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Add a comment"
+        onPress={() => setEditing(true)}
+        className="min-h-[48px] flex-row items-center gap-[10px] rounded-full bg-gray-50 px-[16px] py-[10px] active:opacity-60 dark:bg-dark-100"
+        style={{
+          boxShadow: dark
+            ? "0 0 0 1px rgba(255, 255, 255, 0.06)"
+            : "0 2px 16px rgba(0, 0, 0, 0.06)",
+        }}
+      >
+        <Ionicons
+          name="add"
+          size={22}
+          color={themeColors[dark ? "dark" : "light"].textMuted}
+        />
+        <Text color="muted">Write a comment…</Text>
+      </Pressable>
       {editing && (
         <ComposeComment storyId={storyId} onClose={() => setEditing(false)} />
       )}

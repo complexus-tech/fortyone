@@ -1,56 +1,13 @@
-import React from "react";
-import {
-  TouchableOpacity,
-  TouchableOpacityProps,
-  ActivityIndicator,
-} from "react-native";
-import { VariantProps, cva } from "cva";
-import { Text } from "./text";
-import { cn } from "@/lib/utils";
-
-export const buttonVariants = cva(
-  "flex items-center justify-center transition duration-200 ease-linear",
-  {
-    variants: {
-      size: {
-        sm: "px-2 h-[40px]",
-        md: "px-3 h-[44px]",
-        lg: "px-5 h-14",
-      },
-      color: {
-        primary: "bg-primary",
-        invert: "bg-dark dark:bg-white",
-        tertiary: "bg-gray-100/60 dark:bg-dark-100/45",
-      },
-      rounded: {
-        none: "rounded-none",
-        sm: "rounded",
-        md: "rounded-[0.7rem]",
-        lg: "rounded-[0.85rem]",
-        xl: "rounded-3xl",
-        full: "rounded-full",
-      },
-      disabled: {
-        true: "opacity-40",
-        false: "",
-      },
-      loading: {
-        true: "opacity-80",
-        false: "",
-      },
-      fullWidth: {
-        true: "w-full",
-        false: "",
-      },
-    },
-    defaultVariants: {
-      size: "md",
-      rounded: "md",
-      color: "primary",
-      fullWidth: true,
-    },
-  },
-);
+import type { TouchableOpacityProps } from "react-native";
+import type { VariantProps } from "cva";
+import { Children } from "react";
+import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
+import { colors, themeColors } from "@/constants/colors";
+import { useTheme } from "@/hooks/theme";
+import { cn } from "@/lib/utils/classnames";
+import { Text } from "./Text";
+import { TextStyleContext } from "./text-style-context";
+import { buttonVariants } from "./button-variants";
 
 export interface ButtonProps
   extends Omit<TouchableOpacityProps, "disabled">,
@@ -67,54 +24,90 @@ export const Button = ({
   className,
   disabled,
   children,
-  color,
+  color = "primary",
   isDestructive,
   fullWidth,
+  activeOpacity = 0.7,
+  accessibilityState,
+  style,
   ...rest
 }: ButtonProps) => {
+  const { resolvedTheme } = useTheme();
+  const theme = themeColors[resolvedTheme];
   const isDisabled = Boolean(disabled || loading);
-
-  const classes = cn(
-    buttonVariants({
-      size,
-      disabled: isDisabled,
-      loading,
-      rounded,
-      color,
-      fullWidth,
-    }),
-    className,
-  );
+  const textColor =
+    isDestructive && color === "tertiary"
+      ? "danger"
+      : color === "primary"
+        ? "primaryForeground"
+        : color === "invert"
+          ? "inverse"
+          : "foreground";
+  const indicatorColor =
+    textColor === "primaryForeground"
+      ? colors.primaryForeground
+      : textColor === "danger"
+        ? resolvedTheme === "dark"
+          ? colors.dangerTextDark
+          : colors.danger
+        : textColor === "inverse"
+          ? theme.foregroundInverse
+          : theme.foreground;
 
   return (
-    <TouchableOpacity
-      accessibilityRole="button"
-      accessibilityState={{ disabled: isDisabled, busy: Boolean(loading) }}
-      accessibilityLabel={typeof children === "string" ? children : undefined}
-      className={classes}
-      disabled={isDisabled}
-      activeOpacity={0.7}
+    <Pressable
       {...rest}
-    >
-      {loading ? (
-        <ActivityIndicator
-          size="small"
-          className={cn({
-            "text-white": color === "primary",
-            "text-white dark:text-dark": color === "invert",
-          })}
-        />
-      ) : (
-        <Text
-          className={cn({
-            "text-white": color === "primary",
-            "text-white dark:text-dark": color === "invert",
-            "text-danger dark:text-danger": isDestructive,
-          })}
-        >
-          {children}
-        </Text>
+      accessibilityRole="button"
+      accessibilityState={{
+        ...accessibilityState,
+        disabled: isDisabled,
+        busy: Boolean(loading),
+      }}
+      className={cn(
+        buttonVariants({ size, disabled, loading, rounded, color, fullWidth }),
+        className,
       )}
-    </TouchableOpacity>
+      disabled={isDisabled}
+      style={({ pressed }) => [style, pressed && { opacity: activeOpacity }]}
+    >
+      <TextStyleContext.Provider
+        value={{ color: textColor, fontWeight: "medium" }}
+      >
+        <View style={[styles.content, loading && styles.hiddenContent]}>
+          {Children.map(children, (child) =>
+            typeof child === "string" || typeof child === "number" ? (
+              <Text>{child}</Text>
+            ) : (
+              child
+            ),
+          )}
+        </View>
+      </TextStyleContext.Provider>
+      {loading ? (
+        <View pointerEvents="none" style={styles.indicator}>
+          <ActivityIndicator
+            accessible={false}
+            size="small"
+            color={indicatorColor}
+          />
+        </View>
+      ) : null}
+    </Pressable>
   );
 };
+
+const styles = StyleSheet.create({
+  content: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  hiddenContent: { opacity: 0 },
+  indicator: {
+    position: "absolute",
+    inset: 0,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+});

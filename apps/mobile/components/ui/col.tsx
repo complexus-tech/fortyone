@@ -39,7 +39,7 @@ const colVariants = cva("flex-col", {
       none: "flex-none",
     },
     asContainer: {
-      true: "px-4.5",
+      true: "px-[20px]",
     },
   },
   defaultVariants: {
@@ -65,7 +65,7 @@ export const Col = ({
     <View
       className={cn(
         colVariants({ align, justify, gap, flex, asContainer }),
-        className
+        className,
       )}
       {...props}
     >

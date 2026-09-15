@@ -5,6 +5,7 @@ import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client
 import { createMMKV } from "react-native-mmkv";
 import { CACHE_MAX_AGE, createSessionClient } from "./session-query-client";
 import { registerSessionCacheReset } from "./session-cache";
+import { SessionMutationContext } from "./use-session-mutation";
 
 const storage = createMMKV({ id: "fortyone-query-cache" });
 
@@ -43,7 +44,9 @@ export const SessionQueryProvider = ({
         },
       }}
     >
-      {children}
+      <SessionMutationContext.Provider value={session}>
+        {children}
+      </SessionMutationContext.Provider>
     </PersistQueryClientProvider>
   );
 };

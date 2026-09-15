@@ -1,6 +1,7 @@
-import { ActivityIndicator, View } from "react-native";
-import { Button } from "./button";
-import { Text } from "./text";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { colors } from "@/constants/colors";
+import { Button } from "./Button";
+import { Text } from "./Text";
 
 type QueryStateProps = {
   title: string;
@@ -18,18 +19,42 @@ export const QueryState = ({
   retryLabel = "Try again",
 }: QueryStateProps) => (
   <View
-    className="flex-1 items-center justify-center gap-4 px-6 py-8"
+    style={styles.container}
     accessibilityLiveRegion="polite"
+    accessibilityState={{ busy: loading }}
   >
-    {loading ? <ActivityIndicator /> : null}
-    <Text fontWeight="semibold" className="text-center">
+    {loading ? <ActivityIndicator color={colors.primary} /> : null}
+    <Text fontSize="lg" fontWeight="semibold" align="center">
       {title}
     </Text>
     {message ? (
-      <Text color="muted" className="text-center">
+      <Text color="muted" align="center" style={styles.message}>
         {message}
       </Text>
     ) : null}
-    {onRetry ? <Button onPress={onRetry}>{retryLabel}</Button> : null}
+    {onRetry ? (
+      <Button
+        color="tertiary"
+        fullWidth={false}
+        disabled={loading}
+        style={styles.retry}
+        onPress={onRetry}
+      >
+        {retryLabel}
+      </Button>
+    ) : null}
   </View>
 );
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+    paddingHorizontal: 24,
+    paddingVertical: 40,
+  },
+  message: { maxWidth: 320 },
+  retry: { marginTop: 8, minWidth: 120 },
+});

@@ -1,4 +1,5 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
+import { useSessionMutation } from "@/lib/use-session-mutation";
 import { toast } from "sonner-native";
 import { storyKeys } from "@/constants/keys";
 import {
@@ -20,7 +21,7 @@ const useStoryActionMutation = <TVariables, TData>(
 ) => {
   const client = useQueryClient();
   const queryKey = storyKeys.all;
-  return useMutation({
+  return useSessionMutation({
     mutationFn,
     onMutate: (variables) =>
       updates

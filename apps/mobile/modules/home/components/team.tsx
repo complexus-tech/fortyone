@@ -1,10 +1,9 @@
-import React from "react";
-import { View, Pressable } from "react-native";
-import { Row, Text } from "@/components/ui";
-import { SymbolView } from "expo-symbols";
-import { colors } from "@/constants";
 import type { Team as TeamType } from "@/modules/teams/types";
+import { View, Pressable } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { Text } from "@/components/ui";
+import { themeColors } from "@/constants/colors";
 import { useTheme } from "@/hooks";
 
 export const Team = ({ id, name, color }: TeamType) => {
@@ -12,30 +11,38 @@ export const Team = ({ id, name, color }: TeamType) => {
   const { resolvedTheme } = useTheme();
   return (
     <Pressable
-      className="active:bg-gray-50 dark:active:bg-dark-300 rounded-xl"
+      accessibilityRole="button"
+      accessibilityLabel={`Open ${name} team`}
       onPress={() => router.push(`/teams/${id}`)}
+      className="active:bg-gray-50 dark:active:bg-dark-200"
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        minHeight: 56,
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        gap: 12,
+      }}
     >
-      <Row
-        align="center"
-        justify="between"
-        className="py-3.5 px-3 min-h-[44px]"
+      <View
+        style={{
+          width: 10,
+          height: 10,
+          borderRadius: 3,
+          backgroundColor: color,
+        }}
+      />
+      <Text
+        numberOfLines={1}
+        style={{ flex: 1, fontSize: 16, lineHeight: 22, fontWeight: "400" }}
       >
-        <Row align="center">
-          <View
-            className="size-3.5 rounded-full mr-2"
-            style={{ backgroundColor: color }}
-          />
-          <Text>{name}</Text>
-        </Row>
-        <SymbolView
-          name="chevron.forward"
-          weight="semibold"
-          size={12}
-          tintColor={
-            resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
-          }
-        />
-      </Row>
+        {name}
+      </Text>
+      <Ionicons
+        name="chevron-forward"
+        size={15}
+        color={themeColors[resolvedTheme].icon}
+      />
     </Pressable>
   );
 };

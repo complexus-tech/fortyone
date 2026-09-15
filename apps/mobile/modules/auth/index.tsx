@@ -3,7 +3,7 @@ import { Image } from "expo-image";
 import { Button, Col, SafeContainer, Text } from "@/components/ui";
 import { useAuthStore } from "@/store";
 import { Logo } from "@/components/icons";
-import { colors } from "@/constants";
+import { themeColors } from "@/constants/colors";
 import * as WebBrowser from "expo-web-browser";
 import {
   authenticateWithCode,
@@ -107,10 +107,7 @@ export const Auth = () => {
           paddingTop: 5,
         }}
       >
-        <Logo
-          height={30}
-          color={resolvedTheme === "dark" ? colors.white : colors.black}
-        />
+        <Logo height={30} color={themeColors[resolvedTheme].foreground} />
         <Col>
           {error || sessionError ? (
             <Text accessibilityRole="alert" align="center" className="mb-4">

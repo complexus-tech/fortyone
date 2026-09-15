@@ -1,6 +1,9 @@
 import React from "react";
 import { Alert } from "react-native";
-import { Row, Text, ContextMenuButton } from "@/components/ui";
+import { ScreenHeader, HeaderActions } from "@/components/ui";
+import { useRouter } from "expo-router";
+import { useTerminology } from "@/hooks/use-terminology";
+import { colors } from "@/constants";
 import {
   useDeleteAllMutation,
   useDeleteReadMutation,
@@ -8,6 +11,8 @@ import {
 } from "../hooks";
 
 export const Header = () => {
+  const router = useRouter();
+  const { getTermDisplay } = useTerminology();
   const readAllMutation = useReadAllNotificationsMutation();
   const { mutate: deleteRead } = useDeleteReadMutation();
   const { mutate: deleteAll } = useDeleteAllMutation();
@@ -29,7 +34,7 @@ export const Header = () => {
             deleteRead();
           },
         },
-      ]
+      ],
     );
   };
 
@@ -46,34 +51,38 @@ export const Header = () => {
             deleteAll();
           },
         },
-      ]
+      ],
     );
   };
 
   return (
-    <Row justify="between" align="center" asContainer className="mb-3">
-      <Text fontSize="3xl" fontWeight="semibold">
-        Inbox
-      </Text>
-      <ContextMenuButton
-        actions={[
-          {
-            systemImage: "checkmark.circle.fill",
-            label: "Mark all as read",
-            onPress: handleMarkAllAsRead,
-          },
-          {
-            systemImage: "delete.forward.fill",
-            label: "Delete read",
-            onPress: handleDeleteRead,
-          },
-          {
-            systemImage: "trash.fill",
-            label: "Delete all",
-            onPress: handleDeleteAll,
-          },
-        ]}
-      />
-    </Row>
+    <ScreenHeader
+      title="Inbox"
+      trailing={
+        <HeaderActions
+          createLabel={`Create ${getTermDisplay("storyTerm")}`}
+          onCreate={() => router.push("/new")}
+          actions={[
+            {
+              systemImage: "checkmark.circle.fill",
+              label: "Mark all as read",
+              onPress: handleMarkAllAsRead,
+            },
+            {
+              systemImage: "delete.forward.fill",
+              label: "Delete read",
+              onPress: handleDeleteRead,
+              color: colors.danger,
+            },
+            {
+              systemImage: "trash.fill",
+              label: "Delete all",
+              onPress: handleDeleteAll,
+              color: colors.danger,
+            },
+          ]}
+        />
+      }
+    />
   );
 };

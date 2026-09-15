@@ -1,27 +1,44 @@
 import type { RichTextValue } from "@/components/rich-text/content";
 import type { StoryPriority } from "@/modules/stories/types";
 import type { FormAction, SheetName } from "../form-state";
-import { useState } from "react";
+import type { StorySubmissionState } from "../submission";
+import { useEffect, useRef, useState } from "react";
 import * as Crypto from "expo-crypto";
-import { useRouter } from "expo-router";
 import { useDraft } from "@/components/rich-text/use-draft";
 import { useTeams } from "@/modules/teams/hooks/use-teams";
 import { useTeamStatuses } from "@/modules/statuses/hooks/use-statuses";
 import { useTeamMembers } from "@/modules/members/hooks/use-team-members";
 import { useTeamLabels } from "@/modules/labels/hooks/use-labels";
+import { useAuthStore } from "@/store/auth";
 import { formReducer, initialState, isFormState } from "../form-state";
+import { createStoryFinalizer } from "../submission";
 import { useCreateStoryMutation } from "./use-create-story-mutation";
 
-/** Owns the draft lifecycle and submission; the screen only presents form values. */
+/** Owns durable submission; the screen coordinates editor flush and navigation. */
 export const useNewStoryForm = () => {
-  const router = useRouter();
   const mutation = useCreateStoryMutation();
   const [initialDraft] = useState(() => ({
     ...initialState,
     idempotencyKey: Crypto.randomUUID(),
   }));
+  const [scope] = useState(() => {
+    const { userId, workspace, sessionEpoch } = useAuthStore.getState();
+    return { userId, workspace, sessionEpoch };
+  });
   const draft = useDraft("new-story", initialDraft, isFormState);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submissionState, setSubmissionState] = useState<StorySubmissionState>({
+    isSubmitting: false,
+    isFinalized: false,
+  });
+  const [finalizer] = useState(() => createStoryFinalizer(setSubmissionState));
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
   const state = draft.value;
 
   const { data: teams = [] } = useTeams();
@@ -30,54 +47,74 @@ export const useNewStoryForm = () => {
   const { data: members = [] } = useTeamMembers(selectedTeamId);
   const { data: labels = [] } = useTeamLabels(selectedTeamId);
 
+  const assertActive = () => {
+    const current = useAuthStore.getState();
+    if (
+      !mounted.current ||
+      !current.isAuthenticated ||
+      current.isLoading ||
+      current.userId !== scope.userId ||
+      current.workspace !== scope.workspace ||
+      current.sessionEpoch !== scope.sessionEpoch
+    ) {
+      throw new Error("Your session changed. Reopen the composer to continue.");
+    }
+  };
+  const canEditDraft = () => mounted.current && finalizer.canEdit();
+
   const dispatch = (action: FormAction) => {
-    if (!draft.ready || mutation.isPending) return;
+    if (!draft.ready || !canEditDraft()) return;
     draft.update(formReducer(draft.valueRef.current, action));
   };
 
   const canSubmit =
-    draft.ready && state.title.trim().length > 0 && Boolean(selectedTeamId);
+    draft.ready &&
+    (submissionState.isFinalized ||
+      (state.title.trim().length > 0 &&
+        teams.some((team) => team.id === selectedTeamId)));
 
-  const submit = () => {
-    if (!canSubmit || mutation.isPending) return;
+  const submit = async (description: RichTextValue): Promise<string> => {
+    if (!draft.ready)
+      throw new Error("Wait for your draft to finish restoring.");
     setSubmitError(null);
-    mutation.mutate(
-      {
-        title: state.title.trim(),
-        description: state.description.text || undefined,
-        descriptionHTML: state.description.html || undefined,
-        idempotencyKey: state.idempotencyKey,
-        teamId: selectedTeamId,
-        statusId: state.statusId,
-        assigneeId: state.assigneeId,
-        priority: state.priority,
-        labelIds: state.labelIds,
-      },
-      {
-        onSuccess: async (response) => {
-          if (response.data?.id) {
-            try {
-              await draft.clear();
-              router.replace(`/story/${response.data.id}`);
-            } catch {
-              setSubmitError(
-                "Your story was created, but this device could not remove its draft. Try again to reopen the same story safely.",
-              );
-            }
-          }
+    try {
+      return await finalizer.submit({
+        getDraft: () => draft.valueRef.current,
+        description,
+        availableTeamIds: teams.map((team) => team.id),
+        createIdempotencyKey: Crypto.randomUUID,
+        persistDraft: draft.persist,
+        createStory: async (snapshot) => {
+          const response = await mutation.mutateAsync({
+            title: snapshot.title,
+            description: snapshot.description.text || undefined,
+            descriptionHTML: snapshot.description.html || undefined,
+            idempotencyKey: snapshot.idempotencyKey,
+            teamId: snapshot.teamId,
+            statusId: snapshot.statusId,
+            assigneeId: snapshot.assigneeId,
+            priority: snapshot.priority,
+            labelIds: snapshot.labelIds,
+          });
+          return response.data?.id ?? "";
         },
-        onError: (cause) =>
-          setSubmitError(
-            cause instanceof Error
-              ? cause.message
-              : "Your task could not be saved. Your draft is still here.",
-          ),
-      },
-    );
+        clearDraft: draft.clear,
+        assertActive,
+      });
+    } catch (cause) {
+      if (mounted.current) {
+        setSubmitError(
+          cause instanceof Error
+            ? cause.message
+            : "Your task could not be saved. Your draft is still here.",
+        );
+      }
+      throw cause;
+    }
   };
 
   const selectMetadata = (id: string) => {
-    switch (state.activeSheet) {
+    switch (draft.valueRef.current.activeSheet) {
       case "team":
         dispatch({ type: "setTeam", teamId: id });
         break;
@@ -96,13 +133,22 @@ export const useNewStoryForm = () => {
     }
   };
 
-  const setDescription = (description: RichTextValue) =>
-    draft.persist(
-      formReducer(draft.valueRef.current, {
-        type: "setDescription",
-        description,
-      }),
-    );
+  const setDescription = (description: RichTextValue): Promise<void> => {
+    if (!draft.ready || !canEditDraft()) {
+      return Promise.reject(
+        new Error("This draft is not available for editing."),
+      );
+    }
+    return finalizer.persistEdit(() => {
+      assertActive();
+      return draft.persist(
+        formReducer(draft.valueRef.current, {
+          type: "setDescription",
+          description,
+        }),
+      );
+    });
+  };
 
   return {
     state,
@@ -117,7 +163,8 @@ export const useNewStoryForm = () => {
     selectedAssignee: members.find((member) => member.id === state.assigneeId),
     selectedLabels: labels.filter((label) => state.labelIds.includes(label.id)),
     canSubmit,
-    isSubmitting: mutation.isPending,
+    ...submissionState,
+    canEditDraft,
     submitError,
     submit,
     selectMetadata,
