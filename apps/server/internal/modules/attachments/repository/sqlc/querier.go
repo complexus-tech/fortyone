@@ -23,6 +23,12 @@ type Querier interface {
 	LinkWorkspaceStoryAttachment(ctx context.Context, arg LinkWorkspaceStoryAttachmentParams) (uuid.UUID, error)
 	LinkWorkspaceStoryMedia(ctx context.Context, arg LinkWorkspaceStoryMediaParams) (uuid.UUID, error)
 	ListStoryAttachments(ctx context.Context, arg ListStoryAttachmentsParams) ([]Attachment, error)
+	// Capture and lock metadata before cascading relation deletion. Locks protect
+	// shared-file checks against concurrent attachment links (their FK key locks).
+	LockTeamDeletionAttachments(ctx context.Context, arg LockTeamDeletionAttachmentsParams) ([]uuid.UUID, error)
+	// Retire only files with no surviving consumer and atomically enqueue physical
+	// deletion. Batches avoid one database round trip per uploaded file.
+	RetireTeamDeletionAttachments(ctx context.Context, arg RetireTeamDeletionAttachmentsParams) (int64, error)
 	StartWorkspaceAttachmentOptimization(ctx context.Context, arg StartWorkspaceAttachmentOptimizationParams) (Attachment, error)
 	StoryExistsInWorkspace(ctx context.Context, arg StoryExistsInWorkspaceParams) (bool, error)
 	UnlinkWorkspaceStoryMedia(ctx context.Context, arg UnlinkWorkspaceStoryMediaParams) (uuid.UUID, error)

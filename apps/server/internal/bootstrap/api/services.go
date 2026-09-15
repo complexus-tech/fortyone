@@ -78,6 +78,7 @@ import (
 	subscriptions "github.com/complexus-tech/projects-api/internal/modules/subscriptions/service"
 	teamsrepository "github.com/complexus-tech/projects-api/internal/modules/teams/repository"
 	teams "github.com/complexus-tech/projects-api/internal/modules/teams/service"
+	teamuow "github.com/complexus-tech/projects-api/internal/modules/teams/uow"
 	teamsettingsrepository "github.com/complexus-tech/projects-api/internal/modules/teamsettings/repository"
 	teamsettings "github.com/complexus-tech/projects-api/internal/modules/teamsettings/service"
 	usersrepository "github.com/complexus-tech/projects-api/internal/modules/users/repository"
@@ -194,6 +195,12 @@ func buildServices(cfg mux.Config, dependencies Dependencies) services {
 			cfg.StorageConfig.AttachmentsBucket,
 		),
 	)
+	teamDeletion, err := teamuow.New(dependencies.DatabasePool, teamsRepository, storiesRepo,
+		attachmentsrepository.New(dependencies.DatabasePool), cfg.StorageConfig.Provider, cfg.StorageConfig.AttachmentsBucket)
+	if err != nil {
+		panic("failed to initialize team deletion: " + err.Error())
+	}
+	teamsService.ConfigureDeletion(teamDeletion)
 	storiesService := stories.New(cfg.Log, storiesRepo, cfg.Publisher, cfg.TasksService)
 	storyCommentCreator, err := bootstrapproviders.NewStoryCommentCreator(commentsService)
 	if err != nil {

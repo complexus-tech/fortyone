@@ -65,6 +65,11 @@ func (h *handlers) HandleGitHubStorySync(ctx context.Context, t *asynq.Task) err
 		return fmt.Errorf("construct GitHub story sync scope: %w: %w", err, asynq.SkipRetry)
 	}
 	story, err := h.storySyncReader.GetStoryForMutation(ctx, scope, payload.StoryID)
+	// Queued syncs can outlive a story or its team. There is no remote work left
+	// to perform once the source story has been deleted.
+	if errors.Is(err, storydomain.ErrNotFound) {
+		return nil
+	}
 	if err != nil {
 		h.log.Error(ctx, "Failed to load story for GitHub sync", "error", err, "story_id", payload.StoryID)
 		return err

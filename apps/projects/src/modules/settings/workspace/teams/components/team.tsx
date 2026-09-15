@@ -18,14 +18,22 @@ export const WorkspaceTeam = ({
   Team,
   "id" | "name" | "color" | "code" | "createdAt" | "memberCount"
 >) => {
-  const { mutate: deleteTeam } = useDeleteTeamMutation();
+  const {
+    mutate: deleteTeam,
+    isPending,
+    error,
+    reset,
+  } = useDeleteTeamMutation();
   const { withWorkspace } = useWorkspacePath();
   const { getTermDisplay } = useTerminology();
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
   const handleDeleteTeam = () => {
-    deleteTeam(id);
-    setIsDeleteOpen(false);
+    deleteTeam(id, {
+      onSuccess: () => {
+        setIsDeleteOpen(false);
+      },
+    });
   };
 
   return (
@@ -77,6 +85,7 @@ export const WorkspaceTeam = ({
             <Menu.Group>
               <Menu.Item
                 onSelect={() => {
+                  reset();
                   setIsDeleteOpen(true);
                 }}
               >
@@ -89,8 +98,13 @@ export const WorkspaceTeam = ({
       </Flex>
       <ConfirmDialog
         confirmPhrase="delete team"
-        description={`Are you sure you want to delete this team? This action will remove all members and ${getTermDisplay("storyTerm", { variant: "plural" })} from the team and cannot be undone.`}
+        confirmText="Delete team"
+        description={`Are you sure you want to delete this team? All of its data, including ${getTermDisplay("storyTerm", { variant: "plural" })}, will be permanently removed. This action cannot be undone.`}
+        errorMessage={error?.message}
+        isLoading={isPending}
         isOpen={isDeleteOpen}
+        loadingText="Deleting team..."
+        normalizeConfirmPhrase
         onClose={() => {
           setIsDeleteOpen(false);
         }}

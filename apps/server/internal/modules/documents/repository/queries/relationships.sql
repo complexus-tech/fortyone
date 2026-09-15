@@ -51,6 +51,8 @@ INNER JOIN public.workspaces AS workspace
 WHERE objective.objective_id = sqlc.arg(entity_id)
   AND objective.workspace_id = sqlc.arg(workspace_id);
 
+-- Polymorphic entity IDs have no foreign key. Hold a key lock on the target
+-- through commit so deletion cannot race its relationship cleanup.
 -- name: InsertEditableDocumentRelationship :one
 INSERT INTO public.document_relationships (
     document_id,
@@ -104,6 +106,7 @@ WHERE document.document_id = sqlc.arg(document_id)
               WHERE target_story.id = sqlc.arg(entity_id)
                 AND target_story.workspace_id = document.workspace_id
                 AND target_story.deleted_at IS NULL
+              FOR KEY SHARE OF target_story
           )
       )
       OR (
@@ -119,6 +122,7 @@ WHERE document.document_id = sqlc.arg(document_id)
                  AND target_membership.user_id = sqlc.arg(actor_id)
               WHERE target_objective.objective_id = sqlc.arg(entity_id)
                 AND target_objective.workspace_id = document.workspace_id
+              FOR KEY SHARE OF target_objective
           )
       )
   )

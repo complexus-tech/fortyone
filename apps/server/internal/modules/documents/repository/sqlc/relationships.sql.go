@@ -260,6 +260,7 @@ WHERE document.document_id = $4
               WHERE target_story.id = $2
                 AND target_story.workspace_id = document.workspace_id
                 AND target_story.deleted_at IS NULL
+              FOR KEY SHARE OF target_story
           )
       )
       OR (
@@ -275,6 +276,7 @@ WHERE document.document_id = $4
                  AND target_membership.user_id = $3
               WHERE target_objective.objective_id = $2
                 AND target_objective.workspace_id = document.workspace_id
+              FOR KEY SHARE OF target_objective
           )
       )
   )
@@ -291,6 +293,8 @@ type InsertEditableDocumentRelationshipParams struct {
 	WorkspaceID uuid.UUID
 }
 
+// Polymorphic entity IDs have no foreign key. Hold a key lock on the target
+// through commit so deletion cannot race its relationship cleanup.
 func (q *Queries) InsertEditableDocumentRelationship(ctx context.Context, arg InsertEditableDocumentRelationshipParams) (uuid.UUID, error) {
 	row := q.db.QueryRow(ctx, insertEditableDocumentRelationship,
 		arg.EntityType,

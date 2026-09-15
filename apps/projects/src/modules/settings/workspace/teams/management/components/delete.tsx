@@ -11,12 +11,18 @@ export const DeleteTeam = ({ team }: { team: Team }) => {
   const router = useRouter();
   const { withWorkspace } = useWorkspacePath();
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const { mutate: deleteTeam, isPending } = useDeleteTeamMutation();
+  const {
+    mutate: deleteTeam,
+    isPending,
+    error,
+    reset,
+  } = useDeleteTeamMutation();
 
   const handleDelete = () => {
     deleteTeam(team.id, {
       onSuccess: () => {
-        router.push(withWorkspace("/settings/workspace/teams"));
+        setIsDeleteOpen(false);
+        router.replace(withWorkspace("/settings/workspace/teams"));
       },
     });
   };
@@ -34,6 +40,7 @@ export const DeleteTeam = ({ team }: { team: Team }) => {
           <Button
             className="mt-4"
             onClick={() => {
+              reset();
               setIsDeleteOpen(true);
             }}
           >
@@ -45,9 +52,11 @@ export const DeleteTeam = ({ team }: { team: Team }) => {
         confirmPhrase="i understand"
         confirmText="Delete team"
         description="Are you sure you want to delete this team? All of the team's data will be permanently removed. This action cannot be undone."
+        errorMessage={error?.message}
         isLoading={isPending}
         isOpen={isDeleteOpen}
         loadingText="Deleting team..."
+        normalizeConfirmPhrase
         onClose={() => {
           setIsDeleteOpen(false);
         }}

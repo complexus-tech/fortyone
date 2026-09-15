@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Box, Button, Dialog, Input, Text } from "ui";
 
 type ConfirmDialogProps = {
@@ -13,6 +13,8 @@ type ConfirmDialogProps = {
   confirmText?: string;
   cancelText?: string;
   confirmPhrase?: string;
+  normalizeConfirmPhrase?: boolean;
+  errorMessage?: string;
   isLoading?: boolean;
   loadingText?: string;
   hideClose?: boolean;
@@ -30,6 +32,8 @@ type ConfirmDialogProps = {
  * @param confirmText - The text of the confirm button
  * @param cancelText - The text of the cancel button
  * @param confirmPhrase - The phrase to confirm the action
+ * @param normalizeConfirmPhrase - Ignore casing and surrounding whitespace when matching the phrase
+ * @param errorMessage - An error to show without dismissing the dialog
  * @param isLoading - display a loading state on the confirm button
  * @param loadingText - The text of the loading button
  * @param hideClose - Whether to hide the close button
@@ -44,27 +48,63 @@ export const ConfirmDialog = ({
   confirmText = "Confirm",
   cancelText = "Cancel",
   confirmPhrase = "",
+  normalizeConfirmPhrase = false,
+  errorMessage,
   isLoading = false,
   loadingText = "Confirming...",
   hideClose = false,
 }: ConfirmDialogProps) => {
   const [phrase, setPhrase] = useState("");
+  const phraseInputId = useId();
+  const hasConfirmedPhrase = normalizeConfirmPhrase
+    ? phrase.trim().toLowerCase() === confirmPhrase.trim().toLowerCase()
+    : phrase === confirmPhrase;
+
+  const handleClose = () => {
+    if (isLoading) return;
+    setPhrase("");
+    onClose?.();
+  };
+
   return (
-    <Dialog onOpenChange={onClose} open={isOpen}>
-      <Dialog.Content hideClose={hideClose}>
+    <Dialog
+      onOpenChange={(open) => {
+        if (!open) handleClose();
+      }}
+      open={isOpen}
+    >
+      <Dialog.Content
+        aria-busy={isLoading}
+        hideClose={hideClose || isLoading}
+        onEscapeKeyDown={(event) => {
+          if (isLoading) event.preventDefault();
+        }}
+        onInteractOutside={(event) => {
+          if (isLoading) event.preventDefault();
+        }}
+      >
         <Dialog.Header>
           <Dialog.Title className="px-6 pt-0.5 text-lg">{title}</Dialog.Title>
         </Dialog.Header>
         <Dialog.Body>
-          <Text color="muted">{description}</Text>
+          <Dialog.Description asChild>
+            <Text className="px-0" color="muted" fontSize="md">
+              {description}
+            </Text>
+          </Dialog.Description>
           {confirmPhrase ? (
             <Box className="mt-3">
-              <Text className="mb-2" color="muted">
+              <label
+                className="text-text-muted mb-2 block"
+                htmlFor={phraseInputId}
+              >
                 Please enter{" "}
                 <Text as="span">&ldquo;{confirmPhrase}&rdquo;</Text> to confirm
-              </Text>
+              </label>
               <Input
                 className="rounded-lg"
+                disabled={isLoading}
+                id={phraseInputId}
                 onChange={(e) => {
                   setPhrase(e.target.value);
                 }}
@@ -74,24 +114,33 @@ export const ConfirmDialog = ({
               />
             </Box>
           ) : null}
+          {errorMessage ? (
+            <Text className="mt-3" color="danger" role="alert">
+              {errorMessage}
+            </Text>
+          ) : null}
         </Dialog.Body>
         <Dialog.Footer className="justify-end gap-3 border-0 pt-2">
           <Button
             className="px-4"
             color="tertiary"
+            disabled={isLoading}
             onClick={() => {
+              if (isLoading) return;
               onCancel?.();
-              onClose?.();
+              handleClose();
             }}
           >
             {cancelText}
           </Button>
           <Button
             className="px-4"
-            disabled={phrase !== confirmPhrase}
+            disabled={isLoading || !hasConfirmedPhrase}
             loading={isLoading}
             loadingText={loadingText}
-            onClick={onConfirm}
+            onClick={() => {
+              if (!isLoading && hasConfirmedPhrase) onConfirm();
+            }}
           >
             {confirmText}
           </Button>

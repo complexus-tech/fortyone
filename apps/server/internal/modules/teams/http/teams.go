@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 
+	teamsdomain "github.com/complexus-tech/projects-api/internal/modules/teams/domain"
 	teams "github.com/complexus-tech/projects-api/internal/modules/teams/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/internal/platform/pagination"
@@ -301,6 +302,9 @@ func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Re
 	}
 
 	if err := h.teams.Delete(ctx, teamID, workspace.ID); err != nil {
+		if errors.Is(err, teamsdomain.ErrDeletionForbidden) {
+			return web.RespondError(ctx, w, err, http.StatusForbidden)
+		}
 		if errors.Is(err, teams.ErrTeamNotFound) {
 			return web.RespondError(ctx, w, err, http.StatusNotFound)
 		}

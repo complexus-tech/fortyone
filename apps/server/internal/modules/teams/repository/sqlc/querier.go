@@ -6,6 +6,8 @@ package teamsql
 
 import (
 	"context"
+
+	"github.com/google/uuid"
 )
 
 type Querier interface {
@@ -15,6 +17,10 @@ type Querier interface {
 	CreateDefaultStoryStatus(ctx context.Context, arg CreateDefaultStoryStatusParams) (int64, error)
 	CreateTeam(ctx context.Context, arg CreateTeamParams) (CreateTeamRow, error)
 	DeleteActorTeamOrdering(ctx context.Context, arg DeleteActorTeamOrderingParams) error
+	// Entity IDs in document relationships and notifications deliberately have
+	// no foreign key. Remove the links while their target rows still exist.
+	DeleteTeamDocumentRelationships(ctx context.Context, arg DeleteTeamDocumentRelationshipsParams) error
+	DeleteTeamEntityNotifications(ctx context.Context, arg DeleteTeamEntityNotificationsParams) error
 	DeleteTeamForWorkspace(ctx context.Context, arg DeleteTeamForWorkspaceParams) (int64, error)
 	GetTeamForActor(ctx context.Context, arg GetTeamForActorParams) (GetTeamForActorRow, error)
 	InsertActorTeamOrder(ctx context.Context, arg InsertActorTeamOrderParams) (int64, error)
@@ -22,6 +28,14 @@ type Querier interface {
 	LeaveTeamForActor(ctx context.Context, arg LeaveTeamForActorParams) (int64, error)
 	ListPublicTeamsForActor(ctx context.Context, arg ListPublicTeamsForActorParams) ([]ListPublicTeamsForActorRow, error)
 	ListTeamsForActor(ctx context.Context, arg ListTeamsForActorParams) ([]ListTeamsForActorRow, error)
+	// Lock intermediate parents so new feedback cannot arrive after attachment
+	// capture but before the team cascade.
+	LockTeamDeletionBoards(ctx context.Context, arg LockTeamDeletionBoardsParams) error
+	LockTeamDeletionFeedback(ctx context.Context, arg LockTeamDeletionFeedbackParams) error
+	// Keep ownership stable until the objective cascade and polymorphic-reference
+	// cleanup have committed; an objective transfer must wait for this decision.
+	LockTeamDeletionObjectives(ctx context.Context, arg LockTeamDeletionObjectivesParams) error
+	LockTeamForDeletion(ctx context.Context, arg LockTeamForDeletionParams) (uuid.UUID, error)
 	RemoveTeamMemberForWorkspace(ctx context.Context, arg RemoveTeamMemberForWorkspaceParams) (int64, error)
 	UpdateTeamForWorkspace(ctx context.Context, arg UpdateTeamForWorkspaceParams) (UpdateTeamForWorkspaceRow, error)
 	UpdateTeamMemberAIContextForWorkspace(ctx context.Context, arg UpdateTeamMemberAIContextForWorkspaceParams) (int64, error)

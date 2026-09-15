@@ -1407,6 +1407,85 @@
         "Pending payloads are cleared after delivery; source user or workspace deletion cascades to the corresponding alerts.",
         "Disabling pauses delivery while capture continues. Enabling resumes queued alerts."
       ]
+    },
+    {
+      "version": 189,
+      "slug": "team_deletion_integrity",
+      "classification": "forward-only",
+      "files": {
+        "up": "000189_team_deletion_integrity.up.sql",
+        "down": "000189_team_deletion_integrity.down.sql"
+      },
+      "compatibility": {
+        "schema": "Cascades team objectives and labels, closes surviving feedback merged into deleted targets, repairs historical cross-team story statuses, enforces team/status ownership, and retains the actual calendar provider and calendar identity during schedule deletion.",
+        "api": "Valid story writes remain compatible. The replacement team deletion API requires migrations 000189 and 000190 and records story deletion events, attachment cleanup, and linked-data cleanup transactionally; old deletion APIs omit that lifecycle.",
+        "worker": "Existing calendar and attachment outboxes remain the durable delivery contract. Deploy the replacement GitHub worker so queued syncs for deleted stories complete without retrying; keep the cleanup dispatchers active after cutover.",
+        "mixed_versions": "Apply the schema before replacement binaries. Keep team and workspace deletion paused through migrations 000189 and 000190 and drain old deletion writers before enabling the replacement API and worker; migration 000189 alone enables cascades without the final-team credential safeguard."
+      },
+      "rollout": {
+        "sequence": 38,
+        "mode": "schema-first",
+        "steps": [
+          "Pause team and workspace deletion paths, back up PostgreSQL, and record the story IDs, original status IDs, and owning teams affected by the historical status repair.",
+          "Apply migration 000189 with lock and statement timeouts sized from a disposable-database rehearsal; allow for the story update, unique index build, and foreign-key validation.",
+          "Apply migration 000190 before resuming deletion, then deploy the replacement API, worker, and team settings UI and remove old deletion writers from service.",
+          "Verify a controlled populated-team deletion preserves unrelated teams and shared attachments, closes surviving merged feedback, records durable cleanup, and uses the original provider/calendar for scheduled-event deletion before restoring normal deletion traffic."
+        ]
+      },
+      "recovery": {
+        "strategy": "forward-fix",
+        "procedure": [
+          "Pause affected deletion paths and preserve committed story events, attachment deletion work, calendar outbox rows, and merge history while diagnosing the failure.",
+          "Repair schema or application behavior with a new forward migration or compatible release. If historical status choices need correction, use the recorded pre-migration evidence to select a valid status in the story's current team; do not restore cross-team references.",
+          "Do not use the down migration for production recovery after activation: it does not restore repaired status assignments or deleted data, retains closed surviving feedback, removes the new integrity guards, and restores the old Google-only calendar cleanup behavior."
+        ]
+      },
+      "operational_notes": [
+        "Historical repair preserves every story, prefers the owning team's equivalent status category before its default, uses deterministic ordering, and leaves status_id NULL when that team has no statuses. It updates updated_at and can invoke existing schedule cleanup triggers; the original assignments are not recoverable from this migration alone.",
+        "The composite team/status foreign key applies to every writer, including duplication, imports, and team transfers. Nullable status IDs remain supported, and NO ACTION permits stories and statuses to disappear together in a team cascade without deleting another team's stories.",
+        "Deleting any merged feedback target closes surviving source items and clears their merge pointer, timestamp, and user fields without reopening them. The statement trigger touches only surviving rows, and the durable merge outbox retains the original event and attribution.",
+        "Calendar cleanup records the deleted block's external provider and calendar ID and deduplicates by provider and block identity. Applying this schema does not itself retrofit the transactional team cleanup into an old API.",
+        "Team deletion is permanent. Database rollback cannot undo committed object deletion or external calendar deletion; retain and reconcile durable cleanup records during incident recovery."
+      ]
+    },
+    {
+      "version": 190,
+      "slug": "team_credential_deletion_safety",
+      "classification": "forward-only",
+      "files": {
+        "up": "000190_team_credential_deletion_safety.up.sql",
+        "down": "000190_team_credential_deletion_safety.down.sql"
+      },
+      "compatibility": {
+        "schema": "Adds a database trigger that revokes an unrevoked API credential and appends a system-attributed audit event when deleting or moving its final team restriction, including foreign-key cascades.",
+        "api": "Existing authentication already rejects revoked credentials. The replacement team deletion API must run after this safeguard is installed; unrestricted credentials and credentials retaining another team restriction keep their current access.",
+        "worker": "The safeguard runs synchronously in the deleting transaction and requires no new dispatcher. Workers that cascade-delete teams or workspaces receive the same protection.",
+        "mixed_versions": "Install immediately after migration 000189 while deletion paths remain paused. Valid older authentication reads are compatible, but any writer that replaces restriction rows by deleting the last row first must account for irreversible revocation; inserting restrictions later does not reactivate a credential."
+      },
+      "rollout": {
+        "sequence": 39,
+        "mode": "schema-first",
+        "steps": [
+          "Keep team and workspace deletion paused after migration 000189 and identify unrevoked credentials restricted to deletion-target teams without collecting credential secrets.",
+          "Apply migration 000190 and verify the api_credential_final_team_removal_revokes trigger is present on api_credential_team_restrictions.",
+          "Verify in a controlled deletion that a final-team credential is revoked with reason team_restrictions_exhausted and one system audit event, while a credential retaining another team and an intentionally unrestricted credential remain unchanged.",
+          "Deploy and verify the replacement team deletion API, worker, and UI, then resume deletion paths. Monitor transaction retries and automatic revocation audit events during rollout."
+        ]
+      },
+      "recovery": {
+        "strategy": "forward-fix",
+        "procedure": [
+          "Pause affected restriction changes or deletion paths while preserving credential revocation state and append-only audit records.",
+          "Repair the trigger or its callers forward. Restore needed access by issuing a new explicitly scoped credential through the normal authorized workflow; never clear revoked_at or revive an exhausted credential.",
+          "Do not use the down migration as production recovery: it removes the safeguard but deliberately leaves all previous revocations and audit events intact, and it cannot restore deleted team restrictions."
+        ]
+      },
+      "operational_notes": [
+        "An empty team restriction set represents unrestricted workspace access. The trigger distinguishes exhaustion through a restriction mutation from credentials created intentionally unrestricted; it does not retroactively classify existing zero-restriction credentials.",
+        "The credential row update serializes concurrent restriction removals and rotation. A stale REPEATABLE READ or SERIALIZABLE transaction aborts rather than overlooking another committed removal; callers must retry the full transaction on retryable database errors.",
+        "Automatic audit events use actor_kind system and the zero UUID, preserve the removed team ID as metadata, and record personal_token.revoked or service_account_key.revoked with reason team_restrictions_exhausted.",
+        "Revocation and audit insertion commit or roll back with the restriction mutation. Already-revoked or deleted credential parents require no new revocation event; migration rollback must never resurrect access."
+      ]
     }
   ]
 }

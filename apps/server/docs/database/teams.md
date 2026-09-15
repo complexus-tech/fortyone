@@ -16,6 +16,10 @@ use the existing `teams.Core*` types and domain errors.
 | replace a user's team order                 | `queries/orderings.sql`        | `orderings.go`      |
 | generated pgx implementation                | generated from all query files | `repository/sqlc`   |
 
+Permanent deletion is composed by `internal/modules/teams/uow`. Team queries
+remain in the team adapter; story deletion/events and attachment cleanup use
+their owning repository capabilities on the same transaction.
+
 Generated rows never become service or JSON contracts. `models.go` performs the
 explicit conversion to `teams.CoreTeam`, including member counts and sprint
 settings.
@@ -69,6 +73,47 @@ positions. Every team must belong to that workspace and be visible to the actor
 as a team member or workspace admin. A duplicate, inaccessible, or
 cross-workspace team fails the operation and restores the previous order through
 transaction rollback.
+
+## Permanent team deletion
+
+The authenticated settings route delegates to the configured deletion manager.
+It accepts a first-party human actor and rechecks active workspace-admin
+membership in SQL. Team, administrator, objective, feedback, story and candidate
+attachment locks keep authorization, ownership and file references stable until
+commit. Cross-workspace or inaccessible targets return the existing not-found
+response without changing data.
+
+Within one transaction the manager:
+
+1. Locks the team and its dependent records, including archived and soft-deleted
+   stories, and captures story, inline and feedback attachment IDs.
+2. Removes document relationships and entity notifications while their target
+   identifiers can still be resolved. Shared documents remain intact.
+3. Deletes stories in batches and writes one durable `story.deleted` event per
+   deleted story using the existing integration payload and authenticated actor.
+4. Deletes the team and cascades its remaining owned records.
+5. Retires only attachments with no remaining story, inline, document or
+   feedback reference, and records physical object deletion in the existing
+   durable outbox. Provider calls happen after commit through existing workers.
+
+Any query, constraint, event or outbox failure rolls back the complete operation.
+Missing stories in already-queued GitHub synchronization work complete without
+retrying a permanently absent resource. The client retains failed confirmations,
+blocks duplicate submissions while pending, and refreshes affected workspace
+and credential caches after success.
+
+Migration `000189` adds objective/label cascades, repairs historical cross-team
+status references and enforces matching team/status ownership. It also preserves
+surviving feedback merge sources as closed records when their target is deleted,
+retains original durable merge history, and routes calendar cleanup to the
+actual provider. Migration `000190` revokes and audits a machine credential when
+its final team restriction disappears; removing a restriction cannot broaden
+credential access. Other team restrictions and previously unrestricted
+credentials retain their existing behavior.
+
+Deploy the new migrations with the API/worker changes. Historical status repairs
+and credential revocations are not reversed by rolling back schema definitions;
+see `migration-operations.md` for rollout and recovery details.
 
 ## Error and empty-result semantics
 

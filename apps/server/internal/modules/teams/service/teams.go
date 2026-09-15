@@ -17,7 +17,6 @@ type Repository interface {
 	GetByID(ctx context.Context, teamID uuid.UUID, workspaceID uuid.UUID, userID uuid.UUID) (CoreTeam, error)
 	Create(ctx context.Context, team CoreTeam) (CoreTeam, error)
 	Update(ctx context.Context, teamID uuid.UUID, updates CoreTeam) (CoreTeam, error)
-	Delete(ctx context.Context, teamID uuid.UUID, workspaceID uuid.UUID) error
 	AddMember(ctx context.Context, teamID, userID, workspaceID uuid.UUID) error
 	JoinPublicTeam(ctx context.Context, input CorePublicTeamJoin) error
 	LeaveTeam(ctx context.Context, input CoreTeamSelfLeave) error
@@ -30,8 +29,9 @@ type Repository interface {
 
 // Service provides team-related operations.
 type Service struct {
-	repo Repository
-	log  *logger.Logger
+	repo     Repository
+	log      *logger.Logger
+	deletion DeletionManager
 }
 
 // New constructs a new teams service instance with the provided repository.
@@ -138,23 +138,6 @@ func (s *Service) Update(ctx context.Context, teamID uuid.UUID, updates CoreTeam
 		attribute.String("workspace_id", updates.Workspace.String()),
 	))
 	return result, nil
-}
-
-func (s *Service) Delete(ctx context.Context, teamID uuid.UUID, workspaceID uuid.UUID) error {
-	s.log.Info(ctx, "business.core.teams.delete")
-	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.teams.Delete")
-	defer span.End()
-
-	if err := s.repo.Delete(ctx, teamID, workspaceID); err != nil {
-		span.RecordError(err)
-		return err
-	}
-
-	span.AddEvent("team deleted.", trace.WithAttributes(
-		attribute.String("team_id", teamID.String()),
-		attribute.String("workspace_id", workspaceID.String()),
-	))
-	return nil
 }
 
 func (s *Service) AddMember(ctx context.Context, teamID, userID, workspaceID uuid.UUID) error {

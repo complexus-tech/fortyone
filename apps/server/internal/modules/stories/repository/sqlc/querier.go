@@ -39,6 +39,9 @@ type Querier interface {
 	DeleteStoryNotificationMute(ctx context.Context, arg DeleteStoryNotificationMuteParams) error
 	DeleteStoryRetentionCandidates(ctx context.Context, arg DeleteStoryRetentionCandidatesParams) ([]uuid.UUID, error)
 	DeleteStoryWatcher(ctx context.Context, arg DeleteStoryWatcherParams) error
+	// The event payload matches the normal story.deleted integration contract.
+	// Bulk insertion keeps deletion latency independent of per-story round trips.
+	DeleteTeamStoriesWithEvents(ctx context.Context, arg DeleteTeamStoriesWithEventsParams) (int64, error)
 	DeleteUnreferencedStoryRetentionAttachments(ctx context.Context, arg DeleteUnreferencedStoryRetentionAttachmentsParams) ([]DeleteUnreferencedStoryRetentionAttachmentsRow, error)
 	DuplicateAuthorizedStory(ctx context.Context, arg DuplicateAuthorizedStoryParams) (uuid.UUID, error)
 	FailAttachmentObjectDeletion(ctx context.Context, arg FailAttachmentObjectDeletionParams) (int64, error)
@@ -121,6 +124,9 @@ type Querier interface {
 	LockStoryAutomation(ctx context.Context, arg LockStoryAutomationParams) error
 	LockStoryForScheduleTransition(ctx context.Context, arg LockStoryForScheduleTransitionParams) (LockStoryForScheduleTransitionRow, error)
 	LockStoryMediaLinks(ctx context.Context, arg LockStoryMediaLinksParams) ([]LockStoryMediaLinksRow, error)
+	// Team deletion owns the parent team lock before taking these locks. Both
+	// archived and soft-deleted stories participate in permanent team deletion.
+	LockTeamDeletionStories(ctx context.Context, arg LockTeamDeletionStoriesParams) ([]uuid.UUID, error)
 	// These state queries run only after AuthorizeSecondaryStoryTargets has
 	// locked and authorized the story in the same transaction. Keeping the state
 	// SQL small makes the compare-and-swap contract easy to review.

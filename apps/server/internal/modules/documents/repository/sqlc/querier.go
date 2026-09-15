@@ -24,6 +24,8 @@ type Querier interface {
 	GetVisibleObjectiveRelationshipTarget(ctx context.Context, arg GetVisibleObjectiveRelationshipTargetParams) (GetVisibleObjectiveRelationshipTargetRow, error)
 	GetVisibleStoryRelationshipTarget(ctx context.Context, arg GetVisibleStoryRelationshipTargetParams) (GetVisibleStoryRelationshipTargetRow, error)
 	InsertActiveWorkspaceDocumentMembers(ctx context.Context, arg InsertActiveWorkspaceDocumentMembersParams) (int64, error)
+	// Polymorphic entity IDs have no foreign key. Hold a key lock on the target
+	// through commit so deletion cannot race its relationship cleanup.
 	InsertEditableDocumentRelationship(ctx context.Context, arg InsertEditableDocumentRelationshipParams) (uuid.UUID, error)
 	IsWorkspaceAttachmentUnreferenced(ctx context.Context, arg IsWorkspaceAttachmentUnreferencedParams) (*bool, error)
 	LinkEditableDocumentMedia(ctx context.Context, arg LinkEditableDocumentMediaParams) (uuid.UUID, error)

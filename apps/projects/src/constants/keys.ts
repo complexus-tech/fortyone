@@ -94,6 +94,31 @@ export const teamKeys = {
     [...teamKeys.all(workspaceSlug), "settings", id] as const,
 };
 
+export const developerKeys = {
+  root: (workspaceSlug: string) =>
+    ["developer-settings", workspaceSlug] as const,
+  personalTokens: (workspaceSlug: string) =>
+    [...developerKeys.root(workspaceSlug), "personal-tokens"] as const,
+  serviceAccounts: (workspaceSlug: string) =>
+    [...developerKeys.root(workspaceSlug), "service-accounts"] as const,
+  serviceAccountKeys: (workspaceSlug: string, accountId: string) =>
+    [
+      ...developerKeys.serviceAccounts(workspaceSlug),
+      accountId,
+      "keys",
+    ] as const,
+  oauthApplications: (workspaceSlug: string) =>
+    [...developerKeys.root(workspaceSlug), "oauth-applications"] as const,
+  oauthSecrets: (workspaceSlug: string, applicationId: string) =>
+    [
+      ...developerKeys.oauthApplications(workspaceSlug),
+      applicationId,
+      "secrets",
+    ] as const,
+  webhooks: (workspaceSlug: string) =>
+    [...developerKeys.root(workspaceSlug), "webhooks"] as const,
+};
+
 export const userKeys = {
   all: ["users"] as const,
   profile: () => [...userKeys.all, "profile"] as const,
