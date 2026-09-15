@@ -3,7 +3,7 @@
 import { Button, Box, Flex, Text, Wrapper, Avatar } from "ui";
 import { toast } from "sonner";
 import { useRef, useState } from "react";
-import { redirect } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { acceptInvitation } from "@/modules/invitations/public/onboarding";
 import type { Invitation } from "@/modules/invitations/public/types";
 import { useWorkspaces } from "@/lib/hooks/workspaces";
@@ -22,6 +22,7 @@ export const JoinForm = ({
   callbackUrl?: string;
 }) => {
   const { workspaceName, workspaceSlug } = invitation;
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const latestRequestVersionRef = useRef(0);
   const { data: workspaces = [] } = useWorkspaces();
@@ -44,13 +45,13 @@ export const JoinForm = ({
         }
 
         if (workspaces.length === 0) {
-          redirect(
+          router.push(
             withOnboardingCallbackUrl("/onboarding/account", callbackUrl),
           );
           return;
         }
 
-        redirect(getOnboardingWorkspaceUrl(workspaceSlug, callbackUrl));
+        router.push(getOnboardingWorkspaceUrl(workspaceSlug, callbackUrl));
       })
       .finally(() => {
         if (requestVersion === latestRequestVersionRef.current) {

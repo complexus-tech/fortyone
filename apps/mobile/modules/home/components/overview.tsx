@@ -66,7 +66,6 @@ export const Overview = () => {
               label="Overdue"
               icon="alert-circle-outline"
               systemImage="clock.badge.exclamationmark"
-              attention
             />
             <StatCard
               count={summary?.closed}

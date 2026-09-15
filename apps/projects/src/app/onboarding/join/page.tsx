@@ -3,6 +3,7 @@ import { Box, Button, Text } from "ui";
 import { JoinWorkspace } from "@/modules/onboarding/join";
 import { verifyInvitation } from "@/modules/invitations/public/server";
 import { Logo } from "@/components/ui";
+import { getLoginUrl } from "@/utils/callback-url";
 
 export const metadata: Metadata = {
   title: "Join Workspace - FortyOne",
@@ -38,7 +39,7 @@ export default async function JoinWorkspacePage({
           className="md:py-3"
           color="invert"
           fullWidth
-          href="/"
+          href={getLoginUrl(callbackUrl)}
           size="lg"
         >
           Go back

@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { CalendarIcon } from "@/components/icons/calendar";
 import { Text } from "@/components/ui";
 import { GlassIconButton } from "@/components/ui/glass-icon-button";
 import { themeColors } from "@/constants/colors";
@@ -27,11 +28,6 @@ import {
 import { useStoryFilterSections } from "../hooks/use-story-filter-sections";
 import { changeStoryFilter } from "./story-filter-selection";
 import { StoryFilterIcon } from "./story-filter-icon";
-
-const FACET_ICONS = {
-  sprint: "calendar-outline",
-  objective: "locate-outline",
-} as const;
 
 export function StoryFiltersSheet(props: StoryFiltersSheetProps) {
   const close = () => {
@@ -111,7 +107,8 @@ function StoryFiltersContent(props: StoryFiltersSheetProps) {
         ]}
       >
         {option &&
-        (section.id === "status" ||
+        (section.id === "objective" ||
+          section.id === "status" ||
           section.id === "priority" ||
           (section.id === "assignee" && option.id === "unassigned")) ? (
           <StoryFilterIcon facet={section.id} option={option} />
@@ -315,17 +312,13 @@ function StoryFiltersContent(props: StoryFiltersSheetProps) {
                   { backgroundColor: pressed ? theme.stateHover : undefined },
                 ]}
               >
-                {item.id === "status" ||
+                {item.id === "objective" ||
+                item.id === "status" ||
                 item.id === "priority" ||
                 item.id === "assignee" ? (
                   <StoryFilterIcon facet={item.id} />
                 ) : (
-                  <Ionicons
-                    accessible={false}
-                    name={FACET_ICONS[item.id]}
-                    size={20}
-                    color={theme.icon}
-                  />
+                  <CalendarIcon size={20} color={theme.icon} />
                 )}
                 <Text
                   numberOfLines={1}

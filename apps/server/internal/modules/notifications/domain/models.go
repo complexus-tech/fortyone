@@ -12,10 +12,14 @@ type NotificationMessage struct {
 	Template  string                        `json:"template"`
 	Variables map[string]Variable           `json:"variables"`
 	Strategy  *StrategyNotificationSnapshot `json:"strategy,omitempty"`
+	// IdentityReferences links display snapshots to accounts for targeted erasure.
+	// It is stored with the message but never included in public responses.
+	IdentityReferences map[string]uuid.UUID `json:"identityReferences,omitempty"`
 }
 
 func (message NotificationMessage) Public() NotificationMessage {
 	message.Strategy = nil
+	message.IdentityReferences = nil
 	return message
 }
 

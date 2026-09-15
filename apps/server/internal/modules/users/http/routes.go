@@ -79,6 +79,7 @@ func Routes(cfg Config, app *web.App) {
 	app.Get("/users/profile", h.GetProfile, auth)
 	app.Put("/users/profile", h.UpdateProfile, auth)
 	app.Delete("/users/profile", h.DeleteProfile, auth)
+	app.Delete("/users/account", h.DeleteAccount, auth)
 	app.Post("/workspaces/switch", h.SwitchWorkspace, auth)
 
 	// Profile image endpoints

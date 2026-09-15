@@ -1,6 +1,6 @@
 import type { Story } from "@/modules/stories/types";
 import { useColorScheme } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { ObjectiveIcon } from "@/components/icons/objective";
 import { Text } from "@/components/ui";
 import { themeColors } from "@/constants/colors";
 import { useTerminology } from "@/hooks";
@@ -28,8 +28,7 @@ export const ObjectiveBadge = ({
   const current = items.find((item) => item.id === story.objectiveId);
   const title = getTermDisplay("objectiveTerm", { capitalize: true });
   const icon = (
-    <Ionicons
-      name="grid-outline"
+    <ObjectiveIcon
       size={16}
       color={themeColors[dark ? "dark" : "light"].textMuted}
     />

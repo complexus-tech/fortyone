@@ -399,3 +399,78 @@ func assertCount(t *testing.T, ctx context.Context, pool *pgxpool.Pool, query st
 		t.Fatalf("count = %d, want %d", got, want)
 	}
 }
+
+func TestAccountInvitationAcceptanceAndRecipientIsolation(t *testing.T) {
+	fixture := newInvitationFixture(t)
+	ctx := t.Context()
+	_, command := fixture.newInvitation(t, fixture.teamA)
+	if _, err := fixture.repository.CreateBulkInvitations(ctx, fixture.inviterID, []invitations.NewWorkspaceInvitation{command}); err != nil {
+		t.Fatal(err)
+	}
+	accept := invitations.AcceptInvitationCommand{InvitationID: command.Invitation.ID, UserID: fixture.inviterID, AcceptedAt: time.Now().UTC()}
+	if _, err := fixture.repository.AcceptInvitation(ctx, accept); !errors.Is(err, invitations.ErrInvitationNotFound) {
+		t.Fatalf("other account acceptance = %v, want not found", err)
+	}
+	listed, err := fixture.repository.ListInvitationsByEmail(ctx, fixture.invitee, accept.AcceptedAt)
+	if err != nil || len(listed) != 1 {
+		t.Fatalf("recipient invitation changed after unauthorized request: %v, %v", listed, err)
+	}
+	accept.UserID = fixture.inviteeID
+	if _, err := fixture.repository.AcceptInvitation(ctx, accept); err != nil {
+		t.Fatal(err)
+	}
+	listed, err = fixture.repository.ListInvitationsByEmail(ctx, fixture.invitee, accept.AcceptedAt)
+	if err != nil || len(listed) != 0 {
+		t.Fatalf("accepted invitation remains listed: %v, %v", listed, err)
+	}
+	var member bool
+	if err := fixture.pool.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM team_members WHERE team_id = $1 AND user_id = $2)`, fixture.teamA, fixture.inviteeID).Scan(&member); err != nil || !member {
+		t.Fatalf("team membership = %v, %v", member, err)
+	}
+}
+
+func TestUnavailableAccountInvitationsStayOutOfRecipientList(t *testing.T) {
+	for _, state := range []string{"revoked", "deleted", "expired", "accepted"} {
+		t.Run(state, func(t *testing.T) {
+			fixture := newInvitationFixture(t)
+			ctx := t.Context()
+			_, command := fixture.newInvitation(t)
+			if _, err := fixture.repository.CreateBulkInvitations(ctx, fixture.inviterID, []invitations.NewWorkspaceInvitation{command}); err != nil {
+				t.Fatal(err)
+			}
+			now := time.Now().UTC()
+			accept := invitations.AcceptInvitationCommand{InvitationID: command.Invitation.ID, UserID: fixture.inviteeID, AcceptedAt: now}
+			switch state {
+			case "revoked":
+				if err := fixture.repository.RevokeInvitation(ctx, fixture.workspaceA, fixture.inviterID, command.Invitation.ID, now); err != nil {
+					t.Fatal(err)
+				}
+			case "deleted":
+				if _, err := fixture.pool.Exec(ctx, `DELETE FROM workspace_invitations WHERE invitation_id = $1`, command.Invitation.ID); err != nil {
+					t.Fatal(err)
+				}
+			case "expired":
+				if _, err := fixture.pool.Exec(ctx, `UPDATE workspace_invitations SET expires_at = $2 WHERE invitation_id = $1`, command.Invitation.ID, now); err != nil {
+					t.Fatal(err)
+				}
+			case "accepted":
+				if _, err := fixture.repository.AcceptInvitation(ctx, accept); err != nil {
+					t.Fatal(err)
+				}
+			}
+			assertAbsent := func() {
+				t.Helper()
+				listed, err := fixture.repository.ListInvitationsByEmail(ctx, fixture.invitee, now)
+				if err != nil || len(listed) != 0 {
+					t.Fatalf("unavailable invitation remains listed: %v, %v", listed, err)
+				}
+			}
+			assertAbsent()
+			_, err := fixture.repository.AcceptInvitation(ctx, accept)
+			if !errors.Is(err, invitations.ErrInvitationNotFound) && !errors.Is(err, invitations.ErrInvitationExpired) && !errors.Is(err, invitations.ErrInvitationUsed) {
+				t.Fatalf("unavailable acceptance = %v, want lifecycle error", err)
+			}
+			assertAbsent()
+		})
+	}
+}

@@ -11,6 +11,7 @@ import { OTPInput } from "@/components/ui/otp-input";
 import { requestMagicEmail } from "@/lib/actions/request-magic-email";
 import { signInWithGoogle, signInWithMicrosoft } from "@/lib/actions/sign-in";
 import { getSafeCallbackUrl, withCallbackUrl } from "@/utils/callback-url";
+import { isMobileAuthFlow } from "@/lib/mobile-auth";
 
 const COPYRIGHT_NOTICE =
   "\u00a9 2026 \u2022 Product of Complexus LLC \u2022 All Rights Reserved.";
@@ -19,12 +20,16 @@ export const AuthLayout = ({
   page,
   errorMessage,
   callbackUrl,
-  isMobileApp = false,
+  isMobileApp: mobileApp = false,
+  accountDeleted = false,
+  cleanupPending = false,
 }: {
   page: "login" | "signup";
   errorMessage?: string;
   callbackUrl?: string;
   isMobileApp?: boolean;
+  accountDeleted?: boolean;
+  cleanupPending?: boolean;
 }) => {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
@@ -34,6 +39,7 @@ export const AuthLayout = ({
   const [otpLoading, setOtpLoading] = useState(false);
   const router = useRouter();
   const safeCallbackUrl = getSafeCallbackUrl(callbackUrl);
+  const isMobileApp = mobileApp || isMobileAuthFlow(safeCallbackUrl);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -47,9 +53,14 @@ export const AuthLayout = ({
     });
 
     if (result.error.message) {
-      toast.error("Failed to send magic link", {
-        description: result.error.message,
-      });
+      toast.error(
+        isMobileApp
+          ? "Failed to send sign-in code"
+          : "Failed to send magic link",
+        {
+          description: result.error.message,
+        },
+      );
       return;
     }
 
@@ -73,6 +84,22 @@ export const AuthLayout = ({
   return (
     <Box className="max-w-xl px-6 md:w-full">
       <Logo asIcon className="h-10" />
+      {accountDeleted ? (
+        <Box
+          className="border-success/20 bg-success/10 mt-6 rounded-lg border p-4"
+          role="status"
+        >
+          <Text>Your account has been deleted.</Text>
+          <Text>
+            Shared workspace contributions remain attributed to Former user.
+          </Text>
+          {cleanupPending ? (
+            <Text className="mt-1" color="muted">
+              Connected-service cleanup will continue in the background.
+            </Text>
+          ) : null}
+        </Box>
+      ) : null}
       {isSent ? (
         <>
           <Text
@@ -138,10 +165,7 @@ export const AuthLayout = ({
                   Don&apos;t have an account?{" "}
                   <Link
                     className="text-primary underline"
-                    href={withCallbackUrl(
-                      "/signup",
-                      safeCallbackUrl,
-                    )}
+                    href={withCallbackUrl("/signup", safeCallbackUrl)}
                   >
                     Create one
                   </Link>
@@ -190,69 +214,63 @@ export const AuthLayout = ({
             >
               Continue
             </Button>
-            <Flex align="center" className="my-4 gap-4" justify="between">
-              <Box className="bg-surface-muted h-px w-full" />
-              <Text className="text-[0.95rem] opacity-40">OR</Text>
-              <Box className="bg-surface-muted h-px w-full" />
-            </Flex>
-            <Button
-              align="center"
-              className="mb-3 md:py-2.5"
-              color="tertiary"
-              fullWidth
-              leftIcon={<GoogleIcon />}
-              onClick={async () => {
-                await signInWithGoogle(
-                  withCallbackUrl(
-                    isMobileApp
-                      ? "/auth-callback?mobileApp=true"
-                      : "/auth-callback",
-                    safeCallbackUrl,
-                  ),
-                ).catch((error) => {
-                  toast.error("Google sign-in failed", {
-                    description:
-                      error instanceof Error
-                        ? error.message
-                        : "Please try again.",
-                  });
-                });
-              }}
-              size="lg"
-              type="button"
-            >
-              Continue with Google
-            </Button>
-            <Button
-              align="center"
-              className="mb-3 md:py-2.5"
-              color="tertiary"
-              fullWidth
-              leftIcon={<MicrosoftIcon />}
-              onClick={async () => {
-                try {
-                  await signInWithMicrosoft(
-                    withCallbackUrl(
-                      isMobileApp
-                        ? "/auth-callback?mobileApp=true"
-                        : "/auth-callback",
-                      safeCallbackUrl,
-                    ),
-                  );
-                } catch (error) {
-                  toast.error("Microsoft sign-in failed", {
-                    description:
-                      error instanceof Error
-                        ? error.message
-                        : "Please try again.",
-                  });
-                }
-              }}
-              size="lg"
-              type="button"
-            >
-              Continue with Microsoft
-            </Button>
+            {!isMobileApp ? (
+              <>
+                <Flex align="center" className="my-4 gap-4" justify="between">
+                  <Box className="bg-surface-muted h-px w-full" />
+                  <Text className="text-[0.95rem] opacity-40">OR</Text>
+                  <Box className="bg-surface-muted h-px w-full" />
+                </Flex>
+                <Button
+                  align="center"
+                  className="mb-3 md:py-2.5"
+                  color="tertiary"
+                  fullWidth
+                  leftIcon={<GoogleIcon />}
+                  onClick={async () => {
+                    await signInWithGoogle(
+                      withCallbackUrl("/auth-callback", safeCallbackUrl),
+                    ).catch((error) => {
+                      toast.error("Google sign-in failed", {
+                        description:
+                          error instanceof Error
+                            ? error.message
+                            : "Please try again.",
+                      });
+                    });
+                  }}
+                  size="lg"
+                  type="button"
+                >
+                  Continue with Google
+                </Button>
+                <Button
+                  align="center"
+                  className="mb-3 md:py-2.5"
+                  color="tertiary"
+                  fullWidth
+                  leftIcon={<MicrosoftIcon />}
+                  onClick={async () => {
+                    try {
+                      await signInWithMicrosoft(
+                        withCallbackUrl("/auth-callback", safeCallbackUrl),
+                      );
+                    } catch (error) {
+                      toast.error("Microsoft sign-in failed", {
+                        description:
+                          error instanceof Error
+                            ? error.message
+                            : "Please try again.",
+                      });
+                    }
+                  }}
+                  size="lg"
+                  type="button"
+                >
+                  Continue with Microsoft
+                </Button>
+              </>
+            ) : null}
           </form>
           <Text className="mt-3 pl-px text-[90%]" color="muted">
             {COPYRIGHT_NOTICE}

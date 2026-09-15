@@ -72,9 +72,10 @@ type EmailDelivery struct {
 }
 
 type AcceptCommand struct {
-	Lookup     TokenLookup
-	UserID     uuid.UUID
-	AcceptedAt time.Time
+	InvitationID uuid.UUID
+	Lookup       TokenLookup
+	UserID       uuid.UUID
+	AcceptedAt   time.Time
 }
 
 type OutboxEvent struct {

@@ -40,12 +40,14 @@ func (s *Service) DeleteRetainedObject(
 		return ErrRetainedObjectStorageRoute
 	}
 	configuredProvider, configuredContainer, err := s.RetainedObjectStorage()
+	container = strings.TrimSpace(container)
+	profileContainer := strings.TrimSpace(s.config.ProfilesBucket)
 	if err != nil || strings.TrimSpace(provider) != configuredProvider ||
-		strings.TrimSpace(container) != configuredContainer ||
+		(container != configuredContainer && (profileContainer == "" || container != profileContainer)) ||
 		strings.TrimSpace(blobName) == "" || len(blobName) > maximumRetainedObjectBlobNameLength {
 		return ErrRetainedObjectStorageRoute
 	}
-	if err := s.storage.DeleteFile(ctx, configuredContainer, blobName); err != nil {
+	if err := s.storage.DeleteFile(ctx, container, blobName); err != nil {
 		return ErrRetainedObjectDeletion
 	}
 	return nil

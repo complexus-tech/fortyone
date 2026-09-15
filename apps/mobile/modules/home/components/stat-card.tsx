@@ -5,14 +5,13 @@ import { SymbolView } from "expo-symbols";
 import { Ionicons } from "@expo/vector-icons";
 import { Text } from "@/components/ui";
 import { useTheme } from "@/hooks";
-import { colors, themeColors } from "@/constants/colors";
+import { themeColors } from "@/constants/colors";
 
 type StatCardProps = {
   count?: number;
   label: string;
   icon: ComponentProps<typeof Ionicons>["name"];
   systemImage: SFSymbol;
-  attention?: boolean;
 };
 
 export const StatCard = ({
@@ -20,14 +19,10 @@ export const StatCard = ({
   label,
   icon,
   systemImage,
-  attention,
 }: StatCardProps) => {
   const { resolvedTheme } = useTheme();
   const dark = resolvedTheme === "dark";
-  const iconColor =
-    attention && count > 0
-      ? colors.danger
-      : themeColors[dark ? "dark" : "light"].textMuted;
+  const iconColor = themeColors[resolvedTheme].foreground;
 
   return (
     <View

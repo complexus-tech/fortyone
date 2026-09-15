@@ -52,5 +52,6 @@ func Routes(cfg Config, app *web.App) {
 	app.Delete("/workspaces/{workspaceSlug}/invitations/{id}", h.RevokeInvitation, auth, workspace, adminOnly)
 	app.Get("/invitations/{token}", h.GetInvitation)
 	app.Get("/users/me/invitations", h.ListUserInvitations, auth)
+	app.Post("/users/me/invitations/{id}/accept", h.AcceptUserInvitation, auth, acceptRateLimit)
 	app.Post("/invitations/{token}/accept", h.AcceptInvitation, auth, acceptRateLimit)
 }

@@ -47,7 +47,12 @@ describe("invitation query options", () => {
 
     expect(hookOptions.queryKey).toEqual(invitationKeys.mine);
     expect(prefetchOptions.queryKey).toEqual(invitationKeys.mine);
-    expect(hookOptions.staleTime).toBe(DURATION_FROM_MILLISECONDS.MINUTE * 10);
+    expect(hookOptions.staleTime).toBe(0);
+    expect(hookOptions.refetchOnMount).toBe("always");
+    expect(hookOptions.refetchOnWindowFocus).toBe("always");
+    expect(hookOptions.refetchInterval).toBe(
+      DURATION_FROM_MILLISECONDS.SECOND * 30,
+    );
     expect(prefetchOptions.staleTime).toBe(
       DURATION_FROM_MILLISECONDS.MINUTE * 5,
     );

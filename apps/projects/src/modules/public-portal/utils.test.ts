@@ -1,5 +1,6 @@
 /* global describe, expect, it -- Jest globals are provided by the projects test runner. */
 
+import { FORMER_USER_ID } from "@/lib/former-user";
 import {
   getAuthorPathByPortalSlug,
   getCrossPortalRequestHref,
@@ -7,6 +8,9 @@ import {
 } from "./utils";
 
 describe("public portal profile paths", () => {
+  it("never links the shared former-user identity to a profile", () => {
+    expect(getAuthorPathByPortalSlug("city-roads", FORMER_USER_ID)).toBeNull();
+  });
   it("uses the global profile outside workspace subdomain deployments", () => {
     expect(getGlobalProfileHref()).toBe("/profile");
   });

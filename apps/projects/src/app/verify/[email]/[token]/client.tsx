@@ -4,7 +4,7 @@ import { Text, Flex } from "ui";
 import { useParams } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { Logo } from "@/components/ui";
-import { withCallbackUrl } from "@/utils/callback-url";
+import { getAuthCallbackPath, getLoginUrl } from "@/utils/callback-url";
 import { logIn } from "./actions";
 
 export const EmailVerificationCallback = ({
@@ -28,15 +28,16 @@ export const EmailVerificationCallback = ({
       const res = await logIn(validatedEmail, validatedToken);
 
       if (res.error) {
-        const errorPath = `/?error=${encodeURIComponent(res.error)}${isMobileApp ? "&mobileApp=true" : ""}`;
-        window.location.href = withCallbackUrl(errorPath, callbackUrl);
+        const errorURL = new URL(
+          getLoginUrl(callbackUrl, isMobileApp),
+          window.location.origin,
+        );
+        errorURL.searchParams.set("error", res.error);
+        window.location.href = errorURL.toString();
         return;
       }
 
-      window.location.href = withCallbackUrl(
-        isMobileApp ? "/auth-callback?mobileApp=true" : "/auth-callback",
-        callbackUrl,
-      );
+      window.location.href = getAuthCallbackPath(callbackUrl, isMobileApp);
     };
 
     void validate();
@@ -51,7 +52,7 @@ export const EmailVerificationCallback = ({
       <Flex align="center" direction="column" justify="center">
         <Logo asIcon className="mb-1 animate-pulse" />
         <Text color="muted" fontWeight="medium">
-          Verifying your secure sign-in link...
+          Verifying your secure sign-in {isMobileApp ? "code" : "link"}...
         </Text>
       </Flex>
     </Flex>

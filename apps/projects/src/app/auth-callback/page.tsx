@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { getMyInvitationsForCurrentRequest } from "@/modules/invitations/public/server";
-import { isMobileAuthPath } from "@/lib/mobile-auth";
+import { isMobileAuthFlow } from "@/lib/mobile-auth";
 import { getWorkspaces } from "@/lib/queries/get-workspaces";
 import { getProfile } from "@/lib/queries/profile";
 import { getLoginUrl } from "@/utils/callback-url";
@@ -20,29 +20,29 @@ export default async function AuthCallback({
   searchParams: Promise<{ callbackUrl?: string; mobileApp?: string }>;
 }) {
   const params = await searchParams;
-  const isMobileApp = params.mobileApp === "true";
+  const isMobileApp =
+    params.mobileApp === "true" || isMobileAuthFlow(params.callbackUrl);
   const callbackUrl = params.callbackUrl;
 
   const session = await auth();
 
   if (!session) {
-    redirect(getLoginUrl(callbackUrl));
+    redirect(getLoginUrl(callbackUrl, isMobileApp));
   }
 
+  if (isMobileAuthFlow(callbackUrl)) {
+    redirect(callbackUrl!);
+  }
+  if (isMobileApp) {
+    redirect(
+      "/?mobileApp=true&error=Please%20restart%20sign-in%20from%20the%20latest%20FortyOne%20app.",
+    );
+  }
   const [invitations, workspaces, profile] = await Promise.all([
     getMyInvitationsForCurrentRequest(),
     getWorkspaces(),
     getProfile(),
   ]);
-
-  if (isMobileAuthPath(callbackUrl)) {
-    redirect(callbackUrl!);
-  }
-  if (isMobileApp) {
-    redirect(
-      "/?error=Please%20restart%20sign-in%20from%20the%20latest%20FortyOne%20app.",
-    );
-  }
   return (
     <ClientPage
       callbackUrl={callbackUrl}

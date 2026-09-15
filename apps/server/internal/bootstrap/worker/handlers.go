@@ -56,6 +56,7 @@ type taskMuxDependencies struct {
 	InvitationOutbox       taskhandlers.InvitationOutboxProcessor
 	FeedbackSecurityKey    string
 	IdempotencyReceipts    taskhandlers.IdempotencyReceiptPurger
+	SubscriberCleanup      accountSubscriberCleanup
 }
 
 func buildTaskMux(dependencies taskMuxDependencies) *asynq.ServeMux {
@@ -161,10 +162,10 @@ func buildTaskMux(dependencies taskMuxDependencies) *asynq.ServeMux {
 	mux := asynq.NewServeMux()
 
 	// Existing handlers
-	mux.HandleFunc(tasks.TypeUserOnboardingStart, workerTaskService.HandleUserOnboardingStart)
-	mux.HandleFunc(tasks.TypeWorkspaceTrialStart, workerTaskService.HandleWorkspaceTrialStart)
+	mux.Handle(tasks.TypeUserOnboardingStart, subscriberUpdateHandler(dependencies.SubscriberCleanup))
+	mux.Handle(tasks.TypeWorkspaceTrialStart, subscriberUpdateHandler(dependencies.SubscriberCleanup))
 	mux.HandleFunc(tasks.TypeWorkspaceTrialEnd, workerTaskService.HandleWorkspaceTrialEnd)
-	mux.HandleFunc(tasks.TypeSubscriberUpdate, workerTaskService.HandleSubscriberUpdate)
+	mux.Handle(tasks.TypeSubscriberUpdate, subscriberUpdateHandler(dependencies.SubscriberCleanup))
 	mux.HandleFunc(tasks.TypeNotificationEmail, workerTaskService.HandleNotificationEmail)
 	mux.HandleFunc(tasks.TypeNotificationEmailDigest, workerTaskService.HandleNotificationEmailDigest)
 	mux.HandleFunc(tasks.TypeFeedbackContributorDelivery, workerTaskService.HandleFeedbackContributorDelivery)

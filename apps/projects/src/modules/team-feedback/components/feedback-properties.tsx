@@ -11,6 +11,7 @@ import { Avatar, Box, Button, Container, Flex, Text, TimeAgo } from "ui";
 import { Dot } from "@/components/ui/dot";
 import { PropertyOption } from "@/components/ui/property-option";
 import { useTerminology } from "@/hooks/use-terminology-display";
+import { FORMER_USER_NAME, isFormerUser } from "@/lib/former-user";
 import { FeedbackStatus } from "../status";
 import type { TeamFeedbackItem, TeamFeedbackPrivateAuthor } from "../types";
 
@@ -49,9 +50,15 @@ export const FeedbackProperties = ({
   const storyTerm = getTermDisplay("storyTerm");
   const linkedStory = feedback.storyLinks.find((link) => link.isPrimary);
   const isInline = variant === "inline";
-  const authorName = privateAuthor?.displayName || feedback.authorName;
-  const authorAvatar = privateAuthor?.avatarUrl ?? feedback.authorAvatar;
-  const showPrivateIdentity = Boolean(privateAuthor?.publicMasked);
+  const formerUser = isFormerUser(feedback.authorId);
+  const authorName = formerUser
+    ? FORMER_USER_NAME
+    : privateAuthor?.displayName || feedback.authorName;
+  const authorAvatar = formerUser
+    ? undefined
+    : privateAuthor?.avatarUrl ?? feedback.authorAvatar;
+  const showPrivateIdentity =
+    !formerUser && Boolean(privateAuthor?.publicMasked);
 
   return (
     <Container
@@ -81,7 +88,7 @@ export const FeedbackProperties = ({
                 size="xs"
                 src={authorAvatar ?? undefined}
               />
-              {authorProfileHref && !showPrivateIdentity ? (
+              {authorProfileHref && !showPrivateIdentity && !formerUser ? (
                 <Link
                   className="text-foreground hover:text-primary min-w-0 transition-colors"
                   href={authorProfileHref}
@@ -103,7 +110,8 @@ export const FeedbackProperties = ({
             </MetadataValue>
           }
         />
-        {privateAuthor?.email &&
+        {!formerUser &&
+        privateAuthor?.email &&
         (privateAuthor.kind === "verified_guest" ||
           privateAuthor.kind === "external") ? (
           <PropertyOption

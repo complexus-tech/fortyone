@@ -172,6 +172,21 @@ describe("workspace public portal routes", () => {
 });
 
 describe("authentication availability", () => {
+  it("lets the standalone deletion page own its email-only unauthenticated redirect", async () => {
+    mockedGetSessionFromRequest.mockResolvedValue(null);
+    const response = await proxy({
+      headers: { get: () => null },
+      nextUrl: {
+        hostname: "cloud.fortyone.app",
+        pathname: "/auth/account-deletion",
+        search: "",
+      },
+      url: "https://cloud.fortyone.app/auth/account-deletion",
+    } as unknown as NextRequest);
+    expect(response.status).toBe(200);
+    expect(mockedResponse.redirect).not.toHaveBeenCalled();
+    expect(mockedResponse.rewrite).not.toHaveBeenCalled();
+  });
   it("returns a controlled service-unavailable response", async () => {
     mockedGetSessionFromRequest.mockRejectedValue(
       new AuthSessionLookupError("Current-user lookup failed"),

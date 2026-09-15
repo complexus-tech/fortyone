@@ -1,3 +1,4 @@
+import { ObjectiveIcon } from "@/components/icons/objective";
 import type { StoryFilterOption } from "./story-filters.types";
 import { View } from "react-native";
 import { AssigneeIcon, PriorityIcon, StatusIcon } from "@/components/icons";
@@ -7,7 +8,7 @@ export function StoryFilterIcon({
   facet,
   option,
 }: {
-  facet: "status" | "priority" | "assignee";
+  facet: "status" | "priority" | "assignee" | "objective";
   option?: StoryFilterOption;
 }) {
   return (
@@ -20,7 +21,9 @@ export function StoryFilterIcon({
         justifyContent: "center",
       }}
     >
-      {facet === "status" ? (
+      {facet === "objective" ? (
+        <ObjectiveIcon />
+      ) : facet === "status" ? (
         <StatusIcon
           category={option?.statusCategory}
           color={option?.color}

@@ -15,7 +15,7 @@ export type RevokeInvitationCacheContext = {
 
 export const optimisticallyAcceptInvitation = async (
   queryClient: QueryClient,
-  inviteToken: string,
+  invitationId: string,
 ): Promise<AcceptInvitationCacheContext> => {
   await queryClient.cancelQueries({ queryKey: invitationKeys.mine });
 
@@ -23,13 +23,13 @@ export const optimisticallyAcceptInvitation = async (
     invitationKeys.mine,
   );
   const invitation = previousMineInvitations?.find(
-    (candidate) => candidate.token === inviteToken,
+    (candidate) => candidate.id === invitationId,
   );
 
   queryClient.setQueryData<Invitation[]>(
     invitationKeys.mine,
     (currentInvitations = []) =>
-      currentInvitations.filter((candidate) => candidate.token !== inviteToken),
+      currentInvitations.filter((candidate) => candidate.id !== invitationId),
   );
 
   return { invitation, previousMineInvitations };

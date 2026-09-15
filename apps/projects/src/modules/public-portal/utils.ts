@@ -1,4 +1,5 @@
 import { getLoginUrl } from "@/utils/callback-url";
+import { isFormerUser } from "@/lib/former-user";
 import type { PublicPortal, PublicRequest } from "./types";
 import { NEW_FEEDBACK_QUERY_PARAM } from "./query-params";
 
@@ -39,7 +40,8 @@ export const getAuthorPathByPortalSlug = (
   portalSlug: string,
   authorId: string | null,
 ) => {
-  if (!authorId || authorId === NIL_AUTHOR_ID) return null;
+  if (!authorId || authorId === NIL_AUTHOR_ID || isFormerUser(authorId))
+    return null;
 
   return isWorkspaceSubdomainDeployment
     ? `/people/${authorId}`

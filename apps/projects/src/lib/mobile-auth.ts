@@ -1,4 +1,5 @@
 export const MOBILE_REDIRECT_URI = "fortyone://login";
+export const MOBILE_ACCOUNT_DELETION_PATH = "/auth/account-deletion";
 const RANDOM_VALUE = /^[A-Za-z0-9_-]{43}$/;
 
 export type MobileAuthRequest = { state: string; codeChallenge: string };
@@ -36,6 +37,53 @@ export const isMobileAuthPath = (value?: string | null) => {
       code_challenge: url.searchParams.get("code_challenge") ?? undefined,
     }) !== null
   );
+};
+
+const MOBILE_CONTINUATION_PATHS = new Set([
+  "/auth-callback",
+  "/onboarding/account",
+  "/onboarding/create",
+  "/onboarding/invite",
+  "/onboarding/join",
+  "/onboarding/welcome",
+]);
+
+// An expired session can wrap the handoff in an onboarding return URL. Keep
+// that login email-only even when the outer mobileApp flag was not preserved.
+export const isMobileAuthFlow = (callbackUrl?: string | null): boolean => {
+  let callback = callbackUrl;
+  for (let depth = 0; depth < 5 && callback; depth++) {
+    if (
+      callback === MOBILE_ACCOUNT_DELETION_PATH ||
+      callback === `${MOBILE_ACCOUNT_DELETION_PATH}?mobileApp=true`
+    )
+      return true;
+    if (isMobileAuthPath(callback)) return true;
+    if (
+      callback.length > 2048 ||
+      !callback.startsWith("/") ||
+      callback.startsWith("//") ||
+      Array.from(callback).some(
+        (character) =>
+          character === "\\" ||
+          character.charCodeAt(0) <= 32 ||
+          character.charCodeAt(0) === 127,
+      )
+    )
+      return false;
+    const url = new URL(callback, "https://cloud.fortyone.app");
+    if (
+      (!MOBILE_CONTINUATION_PATHS.has(url.pathname) &&
+        !/^\/[a-z0-9][a-z0-9-]*\/settings(?:\/workspace\/members)?$/.test(
+          url.pathname,
+        )) ||
+      url.hash ||
+      url.searchParams.getAll("callbackUrl").length !== 1
+    )
+      return false;
+    callback = url.searchParams.get("callbackUrl");
+  }
+  return false;
 };
 
 export const getMobileRedirectURL = (code: string, state: string) => {

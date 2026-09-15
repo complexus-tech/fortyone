@@ -19,6 +19,7 @@ const AUTH_ONLY_PREFIXES = new Set([
   "/signup",
   "/auth-callback",
   "/auth/mobile",
+  "/auth/account-deletion",
   "/verify",
   "/onboarding",
   "/unauthorized",

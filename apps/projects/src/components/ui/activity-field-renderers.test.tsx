@@ -1,5 +1,7 @@
 /* global describe, expect, it -- Jest globals are provided by the projects test runner. */
 
+import { render, screen } from "@testing-library/react";
+import { FORMER_USER_ID } from "@/lib/former-user";
 import {
   getActivityFieldMeta,
   getLabelActivityDisplayValue,
@@ -18,6 +20,15 @@ const createRendererOptions = () => ({
 });
 
 describe("activity field renderers", () => {
+  it("keeps former assignee history legible without a live member or profile link", () => {
+    render(
+      getActivityFieldMeta("assignee_id", createRendererOptions()).render(
+        FORMER_USER_ID,
+      ),
+    );
+    expect(screen.getByText("Former user")).toBeInTheDocument();
+    expect(screen.queryByRole("link")).not.toBeInTheDocument();
+  });
   it("keeps the field labels and fallback used by activity copy", () => {
     const options = createRendererOptions();
 

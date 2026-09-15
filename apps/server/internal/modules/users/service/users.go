@@ -64,6 +64,7 @@ type Service struct {
 	verificationTokens *VerificationTokenManager
 	verificationRepo   VerificationTokenRepository
 	clock              platformclock.Clock
+	accountDeletion    AccountDeletionService
 }
 
 // Option configures an optional users service capability.

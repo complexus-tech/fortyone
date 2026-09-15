@@ -6,12 +6,47 @@ import {
   getMobileAuthPath,
   getMobileRedirectURL,
   isMobileAuthPath,
+  isMobileAuthFlow,
   parseMobileAuthRequest,
+  MOBILE_ACCOUNT_DELETION_PATH,
 } from "./mobile-auth";
 
 const transaction = { state: "s".repeat(43), codeChallenge: "c".repeat(43) };
 
 describe("mobile browser handoff", () => {
+  it("keeps deletion and its exact workspace resolution routes email-only", () => {
+    expect(isMobileAuthFlow(MOBILE_ACCOUNT_DELETION_PATH)).toBe(true);
+    expect(
+      isMobileAuthFlow(
+        withCallbackUrl("/auth-callback", MOBILE_ACCOUNT_DELETION_PATH),
+      ),
+    ).toBe(true);
+    expect(
+      isMobileAuthFlow(
+        withCallbackUrl("/acme/settings", MOBILE_ACCOUNT_DELETION_PATH),
+      ),
+    ).toBe(true);
+    expect(
+      isMobileAuthFlow(
+        withCallbackUrl(
+          "/acme/settings/workspace/members",
+          MOBILE_ACCOUNT_DELETION_PATH,
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      isMobileAuthFlow(
+        withCallbackUrl(
+          "/acme/settings/workspace/billing",
+          MOBILE_ACCOUNT_DELETION_PATH,
+        ),
+      ),
+    ).toBe(false);
+    expect(isMobileAuthFlow("/auth/account-deletion-unknown")).toBe(false);
+    expect(
+      isMobileAuthFlow("https://attacker.example/auth/account-deletion"),
+    ).toBe(false);
+  });
   it("requires one high entropy state and S256 challenge", () => {
     expect(
       parseMobileAuthRequest({
@@ -51,6 +86,36 @@ describe("mobile browser handoff", () => {
     expect(() =>
       getMobileRedirectURL("unsafe&token=value", transaction.state),
     ).toThrow();
+  });
+
+  it("recognizes mobile handoffs nested in an onboarding login return", () => {
+    const path = getMobileAuthPath(transaction);
+    expect(isMobileAuthFlow(path)).toBe(true);
+    expect(
+      isMobileAuthFlow(withCallbackUrl("/onboarding/join?token=invite", path)),
+    ).toBe(true);
+    expect(
+      isMobileAuthFlow(
+        withCallbackUrl(
+          "/auth-callback",
+          withCallbackUrl("/onboarding/account", path),
+        ),
+      ),
+    ).toBe(true);
+  });
+
+  it("does not infer mobile mode from unrelated or unsafe return URLs", () => {
+    const path = getMobileAuthPath(transaction);
+    for (const callback of [
+      withCallbackUrl("/settings/workspace/billing", path),
+      `https://example.com${path}`,
+      `//example.com${path}`,
+      "/onboarding/join?callbackUrl=/auth/mobile?state=invalid",
+      `${withCallbackUrl("/onboarding/join", path)}&callbackUrl=/other`,
+      `${withCallbackUrl("/onboarding/join", path)}#fragment`,
+    ]) {
+      expect(isMobileAuthFlow(callback)).toBe(false);
+    }
   });
 
   it("preserves mobile context through sign-in and onboarding completion", () => {

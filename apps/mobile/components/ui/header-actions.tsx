@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { themeColors } from "@/constants/colors";
 import { useTheme } from "@/hooks/theme";
 import { ContextMenuButton } from "./context-menu-button";
+import { NewStoryIcon } from "@/components/icons/new-story";
 import { IconButton } from "./icon-button";
 
 export type { HeaderActionsProps } from "./header-actions.types";
@@ -30,12 +31,9 @@ export function HeaderActions({
         },
       ]}
     >
-      <IconButton
-        icon="create-outline"
-        label={createLabel}
-        onPress={onCreate}
-        style={styles.action}
-      />
+      <IconButton label={createLabel} onPress={onCreate} style={styles.action}>
+        <NewStoryIcon size={22} color={theme.foreground} />
+      </IconButton>
       {onOptions ? (
         <IconButton
           icon="ellipsis-horizontal"

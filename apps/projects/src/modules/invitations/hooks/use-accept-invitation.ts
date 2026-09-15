@@ -2,7 +2,10 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { redirect } from "next/navigation";
 import { buildWorkspaceUrl } from "@/utils/workspace-url";
-import { acceptInvitation } from "../actions/accept-invitation";
+import {
+  acceptUserInvitation,
+  InvitationUnavailableError,
+} from "../actions/accept-user-invitation";
 import {
   optimisticallyAcceptInvitation,
   reconcileAcceptedInvitation,
@@ -14,11 +17,11 @@ export const useAcceptInvitationMutation = () => {
   const toastId = "accept-invitation";
 
   const mutation = useMutation({
-    mutationFn: (inviteToken: string) => acceptInvitation(inviteToken),
-    onMutate: async (inviteToken) => {
+    mutationFn: (invitationId: string) => acceptUserInvitation(invitationId),
+    onMutate: async (invitationId) => {
       const context = await optimisticallyAcceptInvitation(
         queryClient,
-        inviteToken,
+        invitationId,
       );
 
       toast.loading("Accepting invitation...", {
@@ -29,6 +32,14 @@ export const useAcceptInvitationMutation = () => {
       return context;
     },
     onError: (error, variables, context) => {
+      if (error instanceof InvitationUnavailableError) {
+        toast.info("Invitation no longer available", {
+          id: toastId,
+          description: error.message,
+        });
+        return;
+      }
+
       rollbackAcceptedInvitation(queryClient, context);
 
       toast.error("Failed to accept", {
@@ -42,11 +53,7 @@ export const useAcceptInvitationMutation = () => {
         },
       });
     },
-    onSuccess: (res, __, context) => {
-      if (res.error?.message) {
-        throw new Error(res.error.message);
-      }
-
+    onSuccess: (_, __, context) => {
       if (context.invitation) {
         toast.success("Accepted", {
           description: "Invitation accepted successfully",

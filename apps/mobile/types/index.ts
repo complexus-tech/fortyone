@@ -40,6 +40,13 @@ export type Comment = {
   storyId: string;
   parentId: string | null;
   userId: string;
+  user?: {
+    id: string;
+    username: string;
+    fullName: string;
+    avatarUrl?: string | null;
+    isSystem?: boolean;
+  } | null;
   comment: string;
   createdAt: string;
   updatedAt: string;

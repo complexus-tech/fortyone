@@ -1,4 +1,5 @@
 import type { Workspace } from "@/types/workspace";
+import { isMobileAuthPath } from "@/lib/mobile-auth";
 import {
   getOnboardingWorkspaceUrl,
   withOnboardingCallbackUrl,
@@ -28,6 +29,10 @@ export const getWelcomeDestinations = (
       redirectUrl: withOnboardingCallbackUrl("/onboarding/create", callbackUrl),
     };
   }
+
+  // Mobile onboarding must finish the browser handoff, not enter optional web
+  // setup pages with their own navigation, billing, or upgrade surfaces.
+  if (isMobileAuthPath(callbackUrl)) return { redirectUrl: callbackUrl! };
 
   return {
     redirectUrl: getOnboardingWorkspaceUrl(activeWorkspace.slug, callbackUrl),

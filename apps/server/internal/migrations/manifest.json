@@ -1486,6 +1486,118 @@
         "Automatic audit events use actor_kind system and the zero UUID, preserve the removed team ID as metadata, and record personal_token.revoked or service_account_key.revoked with reason team_restrictions_exhausted.",
         "Revocation and audit insertion commit or roll back with the restriction mutation. Already-revoked or deleted credential parents require no new revocation event; migration rollback must never resurrect access."
       ]
+    },
+    {
+      "version": 191,
+      "slug": "permanent_account_deletion",
+      "classification": "forward-only",
+      "files": {
+        "up": "000191_permanent_account_deletion.up.sql",
+        "down": "000191_permanent_account_deletion.down.sql"
+      },
+      "compatibility": {
+        "schema": "Adds an inactive shared attribution identity and a credential-free account deletion finalization queue with an irreversible reactivation guard.",
+        "api": "New authenticated DELETE /users/account permanently erases personal data and login access; 409 lists live workspaces needing another administrator; 202 means connected-service cleanup remains. Existing DELETE /users/profile remains deactivation.",
+        "worker": "Deploy the account finalizer and existing calendar/object/Drive cleanup dispatchers before exposing deletion. Remote calendar cleanup temporarily retains sealed credentials and an anonymous account FK.",
+        "mixed_versions": "Schema-first expansion; older API nodes remain compatible but do not expose permanent deletion. Deleted identities cannot be restored by old reactivation writers."
+      },
+      "rollout": {
+        "sequence": 40,
+        "mode": "schema-first",
+        "steps": [
+          "Apply migration 000191.",
+          "Deploy worker with periodic account finalization and verify calendar, object and Drive cleanup dispatchers.",
+          "Deploy API and client deletion flow; validate sole-admin conflict, session revocation, object cleanup and pending finalization in a controlled test account."
+        ]
+      },
+      "recovery": {
+        "strategy": "forward-fix",
+        "procedure": [
+          "Disable new deletion requests if failures occur while leaving cleanup dispatchers running.",
+          "Repair forward; never restore erased identity/content or reactivate pending account keys.",
+          "The down migration deliberately refuses irreversible rollback."
+        ]
+      },
+      "operational_notes": [
+        "Organization-owned shared tasks/documents remain with detached or generic authorship; private documents, personal comments, chats, preferences, memories and credentials are erased.",
+        "Provider cleanup queues retain only the sealed credentials and routing required to finish removal; physical storage cleanup is asynchronous.",
+        "Existing immutable security audit ledgers and externally delivered copies are not rewritten. Retention and collaborative content boundaries must be disclosed.",
+        "No migration or deletion is authorized against production by local validation."
+      ]
+    },
+    {
+      "version": 192,
+      "slug": "account_subscriber_deletions",
+      "classification": "forward-only",
+      "files": {
+        "up": "000192_account_subscriber_deletions.up.sql",
+        "down": "000192_account_subscriber_deletions.down.sql"
+      },
+      "compatibility": {
+        "schema": "Adds a leased subscriber deletion outbox without a user foreign key; retains the address only until confirmed provider deletion.",
+        "api": "Permanent account deletion stages the outbox in the erasure transaction and reports 202 cleanup_pending for connected-service cleanup.",
+        "worker": "The account cleanup worker deletes Brevo contacts with bounded retry and purges addresses after 204 or 404. Subscriber updates check active identity under the same email lifecycle lock used by deletion.",
+        "mixed_versions": "Apply schema first and replace all subscriber-update workers before exposing account deletion; old update workers can recreate erased contacts from stale queued payloads."
+      },
+      "rollout": {
+        "sequence": 41,
+        "mode": "schema-first",
+        "steps": [
+          "Apply migrations 000191 and 000192 before deploying the new API or worker.",
+          "Replace all workers, configure Brevo credentials and verify periodic cleanup and guarded subscriber updates.",
+          "Enable account deletion after observing confirmed contact deletion and removal of the temporary outbox address in a controlled test account."
+        ]
+      },
+      "recovery": {
+        "strategy": "forward-fix",
+        "procedure": [
+          "Disable new account deletion requests if necessary, but preserve and continue dispatching existing cleanup obligations.",
+          "Repair provider credentials or worker failures; disabled Brevo configuration must never acknowledge deletion.",
+          "Do not discard pending addresses or roll back to subscriber workers that trust stale profile payloads."
+        ]
+      },
+      "operational_notes": [
+        "Retries use expiring fenced claims and capped backoff. Provider calls occur outside the erasure transaction; failed and unconfigured requests retain their cleanup obligation.",
+        "The worker logs counts and safe status only; it does not place contact addresses or provider response bodies in task payloads or new cleanup logs.",
+        "The outbox temporarily retains the minimum address required for deletion and removes the entire row after explicit 204 or 404 confirmation.",
+        "A newly registered account using the same address waits for old cleanup before a queued profile update can subscribe it again."
+      ]
+    },
+    {
+      "version": 193,
+      "slug": "account_deletion_shared_history",
+      "classification": "forward-only",
+      "files": {
+        "up": "000193_account_deletion_shared_history.up.sql",
+        "down": "000193_account_deletion_shared_history.down.sql"
+      },
+      "compatibility": {
+        "schema": "Renames the permanently inactive shared attribution actor to Former user without removing its update/reactivation guard.",
+        "api": "The new account deletion implementation retains shared comments, feedback submissions and activity history under generic attribution, while erasing identity and private account data.",
+        "worker": "Existing account finalization, subscriber and provider cleanup contracts are unchanged.",
+        "mixed_versions": "Apply schema first, then replace all account deletion API instances before accepting deletion requests under the shared-history retention contract; older APIs delete authored collaboration records."
+      },
+      "rollout": {
+        "sequence": 42,
+        "mode": "schema-first",
+        "steps": [
+          "Pause new account deletion requests during the API cutover.",
+          "Apply migration 000193, then deploy all API instances with shared-history reattribution and the matching client disclosure.",
+          "Verify retained comment threads, feedback prose and history, erased account identity, revoked sessions, shared files and continuing provider cleanup before reopening deletion."
+        ]
+      },
+      "recovery": {
+        "strategy": "forward-fix",
+        "procedure": [
+          "Pause new deletion requests if validation fails while retaining all existing cleanup queues.",
+          "Repair forward without restoring erased identities or reverting to APIs that delete retained collaboration history."
+        ]
+      },
+      "operational_notes": [
+        "The shared Former user actor remains inactive, system-owned and protected from update/reactivation.",
+        "Retained shared content may contain personal details voluntarily included in prose; this operation erases account identity rather than rewriting organization-owned content.",
+        "Private documents, credentials and account-specific stores are erased; referenced shared attachment objects remain available."
+      ]
     }
   ]
 }

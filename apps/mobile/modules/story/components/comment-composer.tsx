@@ -56,7 +56,7 @@ const ComposeComment = ({
       saveLabel={sent ? "Finish" : "Send"}
       readOnly={sent}
       initialHtml={draft.value.html}
-      placeholder="Share an update or mention someone…"
+      placeholder="Share an update…"
       onDraft={(value) => finalizer.persistDraft(() => draft.persist(value))}
       onClose={async () => {
         await finalizer.close(draft.clear);

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Avatar, Box, Button, Flex, Text, Tooltip } from "ui";
 import { useWorkspacePath } from "@/hooks";
 import type { Member, UserSummary } from "@/types";
+import { isFormerUser } from "@/lib/former-user";
 
 export const MemberTooltip = ({
   member,
@@ -13,7 +14,7 @@ export const MemberTooltip = ({
 }) => {
   const { withWorkspace } = useWorkspacePath();
 
-  if (!member) {
+  if (!member || isFormerUser(member.id)) {
     return children;
   }
 

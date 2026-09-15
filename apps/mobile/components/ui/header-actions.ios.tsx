@@ -1,6 +1,13 @@
 import type { HeaderActionsProps } from "./header-actions.types";
 import type { SFSymbol } from "expo-symbols";
-import { Button, Host, HStack, Image, Menu } from "@expo/ui/swift-ui";
+import {
+  Button,
+  Host,
+  HStack,
+  Image,
+  Menu,
+  RNHostView,
+} from "@expo/ui/swift-ui";
 import {
   accessibilityLabel,
   accessibilityAddTraits,
@@ -11,6 +18,8 @@ import {
   shapes,
   tint,
 } from "@expo/ui/swift-ui/modifiers";
+import { View } from "react-native";
+import { NewStoryIcon } from "@/components/icons/new-story";
 import { themeColors } from "@/constants/colors";
 import { useTheme } from "@/hooks/theme";
 
@@ -69,7 +78,26 @@ export function HeaderActions({
           onPress={onCreate}
           modifiers={[buttonStyle("plain"), accessibilityLabel(createLabel)]}
         >
-          <ActionIcon systemName="square.and.pencil" color={foreground} />
+          <HStack
+            modifiers={[
+              frame({ width: 44, height: 44 }),
+              contentShape(shapes.rectangle()),
+            ]}
+          >
+            <RNHostView matchContents>
+              <View
+                pointerEvents="none"
+                style={{
+                  width: 44,
+                  height: 44,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <NewStoryIcon size={22} color={foreground} />
+              </View>
+            </RNHostView>
+          </HStack>
         </Button>
         {onOptions ? (
           <Button

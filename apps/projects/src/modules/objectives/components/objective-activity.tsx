@@ -4,6 +4,8 @@ import { Box, Flex, Text, Avatar, Tooltip, Button, TimeAgo } from "ui";
 import Link from "next/link";
 import { cn } from "lib";
 import { CalendarIcon } from "icons";
+import { FORMER_USER_NAME, isFormerUser } from "@/lib/former-user";
+import { FormerUser } from "@/components/ui/former-user";
 import { useMembers } from "@/lib/hooks/members";
 import { PriorityIcon } from "@/components/ui/priority-icon";
 import { ObjectiveStatusIcon } from "@/components/ui/objective-status-icon";
@@ -27,7 +29,8 @@ export const ObjectiveActivityComponent = ({
 }: ObjectiveActivity) => {
   const { data: members = [] } = useMembers();
   const { data: statuses = [] } = useObjectiveStatuses();
-  const member = members.find((m) => m.id === userId);
+  const formerUser = isFormerUser(userId);
+  const member = formerUser ? undefined : members.find((m) => m.id === userId);
   const { data: keyResults = [] } = useKeyResults(objectiveId);
   const keyResult = keyResults.find((kr) => kr.id === keyResultId);
   const { withWorkspace } = useWorkspacePath();
@@ -35,6 +38,22 @@ export const ObjectiveActivityComponent = ({
   if (field === "completed_at") {
     return null;
   }
+
+  const renderLead = (value: string) => {
+    if (isFormerUser(value)) return <span>{FORMER_USER_NAME}</span>;
+    if (!value || value.includes("nil")) return <span>No lead</span>;
+    const lead = members.find((person) => person.id === value);
+    if (!lead) return <span>Unavailable member</span>;
+    return (
+      <Link
+        className="flex items-center gap-1.5"
+        href={withWorkspace(`/profile/${lead.id}`)}
+      >
+        <Avatar name={lead.fullName} size="xs" src={lead.avatarUrl} />
+        {lead.username || lead.fullName}
+      </Link>
+    );
+  };
 
   const objectiveFieldMap = {
     name: {
@@ -94,27 +113,7 @@ export const ObjectiveActivityComponent = ({
 
     lead_user_id: {
       label: "Lead",
-      render: (value: string) => (
-        <>
-          {!value || value.includes("nil") ? (
-            <span>No lead</span>
-          ) : (
-            <Link
-              className="flex items-center gap-1.5"
-              href={withWorkspace(
-                `/profile/${members.find((m) => m.id === value)?.id}`,
-              )}
-            >
-              <Avatar
-                name={members.find((m) => m.id === value)?.fullName}
-                size="xs"
-                src={members.find((m) => m.id === value)?.avatarUrl}
-              />
-              {members.find((m) => m.id === value)?.username || "deleted user"}
-            </Link>
-          )}
-        </>
-      ),
+      render: renderLead,
     },
   } as Record<
     string,
@@ -164,28 +163,7 @@ export const ObjectiveActivityComponent = ({
     },
     lead: {
       label: "Lead",
-      render: (value: string) => (
-        <>
-          {!value || value.includes("nil") ? (
-            <span>No lead</span>
-          ) : (
-            <Link
-              className="flex items-center gap-1.5"
-              href={withWorkspace(
-                `/profile/${members.find((m) => m.id === value)?.id}`,
-              )}
-            >
-              <Avatar
-                className="relative"
-                name={members.find((m) => m.id === value)?.fullName}
-                size="xs"
-                src={members.find((m) => m.id === value)?.avatarUrl}
-              />
-              {members.find((m) => m.id === value)?.username || "deleted user"}
-            </Link>
-          )}
-        </>
-      ),
+      render: renderLead,
     },
     contributors: {
       label: "Contributors",
@@ -212,66 +190,70 @@ export const ObjectiveActivityComponent = ({
         )}
       />
       <Flex align="center" className="z-1" gap={1}>
-        <Tooltip
-          className="py-2.5"
-          title={
-            member ? (
-              <Box>
-                <Flex gap={2}>
-                  <Avatar
-                    className="mt-0.5"
-                    name={member.fullName}
-                    src={member.avatarUrl}
-                  />
-                  <Box>
-                    <Link
-                      className={cn("mb-2 flex gap-1", {
-                        "mb-0": member.role === "system",
-                      })}
-                      href={
-                        member.role === "system"
-                          ? ""
-                          : withWorkspace(`/profile/${member.id}`)
-                      }
-                    >
-                      <Text fontSize="md">{member.fullName}</Text>
-                      <Text color="muted" fontSize="md">
-                        ({member.username})
-                      </Text>
-                    </Link>
-                    {member.role !== "system" ? (
-                      <Button
-                        className="mb-0.5 ml-px px-2"
-                        color="tertiary"
-                        href={withWorkspace(`/profile/${member.id}`)}
-                        size="xs"
+        {formerUser ? (
+          <FormerUser />
+        ) : (
+          <Tooltip
+            className="py-2.5"
+            title={
+              member ? (
+                <Box>
+                  <Flex gap={2}>
+                    <Avatar
+                      className="mt-0.5"
+                      name={member.fullName}
+                      src={member.avatarUrl}
+                    />
+                    <Box>
+                      <Link
+                        className={cn("mb-2 flex gap-1", {
+                          "mb-0": member.role === "system",
+                        })}
+                        href={
+                          member.role === "system"
+                            ? ""
+                            : withWorkspace(`/profile/${member.id}`)
+                        }
                       >
-                        Go to profile
-                      </Button>
-                    ) : (
-                      <Text color="muted" fontSize="md">
-                        (System Account)
-                      </Text>
-                    )}
-                  </Box>
-                </Flex>
+                        <Text fontSize="md">{member.fullName}</Text>
+                        <Text color="muted" fontSize="md">
+                          ({member.username})
+                        </Text>
+                      </Link>
+                      {member.role !== "system" ? (
+                        <Button
+                          className="mb-0.5 ml-px px-2"
+                          color="tertiary"
+                          href={withWorkspace(`/profile/${member.id}`)}
+                          size="xs"
+                        >
+                          Go to profile
+                        </Button>
+                      ) : (
+                        <Text color="muted" fontSize="md">
+                          (System Account)
+                        </Text>
+                      )}
+                    </Box>
+                  </Flex>
+                </Box>
+              ) : null
+            }
+          >
+            <Flex align="center" className="cursor-pointer" gap={1}>
+              <Box className="bg-surface relative left-px flex aspect-square items-center rounded-full p-[0.3rem]">
+                <Avatar
+                  name={member?.fullName}
+                  size="xs"
+                  src={member?.avatarUrl}
+                />
               </Box>
-            ) : null
-          }
-        >
-          <Flex align="center" className="cursor-pointer" gap={1}>
-            <Box className="bg-surface relative left-px flex aspect-square items-center rounded-full p-[0.3rem]">
-              <Avatar
-                name={member?.fullName}
-                size="xs"
-                src={member?.avatarUrl}
-              />
-            </Box>
-            <Text className="relative ml-1 text-sm text-black md:text-[0.95rem] dark:text-white">
-              {member?.username}
-            </Text>
-          </Flex>
-        </Tooltip>
+              <Text className="relative ml-1 text-sm text-black md:text-[0.95rem] dark:text-white">
+                {member?.username}
+              </Text>
+            </Flex>
+          </Tooltip>
+        )}
         <Box className="line-clamp-1 flex items-center gap-1 text-sm md:text-[0.95rem]">
           <Text as="span" className="text-sm md:text-[0.95rem]" color="muted">
             {type === "create" ? `created the ${entityType}` : "changed the"}
@@ -341,7 +323,7 @@ export const ObjectiveActivityComponent = ({
         <Flex align="start" className="mt-2 ml-9 gap-2">
           <Avatar
             className="mt-0.5"
-            name={member?.fullName}
+            name={formerUser ? FORMER_USER_NAME : member?.fullName}
             size="xs"
             src={member?.avatarUrl}
           />

@@ -67,3 +67,11 @@ func invitationFromEmailList(row invitationsql.ListInvitationsByEmailRow) invita
 		row.WorkspaceName, row.WorkspaceSlug, row.WorkspaceColor,
 	)
 }
+
+func invitationFromIDLock(row invitationsql.LockInvitationByIDRow) invitationsdomain.WorkspaceInvitation {
+	return toCoreInvitation(
+		row.InvitationID, row.WorkspaceID, row.InviterID, row.Email, row.Role, row.TeamIds,
+		row.ExpiresAt, row.CreatedAt, row.UpdatedAt, row.UsedAt,
+		row.WorkspaceName, row.WorkspaceSlug, row.WorkspaceColor,
+	)
+}

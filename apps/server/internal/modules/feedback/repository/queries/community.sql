@@ -458,6 +458,7 @@ SELECT contributor.id AS contributor_id,
        contributor.user_id,
        CAST(contributor.kind AS text) AS kind,
        CAST(CASE
+           WHEN item.author_id = CAST('ffffffff-ffff-4fff-8fff-ffffffffffff' AS uuid) THEN 'Former user'
            WHEN contributor.kind = 'anonymous' THEN 'Anonymous'
            WHEN contributor.kind = 'account' THEN COALESCE(NULLIF(TRIM(account.full_name), ''), NULLIF(TRIM(account.username), ''), 'Account user')
            ELSE COALESCE(NULLIF(TRIM(contributor.display_name), ''), 'Guest')

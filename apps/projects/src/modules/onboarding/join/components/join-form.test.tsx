@@ -9,7 +9,7 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { toast } from "sonner";
-import { redirect } from "next/navigation";
+import { getMobileAuthPath } from "@/lib/mobile-auth";
 import { useWorkspaces } from "@/lib/hooks/workspaces";
 import { acceptInvitation } from "@/modules/invitations/public/onboarding";
 import type { Invitation } from "@/modules/invitations/public/types";
@@ -23,9 +23,8 @@ jest.mock("@/modules/invitations/public/onboarding", () => ({
   acceptInvitation: jest.fn(),
 }));
 
-jest.mock("next/navigation", () => ({
-  redirect: jest.fn(),
-}));
+const mockPush = jest.fn<undefined, [string]>();
+jest.mock("next/navigation", () => ({ useRouter: () => ({ push: mockPush }) }));
 
 jest.mock("sonner", () => ({
   toast: {
@@ -100,7 +99,6 @@ const invitation: Invitation = {
 };
 
 const acceptInvitationMock = jest.mocked(acceptInvitation);
-const redirectMock = jest.mocked(redirect);
 const toastErrorMock = jest.mocked(toast.error);
 const useWorkspacesMock = jest.mocked(useWorkspaces);
 
@@ -136,7 +134,7 @@ describe("JoinForm", () => {
 
     expect(joinButton).toHaveAttribute("data-loading", "true");
     expect(toastErrorMock).not.toHaveBeenCalled();
-    expect(redirectMock).not.toHaveBeenCalled();
+    expect(mockPush).not.toHaveBeenCalled();
 
     await act(async () => {
       secondRequest.resolve({
@@ -152,4 +150,37 @@ describe("JoinForm", () => {
     });
     expect(joinButton).toHaveAttribute("data-loading", "false");
   });
+
+  it.each([true, false])(
+    "retains the mobile handoff after joining (first workspace: %s)",
+    async (firstWorkspace) => {
+      const callbackUrl = getMobileAuthPath({
+        state: "s".repeat(43),
+        codeChallenge: "c".repeat(43),
+      });
+      useWorkspacesMock.mockReturnValue({
+        data: firstWorkspace ? [] : [{ id: "existing-workspace" }],
+      } as ReturnType<typeof useWorkspaces>);
+      acceptInvitationMock.mockResolvedValue({
+        data: null,
+      });
+      render(
+        <JoinForm
+          callbackUrl={callbackUrl}
+          invitation={invitation}
+          token="invite-token"
+        />,
+      );
+      fireEvent.click(
+        screen.getByRole("button", { name: "Accept invitation" }),
+      );
+      await waitFor(() => {
+        expect(mockPush).toHaveBeenCalledWith(
+          firstWorkspace
+            ? `/onboarding/account?${new URLSearchParams({ callbackUrl }).toString()}`
+            : callbackUrl,
+        );
+      });
+    },
+  );
 });

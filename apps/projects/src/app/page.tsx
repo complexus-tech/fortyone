@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { OnboardingLayout } from "@/components/layouts/onboarding-layout";
 import { AuthLayout } from "@/modules/auth";
 import { auth } from "@/auth";
+import { isMobileAuthFlow } from "@/lib/mobile-auth";
 import { getProfile } from "@/lib/queries/profile";
 import { getWorkspaces } from "@/lib/queries/get-workspaces";
 import { getRedirectUrl } from "@/utils";
@@ -20,10 +21,13 @@ export default async function Page({
     callbackUrl?: string;
     mobileApp?: string;
     error?: string;
+    accountDeleted?: string;
+    cleanupPending?: string;
   }>;
 }) {
   const params = await searchParams;
-  const isMobileApp = params.mobileApp === "true";
+  const isMobileApp =
+    params.mobileApp === "true" || isMobileAuthFlow(params.callbackUrl);
   const errorMessage = params.error;
   const callbackUrl = params.callbackUrl;
 
@@ -44,7 +48,9 @@ export default async function Page({
   return (
     <OnboardingLayout>
       <AuthLayout
+        accountDeleted={params.accountDeleted === "true"}
         callbackUrl={callbackUrl}
+        cleanupPending={params.cleanupPending === "true"}
         errorMessage={errorMessage}
         isMobileApp={isMobileApp}
         page="login"

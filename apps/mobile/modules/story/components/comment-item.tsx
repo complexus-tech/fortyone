@@ -6,22 +6,23 @@ import { useMembers } from "@/modules/members/hooks/use-members";
 import type { Comment } from "@/types";
 import { RichTextViewer } from "@/components/rich-text/viewer";
 import { plainTextToHtml } from "@/components/rich-text/content";
+import { resolveCommentAuthor } from "./comment-author";
 
-export const CommentItem = ({ userId, comment, createdAt }: Comment) => {
+export const CommentItem = ({ userId, user, comment, createdAt }: Comment) => {
   const { data: members = [] } = useMembers();
-  const member = members.find((m) => m.id === userId);
+  const author = resolveCommentAuthor({ userId, user }, members);
 
   return (
     <View className="my-[6px] rounded-[20px] bg-gray-50 p-[14px] dark:bg-dark-100">
       <Row align="center" wrap>
         <Avatar
-          name={member?.fullName || member?.username}
-          src={member?.avatarUrl}
+          name={author.name}
+          src={author.avatarUrl}
           size="xs"
           className="mr-2"
         />
         <Text fontSize="sm" fontWeight="semibold">
-          {member?.username || "Unknown"}
+          {author.name}
         </Text>
         <Text fontSize="xs" color="muted" className="ml-2">
           {formatDistanceToNow(new Date(createdAt), { addSuffix: true })}

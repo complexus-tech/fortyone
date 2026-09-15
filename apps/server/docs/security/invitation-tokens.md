@@ -49,6 +49,22 @@ tokens while every new invitation is written without a plaintext bearer.
   Bulk requests are capped at 50 normalized, unique recipient emails and
   duplicate team IDs are removed before persistence.
 
+## Account invitation acceptance and stale lists
+
+`POST /users/me/invitations/{id}/accept` accepts a listed invitation using the
+browser session and invitation ID. It requires authentication and shares the
+per-user acceptance rate limit with the email-bearer endpoint. The ID lookup
+matches the active user's email before locking the invitation; the existing
+acceptance transaction rechecks the recipient and lifecycle. IDs never replace
+bearers on the public invitation lookup endpoint.
+
+The recipient list reads the canonical invitation table and excludes consumed,
+revoked, expired, and deleted invitations. There is no separate account copy to
+delete. Unavailable acceptance returns HTTP 404 without creating membership or
+altering another recipient's invitation. The account UI discards the stale card,
+refreshes its list, and offers no retry for that invitation. Temporary failures
+restore the card. Open account lists refresh every 30 seconds and on mount/focus.
+
 ## Configuration and key separation
 
 The API issues and verifies tokens. The worker reconstructs outstanding tokens

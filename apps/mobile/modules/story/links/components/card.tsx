@@ -5,6 +5,7 @@ import { Row, Text } from "@/components/ui";
 import { SymbolView } from "expo-symbols";
 import { themeColors } from "@/constants/colors";
 import { useTheme } from "@/hooks";
+import { toast } from "sonner-native";
 
 type CardProps = {
   link: Link;
@@ -13,14 +14,27 @@ type CardProps = {
 export const Card = ({ link }: CardProps) => {
   const { resolvedTheme } = useTheme();
   const handlePress = async () => {
-    const canOpen = await Linking.canOpenURL(link.url);
-    if (canOpen) {
+    try {
+      const canOpen = await Linking.canOpenURL(link.url);
+      if (!canOpen) {
+        toast.error("Could not open this link", {
+          description: "No app is available to open this link.",
+        });
+        return;
+      }
       await Linking.openURL(link.url);
+    } catch (error) {
+      toast.error("Could not open this link", {
+        description:
+          error instanceof Error ? error.message : "Please try again.",
+      });
     }
   };
 
   return (
     <Pressable
+      accessibilityRole="link"
+      accessibilityLabel={link.title || link.url}
       className="active:bg-gray-50 dark:active:bg-dark py-4"
       onPress={handlePress}
     >

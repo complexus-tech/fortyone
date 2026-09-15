@@ -96,7 +96,7 @@ func (r *Rules) handleReassignment(ctx context.Context, payload events.StoryUpda
 	// Notify old assignee about who the story went to (only if they're not the actor)
 	if shouldNotify(*oldAssigneeID, actorID) {
 		template := "{actor} reassigned task to {assignee}"
-		if actorName == newAssigneeName {
+		if actorID == *newAssigneeID {
 			template = "{actor} reassigned task to themself"
 		}
 
@@ -116,6 +116,7 @@ func (r *Rules) handleReassignment(ctx context.Context, payload events.StoryUpda
 				},
 			}
 		}
+		message.IdentityReferences = map[string]uuid.UUID{"assignee": *newAssigneeID}
 
 		notifications = append(notifications, r.createNotification(*oldAssigneeID, payload, actorID, "story_update", "", message))
 	}

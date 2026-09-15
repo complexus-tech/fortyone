@@ -10,6 +10,7 @@ import { Avatar, Box, Button, Flex, Text, TextEditor, TimeAgo } from "ui";
 import { useSession } from "@/lib/auth/client";
 import { getCommentEditorExtensions } from "@/lib/tiptap/comment-editor";
 import { serializeCommentToGitHubMarkdown } from "@/lib/tiptap/comment-markdown";
+import { FORMER_USER_NAME, isFormerUser } from "@/lib/former-user";
 import { useCreateTeamFeedbackComment } from "../hooks/use-create-comment";
 import type { TeamFeedbackComment } from "../types";
 import { getCommentThreads } from "../utils/comment-threads";
@@ -126,6 +127,8 @@ const CommentRow = ({
   replies?: TeamFeedbackComment[];
 }) => {
   const [isReplying, setIsReplying] = useState(false);
+  const formerUser = isFormerUser(comment.authorId);
+  const authorName = formerUser ? FORMER_USER_NAME : comment.authorName;
 
   return (
     <Box
@@ -139,14 +142,12 @@ const CommentRow = ({
         <Box className="bg-surface relative top-px flex aspect-square items-center rounded-full p-[0.3rem]">
           <Avatar
             className="relative top-0.5"
-            name={comment.authorName}
+            name={authorName}
             size="xs"
-            src={comment.authorAvatar ?? undefined}
+            src={formerUser ? undefined : comment.authorAvatar ?? undefined}
           />
         </Box>
-        <Text className="ml-1 text-black dark:text-white">
-          {comment.authorName}
-        </Text>
+        <Text className="ml-1 text-black dark:text-white">{authorName}</Text>
         <Text className="mx-0.5 text-[0.95rem]" color="muted">
           ·
         </Text>

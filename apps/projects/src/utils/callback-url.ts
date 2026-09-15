@@ -1,3 +1,5 @@
+import { isMobileAuthFlow } from "@/lib/mobile-auth";
+
 const FORTYONE_DOMAIN = "fortyone.app";
 const DEFAULT_AUTH_HOST = "cloud.fortyone.app";
 const MAX_CALLBACK_URL_LENGTH = 2048;
@@ -57,11 +59,25 @@ export const withCallbackUrl = (path: string, callbackUrl?: string | null) => {
   return `${path}${separator}callbackUrl=${encodeURIComponent(safeCallbackUrl)}`;
 };
 
-export const getAuthCallbackPath = (callbackUrl?: string | null) =>
-  withCallbackUrl("/auth-callback", callbackUrl);
+export const getAuthCallbackPath = (
+  callbackUrl?: string | null,
+  isMobileApp = false,
+) =>
+  withCallbackUrl(
+    isMobileApp || isMobileAuthFlow(callbackUrl)
+      ? "/auth-callback?mobileApp=true"
+      : "/auth-callback",
+    callbackUrl,
+  );
 
-export const getLoginUrl = (callbackUrl?: string | null) => {
-  const loginPath = withCallbackUrl("/", callbackUrl);
+export const getLoginUrl = (
+  callbackUrl?: string | null,
+  isMobileApp = false,
+) => {
+  const loginPath = withCallbackUrl(
+    isMobileApp || isMobileAuthFlow(callbackUrl) ? "/?mobileApp=true" : "/",
+    callbackUrl,
+  );
 
   if (process.env.NEXT_PUBLIC_DOMAIN !== FORTYONE_DOMAIN) {
     return loginPath;

@@ -10,6 +10,11 @@ import { getWorkspaces } from "@/lib/queries/get-workspaces";
 import { HttpError } from "@/lib/http";
 import { resetSessionCache } from "@/lib/session-cache";
 import { clearMobileDrafts } from "@/components/rich-text/draft-store";
+import {
+  completeDeletedAccount,
+  type AccountDeletionResult,
+} from "@/lib/account-deletion";
+import { clearLocalAccountData } from "@/lib/session-cleanup";
 
 type AuthData = { workspace: string; userId: string };
 interface AuthState {
@@ -22,6 +27,10 @@ interface AuthState {
   setWorkspace: (workspace: string) => Promise<void>;
   setAuthData: (data: AuthData) => Promise<void>;
   clearAuth: () => Promise<void>;
+  completeAccountDeletion: (
+    cookie: string,
+    result: AccountDeletionResult,
+  ) => Promise<boolean>;
   expireSession: (cookie: string) => Promise<void>;
   loadAuthData: () => Promise<void>;
 }
@@ -37,28 +46,26 @@ export const useAuthStore = create<AuthState>((set, get) => {
     if (clearingSession) return clearingSession;
     operationVersion++;
     set({ isLoading: true });
-    clearingSession = (async () => {
-      try {
-        await resetSessionCache();
-      } finally {
-        try {
-          await Promise.all([
-            clearStoredSession(),
-            ...(clearTransaction ? [clearSignInTransaction()] : []),
-          ]);
-        } finally {
-          set((state) => ({
-            workspace: null,
-            userId: null,
-            isAuthenticated: false,
-            isLoading: false,
-            sessionEpoch: state.sessionEpoch + 1,
-            sessionError: message,
-          }));
-          await clearMobileDrafts();
-        }
-      }
-    })();
+    clearingSession = clearLocalAccountData({
+      resetCache: resetSessionCache,
+      clearCredentials: async () => {
+        await Promise.all([
+          clearStoredSession(),
+          ...(clearTransaction ? [clearSignInTransaction()] : []),
+        ]);
+      },
+      clearDrafts: clearMobileDrafts,
+      finish: () => {
+        set((state) => ({
+          workspace: null,
+          userId: null,
+          isAuthenticated: false,
+          isLoading: false,
+          sessionEpoch: state.sessionEpoch + 1,
+          sessionError: message,
+        }));
+      },
+    });
     try {
       await clearingSession;
     } finally {
@@ -138,6 +145,16 @@ export const useAuthStore = create<AuthState>((set, get) => {
         }
       }
     },
+
+    completeAccountDeletion: (cookie, result) =>
+      completeDeletedAccount(cookie, result, {
+        getVersion: () => operationVersion,
+        getSession: getStoredSession,
+        clearLocalSession,
+        reportCleanupFailure: (message) => {
+          if (!get().isAuthenticated) set({ sessionError: message });
+        },
+      }),
 
     expireSession: async (cookie) => {
       const session = await getStoredSession();

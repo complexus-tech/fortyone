@@ -1,7 +1,7 @@
 import type { DateFieldProps } from "./date-field.types";
 import { useRef, useState } from "react";
 import { Pressable, useColorScheme } from "react-native";
-import { MaterialIcons } from "@expo/vector-icons";
+import { CalendarIcon } from "@/components/icons/calendar";
 import {
   Button,
   DatePicker,
@@ -95,7 +95,7 @@ export function DateField({
           rounded="full"
           className="min-w-0 max-w-full shrink border-0 bg-accent px-[8px] py-[4px] dark:bg-accent-dark"
         >
-          <MaterialIcons name="calendar-today" size={16} color={muted} />
+          <CalendarIcon size={16} color={muted} />
           <UIText fontSize="sm" numberOfLines={1} style={{ flexShrink: 1 }}>
             {value
               ? format(dateValue(value), "MMM d")

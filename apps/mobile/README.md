@@ -73,7 +73,7 @@ pnpm --filter mobile type-check
 pnpm --filter mobile lint
 pnpm --filter mobile test
 EXPO_NO_DOTENV=1 EXPO_PUBLIC_API_URL=https://api.example.invalid EXPO_PUBLIC_APP_URL=https://app.example.invalid SENTRY_DISABLE_AUTO_UPLOAD=true pnpm --filter mobile export:verify
-pnpm --filter mobile doctor
+pnpm --filter mobile run doctor
 ```
 
 `test` discovers local `*.test.ts` files and uses Node's test runner with `tsx`. Tests cover auth/session contracts, storage ordering, cache isolation/cancellation, optimistic changes, notification pagination/destinations, and editor HTML/draft behavior. They do not contact a backend or monitoring service.
@@ -89,6 +89,11 @@ The JavaScript event filter drops messages, request bodies/headers, user fields,
 The managed release owner configures `SENTRY_ORG`, `SENTRY_PROJECT`, and a secret `SENTRY_AUTH_TOKEN` in the build environment for source-map and native-symbol upload. Never prefix the token with `EXPO_PUBLIC_`, commit it, or include it in app config. Local/CI builds set `SENTRY_DISABLE_AUTO_UPLOAD=true`. No Sentry account setup or diagnostic event submission is part of the automated tests. See the [official Expo Sentry guide](https://docs.expo.dev/guides/using-sentry/) for the managed build integration.
 
 ## Managed mobile delivery
+
+The [iOS release checklist](docs/ios-release.md) covers the Expo Image source-build
+override, SDK privacy resources, the `pnpm privacy:verify` artifact gate, and the
+separate App Store privacy declarations. Run that gate on the final built app or
+archive before the managed submission process.
 
 Production builds, signing credentials, store submissions, and over-the-air updates are owned by the internal mobile release process. Do not run an ad hoc production EAS build or store submission from a personal Expo account.
 

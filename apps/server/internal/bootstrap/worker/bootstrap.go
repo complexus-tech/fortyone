@@ -24,6 +24,9 @@ import (
 	slack "github.com/complexus-tech/projects-api/internal/modules/slack/service"
 	storiesrepository "github.com/complexus-tech/projects-api/internal/modules/stories/repository"
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
+	usersrepository "github.com/complexus-tech/projects-api/internal/modules/users/repository"
+	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
+	useruow "github.com/complexus-tech/projects-api/internal/modules/users/uow"
 	"github.com/complexus-tech/projects-api/internal/platform/actors"
 	actorsrepository "github.com/complexus-tech/projects-api/internal/platform/actors/repository"
 	"github.com/complexus-tech/projects-api/internal/platform/appkeys"
@@ -401,6 +404,7 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 	if err != nil {
 		return App{}, fmt.Errorf("initialize API idempotency receipt cleanup: %w", err)
 	}
+	subscriberCleanup := users.NewSubscriberCleanup(usersrepository.NewSubscriberDeletionRepository(connections.Pool), brevoService)
 	taskMux := buildTaskMux(taskMuxDependencies{
 		Log: log, DatabasePool: connections.Pool,
 		APIPublicURL: cfg.APIPublicURL,
@@ -419,12 +423,24 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 		InvitationOutbox:       invitationOutbox,
 		FeedbackSecurityKey:    cfg.Feedback.SecurityKey,
 		IdempotencyReceipts:    idempotencyReceipts,
+		SubscriberCleanup:      subscriberCleanup,
 	})
 	if err := registerOutboundWebhookTask(taskMux, log, storyMutationEventDispatcher, outboundWebhookDispatcher); err != nil {
 		return App{}, fmt.Errorf("register outbound webhook worker: %w", err)
 	}
 	if err := registerInternalSlackAlerts(taskMux, scheduler, slack.InternalAlertConfig(cfg.InternalSlack), connections.Pool, credentialVault, log); err != nil {
 		return App{}, fmt.Errorf("initialize internal Slack alerts: %w", err)
+	}
+	accountDeletionStore, err := usersrepository.NewAccountDeletionRepository(connections.Pool, cfg.Storage.Provider, cfg.Storage.AttachmentsBucket, cfg.Storage.ProfilesBucket)
+	if err != nil {
+		return App{}, fmt.Errorf("initialize account deletion repository: %w", err)
+	}
+	accountDeletions, err := useruow.New(connections.Pool, accountDeletionStore, calendarrepository.New(connections.Pool))
+	if err != nil {
+		return App{}, fmt.Errorf("initialize account deletion manager: %w", err)
+	}
+	if err := registerAccountDeletionFinalization(taskMux, scheduler, accountDeletions, subscriberCleanup, log); err != nil {
+		return App{}, fmt.Errorf("initialize account deletion worker: %w", err)
 	}
 	resourcesTransferred = true
 	databaseTransferred = true

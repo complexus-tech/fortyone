@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { render, screen } from "@testing-library/react";
+import { FORMER_USER_ID } from "@/lib/former-user";
 import { ActivityActor } from "./activity-actor";
 
 jest.mock("next/link", () => ({
@@ -47,6 +48,28 @@ jest.mock("./maya-avatar", () => ({
 }));
 
 describe("ActivityActor", () => {
+  it("renders Former user without stale names, system labels, or profile navigation", () => {
+    render(
+      <ActivityActor
+        displayName="Stale name"
+        displayUsername="stale"
+        isSelfActivity={false}
+        member={{
+          id: FORMER_USER_ID,
+          fullName: "Stale name",
+          username: "stale",
+          avatarUrl: "https://example.com/stale.png",
+          isSystem: true,
+        }}
+        withWorkspace={(path) => `/acme${path}`}
+      />,
+    );
+    expect(screen.getAllByText("Former user").length).toBeGreaterThan(0);
+    expect(
+      screen.queryByText(/Stale name|stale|Bot|AI Agent/),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("link")).not.toBeInTheDocument();
+  });
   it("keeps a member profile route scoped to the active workspace", () => {
     render(
       <ActivityActor

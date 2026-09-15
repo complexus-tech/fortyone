@@ -4,34 +4,11 @@ import { teamStoriesHref } from "@/modules/teams/stories/team-story-navigation";
 export type NotificationDestination =
   | { type: "story"; storyId: string }
   | { type: "teamStories"; href: ReturnType<typeof teamStoriesHref> }
-  | { type: "web"; url: string };
-
-export const notificationWebURL = (
-  applicationURL: string,
-  workspace: string,
-  notification: Pick<AppNotification, "id" | "entityId" | "entityType">,
-) => {
-  const url = new URL(applicationURL);
-  if (!/^[a-z0-9][a-z0-9-]*$/.test(workspace))
-    throw new Error("The workspace address is invalid.");
-  const hosted =
-    url.hostname === "fortyone.app" || url.hostname.endsWith(".fortyone.app");
-  if (hosted) url.hostname = `${workspace}.fortyone.app`;
-  const path =
-    notification.entityType === "strategy" ? "/strategy" : "/notifications";
-  url.pathname = hosted
-    ? path
-    : `${url.pathname.replace(/\/$/, "")}/${encodeURIComponent(workspace)}${path}`;
-  url.search = "";
-  url.hash = "";
-  return url.toString();
-};
+  | { type: "summary" };
 
 export const resolveNotificationDestination = async (
   notification: Pick<AppNotification, "id" | "entityId" | "entityType">,
   context: {
-    applicationURL: string;
-    workspace: string;
     loadObjective: (
       id: string,
     ) => Promise<{ id: string; teamId: string } | null | undefined>;
@@ -63,12 +40,5 @@ export const resolveNotificationDestination = async (
       ),
     };
   }
-  return {
-    type: "web",
-    url: notificationWebURL(
-      context.applicationURL,
-      context.workspace,
-      notification,
-    ),
-  };
+  return { type: "summary" };
 };

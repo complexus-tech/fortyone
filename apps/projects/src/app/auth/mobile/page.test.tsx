@@ -38,11 +38,9 @@ it("keeps transaction context while asking an unauthenticated user to sign in", 
 });
 
 it("routes a new account through workspace onboarding with its return context", async () => {
-  jest
-    .mocked(auth)
-    .mockResolvedValue({
-      user: { id: "user", email: "member@example.com" },
-    } as Awaited<ReturnType<typeof auth>>);
+  jest.mocked(auth).mockResolvedValue({
+    user: { id: "user", email: "member@example.com" },
+  } as Awaited<ReturnType<typeof auth>>);
   await expect(
     MobileAuthPage({ searchParams: Promise.resolve(params) }),
   ).rejects.toThrow(
@@ -54,4 +52,20 @@ it("rejects malformed transactions without checking an account or issuing a code
   await MobileAuthPage({ searchParams: Promise.resolve({ state: "invalid" }) });
   expect(auth).not.toHaveBeenCalled();
   expect(getWorkspaces).not.toHaveBeenCalled();
+});
+
+it("preserves explicit handoff confirmation for an existing verified browser session", async () => {
+  jest.mocked(auth).mockResolvedValue({
+    user: { id: "user", email: "member@example.com" },
+  } as Awaited<ReturnType<typeof auth>>);
+  jest
+    .mocked(getWorkspaces)
+    .mockResolvedValue([{ id: "workspace", slug: "acme" }] as Awaited<
+      ReturnType<typeof getWorkspaces>
+    >);
+  const page = await MobileAuthPage({ searchParams: Promise.resolve(params) });
+  expect(page.props.children.props).toEqual({
+    email: "member@example.com",
+    transaction: { state: params.state, codeChallenge: params.code_challenge },
+  });
 });

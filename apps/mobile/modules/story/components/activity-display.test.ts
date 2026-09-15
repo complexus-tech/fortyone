@@ -2,6 +2,7 @@ import type { StoryActivity, StoryActivityUser } from "@/modules/stories/types";
 import type { ActivityDisplayContext } from "./activity-display.ts";
 import assert from "node:assert/strict";
 import test from "node:test";
+import { FORMER_USER_ID } from "@/lib/former-user";
 import {
   formatActivityTimestamp,
   formatScheduleActivityValue,
@@ -64,6 +65,25 @@ const activity: StoryActivity = {
 };
 const display = (patch: Partial<StoryActivity>, config = context) =>
   getActivityDisplay({ ...activity, newValue: undefined, ...patch }, config);
+
+test("retained history uses Former user even with missing members or a stale system summary", () => {
+  assert.deepEqual(display({ userId: FORMER_USER_ID, user: null }).actor, {
+    name: "Former user",
+    isSystem: false,
+  });
+  assert.deepEqual(
+    display({ userId: FORMER_USER_ID, user: { ...maya, id: FORMER_USER_ID } })
+      .actor,
+    {
+      name: "Former user",
+      isSystem: false,
+    },
+  );
+  assert.equal(
+    display({ field: "assignee_id", currentValue: FORMER_USER_ID }).message,
+    "assigned the task to Former user",
+  );
+});
 
 test("uses the API's embedded Maya actor even when absent from workspace members", () => {
   const result = getActivityDisplay(activity, context);

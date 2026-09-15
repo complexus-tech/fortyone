@@ -1,5 +1,6 @@
 /* global describe, expect, it, jest -- Jest globals are provided by the projects test runner. */
 import type { Workspace } from "@/types/workspace";
+import { getMobileAuthPath } from "@/lib/mobile-auth";
 import { getWelcomeDestinations } from "./destinations";
 
 jest.mock("@/utils", () => ({
@@ -18,6 +19,22 @@ const workspace = (id: string, slug: string, userRole: Workspace["userRole"]) =>
   >;
 
 describe("welcome destinations", () => {
+  it.each(["admin", "member", "guest"] as const)(
+    "only returns to the app for mobile %s onboarding, without web setup routes",
+    (userRole) => {
+      const callback = getMobileAuthPath({
+        state: "s".repeat(43),
+        codeChallenge: "c".repeat(43),
+      });
+      expect(
+        getWelcomeDestinations(
+          [workspace("workspace", "acme", userRole)],
+          "workspace",
+          callback,
+        ),
+      ).toEqual({ redirectUrl: callback });
+    },
+  );
   it("offers the fixed onboarding import route for the active admin workspace", () => {
     const destinations = getWelcomeDestinations(
       [workspace("one", "first", "admin"), workspace("two", "active", "admin")],

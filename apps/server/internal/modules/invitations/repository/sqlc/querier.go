@@ -26,6 +26,7 @@ type Querier interface {
 	ListInvitationsByEmail(ctx context.Context, arg ListInvitationsByEmailParams) ([]ListInvitationsByEmailRow, error)
 	ListWorkspaceInvitations(ctx context.Context, arg ListWorkspaceInvitationsParams) ([]ListWorkspaceInvitationsRow, error)
 	LockActiveWorkspaceAdmin(ctx context.Context, arg LockActiveWorkspaceAdminParams) (bool, error)
+	LockInvitationByID(ctx context.Context, arg LockInvitationByIDParams) (LockInvitationByIDRow, error)
 	LockInvitationByToken(ctx context.Context, arg LockInvitationByTokenParams) (LockInvitationByTokenRow, error)
 	LockInvitationRecipient(ctx context.Context, arg LockInvitationRecipientParams) error
 	RetryInvitationOutboxEvent(ctx context.Context, arg RetryInvitationOutboxEventParams) (int64, error)

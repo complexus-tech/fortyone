@@ -11,6 +11,7 @@ import (
 )
 
 type Querier interface {
+	AccountCalendarCleanupPending(ctx context.Context, arg AccountCalendarCleanupPendingParams) (bool, error)
 	BeginCalendarConnectionSync(ctx context.Context, arg BeginCalendarConnectionSyncParams) (CalendarConnection, error)
 	CalendarScheduleBlockConflicts(ctx context.Context, arg CalendarScheduleBlockConflictsParams) (bool, error)
 	CalendarScheduleStoryExists(ctx context.Context, arg CalendarScheduleStoryExistsParams) (bool, error)
@@ -28,6 +29,7 @@ type Querier interface {
 	DeleteDrainedCalendarConnection(ctx context.Context, arg DeleteDrainedCalendarConnectionParams) error
 	DeleteDrainedCleanupPendingCalendarConnection(ctx context.Context, arg DeleteDrainedCleanupPendingCalendarConnectionParams) error
 	DeleteMayaScheduleSegment(ctx context.Context, arg DeleteMayaScheduleSegmentParams) error
+	DeleteRevokedAccountCalendarConnections(ctx context.Context, arg DeleteRevokedAccountCalendarConnectionsParams) error
 	DeleteStaleCalendarEvents(ctx context.Context, arg DeleteStaleCalendarEventsParams) error
 	DetachMayaScheduleMirrors(ctx context.Context, arg DetachMayaScheduleMirrorsParams) error
 	EnqueueScheduleEventOutbox(ctx context.Context, arg EnqueueScheduleEventOutboxParams) error
@@ -85,6 +87,8 @@ type Querier interface {
 	RemoveCalendarConnectionScope(ctx context.Context, arg RemoveCalendarConnectionScopeParams) error
 	RetainMayaScheduleOwnership(ctx context.Context, arg RetainMayaScheduleOwnershipParams) error
 	ScheduleEventUpsertIsCurrent(ctx context.Context, arg ScheduleEventUpsertIsCurrentParams) (bool, error)
+	ScrubAccountCalendarCleanup(ctx context.Context, arg ScrubAccountCalendarCleanupParams) error
+	ScrubAccountCalendarOutbox(ctx context.Context, arg ScrubAccountCalendarOutboxParams) error
 	SetCalendarNotificationChannel(ctx context.Context, arg SetCalendarNotificationChannelParams) (int64, error)
 	SetPrimaryCalendarConnection(ctx context.Context, arg SetPrimaryCalendarConnectionParams) (CalendarConnection, error)
 	StoreIncrementalCalendarSyncToken(ctx context.Context, arg StoreIncrementalCalendarSyncTokenParams) error

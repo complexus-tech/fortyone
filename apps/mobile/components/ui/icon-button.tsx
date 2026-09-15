@@ -1,4 +1,4 @@
-import type { ComponentProps } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import type { PressableProps, StyleProp, ViewStyle } from "react-native";
 import { Pressable, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -6,16 +6,19 @@ import { colors, themeColors } from "@/constants/colors";
 import { useTheme } from "@/hooks/theme";
 
 export type IconButtonProps = {
-  icon: ComponentProps<typeof Ionicons>["name"];
   label: string;
   onPress: NonNullable<PressableProps["onPress"]>;
   disabled?: boolean;
   selected?: boolean;
   style?: StyleProp<ViewStyle>;
-};
+} & (
+  | { icon: ComponentProps<typeof Ionicons>["name"]; children?: never }
+  | { icon?: never; children: ReactNode }
+);
 
 export const IconButton = ({
   icon,
+  children,
   label,
   onPress,
   disabled = false,
@@ -41,12 +44,14 @@ export const IconButton = ({
         style,
       ]}
     >
-      <Ionicons
-        accessible={false}
-        name={icon}
-        size={22}
-        color={selected ? colors.primary : theme.foreground}
-      />
+      {children ?? (
+        <Ionicons
+          accessible={false}
+          name={icon}
+          size={22}
+          color={selected ? colors.primary : theme.foreground}
+        />
+      )}
     </Pressable>
   );
 };

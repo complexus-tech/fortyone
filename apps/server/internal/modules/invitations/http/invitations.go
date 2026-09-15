@@ -201,7 +201,23 @@ func (h *Handlers) AcceptInvitation(ctx context.Context, w http.ResponseWriter, 
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	if err := h.invitations.AcceptInvitation(ctx, token, userID); err != nil {
+	return respondInvitationAcceptance(ctx, w, h.invitations.AcceptInvitation(ctx, token, userID))
+}
+
+func (h *Handlers) AcceptUserInvitation(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	invitationID, err := uuid.Parse(web.Params(r, "id"))
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidInvitationID, http.StatusBadRequest)
+	}
+	return respondInvitationAcceptance(ctx, w, h.invitations.AcceptUserInvitation(ctx, invitationID, userID))
+}
+
+func respondInvitationAcceptance(ctx context.Context, w http.ResponseWriter, err error) error {
+	if err != nil {
 		if status, handled, publicError := publicInvitationBearerError(err); handled {
 			return web.RespondError(ctx, w, publicError, status)
 		}

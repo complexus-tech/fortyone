@@ -165,3 +165,17 @@ func (s *Service) AcceptInvitation(ctx context.Context, rawToken string, userID 
 	})
 	return err
 }
+
+// AcceptUserInvitation accepts a listed invitation without exposing an email bearer.
+// The repository checks the authenticated recipient while locking the invitation.
+func (s *Service) AcceptUserInvitation(ctx context.Context, invitationID, userID uuid.UUID) error {
+	if invitationID == uuid.Nil || userID == uuid.Nil {
+		return ErrInvitationNotFound
+	}
+	_, err := s.repo.AcceptInvitation(ctx, AcceptInvitationCommand{
+		InvitationID: invitationID,
+		UserID:       userID,
+		AcceptedAt:   s.now().UTC(),
+	})
+	return err
+}

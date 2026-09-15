@@ -17,7 +17,16 @@ import (
 
 	"github.com/complexus-tech/projects-api/internal/platform/workspaceurl"
 	"github.com/google/uuid"
+	"golang.org/x/oauth2"
 )
+
+// Only the provider's explicit rejection of the grant may discard its cleanup
+// credential. Decryption failure can mean a recoverable deployment-key mismatch;
+// refresh outages, application configuration and storage also remain retryable.
+func isPermanentCalendarCredentialError(err error) bool {
+	var response *oauth2.RetrieveError
+	return errors.As(err, &response) && response.ErrorCode == "invalid_grant"
+}
 
 func (s *Service) provider(provider Provider) (CalendarProvider, error) {
 	if s.cfg.Providers == nil {

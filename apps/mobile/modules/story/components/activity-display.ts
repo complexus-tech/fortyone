@@ -1,5 +1,6 @@
 import type { StoryActivity, StoryActivityUser } from "@/modules/stories/types";
 import { format, formatDistance, isValid, parseISO } from "date-fns";
+import { FORMER_USER_NAME, isFormerUser } from "@/lib/former-user";
 
 type Person = Pick<StoryActivityUser, "id" | "username" | "fullName"> & {
   isSystem?: boolean;
@@ -98,6 +99,8 @@ export function resolveActivityActor(
   activity: Pick<StoryActivity, "userId" | "user">,
   context: Pick<ActivityDisplayContext, "members" | "currentUserId">,
 ) {
+  if (isFormerUser(activity.userId))
+    return { name: FORMER_USER_NAME, isSystem: false };
   // The embedded account survives workspace membership changes and includes
   // system actors. Never infer an actor from the kind of change they made.
   const person: Person | undefined | null =
@@ -225,6 +228,7 @@ function fieldValue(
     case "assignee_id":
     case "reporter_id": {
       if (isMissing(value)) return "Unassigned";
+      if (isFormerUser(raw)) return FORMER_USER_NAME;
       const person =
         activity.user?.id === raw ? activity.user : context.members.get(raw);
       return (
@@ -278,7 +282,9 @@ function collectionValue(
       .map((id) =>
         field === "labels"
           ? context.labels.get(id)?.name || "an unavailable label"
-          : personName(context.members.get(id)) || "an unavailable member",
+          : isFormerUser(id)
+            ? FORMER_USER_NAME
+            : personName(context.members.get(id)) || "an unavailable member",
       )
       .join(", ");
   }

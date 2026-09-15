@@ -4,7 +4,7 @@ import { Alert, Platform, Pressable, View } from "react-native";
 import DateTimePicker, {
   DateTimePickerAndroid,
 } from "@react-native-community/datetimepicker";
-import { MaterialIcons } from "@expo/vector-icons";
+import { CalendarIcon } from "@/components/icons/calendar";
 import { format } from "date-fns";
 import { calendarDate, dateValue } from "./date-field-utils";
 import { useTheme } from "@/hooks";
@@ -87,7 +87,7 @@ export function DateField({
           rounded="full"
           className="min-w-0 max-w-full shrink border-0 bg-accent px-[8px] py-[4px] dark:bg-accent-dark"
         >
-          <MaterialIcons name="calendar-today" size={16} color={iconColor} />
+          <CalendarIcon size={16} color={iconColor} />
           <Text fontSize="sm" numberOfLines={1} style={{ flexShrink: 1 }}>
             {value
               ? format(dateValue(value), "MMM d")

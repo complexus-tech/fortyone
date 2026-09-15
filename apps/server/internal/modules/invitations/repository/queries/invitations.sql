@@ -300,3 +300,36 @@ INNER JOIN public.users AS inviter ON inviter.user_id = invitation.inviter_id
 INNER JOIN public.users AS invitee ON invitee.user_id = sqlc.arg(invitee_id)
 INNER JOIN public.workspaces AS workspace ON workspace.workspace_id = invitation.workspace_id
 WHERE invitation.invitation_id = sqlc.arg(invitation_id);
+
+-- name: LockInvitationByID :one
+SELECT
+    invitation.invitation_id,
+    invitation.workspace_id,
+    invitation.inviter_id,
+    invitation.email,
+    invitation.role,
+    invitation.expires_at,
+    invitation.used_at,
+    invitation.created_at,
+    invitation.updated_at,
+    workspace.name AS workspace_name,
+    workspace.slug AS workspace_slug,
+    workspace.color AS workspace_color,
+    CAST(ARRAY(
+        SELECT assignment.team_id
+        FROM public.workspace_invitation_teams AS assignment
+        WHERE assignment.invitation_id = invitation.invitation_id
+        ORDER BY assignment.team_id
+    ) AS uuid[]) AS team_ids
+FROM public.workspace_invitations AS invitation
+INNER JOIN public.workspaces AS workspace
+    ON workspace.workspace_id = invitation.workspace_id
+WHERE invitation.invitation_id = sqlc.arg(invitation_id)
+  AND EXISTS (
+      SELECT 1 FROM public.users AS invitee
+      WHERE invitee.user_id = sqlc.arg(user_id)
+        AND invitee.is_active = TRUE
+        AND lower(invitee.email) = lower(invitation.email)
+  )
+LIMIT 1
+FOR UPDATE OF invitation;

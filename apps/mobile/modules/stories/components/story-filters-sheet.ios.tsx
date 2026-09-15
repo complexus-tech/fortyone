@@ -52,11 +52,10 @@ import { changeStoryFilter } from "./story-filter-selection";
 import { StoryFilterIcon } from "./story-filter-icon";
 
 const FACET_ICONS: Record<
-  Exclude<StoryFilterFacet, "status" | "priority" | "assignee">,
+  Exclude<StoryFilterFacet, "status" | "priority" | "assignee" | "objective">,
   SFSymbol
 > = {
   sprint: "play.circle",
-  objective: "flag",
 };
 
 function FilterIconButton({
@@ -297,7 +296,8 @@ function FilterContent(props: StoryFiltersSheetProps) {
                       contentShape(shapes.rectangle()),
                     ]}
                   >
-                    {section.id === "status" ||
+                    {section.id === "objective" ||
+                    section.id === "status" ||
                     section.id === "priority" ||
                     (section.id === "assignee" &&
                       option.id === "unassigned") ? (
@@ -372,7 +372,8 @@ function FilterContent(props: StoryFiltersSheetProps) {
                     contentShape(shapes.rectangle()),
                   ]}
                 >
-                  {item.id === "status" ||
+                  {item.id === "objective" ||
+                  item.id === "status" ||
                   item.id === "priority" ||
                   item.id === "assignee" ? (
                     <RNHostView matchContents>

@@ -1,5 +1,6 @@
 /* global describe, expect, it, jest -- Jest globals are provided by the projects test runner. */
 
+import { getMobileAuthPath } from "@/lib/mobile-auth";
 import { getOnboardingStartUrl } from "./start";
 
 jest.mock("@/utils", () => ({
@@ -11,6 +12,16 @@ jest.mock("@/utils/workspace-url", () => ({
 }));
 
 describe("onboarding first action destinations", () => {
+  it.each(["task", "import", "examples", "empty"] as const)(
+    "mobile handoff wins over the optional %s destination",
+    (start) => {
+      const callback = getMobileAuthPath({
+        state: "s".repeat(43),
+        codeChallenge: "c".repeat(43),
+      });
+      expect(getOnboardingStartUrl("acme", start, callback)).toBe(callback);
+    },
+  );
   it.each([
     ["task", "/my-work?onboarding=task"],
     ["import", "/settings/workspace/imports?from=onboarding"],

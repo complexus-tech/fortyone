@@ -24,7 +24,6 @@ const createInvitation = (
   inviterId: "inviter-1",
   role: "member",
   teamIds: [],
-  token: `token-${id}`,
   updatedAt: "2026-08-29T08:00:00.000Z",
   workspaceColor: "#111111",
   workspaceId: "workspace-1",
@@ -41,7 +40,7 @@ const createQueryClient = () =>
   });
 
 describe("invitation optimistic cache policy", () => {
-  it("removes an accepted invitation by token and restores the exact snapshot", async () => {
+  it("removes an accepted invitation by ID and restores the exact snapshot", async () => {
     const queryClient = createQueryClient();
     const selectedInvitation = createInvitation("invitation-1");
     const remainingInvitation = createInvitation("invitation-2");
@@ -51,7 +50,7 @@ describe("invitation optimistic cache policy", () => {
 
     const context = await optimisticallyAcceptInvitation(
       queryClient,
-      selectedInvitation.token!,
+      selectedInvitation.id,
     );
 
     expect(cancelQueries).toHaveBeenCalledWith({

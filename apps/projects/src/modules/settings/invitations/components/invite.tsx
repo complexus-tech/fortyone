@@ -11,7 +11,8 @@ import type { Invitation } from "@/modules/invitations/public/types";
 
 export const InvitationRow = ({ invitation }: { invitation: Invitation }) => {
   const { mutate: declineInvitation } = useRevokeInvitationMutation();
-  const { mutate: acceptInvitation } = useAcceptInvitationMutation();
+  const { mutate: acceptInvitation, isPending: isAccepting } =
+    useAcceptInvitationMutation();
 
   const [isOpen, setIsOpen] = useState(false);
   const timeLeft = formatDistanceToNow(new Date(invitation.expiresAt), {
@@ -19,7 +20,7 @@ export const InvitationRow = ({ invitation }: { invitation: Invitation }) => {
   });
 
   const handleAccept = () => {
-    acceptInvitation(invitation.token!);
+    acceptInvitation(invitation.id);
   };
 
   const handleDecline = () => {
@@ -55,6 +56,8 @@ export const InvitationRow = ({ invitation }: { invitation: Invitation }) => {
       <Flex gap={2}>
         <Button
           color="primary"
+          loading={isAccepting}
+          loadingText="Joining..."
           onClick={handleAccept}
           size="sm"
           variant="naked"

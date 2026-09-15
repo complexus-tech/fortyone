@@ -1,13 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-  notificationWebURL,
-  resolveNotificationDestination,
-} from "./destination.ts";
+import { resolveNotificationDestination } from "./destination.ts";
 
 const context = {
-  applicationURL: "https://cloud.fortyone.app",
-  workspace: "acme",
   loadObjective: async (id: string) => ({ id, teamId: "team" }),
   loadSprint: async (id: string) => ({ id, teamId: "team" }),
 };
@@ -96,30 +91,14 @@ test("lookup failures remain errors and task notifications keep their direct des
   );
 });
 
-test("unsupported native entities open the configured workspace website", () => {
-  const notification = {
-    id: "n",
-    entityId: "strategy",
-    entityType: "strategy" as const,
-  };
-  assert.equal(
-    notificationWebURL("https://cloud.fortyone.app", "acme", notification),
-    "https://acme.fortyone.app/strategy",
-  );
-  assert.equal(
-    notificationWebURL("https://projects.example.com", "acme", {
-      ...notification,
-      entityType: "key_result",
-    }),
-    "https://projects.example.com/acme/notifications",
-  );
-  assert.throws(
-    () =>
-      notificationWebURL(
-        "https://cloud.fortyone.app",
-        "acme.evil.com",
-        notification,
+test("unsupported native entities show a native summary without opening purchase-capable web pages", async () => {
+  for (const entityType of ["strategy", "key_result"] as const) {
+    assert.deepEqual(
+      await resolveNotificationDestination(
+        { id: "n", entityId: "entity", entityType },
+        context,
       ),
-    /invalid/,
-  );
+      { type: "summary" },
+    );
+  }
 });

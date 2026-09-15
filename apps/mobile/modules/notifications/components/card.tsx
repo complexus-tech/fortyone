@@ -3,11 +3,10 @@ import { Row, Col, Text, Avatar } from "@/components/ui";
 import { colors } from "@/constants";
 import type { AppNotification } from "../types";
 import { useQueryClient, type QueryClient } from "@tanstack/react-query";
-import { openBrowserAsync } from "expo-web-browser";
+import { Alert } from "react-native";
 import { toast } from "sonner-native";
 import { objectiveKeys, sprintKeys } from "@/constants/keys";
 import { useAuthStore } from "@/store/auth";
-import { getApplicationURL } from "@/lib/http/config";
 import { getObjective } from "@/modules/objectives/queries/get-objective";
 import { getSprint } from "@/modules/sprints/queries/get-sprint";
 import { resolveNotificationDestination } from "../utils/destination";
@@ -28,12 +27,11 @@ const openNotificationDestination = async (
   router: ReturnType<typeof useRouter>,
   workspace: string | null,
   sessionEpoch: number,
+  summary: { title: string; description: string },
 ) => {
   if (!workspace)
     throw new Error("Choose a workspace to open this notification.");
   const destination = await resolveNotificationDestination(notification, {
-    workspace,
-    applicationURL: getApplicationURL().toString(),
     loadObjective: (objectiveId) =>
       client.fetchQuery({
         queryKey: objectiveKeys.detail(objectiveId),
@@ -60,8 +58,8 @@ const openNotificationDestination = async (
     case "teamStories":
       router.push(destination.href);
       break;
-    case "web":
-      await openBrowserAsync(destination.url);
+    case "summary":
+      Alert.alert(summary.title, summary.description);
       break;
   }
   return true;
@@ -121,9 +119,6 @@ export const NotificationCard = memo(function NotificationCard({
         }
       : message;
   const spokenMessage = renderTemplate(messageWithActor).text;
-  const nativeDestination = ["story", "objective", "sprint"].includes(
-    entityType,
-  );
 
   const handlePress = () => {
     if (openingRef.current || actionInFlight.current) return;
@@ -136,6 +131,7 @@ export const NotificationCard = memo(function NotificationCard({
       router,
       workspace,
       sessionEpoch,
+      { title, description: spokenMessage },
     )
       .then((opened) => {
         if (
@@ -214,11 +210,7 @@ export const NotificationCard = memo(function NotificationCard({
       ]}
       accessibilityRole="button"
       accessibilityLabel={`${isUnread ? "Unread. " : ""}${title}. ${spokenMessage}`}
-      accessibilityHint={
-        nativeDestination
-          ? "Opens notification details"
-          : "Opens the FortyOne website"
-      }
+      accessibilityHint="Opens notification details"
       accessibilityState={{
         busy: isOpening || isUpdating,
         disabled: isOpening || isUpdating,

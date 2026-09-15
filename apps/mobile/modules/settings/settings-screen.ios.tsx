@@ -24,7 +24,8 @@ export const Settings = () => {
   const { resolvedTheme } = useTheme();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const [isPresented, setIsPresented] = useState(true);
-  const [openingSession] = useState(useAuthStore.getState().sessionEpoch);
+  const sessionEpoch = useAuthStore((state) => state.sessionEpoch);
+  const [openingSession] = useState(sessionEpoch);
   const [contentSize, setContentSize] = useState({
     width: windowWidth,
     height: 560,

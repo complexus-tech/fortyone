@@ -6,7 +6,7 @@ import {
 import { Logo } from "@/components/ui/logo";
 import type { Invitation } from "@/modules/invitations/public/types";
 import { auth } from "@/auth";
-import { withCallbackUrl } from "@/utils/callback-url";
+import { getLoginUrl } from "@/utils/callback-url";
 import { withOnboardingCallbackUrl } from "../routing";
 import { JoinForm } from "./components/join-form";
 
@@ -56,8 +56,7 @@ export const JoinWorkspace = async ({
           align="center"
           color="invert"
           fullWidth
-          href={withCallbackUrl(
-            "/",
+          href={getLoginUrl(
             withOnboardingCallbackUrl(
               `/onboarding/join?token=${encodeURIComponent(token)}`,
               callbackUrl,

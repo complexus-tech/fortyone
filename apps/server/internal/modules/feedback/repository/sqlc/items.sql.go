@@ -1109,6 +1109,7 @@ WITH input AS (
            fi.title,
            CASE WHEN contributor.kind = 'account' THEN fi.author_id ELSE CAST(NULL AS uuid) END AS author_id,
            CAST(CASE
+               WHEN fi.author_id = CAST('ffffffff-ffff-4fff-8fff-ffffffffffff' AS uuid) THEN 'Former user'
                WHEN contributor.kind = 'anonymous'
                  OR (contributor.kind IN ('verified_guest', 'external') AND (contributor.public_masked OR portal.guest_identity_policy = 'always_mask_guests')) THEN 'Anonymous'
                WHEN contributor.kind IN ('verified_guest', 'external') THEN COALESCE(NULLIF(TRIM(contributor.display_name), ''), 'Guest')

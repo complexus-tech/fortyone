@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AuthLayout } from "@/modules/auth";
 import { auth } from "@/auth";
+import { isMobileAuthFlow } from "@/lib/mobile-auth";
 import { getProfile } from "@/lib/queries/profile";
 import { getWorkspaces } from "@/lib/queries/get-workspaces";
 import { getRedirectUrl } from "@/utils";
@@ -18,7 +19,8 @@ export default async function Page({
   searchParams: Promise<{ callbackUrl?: string; mobileApp?: string }>;
 }) {
   const params = await searchParams;
-  const isMobileApp = params.mobileApp === "true";
+  const isMobileApp =
+    params.mobileApp === "true" || isMobileAuthFlow(params.callbackUrl);
   const callbackUrl = params.callbackUrl;
   const session = await auth();
 

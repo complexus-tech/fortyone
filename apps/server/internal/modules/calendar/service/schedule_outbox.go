@@ -43,22 +43,16 @@ func (s *Service) DispatchScheduleEventOutbox(ctx context.Context, userID uuid.U
 		}
 		provider, err := s.provider(connection.Provider)
 		if err != nil {
-			if cleanupPending {
-				return terminallyFinalizeScheduleCleanup(ctx, outbox, userID, connection.Provider, "Calendar cleanup could not initialize the provider writer.")
-			}
 			return err
 		}
 		eventWriter, ok := provider.(CalendarEventWriter)
 		if !ok {
-			if cleanupPending {
-				return terminallyFinalizeScheduleCleanup(ctx, outbox, userID, connection.Provider, "Calendar cleanup provider does not support event deletion.")
-			}
 			return ErrCalendarNotConfigured
 		}
 		token, err := s.tokenForConnection(ctx, connection, provider)
 		if err != nil {
-			if cleanupPending {
-				return terminallyFinalizeScheduleCleanup(ctx, outbox, userID, connection.Provider, "Calendar cleanup credentials could not be decrypted.")
+			if cleanupPending && isPermanentCalendarCredentialError(err) {
+				return terminallyFinalizeScheduleCleanup(ctx, outbox, userID, connection.Provider, "Calendar cleanup provider grant is no longer valid.")
 			}
 			return err
 		}

@@ -1,5 +1,6 @@
 /* global describe, expect, it -- Jest globals are provided by the projects test runner. */
 
+import { getMobileAuthPath } from "@/lib/mobile-auth";
 import {
   getAuthCallbackPath,
   getLoginUrl,
@@ -70,6 +71,38 @@ describe("callback URL helpers", () => {
   it("appends callback URLs to paths that already have query parameters", () => {
     expect(withCallbackUrl("/signup?source=portal", "/feedback")).toBe(
       "/signup?source=portal&callbackUrl=%2Ffeedback",
+    );
+  });
+
+  it("keeps mobile email login through callback and nested onboarding retries", () => {
+    const mobile = getMobileAuthPath({
+      state: "s".repeat(43),
+      codeChallenge: "c".repeat(43),
+    });
+    for (const callback of [
+      mobile,
+      withCallbackUrl("/onboarding/join?token=invite", mobile),
+    ]) {
+      for (const destination of [
+        getLoginUrl(callback),
+        getAuthCallbackPath(callback),
+      ]) {
+        const url = new URL(destination, "https://cloud.fortyone.app");
+        expect(url.searchParams.get("mobileApp")).toBe("true");
+        expect(url.searchParams.get("callbackUrl")).toBe(callback);
+      }
+    }
+  });
+
+  it("keeps an explicit legacy mobile login email-only without a callback", () => {
+    expect(
+      new URL(
+        getLoginUrl(undefined, true),
+        "https://cloud.fortyone.app",
+      ).searchParams.get("mobileApp"),
+    ).toBe("true");
+    expect(getAuthCallbackPath(undefined, true)).toBe(
+      "/auth-callback?mobileApp=true",
     );
   });
 });

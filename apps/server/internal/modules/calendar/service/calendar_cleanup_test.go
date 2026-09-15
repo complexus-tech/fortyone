@@ -37,7 +37,7 @@ func TestCleanupPendingWithoutOwnedScopeDeadLettersAndPurgesCredentials(t *testi
 	}
 }
 
-func TestCleanupPendingWithUnreadableCredentialsDeadLettersAndPurges(t *testing.T) {
+func TestCleanupPendingWithUnreadableCredentialsRetainsPendingCleanup(t *testing.T) {
 	t.Parallel()
 	workspaceID := uuid.New()
 	userID := uuid.New()
@@ -54,11 +54,11 @@ func TestCleanupPendingWithUnreadableCredentialsDeadLettersAndPurges(t *testing.
 	}
 	service := New(nil, repo, Config{SecretKey: "test-secret", Providers: map[Provider]CalendarProvider{ProviderGoogle: &fakeProvider{}}})
 
-	if err := service.DispatchScheduleEventOutbox(context.Background(), userID); err != nil {
-		t.Fatalf("unreadable cleanup credentials returned error: %v", err)
+	if err := service.DispatchScheduleEventOutbox(context.Background(), userID); err == nil {
+		t.Fatal("unreadable credentials must report a recoverable cleanup failure")
 	}
-	if len(repo.failedOutboxPermanent) != 1 || !repo.failedOutboxPermanent[0] || repo.cleanupFinalizeCalls != 1 {
-		t.Fatalf("unreadable cleanup credentials must terminally audit then purge: terminal=%v finalizers=%d", repo.failedOutboxPermanent, repo.cleanupFinalizeCalls)
+	if len(repo.failedOutboxPermanent) != 0 || repo.cleanupFinalizeCalls != 0 || repo.outboxClaimCalls != 0 {
+		t.Fatalf("unreadable cleanup credentials must retain pending work for operator recovery: terminal=%v finalizers=%d claims=%d", repo.failedOutboxPermanent, repo.cleanupFinalizeCalls, repo.outboxClaimCalls)
 	}
 }
 

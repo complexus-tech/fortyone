@@ -11,18 +11,127 @@ import (
 )
 
 type Querier interface {
+	// Same key as the account deletion transaction; remote I/O uses a session lock.
+	AcquireAccountSubscriberLifecycle(ctx context.Context, arg AcquireAccountSubscriberLifecycleParams) error
 	AcquireExternalIdentityLock(ctx context.Context, arg AcquireExternalIdentityLockParams) error
 	AcquireVerificationTokenIssueLock(ctx context.Context, arg AcquireVerificationTokenIssueLockParams) error
+	// Actor attribution and assignment history are separate. Replace identity
+	// references even on edits authored by somebody else, preserving status/date
+	// changes, prose, reasons and timestamps. These fields store UUID scalars.
+	AnonymizeAccountActivityReferences(ctx context.Context, arg AnonymizeAccountActivityReferencesParams) error
+	AnonymizeAccountAdminAudits(ctx context.Context, arg AnonymizeAccountAdminAuditsParams) error
+	// No sign-in path can recover this row. Only calendar cleanup still needs its
+	// opaque FK key; the finalizer deletes it as soon as remote cleanup is drained.
+	AnonymizeAccountAwaitingCleanup(ctx context.Context, arg AnonymizeAccountAwaitingCleanupParams) error
+	// Existing submissions require a contributor FK. Erase the identity entirely;
+	// leave only an anonymous attribution key for retained workspace discussion.
+	AnonymizeAccountFeedbackContributors(ctx context.Context, arg AnonymizeAccountFeedbackContributorsParams) error
+	// Anonymous contributor keys preserve vote totals without linking the account.
+	AnonymizeAccountFeedbackVotes(ctx context.Context, arg AnonymizeAccountFeedbackVotesParams) error
+	// New snapshots carry an internal identity reference, making duplicate names
+	// safe. Legacy assignee variables store only a display name, not an account ID.
+	// Leave those legacy snapshots unchanged rather than guess at their identity.
+	AnonymizeAccountNotificationReferences(ctx context.Context, arg AnonymizeAccountNotificationReferencesParams) error
+	AnonymizeAccountObjectiveActivityReferences(ctx context.Context, arg AnonymizeAccountObjectiveActivityReferencesParams) error
+	ClaimAccountSubscriberDeletion(ctx context.Context, arg ClaimAccountSubscriberDeletionParams) (ClaimAccountSubscriberDeletionRow, error)
+	ClearAccountAttachmentsUploadedBy(ctx context.Context, arg ClearAccountAttachmentsUploadedByParams) error
+	ClearAccountIntegrationRequestsAcceptanceStartedByUserId(ctx context.Context, arg ClearAccountIntegrationRequestsAcceptanceStartedByUserIdParams) error
+	ClearAccountKeyResultsLead(ctx context.Context, arg ClearAccountKeyResultsLeadParams) error
+	ClearAccountObjectivesLeadUserId(ctx context.Context, arg ClearAccountObjectivesLeadUserIdParams) error
+	ClearAccountStoriesAssigneeId(ctx context.Context, arg ClearAccountStoriesAssigneeIdParams) error
+	ClearAccountWorkspacesDeletedBy(ctx context.Context, arg ClearAccountWorkspacesDeletedByParams) error
+	CompleteAccountSubscriberDeletion(ctx context.Context, arg CompleteAccountSubscriberDeletionParams) (int64, error)
 	ConsumeVerificationToken(ctx context.Context, arg ConsumeVerificationTokenParams) (ConsumeVerificationTokenRow, error)
 	CountRecentVerificationTokenIssues(ctx context.Context, arg CountRecentVerificationTokenIssuesParams) (int32, error)
 	CreateExternalIdentityUser(ctx context.Context, arg CreateExternalIdentityUserParams) (CreateExternalIdentityUserRow, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error)
 	CreateUserMemoryForMember(ctx context.Context, arg CreateUserMemoryForMemberParams) (CreateUserMemoryForMemberRow, error)
 	CreateVerificationToken(ctx context.Context, arg CreateVerificationTokenParams) (CreateVerificationTokenRow, error)
+	// A real active-to-inactive transition runs the existing Drive revocation saga.
+	DeactivateAccountForDeletion(ctx context.Context, arg DeactivateAccountForDeletionParams) error
 	DeactivateInactiveUsers(ctx context.Context, arg DeactivateInactiveUsersParams) (int64, error)
 	DeactivateUser(ctx context.Context, arg DeactivateUserParams) (int64, error)
+	DeleteAccountAIUsageResets(ctx context.Context, arg DeleteAccountAIUsageResetsParams) error
+	DeleteAccountAdminNotes(ctx context.Context, arg DeleteAccountAdminNotesParams) error
+	DeleteAccountAdminTargetAudits(ctx context.Context, arg DeleteAccountAdminTargetAuditsParams) error
+	DeleteAccountAnalytics(ctx context.Context, arg DeleteAccountAnalyticsParams) error
+	DeleteAccountAutomationPreferences(ctx context.Context, arg DeleteAccountAutomationPreferencesParams) error
+	DeleteAccountCalendarAvailability(ctx context.Context, arg DeleteAccountCalendarAvailabilityParams) error
+	// Calendar provider mirrors are staged and detached before these local records
+	// are erased. Provider outbox records and sealed credentials remain untouched.
+	DeleteAccountCalendarBlocks(ctx context.Context, arg DeleteAccountCalendarBlocksParams) error
+	DeleteAccountCalendarHistory(ctx context.Context, arg DeleteAccountCalendarHistoryParams) error
+	DeleteAccountChatApprovals(ctx context.Context, arg DeleteAccountChatApprovalsParams) error
+	DeleteAccountChats(ctx context.Context, arg DeleteAccountChatsParams) error
+	DeleteAccountCommentMentions(ctx context.Context, arg DeleteAccountCommentMentionsParams) error
+	DeleteAccountDocumentMemberships(ctx context.Context, arg DeleteAccountDocumentMembershipsParams) error
+	DeleteAccountDriveAccounts(ctx context.Context, arg DeleteAccountDriveAccountsParams) error
+	DeleteAccountDriveCreateOperations(ctx context.Context, arg DeleteAccountDriveCreateOperationsParams) error
+	DeleteAccountDriveImportOperations(ctx context.Context, arg DeleteAccountDriveImportOperationsParams) error
+	DeleteAccountDriveOAuthStates(ctx context.Context, arg DeleteAccountDriveOAuthStatesParams) error
+	DeleteAccountEmailAvatarHandles(ctx context.Context, arg DeleteAccountEmailAvatarHandlesParams) error
+	DeleteAccountExternalIdentities(ctx context.Context, arg DeleteAccountExternalIdentitiesParams) error
+	DeleteAccountFeedbackDeliveries(ctx context.Context, arg DeleteAccountFeedbackDeliveriesParams) error
+	DeleteAccountFeedbackDigests(ctx context.Context, arg DeleteAccountFeedbackDigestsParams) error
+	DeleteAccountFeedbackReads(ctx context.Context, arg DeleteAccountFeedbackReadsParams) error
+	DeleteAccountFeedbackSubscriptions(ctx context.Context, arg DeleteAccountFeedbackSubscriptionsParams) error
+	DeleteAccountFeedbackVerifications(ctx context.Context, arg DeleteAccountFeedbackVerificationsParams) error
+	DeleteAccountFigmaConnections(ctx context.Context, arg DeleteAccountFigmaConnectionsParams) error
+	DeleteAccountFigmaOAuthStates(ctx context.Context, arg DeleteAccountFigmaOAuthStatesParams) error
+	DeleteAccountGlobalWalkthroughs(ctx context.Context, arg DeleteAccountGlobalWalkthroughsParams) error
+	DeleteAccountInternalAlerts(ctx context.Context, arg DeleteAccountInternalAlertsParams) error
+	// Invitation outboxes may outlive their source invitation. Erase address-bearing
+	// snapshots before deleting invitation rows, including invitations sent to us.
+	DeleteAccountInvitationOutbox(ctx context.Context, arg DeleteAccountInvitationOutboxParams) error
+	DeleteAccountInvitations(ctx context.Context, arg DeleteAccountInvitationsParams) error
+	DeleteAccountKeyResultContributions(ctx context.Context, arg DeleteAccountKeyResultContributionsParams) error
+	DeleteAccountMayaRuns(ctx context.Context, arg DeleteAccountMayaRunsParams) error
+	DeleteAccountMayaVoiceSessions(ctx context.Context, arg DeleteAccountMayaVoiceSessionsParams) error
+	DeleteAccountMemories(ctx context.Context, arg DeleteAccountMemoriesParams) error
+	DeleteAccountMessagingConfirmations(ctx context.Context, arg DeleteAccountMessagingConfirmationsParams) error
+	DeleteAccountMessagingConversations(ctx context.Context, arg DeleteAccountMessagingConversationsParams) error
+	DeleteAccountMessagingDeliveries(ctx context.Context, arg DeleteAccountMessagingDeliveriesParams) error
+	DeleteAccountMessagingEmailThreads(ctx context.Context, arg DeleteAccountMessagingEmailThreadsParams) error
+	DeleteAccountMessagingNonces(ctx context.Context, arg DeleteAccountMessagingNoncesParams) error
+	DeleteAccountNotificationEmails(ctx context.Context, arg DeleteAccountNotificationEmailsParams) error
+	DeleteAccountNotificationPreferences(ctx context.Context, arg DeleteAccountNotificationPreferencesParams) error
+	DeleteAccountNotifications(ctx context.Context, arg DeleteAccountNotificationsParams) error
+	DeleteAccountOAuthGrants(ctx context.Context, arg DeleteAccountOAuthGrantsParams) error
+	DeleteAccountOwnedOAuthApplications(ctx context.Context, arg DeleteAccountOwnedOAuthApplicationsParams) error
+	DeleteAccountOwnedOAuthInstallations(ctx context.Context, arg DeleteAccountOwnedOAuthInstallationsParams) error
+	DeleteAccountPersonalIntegrations(ctx context.Context, arg DeleteAccountPersonalIntegrationsParams) error
+	DeleteAccountPrincipals(ctx context.Context, arg DeleteAccountPrincipalsParams) error
+	DeleteAccountPrivateDocuments(ctx context.Context, arg DeleteAccountPrivateDocumentsParams) error
+	DeleteAccountRoutineEmails(ctx context.Context, arg DeleteAccountRoutineEmailsParams) error
+	DeleteAccountSlackLinks(ctx context.Context, arg DeleteAccountSlackLinksParams) error
+	DeleteAccountStoryCollaborators(ctx context.Context, arg DeleteAccountStoryCollaboratorsParams) error
+	DeleteAccountStoryMutes(ctx context.Context, arg DeleteAccountStoryMutesParams) error
+	DeleteAccountStoryWatchers(ctx context.Context, arg DeleteAccountStoryWatchersParams) error
+	DeleteAccountTeamMemberships(ctx context.Context, arg DeleteAccountTeamMembershipsParams) error
+	DeleteAccountTeamOrder(ctx context.Context, arg DeleteAccountTeamOrderParams) error
+	DeleteAccountVerificationTokens(ctx context.Context, arg DeleteAccountVerificationTokensParams) error
+	DeleteAccountWorkspaceMemberships(ctx context.Context, arg DeleteAccountWorkspaceMembershipsParams) error
+	DeleteAccountWorkspaceWalkthroughs(ctx context.Context, arg DeleteAccountWorkspaceWalkthroughsParams) error
 	DeleteUserMemoryForOwner(ctx context.Context, arg DeleteUserMemoryForOwnerParams) (int64, error)
+	DetachAccountDocumentAttachmentsCreatedBy(ctx context.Context, arg DetachAccountDocumentAttachmentsCreatedByParams) error
+	DetachAccountDocumentRelationshipsCreatedBy(ctx context.Context, arg DetachAccountDocumentRelationshipsCreatedByParams) error
+	DetachAccountDocumentsCreatedBy(ctx context.Context, arg DetachAccountDocumentsCreatedByParams) error
+	DetachAccountDocumentsUpdatedBy(ctx context.Context, arg DetachAccountDocumentsUpdatedByParams) error
+	DetachAccountGoogleDriveDocumentImportsImportedByUserId(ctx context.Context, arg DetachAccountGoogleDriveDocumentImportsImportedByUserIdParams) error
+	DetachAccountGoogleDriveFileReferencesCreatedByUserId(ctx context.Context, arg DetachAccountGoogleDriveFileReferencesCreatedByUserIdParams) error
+	DetachAccountStoryFigmaLinksCreatedByUserId(ctx context.Context, arg DetachAccountStoryFigmaLinksCreatedByUserIdParams) error
+	DetachAccountStoryInlineAttachmentsCreatedBy(ctx context.Context, arg DetachAccountStoryInlineAttachmentsCreatedByParams) error
+	DetachAccountUserAiUsageResetsResetByUserId(ctx context.Context, arg DetachAccountUserAiUsageResetsResetByUserIdParams) error
 	EnsureEmailAvatarHandle(ctx context.Context, arg EnsureEmailAvatarHandleParams) (uuid.UUID, error)
+	EraseAccountFeedbackContributorDeliveries(ctx context.Context, arg EraseAccountFeedbackContributorDeliveriesParams) error
+	EraseAccountFeedbackContributorPreferences(ctx context.Context, arg EraseAccountFeedbackContributorPreferencesParams) error
+	EraseAccountFeedbackContributorSessions(ctx context.Context, arg EraseAccountFeedbackContributorSessionsParams) error
+	EraseAccountFeedbackContributorUnsubscribeTokens(ctx context.Context, arg EraseAccountFeedbackContributorUnsubscribeTokensParams) error
+	EraseAccountFeedbackItemFollowers(ctx context.Context, arg EraseAccountFeedbackItemFollowersParams) error
+	EraseAccountFeedbackPortalFollowers(ctx context.Context, arg EraseAccountFeedbackPortalFollowersParams) error
+	// Never replay stale queued profile data after an account was erased. A new
+	// account with the same email can subscribe after older cleanup is confirmed.
+	GetActiveAccountSubscriber(ctx context.Context, arg GetActiveAccountSubscriberParams) (GetActiveAccountSubscriberRow, error)
 	GetActiveBrowserSessionVersion(ctx context.Context, arg GetActiveBrowserSessionVersionParams) (int64, error)
 	GetActiveUserByEmail(ctx context.Context, arg GetActiveUserByEmailParams) (GetActiveUserByEmailRow, error)
 	GetActiveUserByID(ctx context.Context, arg GetActiveUserByIDParams) (GetActiveUserByIDRow, error)
@@ -34,14 +143,57 @@ type Querier interface {
 	GetUserByExternalIdentity(ctx context.Context, arg GetUserByExternalIdentityParams) (GetUserByExternalIdentityRow, error)
 	InvalidateVerificationTokens(ctx context.Context, arg InvalidateVerificationTokensParams) (int64, error)
 	LinkExternalIdentity(ctx context.Context, arg LinkExternalIdentityParams) error
+	ListAccountDeletionConflicts(ctx context.Context, arg ListAccountDeletionConflictsParams) ([]string, error)
+	ListPendingAccountDeletions(ctx context.Context, arg ListPendingAccountDeletionsParams) ([]uuid.UUID, error)
 	ListUserInactivityWarningCandidates(ctx context.Context, arg ListUserInactivityWarningCandidatesParams) ([]ListUserInactivityWarningCandidatesRow, error)
 	ListUserMemoriesForOwner(ctx context.Context, arg ListUserMemoriesForOwnerParams) ([]ListUserMemoriesForOwnerRow, error)
 	ListUsersByIDs(ctx context.Context, arg ListUsersByIDsParams) ([]ListUsersByIDsRow, error)
 	ListWorkspaceUsers(ctx context.Context, arg ListWorkspaceUsersParams) ([]ListWorkspaceUsersRow, error)
+	LockAccountDeletionAttachments(ctx context.Context, arg LockAccountDeletionAttachmentsParams) ([]uuid.UUID, error)
+	// Lock all memberships in affected workspaces, not only the deleting member.
+	// Together with SERIALIZABLE isolation this prevents concurrent last-admin exits.
+	LockAccountDeletionMemberships(ctx context.Context, arg LockAccountDeletionMembershipsParams) ([]LockAccountDeletionMembershipsRow, error)
+	LockAccountForDeletion(ctx context.Context, arg LockAccountForDeletionParams) (LockAccountForDeletionRow, error)
+	// Account deletion is a separate, irreversible path from account deactivation.
+	// The subscriber update/delete workers use the same per-email advisory lock.
+	// This prevents a previously queued update from recreating an erased contact.
+	LockAccountSubscriberLifecycle(ctx context.Context, arg LockAccountSubscriberLifecycleParams) error
+	LockPendingAccountDeletion(ctx context.Context, arg LockPendingAccountDeletionParams) (uuid.UUID, error)
 	MarkUserInactivityWarningSent(ctx context.Context, arg MarkUserInactivityWarningSentParams) (int64, error)
+	PermanentlyDeleteAccount(ctx context.Context, arg PermanentlyDeleteAccountParams) (int64, error)
 	PurgeExpiredVerificationTokens(ctx context.Context, arg PurgeExpiredVerificationTokensParams) (int64, error)
+	QueueAccountAvatarDeletion(ctx context.Context, arg QueueAccountAvatarDeletionParams) error
+	QueueAccountDeletionFinalization(ctx context.Context, arg QueueAccountDeletionFinalizationParams) error
+	// Keep only the address necessary to erase the remote contact; the provider
+	// dispatcher deletes this row only after a confirmed, idempotent deletion.
+	QueueAccountSubscriberDeletion(ctx context.Context, arg QueueAccountSubscriberDeletionParams) error
 	ReactivateUserForVerifiedSignIn(ctx context.Context, arg ReactivateUserForVerifiedSignInParams) (ReactivateUserForVerifiedSignInRow, error)
+	ReattributeAccountActivities(ctx context.Context, arg ReattributeAccountActivitiesParams) error
+	// Comments belong to the shared work record. Preserve IDs, prose and the entire
+	// reply hierarchy while moving the author FK away from the erased account.
+	ReattributeAccountComments(ctx context.Context, arg ReattributeAccountCommentsParams) error
+	ReattributeAccountFeedbackComments(ctx context.Context, arg ReattributeAccountFeedbackCommentsParams) error
+	ReattributeAccountFeedbackSubmissions(ctx context.Context, arg ReattributeAccountFeedbackSubmissionsParams) error
+	ReattributeAccountIntegrationComments(ctx context.Context, arg ReattributeAccountIntegrationCommentsParams) error
+	ReattributeAccountKeyResultsCreatedBy(ctx context.Context, arg ReattributeAccountKeyResultsCreatedByParams) error
+	// Other recipients retain their inbox history. Replace the actor snapshot at
+	// its typed location; do not rewrite task titles or shared comment prose.
+	ReattributeAccountNotifications(ctx context.Context, arg ReattributeAccountNotificationsParams) error
+	ReattributeAccountObjectiveActivities(ctx context.Context, arg ReattributeAccountObjectiveActivitiesParams) error
+	ReattributeAccountObjectivesCreatedBy(ctx context.Context, arg ReattributeAccountObjectivesCreatedByParams) error
+	ReattributeAccountStoriesReporterId(ctx context.Context, arg ReattributeAccountStoriesReporterIdParams) error
+	ReattributeAccountWorkspacesCreatedBy(ctx context.Context, arg ReattributeAccountWorkspacesCreatedByParams) error
+	ReleaseAccountSubscriberLifecycle(ctx context.Context, arg ReleaseAccountSubscriberLifecycleParams) (bool, error)
+	RemoveAccountAuditSnapshots(ctx context.Context, arg RemoveAccountAuditSnapshotsParams) error
+	RemoveAccountMutationSnapshots(ctx context.Context, arg RemoveAccountMutationSnapshotsParams) error
+	RemoveAccountScheduleSnapshots(ctx context.Context, arg RemoveAccountScheduleSnapshotsParams) error
+	// Revalidate after waiting for the email lifecycle lock; an expired worker
+	// must never delete a newly recreated contact after another worker completed.
+	RenewAccountSubscriberDeletion(ctx context.Context, arg RenewAccountSubscriberDeletionParams) (int64, error)
+	RetireAccountDeletionAttachments(ctx context.Context, arg RetireAccountDeletionAttachmentsParams) error
+	RetryAccountSubscriberDeletion(ctx context.Context, arg RetryAccountSubscriberDeletionParams) (int64, error)
 	TouchExternalIdentity(ctx context.Context, arg TouchExternalIdentityParams) (int64, error)
+	TouchPendingAccountDeletion(ctx context.Context, arg TouchPendingAccountDeletionParams) error
 	UpdateActiveUser(ctx context.Context, arg UpdateActiveUserParams) (UpdateActiveUserRow, error)
 	UpdateLastUsedWorkspaceForMember(ctx context.Context, arg UpdateLastUsedWorkspaceForMemberParams) (int64, error)
 	UpdateUserMemoryForOwner(ctx context.Context, arg UpdateUserMemoryForOwnerParams) (int64, error)

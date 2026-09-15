@@ -1,6 +1,6 @@
 # Privacy Policy
 
-Last updated: September 4, 2026
+Last updated: September 16, 2026
 
 This Privacy Policy describes Our policies and procedures on the collection, use and disclosure of Your information when You use the Service and tells You about Your privacy rights and how the law protects You.
 
@@ -57,6 +57,12 @@ The Company allows You to create an account and log in to use the Service throug
 
 If You decide to register through or otherwise grant us access to a Third-Party Social Media Service, We may collect Personal data that is already associated with Your Third-Party Social Media Service's account, such as Your name, Your email address, Your activities or Your contact list associated with that account.
 
+#### Mobile application
+
+The mobile application offers email verification codes for sign-in. Session credentials are kept in the device's secure storage. The app also stores local workspace caches and editing drafts so You can recover work; these are cleared when You sign out or delete Your account. Workspace tasks, descriptions, comments, profile information, and related content are sent to FortyOne's API to provide the Service and are shared according to workspace access controls.
+
+When production error reporting is enabled, We use Sentry to process crash and error diagnostics, including app and operating-system versions, stack traces, and SDK installation identifiers, to diagnose reliability problems. Mobile error reporting does not enable session replay, screenshots, or view-hierarchy capture. Diagnostic processing by native SDKs is separate from the app's JavaScript error scrubbing.
+
 ### Connected Services and Integrations
 
 You may choose to connect FortyOne to third-party services. We access and use data from a connected service only after an authorized user grants the requested permissions and only to provide, secure, support, and improve the user-facing integration. We do not sell connected-service data or use it for advertising.
@@ -75,9 +81,9 @@ Accepted inbound Slack payloads are encrypted at rest. Conversation and assistan
 
 When You connect Google Calendar, We may collect and store Your Google account identifier, connected email address, timezone, authorized scopes, encrypted OAuth credentials, primary-calendar availability, and synchronization status. If You grant event-detail access, We may also cache event titles, descriptions, locations, meeting links, organizers, attendees, visibility, and start and end times for Your primary calendar. Private and confidential events are stored as Busy without their descriptive details.
 
-We use Google Calendar data to show Your meetings beside FortyOne work, calculate availability, avoid obvious schedule conflicts, and provide schedule-aware planning features. Detailed calendar events are visible only to the connected calendar owner. Teammates, managers, Maya, and capacity-planning features receive title-free availability windows rather than event content. The integration is read-only and does not create, edit, or delete Google Calendar events.
+We use Google Calendar data to show Your meetings beside FortyOne work, calculate availability, avoid obvious schedule conflicts, and provide schedule-aware planning features. Detailed calendar events are visible only to the connected calendar owner. Teammates, managers, Maya, and capacity-planning features receive title-free availability windows rather than event content. If You grant the additional event-writing permissions and use scheduling features, FortyOne may create, update, and remove its own task-scheduling events in Your connected calendar.
 
-FortyOne keeps a rolling calendar snapshot that currently covers seven days before and ninety days after the sync date. When You disconnect Google Calendar, We clear the connection credentials and scopes and delete the cached calendar events and availability windows for that connection. FortyOne's use and transfer of information received from Google APIs adheres to the [Google API Services User Data Policy](https://developers.google.com/terms/api-services-user-data-policy), including its Limited Use requirements.
+FortyOne keeps a rolling calendar snapshot that currently covers seven days before and ninety days after the sync date. When You disconnect Google Calendar or delete Your FortyOne account, We delete the cached events and availability windows and disable product access through the connection. A sealed credential and the identifiers needed to remove FortyOne-created calendar events may remain temporarily while background cleanup finishes. Cleanup credentials are removed when that work completes or reaches its terminal cleanup policy. FortyOne's use and transfer of information received from Google APIs adheres to the [Google API Services User Data Policy](https://developers.google.com/terms/api-services-user-data-policy), including its Limited Use requirements.
 
 #### Google Drive and Google Workspace
 
@@ -154,6 +160,12 @@ Your information, including Personal Data, is processed at the Company's operati
 You have the right to delete or request that We assist in deleting the Personal Data that We have collected about You.
 
 You may update, amend, or delete Your information at any time by signing in to Your Account, if you have one, and visiting the account settings section that allows you to manage Your personal information. You may also contact Us to request access to, correct, or delete any personal information that You have provided to Us.
+
+In the mobile app, choose **Settings → Delete account**. On the web, use **Settings → Account → Delete Account**. This is permanent deletion, not temporary deactivation. It removes Your account profile, private documents, personal assistant conversations and memories, memberships, and personal connection credentials. Applications and integrations owned by Your account are disconnected for the workspaces using them. If You are the only administrator of an active workspace, first transfer administrator access or delete that workspace so other members do not lose administration of their work.
+
+Shared workspace tasks, comments and replies, feedback submissions, activity history, shared documents, and files still referenced by workspace content remain under the workspace's controls so the organization can keep its work history. Your historical authorship is replaced with **Former user**, without Your profile name, email, or avatar. Active assignments and leadership responsibilities are cleared. Retained work content and older notification text may still contain names, email addresses, or other personal information. We do not automatically redact shared prose or change historical names that cannot be reliably linked to Your account; contact Us about a request concerning that content using the contact details below.
+
+Limited security and audit records may be retained for the purposes described under retention above. Object-storage deletion and connected-service cleanup run in the background; the app identifies when connected-service cleanup is still pending. We retain the email address needed to remove Your email-provider contact in a restricted cleanup queue until the provider confirms removal. This cleanup does not restore the account or permit product access through it. Organization subscriptions are managed separately by their workspace administrators.
 
 ## Disclosure of Your Personal Data
 

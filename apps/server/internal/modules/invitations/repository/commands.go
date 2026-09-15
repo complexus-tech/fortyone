@@ -181,14 +181,11 @@ func (r *repo) AcceptInvitation(
 		alreadyMember bool
 	)
 	err := r.withinTransaction(ctx, func(queries invitationsql.Querier) error {
-		row, err := queries.LockInvitationByToken(ctx, lockTokenLookupParams(command.Lookup))
+		var err error
+		accepted, err = lockInvitationForAcceptance(ctx, queries, command)
 		if err != nil {
-			if errors.Is(err, pgx.ErrNoRows) {
-				return invitationsdomain.ErrInvitationNotFound
-			}
-			return fmt.Errorf("lock invitation for acceptance: %w", err)
+			return err
 		}
-		accepted = invitationFromLock(row)
 		if accepted.UsedAt != nil {
 			return invitationsdomain.ErrInvitationUsed
 		}
@@ -319,4 +316,29 @@ func consumeInvitation(
 		return invitationsdomain.ErrInvitationUsed
 	}
 	return nil
+}
+
+// Both account IDs and email bearers share the same locked acceptance transaction.
+func lockInvitationForAcceptance(ctx context.Context, queries invitationsql.Querier, command invitationsdomain.AcceptCommand) (invitationsdomain.WorkspaceInvitation, error) {
+	var invitation invitationsdomain.WorkspaceInvitation
+	var err error
+	if command.InvitationID != uuid.Nil {
+		var row invitationsql.LockInvitationByIDRow
+		row, err = queries.LockInvitationByID(ctx, invitationsql.LockInvitationByIDParams{
+			InvitationID: command.InvitationID,
+			UserID:       command.UserID,
+		})
+		invitation = invitationFromIDLock(row)
+	} else {
+		var row invitationsql.LockInvitationByTokenRow
+		row, err = queries.LockInvitationByToken(ctx, lockTokenLookupParams(command.Lookup))
+		invitation = invitationFromLock(row)
+	}
+	if errors.Is(err, pgx.ErrNoRows) {
+		return invitationsdomain.WorkspaceInvitation{}, invitationsdomain.ErrInvitationNotFound
+	}
+	if err != nil {
+		return invitationsdomain.WorkspaceInvitation{}, fmt.Errorf("lock invitation for acceptance: %w", err)
+	}
+	return invitation, nil
 }

@@ -83,6 +83,7 @@ import (
 	teamsettings "github.com/complexus-tech/projects-api/internal/modules/teamsettings/service"
 	usersrepository "github.com/complexus-tech/projects-api/internal/modules/users/repository"
 	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
+	useruow "github.com/complexus-tech/projects-api/internal/modules/users/uow"
 	workspacesrepository "github.com/complexus-tech/projects-api/internal/modules/workspaces/repository"
 	workspaces "github.com/complexus-tech/projects-api/internal/modules/workspaces/service"
 	workspaceuow "github.com/complexus-tech/projects-api/internal/modules/workspaces/uow"
@@ -166,10 +167,20 @@ func buildServices(cfg mux.Config, dependencies Dependencies) services {
 	)
 
 	usersRepository := usersrepository.New(dependencies.DatabasePool)
+	accountDeletionRepository, err := usersrepository.NewAccountDeletionRepository(dependencies.DatabasePool,
+		cfg.StorageConfig.Provider, cfg.StorageConfig.AttachmentsBucket, cfg.StorageConfig.ProfilesBucket)
+	if err != nil {
+		panic("failed to initialize account deletion repository: " + err.Error())
+	}
+	accountDeletion, err := useruow.New(dependencies.DatabasePool, accountDeletionRepository, calendarrepository.New(dependencies.DatabasePool))
+	if err != nil {
+		panic("failed to initialize account deletion: " + err.Error())
+	}
 	usersService := users.New(
 		cfg.Log,
 		usersRepository,
 		cfg.TasksService,
+		users.WithAccountDeletion(accountDeletion),
 		users.WithVerificationTokens(
 			dependencies.VerificationTokens,
 			usersRepository,

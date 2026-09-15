@@ -6,7 +6,7 @@ import { invitationKeys } from "../keys";
 import { getMyInvitations } from "./my-invitations";
 import { getPendingInvitations } from "./pending-invitations";
 
-const MY_INVITATIONS_STALE_TIME = DURATION_FROM_MILLISECONDS.MINUTE * 10;
+const MY_INVITATIONS_REFRESH_INTERVAL = DURATION_FROM_MILLISECONDS.SECOND * 30;
 const INVITATION_PREFETCH_STALE_TIME = DURATION_FROM_MILLISECONDS.MINUTE * 5;
 
 const createMyInvitationsOptions = (
@@ -30,7 +30,12 @@ const createPendingInvitationsOptions = (
   });
 
 export const myInvitationsQueryOptions = () =>
-  createMyInvitationsOptions({}, MY_INVITATIONS_STALE_TIME);
+  queryOptions({
+    ...createMyInvitationsOptions({}, 0),
+    refetchOnMount: "always",
+    refetchOnWindowFocus: "always",
+    refetchInterval: MY_INVITATIONS_REFRESH_INTERVAL,
+  });
 
 export const pendingInvitationsQueryOptions = (ctx: WorkspaceCtx) =>
   createPendingInvitationsOptions(ctx);

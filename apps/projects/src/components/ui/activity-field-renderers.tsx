@@ -3,6 +3,7 @@ import { format } from "date-fns";
 import Link from "next/link";
 import { Avatar, Badge, Flex, Tooltip } from "ui";
 import { CalendarIcon, TagsIcon, TimeScheduleIcon } from "icons";
+import { FORMER_USER_NAME, isFormerUser } from "@/lib/former-user";
 import { MayaAvatar } from "./maya-avatar";
 import { StoryStatusIcon } from "./story-status-icon";
 
@@ -195,6 +196,7 @@ const createActivityFieldRenderers = ({
     assignee_id: {
       label: "Assignee",
       render: (value) => {
+        if (isFormerUser(value)) return <span>{FORMER_USER_NAME}</span>;
         const assignee = findActivityAssignee(value);
         const assigneeLabel =
           assignee?.username || assignee?.fullName || "Unknown user";

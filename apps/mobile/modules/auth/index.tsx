@@ -1,4 +1,4 @@
-import { View } from "react-native";
+import { Pressable, View } from "react-native";
 import { Image } from "expo-image";
 import { Button, Col, SafeContainer, Text } from "@/components/ui";
 import { useAuthStore } from "@/store";
@@ -14,6 +14,7 @@ import { clearSignInTransaction } from "@/lib/auth";
 import { useEffect, useRef, useState } from "react";
 import { useLocalSearchParams } from "expo-router";
 import { useTheme } from "@/hooks";
+import { openPublicPage, publicPages } from "@/lib/public-pages";
 const lightMesh = require("@/assets/images/mesh.webp");
 const darkMesh = require("@/assets/images/mesh-dark.webp");
 
@@ -134,7 +135,7 @@ export const Auth = () => {
             onPress={handleGetStarted}
             loading={loading}
           >
-            Get Started
+            Continue with email
           </Button>
           {sessionError ? (
             <Button
@@ -147,6 +148,32 @@ export const Auth = () => {
               Retry connection
             </Button>
           ) : null}
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "center",
+              flexWrap: "wrap",
+              marginTop: 8,
+            }}
+          >
+            {(["privacy", "terms"] as const).map((page) => (
+              <Pressable
+                key={page}
+                accessibilityRole="link"
+                onPress={() => openPublicPage(page)}
+                style={({ pressed }) => ({
+                  minHeight: 44,
+                  paddingHorizontal: 12,
+                  justifyContent: "center",
+                  opacity: pressed ? 0.6 : 1,
+                })}
+              >
+                <Text fontSize="sm" decoration="underline">
+                  {publicPages[page].label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
           <Text
             align="center"
             className="mt-4 opacity-80 text-[15px] dark:opacity-100"

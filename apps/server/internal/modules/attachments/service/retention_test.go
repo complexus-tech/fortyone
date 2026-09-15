@@ -31,6 +31,15 @@ func TestRetainedObjectDeletionUsesConfiguredCredentialFreeRoute(t *testing.T) {
 	require.Equal(t, "private/object-name.png", storageStub.deletedBlobName)
 }
 
+func TestRetainedAccountAvatarDeletionAllowsOnlyConfiguredProfileBucket(t *testing.T) {
+	store := &retainedObjectStorageStub{}
+	service := New(nil, nil, store, storage.Config{Provider: "aws", AttachmentsBucket: "attachments", ProfilesBucket: "profiles"}, nil)
+	require.NoError(t, service.DeleteRetainedObject(t.Context(), "aws", "profiles", "avatar.png"))
+	require.Equal(t, "profiles", store.deletedContainer)
+	require.ErrorIs(t, service.DeleteRetainedObject(t.Context(), "aws", "unrelated", "avatar.png"), ErrRetainedObjectStorageRoute)
+	require.Equal(t, 1, store.deleteCalls)
+}
+
 func TestRetainedObjectDeletionRejectsAStaleOrForeignStorageRoute(t *testing.T) {
 	storageStub := &retainedObjectStorageStub{}
 	service := New(nil, nil, storageStub, storage.Config{

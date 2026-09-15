@@ -1,7 +1,7 @@
 import type { Story } from "@/modules/stories/types";
 import { useRef, useLayoutEffect } from "react";
 import { useColorScheme } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { TagsIcon } from "@/components/icons/tags";
 import { Text } from "@/components/ui";
 import { themeColors } from "@/constants/colors";
 import { Dot } from "@/components/icons";
@@ -45,8 +45,7 @@ export const LabelsBadge = ({
       }}
       trigger={
         <PropertyChip>
-          <Ionicons
-            name="pricetag-outline"
+          <TagsIcon
             size={16}
             color={themeColors[dark ? "dark" : "light"].textMuted}
           />

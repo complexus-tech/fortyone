@@ -2,6 +2,7 @@
 
 import { Box, Text, Button } from "ui";
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { ConfirmDialog } from "@/components/ui";
 import { logOut } from "@/components/shared/sidebar/actions";
 import { clearAllStorage } from "@/components/shared/sidebar/utils";
@@ -9,6 +10,9 @@ import { useDeleteWorkspaceMutation } from "@/lib/hooks/delete-workspace-mutatio
 import { useRestoreWorkspaceMutation } from "@/lib/hooks/restore-workspace-mutation";
 import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
 import { useAnalytics } from "@/hooks";
+import { MOBILE_ACCOUNT_DELETION_PATH } from "@/lib/mobile-auth";
+import { getLoginUrl } from "@/utils/callback-url";
+import { finalizeDeletionCleanup } from "@/lib/finalize-deletion-cleanup";
 import { SectionHeader } from "../../components";
 import { WorkspaceForm } from "./components/form";
 import { WorkspaceFeatures } from "./components/features";
@@ -16,6 +20,9 @@ import { Logo } from "./components/logo";
 import { WorkspaceWorkSchedule } from "./components/work-schedule";
 
 export const WorkspaceGeneralSettings = () => {
+  const searchParams = useSearchParams();
+  const returnToAccountDeletion =
+    searchParams.get("callbackUrl") === MOBILE_ACCOUNT_DELETION_PATH;
   const [isOpen, setIsOpen] = useState(false);
   const { workspace } = useCurrentWorkspace();
   const { analytics } = useAnalytics();
@@ -34,8 +41,11 @@ export const WorkspaceGeneralSettings = () => {
     } catch {
       // continue with local sign-out cleanup
     }
-    clearAllStorage();
-    window.location.href = "/?signedOut=true";
+    await finalizeDeletionCleanup(clearAllStorage, () => {
+      window.location.href = returnToAccountDeletion
+        ? getLoginUrl(MOBILE_ACCOUNT_DELETION_PATH, true)
+        : "/?signedOut=true";
+    });
   };
 
   const handleConfirmDelete = () => {
@@ -55,6 +65,16 @@ export const WorkspaceGeneralSettings = () => {
       <Text as="h1" className="mb-6 text-2xl font-medium">
         Workspace Settings
       </Text>
+      {returnToAccountDeletion ? (
+        <Button
+          className="mb-6"
+          color="tertiary"
+          href={MOBILE_ACCOUNT_DELETION_PATH}
+          variant="outline"
+        >
+          Return to account deletion
+        </Button>
+      ) : null}
       <Box className="border-border bg-surface mb-6 rounded-2xl border">
         <SectionHeader
           action={<Logo />}
@@ -70,7 +90,10 @@ export const WorkspaceGeneralSettings = () => {
         <WorkspaceFeatures />
       </Box>
 
-      <Box className="border-border bg-surface rounded-2xl border">
+      <Box
+        className="border-border bg-surface scroll-mt-6 rounded-2xl border"
+        id="delete-workspace"
+      >
         <SectionHeader
           action={
             <Button

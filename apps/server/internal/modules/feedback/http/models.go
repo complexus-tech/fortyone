@@ -388,19 +388,14 @@ func toAppBoardReviewer(core feedback.CoreBoardReviewer) AppBoardReviewer {
 }
 
 func toAppItem(core feedback.CoreItem, comments []AppComment, links []AppStoryLink, attachments ...AppItemAttachment) AppItem {
-	authorID := uuidPointer(core.AuthorID)
-	authorAvatar := core.AuthorAvatar
-	if core.AuthorMasked {
-		authorID = nil
-		authorAvatar = nil
-	}
+	authorID, authorName, authorAvatar := presentAuthor(core.AuthorID, core.AuthorName, core.AuthorAvatar, core.AuthorMasked)
 	item := AppItem{
 		ID:               core.ID,
 		WorkspaceID:      core.WorkspaceID,
 		PortalID:         core.PortalID,
 		BoardID:          core.BoardID,
 		AuthorID:         authorID,
-		AuthorName:       core.AuthorName,
+		AuthorName:       authorName,
 		AuthorAvatar:     authorAvatar,
 		ParticipantKind:  core.ParticipantKind,
 		AuthorMasked:     core.AuthorMasked,
@@ -461,19 +456,14 @@ func uuidPointer(value uuid.UUID) *uuid.UUID {
 }
 
 func toAppComment(core feedback.CoreComment) AppComment {
-	authorID := uuidPointer(core.AuthorID)
-	authorAvatar := core.AuthorAvatar
-	if core.AuthorMasked {
-		authorID = nil
-		authorAvatar = nil
-	}
+	authorID, authorName, authorAvatar := presentAuthor(core.AuthorID, core.AuthorName, core.AuthorAvatar, core.AuthorMasked)
 	return AppComment{
 		ID:              core.ID,
 		WorkspaceID:     core.WorkspaceID,
 		ItemID:          core.ItemID,
 		AuthorID:        authorID,
 		ParentID:        core.ParentID,
-		AuthorName:      core.AuthorName,
+		AuthorName:      authorName,
 		AuthorAvatar:    authorAvatar,
 		ParticipantKind: core.ParticipantKind,
 		AuthorMasked:    core.AuthorMasked,

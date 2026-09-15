@@ -17,23 +17,34 @@ export default function TabsLayout() {
     >
       <NativeTabs.Trigger name="index" accessibilityLabel="Home">
         <NativeTabs.Trigger.Icon
-          sf={{
-            default: "square.grid.2x2",
-            selected: "square.grid.2x2.fill",
+          src={{
+            default: require("@/assets/icons/tabs/home.png"),
+            selected: require("@/assets/icons/tabs/home-selected.png"),
           }}
-          md="grid_view"
+          renderingMode="template"
         />
-        <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label hidden>Home</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="my-work" accessibilityLabel="My Work">
-        <NativeTabs.Trigger.Label>My Work</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf="checklist" md="checklist" />
+        <NativeTabs.Trigger.Label hidden>My Work</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon
+          src={{
+            default: require("@/assets/icons/tabs/my-work.png"),
+            selected: require("@/assets/icons/tabs/my-work-selected.png"),
+          }}
+          renderingMode="template"
+        />
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="maya" hidden />
       <NativeTabs.Trigger name="inbox" accessibilityLabel="Inbox">
-        <NativeTabs.Trigger.Label>Inbox</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf="tray.fill" md="inbox" />
+        <NativeTabs.Trigger.Label hidden>Inbox</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon
+          src={{
+            default: require("@/assets/icons/tabs/inbox.png"),
+            selected: require("@/assets/icons/tabs/inbox-selected.png"),
+          }}
+          renderingMode="template"
+        />
         {unreadNotifications > 0 && (
           <NativeTabs.Trigger.Badge>{badgeLabel}</NativeTabs.Trigger.Badge>
         )}
@@ -43,7 +54,7 @@ export default function TabsLayout() {
         role="search"
         accessibilityLabel="Search"
       >
-        <NativeTabs.Trigger.Label>Search</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label hidden>Search</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="magnifyingglass" md="search" />
       </NativeTabs.Trigger>
     </NativeTabs>
