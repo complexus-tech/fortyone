@@ -56,7 +56,7 @@ export const Billing = () => {
 
   const renderFeatureItem = (text: string) => {
     return (
-      <Flex align="center" gap={2}>
+      <Flex align="center" gap={2} key={text}>
         <CheckIcon />
         <Text>{text}</Text>
       </Flex>

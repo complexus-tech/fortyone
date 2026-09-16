@@ -54,25 +54,26 @@ export default function TabsLayout() {
         )}
       </NativeTabs.Trigger>
       <NativeTabs.Trigger
-        name="maya"
-        accessibilityLabel="Maya, AI assistant"
-        disableAutomaticContentInsets
-      >
-        <NativeTabs.Trigger.Label hidden>Maya</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          src={require("@/assets/icons/tabs/maya.png")}
-          renderingMode="template"
-        />
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger
         name="search"
-        role="search"
         accessibilityLabel="Search"
         disableAutomaticContentInsets
       >
         <NativeTabs.Trigger.Label hidden>Search</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           src={require("@/assets/icons/tabs/search.png")}
+          renderingMode="template"
+        />
+      </NativeTabs.Trigger>
+      {/* iOS uses the search role for the detached slot; Maya keeps its own icon and label. */}
+      <NativeTabs.Trigger
+        name="maya"
+        role="search"
+        accessibilityLabel="Maya, AI assistant"
+        disableAutomaticContentInsets
+      >
+        <NativeTabs.Trigger.Label hidden>Maya</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon
+          src={require("@/assets/icons/tabs/maya.png")}
           renderingMode="template"
         />
       </NativeTabs.Trigger>

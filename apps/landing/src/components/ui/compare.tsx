@@ -76,7 +76,10 @@ const comparisonSections: ComparisonSection[] = [
         label: "Tasks",
         description:
           "The number of tasks that can be created across the workspace.",
-        getValue: (plan) => plan.limits.issues,
+        getValue: (plan) =>
+          plan.limits.issues === "Unlimited"
+            ? "Unlimited"
+            : `${plan.limits.issues} tasks`,
       },
     ],
   },
