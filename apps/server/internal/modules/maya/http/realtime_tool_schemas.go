@@ -56,6 +56,16 @@ func realtimeExtendedTools() []openAIRealtimeTool {
 			[]string{"reference", "confirmed"},
 		),
 		realtimeTool(
+			"delete_story",
+			"Move one exact story to trash after the user confirms its reference and title. Only workspace admins or the story creator can delete it. Never infer approval from the original request.",
+			map[string]any{
+				"reference":         stringProperty("Story reference such as ENG-42, or an unambiguous title."),
+				"confirmed":         booleanProperty("True only after the user explicitly approves the displayed deletion."),
+				"confirmationToken": stringProperty("Exact token returned by the preceding confirmation request."),
+			},
+			[]string{"reference", "confirmed"},
+		),
+		realtimeTool(
 			"story_comments",
 			"List comments on a story, or add a comment after the user confirms the exact text and target story.",
 			map[string]any{

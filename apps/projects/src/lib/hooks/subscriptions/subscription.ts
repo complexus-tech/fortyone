@@ -1,7 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { useSession } from "@/lib/auth/client";
 import { useWorkspacePath } from "@/hooks";
-import { getSubscription } from "@/lib/queries/subscriptions/get-subscription";
+import {
+  getSubscription,
+  getSubscriptionWithPrice,
+} from "@/lib/queries/subscriptions/get-subscription";
 import { subscriptionKeys } from "@/constants/keys";
 import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
 
@@ -17,5 +20,17 @@ export const useSubscription = () => {
     refetchIntervalInBackground: true,
     refetchOnMount: true,
     refetchOnReconnect: true,
+  });
+};
+
+export const useSubscriptionWithPrice = (enabled: boolean) => {
+  const { data: session } = useSession();
+  const { workspaceSlug } = useWorkspacePath();
+  return useQuery({
+    queryKey: [...subscriptionKeys.details(workspaceSlug), "price"],
+    queryFn: () =>
+      getSubscriptionWithPrice({ session: session!, workspaceSlug }),
+    enabled: enabled && Boolean(session),
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE,
   });
 };

@@ -112,7 +112,7 @@ export const plans: Plan[] = [
 // Feature labels mapping for display
 export const featureLabels = {
   teams: "Teams",
-  sso: "Single Sign-On (SSO)",
+  sso: "Google sign-in",
   emailSupport: "Email support",
   objectives: "Objectives",
   trackOKRs: "Track OKRs",
@@ -122,7 +122,7 @@ export const featureLabels = {
   customWorkflows: "Custom workflows",
   customTerminology: "Custom terminology",
   prioritySupport: "Priority support",
-  unlimitedEverything: "Unlimited everything",
+  unlimitedEverything: "Unlimited tasks, teams, and objectives",
   customOnboarding: "Custom onboarding",
   onPremise: "On-premise/Private Cloud Option",
   dedicatedManager: "Dedicated account manager",

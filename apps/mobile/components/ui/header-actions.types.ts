@@ -9,6 +9,8 @@ export type HeaderActionsProps = {
   actions?: ContextMenuAction[];
   onOptions?: () => void;
   optionsLabel?: string;
+  optionsIcon?: IconButtonProps["icon"];
+  optionsSystemImage?: SFSymbol;
   menuLabel?: string;
   menuContent?: ReactNode;
   menuIcon?: IconButtonProps["icon"];

@@ -75,6 +75,12 @@ export type UpdateAutomationPreferences = Partial<
 >;
 
 export type Subscription = {
+  price?: {
+    unitAmount: number;
+    currency: string;
+    interval: "month" | "year" | "week" | "day";
+    intervalCount: number;
+  };
   workspaceId: string;
   stripeCustomerId: string;
   stripeSubscriptionId: string;

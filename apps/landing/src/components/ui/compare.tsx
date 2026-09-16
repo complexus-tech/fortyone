@@ -110,7 +110,7 @@ const comparisonSections: ComparisonSection[] = [
       featureRow(
         "unlimitedEverything",
         "Unlimited planning",
-        "Remove limits across the core planning experience.",
+        "Create unlimited tasks, teams, and objectives. AI usage and file upload limits still apply.",
       ),
     ],
   },
@@ -282,8 +282,8 @@ const comparisonSections: ComparisonSection[] = [
     rows: [
       featureRow(
         "sso",
-        "Single Sign-On (SSO)",
-        "Let members sign in through your identity provider.",
+        "Google sign-in",
+        "Let members sign in with their Google account.",
       ),
       featureRow(
         "onPremise",

@@ -1,5 +1,6 @@
 /* eslint-disable turbo/no-undeclared-env-vars -- ok */
 import type { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
+import { ApiError } from "api-client";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { devToolsMiddleware } from "@ai-sdk/devtools";
@@ -31,6 +32,8 @@ import {
 } from "@/lib/ai/tool-discovery";
 import { auth } from "@/auth";
 import posthogServer from "@/app/posthog-server";
+import { get } from "@/lib/http";
+import type { ApiResponse } from "@/types";
 import { systemPrompt } from "./system";
 import { getUserContext } from "./user-context";
 import { beginChatWrite, saveChat } from "./save-chat";
@@ -62,6 +65,12 @@ import {
   type ChatRequestBody,
   dispatchValidatedChatRequest,
 } from "./chat-request";
+import { resolveTrustedChatContext } from "./trusted-context";
+import {
+  ChatAdmissionError,
+  assertChatAdmission,
+} from "./request-context-policy";
+import { mobileMayaTools, canUseMobileMayaTool } from "./mobile-tools";
 
 export const maxDuration = 300;
 
@@ -94,15 +103,9 @@ const handleChatRequest = async (
     currentPath,
     currentTheme,
     resolvedTheme,
-    subscription,
     id,
-    username,
-    terminology,
-    workspace,
-    memories,
     messageId,
     provider = "openai",
-    totalMessages,
     trigger,
   } = requestBody;
   const session = await sessionPromise;
@@ -110,7 +113,36 @@ const handleChatRequest = async (
     return new Response("Unauthorized", { status: 401 });
   }
 
+  const {
+    workspace,
+    terminology,
+    memories,
+    subscription,
+    username,
+    timezone,
+    messageLimit,
+  } = await resolveTrustedChatContext(requestBody, session);
   const uiMessages = redactGoogleDriveContentFromMessages(messagesFromRequest);
+  if (
+    requestBody.client === "mobile" &&
+    uiMessages
+      .at(-1)
+      ?.parts.some(
+        (part) =>
+          part.type.startsWith("tool-") &&
+          "state" in part &&
+          part.state === "approval-responded" &&
+          part.approval.approved &&
+          !canUseMobileMayaTool(
+            part.type.slice(5),
+            "input" in part ? part.input : undefined,
+          ),
+      )
+  ) {
+    return new Response("This action must be reviewed in the web app.", {
+      status: 409,
+    });
+  }
   const mutationApprovalResponse = createMutationToolApprovalResponse({
     abortSignal: req.signal,
     chatId: id,
@@ -129,6 +161,15 @@ const handleChatRequest = async (
   }
 
   assertLatestUserTextWithinContextBudget(uiMessages);
+  const usage = await get<ApiResponse<{ count: number }>>(
+    "chat-sessions/messages/count",
+    { session, workspaceSlug: workspace.slug },
+  );
+  assertChatAdmission({
+    current: usage.data?.count ?? NaN,
+    limit: messageLimit,
+    isInternal: session.user.isInternal,
+  });
 
   const writeReservation = await beginChatWrite({
     id,
@@ -168,13 +209,15 @@ const handleChatRequest = async (
   // OpenAI hosted tool-search requires stored Responses. Drive-bearing turns
   // instead send the local tool catalog and disable provider-side Response
   // storage so extracted source content exists only for the active model run.
+  const availableTools =
+    requestBody.client === "mobile" ? mobileMayaTools(modelTools) : modelTools;
   const runtimeTools =
     provider === "openai" && !containsGoogleDriveContent
       ? withOpenAIToolDiscovery(
-          modelTools,
+          availableTools,
           openaiClient.tools.toolSearch({ execution: "server" }),
         )
-      : modelTools;
+      : availableTools;
   const runtimeToolNames = new Set(Object.keys(runtimeTools));
   // Compact copies determine the byte-bounded suffix and tool routing. Convert
   // the aligned raw suffix so each registered toModelOutput projector runs
@@ -209,17 +252,17 @@ const handleChatRequest = async (
   const userContext =
     getUserContext({
       user: session.user,
-      currentPath,
-      currentTheme,
-      resolvedTheme,
-      subscription,
+      currentPath: currentPath ?? "/my-work",
+      currentTheme: currentTheme ?? "system",
+      resolvedTheme: resolvedTheme ?? "light",
       memories,
-      joinedTeams,
-      storyCreationDefaults,
-      username: username ?? subscription?.username,
       terminology,
       workspace,
-      totalMessages,
+      timezone,
+      totalMessages: { current: usage.data!.count, limit: messageLimit },
+      joinedTeams,
+      storyCreationDefaults,
+      username,
     }) + getGoogleDriveSelectionRuntimeContext(selectedGoogleDriveFiles);
 
   const phClient = posthogServer();
@@ -329,6 +372,17 @@ export async function POST(req: NextRequest) {
       request: req,
     });
   } catch (error) {
+    if (error instanceof ChatAdmissionError)
+      return new Response(error.message, { status: error.status });
+    if (
+      error instanceof ApiError &&
+      [401, 403, 404, 409, 429].includes(error.status)
+    ) {
+      return new Response(
+        "Maya could not access this conversation. Refresh it and try again.",
+        { status: error.status },
+      );
+    }
     // eslint-disable-next-line no-console -- Diagnostics intentionally omit request payloads and user content.
     console.error(
       "[chat/route] Request setup failed",

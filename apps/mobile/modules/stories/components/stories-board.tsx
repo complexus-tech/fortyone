@@ -143,7 +143,7 @@ function GroupedStoriesList({
         completionStatus={completionByTeam.get(item.teamId)}
         assignee={memberById.get(item.assigneeId ?? "")}
         team={teamById.get(item.teamId)}
-        statusInGroupHeader={groupFilters.groupBy === "status"}
+        showStatusLabel={groupFilters.groupBy !== "status"}
       />
     ),
     [

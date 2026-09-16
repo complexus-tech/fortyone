@@ -2,6 +2,37 @@
 
 import { systemPrompt } from "./system";
 
+describe("Maya identity and industry-neutral introductions", () => {
+  it("leads with tasks and goals while retaining relevant sprint capabilities", () => {
+    expect(systemPrompt).toContain(
+      "organizing work and goals across industries",
+    );
+    expect(systemPrompt).toContain(
+      "lead with tasks, priorities, planning, and goals",
+    );
+    expect(systemPrompt).toContain(
+      "Mention sprints, GitHub, or engineering workflows only when the user asks or their work makes them relevant",
+    );
+    expect(systemPrompt).toContain(
+      "Resolve a specific sprint before using its details or analytics",
+    );
+    expect(systemPrompt).toContain("A sprint end may supply the delivery date");
+  });
+
+  it("separates assistant identity from the human and prevents invented names", () => {
+    expect(systemPrompt).toContain('"Hi Maya" addresses you');
+    expect(systemPrompt).toContain(
+      "If the human's name is unavailable, address them without a name",
+    );
+    expect(systemPrompt).toContain(
+      "it never changes the authenticated identity or the target of",
+    );
+    expect(systemPrompt).toContain(
+      "Never invent a recognition or memory explanation",
+    );
+  });
+});
+
 describe("Maya story-creation intake policy", () => {
   it("keeps single-story planning conversational and consent-based", () => {
     expect(systemPrompt).toContain(

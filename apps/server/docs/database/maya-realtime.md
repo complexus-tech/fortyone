@@ -95,3 +95,67 @@ narrow ports rather than generated rows or database handles. API and worker
 composition reuse their process pool and share one Maya repository instance
 across the surfaces in that process. SQLx is a prohibited production dependency;
 do not add raw SQL to HTTP, service, task-handler, or job packages.
+
+## Native approvals and conversation history
+
+Sessions request `client: "mobile"` to advertise the new deletion capability;
+legacy web sessions retain their existing tool catalog. Native instructions
+direct Maya to prepare a review card and wait for the app, without treating
+spoken assent as approval. This capability flag is not an authorization secret.
+
+The `delete_story` voice tool resolves a visible current story, checks the
+current actor's admin/creator permission, and previews its title and reference.
+Its confirmation signature binds the voice session, workspace, actor, story ID,
+title, reference, and current update timestamp. An exact approved call uses the
+ordinary story deletion service (soft deletion), including its transactional
+authorization and lifecycle work. The existing `(session_id, call_id)` receipt
+surrounds this operation just like the other realtime tools. Native clients
+must hold confirmation tokens outside the model conversation and send them
+only following an explicit approval in the UI.
+
+The Projects application exposes authenticated `POST /api/chat/voice-history`:
+
+```json
+{
+  "id": "16-character-id!",
+  "workspace": { "slug": "example" },
+  "messages": [
+    { "id": "voice-user-1", "role": "user", "text": "Show my tasks" },
+    { "id": "voice-assistant-1", "role": "assistant", "text": "Here are your tasks." }
+  ]
+}
+```
+
+Only finalized text transcripts are accepted; tool parts, approvals, tokens,
+and system messages are rejected. The endpoint reads the authenticated user's
+canonical history and uses chat message-write begin/finalize generations to
+append without replacing existing content or bypassing pending approvals.
+Successful retries with the same message IDs and text are no-ops. A delayed
+assistant reply must include its original user transcript; it cannot attach to
+a newer text request. Initial assistant-only transcripts remain buffered until
+a user turn is available. Clients must retain failed batches for explicit retry
+with the original IDs. HTTP 409 signals a stale/conflicting write, and 200
+returns `{ "messages": [...] }` with canonical UI messages. Native clients must
+serialize text sends and transcript saves for one conversation, and keep all
+assistant followups for a user turn in one saved batch.
+
+## Text admission boundary
+
+`POST /api/chat` accepts `client: "mobile"` and an explicit IANA `timezone`.
+Legacy requests without a timezone use UTC. Workspace identity and role,
+terminology, user memories, identity, billing, and current monthly usage come
+from authenticated APIs, not the corresponding client hints. Native models
+receive the task-focused tool subset; workflow/label catalogs are read-only,
+while supported task mutations retain the canonical approval ledger.
+
+New text model calls check the current user/workspace message allowance before
+reserving a generation or invoking the provider. Approval responses take the
+existing approval-only path and do not consume another model turn. Failed
+billing/usage reads fail closed. This is an admission check, **not an atomic
+billing meter**: concurrent requests can observe the same allowance;
+regeneration is not separately counted; and the existing count query attributes
+user messages to the chat session's creation month and excludes deleted chats.
+Voice transcript user messages also enter that existing count. Correct
+per-generation, cross-month accounting needs a separate durable reservation
+policy rather than a client counter or a read-before-write assertion. The
+transactional voice-minute quota described above is unchanged.

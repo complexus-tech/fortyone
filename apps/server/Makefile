@@ -267,3 +267,7 @@ migrate-force: migrate-bootstrap
 # Run database seeding: make seed name="My Workspace" slug="my-workspace" email="admin@example.com"
 seed:
 	go run ./cmd/seed --name "$(or $(name),Development)" --slug "$(or $(slug),dev)" --email "$(or $(email),admin@example.com)" --fullname "$(or $(fullname),Admin User)" $(if $(strip $(disable-tls)),--disable-tls=$(disable-tls),)
+
+.PHONY: stripe-pricing-sync
+stripe-pricing-sync:
+	go run ./cmd/stripe-pricing-sync $(ARGS)

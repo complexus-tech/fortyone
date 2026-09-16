@@ -121,6 +121,15 @@ export const Header = () => {
   const getActions = () => {
     const baseActions = [
       {
+        systemImage: "bubble.left.and.bubble.right" as const,
+        label: "Ask Maya",
+        onPress: () =>
+          router.navigate({
+            pathname: "/(tabs)/maya",
+            params: { storyId, storyReference, storyTitle: story?.title ?? "" },
+          }),
+      },
+      {
         systemImage: "link" as const,
         label: "Copy link",
         onPress: handleCopyLink,

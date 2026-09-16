@@ -564,15 +564,8 @@ export const useMayaRealtimeVoice = ({
         setStatus("connected");
         startSessionTimer(session.maxSessionSeconds);
         resetIdleTimer();
-        dataChannel.send(
-          JSON.stringify({
-            type: "response.create",
-            response: {
-              instructions:
-                "Begin with one warm, concise sentence. Introduce yourself as Maya and ask what the user would like help with in FortyOne.",
-            },
-          }),
-        );
+        // Preserve the server's identity, greeting, and approval instructions.
+        dataChannel.send(JSON.stringify({ type: "response.create" }));
       };
 
       const offer = await peerConnection.createOffer();

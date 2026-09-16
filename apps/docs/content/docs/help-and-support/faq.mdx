@@ -4,6 +4,8 @@ description: Find answers to common questions about FortyOne, covering general t
 icon: MessageCircleQuestion
 ---
 
+import { BILLING_FAQS } from "lib";
+
 import { Accordion, Accordions } from "fumadocs-ui/components/accordion";
 
 ## General
@@ -22,10 +24,11 @@ import { Accordion, Accordions } from "fumadocs-ui/components/accordion";
     decisions. See [Use cases](/use-cases) for practical examples.
   </Accordion>
   <Accordion title="Is there a mobile app or mobile-friendly version of FortyOne?">
-    FortyOne does not have a dedicated native mobile app at this time. However,
-    our web application is fully responsive and designed to work well on modern
-    mobile browsers. You can also install FortyOne as a Progressive Web App
-    (PWA) for an app-like experience on supported devices.
+    You can use FortyOne in a modern mobile browser and install the web app as a
+    Progressive Web App (PWA) on supported devices. A native iOS and Android app
+    is being prepared for release. Contact
+    [info@fortyone.app](mailto:info@fortyone.app) for current native app
+    availability.
   </Accordion>
 </Accordions>
 
@@ -33,9 +36,9 @@ import { Accordion, Accordions } from "fumadocs-ui/components/accordion";
 
 <Accordions type="single">
   <Accordion title="How do I log in to FortyOne?">
-    FortyOne uses passwordless authentication. You can log in using magic links
-    sent to your email address or through available social authentication
-    options (Google).
+    FortyOne uses passwordless authentication. Sign in with Google or use the
+    sign-in link or verification code sent to your email. Native app sign-in
+    opens a secure browser flow and returns you to the app when complete.
   </Accordion>
   <Accordion title="Can I change the email address associated with my account?">
     Currently, it is not possible to change the email address associated with
@@ -47,7 +50,16 @@ import { Accordion, Accordions } from "fumadocs-ui/components/accordion";
 
 ## Billing
 
+See the [pricing page](https://www.fortyone.app/pricing) for the current plans and
+included features. Manage your subscription from **Settings → Workspace → Billing**
+in the web app.
+
 <Accordions type="single">
+  {BILLING_FAQS.map(({ question, answer }) => (
+    <Accordion key={question} title={question}>
+      {answer}
+    </Accordion>
+  ))}
   <Accordion title="Where can I find my invoices?">
     You can find your invoices on the **Billing page** within your FortyOne
     workspace, under the **Recent invoices** section.

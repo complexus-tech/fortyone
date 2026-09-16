@@ -202,6 +202,8 @@ func (h *Handlers) ExecuteRealtimeTool(ctx context.Context, w http.ResponseWrite
 		result, err = h.executeGetStory(ctx, workspace.ID, userID, req.Arguments)
 	case "update_story":
 		result, err = h.executeUpdateStory(ctx, workspace.ID, userID, req.SessionID, req.Arguments)
+	case "delete_story":
+		result, err = h.executeDeleteStory(ctx, workspace.ID, userID, req.SessionID, req.Arguments, workspace.UserRole == string(mid.RoleAdmin))
 	case "story_comments":
 		result, err = h.executeStoryComments(ctx, workspace.ID, userID, req.SessionID, req.Arguments)
 	case "sprints":

@@ -172,7 +172,21 @@ func (h *Handlers) GetSubscription(ctx context.Context, w http.ResponseWriter, r
 		return nil
 	}
 
-	web.Respond(ctx, w, toAppSubscription(subscription), http.StatusOK)
+	response := toAppSubscription(subscription)
+	// Only the billing screen requests provider pricing; ordinary entitlement
+	// reads must not depend on Stripe availability or latency.
+	if r.URL.Query().Get("includePrice") == "true" {
+		price, priceErr := h.subscriptions.GetSubscriptionPrice(ctx, subscription)
+		if priceErr != nil {
+			span.RecordError(priceErr)
+			web.RespondError(ctx, w, priceErr, http.StatusBadGateway)
+			return nil
+		}
+		if price != nil {
+			response.Price = &AppSubscriptionPrice{UnitAmount: price.UnitAmount, Currency: price.Currency, Interval: price.Interval, IntervalCount: price.IntervalCount}
+		}
+	}
+	web.Respond(ctx, w, response, http.StatusOK)
 	return nil
 }
 

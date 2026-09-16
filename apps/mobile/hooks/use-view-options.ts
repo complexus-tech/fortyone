@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { StoriesViewOptions } from "@/types/stories-view-options";
+import { DEFAULT_STORY_DISPLAY_COLUMNS } from "@/types/stories-view-options";
 
 const defaultViewOptions: StoriesViewOptions = {
   groupBy: "status",
   orderBy: "created",
   orderDirection: "desc",
-  displayColumns: ["Status", "Assignee", "Priority"],
+  displayColumns: DEFAULT_STORY_DISPLAY_COLUMNS,
 };
 
 export const useViewOptions = (storageKey: string) => {
@@ -43,7 +44,7 @@ export const useViewOptions = (storageKey: string) => {
         console.error(`Failed to save view options for ${storageKey}:`, error);
       }
     },
-    [viewOptions, storageKey]
+    [viewOptions, storageKey],
   );
 
   const resetViewOptions = useCallback(async () => {

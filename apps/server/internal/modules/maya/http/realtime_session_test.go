@@ -175,6 +175,7 @@ func TestRealtimeToolsExposeProductCapabilityBundle(t *testing.T) {
 		"set_theme":          false,
 		"get_story":          false,
 		"update_story":       false,
+		"delete_story":       false,
 		"story_comments":     false,
 		"sprints":            false,
 		"workload":           false,
@@ -237,5 +238,108 @@ func TestExecuteSetThemeReturnsClientAction(t *testing.T) {
 	}
 	if response.ClientAction == nil || response.ClientAction.Type != "theme" || response.ClientAction.Theme != "dark" {
 		t.Fatalf("executeSetTheme() client action = %#v", response.ClientAction)
+	}
+}
+
+func TestRealtimeDeleteCapabilityRequiresNativeApprovalClient(t *testing.T) {
+	for _, client := range []string{"", "mobile"} {
+		config := newRealtimeSessionConfig(AppRealtimeTerminology{}, nil, AppRealtimeVoiceUser{}, AppRealtimeSessionRequest{Client: client})
+		found := false
+		for _, tool := range config.Tools {
+			if tool.Name == "delete_story" {
+				found = true
+			}
+		}
+		if found != (client == "mobile") {
+			t.Fatalf("client=%q advertised deletion=%v", client, found)
+		}
+		if client == "mobile" && !strings.Contains(config.Instructions, "Spoken assent is not authorization") {
+			t.Fatal("native model must defer approval to app")
+		}
+		if client == "" && strings.Contains(config.Instructions, "Use delete_story") {
+			t.Fatal("legacy client instructed to use unavailable deletion")
+		}
+	}
+	if err := (AppRealtimeSessionRequest{Client: "unrecognized"}).Validate(); err == nil {
+		t.Fatal("unknown client accepted")
+	}
+}
+
+func TestRealtimeGreetingUsesProfileNameOrNeutralFallback(t *testing.T) {
+	tests := []struct {
+		name string
+		user AppRealtimeVoiceUser
+		want string
+	}{
+		{name: "full profile name", user: AppRealtimeVoiceUser{Name: "Joseph Mukorivo", Username: "joseph"}, want: `first name "Joseph"`},
+		{name: "single profile name", user: AppRealtimeVoiceUser{Name: "Joseph", Username: "joseph"}, want: `first name "Joseph"`},
+		{name: "surrounding whitespace", user: AppRealtimeVoiceUser{Name: "  Joseph   Mukorivo  ", Username: "joseph"}, want: `first name "Joseph"`},
+		{name: "human genuinely named Maya", user: AppRealtimeVoiceUser{Name: "Maya Rivera", Username: "mrivera"}, want: `first name "Maya"`},
+		{name: "missing name", user: AppRealtimeVoiceUser{Username: "joseph"}, want: "Use a neutral greeting"},
+		{name: "username fallback", user: AppRealtimeVoiceUser{Name: "joseph", Username: "joseph"}, want: "Use a neutral greeting"},
+		{name: "whitespace only", user: AppRealtimeVoiceUser{Name: " \t\n", Username: "joseph"}, want: "Use a neutral greeting"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			instruction := realtimeGreetingInstruction(tt.user)
+			if !strings.Contains(instruction, tt.want) {
+				t.Fatalf("greeting instruction = %q, want %q", instruction, tt.want)
+			}
+		})
+	}
+}
+
+func TestRealtimeInstructionsKeepHumanAndAssistantIdentitySeparate(t *testing.T) {
+	for _, client := range []string{"", "mobile"} {
+		t.Run("client="+client, func(t *testing.T) {
+			config := newRealtimeSessionConfig(AppRealtimeTerminology{}, nil,
+				AppRealtimeVoiceUser{Name: "Joseph Mukorivo", Username: "joseph"},
+				AppRealtimeSessionRequest{Client: client, Messages: []AppRealtimeConversationMessage{
+					{Role: "user", Text: "Hi Maya"},
+					{Role: "assistant", Text: "Hi Maya"},
+				}})
+			for _, want := range []string{
+				"Maya is the assistant's identity, not the human user's identity",
+				"When the user says 'Hi Maya', they are addressing you",
+				`profile display name is "Joseph Mukorivo"`,
+				`first name "Joseph"`,
+				"For the initial response when a voice session opens, give one brief greeting",
+				"Do not list capabilities or deliver an introduction pitch",
+				"If a recent user request is already pending, continue that request",
+				"earlier assistant replies do not establish the user's identity",
+				"Do not invent a reason or claim that you forgot them",
+			} {
+				if !strings.Contains(config.Instructions, want) {
+					t.Errorf("instructions missing identity rule %q", want)
+				}
+			}
+		})
+	}
+}
+
+func TestRealtimeIntroductionIsIndustryNeutralWithoutRemovingSprints(t *testing.T) {
+	for _, client := range []string{"", "mobile"} {
+		t.Run("client="+client, func(t *testing.T) {
+			config := newRealtimeSessionConfig(AppRealtimeTerminology{}, nil, AppRealtimeVoiceUser{}, AppRealtimeSessionRequest{Client: client})
+			for _, want := range []string{
+				"Lead with tasks, goals, objectives, and OKRs",
+				"Do not lead with sprints, GitHub, software development, or engineering workflows",
+				"Mention sprints only when the user asks about them or they are clearly relevant",
+				"Use sprints for sprint lists and summaries when requested or clearly relevant",
+			} {
+				if !strings.Contains(config.Instructions, want) {
+					t.Errorf("instructions missing product scope rule %q", want)
+				}
+			}
+			hasSprints := false
+			for _, tool := range config.Tools {
+				if tool.Name == "sprints" {
+					hasSprints = true
+				}
+			}
+			if !hasSprints {
+				t.Fatal("industry-neutral introductions must retain the sprint capability")
+			}
+		})
 	}
 }

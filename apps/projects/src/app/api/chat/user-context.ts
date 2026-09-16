@@ -6,6 +6,7 @@ import type { StoryCreationDefaults } from "./story-creation-defaults";
 type UserContextIdentity = {
   id: string;
   name?: string | null;
+  fullName?: string | null;
 };
 
 const MAX_CONTEXT_MEMORIES = 12;
@@ -28,7 +29,9 @@ export function getUserContext({
   workspace,
   memories,
   storyCreationDefaults,
+  timezone = "UTC",
 }: {
+  timezone?: string;
   user?: UserContextIdentity;
   currentPath: string;
   currentTheme: string;
@@ -59,16 +62,18 @@ export function getUserContext({
     return "";
   }
 
-  const displayName = user.name ?? "User";
-  const usernameLabel = username ? ` (@${username})` : "";
+  // Session.name can fall back to username; a missing fullName is not a name.
+  const profileName = user.fullName === undefined ? user.name : user.fullName;
+  const displayName = profileName?.trim() || "Name unavailable";
+  const usernameLabel = username?.trim() ? ` (@${username.trim()})` : "";
   const now = new Date();
-  const currentDate = now.toISOString().split("T")[0];
+  const currentDate = now.toLocaleDateString("en-CA", { timeZone: timezone });
   const currentTime = now.toLocaleTimeString("en-US", {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
+    timeZone: timezone,
   });
-  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   let joinedTeamsSummary = "Unavailable";
   if (joinedTeams) {
@@ -113,7 +118,8 @@ export function getUserContext({
 
   return `
 Runtime context:
-- User: ${displayName}${usernameLabel} [${user.id}]
+- Assistant: Maya (FortyOne's AI assistant, distinct from the human user)
+- Authenticated human user: ${displayName}${usernameLabel} [${user.id}]
 - Workspace: ${workspace.name} (${workspace.slug}) [${workspace.id}]
 - Role: ${workspace.userRole}; path: ${currentPath}
 - Local time: ${currentDate} ${currentTime} (${timezone})
@@ -130,6 +136,6 @@ Joined teams:
 Memories:
 ${memoriesSummary}
 
-Resolution: "me"/"my"/"assign to me" resolve to ${displayName} [${user.id}]. Server dates are UTC; present them in ${timezone} without seconds.
+Resolution: "me"/"my"/"assign to me" resolve to the authenticated human user [${user.id}], never the assistant. Server dates are UTC; present them in ${timezone} without seconds.
 `;
 }

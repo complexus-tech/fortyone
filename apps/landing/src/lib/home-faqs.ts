@@ -1,3 +1,5 @@
+import { BILLING_FAQS } from "lib";
+
 export type HomeFaq = {
   question: string;
   answer: string;
@@ -51,4 +53,7 @@ export const homeFaqs: HomeFaq[] = [
   },
 ];
 
-export const pricingFaqs = homeFaqs.slice(0, 5);
+export const pricingFaqs: HomeFaq[] = [
+  ...homeFaqs.slice(4, 5),
+  ...BILLING_FAQS,
+];

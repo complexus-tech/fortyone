@@ -10,7 +10,7 @@ import {
   buttonStyle,
 } from "@expo/ui/swift-ui/modifiers";
 
-export const Back = () => {
+export const Back = ({ onPress }: { onPress?: () => void }) => {
   const { resolvedTheme } = useTheme();
   const router = useRouter();
   const canGoBack = router.canGoBack();
@@ -37,7 +37,7 @@ export const Back = () => {
             },
           }),
         ]}
-        onPress={handleBack}
+        onPress={onPress ?? handleBack}
       >
         <Image
           systemName="chevron.backward"

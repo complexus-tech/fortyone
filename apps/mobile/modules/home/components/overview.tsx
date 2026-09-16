@@ -1,7 +1,7 @@
 import { WebIcon } from "@/components/icons/web-icon";
 import { StatusIcon } from "@/components/icons/status";
 import { useTheme } from "@/hooks/theme";
-import { themeColors } from "@/constants/colors";
+import { colors, themeColors } from "@/constants/colors";
 import { Pressable, View, useWindowDimensions } from "react-native";
 import { useRouter } from "expo-router";
 import { Text } from "@/components/ui";
@@ -62,7 +62,11 @@ export const Overview = () => {
               count={summary?.inProgress}
               label="In progress"
               icon={
-                <StatusIcon category="started" size={18} color={iconColor} />
+                <StatusIcon
+                  category="started"
+                  size={18}
+                  color={colors.warning}
+                />
               }
             />
           </View>
@@ -70,13 +74,27 @@ export const Overview = () => {
             <StatCard
               count={summary?.overdue}
               label="Overdue"
-              icon={<WebIcon name="clock" size={18} color={iconColor} />}
+              icon={
+                <WebIcon
+                  name="clock"
+                  size={18}
+                  color={
+                    resolvedTheme === "dark"
+                      ? colors.dangerTextDark
+                      : colors.danger
+                  }
+                />
+              }
             />
             <StatCard
               count={summary?.closed}
               label="Closed"
               icon={
-                <StatusIcon category="completed" size={18} color={iconColor} />
+                <StatusIcon
+                  category="completed"
+                  size={18}
+                  color={colors.success}
+                />
               }
             />
           </View>

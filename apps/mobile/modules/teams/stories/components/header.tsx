@@ -70,16 +70,9 @@ export const Header = ({
               {team?.name ?? "Team"}
             </Text>
             {teams.length > 1 ? (
-              <Ionicons name="chevron-down" size={12} color={palette.icon} />
+              <Ionicons name="chevron-down" size={18} color={palette.icon} />
             ) : null}
           </View>
-          {team ? (
-            <Text
-              fontSize="xs"
-              color="muted"
-              numberOfLines={1}
-            >{`${team.code} · ${team.memberCount} ${team.memberCount === 1 ? "member" : "members"}`}</Text>
-          ) : null}
         </Pressable>
         <StoryOptionsButton
           {...displayProps}

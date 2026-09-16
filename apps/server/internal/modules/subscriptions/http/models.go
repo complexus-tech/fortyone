@@ -31,18 +31,26 @@ type AppChangeSubscriptionPlanRequest struct {
 }
 
 // App representation of a subscription
+type AppSubscriptionPrice struct {
+	UnitAmount    int64  `json:"unitAmount"`
+	Currency      string `json:"currency"`
+	Interval      string `json:"interval"`
+	IntervalCount int64  `json:"intervalCount"`
+}
+
 type AppSubscription struct {
-	WorkspaceID          uuid.UUID  `json:"workspaceId"`
-	StripeCustomerID     string     `json:"stripeCustomerId"`
-	StripeSubscriptionID *string    `json:"stripeSubscriptionId"`
-	Status               *string    `json:"status"`
-	Tier                 string     `json:"tier"`
-	SeatCount            int        `json:"seatCount"`
-	TrialEndDate         *time.Time `json:"trialEndDate"`
-	BillingInterval      *string    `json:"billingInterval"`
-	BillingEndsAt        *time.Time `json:"billingEndsAt"`
-	CreatedAt            time.Time  `json:"createdAt"`
-	UpdatedAt            time.Time  `json:"updatedAt"`
+	Price                *AppSubscriptionPrice `json:"price,omitempty"`
+	WorkspaceID          uuid.UUID             `json:"workspaceId"`
+	StripeCustomerID     string                `json:"stripeCustomerId"`
+	StripeSubscriptionID *string               `json:"stripeSubscriptionId"`
+	Status               *string               `json:"status"`
+	Tier                 string                `json:"tier"`
+	SeatCount            int                   `json:"seatCount"`
+	TrialEndDate         *time.Time            `json:"trialEndDate"`
+	BillingInterval      *string               `json:"billingInterval"`
+	BillingEndsAt        *time.Time            `json:"billingEndsAt"`
+	CreatedAt            time.Time             `json:"createdAt"`
+	UpdatedAt            time.Time             `json:"updatedAt"`
 }
 
 // App representation of an invoice

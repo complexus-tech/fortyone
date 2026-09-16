@@ -11,14 +11,16 @@ const MAX_CHAT_REQUEST_BYTES = 16 * 1024 * 1024;
 const INVALID_CHAT_REQUEST_CODE = "invalid_chat_request";
 
 export type ChatRequestBody = {
-  currentPath: string;
-  currentTheme: string;
+  client?: "mobile";
+  timezone?: string;
+  currentPath?: string;
+  currentTheme?: string;
   id: string;
   memories: Memory[];
   messageId?: string;
   messages: MayaUIMessage[];
   provider?: "google" | "openai";
-  resolvedTheme: string;
+  resolvedTheme?: string;
   subscription?: {
     billingEndsAt: string;
     billingInterval: string;
@@ -35,7 +37,7 @@ export type ChatRequestBody = {
   totalMessages: { current: number; limit: number };
   trigger?: "regenerate-message" | "submit-message";
   username?: string;
-  workspace: Parameters<typeof getUserContext>[0]["workspace"];
+  workspace?: Pick<Parameters<typeof getUserContext>[0]["workspace"], "slug">;
 };
 
 const createInvalidChatRequestError = (cause?: unknown) =>

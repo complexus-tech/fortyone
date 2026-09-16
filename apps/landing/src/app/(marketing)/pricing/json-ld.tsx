@@ -1,3 +1,4 @@
+import { SUBSCRIPTION_PRICING } from "lib";
 import type { FAQPage, Product, WithContext } from "schema-dts";
 import { pricingFaqs } from "@/lib/home-faqs";
 
@@ -11,7 +12,7 @@ const pricingPage: WithContext<Product> = {
     "@type": "AggregateOffer",
     priceCurrency: "USD",
     lowPrice: "0",
-    highPrice: "10",
+    highPrice: SUBSCRIPTION_PRICING.business.monthly,
     offerCount: "3",
     offers: [
       {
@@ -27,7 +28,7 @@ const pricingPage: WithContext<Product> = {
             "1 team",
             "Up to 5 members",
             "Up to 200 tasks",
-            "Single Sign-On (SSO)",
+            "Google sign-in",
             "Kanban & list views",
             "Email support",
           ],
@@ -37,7 +38,7 @@ const pricingPage: WithContext<Product> = {
         "@type": "Offer",
         name: "Professional",
         description: "For small teams",
-        price: "7",
+        price: SUBSCRIPTION_PRICING.pro.monthly,
         priceCurrency: "USD",
         availability: "https://schema.org/InStock",
         itemOffered: {
@@ -56,7 +57,7 @@ const pricingPage: WithContext<Product> = {
         "@type": "Offer",
         name: "Business",
         description: "For mid-sized teams",
-        price: "10",
+        price: SUBSCRIPTION_PRICING.business.monthly,
         priceCurrency: "USD",
         availability: "https://schema.org/InStock",
         itemOffered: {
@@ -64,7 +65,7 @@ const pricingPage: WithContext<Product> = {
           featureList: [
             "Unlimited teams",
             "Unlimited objectives",
-            "Unlimited everything",
+            "Unlimited tasks, teams, and objectives",
             "Custom terminology",
             "Private teams",
             "Priority support",

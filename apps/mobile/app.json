@@ -24,6 +24,7 @@
       "predictiveBackGestureEnabled": true,
       "package": "com.fortyone.mobile",
       "blockedPermissions": [
+        "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE"
       ]
@@ -33,6 +34,15 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      "./plugins/with-maya-voice",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Allow FortyOne to use your microphone to dictate messages and talk with Maya.",
+          "enableBackgroundPlayback": false,
+          "enableBackgroundRecording": false
+        }
+      ],
       "expo-router",
       [
         "expo-splash-screen",

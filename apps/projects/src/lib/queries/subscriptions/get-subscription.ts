@@ -13,3 +13,13 @@ export const getSubscription = async (ctx: WorkspaceCtx) => {
     return null;
   }
 };
+
+// Unlike entitlement reads, surface failures so billing never substitutes a
+// public catalogue rate for the customer's actual subscription price.
+export const getSubscriptionWithPrice = async (ctx: WorkspaceCtx) => {
+  const response = await get<ApiResponse<Subscription>>(
+    "subscription?includePrice=true",
+    ctx,
+  );
+  return response.data;
+};

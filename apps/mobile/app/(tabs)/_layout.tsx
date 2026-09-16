@@ -1,9 +1,11 @@
 import { themeColors } from "@/constants/colors";
 import { useUnreadNotifications } from "@/modules/notifications/hooks/use-unread-notifications";
 import { NativeTabs } from "expo-router/unstable-native-tabs";
+import { usePathname } from "expo-router";
 import { useColorScheme } from "react-native";
 
 export default function TabsLayout() {
+  const pathname = usePathname();
   const { data: unreadNotifications = 0 } = useUnreadNotifications();
   const badgeLabel =
     unreadNotifications > 99 ? "99+" : String(unreadNotifications);
@@ -11,6 +13,8 @@ export default function TabsLayout() {
     themeColors[useColorScheme() === "dark" ? "dark" : "light"].foreground;
   return (
     <NativeTabs
+      hidden={pathname === "/maya" || pathname === "/search"}
+      backBehavior="history"
       tintColor={foreground}
       iconColor={{ default: foreground, selected: foreground }}
       minimizeBehavior="onScrollDown"
@@ -50,9 +54,21 @@ export default function TabsLayout() {
         )}
       </NativeTabs.Trigger>
       <NativeTabs.Trigger
+        name="maya"
+        accessibilityLabel="Maya, AI assistant"
+        disableAutomaticContentInsets
+      >
+        <NativeTabs.Trigger.Label hidden>Maya</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon
+          src={require("@/assets/icons/tabs/maya.png")}
+          renderingMode="template"
+        />
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger
         name="search"
         role="search"
         accessibilityLabel="Search"
+        disableAutomaticContentInsets
       >
         <NativeTabs.Trigger.Label hidden>Search</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon

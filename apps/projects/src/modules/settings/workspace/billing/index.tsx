@@ -6,15 +6,17 @@ import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { format } from "date-fns";
 import { ArrowRight2Icon, CheckIcon, NewTabIcon } from "icons";
-import { cn } from "lib";
+import { cn, EXISTING_SUBSCRIPTION_COPY } from "lib";
 import { useWorkspacePath } from "@/hooks";
 import { manageBilling } from "@/lib/actions/billing/manage-billing";
+import { useSubscriptionWithPrice } from "@/lib/hooks/subscriptions/subscription";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { useMembers } from "@/lib/hooks/members";
 import { useInvoices } from "@/lib/hooks/billing/invoices";
 import { RowWrapper } from "@/components/ui";
 import { SectionHeader } from "../../components";
 import { Plans } from "./components/plans";
+import { formatSubscriptionPrice } from "./components/subscription-price";
 import { plans, getPlanFeaturesList } from "./components/plan-data";
 
 export const Billing = () => {
@@ -23,6 +25,8 @@ export const Billing = () => {
   const { data: members } = useMembers();
   const { data: invoices = [] } = useInvoices();
   const { tier, billingInterval, billingEndsAt } = useSubscriptionFeatures();
+  const { data: pricedSubscription, isPending: isPricePending } =
+    useSubscriptionWithPrice(!["free", "trial"].includes(tier));
   const [isLoading, setIsLoading] = useState(false);
   const [showPlans, setShowPlans] = useState(tier === "free");
   const totalValidMembers =
@@ -106,19 +110,6 @@ export const Billing = () => {
   // Find current plan based on tier name
   const currentPlan = plans.find((plan) => plan.name === getTierName());
 
-  // Get pricing
-  const getPlanPrice = () => {
-    const isYearly = billingInterval === "year";
-
-    if (tier === "business") {
-      return isYearly ? "8" : "10";
-    }
-    if (tier === "pro") {
-      return isYearly ? "5.6" : "7";
-    }
-    return "0";
-  };
-
   // Get features from the current plan
   const planFeatures = currentPlan ? getPlanFeaturesList(currentPlan) : [];
   const halfFeatureLength = Math.ceil(planFeatures.length / 2);
@@ -166,7 +157,7 @@ export const Billing = () => {
               Manage subscription
             </Button>
           }
-          description="Details about your current plan and subscription."
+          description={EXISTING_SUBSCRIPTION_COPY}
           title="Current Subscription"
         />
         <Box className="p-6">
@@ -188,7 +179,12 @@ export const Billing = () => {
                     Current plan
                   </Badge>
                 </Text>
-                <Text color="muted">${getPlanPrice()} per user/mo</Text>
+                <Text color="muted">
+                  {isPricePending
+                    ? "Loading your rate…"
+                    : formatSubscriptionPrice(pricedSubscription?.price) ??
+                      "View your current rate in Manage subscription."}
+                </Text>
               </Box>
               <Box>
                 <Text className="mb-0.5">Next renewal</Text>

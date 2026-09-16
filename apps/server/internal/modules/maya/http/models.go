@@ -42,6 +42,7 @@ type AppRealtimeSession struct {
 }
 
 type AppRealtimeSessionRequest struct {
+	Client      string                           `json:"client,omitempty"`
 	CurrentPath string                           `json:"currentPath"`
 	Messages    []AppRealtimeConversationMessage `json:"messages"`
 }
@@ -52,6 +53,9 @@ type AppRealtimeConversationMessage struct {
 }
 
 func (r AppRealtimeSessionRequest) Validate() error {
+	if r.Client != "" && r.Client != "mobile" {
+		return errors.New("unsupported realtime client")
+	}
 	if utf8.RuneCountInString(r.CurrentPath) > 512 {
 		return errors.New("currentPath must be 512 characters or fewer")
 	}
@@ -166,6 +170,12 @@ type AppRealtimeSetThemeArguments struct {
 
 type AppRealtimeStoryArguments struct {
 	Reference string `json:"reference"`
+}
+
+type AppRealtimeDeleteStoryArguments struct {
+	Reference         string `json:"reference"`
+	Confirmed         bool   `json:"confirmed"`
+	ConfirmationToken string `json:"confirmationToken"`
 }
 
 type AppRealtimeUpdateStoryArguments struct {

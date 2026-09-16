@@ -110,3 +110,44 @@ Before the first release, the release owner still needs evidence for:
 ## Related applications
 
 The mobile app shares API contracts with [Projects](../projects/) and the [Go API](../server/). Authentication changes must stay compatible across all three applications.
+
+## Maya on mobile
+
+The **Maya** tab and the story menu open the native conversation screen.
+The tab bar hides while Maya is open; Back returns to the previous tab.
+Text chat uses the existing authenticated cloud `/api/chat` stream and canonical
+conversation history. Proposed work changes require an explicit review card.
+The composer accepts JPEG, PNG, WebP, GIF, and PDF files through the system Files
+picker: up to five files, 5 MB per file, and 8 MB combined. Temporary app-owned
+copies are cleared when removed or when leaving the conversation. Attachment
+bytes are sent only with the new user turn, not again with later turns or tool
+approvals.
+
+Dictation records up to 60 seconds and uses the existing authenticated
+`/api/transcribe` endpoint. The transcript is added to the editable draft; it is
+never sent as a chat message automatically. Canceling or leaving Maya stops the
+microphone and discards the temporary recording.
+Voice uses a short-lived server-issued OpenAI credential through native WebRTC;
+no provider API key is embedded in the app. The system asks for microphone access
+when needed; dictation and live voice start directly from their composer controls.
+Live voice ends after at most five minutes, or sooner when the server allowance
+expires or the session is idle for one minute. Camera access is not requested.
+
+Rebuild the development client after installing dependencies (`pnpm ios26`).
+An old installed native binary cannot run the new audio recorder, and Expo Go
+cannot run WebRTC voice. Deploy the
+matching Projects routes (including `/api/chat/voice-history`) and Go Maya
+changes before distributing this mobile feature. The existing API session and
+configured application URL must refer to the same environment.
+
+Finalized voice transcripts are kept in memory during a call and appended to
+canonical history when the call ends or the user changes conversations. Failed
+saves retain their IDs for an explicit retry; an OS kill before saving can lose
+the current call's transcript. Text or mutation requests are never automatically
+replayed after an uncertain response.
+
+Before release, verify a real microphone conversation on iPhone, interruptions,
+Bluetooth/earpiece routing, action approvals, and history after switching back to
+text. Update App Store audio/user-content declarations to match actual retention
+and provider handling. Existing monthly voice reservation and text usage limits
+are documented in `../server/docs/database/maya-realtime.md`.

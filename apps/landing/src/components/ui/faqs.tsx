@@ -6,7 +6,7 @@ import { MinusIcon, PlusIcon } from "icons";
 import { cn } from "lib";
 import { Box, Flex, Text } from "ui";
 import type { HomeFaq } from "@/lib/home-faqs";
-import { pricingFaqs } from "@/lib/home-faqs";
+import { homeFaqs, pricingFaqs } from "@/lib/home-faqs";
 import { Container } from "./container";
 import styles from "./faqs.module.css";
 
@@ -113,7 +113,7 @@ export const Faqs = ({
   className,
   heading,
   headingClassName,
-  items = pricingFaqs,
+  items,
   variant = "default",
 }: FaqsProps) => {
   const instanceId = useId().replaceAll(":", "");
@@ -173,19 +173,21 @@ export const Faqs = ({
           )}
           direction="column"
         >
-          {items.map((item, index) => (
-            <AccordionItem
-              idPrefix={instanceId}
-              index={index}
-              isOpen={openIndex === index}
-              item={item}
-              key={item.question}
-              onToggle={() => {
-                handleToggle(index);
-              }}
-              pricingStyle={isPricing}
-            />
-          ))}
+          {(items ?? (isPricing ? pricingFaqs : homeFaqs)).map(
+            (item, index) => (
+              <AccordionItem
+                idPrefix={instanceId}
+                index={index}
+                isOpen={openIndex === index}
+                item={item}
+                key={item.question}
+                onToggle={() => {
+                  handleToggle(index);
+                }}
+                pricingStyle={isPricing}
+              />
+            ),
+          )}
         </Flex>
       </Container>
     </Box>

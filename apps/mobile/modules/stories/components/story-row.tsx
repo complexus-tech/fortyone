@@ -22,7 +22,7 @@ type StoryRowProps = {
   completionStatus?: Status;
   assignee?: Member;
   team?: Team;
-  statusInGroupHeader?: boolean;
+  showStatusLabel?: boolean;
 };
 
 export const StoryRow = memo(function StoryRow({
@@ -32,7 +32,7 @@ export const StoryRow = memo(function StoryRow({
   completionStatus,
   assignee,
   team,
-  statusInGroupHeader = false,
+  showStatusLabel = true,
 }: StoryRowProps) {
   const router = useRouter();
   const dark = useColorScheme() === "dark";
@@ -65,7 +65,7 @@ export const StoryRow = memo(function StoryRow({
     visibleColumns.includes("ID")
       ? `${team?.code ? `${team.code}-` : "#"}${story.sequenceId}`
       : null,
-    showStatus && !statusInGroupHeader ? status?.name || "No status" : null,
+    showStatus && showStatusLabel ? status?.name || "No status" : null,
   ]
     .filter(Boolean)
     .join(" · ");

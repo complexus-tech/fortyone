@@ -1,85 +1,15 @@
 import { differenceInDays, isAfter } from "date-fns";
 import { useSubscription } from "@/lib/hooks/subscriptions/subscription";
 import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
+import {
+  TIER_LIMITS,
+  type SubscriptionTier,
+} from "@/shared/maya-usage/plan-limits";
 
-/**
- * Feature limits for each subscription tier
- * Each tier defines maximum limits and feature availability
- */
-export const TIER_LIMITS = {
-  trial: {
-    maxMembers: 10,
-    maxFileUploads: "25MB",
-    maxStories: Infinity,
-    maxTeams: 3,
-    customTerminology: true,
-    privateTeams: true,
-    customWorkflows: true,
-    maxObjectives: 3,
-    objective: true,
-    maxAiMessages: 25,
-    maxMemories: 5,
-    backgroundMaya: true,
-  },
-  free: {
-    maxMembers: 5,
-    maxFileUploads: "10MB",
-    maxStories: 200,
-    maxTeams: 1,
-    customTerminology: false,
-    privateTeams: false,
-    customWorkflows: false,
-    maxObjectives: 1,
-    objective: true,
-    maxAiMessages: 15,
-    maxMemories: 5,
-    backgroundMaya: false,
-  },
-  pro: {
-    maxMembers: 10,
-    maxFileUploads: "25MB",
-    maxStories: Infinity,
-    maxTeams: 3,
-    customTerminology: false,
-    privateTeams: false,
-    customWorkflows: true,
-    maxObjectives: 20,
-    objective: true,
-    maxAiMessages: 100,
-    maxMemories: 10,
-    backgroundMaya: true,
-  },
-  business: {
-    maxMembers: Infinity,
-    maxFileUploads: "25MB",
-    maxStories: Infinity,
-    maxTeams: Infinity,
-    customTerminology: true,
-    privateTeams: true,
-    customWorkflows: true,
-    maxObjectives: Infinity,
-    objective: true,
-    maxAiMessages: 500,
-    maxMemories: 15,
-    backgroundMaya: true,
-  },
-  enterprise: {
-    maxMembers: Infinity,
-    maxFileUploads: "25MB",
-    maxStories: Infinity,
-    maxTeams: Infinity,
-    customTerminology: true,
-    privateTeams: true,
-    customWorkflows: true,
-    maxObjectives: Infinity,
-    objective: true,
-    maxAiMessages: Infinity,
-    maxMemories: 15,
-    backgroundMaya: true,
-  },
-} as const;
-
-export type SubscriptionTier = keyof typeof TIER_LIMITS;
+export {
+  TIER_LIMITS,
+  type SubscriptionTier,
+} from "@/shared/maya-usage/plan-limits";
 
 const ACTIVE_SUBSCRIPTION_STATUSES = ["active", "trialing", "past_due"];
 

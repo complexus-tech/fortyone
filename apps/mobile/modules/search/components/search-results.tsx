@@ -1,12 +1,11 @@
 import type { SearchResponse } from "../types";
 import type { Story } from "@/modules/stories/types";
 import type { Objective } from "@/modules/objectives/types";
-import type { DisplayColumn } from "@/types/stories-view-options";
+import { DEFAULT_STORY_DISPLAY_COLUMNS } from "@/types/stories-view-options";
 import { memo, useCallback, useMemo } from "react";
 import { FlatList, Pressable, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button, Col, Row, Text } from "@/components/ui";
 import { QueryState } from "@/components/ui/query-state";
 import { themeColors } from "@/constants/colors";
@@ -32,12 +31,6 @@ type SearchResultsProps = {
 type SearchResult =
   | { type: "story"; item: Story }
   | { type: "objective"; item: Objective };
-const visibleColumns: DisplayColumn[] = [
-  "ID",
-  "Status",
-  "Assignee",
-  "Priority",
-];
 const resultKey = (result: SearchResult) => `${result.type}:${result.item.id}`;
 
 const ObjectiveResult = memo(function ObjectiveResult({
@@ -98,7 +91,6 @@ export function SearchResults({
   onLoadMore,
   onRetry,
 }: SearchResultsProps) {
-  const { bottom } = useSafeAreaInsets();
   const { getTermDisplay } = useTerminology();
   const { data: statuses = [] } = useStatuses();
   const { data: members = [] } = useMembers();
@@ -129,7 +121,8 @@ export function SearchResults({
       result.type === "story" ? (
         <StoryRow
           story={result.item}
-          visibleColumns={visibleColumns}
+          visibleColumns={DEFAULT_STORY_DISPLAY_COLUMNS}
+          showStatusLabel={false}
           status={statusById.get(result.item.statusId)}
           assignee={memberById.get(result.item.assigneeId ?? "")}
           team={teamById.get(result.item.teamId)}
@@ -203,7 +196,7 @@ export function SearchResults({
         ) : null
       }
       showsVerticalScrollIndicator={false}
-      contentContainerStyle={{ paddingBottom: bottom + 80 }}
+      contentContainerStyle={{ paddingBottom: 16 }}
       style={{ flex: 1 }}
     />
   );

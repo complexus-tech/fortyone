@@ -84,8 +84,13 @@ describe("getUserContext", () => {
       },
     });
 
-    expect(context).toContain("User: Maya (@maya) [user-1]");
-    expect(context).toContain("resolve to Maya [user-1].");
+    expect(context).toContain(
+      "Authenticated human user: Maya (@maya) [user-1]",
+    );
+    expect(context).toContain("Assistant: Maya (FortyOne's AI assistant");
+    expect(context).toContain(
+      "resolve to the authenticated human user [user-1], never the assistant.",
+    );
     expect(context).toContain("Product (PROD) [team-1]");
     expect(context).toContain("Joined teams:");
     expect(context).toContain(
@@ -150,12 +155,47 @@ describe("getUserContext", () => {
       },
     });
 
-    expect(context).toContain("User: Maya [user-1]");
+    expect(context).toContain("Authenticated human user: Maya [user-1]");
     expect(context).not.toContain("@undefined");
     expect(context).toContain(
       "Account story-creation defaults: single-story suggestions unavailable; multiple-story default: no shared time estimate, calendar scheduling=off",
     );
   });
+
+  it("uses the genuine profile name instead of the session display fallback", () => {
+    const context = getUserContext({
+      ...contextInput,
+      user: {
+        id: "user-1",
+        name: "profile-handle",
+        fullName: "  Alex Rivera  ",
+      },
+      username: "profile-handle",
+    });
+
+    expect(context).toContain(
+      "Authenticated human user: Alex Rivera (@profile-handle) [user-1]",
+    );
+  });
+
+  it.each([null, "", "   "])(
+    "does not invent a human name when fullName is %p",
+    (fullName) => {
+      const context = getUserContext({
+        ...contextInput,
+        user: { id: "user-1", name: "maya", fullName },
+        username: "maya",
+      });
+
+      expect(context).toContain(
+        "Authenticated human user: Name unavailable (@maya) [user-1]",
+      );
+      expect(context).toContain(
+        "resolve to the authenticated human user [user-1], never the assistant.",
+      );
+      expect(context).not.toContain("Authenticated human user: maya");
+    },
+  );
 
   it("bounds dynamic memories and omits billing metadata from model context", () => {
     const context = getUserContext({

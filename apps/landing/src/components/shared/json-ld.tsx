@@ -1,3 +1,4 @@
+import { SUBSCRIPTION_PRICING } from "lib";
 import type {
   WebApplication,
   WithContext,
@@ -22,7 +23,7 @@ const softwareApplication: WithContext<WebApplication> = {
     "@type": "AggregateOffer",
     priceCurrency: "USD",
     lowPrice: "0",
-    highPrice: "10",
+    highPrice: SUBSCRIPTION_PRICING.business.monthly,
     offerCount: "3",
     offers: [
       {
@@ -34,13 +35,13 @@ const softwareApplication: WithContext<WebApplication> = {
       {
         "@type": "Offer",
         name: "Professional",
-        price: "7",
+        price: SUBSCRIPTION_PRICING.pro.monthly,
         priceCurrency: "USD",
       },
       {
         "@type": "Offer",
         name: "Business",
-        price: "10",
+        price: SUBSCRIPTION_PRICING.business.monthly,
         priceCurrency: "USD",
       },
     ],
@@ -114,7 +115,7 @@ const product: WithContext<Product> = {
     "@type": "AggregateOffer",
     priceCurrency: "USD",
     lowPrice: "0",
-    highPrice: "10",
+    highPrice: SUBSCRIPTION_PRICING.business.monthly,
     offerCount: "3",
     offers: [
       {
@@ -126,13 +127,13 @@ const product: WithContext<Product> = {
       {
         "@type": "Offer",
         name: "Professional",
-        price: "7",
+        price: SUBSCRIPTION_PRICING.pro.monthly,
         priceCurrency: "USD",
       },
       {
         "@type": "Offer",
         name: "Business",
-        price: "10",
+        price: SUBSCRIPTION_PRICING.business.monthly,
         priceCurrency: "USD",
       },
     ],

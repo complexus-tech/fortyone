@@ -1,7 +1,7 @@
 import { useRouter } from "expo-router";
 import { IconButton } from "./icon-button";
 
-export const Back = () => {
+export const Back = ({ onPress }: { onPress?: () => void }) => {
   const router = useRouter();
   const canGoBack = router.canGoBack();
 
@@ -13,5 +13,11 @@ export const Back = () => {
     }
   };
 
-  return <IconButton icon="chevron-back" label="Back" onPress={handleBack} />;
+  return (
+    <IconButton
+      icon="chevron-back"
+      label="Back"
+      onPress={onPress ?? handleBack}
+    />
+  );
 };

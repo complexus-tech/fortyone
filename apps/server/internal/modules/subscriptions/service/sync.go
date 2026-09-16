@@ -74,7 +74,7 @@ func (s *Service) SyncSubscription(ctx context.Context, workspaceID uuid.UUID) e
 }
 
 func stripeSubscriptionDetails(subscription *stripe.Subscription) (string, int, SubscriptionTier, *BillingInterval, *time.Time, error) {
-	if subscription == nil || len(subscription.Items.Data) == 0 || subscription.Items.Data[0] == nil {
+	if subscription == nil || subscription.Items == nil || len(subscription.Items.Data) == 0 || subscription.Items.Data[0] == nil {
 		return "", 0, TierFree, nil, nil, ErrInvalidSubscription
 	}
 
@@ -82,7 +82,11 @@ func stripeSubscriptionDetails(subscription *stripe.Subscription) (string, int, 
 	if item.ID == "" || item.Price == nil {
 		return "", 0, TierFree, nil, nil, ErrInvalidSubscription
 	}
-	tier, ok := subscriptionTierForLookupKey(item.Price.LookupKey)
+	lookupKey := item.Price.LookupKey
+	if lookupKey == "" {
+		lookupKey = item.Price.Metadata[subscriptionsdomain.StripePriceLookupKeyMetadata]
+	}
+	tier, ok := subscriptionTierForLookupKey(lookupKey)
 	if !ok {
 		return "", 0, TierFree, nil, nil, fmt.Errorf("%w: unsupported Stripe price lookup key %q", ErrInvalidSubscription, item.Price.LookupKey)
 	}

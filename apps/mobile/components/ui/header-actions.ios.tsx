@@ -52,6 +52,7 @@ export function HeaderActions({
   actions,
   onOptions,
   optionsLabel = "View options",
+  optionsSystemImage = "ellipsis",
   menuLabel = "More options",
   menuContent,
   menuSystemImage = "ellipsis",
@@ -106,7 +107,7 @@ export function HeaderActions({
             onPress={onOptions}
             modifiers={[buttonStyle("plain"), accessibilityLabel(optionsLabel)]}
           >
-            <ActionIcon systemName="ellipsis" color={foreground} />
+            <ActionIcon systemName={optionsSystemImage} color={foreground} />
           </Button>
         ) : null}
         {hasMenu ? (

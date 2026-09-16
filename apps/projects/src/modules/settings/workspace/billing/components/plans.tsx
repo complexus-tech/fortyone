@@ -1,7 +1,7 @@
 "use client";
 import { Flex, Text, Box, Button } from "ui";
 import { ErrorIcon, SuccessIcon } from "icons";
-import { cn } from "lib";
+import { cn, SUBSCRIPTION_PRICING } from "lib";
 import { LazyMotion, domAnimation, m } from "framer-motion";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -133,8 +133,8 @@ export const Plans = () => {
     from: string;
     to: string;
   } | null>(null);
-  const proPrice = 7;
-  const businessPrice = 10;
+  const proPrice = SUBSCRIPTION_PRICING.pro.monthly;
+  const businessPrice = SUBSCRIPTION_PRICING.business.monthly;
 
   const handlePlanAction = async (plan: Plan) => {
     const host = `${window.location.protocol}//${window.location.host}`;
@@ -207,7 +207,7 @@ export const Plans = () => {
 
     toast.success("Plan change initiated!", {
       description:
-        "You will receive an email when the plan change is complete.",
+        "Your billing details will update once the change is confirmed.",
       id: toastId,
     });
     resetLoadingState();
@@ -248,17 +248,20 @@ export const Plans = () => {
       case "upgrade":
         return {
           title: `Upgrade to ${pendingAction.to}`,
-          description: `Your current ${pendingAction.from} plan will be upgraded to ${pendingAction.to}, and we will charge you the price difference to your current payment method.`,
+          description: `Your subscription will change to ${pendingAction.to} at the current price shown above. This replaces any retained rate. Prorated charges or credits may apply.`,
         };
       case "downgrade":
         return {
           title: `Downgrade to ${pendingAction.to}`,
-          description: `Your current ${pendingAction.from} plan will be downgraded to ${pendingAction.to}. You will lose access to all ${pendingAction.from} features.`,
+          description:
+            pendingAction.plan === "free"
+              ? "Your paid subscription will end after the current billing period. You will then move to Hobby, with its features and limits."
+              : `Your subscription will change to ${pendingAction.to} at the current price shown above. This replaces any retained rate. The selected plan's features and limits will apply, and prorated charges or credits may apply.`,
         };
       case "switch":
         return {
           title: `Switch to ${pendingAction.to}`,
-          description: `Your current ${pendingAction.from} plan will be switched to ${pendingAction.to}. Your billing cycle will be updated accordingly.`,
+          description: `Your subscription will switch to ${pendingAction.to} at the current price shown above. This replaces any retained rate and updates your billing interval. Prorated charges or credits may apply.`,
         };
     }
   };

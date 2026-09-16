@@ -15,6 +15,7 @@ export function HeaderActions({
   actions,
   onOptions,
   optionsLabel = "View options",
+  optionsIcon = "ellipsis-horizontal",
   menuLabel = "More options",
   menuContent,
   menuIcon = "ellipsis-horizontal",
@@ -37,7 +38,7 @@ export function HeaderActions({
       </IconButton>
       {onOptions ? (
         <IconButton
-          icon="ellipsis-horizontal"
+          icon={optionsIcon}
           label={optionsLabel}
           onPress={onOptions}
           style={styles.action}

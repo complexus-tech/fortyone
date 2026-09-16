@@ -1,7 +1,7 @@
 "use client";
 import type { ComponentPropsWithoutRef, ComponentType } from "react";
 import { CheckIcon } from "icons";
-import { cn } from "lib";
+import { cn, SUBSCRIPTION_PRICING } from "lib";
 import { useState } from "react";
 import { Badge, Box, Button, Divider, Flex, Switch, Text } from "ui";
 import { SIGNUP_URL } from "@/lib/app-url";
@@ -58,8 +58,8 @@ const packages = [
       "Up to 200 tasks",
       "1 objective with OKR tracking",
       "Customer feedback & public roadmap",
-      "15 Maya AI agent messages per month",
-      "Single Sign-On (SSO)",
+      "15 Maya AI agent messages per user/month",
+      "Google sign-in",
       "Kanban & list views",
       "Email support",
     ],
@@ -95,7 +95,7 @@ const packages = [
         iconClassName: "text-success",
         iconSurfaceClassName: "bg-success/15",
         features: [
-          "15 AI agent messages per month",
+          "15 AI agent messages per user/month",
           "Calendar and focus planning",
         ],
       },
@@ -115,7 +115,7 @@ const packages = [
         icon: PricingAccessIcon,
         iconClassName: "text-secondary",
         iconSurfaceClassName: "bg-secondary/15",
-        features: ["Single Sign-On (SSO)", "Email support"],
+        features: ["Google sign-in", "Email support"],
       },
     ] satisfies FeatureGroupData[],
   },
@@ -125,16 +125,17 @@ const packages = [
     href: SIGNUP_URL,
     overview:
       "For teams that need shared goals, custom workflows, and room to plan across multiple teams.",
-    price: 7,
+    price: SUBSCRIPTION_PRICING.pro.monthly,
     features: [
       "Everything in Hobby",
       "Up to 3 teams",
+      "Up to 10 members",
       "Up to 20 objectives",
       "OKR tracking",
       "Unlimited tasks",
       "Unlimited guests",
       "Custom workflows",
-      "100 Maya AI agent messages per month",
+      "100 Maya AI agent messages per user/month",
       "AI work planning",
     ],
     featureGroups: [
@@ -143,7 +144,12 @@ const packages = [
         icon: PricingTeamIcon,
         iconClassName: "text-info",
         iconSurfaceClassName: "bg-info/15",
-        features: ["Up to 3 teams", "Unlimited tasks", "Unlimited guests"],
+        features: [
+          "Up to 3 teams",
+          "Up to 10 members",
+          "Unlimited tasks",
+          "Unlimited guests",
+        ],
       },
       {
         title: "Goals & workflows",
@@ -158,7 +164,7 @@ const packages = [
         iconClassName: "text-success",
         iconSurfaceClassName: "bg-success/15",
         features: [
-          "100 AI agent messages per month",
+          "100 AI agent messages per user/month",
           "AI owner & work-window suggestions",
           "Calendar-aware task scheduling",
         ],
@@ -171,16 +177,16 @@ const packages = [
     href: SIGNUP_URL,
     overview:
       "For organizations coordinating multiple teams with private spaces, shared terminology, and no planning limits.",
-    price: 10,
+    price: SUBSCRIPTION_PRICING.business.monthly,
     features: [
       "Everything in Professional",
       "Unlimited teams",
       "Unlimited objectives",
-      "Unlimited everything",
+      "Unlimited tasks, teams, and objectives",
       "Custom terminology",
       "Private teams",
       "Priority support",
-      "500 Maya AI agent messages per month",
+      "500 Maya AI agent messages per user/month",
     ],
     featureGroups: [
       {
@@ -191,7 +197,7 @@ const packages = [
         features: [
           "Unlimited teams",
           "Unlimited objectives",
-          "Unlimited everything",
+          "Unlimited tasks, teams, and objectives",
         ],
       },
       {
@@ -207,7 +213,7 @@ const packages = [
         iconClassName: "text-primary",
         iconSurfaceClassName: "bg-primary/12",
         features: [
-          "500 AI agent messages per month",
+          "500 AI agent messages per user/month",
           "AI work planning across unlimited teams",
           "Automated planning actions",
         ],
