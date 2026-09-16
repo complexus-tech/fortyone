@@ -1,10 +1,10 @@
-import React, { createContext, useContext, useState, ReactNode } from "react";
-import { View, Pressable, ViewProps } from "react-native";
-import { Text } from "./Text";
+import type { ReactNode } from "react";
+import type { ViewProps } from "react-native";
+import type { TabsControlProps } from "./tabs-control.types";
+import { createContext, useContext, useState } from "react";
+import { View } from "react-native";
 import { Row } from "./row";
-import { cn } from "@/lib/utils/classnames";
-import { themeColors } from "@/constants/colors";
-import { useTheme } from "@/hooks/theme";
+import { TabsControl } from "./tabs-control";
 
 type TabsContextValue = {
   activeTab: string;
@@ -52,89 +52,27 @@ export const Tabs = ({
   );
 };
 
-type TabsListProps = ViewProps & {
-  children: ReactNode;
-};
+type TabsListProps = Omit<ViewProps, "children"> &
+  Pick<TabsControlProps, "options" | "labelSize">;
 
-const TabsList = ({ children, ...props }: TabsListProps) => {
-  return (
-    <Row
-      gap={1}
-      align="center"
-      wrap
-      asContainer
-      accessibilityRole="tablist"
-      className="mb-[4px]"
-      {...props}
-    >
-      {children}
-    </Row>
-  );
-};
-
-type TabProps = {
-  children: ReactNode;
-  value: string;
-  leftIcon?: ReactNode;
-  rightIcon?: ReactNode;
-  className?: string;
-  labelClassName?: string;
-  disabled?: boolean;
-  accessibilityLabel?: string;
-};
-
-const Tab = ({
-  children,
-  value,
-  leftIcon,
-  rightIcon,
-  className,
-  labelClassName,
-  disabled = false,
+const TabsList = ({
+  options,
+  labelSize,
   accessibilityLabel,
-}: TabProps) => {
+  ...props
+}: TabsListProps) => {
   const { activeTab, onTabChange } = useTabsContext();
-  const { resolvedTheme } = useTheme();
-  const isActive = activeTab === value;
-  const isDark = resolvedTheme === "dark";
 
   return (
-    <Pressable
-      accessibilityRole="tab"
-      accessibilityLabel={accessibilityLabel}
-      accessibilityState={{ selected: isActive, disabled }}
-      disabled={disabled}
-      onPress={() => onTabChange(value)}
-      className={cn(
-        "min-h-[44px] flex-row items-center justify-center gap-[8px] rounded-full px-[16px] py-[10px]",
-        {
-          "opacity-40": disabled,
-        },
-        className,
-      )}
-      style={({ pressed }) => ({
-        opacity: disabled ? 0.4 : pressed ? 0.65 : 1,
-        backgroundColor: isActive
-          ? themeColors[resolvedTheme].surfaceElevated
-          : "transparent",
-        boxShadow: isActive
-          ? isDark
-            ? "0 0 0 1px rgba(255, 255, 255, 0.06), 0 3px 12px rgba(0, 0, 0, 0.18)"
-            : "0 3px 16px rgba(0, 0, 0, 0.06)"
-          : undefined,
-      })}
-    >
-      {leftIcon}
-      <Text
-        className={labelClassName}
-        fontSize="sm"
-        fontWeight="semibold"
-        color={isActive ? undefined : "muted"}
-      >
-        {children}
-      </Text>
-      {rightIcon}
-    </Pressable>
+    <Row align="center" asContainer className="mb-[4px]" {...props}>
+      <TabsControl
+        options={options}
+        value={activeTab}
+        onValueChange={onTabChange}
+        labelSize={labelSize}
+        accessibilityLabel={accessibilityLabel}
+      />
+    </Row>
   );
 };
 
@@ -153,5 +91,4 @@ const TabPanel = ({ children, value }: TabPanelProps) => {
 };
 
 Tabs.List = TabsList;
-Tabs.Tab = Tab;
 Tabs.Panel = TabPanel;

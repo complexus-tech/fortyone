@@ -5,22 +5,15 @@ import { ActivitySkeleton } from "./activity-skeleton";
 export const ActivitiesSkeleton = () => {
   return (
     <Tabs defaultValue="updates">
-      <Tabs.List className="mb-2">
-        <Tabs.Tab
-          value="updates"
-          labelClassName="text-[14px] leading-[19px]"
-          className="py-1.5 px-4 rounded-[10px]"
-        >
-          Updates
-        </Tabs.Tab>
-        <Tabs.Tab
-          value="comments"
-          labelClassName="text-[14px] leading-[19px]"
-          className="py-1.5 px-4 rounded-[10px]"
-        >
-          Comments
-        </Tabs.Tab>
-      </Tabs.List>
+      <Tabs.List
+        className="mb-[6px]"
+        accessibilityLabel="Story activity"
+        labelSize={14}
+        options={[
+          { value: "updates", label: "Updates" },
+          { value: "comments", label: "Comments" },
+        ]}
+      />
       <Tabs.Panel value="updates">
         <Col asContainer>
           {Array.from({ length: 7 }).map((_, index) => (

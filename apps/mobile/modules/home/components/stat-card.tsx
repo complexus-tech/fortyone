@@ -1,8 +1,7 @@
 import type { ReactNode } from "react";
-import { StyleSheet, View } from "react-native";
+import { View } from "react-native";
 import { Text } from "@/components/ui";
-import { useTheme } from "@/hooks";
-import { themeColors } from "@/constants/colors";
+import { GlassSurface } from "@/components/ui/glass-surface";
 
 type StatCardProps = {
   count?: number;
@@ -11,11 +10,9 @@ type StatCardProps = {
 };
 
 export const StatCard = ({ count = 0, label, icon }: StatCardProps) => {
-  const { resolvedTheme } = useTheme();
-  const dark = resolvedTheme === "dark";
-
   return (
-    <View
+    <GlassSurface
+      cornerRadius={16}
       accessible
       accessibilityLabel={`${count} ${label.toLowerCase()}`}
       style={{
@@ -25,10 +22,6 @@ export const StatCard = ({ count = 0, label, icon }: StatCardProps) => {
         paddingVertical: 12,
         gap: 4,
         minHeight: 80,
-        borderRadius: 12,
-        borderWidth: StyleSheet.hairlineWidth,
-        borderColor: themeColors[dark ? "dark" : "light"].border,
-        backgroundColor: themeColors[dark ? "dark" : "light"].surfaceMuted,
       }}
     >
       <View
@@ -62,6 +55,6 @@ export const StatCard = ({ count = 0, label, icon }: StatCardProps) => {
       >
         {label}
       </Text>
-    </View>
+    </GlassSurface>
   );
 };

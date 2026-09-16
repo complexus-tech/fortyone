@@ -50,6 +50,7 @@ export interface AvatarProps
   src?: string | null;
   name?: string;
   textClassName?: string;
+  fallbackIconSize?: number;
 }
 
 export const Avatar = ({
@@ -60,6 +61,7 @@ export const Avatar = ({
   size,
   rounded,
   textClassName,
+  fallbackIconSize,
   ...props
 }: AvatarProps) => {
   const { resolvedTheme } = useTheme();
@@ -121,7 +123,8 @@ export const Avatar = ({
       {asIcon && (
         <AssigneeIcon
           size={
-            size === "xs"
+            fallbackIconSize ??
+            (size === "xs"
               ? 18
               : size === "sm"
                 ? 24
@@ -129,7 +132,7 @@ export const Avatar = ({
                   ? 25
                   : size === "lg"
                     ? 30
-                    : 25
+                    : 25)
           }
           color={iconColor}
         />

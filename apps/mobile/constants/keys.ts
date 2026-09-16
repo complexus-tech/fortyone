@@ -136,3 +136,20 @@ export const subscriptionKeys = {
     return resourceKey("subscriptions");
   },
 };
+
+export const feedbackKeys = {
+  get all() {
+    return resourceKey("feedback");
+  },
+  summaries: () => [...feedbackKeys.all, "team-summaries"] as const,
+  team: (id: string) => [...feedbackKeys.all, "team", id, "active"] as const,
+  detail: (id: string) => [...feedbackKeys.all, "detail", id] as const,
+};
+
+export const intakeKeys = {
+  get all() {
+    return resourceKey("intake");
+  },
+  team: (id: string) => [...intakeKeys.all, "team", id, "pending"] as const,
+  detail: (id: string) => [...intakeKeys.all, "detail", id] as const,
+};

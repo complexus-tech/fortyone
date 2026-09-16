@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View } from "react-native";
+import { GlassSurface } from "@/components/ui/glass-surface";
 import { PropertyExpandButton } from "./properties/property-expand-button";
 import { Row, Col } from "@/components/ui";
 import { DetailedStory, Story } from "@/modules/stories/types";
@@ -45,7 +45,7 @@ export const Properties = ({ story }: { story: Story }) => {
 
   return (
     <Col asContainer align="stretch" className="my-[8px]">
-      <View className="rounded-[20px] bg-surface-muted p-[8px] dark:bg-surface-muted-dark">
+      <GlassSurface cornerRadius={20} style={{ padding: 8 }}>
         <Row
           wrap
           align="center"
@@ -118,7 +118,7 @@ export const Properties = ({ story }: { story: Story }) => {
             onPress={() => setExpanded((value) => !value)}
           />
         </Row>
-      </View>
+      </GlassSurface>
     </Col>
   );
 };

@@ -7,6 +7,7 @@ export const useTeamStoriesGrouped = (
   teamId: string,
   groupBy: GroupedStoryParams["groupBy"] = "status",
   options?: Partial<GroupedStoryParams>,
+  enabled = true,
 ) => {
   const params: GroupedStoryParams = {
     groupBy,
@@ -19,7 +20,7 @@ export const useTeamStoriesGrouped = (
   return useQuery({
     queryKey,
     queryFn: ({ signal }) => getGroupedStories(params, signal),
-    enabled: Boolean(teamId),
+    enabled: Boolean(teamId) && enabled,
     staleTime: 1000 * 60 * 2,
   });
 };

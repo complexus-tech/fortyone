@@ -141,7 +141,7 @@ export function assigneeIconGeometry(color: string): TaskIconGeometry {
         cy: 10,
         r: 8,
         stroke: color,
-        strokeWidth: 1.85,
+        strokeWidth: 1.3,
         strokeDasharray: "2 2",
       },
       { cx: 10, cy: 7.5, r: 2.5, fill: color },

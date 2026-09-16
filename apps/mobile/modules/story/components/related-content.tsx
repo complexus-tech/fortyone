@@ -1,8 +1,10 @@
 import type { DetailedStory } from "@/modules/stories/types";
-import { Pressable, View, useColorScheme } from "react-native";
+import { Pressable, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Text } from "@/components/ui/Text";
+import { GlassSurface } from "@/components/ui/glass-surface";
+import { useTheme } from "@/hooks/theme";
 import { themeColors } from "@/constants/colors";
 import { useTerminology } from "@/hooks/use-terminology";
 import { useStory } from "@/modules/stories/hooks/use-story";
@@ -37,14 +39,14 @@ export function RelatedContent({ story }: { story: DetailedStory }) {
   const router = useRouter();
   const { data: statuses = [] } = useStatuses();
   const { getTermDisplay } = useTerminology();
-  const foreground =
-    themeColors[useColorScheme() === "dark" ? "dark" : "light"].textMuted;
+  const { resolvedTheme } = useTheme();
+  const foreground = themeColors[resolvedTheme].textMuted;
   const subStories = story.subStories ?? [];
   const subStoryLabel = `Sub-${getTermDisplay("storyTerm", { variant: "plural" })}`;
 
   return (
     <View className="gap-[10px] px-[20px] pb-[20px]">
-      <View className="overflow-hidden rounded-[20px] bg-gray-50 dark:bg-dark-100">
+      <GlassSurface cornerRadius={20}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`${subStoryLabel}, ${subStories.length}. View all`}
@@ -85,18 +87,20 @@ export function RelatedContent({ story }: { story: DetailedStory }) {
             </Pressable>
           );
         })}
-      </View>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="View linked resources"
-        onPress={() => router.push(`/story/${story.id}/links`)}
-        className="min-h-[48px] flex-row items-center gap-[10px] rounded-[20px] bg-gray-50 px-[16px] py-[12px] active:opacity-60 dark:bg-dark-100"
-      >
-        <Ionicons name="chevron-forward" size={14} color={foreground} />
-        <Text fontSize="sm" color="muted">
-          Resources
-        </Text>
-      </Pressable>
+      </GlassSurface>
+      <GlassSurface cornerRadius={20}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="View linked resources"
+          onPress={() => router.push(`/story/${story.id}/links`)}
+          className="min-h-[48px] flex-row items-center gap-[10px] rounded-[20px] px-[16px] py-[12px] active:opacity-60"
+        >
+          <Ionicons name="chevron-forward" size={14} color={foreground} />
+          <Text fontSize="sm" color="muted">
+            Resources
+          </Text>
+        </Pressable>
+      </GlassSurface>
     </View>
   );
 }

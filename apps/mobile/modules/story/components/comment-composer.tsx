@@ -1,11 +1,8 @@
 import { useState } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  View,
-  useColorScheme,
-} from "react-native";
+import { ActivityIndicator, Pressable, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { GlassInputSurface } from "@/components/ui/glass-input-surface";
+import { useTheme } from "@/hooks/theme";
 import { themeColors } from "@/constants/colors";
 import { Button, Text } from "@/components/ui";
 import { RichTextEditor } from "@/components/rich-text/editor";
@@ -84,27 +81,24 @@ const ComposeComment = ({
 
 export const CommentComposer = ({ storyId }: { storyId: string }) => {
   const [editing, setEditing] = useState(false);
-  const dark = useColorScheme() === "dark";
+  const { resolvedTheme } = useTheme();
   return (
     <View>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Add a comment"
-        onPress={() => setEditing(true)}
-        className="min-h-[48px] flex-row items-center gap-[10px] rounded-full bg-gray-50 px-[16px] py-[10px] active:opacity-60 dark:bg-dark-100"
-        style={{
-          boxShadow: dark
-            ? "0 0 0 1px rgba(255, 255, 255, 0.06)"
-            : "0 2px 16px rgba(0, 0, 0, 0.06)",
-        }}
-      >
-        <Ionicons
-          name="add"
-          size={22}
-          color={themeColors[dark ? "dark" : "light"].textMuted}
-        />
-        <Text color="muted">Write a comment…</Text>
-      </Pressable>
+      <GlassInputSurface>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Add a comment"
+          onPress={() => setEditing(true)}
+          className="min-h-[48px] flex-row items-center gap-[10px] rounded-full px-[16px] py-[10px] active:opacity-60"
+        >
+          <Ionicons
+            name="add"
+            size={22}
+            color={themeColors[resolvedTheme].textMuted}
+          />
+          <Text color="muted">Write a comment…</Text>
+        </Pressable>
+      </GlassInputSurface>
       {editing && (
         <ComposeComment storyId={storyId} onClose={() => setEditing(false)} />
       )}

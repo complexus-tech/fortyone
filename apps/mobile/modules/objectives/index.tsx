@@ -8,6 +8,15 @@ import { List } from "./components/list";
 
 export const Objectives = () => {
   const { teamId } = useLocalSearchParams<{ teamId: string }>();
+  return (
+    <SafeContainer isFull>
+      <Header />
+      <TeamObjectives teamId={teamId} />
+    </SafeContainer>
+  );
+};
+
+export const TeamObjectives = ({ teamId }: { teamId: string }) => {
   const { getTermDisplay } = useTerminology();
   const {
     data: items = [],
@@ -18,8 +27,7 @@ export const Objectives = () => {
   } = useTeamObjectives(teamId);
   const term = getTermDisplay("objectiveTerm", { variant: "plural" });
   return (
-    <SafeContainer isFull>
-      <Header />
+    <>
       {isPending ? (
         <QueryState loading title={`Loading ${term}`} />
       ) : error ? (
@@ -39,6 +47,6 @@ export const Objectives = () => {
           }}
         />
       )}
-    </SafeContainer>
+    </>
   );
 };

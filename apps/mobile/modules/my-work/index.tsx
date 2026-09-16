@@ -13,6 +13,8 @@ import {
   getTeamStoryFilterCount,
 } from "@/modules/teams/stories/team-story-filters";
 import { useMyStoriesGrouped, useViewOptions } from "./hooks";
+import { useTerminology } from "@/hooks/use-terminology";
+import { ScrollView } from "react-native";
 import { useAuthStore } from "@/store/auth";
 import { storyKeys } from "@/constants/keys";
 
@@ -23,6 +25,7 @@ export const MyWork = () => {
 
 function MyWorkContent() {
   const client = useQueryClient();
+  const { getTermDisplay } = useTerminology();
   const [activeTab, setActiveTab] = useState<MyWorkTab>("all");
   const ownerKey = `my-work:${activeTab}`;
   const [storedFilters, setFilters] = useState(() =>
@@ -88,11 +91,23 @@ function MyWorkContent() {
             }
           }}
         >
-          <Tabs.List style={{ marginBottom: 4 }}>
-            <Tabs.Tab value="all">All</Tabs.Tab>
-            <Tabs.Tab value="assigned">Assigned</Tabs.Tab>
-            <Tabs.Tab value="created">Created</Tabs.Tab>
-          </Tabs.List>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={{ flexGrow: 0 }}
+          >
+            <Tabs.List
+              accessibilityLabel="My Work filter"
+              options={[
+                {
+                  value: "all",
+                  label: `All ${getTermDisplay("storyTerm", { variant: "plural" })}`,
+                },
+                { value: "assigned", label: "Assigned" },
+                { value: "created", label: "Created" },
+              ]}
+            />
+          </ScrollView>
           <ActiveStoryFilters
             filters={filters}
             onChange={setFilters}

@@ -162,6 +162,7 @@ export const StoryRow = memo(function StoryRow({
           <Avatar
             name={assignee?.fullName || assignee?.username}
             src={assignee?.avatarUrl}
+            fallbackIconSize={23}
             style={{ width: 24, height: 24 }}
           />
         </View>

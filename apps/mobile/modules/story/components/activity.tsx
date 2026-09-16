@@ -153,20 +153,15 @@ export const Activity = ({
         ListHeaderComponent={
           <>
             {children}
-            <Tabs.List className="mb-[8px] pt-[8px] border-t border-gray-100 dark:border-dark-100">
-              <Tabs.Tab
-                value="updates"
-                labelClassName="text-[14px] leading-[19px]"
-              >
-                Updates
-              </Tabs.Tab>
-              <Tabs.Tab
-                value="comments"
-                labelClassName="text-[14px] leading-[19px]"
-              >
-                Comments
-              </Tabs.Tab>
-            </Tabs.List>
+            <Tabs.List
+              className="mb-[6px] pt-[4px]"
+              accessibilityLabel="Story activity"
+              labelSize={14}
+              options={[
+                { value: "updates", label: "Updates" },
+                { value: "comments", label: "Comments" },
+              ]}
+            />
           </>
         }
         ListFooterComponent={
