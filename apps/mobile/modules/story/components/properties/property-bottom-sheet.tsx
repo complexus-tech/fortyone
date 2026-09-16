@@ -156,7 +156,7 @@ export const PropertyBottomSheet = ({
                 </View>
                 <Text
                   accessibilityRole="header"
-                  fontWeight="semibold"
+                  fontWeight="bold"
                   style={{ flex: 1, textAlign: "center" }}
                 >
                   {title}

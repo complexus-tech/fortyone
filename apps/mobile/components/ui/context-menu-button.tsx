@@ -64,7 +64,7 @@ const Menu = ({
       >
         <Text
           accessibilityRole="header"
-          style={{ color: foreground, fontSize: 18, fontWeight: "600" }}
+          style={{ color: foreground, fontSize: 18, fontWeight: "700" }}
         >
           Options
         </Text>

@@ -34,7 +34,7 @@ export const Team = ({ id, name, color }: TeamType) => {
       />
       <Text
         numberOfLines={1}
-        style={{ flex: 1, fontSize: 16, lineHeight: 22, fontWeight: "400" }}
+        style={{ flex: 1, fontSize: 17, lineHeight: 23, fontWeight: "500" }}
       >
         {name}
       </Text>

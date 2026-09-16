@@ -21,7 +21,7 @@ export const CommentItem = ({ userId, user, comment, createdAt }: Comment) => {
           size="xs"
           className="mr-2"
         />
-        <Text fontSize="sm" fontWeight="semibold">
+        <Text fontSize="sm" fontWeight="bold">
           {author.name}
         </Text>
         <Text fontSize="xs" color="muted" className="ml-2">

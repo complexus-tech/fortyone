@@ -26,7 +26,7 @@ export const textVariants = cva("text-foreground dark:text-foreground-dark", {
     fontSize: {
       xs: "text-[13px] leading-[18px]",
       sm: "text-[15px] leading-[20px]",
-      md: "text-[16px] leading-[24px]",
+      md: "text-[17px] leading-[25px]",
       lg: "text-[17px] leading-[24px]",
       xl: "text-[20px] leading-[26px]",
       "2xl": "text-[26px] leading-[32px]",
@@ -59,6 +59,6 @@ export const textVariants = cva("text-foreground dark:text-foreground-dark", {
   defaultVariants: {
     align: "left",
     fontSize: "md",
-    fontWeight: "normal",
+    fontWeight: "medium",
   },
 });

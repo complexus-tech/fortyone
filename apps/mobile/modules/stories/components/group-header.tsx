@@ -22,13 +22,13 @@ export const GroupHeader = ({
       accessibilityRole="header"
       color="muted"
       numberOfLines={1}
-      style={{ flexShrink: 1, fontSize: 13, lineHeight: 18, fontWeight: "500" }}
+      style={{ flexShrink: 1, fontSize: 13, lineHeight: 18, fontWeight: "600" }}
     >
       {title}
     </Text>
     <Text
       color="muted"
-      style={{ fontSize: 12, lineHeight: 18, fontWeight: "400" }}
+      style={{ fontSize: 12, lineHeight: 18, fontWeight: "600" }}
     >
       {count}
     </Text>

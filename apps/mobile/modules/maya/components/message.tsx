@@ -39,22 +39,27 @@ export const MayaMessage = memo(function MayaMessage({
   const router = useRouter();
   const isUser = message.role === "user";
   const markdownStyles = {
-    body: { color: theme.foreground, fontSize: 16, lineHeight: 25 },
+    body: {
+      color: theme.foreground,
+      fontSize: 17,
+      lineHeight: 26,
+      fontWeight: "500" as const,
+    },
     paragraph: { marginTop: 0, marginBottom: 10 },
     heading1: {
       fontSize: 23,
       lineHeight: 29,
-      fontWeight: "600" as const,
+      fontWeight: "700" as const,
       marginBottom: 10,
     },
     heading2: {
       fontSize: 20,
       lineHeight: 26,
-      fontWeight: "600" as const,
+      fontWeight: "700" as const,
       marginBottom: 8,
     },
-    heading3: { fontSize: 17, lineHeight: 24, fontWeight: "600" as const },
-    strong: { fontWeight: "600" as const },
+    heading3: { fontSize: 17, lineHeight: 24, fontWeight: "700" as const },
+    strong: { fontWeight: "700" as const },
     code_inline: {
       backgroundColor: theme.accent,
       color: theme.foreground,
@@ -262,7 +267,7 @@ export const MayaMessage = memo(function MayaMessage({
                         <Text
                           numberOfLines={1}
                           ellipsizeMode="tail"
-                          fontWeight="medium"
+                          fontWeight="semibold"
                         >
                           {story.title}
                         </Text>

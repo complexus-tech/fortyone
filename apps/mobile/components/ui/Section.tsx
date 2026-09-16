@@ -11,7 +11,7 @@ export const Section = ({ title, children }: SectionProps) => {
   return (
     <View className="mb-6">
       {title && (
-        <Text fontWeight="medium" color="muted" className="mb-1">
+        <Text fontWeight="semibold" color="muted" className="mb-1">
           {title}
         </Text>
       )}

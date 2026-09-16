@@ -63,7 +63,7 @@ export const Header = ({
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
             <Text
               fontSize="xl"
-              fontWeight="semibold"
+              fontWeight="bold"
               numberOfLines={1}
               style={{ flexShrink: 1 }}
             >

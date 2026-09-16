@@ -41,7 +41,7 @@ export function MayaHistory({
     >
       <SafeContainer isFull edges={["top", "bottom"]}>
         <View style={styles.header}>
-          <Text fontSize="2xl" fontWeight="semibold" style={{ flex: 1 }}>
+          <Text fontSize="2xl" fontWeight="bold" style={{ flex: 1 }}>
             Conversations
           </Text>
           <GlassIconButton
@@ -68,7 +68,7 @@ export function MayaHistory({
                   size={28}
                   color={theme.textMuted}
                 />
-                <Text fontWeight="medium">A fresh start</Text>
+                <Text fontWeight="semibold">A fresh start</Text>
                 <Text color="muted" align="center">
                   Your conversations with Maya will appear here.
                 </Text>

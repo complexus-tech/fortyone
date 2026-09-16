@@ -83,7 +83,7 @@ export const Header = ({
           />
           <Text
             fontSize="sm"
-            fontWeight="medium"
+            fontWeight="semibold"
             numberOfLines={1}
             style={{ flexShrink: 1 }}
           >

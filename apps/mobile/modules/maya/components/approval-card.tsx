@@ -38,7 +38,7 @@ export function ApprovalCard({
           size={20}
           color={destructive ? colors.danger : theme.foreground}
         />
-        <Text fontWeight="semibold" style={{ flex: 1 }}>
+        <Text fontWeight="bold" style={{ flex: 1 }}>
           {title}
         </Text>
       </View>
@@ -79,7 +79,7 @@ export function ApprovalCard({
             },
           ]}
         >
-          <Text fontWeight="medium">Cancel</Text>
+          <Text fontWeight="semibold">Cancel</Text>
         </Pressable>
         <Pressable
           disabled={busy}
@@ -100,7 +100,7 @@ export function ApprovalCard({
           ]}
         >
           <Text
-            fontWeight="semibold"
+            fontWeight="bold"
             style={{
               color: destructive
                 ? colors.dangerForeground

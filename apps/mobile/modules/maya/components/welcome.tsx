@@ -95,5 +95,5 @@ const styles = StyleSheet.create({
     gap: 14,
     alignItems: "center",
   },
-  suggestionTitle: { flex: 1, fontSize: 17, lineHeight: 24, fontWeight: "400" },
+  suggestionTitle: { flex: 1, fontSize: 17, lineHeight: 24, fontWeight: "500" },
 });

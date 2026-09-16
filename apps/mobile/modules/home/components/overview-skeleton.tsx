@@ -8,7 +8,7 @@ export const OverviewSkeleton = () => (
         {[0, 1].map((column) => (
           <Skeleton
             key={column}
-            style={{ flex: 1, height: 96, borderRadius: 12 }}
+            style={{ flex: 1, height: 80, borderRadius: 12 }}
           />
         ))}
       </View>

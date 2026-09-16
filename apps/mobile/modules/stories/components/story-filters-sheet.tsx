@@ -164,7 +164,7 @@ function StoryFiltersContent(props: StoryFiltersSheetProps) {
           <Text
             accessibilityRole="header"
             numberOfLines={1}
-            fontWeight="semibold"
+            fontWeight="bold"
             style={[styles.title, { color: theme.foreground }]}
           >
             {section?.label ?? "Filters"}

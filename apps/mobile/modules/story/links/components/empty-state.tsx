@@ -24,7 +24,7 @@ export const EmptyState = ({ title, message }: EmptyStateProps) => {
       >
         <SymbolView name="grid" size={36} tintColor={iconColor} />
       </Row>
-      <Text fontSize="xl" fontWeight="semibold" className="mb-4 text-center">
+      <Text fontSize="xl" fontWeight="bold" className="mb-4 text-center">
         {title || defaultTitle}
       </Text>
       <Text color="muted" className="text-center">

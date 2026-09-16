@@ -21,9 +21,10 @@ export const StatCard = ({ count = 0, label, icon }: StatCardProps) => {
       style={{
         flex: 1,
         minWidth: 0,
-        padding: 16,
-        gap: 8,
-        minHeight: 96,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        gap: 4,
+        minHeight: 80,
         borderRadius: 12,
         borderWidth: StyleSheet.hairlineWidth,
         borderColor: themeColors[dark ? "dark" : "light"].border,
@@ -45,7 +46,7 @@ export const StatCard = ({ count = 0, label, icon }: StatCardProps) => {
             flexShrink: 1,
             fontSize: 26,
             lineHeight: 32,
-            fontWeight: "500",
+            fontWeight: "600",
             fontVariant: ["tabular-nums"],
           }}
         >
@@ -57,7 +58,7 @@ export const StatCard = ({ count = 0, label, icon }: StatCardProps) => {
         color="muted"
         numberOfLines={1}
         ellipsizeMode="tail"
-        style={{ fontSize: 15, lineHeight: 20, fontWeight: "400" }}
+        style={{ fontSize: 15, lineHeight: 20, fontWeight: "600" }}
       >
         {label}
       </Text>

@@ -24,8 +24,9 @@ export const ScreenHeader = ({
       <View style={styles.heading}>
         <Text
           accessibilityRole="header"
-          fontSize={compact ? "xl" : "2xl"}
-          fontWeight="semibold"
+          fontSize={compact ? "xl" : "3xl"}
+          fontWeight="bold"
+          style={compact ? undefined : styles.pageTitle}
           numberOfLines={2}
         >
           {title}
@@ -42,6 +43,7 @@ export const ScreenHeader = ({
 );
 
 const styles = StyleSheet.create({
+  pageTitle: { fontSize: 36, lineHeight: 43 },
   container: { paddingHorizontal: 20, paddingBottom: 12 },
   toolbar: {
     minHeight: 56,

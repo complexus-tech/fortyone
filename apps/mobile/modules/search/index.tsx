@@ -95,7 +95,7 @@ export const Search = () => {
                     color={themeColors[resolvedTheme].textMuted}
                   />
                 </View>
-                <Text fontSize="xl" fontWeight="semibold" className="mb-2">
+                <Text fontSize="xl" fontWeight="bold" className="mb-2">
                   Find your way
                 </Text>
                 <Text color="muted" align="center" style={{ maxWidth: 290 }}>

@@ -58,7 +58,7 @@ const WorkspaceItem = ({
         src={workspace.avatarUrl}
       />
       <View style={styles.details}>
-        <Text fontWeight="medium" numberOfLines={1}>
+        <Text fontWeight="semibold" numberOfLines={1}>
           {workspace.name}
         </Text>
         <Text fontSize="sm" color="muted" numberOfLines={1}>
@@ -100,7 +100,7 @@ export const WorkspaceSwitcher = ({
       padding={{ leading: 20, trailing: 20, top: 20, bottom: 16 }}
     >
       <View style={styles.heading}>
-        <Text fontSize="xl" fontWeight="semibold">
+        <Text fontSize="xl" fontWeight="bold">
           Choose a workspace
         </Text>
         <Text fontSize="sm" color="muted">

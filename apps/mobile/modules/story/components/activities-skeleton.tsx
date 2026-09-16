@@ -6,10 +6,18 @@ export const ActivitiesSkeleton = () => {
   return (
     <Tabs defaultValue="updates">
       <Tabs.List className="mb-2">
-        <Tabs.Tab value="updates" className="py-1.5 px-4 rounded-[10px]">
+        <Tabs.Tab
+          value="updates"
+          labelClassName="text-[14px] leading-[19px]"
+          className="py-1.5 px-4 rounded-[10px]"
+        >
           Updates
         </Tabs.Tab>
-        <Tabs.Tab value="comments" className="py-1.5 px-4 rounded-[10px]">
+        <Tabs.Tab
+          value="comments"
+          labelClassName="text-[14px] leading-[19px]"
+          className="py-1.5 px-4 rounded-[10px]"
+        >
           Comments
         </Tabs.Tab>
       </Tabs.List>

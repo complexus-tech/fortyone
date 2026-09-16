@@ -154,8 +154,18 @@ export const Activity = ({
           <>
             {children}
             <Tabs.List className="mb-[8px] pt-[8px] border-t border-gray-100 dark:border-dark-100">
-              <Tabs.Tab value="updates">Updates</Tabs.Tab>
-              <Tabs.Tab value="comments">Comments</Tabs.Tab>
+              <Tabs.Tab
+                value="updates"
+                labelClassName="text-[14px] leading-[19px]"
+              >
+                Updates
+              </Tabs.Tab>
+              <Tabs.Tab
+                value="comments"
+                labelClassName="text-[14px] leading-[19px]"
+              >
+                Comments
+              </Tabs.Tab>
             </Tabs.List>
           </>
         }

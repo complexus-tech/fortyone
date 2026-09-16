@@ -306,7 +306,7 @@ function SwipeableRowContent({
                 style={{
                   fontSize: flush ? 13 : 12,
                   lineHeight: flush ? 18 : 16,
-                  fontWeight: "500",
+                  fontWeight: "600",
                   color: item.foregroundColor,
                 }}
               >

@@ -54,7 +54,7 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
         style={{
           color: themeColors.dark.foreground,
           fontSize: 24,
-          fontWeight: "600",
+          fontWeight: "700",
         }}
       >
         Something went wrong
@@ -80,7 +80,7 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
           style={{
             color: themeColors.dark.foregroundInverse,
             fontSize: 16,
-            fontWeight: "600",
+            fontWeight: "700",
           }}
         >
           Try again

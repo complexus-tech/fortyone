@@ -131,7 +131,7 @@ export function StoriesDisplayOptions({
                 },
               ]}
             >
-              <Text fontSize="sm" fontWeight="normal">
+              <Text fontSize="sm" fontWeight="medium">
                 {column}
               </Text>
             </Pressable>

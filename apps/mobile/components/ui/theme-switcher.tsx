@@ -104,7 +104,7 @@ export const ThemeSwitcher = ({
       <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
         <RNText
           style={{
-            fontWeight: "500",
+            fontWeight: "600",
             color: themeColors[resolvedTheme].textMuted,
             fontSize: 14,
             marginBottom: 8,

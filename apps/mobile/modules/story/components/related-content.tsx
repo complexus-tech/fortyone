@@ -75,7 +75,7 @@ export function RelatedContent({ story }: { story: DetailedStory }) {
                 size={18}
               />
               <Text
-                fontWeight="medium"
+                fontWeight="semibold"
                 className="flex-1"
                 numberOfLines={1}
                 ellipsizeMode="tail"

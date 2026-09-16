@@ -386,7 +386,7 @@ export const NewStory = () => {
               color: titleColor,
               fontSize: 24,
               lineHeight: 30,
-              fontWeight: "600",
+              fontWeight: "700",
               padding: 0,
               minHeight: 44,
               maxHeight: 160,

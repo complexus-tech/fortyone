@@ -29,8 +29,15 @@ export const ActivityItem = ({
         className="mt-[8px] h-[8px] w-[8px] rounded-full border border-gray-300 dark:border-gray-400"
       />
       <View className="min-w-0 flex-1 gap-[4px]">
-        <Text color="muted" numberOfLines={2} ellipsizeMode="tail">
-          <Text fontWeight="medium">{actor.name}</Text>
+        <Text
+          color="muted"
+          numberOfLines={2}
+          ellipsizeMode="tail"
+          style={{ fontSize: 16, lineHeight: 24 }}
+        >
+          <Text fontWeight="semibold" style={{ fontSize: 16, lineHeight: 24 }}>
+            {actor.name}
+          </Text>
           {` ${message}`}
         </Text>
         {timestamp ? (

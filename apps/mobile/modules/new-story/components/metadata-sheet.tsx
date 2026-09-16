@@ -142,7 +142,7 @@ export const MetadataSheet = ({
             <Text
               accessibilityRole="header"
               fontSize="lg"
-              fontWeight="semibold"
+              fontWeight="bold"
               style={{ flex: 1 }}
             >
               {title}

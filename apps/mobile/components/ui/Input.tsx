@@ -6,7 +6,7 @@ import { colors, themeColors } from "@/constants/colors";
 import { useTheme } from "@/hooks/theme";
 
 const inputVariants = cva(
-  "border rounded-md bg-surface text-foreground dark:bg-surface-dark dark:text-foreground-dark px-4 py-3 text-base",
+  "border rounded-md bg-surface text-foreground dark:bg-surface-dark dark:text-foreground-dark px-4 py-3 text-base font-medium",
   {
     variants: {
       size: {
@@ -85,7 +85,7 @@ export const Input = ({
       {label && (
         <Text
           fontSize="sm"
-          fontWeight="medium"
+          fontWeight="semibold"
           className={cn("mb-2", labelClassName)}
         >
           {label}

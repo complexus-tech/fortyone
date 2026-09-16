@@ -19,7 +19,7 @@ export const EmptyState = () => {
           color={themeColors[resolvedTheme].textMuted}
         />
       </Row>
-      <Text fontSize="xl" fontWeight="semibold" className="mb-2 text-center">
+      <Text fontSize="xl" fontWeight="bold" className="mb-2 text-center">
         You’re all caught up
       </Text>
       <Text color="muted" className="text-center">

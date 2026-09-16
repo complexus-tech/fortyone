@@ -110,7 +110,7 @@ const EditTitle = ({
                   backgroundColor: themeColors[resolvedTheme].surfaceMuted,
                 }}
               />
-              <Text fontWeight="semibold" className="flex-1 text-center">
+              <Text fontWeight="bold" className="flex-1 text-center">
                 Edit title
               </Text>
               <Pressable
@@ -153,9 +153,9 @@ const EditTitle = ({
                   draft.update({ ...draft.valueRef.current, title })
                 }
                 style={{
-                  fontSize: 24,
-                  lineHeight: 30,
-                  fontWeight: "600",
+                  fontSize: 28,
+                  lineHeight: 35,
+                  fontWeight: "700",
                   minHeight: 120,
                   color: themeColors[resolvedTheme].foreground,
                 }}
@@ -218,8 +218,8 @@ export const Title = ({ story }: { story: DetailedStory }) => {
       >
         <Text
           fontSize="2xl"
-          fontWeight="semibold"
-          style={{ fontSize: 24, lineHeight: 31, letterSpacing: -0.5 }}
+          fontWeight="bold"
+          style={{ fontSize: 28, lineHeight: 35, letterSpacing: -0.5 }}
         >
           {story.title}
         </Text>

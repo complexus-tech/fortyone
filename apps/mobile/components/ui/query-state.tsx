@@ -24,7 +24,7 @@ export const QueryState = ({
     accessibilityState={{ busy: loading }}
   >
     {loading ? <ActivityIndicator color={colors.primary} /> : null}
-    <Text fontSize="lg" fontWeight="semibold" align="center">
+    <Text fontSize="lg" fontWeight="bold" align="center">
       {title}
     </Text>
     {message ? (

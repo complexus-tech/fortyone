@@ -121,7 +121,7 @@ export const Auth = () => {
           >
             [Built for builders]
           </Text>
-          <Text fontSize="4xl" fontWeight="semibold">
+          <Text fontSize="4xl" fontWeight="bold">
             Plan, track, deliver with the project management tool your team will
             love.
           </Text>

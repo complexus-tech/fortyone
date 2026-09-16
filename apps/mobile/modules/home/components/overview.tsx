@@ -2,17 +2,13 @@ import { WebIcon } from "@/components/icons/web-icon";
 import { StatusIcon } from "@/components/icons/status";
 import { useTheme } from "@/hooks/theme";
 import { colors, themeColors } from "@/constants/colors";
-import { Pressable, View, useWindowDimensions } from "react-native";
-import { useRouter } from "expo-router";
-import { Text } from "@/components/ui";
-import { ScreenHeader } from "@/components/ui/screen-header";
+import { View, useWindowDimensions } from "react-native";
 import { QueryState } from "@/components/ui/query-state";
 import { useOverviewStats } from "@/modules/home/hooks/use-overview-stats";
 import { StatCard } from "./stat-card";
 import { OverviewSkeleton } from "./overview-skeleton";
 
 export const Overview = () => {
-  const router = useRouter();
   const { resolvedTheme } = useTheme();
   const iconColor = themeColors[resolvedTheme].foreground;
   const { width, fontScale } = useWindowDimensions();
@@ -21,25 +17,6 @@ export const Overview = () => {
 
   return (
     <View>
-      <ScreenHeader
-        title="Your work"
-        trailing={
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="View My Work"
-            onPress={() => router.push("/my-work")}
-            style={{ minHeight: 44, justifyContent: "center", paddingLeft: 12 }}
-          >
-            <Text
-              color="muted"
-              numberOfLines={1}
-              style={{ fontSize: 15, lineHeight: 20 }}
-            >
-              View all
-            </Text>
-          </Pressable>
-        }
-      />
       {isPending ? (
         <OverviewSkeleton />
       ) : error ? (

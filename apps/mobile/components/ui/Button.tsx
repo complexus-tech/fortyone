@@ -71,7 +71,7 @@ export const Button = ({
       style={({ pressed }) => [style, pressed && { opacity: activeOpacity }]}
     >
       <TextStyleContext.Provider
-        value={{ color: textColor, fontWeight: "medium" }}
+        value={{ color: textColor, fontWeight: "semibold" }}
       >
         <View style={[styles.content, loading && styles.hiddenContent]}>
           {Children.map(children, (child) =>

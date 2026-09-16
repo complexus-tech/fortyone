@@ -318,6 +318,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
+    fontWeight: "500",
     fontSize: 17,
     lineHeight: 24,
     paddingHorizontal: 0,

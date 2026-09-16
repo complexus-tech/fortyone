@@ -78,6 +78,7 @@ type TabProps = {
   leftIcon?: ReactNode;
   rightIcon?: ReactNode;
   className?: string;
+  labelClassName?: string;
   disabled?: boolean;
   accessibilityLabel?: string;
 };
@@ -88,6 +89,7 @@ const Tab = ({
   leftIcon,
   rightIcon,
   className,
+  labelClassName,
   disabled = false,
   accessibilityLabel,
 }: TabProps) => {
@@ -124,8 +126,9 @@ const Tab = ({
     >
       {leftIcon}
       <Text
+        className={labelClassName}
         fontSize="sm"
-        fontWeight={isActive ? "medium" : "normal"}
+        fontWeight="semibold"
         color={isActive ? undefined : "muted"}
       >
         {children}

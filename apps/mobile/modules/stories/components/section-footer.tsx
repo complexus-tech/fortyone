@@ -48,7 +48,7 @@ export const SectionFooter = ({
           </Row>
         ) : (
           <Row align="center" gap={2} justify="between">
-            <Text fontSize="sm" fontWeight="semibold">
+            <Text fontSize="sm" fontWeight="bold">
               Load more {getTermDisplay("storyTerm", { variant: "plural" })}
             </Text>
             <Text fontSize="sm" color="muted">

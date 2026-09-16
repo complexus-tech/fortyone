@@ -10,7 +10,7 @@ import { themeColors } from "@/constants/colors";
 import { useTheme } from "@/hooks";
 
 const avatarVariants = cva(
-  "flex justify-center items-center aspect-square overflow-hidden text-center font-medium shrink-0",
+  "flex justify-center items-center aspect-square overflow-hidden text-center font-semibold shrink-0",
   {
     variants: {
       rounded: {
@@ -113,7 +113,7 @@ export const Avatar = ({
             },
             textClassName,
           )}
-          fontWeight="semibold"
+          fontWeight="bold"
         >
           {getAvatarInitials(name)}
         </Text>

@@ -30,7 +30,7 @@ export const EmptyState = ({ title, message }: EmptyStateProps) => {
           tintColor={themeColors[resolvedTheme].textMuted}
         />
       </Row>
-      <Text fontSize="xl" fontWeight="semibold" className="mb-4 text-center">
+      <Text fontSize="xl" fontWeight="bold" className="mb-4 text-center">
         {title || defaultTitle}
       </Text>
       <Text color="muted" className="text-center">

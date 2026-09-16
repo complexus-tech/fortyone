@@ -136,7 +136,7 @@ export const StoryRow = memo(function StoryRow({
         <Text
           numberOfLines={1}
           ellipsizeMode="tail"
-          style={{ fontSize: 16, lineHeight: 22, fontWeight: "500" }}
+          style={{ fontSize: 17, lineHeight: 23, fontWeight: "500" }}
         >
           {story.title}
         </Text>
@@ -144,7 +144,7 @@ export const StoryRow = memo(function StoryRow({
           <Text
             color="muted"
             numberOfLines={1}
-            style={{ fontSize: 13, lineHeight: 18, fontWeight: "400" }}
+            style={{ fontSize: 13, lineHeight: 18, fontWeight: "600" }}
           >
             {metadata}
           </Text>

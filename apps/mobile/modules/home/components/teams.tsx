@@ -37,7 +37,7 @@ export const Teams = () => {
       >
         <Text
           color="muted"
-          style={{ fontSize: 15, lineHeight: 20, fontWeight: "500" }}
+          style={{ fontSize: 15, lineHeight: 20, fontWeight: "600" }}
         >
           Teams
         </Text>

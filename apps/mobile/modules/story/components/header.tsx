@@ -198,7 +198,7 @@ export const Header = () => {
       <Back />
       <Text
         accessibilityRole="header"
-        fontWeight="semibold"
+        fontWeight="bold"
         numberOfLines={1}
         ellipsizeMode="tail"
         style={{ flex: 1, minWidth: 0, fontSize: 17, lineHeight: 20 }}

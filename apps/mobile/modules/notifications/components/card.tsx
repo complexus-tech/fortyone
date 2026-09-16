@@ -228,7 +228,7 @@ export const NotificationCard = memo(function NotificationCard({
           <Row justify="between" align="start" gap={2}>
             <Text
               className="flex-1"
-              fontWeight="medium"
+              fontWeight="semibold"
               color={isUnread ? undefined : "muted"}
               numberOfLines={1}
               ellipsizeMode="tail"

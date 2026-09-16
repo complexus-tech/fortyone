@@ -73,7 +73,7 @@ export const StoriesOptionsSheet = (props: StoriesOptionsSheetProps) => {
         spacing={12}
         padding={{ leading: 20, trailing: 20, top: 12, bottom: 24 }}
       >
-        <Text accessibilityRole="header" fontSize="lg" fontWeight="medium">
+        <Text accessibilityRole="header" fontSize="lg" fontWeight="semibold">
           {activeOption?.label}
         </Text>
         <ScrollView style={{ flexShrink: 1 }}>

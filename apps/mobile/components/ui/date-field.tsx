@@ -103,7 +103,7 @@ export function DateField({
           }}
           spacing={16}
         >
-          <Text fontSize="lg" fontWeight="semibold">
+          <Text fontSize="lg" fontWeight="bold">
             {label}
           </Text>
           <DateTimePicker

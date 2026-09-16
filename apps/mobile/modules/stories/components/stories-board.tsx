@@ -164,7 +164,7 @@ function GroupedStoriesList({
   if (error && !groupedStories) {
     return (
       <View className="flex-1 items-center justify-center p-6 gap-4">
-        <Text fontWeight="semibold">Couldn’t load your work</Text>
+        <Text fontWeight="bold">Couldn’t load your work</Text>
         <Text color="muted" align="center">
           Check your connection and try again.
         </Text>

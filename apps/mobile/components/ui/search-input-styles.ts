@@ -7,6 +7,7 @@ export const searchInputStyles = StyleSheet.create({
     minWidth: 0,
     minHeight: 48,
     fontSize: 16,
+    fontWeight: "500",
     lineHeight: 22,
     paddingVertical: 0,
     includeFontPadding: false,
