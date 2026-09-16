@@ -16,7 +16,6 @@ import {
 } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { CalendarIcon } from "@/components/icons/calendar";
 import { Text } from "@/components/ui";
 import { GlassIconButton } from "@/components/ui/glass-icon-button";
 import { themeColors } from "@/constants/colors";
@@ -28,6 +27,8 @@ import {
 import { useStoryFilterSections } from "../hooks/use-story-filter-sections";
 import { changeStoryFilter } from "./story-filter-selection";
 import { StoryFilterIcon } from "./story-filter-icon";
+import { WebIcon } from "@/components/icons/web-icon";
+import { searchInputStyles } from "@/components/ui/search-input-styles";
 
 export function StoryFiltersSheet(props: StoryFiltersSheetProps) {
   const close = () => {
@@ -107,7 +108,8 @@ function StoryFiltersContent(props: StoryFiltersSheetProps) {
         ]}
       >
         {option &&
-        (section.id === "objective" ||
+        (section.id === "sprint" ||
+          section.id === "objective" ||
           section.id === "status" ||
           section.id === "priority" ||
           (section.id === "assignee" && option.id === "unassigned")) ? (
@@ -215,12 +217,9 @@ function StoryFiltersContent(props: StoryFiltersSheetProps) {
             <View
               style={[styles.search, { backgroundColor: theme.surfaceMuted }]}
             >
-              <Ionicons
-                accessible={false}
-                name="search"
-                size={18}
-                color={theme.icon}
-              />
+              <View pointerEvents="none" style={searchInputStyles.icon}>
+                <WebIcon name="search" size={20} color={theme.icon} />
+              </View>
               <TextInput
                 accessibilityLabel={`Search ${section.label.toLowerCase()}`}
                 placeholder={`Search ${section.label.toLowerCase()}`}
@@ -231,7 +230,7 @@ function StoryFiltersContent(props: StoryFiltersSheetProps) {
                 autoCapitalize="none"
                 returnKeyType="search"
                 onSubmitEditing={Keyboard.dismiss}
-                style={[styles.input, { color: theme.foreground }]}
+                style={[searchInputStyles.input, { color: theme.foreground }]}
               />
               {query ? (
                 <Pressable
@@ -312,14 +311,7 @@ function StoryFiltersContent(props: StoryFiltersSheetProps) {
                   { backgroundColor: pressed ? theme.stateHover : undefined },
                 ]}
               >
-                {item.id === "objective" ||
-                item.id === "status" ||
-                item.id === "priority" ||
-                item.id === "assignee" ? (
-                  <StoryFilterIcon facet={item.id} />
-                ) : (
-                  <CalendarIcon size={20} color={theme.icon} />
-                )}
+                <StoryFilterIcon facet={item.id} />
                 <Text
                   numberOfLines={1}
                   style={[styles.facetLabel, { color: theme.foreground }]}
@@ -333,12 +325,7 @@ function StoryFiltersContent(props: StoryFiltersSheetProps) {
                   >
                     {item.value}
                   </Text>
-                  <Ionicons
-                    accessible={false}
-                    name="chevron-forward"
-                    size={16}
-                    color={theme.icon}
-                  />
+                  <WebIcon name="chevronRight" size={16} color={theme.icon} />
                 </View>
               </Pressable>
             )}
@@ -375,13 +362,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderRadius: 24,
     gap: 10,
-  },
-  input: {
-    flex: 1,
-    minWidth: 0,
-    minHeight: 48,
-    fontSize: 16,
-    paddingVertical: 12,
   },
   clear: {
     width: 44,

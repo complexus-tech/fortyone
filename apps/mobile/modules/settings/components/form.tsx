@@ -232,7 +232,7 @@ export const Form = () => {
     };
     Alert.alert(
       "Permanently delete account?",
-      "This permanently deletes your FortyOne account, profile, private documents, and credentials, and signs you out on all devices. It cannot be undone. Shared workspace tasks, comments, documents, feedback, and history remain attributed to Former user. Personal information within retained content may remain. Applications and integrations owned by your account will disconnect for workspaces using them. If you are a workspace's only administrator, add another administrator or delete that workspace first. Connected-service cleanup may continue after your account is deleted.",
+      "Your profile will be deleted. This cannot be undone.",
       [
         { text: "Cancel", style: "cancel", onPress: cancelConfirmation },
         {

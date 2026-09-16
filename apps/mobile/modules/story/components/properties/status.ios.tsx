@@ -1,5 +1,4 @@
 import type { Status } from "@/types/statuses";
-import type { SFSymbol } from "expo-symbols";
 import { PropertyChip } from "./property-chip";
 import React, { useState, useRef } from "react";
 import { BottomSheetModal, Text as UIText } from "@/components/ui";
@@ -8,7 +7,14 @@ import type { Story } from "@/modules/stories/types";
 import { Pressable } from "react-native";
 import { themeColors } from "@/constants/colors";
 import { useTheme } from "@/hooks";
-import { Button, HStack, Image, Spacer, Text } from "@expo/ui/swift-ui";
+import {
+  Button,
+  HStack,
+  Image,
+  Spacer,
+  Text,
+  RNHostView,
+} from "@expo/ui/swift-ui";
 import {
   accessibilityLabel,
   buttonStyle,
@@ -21,15 +27,6 @@ import {
 import { useTeamStatuses } from "@/modules/statuses/hooks/use-statuses";
 import { hexToRgba } from "@/lib/utils/colors";
 import { truncateText } from "@/lib/utils";
-
-const STATUS_SYMBOLS: Record<Status["category"], SFSymbol> = {
-  backlog: "circle.dashed",
-  unstarted: "circle",
-  started: "circle.righthalf.filled",
-  paused: "pause.circle",
-  completed: "checkmark.circle.fill",
-  cancelled: "xmark.circle",
-};
 
 const Item = ({
   status,
@@ -57,11 +54,13 @@ const Item = ({
         modifiers={[frame({ minHeight: 44 }), contentShape(shapes.rectangle())]}
       >
         <HStack modifiers={[frame({ width: 18, height: 18 })]}>
-          <Image
-            systemName={STATUS_SYMBOLS[status.category]}
-            color={status.color}
-            size={18}
-          />
+          <RNHostView matchContents>
+            <StatusIcon
+              category={status.category}
+              color={status.color}
+              size={18}
+            />
+          </RNHostView>
         </HStack>
         <Text modifiers={[font({ textStyle: "body" })]}>{status.name}</Text>
         <Spacer />

@@ -1,6 +1,8 @@
+import { searchInputStyles } from "@/components/ui/search-input-styles";
+import { WebIcon } from "@/components/icons/web-icon";
+import { FilterIcon } from "@/components/icons/filter";
 import { useRef } from "react";
 import { ActivityIndicator, TextInput, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { HeaderActions, IconButton, Row, ScreenHeader } from "@/components/ui";
 import { themeColors } from "@/constants/colors";
@@ -61,8 +63,7 @@ export function SearchHeader({
             createLabel={`Create ${getTermDisplay("storyTerm")}`}
             onCreate={() => router.push("/new")}
             menuLabel={`Search type: ${selectedLabel}`}
-            menuSystemImage="line.3.horizontal.decrease"
-            menuIcon="filter-outline"
+            menuContent={<FilterIcon size={22} />}
             actions={scopes.map((scope) => ({
               label: scope.label,
               selected: scope.value === searchType,
@@ -78,12 +79,13 @@ export function SearchHeader({
           className="min-h-[48px] rounded-2xl pl-[12px]"
           style={{ backgroundColor: theme.surfaceMuted }}
         >
-          <Ionicons name="search-outline" size={20} color={theme.textMuted} />
+          <View pointerEvents="none" style={searchInputStyles.icon}>
+            <WebIcon name="search" size={20} color={theme.textMuted} />
+          </View>
           <TextInput
             ref={inputRef}
             accessibilityLabel={`Search ${selectedLabel.toLowerCase()}`}
-            className="min-h-[48px] flex-1 text-[16px] font-normal"
-            style={{ color: theme.foreground }}
+            style={[searchInputStyles.input, { color: theme.foreground }]}
             placeholder={`Search ${selectedLabel.toLowerCase()}…`}
             placeholderTextColor={theme.textMuted}
             selectionColor={theme.foreground}

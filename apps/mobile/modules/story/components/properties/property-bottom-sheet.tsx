@@ -18,6 +18,8 @@ import { IconButton, Text } from "@/components/ui";
 import { GlassIconButton } from "@/components/ui/glass-icon-button";
 import { themeColors } from "@/constants/colors";
 import { filterPropertyOptions, performPropertyChange } from "./picker-utils";
+import { WebIcon } from "@/components/icons/web-icon";
+import { searchInputStyles } from "@/components/ui/search-input-styles";
 
 export type PropertyOption = {
   id: string;
@@ -179,7 +181,9 @@ export const PropertyBottomSheet = ({
                       themeColors[dark ? "dark" : "light"].surfaceMuted,
                   }}
                 >
-                  <Ionicons name="search" size={20} color={muted} />
+                  <View pointerEvents="none" style={searchInputStyles.icon}>
+                    <WebIcon name="search" size={20} color={muted} />
+                  </View>
                   <TextInput
                     accessibilityLabel={`Search ${title.toLowerCase()}`}
                     placeholder={`Search ${title.toLowerCase()}…`}
@@ -189,13 +193,13 @@ export const PropertyBottomSheet = ({
                     autoCorrect={false}
                     autoCapitalize="none"
                     returnKeyType="search"
-                    style={{
-                      flex: 1,
-                      minHeight: 48,
-                      paddingHorizontal: 10,
-                      fontSize: 16,
-                      color: themeColors[dark ? "dark" : "light"].foreground,
-                    }}
+                    style={[
+                      searchInputStyles.input,
+                      {
+                        paddingHorizontal: 10,
+                        color: themeColors[dark ? "dark" : "light"].foreground,
+                      },
+                    ]}
                   />
                   {query.length > 0 && (
                     <IconButton
@@ -269,8 +273,8 @@ export const PropertyBottomSheet = ({
                       )}
                     </View>
                     {selectedIds.includes(item.id) && (
-                      <Ionicons
-                        name="checkmark"
+                      <WebIcon
+                        name="check"
                         size={20}
                         color={themeColors[dark ? "dark" : "light"].foreground}
                       />
@@ -300,7 +304,7 @@ export const PropertyBottomSheet = ({
                         {clearLabel}
                       </Text>
                       {selectedIds.length === 0 && (
-                        <Ionicons name="checkmark" size={20} color={muted} />
+                        <WebIcon name="check" size={20} color={muted} />
                       )}
                     </Pressable>
                   ) : null

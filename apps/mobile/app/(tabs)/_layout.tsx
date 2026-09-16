@@ -55,7 +55,10 @@ export default function TabsLayout() {
         accessibilityLabel="Search"
       >
         <NativeTabs.Trigger.Label hidden>Search</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf="magnifyingglass" md="search" />
+        <NativeTabs.Trigger.Icon
+          src={require("@/assets/icons/tabs/search.png")}
+          renderingMode="template"
+        />
       </NativeTabs.Trigger>
     </NativeTabs>
   );

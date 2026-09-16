@@ -11,23 +11,18 @@ export function NewStoryIcon({
   color?: string;
 }) {
   const { resolvedTheme } = useTheme();
-  const tint = color ?? themeColors[resolvedTheme].icon;
-
+  const tint = color ?? themeColors[resolvedTheme].foreground;
   return (
     <SymbolView
-      name="square.and.pencil"
+      name="plus"
+      weight="semibold"
       size={size}
       tintColor={tint}
       accessible={false}
       accessibilityElementsHidden
       importantForAccessibility="no"
       fallback={
-        <Ionicons
-          name="create-outline"
-          size={size}
-          color={tint}
-          accessible={false}
-        />
+        <Ionicons name="add" size={size} color={tint} accessible={false} />
       }
     />
   );

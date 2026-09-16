@@ -1,5 +1,6 @@
 import type { HeaderActionsProps } from "./header-actions.types";
 import type { SFSymbol } from "expo-symbols";
+import { NativeToolbarIcon } from "./native-toolbar-icon";
 import {
   Button,
   Host,
@@ -52,6 +53,7 @@ export function HeaderActions({
   onOptions,
   optionsLabel = "View options",
   menuLabel = "More options",
+  menuContent,
   menuSystemImage = "ellipsis",
 }: HeaderActionsProps) {
   const { resolvedTheme } = useTheme();
@@ -111,7 +113,11 @@ export function HeaderActions({
           <Menu
             modifiers={[buttonStyle("plain"), accessibilityLabel(menuLabel)]}
             label={
-              <ActionIcon systemName={menuSystemImage} color={foreground} />
+              menuContent ? (
+                <NativeToolbarIcon>{menuContent}</NativeToolbarIcon>
+              ) : (
+                <ActionIcon systemName={menuSystemImage} color={foreground} />
+              )
             }
           >
             {actions?.map((action) => (

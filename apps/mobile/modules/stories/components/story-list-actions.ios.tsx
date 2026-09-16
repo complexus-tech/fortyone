@@ -1,12 +1,12 @@
 import type { StoryListActionsProps } from "./story-list-actions.types";
-import { Button, Host, HStack, Image } from "@expo/ui/swift-ui";
+import { FilterIcon } from "@/components/icons/filter";
+import { PreferencesIcon } from "@/components/icons/preferences";
+import { NativeToolbarIcon } from "@/components/ui/native-toolbar-icon";
+import { Button, Host, HStack } from "@expo/ui/swift-ui";
 import {
   accessibilityLabel,
   buttonStyle,
-  contentShape,
-  frame,
   glassEffect,
-  shapes,
 } from "@expo/ui/swift-ui/modifiers";
 import { colors, themeColors } from "@/constants/colors";
 import { useTheme } from "@/hooks/theme";
@@ -42,15 +42,12 @@ export function StoryListActions({
             ),
           ]}
         >
-          <Image
-            systemName="line.3.horizontal.decrease"
-            size={22}
-            color={filterCount ? colors.primary : palette.foreground}
-            modifiers={[
-              frame({ width: 44, height: 44 }),
-              contentShape(shapes.rectangle()),
-            ]}
-          />
+          <NativeToolbarIcon>
+            <FilterIcon
+              size={22}
+              color={filterCount ? colors.primary : palette.foreground}
+            />
+          </NativeToolbarIcon>
         </Button>
         <Button
           onPress={onDisplay}
@@ -59,15 +56,9 @@ export function StoryListActions({
             accessibilityLabel("Display options"),
           ]}
         >
-          <Image
-            systemName="slider.horizontal.3"
-            size={22}
-            color={palette.foreground}
-            modifiers={[
-              frame({ width: 44, height: 44 }),
-              contentShape(shapes.rectangle()),
-            ]}
-          />
+          <NativeToolbarIcon>
+            <PreferencesIcon size={22} color={palette.foreground} />
+          </NativeToolbarIcon>
         </Button>
       </HStack>
     </Host>

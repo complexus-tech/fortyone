@@ -4,6 +4,7 @@ import { Pressable, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { colors, themeColors } from "@/constants/colors";
 import { useTheme } from "@/hooks/theme";
+import { WebIcon } from "@/components/icons/web-icon";
 
 export type IconButtonProps = {
   label: string;
@@ -27,6 +28,14 @@ export const IconButton = ({
 }: IconButtonProps) => {
   const { resolvedTheme } = useTheme();
   const theme = themeColors[resolvedTheme];
+  const webIcon =
+    icon === "close"
+      ? "close"
+      : icon === "search"
+        ? "search"
+        : icon === "checkmark"
+          ? "check"
+          : undefined;
   return (
     <Pressable
       accessibilityRole="button"
@@ -44,14 +53,21 @@ export const IconButton = ({
         style,
       ]}
     >
-      {children ?? (
-        <Ionicons
-          accessible={false}
-          name={icon}
-          size={22}
-          color={selected ? colors.primary : theme.foreground}
-        />
-      )}
+      {children ??
+        (webIcon ? (
+          <WebIcon
+            name={webIcon}
+            size={22}
+            color={selected ? colors.primary : theme.foreground}
+          />
+        ) : (
+          <Ionicons
+            accessible={false}
+            name={icon}
+            size={22}
+            color={selected ? colors.primary : theme.foreground}
+          />
+        ))}
     </Pressable>
   );
 };

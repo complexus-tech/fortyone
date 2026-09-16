@@ -1,6 +1,6 @@
 import type { Story } from "@/modules/stories/types";
 import { useColorScheme } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { WebIcon } from "@/components/icons/web-icon";
 import { Text } from "@/components/ui";
 import { themeColors } from "@/constants/colors";
 import { useTerminology } from "@/hooks";
@@ -28,8 +28,8 @@ export const SprintBadge = ({
   const current = items.find((item) => item.id === story.sprintId);
   const title = getTermDisplay("sprintTerm", { capitalize: true });
   const icon = (
-    <Ionicons
-      name="play-circle-outline"
+    <WebIcon
+      name="sprint"
       size={16}
       color={themeColors[dark ? "dark" : "light"].textMuted}
     />

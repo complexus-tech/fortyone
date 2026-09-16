@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Pressable, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { WebIcon } from "@/components/icons/web-icon";
 import { useRouter } from "expo-router";
 import { Avatar, Text, WorkspaceSwitcher } from "@/components/ui";
 import { useProfile } from "@/modules/users/hooks/use-profile";
@@ -65,7 +65,7 @@ export const Header = () => {
           >
             {workspace?.name || "Workspace"}
           </Text>
-          <Ionicons name="chevron-down" size={14} color={muted} />
+          <WebIcon name="chevronDown" size={14} color={muted} />
         </Pressable>
         <NewStoryButton />
         <GlassIconButton

@@ -16,6 +16,7 @@ export function HeaderActions({
   onOptions,
   optionsLabel = "View options",
   menuLabel = "More options",
+  menuContent,
   menuIcon = "ellipsis-horizontal",
 }: HeaderActionsProps) {
   const { resolvedTheme } = useTheme();
@@ -44,12 +45,14 @@ export function HeaderActions({
       ) : null}
       {actions?.length ? (
         <ContextMenuButton actions={actions} menuLabel={menuLabel}>
-          <Ionicons
-            accessible={false}
-            name={menuIcon}
-            size={20}
-            color={theme.foreground}
-          />
+          {menuContent ?? (
+            <Ionicons
+              accessible={false}
+              name={menuIcon}
+              size={20}
+              color={theme.foreground}
+            />
+          )}
         </ContextMenuButton>
       ) : null}
     </View>

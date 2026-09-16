@@ -1,6 +1,6 @@
 import type { Team as TeamType } from "@/modules/teams/types";
 import { View, Pressable } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { WebIcon } from "@/components/icons/web-icon";
 import { useRouter } from "expo-router";
 import { Text } from "@/components/ui";
 import { themeColors } from "@/constants/colors";
@@ -38,8 +38,8 @@ export const Team = ({ id, name, color }: TeamType) => {
       >
         {name}
       </Text>
-      <Ionicons
-        name="chevron-forward"
+      <WebIcon
+        name="chevronRight"
         size={15}
         color={themeColors[resolvedTheme].icon}
       />

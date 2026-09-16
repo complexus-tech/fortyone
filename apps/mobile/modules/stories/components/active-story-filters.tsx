@@ -1,12 +1,12 @@
 import type { StoryFiltersSheetProps } from "./story-filters.types";
 import { Pressable, ScrollView } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { Text } from "@/components/ui/Text";
 import { themeColors } from "@/constants/colors";
 import { useTheme } from "@/hooks/theme";
 import { getTeamStoryFilterCount } from "@/modules/teams/stories/team-story-filters";
 import { useStoryFilterSections } from "../hooks/use-story-filter-sections";
 import { changeStoryFilter } from "./story-filter-selection";
+import { WebIcon } from "@/components/icons/web-icon";
 
 type Props = Pick<
   StoryFiltersSheetProps,
@@ -66,7 +66,7 @@ function ActiveFiltersContent(props: Props) {
               numberOfLines={1}
               style={{ flexShrink: 1 }}
             >{`${section.label}: ${section.value}`}</Text>
-            <Ionicons name="close" size={14} color={palette.icon} />
+            <WebIcon name="close" size={14} color={palette.icon} />
           </Pressable>
         ))}
     </ScrollView>

@@ -50,13 +50,7 @@ import {
 import { useStoryFilterSections } from "../hooks/use-story-filter-sections";
 import { changeStoryFilter } from "./story-filter-selection";
 import { StoryFilterIcon } from "./story-filter-icon";
-
-const FACET_ICONS: Record<
-  Exclude<StoryFilterFacet, "status" | "priority" | "assignee" | "objective">,
-  SFSymbol
-> = {
-  sprint: "play.circle",
-};
+import { WebIcon } from "@/components/icons/web-icon";
 
 function FilterIconButton({
   symbol,
@@ -184,7 +178,9 @@ function FilterContent(props: StoryFiltersSheetProps) {
             frame({ minHeight: 48 }),
           ]}
         >
-          <Image systemName="magnifyingglass" size={18} color={palette.icon} />
+          <RNHostView matchContents>
+            <WebIcon name="search" size={18} color={palette.icon} />
+          </RNHostView>
           <TextField
             placeholder={`Search ${section.label.toLowerCase()}`}
             onTextChange={setQuery}
@@ -236,11 +232,13 @@ function FilterContent(props: StoryFiltersSheetProps) {
                   </Text>
                   <Spacer />
                   {!section.selectedIds.length ? (
-                    <Image
-                      systemName="checkmark"
-                      size={18}
-                      color={palette.foreground}
-                    />
+                    <RNHostView matchContents>
+                      <WebIcon
+                        name="check"
+                        size={18}
+                        color={palette.foreground}
+                      />
+                    </RNHostView>
                   ) : null}
                 </HStack>
               </Button>
@@ -296,7 +294,8 @@ function FilterContent(props: StoryFiltersSheetProps) {
                       contentShape(shapes.rectangle()),
                     ]}
                   >
-                    {section.id === "objective" ||
+                    {section.id === "sprint" ||
+                    section.id === "objective" ||
                     section.id === "status" ||
                     section.id === "priority" ||
                     (section.id === "assignee" &&
@@ -329,11 +328,13 @@ function FilterContent(props: StoryFiltersSheetProps) {
                     </VStack>
                     <Spacer />
                     {section.selectedIds.includes(option.id) ? (
-                      <Image
-                        systemName="checkmark"
-                        size={18}
-                        color={palette.foreground}
-                      />
+                      <RNHostView matchContents>
+                        <WebIcon
+                          name="check"
+                          size={18}
+                          color={palette.foreground}
+                        />
+                      </RNHostView>
                     ) : null}
                   </HStack>
                 </Button>
@@ -372,20 +373,9 @@ function FilterContent(props: StoryFiltersSheetProps) {
                     contentShape(shapes.rectangle()),
                   ]}
                 >
-                  {item.id === "objective" ||
-                  item.id === "status" ||
-                  item.id === "priority" ||
-                  item.id === "assignee" ? (
-                    <RNHostView matchContents>
-                      <StoryFilterIcon facet={item.id} />
-                    </RNHostView>
-                  ) : (
-                    <Image
-                      systemName={FACET_ICONS[item.id]}
-                      color={palette.icon}
-                      size={19}
-                    />
-                  )}
+                  <RNHostView matchContents>
+                    <StoryFilterIcon facet={item.id} />
+                  </RNHostView>
                   <Text
                     modifiers={[
                       font({ textStyle: "callout" }),
@@ -406,11 +396,13 @@ function FilterContent(props: StoryFiltersSheetProps) {
                     >
                       {item.value}
                     </Text>
-                    <Image
-                      systemName="chevron.right"
-                      color={palette.icon}
-                      size={12}
-                    />
+                    <RNHostView matchContents>
+                      <WebIcon
+                        name="chevronRight"
+                        color={palette.icon}
+                        size={12}
+                      />
+                    </RNHostView>
                   </HStack>
                 </HStack>
               </Button>

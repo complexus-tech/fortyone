@@ -1,8 +1,5 @@
-import type { ComponentProps } from "react";
-import type { SFSymbol } from "expo-symbols";
+import type { ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
-import { SymbolView } from "expo-symbols";
-import { Ionicons } from "@expo/vector-icons";
 import { Text } from "@/components/ui";
 import { useTheme } from "@/hooks";
 import { themeColors } from "@/constants/colors";
@@ -10,19 +7,12 @@ import { themeColors } from "@/constants/colors";
 type StatCardProps = {
   count?: number;
   label: string;
-  icon: ComponentProps<typeof Ionicons>["name"];
-  systemImage: SFSymbol;
+  icon: ReactNode;
 };
 
-export const StatCard = ({
-  count = 0,
-  label,
-  icon,
-  systemImage,
-}: StatCardProps) => {
+export const StatCard = ({ count = 0, label, icon }: StatCardProps) => {
   const { resolvedTheme } = useTheme();
   const dark = resolvedTheme === "dark";
-  const iconColor = themeColors[resolvedTheme].foreground;
 
   return (
     <View
@@ -61,12 +51,7 @@ export const StatCard = ({
         >
           {count}
         </Text>
-        <SymbolView
-          name={systemImage}
-          size={18}
-          tintColor={iconColor}
-          fallback={<Ionicons name={icon} size={18} color={iconColor} />}
-        />
+        {icon}
       </View>
       <Text
         color="muted"

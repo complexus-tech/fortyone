@@ -1,7 +1,9 @@
 import type { StoryListActionsProps } from "./story-list-actions.types";
+import { FilterIcon } from "@/components/icons/filter";
+import { PreferencesIcon } from "@/components/icons/preferences";
 import { StyleSheet, View } from "react-native";
 import { IconButton } from "@/components/ui/icon-button";
-import { themeColors } from "@/constants/colors";
+import { colors, themeColors } from "@/constants/colors";
 import { useTheme } from "@/hooks/theme";
 
 export function StoryListActions({
@@ -22,16 +24,18 @@ export function StoryListActions({
       ]}
     >
       <IconButton
-        icon="filter-outline"
         label={filterCount ? `Filters, ${filterCount} active` : "Filters"}
         onPress={onFilters}
         selected={filterCount > 0}
-      />
-      <IconButton
-        icon="options-outline"
-        label="Display options"
-        onPress={onDisplay}
-      />
+      >
+        <FilterIcon
+          size={22}
+          color={filterCount ? colors.primary : palette.foreground}
+        />
+      </IconButton>
+      <IconButton label="Display options" onPress={onDisplay}>
+        <PreferencesIcon size={22} color={palette.foreground} />
+      </IconButton>
     </View>
   );
 }
