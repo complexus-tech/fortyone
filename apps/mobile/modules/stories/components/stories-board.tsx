@@ -54,7 +54,11 @@ function GroupedStoriesList({
   const { getTermDisplay } = useTerminology();
   const { bottom } = useSafeAreaInsets();
   const [requestedPages, setRequestedPages] = useState<PageRequest[]>([]);
-  const groups = groupedStories?.groups ?? [];
+  // Keep groups with unloaded results so pagination stays available.
+  const groups = (groupedStories?.groups ?? []).filter(
+    (group) =>
+      group.totalCount > 0 || group.stories.length > 0 || group.hasMore,
+  );
   const requests = requestedPages.filter((request) =>
     groups.some((group) => group.key === request.groupKey),
   );

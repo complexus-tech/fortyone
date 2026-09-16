@@ -7,6 +7,7 @@ import { getTeamStoryFilterCount } from "@/modules/teams/stories/team-story-filt
 import { useStoryFilterSections } from "../hooks/use-story-filter-sections";
 import { changeStoryFilter } from "./story-filter-selection";
 import { WebIcon } from "@/components/icons/web-icon";
+import { PropertyChip } from "@/modules/story/components/properties/property-chip";
 
 type Props = Pick<
   StoryFiltersSheetProps,
@@ -50,23 +51,20 @@ function ActiveFiltersContent(props: Props) {
               )
             }
             style={({ pressed }) => ({
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 6,
               minHeight: 44,
               maxWidth: 240,
-              paddingHorizontal: 12,
-              borderRadius: 12,
-              backgroundColor: palette.stateHover,
+              justifyContent: "center",
               opacity: pressed ? 0.6 : 1,
             })}
           >
-            <Text
-              fontSize="sm"
-              numberOfLines={1}
-              style={{ flexShrink: 1 }}
-            >{`${section.label}: ${section.value}`}</Text>
-            <WebIcon name="close" size={14} color={palette.icon} />
+            <PropertyChip pointerEvents="none">
+              <Text
+                fontSize="sm"
+                numberOfLines={1}
+                style={{ flexShrink: 1 }}
+              >{`${section.label}: ${section.value}`}</Text>
+              <WebIcon name="close" size={14} color={palette.icon} />
+            </PropertyChip>
           </Pressable>
         ))}
     </ScrollView>
