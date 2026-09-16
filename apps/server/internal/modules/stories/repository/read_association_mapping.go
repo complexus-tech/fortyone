@@ -35,6 +35,7 @@ func mapVisibleAssociations(rows []storyreadsql.ListVisibleStoryAssociationsRow)
 			Status:                   row.RelatedStatusID,
 			Assignee:                 row.RelatedAssigneeID,
 			CollaboratorCount:        int(row.RelatedCollaboratorCount),
+			Collaborators:            row.RelatedCollaboratorIds,
 			Reporter:                 row.RelatedReporterID,
 			KeyResult:                row.RelatedKeyResultID,
 			StartDate:                row.RelatedStartDate,

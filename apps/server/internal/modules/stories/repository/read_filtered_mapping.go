@@ -39,7 +39,7 @@ func storyListRecordFromFilteredRow(row storyreadsql.ListVisibleFilteredStoryRow
 		sprintID: row.SprintID, sprintName: row.SprintName, sprintGoal: row.SprintGoal,
 		sprintStartDate: row.SprintStartDate, sprintEndDate: row.SprintEndDate,
 		teamID: row.TeamID, teamCode: row.TeamCode, teamName: row.TeamName, workspaceID: row.WorkspaceID,
-		statusID: row.StatusID, assigneeID: row.AssigneeID, collaboratorCount: row.CollaboratorCount,
+		statusID: row.StatusID, assigneeID: row.AssigneeID, collaboratorCount: row.CollaboratorCount, collaboratorIDs: row.StoryCollaboratorIds,
 		reporterID: row.ReporterID, keyResultID: row.KeyResultID, startDate: row.StartDate, endDate: row.EndDate,
 		createdAt: row.CreatedAt, updatedAt: row.UpdatedAt, completedAt: row.CompletedAt,
 		deletedAt: row.DeletedAt, archivedAt: row.ArchivedAt, labelIDs: row.LabelIds,

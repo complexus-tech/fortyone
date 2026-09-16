@@ -418,6 +418,7 @@ SELECT
     story.status_id,
     story.assignee_id,
     CAST((SELECT COUNT(*) FROM story_collaborators AS collaborator WHERE collaborator.story_id = story.id) AS integer) AS collaborator_count,
+    CAST(ARRAY(SELECT collaborator.user_id FROM story_collaborators AS collaborator WHERE collaborator.story_id = story.id ORDER BY collaborator.created_at, collaborator.user_id) AS uuid[]) AS collaborator_ids,
     story.reporter_id,
     story.key_result_id,
     story.start_date,
@@ -514,6 +515,7 @@ type ListMyVisibleStoriesRow struct {
 	StatusID                 *uuid.UUID
 	AssigneeID               *uuid.UUID
 	CollaboratorCount        int32
+	CollaboratorIds          []uuid.UUID
 	ReporterID               *uuid.UUID
 	KeyResultID              *uuid.UUID
 	StartDate                *time.Time
@@ -571,6 +573,7 @@ func (q *Queries) ListMyVisibleStories(ctx context.Context, arg ListMyVisibleSto
 			&i.StatusID,
 			&i.AssigneeID,
 			&i.CollaboratorCount,
+			&i.CollaboratorIds,
 			&i.ReporterID,
 			&i.KeyResultID,
 			&i.StartDate,
@@ -623,6 +626,7 @@ SELECT
     story.status_id,
     story.assignee_id,
     CAST((SELECT COUNT(*) FROM story_collaborators AS collaborator WHERE collaborator.story_id = story.id) AS integer) AS collaborator_count,
+    CAST(ARRAY(SELECT collaborator.user_id FROM story_collaborators AS collaborator WHERE collaborator.story_id = story.id ORDER BY collaborator.created_at, collaborator.user_id) AS uuid[]) AS collaborator_ids,
     story.reporter_id,
     story.key_result_id,
     story.start_date,
@@ -721,6 +725,7 @@ type ListVisibleStoriesByCategoryRow struct {
 	StatusID                 *uuid.UUID
 	AssigneeID               *uuid.UUID
 	CollaboratorCount        int32
+	CollaboratorIds          []uuid.UUID
 	ReporterID               *uuid.UUID
 	KeyResultID              *uuid.UUID
 	StartDate                *time.Time
@@ -782,6 +787,7 @@ func (q *Queries) ListVisibleStoriesByCategory(ctx context.Context, arg ListVisi
 			&i.StatusID,
 			&i.AssigneeID,
 			&i.CollaboratorCount,
+			&i.CollaboratorIds,
 			&i.ReporterID,
 			&i.KeyResultID,
 			&i.StartDate,
@@ -830,6 +836,7 @@ SELECT
     related.status_id AS related_status_id,
     related.assignee_id AS related_assignee_id,
     CAST((SELECT COUNT(*) FROM story_collaborators AS collaborator WHERE collaborator.story_id = related.id) AS integer) AS related_collaborator_count,
+    CAST(ARRAY(SELECT collaborator.user_id FROM story_collaborators AS collaborator WHERE collaborator.story_id = related.id ORDER BY collaborator.created_at, collaborator.user_id) AS uuid[]) AS related_collaborator_ids,
     related.reporter_id AS related_reporter_id,
     related.key_result_id AS related_key_result_id,
     related.start_date AS related_start_date,
@@ -922,6 +929,7 @@ type ListVisibleStoryAssociationsRow struct {
 	RelatedStatusID                 *uuid.UUID
 	RelatedAssigneeID               *uuid.UUID
 	RelatedCollaboratorCount        int32
+	RelatedCollaboratorIds          []uuid.UUID
 	RelatedReporterID               *uuid.UUID
 	RelatedKeyResultID              *uuid.UUID
 	RelatedStartDate                *time.Time
@@ -975,6 +983,7 @@ func (q *Queries) ListVisibleStoryAssociations(ctx context.Context, arg ListVisi
 			&i.RelatedStatusID,
 			&i.RelatedAssigneeID,
 			&i.RelatedCollaboratorCount,
+			&i.RelatedCollaboratorIds,
 			&i.RelatedReporterID,
 			&i.RelatedKeyResultID,
 			&i.RelatedStartDate,
@@ -1027,6 +1036,7 @@ SELECT
     story.status_id,
     story.assignee_id,
     CAST((SELECT COUNT(*) FROM story_collaborators AS collaborator WHERE collaborator.story_id = story.id) AS integer) AS collaborator_count,
+    CAST(ARRAY(SELECT collaborator.user_id FROM story_collaborators AS collaborator WHERE collaborator.story_id = story.id ORDER BY collaborator.created_at, collaborator.user_id) AS uuid[]) AS collaborator_ids,
     story.reporter_id,
     story.key_result_id,
     story.start_date,
@@ -1112,6 +1122,7 @@ type ListVisibleSubStoriesRow struct {
 	StatusID                 *uuid.UUID
 	AssigneeID               *uuid.UUID
 	CollaboratorCount        int32
+	CollaboratorIds          []uuid.UUID
 	ReporterID               *uuid.UUID
 	KeyResultID              *uuid.UUID
 	StartDate                *time.Time
@@ -1169,6 +1180,7 @@ func (q *Queries) ListVisibleSubStories(ctx context.Context, arg ListVisibleSubS
 			&i.StatusID,
 			&i.AssigneeID,
 			&i.CollaboratorCount,
+			&i.CollaboratorIds,
 			&i.ReporterID,
 			&i.KeyResultID,
 			&i.StartDate,

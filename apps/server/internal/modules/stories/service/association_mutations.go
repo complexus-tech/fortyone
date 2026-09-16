@@ -347,7 +347,7 @@ func storyToList(story storydomain.Story) CoreStoryList {
 		AutoSchedulingUpdatedAt:  story.AutoSchedulingUpdatedAt,
 		Parent:                   story.Parent, Objective: story.Objective, Epic: story.Epic,
 		Status: story.Status, Assignee: story.Assignee,
-		CollaboratorCount: len(story.Collaborators), Reporter: story.Reporter,
+		Collaborators: story.Collaborators, CollaboratorCount: len(story.Collaborators), Reporter: story.Reporter,
 		Priority: story.Priority, Sprint: story.Sprint, SprintSummary: story.SprintSummary,
 		KeyResult: story.KeyResult, Team: story.Team, Workspace: story.Workspace,
 		StartDate: story.StartDate, EndDate: story.EndDate,

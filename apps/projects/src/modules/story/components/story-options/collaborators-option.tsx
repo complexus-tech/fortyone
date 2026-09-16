@@ -1,10 +1,11 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Avatar, Button, Flex } from "ui";
+import { Avatar, Button } from "ui";
 import { UsersAddIcon } from "icons";
 import { cn } from "lib";
 import { PropertyOption as Option } from "@/components/ui/property-option";
+import { PeopleAvatars } from "@/components/ui/story/people-avatars";
 import { CollaboratorsMenu } from "@/components/ui/story/collaborators-menu";
 import { useUpdateCollaboratorsMutation } from "../../hooks/collaboration-mutations";
 import type { DetailedStory } from "../../types";
@@ -42,9 +43,6 @@ export const CollaboratorsOption = ({
     collaborators,
     members,
   );
-  const visibleCollaborators = selectedCollaborators.slice(0, 5);
-  const hiddenCollaboratorCount =
-    collaboratorIds.length - visibleCollaborators.length;
   const singleCollaborator = selectedCollaborators.at(0);
   let buttonIcon: ReactNode = <UsersAddIcon className="h-[1.15rem] w-auto" />;
   let buttonContent: ReactNode = "Collaborators";
@@ -67,22 +65,11 @@ export const CollaboratorsOption = ({
   } else if (collaboratorIds.length > 1) {
     buttonIcon = null;
     buttonContent = (
-      <Flex className="-space-x-1.5">
-        {visibleCollaborators.map((collaborator) => (
-          <Avatar
-            className="ring-surface ring-1"
-            key={collaborator.id}
-            name={collaborator.fullName || collaborator.username}
-            size="xs"
-            src={collaborator.avatarUrl}
-          />
-        ))}
-        {hiddenCollaboratorCount > 0 ? (
-          <span className="bg-surface-muted ring-surface flex size-5 items-center justify-center rounded-full text-xs ring-1">
-            +{hiddenCollaboratorCount}
-          </span>
-        ) : null}
-      </Flex>
+      <PeopleAvatars
+        people={selectedCollaborators}
+        size="xs"
+        totalCount={collaboratorIds.length}
+      />
     );
   }
 
@@ -95,6 +82,7 @@ export const CollaboratorsOption = ({
         <CollaboratorsMenu>
           <CollaboratorsMenu.Trigger>
             <Button
+              aria-label="Edit collaborators"
               className={cn("max-w-full font-medium", {
                 "text-text-muted": collaboratorIds.length === 0,
               })}

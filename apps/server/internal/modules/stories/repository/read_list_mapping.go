@@ -37,6 +37,7 @@ type storyListRecord struct {
 	workspaceID              uuid.UUID
 	statusID                 *uuid.UUID
 	assigneeID               *uuid.UUID
+	collaboratorIDs          []uuid.UUID
 	collaboratorCount        int32
 	reporterID               *uuid.UUID
 	keyResultID              *uuid.UUID
@@ -108,6 +109,7 @@ func mapStoryListRecord(record storyListRecord) (storydomain.StoryList, error) {
 		Status:                   record.statusID,
 		Assignee:                 record.assigneeID,
 		CollaboratorCount:        int(record.collaboratorCount),
+		Collaborators:            append([]uuid.UUID(nil), record.collaboratorIDs...),
 		Reporter:                 record.reporterID,
 		KeyResult:                record.keyResultID,
 		StartDate:                record.startDate,
@@ -134,7 +136,7 @@ func storyListRecordFromMyStory(row storyreadsql.ListMyVisibleStoriesRow) storyL
 		sprintID: row.SprintID, sprintName: row.SprintName, sprintGoal: row.SprintGoal,
 		sprintStartDate: row.SprintStartDate, sprintEndDate: row.SprintEndDate,
 		teamID: row.TeamID, teamCode: row.TeamCode, teamName: row.TeamName, workspaceID: row.WorkspaceID,
-		statusID: row.StatusID, assigneeID: row.AssigneeID, collaboratorCount: row.CollaboratorCount,
+		statusID: row.StatusID, assigneeID: row.AssigneeID, collaboratorCount: row.CollaboratorCount, collaboratorIDs: row.CollaboratorIds,
 		reporterID: row.ReporterID, keyResultID: row.KeyResultID, startDate: row.StartDate, endDate: row.EndDate,
 		createdAt: row.CreatedAt, updatedAt: row.UpdatedAt, completedAt: row.CompletedAt,
 		deletedAt: row.DeletedAt, archivedAt: row.ArchivedAt, labelIDs: row.LabelIds,
@@ -153,7 +155,7 @@ func storyListRecordFromCategory(row storyreadsql.ListVisibleStoriesByCategoryRo
 		sprintID: row.SprintID, sprintName: row.SprintName, sprintGoal: row.SprintGoal,
 		sprintStartDate: row.SprintStartDate, sprintEndDate: row.SprintEndDate,
 		teamID: row.TeamID, teamCode: row.TeamCode, teamName: row.TeamName, workspaceID: row.WorkspaceID,
-		statusID: row.StatusID, assigneeID: row.AssigneeID, collaboratorCount: row.CollaboratorCount,
+		statusID: row.StatusID, assigneeID: row.AssigneeID, collaboratorCount: row.CollaboratorCount, collaboratorIDs: row.CollaboratorIds,
 		reporterID: row.ReporterID, keyResultID: row.KeyResultID, startDate: row.StartDate, endDate: row.EndDate,
 		createdAt: row.CreatedAt, updatedAt: row.UpdatedAt, completedAt: row.CompletedAt,
 		deletedAt: row.DeletedAt, archivedAt: row.ArchivedAt, labelIDs: row.LabelIds,
@@ -172,7 +174,7 @@ func storyListRecordFromSubStory(row storyreadsql.ListVisibleSubStoriesRow) stor
 		sprintID: row.SprintID, sprintName: row.SprintName, sprintGoal: row.SprintGoal,
 		sprintStartDate: row.SprintStartDate, sprintEndDate: row.SprintEndDate,
 		teamID: row.TeamID, teamCode: row.TeamCode, teamName: row.TeamName, workspaceID: row.WorkspaceID,
-		statusID: row.StatusID, assigneeID: row.AssigneeID, collaboratorCount: row.CollaboratorCount,
+		statusID: row.StatusID, assigneeID: row.AssigneeID, collaboratorCount: row.CollaboratorCount, collaboratorIDs: row.CollaboratorIds,
 		reporterID: row.ReporterID, keyResultID: row.KeyResultID, startDate: row.StartDate, endDate: row.EndDate,
 		createdAt: row.CreatedAt, updatedAt: row.UpdatedAt, completedAt: row.CompletedAt,
 		deletedAt: row.DeletedAt, archivedAt: row.ArchivedAt, labelIDs: row.LabelIds,

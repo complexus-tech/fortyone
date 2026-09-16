@@ -82,6 +82,7 @@ type StoryList struct {
 	Epic                     *uuid.UUID        `json:"epic_id"`
 	Status                   *uuid.UUID        `json:"status_id"`
 	Assignee                 *uuid.UUID        `json:"assignee_id"`
+	Collaborators            []uuid.UUID       `json:"collaborator_ids"`
 	CollaboratorCount        int               `json:"collaborator_count"`
 	Reporter                 *uuid.UUID        `json:"reporter_id"`
 	Priority                 string            `json:"priority"`

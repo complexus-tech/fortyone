@@ -212,6 +212,9 @@ func (h *Handlers) getStoryUsers(ctx context.Context, userIDs []uuid.UUID) (map[
 }
 
 func collectStoryListUserIDs(story stories.CoreStoryList, userIDs map[uuid.UUID]struct{}) {
+	for _, id := range story.Collaborators {
+		userIDs[id] = struct{}{}
+	}
 	if story.Assignee != nil {
 		userIDs[*story.Assignee] = struct{}{}
 	}

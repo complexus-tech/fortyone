@@ -282,3 +282,31 @@ func TestToAppStoryListItemIncludesEmbeddedSummaries(t *testing.T) {
 		t.Fatalf("expected sprint goal %q, got %#v", goal, appStory.SprintSummary.Goal)
 	}
 }
+
+func TestStoryListCollaboratorsUseBatchedSummaries(t *testing.T) {
+	firstID, secondID := uuid.New(), uuid.New()
+	story := stories.CoreStoryList{
+		Collaborators:     []uuid.UUID{secondID, firstID},
+		CollaboratorCount: 2,
+		SubStories:        []stories.CoreStoryList{{Collaborators: []uuid.UUID{firstID}}},
+	}
+	ids := make(map[uuid.UUID]struct{})
+	collectStoryListUserIDs(story, ids)
+	if len(ids) != 2 {
+		t.Fatalf("expected two unique collaborator IDs for batch lookup, got %v", ids)
+	}
+	users := map[uuid.UUID]AppUserSummary{
+		firstID:  {ID: firstID, FullName: "First Person"},
+		secondID: {ID: secondID, FullName: "Second Person"},
+	}
+	result := toAppStoryListItem(story, users)
+	if len(result.Collaborators) != 2 || result.Collaborators[0].ID != secondID || result.Collaborators[1].ID != firstID {
+		t.Fatalf("collaborator summaries must preserve selection order: %+v", result.Collaborators)
+	}
+	if len(result.SubStories[0].Collaborators) != 1 || result.SubStories[0].Collaborators[0].ID != firstID {
+		t.Fatalf("expected substory collaborator summary: %+v", result.SubStories)
+	}
+	if result.CollaboratorCount != 2 {
+		t.Fatalf("collaborator count changed: %d", result.CollaboratorCount)
+	}
+}

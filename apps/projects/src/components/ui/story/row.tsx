@@ -32,6 +32,7 @@ import { useAutomationPreferences } from "@/lib/hooks/users/preferences";
 import { useBoard } from "../board-context";
 import { MemberTooltip } from "../member-tooltip";
 import { RowWrapper } from "../row-wrapper";
+import { PeopleAvatars } from "./people-avatars";
 import { AssigneesMenu } from "./assignees-menu";
 import { StoryContextMenu } from "./context-menu";
 import { DragHandle } from "./drag-handle";
@@ -210,7 +211,7 @@ export const StoryRow = ({
               {
                 "bg-surface-muted opacity-70": isDragging,
                 "pointer-events-none opacity-40": story.id.startsWith("123"),
-                "bg-surface-muted pl-10 md:pl-18": isSubStory,
+                "bg-surface-muted md:pl-18 pl-10": isSubStory,
               },
               className,
             )}
@@ -311,26 +312,24 @@ export const StoryRow = ({
                     <span>
                       <AssigneesMenu.Trigger>
                         <button
+                          aria-label="Change assignee"
                           className="flex items-center gap-1"
                           disabled={userRole === "guest"}
                           type="button"
                         >
-                          <Avatar
-                            name={
-                              selectedAssignee?.fullName ||
-                              selectedAssignee?.username
-                            }
+                          <PeopleAvatars
+                            people={[
+                              ...(selectedAssignee ? [selectedAssignee] : []),
+                              ...(story.collaborators ?? []).filter(
+                                ({ id }) => id !== story.assigneeId,
+                              ),
+                            ]}
                             size="sm"
-                            src={selectedAssignee?.avatarUrl}
+                            totalCount={
+                              story.collaboratorCount +
+                              (selectedAssignee ? 1 : 0)
+                            }
                           />
-                          {story.collaboratorCount > 0 ? (
-                            <span
-                              className="text-text-muted text-xs"
-                              title={`${story.collaboratorCount} collaborator${story.collaboratorCount === 1 ? "" : "s"}`}
-                            >
-                              +{story.collaboratorCount}
-                            </span>
-                          ) : null}
                         </button>
                       </AssigneesMenu.Trigger>
                     </span>

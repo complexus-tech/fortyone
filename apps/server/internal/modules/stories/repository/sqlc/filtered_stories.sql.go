@@ -172,6 +172,7 @@ candidate_stories AS (
             FROM story_collaborators AS collaborator
             WHERE collaborator.story_id = story.id
         ) AS integer) AS collaborator_count,
+        CAST(ARRAY(SELECT collaborator.user_id FROM story_collaborators AS collaborator WHERE collaborator.story_id = story.id ORDER BY collaborator.created_at, collaborator.user_id) AS uuid[]) AS story_collaborator_ids,
         story.reporter_id,
         story.key_result_id,
         story.start_date,
@@ -311,13 +312,13 @@ candidate_stories AS (
       AND ((args.include_deleted AND story.deleted_at IS NOT NULL) OR (NOT args.include_deleted AND story.deleted_at IS NULL))
 ),
 filtered_stories AS (
-    SELECT id, sequence_id, title, priority, estimate_unit, estimate_scheme, estimated_duration_minutes, minimum_focus_block_minutes, auto_scheduling_enabled, auto_scheduling_locked, auto_scheduling_status, auto_scheduling_reason, auto_scheduling_updated_at, parent_id, objective_id, objective_name, objective_description, sprint_id, sprint_name, sprint_goal, sprint_start_date, sprint_end_date, team_id, team_code, team_name, workspace_id, status_id, assignee_id, collaborator_count, reporter_id, key_result_id, start_date, end_date, created_at, updated_at, completed_at, deleted_at, archived_at, label_ids, group_key, order_by, order_direction, apply_group_filter, requested_group_key, read_mode, result_limit, result_offset
+    SELECT id, sequence_id, title, priority, estimate_unit, estimate_scheme, estimated_duration_minutes, minimum_focus_block_minutes, auto_scheduling_enabled, auto_scheduling_locked, auto_scheduling_status, auto_scheduling_reason, auto_scheduling_updated_at, parent_id, objective_id, objective_name, objective_description, sprint_id, sprint_name, sprint_goal, sprint_start_date, sprint_end_date, team_id, team_code, team_name, workspace_id, status_id, assignee_id, collaborator_count, story_collaborator_ids, reporter_id, key_result_id, start_date, end_date, created_at, updated_at, completed_at, deleted_at, archived_at, label_ids, group_key, order_by, order_direction, apply_group_filter, requested_group_key, read_mode, result_limit, result_offset
     FROM candidate_stories
     WHERE NOT apply_group_filter OR group_key = requested_group_key
 ),
 ranked_stories AS (
     SELECT
-        filtered_stories.id, filtered_stories.sequence_id, filtered_stories.title, filtered_stories.priority, filtered_stories.estimate_unit, filtered_stories.estimate_scheme, filtered_stories.estimated_duration_minutes, filtered_stories.minimum_focus_block_minutes, filtered_stories.auto_scheduling_enabled, filtered_stories.auto_scheduling_locked, filtered_stories.auto_scheduling_status, filtered_stories.auto_scheduling_reason, filtered_stories.auto_scheduling_updated_at, filtered_stories.parent_id, filtered_stories.objective_id, filtered_stories.objective_name, filtered_stories.objective_description, filtered_stories.sprint_id, filtered_stories.sprint_name, filtered_stories.sprint_goal, filtered_stories.sprint_start_date, filtered_stories.sprint_end_date, filtered_stories.team_id, filtered_stories.team_code, filtered_stories.team_name, filtered_stories.workspace_id, filtered_stories.status_id, filtered_stories.assignee_id, filtered_stories.collaborator_count, filtered_stories.reporter_id, filtered_stories.key_result_id, filtered_stories.start_date, filtered_stories.end_date, filtered_stories.created_at, filtered_stories.updated_at, filtered_stories.completed_at, filtered_stories.deleted_at, filtered_stories.archived_at, filtered_stories.label_ids, filtered_stories.group_key, filtered_stories.order_by, filtered_stories.order_direction, filtered_stories.apply_group_filter, filtered_stories.requested_group_key, filtered_stories.read_mode, filtered_stories.result_limit, filtered_stories.result_offset,
+        filtered_stories.id, filtered_stories.sequence_id, filtered_stories.title, filtered_stories.priority, filtered_stories.estimate_unit, filtered_stories.estimate_scheme, filtered_stories.estimated_duration_minutes, filtered_stories.minimum_focus_block_minutes, filtered_stories.auto_scheduling_enabled, filtered_stories.auto_scheduling_locked, filtered_stories.auto_scheduling_status, filtered_stories.auto_scheduling_reason, filtered_stories.auto_scheduling_updated_at, filtered_stories.parent_id, filtered_stories.objective_id, filtered_stories.objective_name, filtered_stories.objective_description, filtered_stories.sprint_id, filtered_stories.sprint_name, filtered_stories.sprint_goal, filtered_stories.sprint_start_date, filtered_stories.sprint_end_date, filtered_stories.team_id, filtered_stories.team_code, filtered_stories.team_name, filtered_stories.workspace_id, filtered_stories.status_id, filtered_stories.assignee_id, filtered_stories.collaborator_count, filtered_stories.story_collaborator_ids, filtered_stories.reporter_id, filtered_stories.key_result_id, filtered_stories.start_date, filtered_stories.end_date, filtered_stories.created_at, filtered_stories.updated_at, filtered_stories.completed_at, filtered_stories.deleted_at, filtered_stories.archived_at, filtered_stories.label_ids, filtered_stories.group_key, filtered_stories.order_by, filtered_stories.order_direction, filtered_stories.apply_group_filter, filtered_stories.requested_group_key, filtered_stories.read_mode, filtered_stories.result_limit, filtered_stories.result_offset,
         CAST(COUNT(*) OVER (PARTITION BY group_key) AS integer) AS total_count,
         ROW_NUMBER() OVER (
             PARTITION BY group_key
@@ -349,7 +350,7 @@ SELECT
     objective_id, objective_name, objective_description, sprint_id,
     sprint_name, sprint_goal, sprint_start_date, sprint_end_date, team_id,
     team_code, team_name, workspace_id, status_id, assignee_id,
-    collaborator_count, reporter_id, key_result_id, start_date, end_date,
+    collaborator_count, story_collaborator_ids, reporter_id, key_result_id, start_date, end_date,
     created_at, updated_at, completed_at, deleted_at, archived_at, label_ids,
     group_key, total_count, row_number
 FROM ranked_stories
@@ -487,6 +488,7 @@ type ListVisibleFilteredStoryRowsRow struct {
 	StatusID                 *uuid.UUID
 	AssigneeID               *uuid.UUID
 	CollaboratorCount        int32
+	StoryCollaboratorIds     []uuid.UUID
 	ReporterID               *uuid.UUID
 	KeyResultID              *uuid.UUID
 	StartDate                *time.Time
@@ -622,6 +624,7 @@ func (q *Queries) ListVisibleFilteredStoryRows(ctx context.Context, arg ListVisi
 			&i.StatusID,
 			&i.AssigneeID,
 			&i.CollaboratorCount,
+			&i.StoryCollaboratorIds,
 			&i.ReporterID,
 			&i.KeyResultID,
 			&i.StartDate,

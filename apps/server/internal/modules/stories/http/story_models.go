@@ -100,6 +100,7 @@ type AppStoryList struct {
 	Status                   *uuid.UUID           `json:"statusId"`
 	AssigneeID               *uuid.UUID           `json:"assigneeId"`
 	Assignee                 *AppUserSummary      `json:"assignee"`
+	Collaborators            []AppUserSummary     `json:"collaborators"`
 	CollaboratorCount        int                  `json:"collaboratorCount"`
 	ReporterID               *uuid.UUID           `json:"reporterId"`
 	Reporter                 *AppUserSummary      `json:"reporter"`
@@ -240,6 +241,7 @@ func toAppStoryListItem(story stories.CoreStoryList, usersByID map[uuid.UUID]App
 		AssigneeID:               story.Assignee,
 		Assignee:                 findAppUserSummary(usersByID, story.Assignee),
 		CollaboratorCount:        story.CollaboratorCount,
+		Collaborators:            findAppUserSummaries(usersByID, story.Collaborators),
 		ReporterID:               story.Reporter,
 		Reporter:                 findAppUserSummary(usersByID, story.Reporter),
 		Priority:                 story.Priority,

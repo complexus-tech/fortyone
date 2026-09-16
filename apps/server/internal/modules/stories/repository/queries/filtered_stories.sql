@@ -118,6 +118,7 @@ candidate_stories AS (
             FROM story_collaborators AS collaborator
             WHERE collaborator.story_id = story.id
         ) AS integer) AS collaborator_count,
+        CAST(ARRAY(SELECT collaborator.user_id FROM story_collaborators AS collaborator WHERE collaborator.story_id = story.id ORDER BY collaborator.created_at, collaborator.user_id) AS uuid[]) AS story_collaborator_ids,
         story.reporter_id,
         story.key_result_id,
         story.start_date,
@@ -295,7 +296,7 @@ SELECT
     objective_id, objective_name, objective_description, sprint_id,
     sprint_name, sprint_goal, sprint_start_date, sprint_end_date, team_id,
     team_code, team_name, workspace_id, status_id, assignee_id,
-    collaborator_count, reporter_id, key_result_id, start_date, end_date,
+    collaborator_count, story_collaborator_ids, reporter_id, key_result_id, start_date, end_date,
     created_at, updated_at, completed_at, deleted_at, archived_at, label_ids,
     group_key, total_count, row_number
 FROM ranked_stories
