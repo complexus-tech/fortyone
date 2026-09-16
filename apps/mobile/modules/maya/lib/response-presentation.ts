@@ -1,5 +1,5 @@
 import type { UIMessage } from "ai";
-import { record, resultStories } from "../components/message-model";
+import { record, toolResultError } from "../components/message-model";
 
 export type MayaResponseSnapshot = {
   chatId: string;
@@ -60,12 +60,7 @@ const hasVisibleContent = (message: UIMessage) =>
     if (tool.state === "output-denied" || tool.state === "output-error")
       return true;
     const output = record(tool.output);
-    if (output)
-      return Boolean(
-        resultStories(output).length ||
-          (typeof output.message === "string" && output.message) ||
-          (typeof output.error === "string" && output.error),
-      );
+    if (output) return Boolean(toolResultError(output));
     return false;
   });
 

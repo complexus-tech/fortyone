@@ -118,7 +118,7 @@ func (repository *Repository) Update(
 			return fmt.Errorf("update objective: %w", err)
 		}
 		updated = objectiveFromUpdateRow(row)
-		for _, change := range objectivePatchChanges(command.Patch) {
+		for _, change := range objectiveUpdateChanges(command) {
 			field, value, comment := change.field, change.value, command.Comment
 			if err := queries.CreateObjectiveActivity(ctx, objectivessql.CreateObjectiveActivityParams{
 				ObjectiveID: command.ObjectiveID, ActorID: command.ActorID,

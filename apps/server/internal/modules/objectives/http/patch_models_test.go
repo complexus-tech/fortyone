@@ -110,3 +110,13 @@ func decodeObjectivePatch(t *testing.T, body string) AppUpdateObjective {
 	}
 	return update
 }
+
+func TestObjectiveCommentOnlyRequest(t *testing.T) {
+	request := decodeObjectivePatch(t, `{"comment":"A standalone comment"}`)
+	if !request.ObjectivePatch().Empty() {
+		t.Fatal("comment unexpectedly changed a property")
+	}
+	if err := request.Validate(); err != nil {
+		t.Fatal(err)
+	}
+}

@@ -16,7 +16,7 @@ export type ChatRequestBody = {
   currentPath?: string;
   currentTheme?: string;
   id: string;
-  memories: Memory[];
+  memories?: Memory[];
   messageId?: string;
   messages: MayaUIMessage[];
   provider?: "google" | "openai";
@@ -28,13 +28,13 @@ export type ChatRequestBody = {
     tier: string;
     username?: string;
   };
-  terminology: {
+  terminology?: {
     keyResults: string;
     objectives: string;
     sprints: string;
     stories: string;
   };
-  totalMessages: { current: number; limit: number };
+  totalMessages?: { current: number; limit: number };
   trigger?: "regenerate-message" | "submit-message";
   username?: string;
   workspace?: Pick<Parameters<typeof getUserContext>[0]["workspace"], "slug">;

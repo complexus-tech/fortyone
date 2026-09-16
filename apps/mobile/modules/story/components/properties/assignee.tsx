@@ -9,9 +9,11 @@ export const AssigneeBadge = ({
   story,
   disabled,
   onAssigneeChange,
+  label = "Assignee",
 }: {
-  story: Story;
+  story: Pick<Story, "assigneeId">;
   disabled?: boolean;
+  label?: string;
   onAssigneeChange: (id: string | null) => Promise<void>;
 }) => {
   const { data: members = [], isPending, error, refetch } = useMembers();
@@ -19,7 +21,7 @@ export const AssigneeBadge = ({
   const name = current ? memberDisplayName(current) : "Unassigned";
   return (
     <PropertyBottomSheet
-      title="Assignee"
+      title={label}
       disabled={disabled}
       loading={isPending}
       error={error}

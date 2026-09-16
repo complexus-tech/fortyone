@@ -1,8 +1,6 @@
 /* global beforeEach, describe, expect, it, jest -- Jest globals are provided by the projects test runner. */
 
-import { getSubscription } from "@/lib/queries/subscriptions/get-subscription";
 import { getAutomationPreferences } from "@/lib/queries/users/automation-preferences";
-import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 import { resolveStoryCreationDefaults } from "./story-creation-defaults";
 
 jest.mock("@/lib/queries/subscriptions/get-subscription", () => ({
@@ -18,8 +16,6 @@ jest.mock("@/lib/queries/workspaces/get-workspace", () => ({
 }));
 
 const getAutomationPreferencesMock = jest.mocked(getAutomationPreferences);
-const getSubscriptionMock = jest.mocked(getSubscription);
-const getWorkspaceMock = jest.mocked(getWorkspace);
 const ctx = {
   session: { token: "test-token" },
   workspaceSlug: "complexus",
@@ -51,10 +47,6 @@ describe("resolveStoryCreationDefaults", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     getAutomationPreferencesMock.mockResolvedValue(preferences);
-    getSubscriptionMock.mockResolvedValue(subscription);
-    getWorkspaceMock.mockResolvedValue({ trialEndsOn: null } as Awaited<
-      ReturnType<typeof getWorkspace>
-    >);
   });
 
   it("uses the signed-in user's preference when background Maya is available", async () => {
@@ -63,7 +55,13 @@ describe("resolveStoryCreationDefaults", () => {
       autoScheduling: false,
     });
 
-    await expect(resolveStoryCreationDefaults({ ctx })).resolves.toEqual({
+    await expect(
+      resolveStoryCreationDefaults({
+        ctx,
+        workspace: { trialEndsOn: null },
+        subscription,
+      }),
+    ).resolves.toEqual({
       autoSchedulingAvailable: true,
       bulkStories: {
         autoSchedulingEnabled: false,
@@ -75,16 +73,16 @@ describe("resolveStoryCreationDefaults", () => {
       },
     });
     expect(getAutomationPreferencesMock).toHaveBeenCalledWith(ctx);
-    expect(getSubscriptionMock).toHaveBeenCalledWith(ctx);
   });
 
   it("fails safe with scheduling off for a free workspace without a trial", async () => {
-    getSubscriptionMock.mockResolvedValue({
-      ...subscription,
-      tier: "free",
-    });
-
-    await expect(resolveStoryCreationDefaults({ ctx })).resolves.toEqual({
+    await expect(
+      resolveStoryCreationDefaults({
+        ctx,
+        workspace: { trialEndsOn: null },
+        subscription: { ...subscription, tier: "free" },
+      }),
+    ).resolves.toEqual({
       autoSchedulingAvailable: false,
       bulkStories: {
         autoSchedulingEnabled: false,
@@ -98,12 +96,13 @@ describe("resolveStoryCreationDefaults", () => {
   });
 
   it("allows the preference during an active workspace trial", async () => {
-    getSubscriptionMock.mockResolvedValue(null);
-    getWorkspaceMock.mockResolvedValue({
-      trialEndsOn: "2099-01-01T00:00:00.000Z",
-    } as Awaited<ReturnType<typeof getWorkspace>>);
-
-    await expect(resolveStoryCreationDefaults({ ctx })).resolves.toEqual({
+    await expect(
+      resolveStoryCreationDefaults({
+        ctx,
+        workspace: { trialEndsOn: "2099-01-01T00:00:00.000Z" },
+        subscription: null,
+      }),
+    ).resolves.toEqual({
       autoSchedulingAvailable: true,
       bulkStories: {
         autoSchedulingEnabled: false,
@@ -116,26 +115,19 @@ describe("resolveStoryCreationDefaults", () => {
     });
   });
 
-  it("fails safe with scheduling off when subscription lookup fails and no trial is active", async () => {
-    getSubscriptionMock.mockRejectedValue(
-      new Error("Subscription unavailable"),
-    );
-
-    getWorkspaceMock.mockResolvedValue({
-      trialEndsOn: "2020-01-01T00:00:00.000Z",
-    } as Awaited<ReturnType<typeof getWorkspace>>);
-
-    await expect(resolveStoryCreationDefaults({ ctx })).resolves.toEqual({
-      autoSchedulingAvailable: false,
-      bulkStories: {
-        autoSchedulingEnabled: false,
-        estimatedDurationMinutes: null,
-      },
-      singleStory: {
-        autoSchedulingEnabled: false,
-        estimatedDurationMinutes: 60,
-      },
+  it("does not reload workspace or billing after trusted hydration", async () => {
+    await resolveStoryCreationDefaults({
+      ctx,
+      workspace: { trialEndsOn: null },
+      subscription: null,
     });
+    expect(
+      jest.requireMock("@/lib/queries/subscriptions/get-subscription")
+        .getSubscription,
+    ).not.toHaveBeenCalled();
+    expect(
+      jest.requireMock("@/lib/queries/workspaces/get-workspace").getWorkspace,
+    ).not.toHaveBeenCalled();
   });
 
   it("does not claim scheduling is enabled when preferences cannot be loaded", async () => {
@@ -143,7 +135,13 @@ describe("resolveStoryCreationDefaults", () => {
       new Error("Preferences unavailable"),
     );
 
-    await expect(resolveStoryCreationDefaults({ ctx })).resolves.toEqual({
+    await expect(
+      resolveStoryCreationDefaults({
+        ctx,
+        workspace: { trialEndsOn: null },
+        subscription,
+      }),
+    ).resolves.toEqual({
       autoSchedulingAvailable: true,
       bulkStories: {
         autoSchedulingEnabled: false,

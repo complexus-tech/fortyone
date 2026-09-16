@@ -47,18 +47,32 @@ describe("trusted chat context", () => {
     jest
       .mocked(getWorkspace)
       .mockResolvedValue(workspace as Awaited<ReturnType<typeof getWorkspace>>);
-    jest
-      .mocked(getWorkspaceSettings)
-      .mockResolvedValue({
-        storyTerm: "task",
-        sprintTerm: "sprint",
-        objectiveTerm: "project",
-        keyResultTerm: "key result",
-      } as Awaited<ReturnType<typeof getWorkspaceSettings>>);
+    jest.mocked(getWorkspaceSettings).mockResolvedValue({
+      storyTerm: "task",
+      sprintTerm: "sprint",
+      objectiveTerm: "project",
+      keyResultTerm: "key result",
+    } as Awaited<ReturnType<typeof getWorkspaceSettings>>);
     jest.mocked(getMemories).mockResolvedValue([]);
     jest
       .mocked(get)
       .mockResolvedValue({ data: { tier: "pro", status: "active" } });
+  });
+  it("hydrates context for a minimal mobile request", async () => {
+    const context = await resolveTrustedChatContext(
+      {
+        id: "1234567890123456",
+        workspace: { slug: "acme" },
+        client: "mobile",
+        timezone: "Pacific/Auckland",
+        messages: [],
+      },
+      session,
+    );
+    expect(context.workspace).toBe(workspace);
+    expect(context.terminology.stories).toBe("tasks");
+    expect(context.messageLimit).toBe(100);
+    expect(context.memories).toEqual([]);
   });
   it("ignores client identity, roles, memories and billing claims", async () => {
     const context = await resolveTrustedChatContext(request, session);

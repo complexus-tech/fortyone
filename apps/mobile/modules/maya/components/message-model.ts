@@ -5,6 +5,18 @@ export const record = (value: unknown): Record<string, unknown> | null =>
     ? (value as Record<string, unknown>)
     : null;
 
+/** Successful tool summaries are internal; cards and Maya's reply present the result. */
+export function toolResultError(
+  output: Record<string, unknown>,
+): string | null {
+  if (typeof output.error === "string" && output.error.trim())
+    return output.error;
+  if (output.success !== false) return null;
+  return typeof output.message === "string" && output.message.trim()
+    ? output.message
+    : "This action could not be completed.";
+}
+
 export function humanize(value: string) {
   return value
     .replace(/^tool-/, "")

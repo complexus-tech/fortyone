@@ -61,3 +61,10 @@ func TestDeduplicateUUIDsIsStableAndDropsZeroValues(t *testing.T) {
 		first, uuid.Nil, second, first,
 	}))
 }
+
+func TestStandaloneObjectiveCommentsAreRecordedWithoutPropertyChanges(t *testing.T) {
+	require.Equal(t, []objectiveChange{{field: "comment", value: ""}}, objectiveUpdateChanges(objectivesdomain.UpdateCommand{Comment: "Hello"}))
+	require.Empty(t, objectiveUpdateChanges(objectivesdomain.UpdateCommand{Comment: "  "}))
+	patch := objectivesdomain.ObjectivePatch{Health: objectivesdomain.SetField(objectivesdomain.HealthOnTrack)}
+	require.Equal(t, objectivePatchChanges(patch), objectiveUpdateChanges(objectivesdomain.UpdateCommand{Patch: patch, Comment: "On track"}))
+}

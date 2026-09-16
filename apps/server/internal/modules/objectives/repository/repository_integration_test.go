@@ -5,6 +5,7 @@ package objectivesrepository
 import (
 	"context"
 	"errors"
+	"reflect"
 	"strconv"
 	"sync"
 	"testing"
@@ -285,5 +286,49 @@ func assertObjectivePostgres18(t *testing.T, ctx context.Context, fixture object
 	version, err := strconv.Atoi(raw)
 	if err != nil || version < 180000 || version >= 190000 {
 		t.Fatalf("PostgreSQL version = %q, want 18.x", raw)
+	}
+}
+
+func TestObjectiveStandaloneComment(t *testing.T) {
+	t.Parallel()
+	ctx, cancel := context.WithTimeout(t.Context(), 90*time.Second)
+	defer cancel()
+	fixture := newObjectiveIntegrationFixture(t, ctx)
+	created, err := fixture.repo.Create(ctx, fixture.createCommand(uniqueObjectiveName("comment")))
+	if err != nil {
+		t.Fatal(err)
+	}
+	before := created.Objective
+	updated, err := fixture.repo.Update(ctx, objectivesdomain.UpdateCommand{
+		ObjectiveID: before.ID, WorkspaceID: fixture.workspaceA, ActorID: fixture.actorA,
+		Comment: "**Ready** for review",
+	})
+	if err != nil {
+		t.Fatalf("add standalone comment: %v", err)
+	}
+	before.UpdatedAt = updated.UpdatedAt
+	if !reflect.DeepEqual(before, updated) {
+		t.Fatalf("comment changed objective properties: before=%#v after=%#v", before, updated)
+	}
+	var body string
+	if err := fixture.postgres.Pool.QueryRow(ctx,
+		"SELECT comment FROM okr_activities WHERE objective_id = $1 AND field_changed = 'comment'", before.ID,
+	).Scan(&body); err != nil {
+		t.Fatalf("read comment activity: %v", err)
+	}
+	if body != "**Ready** for review" {
+		t.Fatalf("comment = %q", body)
+	}
+	for _, actor := range []uuid.UUID{fixture.actorB, fixture.outsiderA, fixture.guestA, fixture.inactiveA} {
+		_, err := fixture.repo.Update(ctx, objectivesdomain.UpdateCommand{
+			ObjectiveID: before.ID, WorkspaceID: fixture.workspaceA, ActorID: actor, Comment: "Unauthorized comment",
+		})
+		if !errors.Is(err, objectivesdomain.ErrNotFound) {
+			t.Fatalf("unauthorized comment error = %v", err)
+		}
+	}
+	if got := objectiveRowCount(t, ctx, fixture.postgres.Pool,
+		"SELECT COUNT(*) FROM okr_activities WHERE objective_id = $1 AND field_changed = 'comment'", before.ID); got != 1 {
+		t.Fatalf("comment count = %d, want 1", got)
 	}
 }

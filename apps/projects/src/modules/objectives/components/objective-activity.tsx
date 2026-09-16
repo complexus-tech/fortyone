@@ -2,6 +2,8 @@ import type { ReactNode } from "react";
 import { format } from "date-fns";
 import { Box, Flex, Text, Avatar, Tooltip, Button, TimeAgo } from "ui";
 import Link from "next/link";
+import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { cn } from "lib";
 import { CalendarIcon } from "icons";
 import { FORMER_USER_NAME, isFormerUser } from "@/lib/former-user";
@@ -115,13 +117,15 @@ export const ObjectiveActivityComponent = ({
       label: "Lead",
       render: renderLead,
     },
-  } as Record<
-    string,
-    {
-      label: string;
-      icon?: ReactNode;
-      render: (value: string) => ReactNode;
-    }
+  } as Partial<
+    Record<
+      string,
+      {
+        label: string;
+        icon?: ReactNode;
+        render: (value: string) => ReactNode;
+      }
+    >
   >;
 
   const keyResultFieldMap = {
@@ -169,18 +173,24 @@ export const ObjectiveActivityComponent = ({
       label: "Contributors",
       render: (value: string) => <span>{value}</span>,
     },
-  } as Record<
-    string,
-    {
-      label: string;
-      icon?: ReactNode;
-      render: (value: string) => ReactNode;
-    }
+  } as Partial<
+    Record<
+      string,
+      {
+        label: string;
+        icon?: ReactNode;
+        render: (value: string) => ReactNode;
+      }
+    >
   >;
 
   const fieldMap =
     updateType === "objective" ? objectiveFieldMap : keyResultFieldMap;
   const entityType = updateType === "objective" ? "objective" : "key result";
+
+  let actionLabel = "changed the";
+  if (field === "comment") actionLabel = "commented";
+  else if (type === "create") actionLabel = `created the ${entityType}`;
 
   return (
     <Box className="relative pb-2 last-of-type:pb-0 md:pb-3.5">
@@ -256,9 +266,9 @@ export const ObjectiveActivityComponent = ({
         )}
         <Box className="line-clamp-1 flex items-center gap-1 text-sm md:text-[0.95rem]">
           <Text as="span" className="text-sm md:text-[0.95rem]" color="muted">
-            {type === "create" ? `created the ${entityType}` : "changed the"}
+            {actionLabel}
           </Text>
-          {type === "update" && (
+          {type === "update" && field !== "comment" && (
             <>
               <Text
                 as="span"
@@ -281,7 +291,7 @@ export const ObjectiveActivityComponent = ({
                 as="span"
                 className="shrink-0 text-sm text-black md:text-[0.95rem] dark:text-white"
               >
-                {fieldMap[field].label || field}
+                {fieldMap[field]?.label || field}
               </Text>
               {currentValue ? (
                 <>
@@ -297,7 +307,7 @@ export const ObjectiveActivityComponent = ({
                     className="inline-block max-w-[24ch] shrink-0 truncate text-sm text-black md:text-[0.95rem] dark:text-white"
                     title={currentValue}
                   >
-                    {fieldMap[field].render(currentValue) || currentValue}
+                    {fieldMap[field]?.render(currentValue) || currentValue}
                   </Text>
                 </>
               ) : null}
@@ -328,7 +338,13 @@ export const ObjectiveActivityComponent = ({
             src={member?.avatarUrl}
           />
           <Box className="border-border bg-surface/80 max-w-lg rounded-xl rounded-tl-md border px-4 py-2">
-            <Text color="muted">{comment}</Text>
+            {field === "comment" ? (
+              <Box className="prose prose-stone dark:prose-invert prose-headings:font-semibold prose-a:text-primary prose-pre:bg-surface-muted prose-pre:text-foreground max-w-full break-words">
+                <Markdown remarkPlugins={[remarkGfm]}>{comment}</Markdown>
+              </Box>
+            ) : (
+              <Text color="muted">{comment}</Text>
+            )}
           </Box>
         </Flex>
       ) : null}

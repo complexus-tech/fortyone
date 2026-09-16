@@ -4,6 +4,14 @@ import type { ToolExecutionOptions } from "ai";
 import { canUseMobileMayaTool, mobileMayaTools } from "./mobile-tools";
 
 describe("mobile Maya capability boundary", () => {
+  it("exposes the focus briefing tool used by daily-priority prompts", () => {
+    const focusBrief = {
+      inputSchema: z.object({}),
+      execute: jest.fn(),
+    };
+    expect(canUseMobileMayaTool("focusBrief", {})).toBe(true);
+    expect(mobileMayaTools({ focusBrief }).focusBrief).toBe(focusBrief);
+  });
   it("keeps exact task operations and excludes unsupported management", () => {
     expect(canUseMobileMayaTool("deleteStory", {})).toBe(true);
     expect(canUseMobileMayaTool("navigation", {})).toBe(false);

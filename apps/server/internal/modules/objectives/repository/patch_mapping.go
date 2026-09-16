@@ -3,6 +3,7 @@ package objectivesrepository
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	objectivesdomain "github.com/complexus-tech/projects-api/internal/modules/objectives/domain"
@@ -77,6 +78,14 @@ func patchReferenceParams(
 type objectiveChange struct {
 	field string
 	value string
+}
+
+func objectiveUpdateChanges(command objectivesdomain.UpdateCommand) []objectiveChange {
+	changes := objectivePatchChanges(command.Patch)
+	if len(changes) == 0 && strings.TrimSpace(command.Comment) != "" {
+		return []objectiveChange{{field: "comment", value: ""}}
+	}
+	return changes
 }
 
 func objectivePatchChanges(patch objectivesdomain.ObjectivePatch) []objectiveChange {

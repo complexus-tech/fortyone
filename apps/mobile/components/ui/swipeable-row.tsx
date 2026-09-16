@@ -45,6 +45,7 @@ export type RowAction = {
 type SwipeableRowProps = PressableProps & {
   children: React.ReactNode;
   className?: string;
+  actionMenuTitle?: string;
   actionAppearance?: "inset" | "flush";
   /** Identifies the row and session to invalidate choices in an open native menu. */
   actionScope?: string;
@@ -65,6 +66,7 @@ export function SwipeableRow(props: SwipeableRowProps) {
 function SwipeableRowContent({
   action,
   actions,
+  actionMenuTitle,
   actionAppearance = "inset",
   actionScope,
   children,
@@ -141,7 +143,7 @@ function SwipeableRowContent({
     if (Platform.OS === "ios") {
       ActionSheetIOS.showActionSheetWithOptions(
         {
-          title: props.accessibilityLabel,
+          title: actionMenuTitle ?? props.accessibilityLabel,
           options: [
             ...entries.map((entry) => entry.action.accessibilityLabel),
             "Cancel",
@@ -157,16 +159,20 @@ function SwipeableRowContent({
         },
       );
     } else {
-      Alert.alert(props.accessibilityLabel ?? "Actions", undefined, [
-        { text: "Cancel", style: "cancel" },
-        ...entries.map((entry) => ({
-          text: entry.action.accessibilityLabel,
-          style: entry.action.destructive
-            ? ("destructive" as const)
-            : ("default" as const),
-          onPress: () => performAction(entry.token),
-        })),
-      ]);
+      Alert.alert(
+        actionMenuTitle ?? props.accessibilityLabel ?? "Actions",
+        undefined,
+        [
+          { text: "Cancel", style: "cancel" },
+          ...entries.map((entry) => ({
+            text: entry.action.accessibilityLabel,
+            style: entry.action.destructive
+              ? ("destructive" as const)
+              : ("default" as const),
+            onPress: () => performAction(entry.token),
+          })),
+        ],
+      );
     }
   };
   const hasActions = rowActions.length > 0;

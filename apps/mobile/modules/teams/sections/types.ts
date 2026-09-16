@@ -1,3 +1,4 @@
+import type { StoryPriority } from "@/modules/stories/types";
 export type TeamPagination = {
   page: number;
   nextPage: number;
@@ -25,6 +26,10 @@ export type FeedbackItem = {
     | "closed";
   authorName: string;
   authorAvatar?: string | null;
+  createdAt?: string;
+  readAt?: string | null;
+  deletedAt?: string | null;
+  mergedIntoItemId?: string | null;
   voteCount: number;
   commentCount: number;
   board?: { teamId: string; name: string } | null;
@@ -32,12 +37,19 @@ export type FeedbackItem = {
     | {
         id: string;
         authorName: string;
+        authorAvatar?: string | null;
+        parentId?: string | null;
         body: string;
         createdAt: string;
       }[]
     | null;
   storyLinks:
-    | { id: string; storyId: string; storyTitle?: string | null }[]
+    | {
+        id: string;
+        storyId: string;
+        storyTitle?: string | null;
+        isPrimary?: boolean;
+      }[]
     | null;
 };
 
@@ -48,7 +60,17 @@ export type IntakeItem = {
   description?: string | null;
   provider: "github" | "slack" | "intercom";
   status: "pending" | "accepted" | "declined";
-  priority: string;
+  priority: StoryPriority;
+  statusId?: string | null;
+  assigneeId?: string | null;
+  objectiveId?: string | null;
+  sprintId?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  labelIds?: string[];
+  sourceNumber?: number;
+  sourceUrl?: string;
+  updatedAt?: string;
   acceptedStoryId?: string | null;
   createdAt: string;
 };

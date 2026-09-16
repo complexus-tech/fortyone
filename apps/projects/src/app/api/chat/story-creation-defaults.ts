@@ -1,7 +1,6 @@
 import type { WorkspaceCtx } from "@/lib/http";
-import { getSubscription } from "@/lib/queries/subscriptions/get-subscription";
+import type { Subscription, Workspace } from "@/types";
 import { getAutomationPreferences } from "@/lib/queries/users/automation-preferences";
-import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 import { DEFAULT_TIME_NEEDED_MINUTES } from "@/lib/time-needed";
 
 export type StoryCreationDefaults = {
@@ -31,32 +30,28 @@ const hasActiveWorkspaceTrial = (trialEndsOn: string | null | undefined) => {
 
 export const resolveStoryCreationDefaults = async ({
   ctx,
+  workspace,
+  subscription,
 }: {
   ctx: WorkspaceCtx;
+  workspace: Pick<Workspace, "trialEndsOn">;
+  subscription: Subscription | null;
 }): Promise<StoryCreationDefaults> => {
-  const [preferencesResult, subscriptionResult, workspaceResult] =
-    await Promise.allSettled([
-      getAutomationPreferences(ctx),
-      getSubscription(ctx),
-      getWorkspace(ctx),
-    ]);
+  // Reuse the context already authorized and loaded for this request.
+  const [preferencesResult] = await Promise.allSettled([
+    getAutomationPreferences(ctx),
+  ]);
   const autoSchedulingPreferenceEnabled =
     preferencesResult.status === "fulfilled"
       ? preferencesResult.value.autoScheduling
       : false;
-  const subscription =
-    subscriptionResult.status === "fulfilled" ? subscriptionResult.value : null;
-  const trialEndsOn =
-    workspaceResult.status === "fulfilled"
-      ? workspaceResult.value.trialEndsOn
-      : null;
   const hasEligibleSubscription = Boolean(
     subscription &&
       subscription.tier !== "free" &&
       ACTIVE_SUBSCRIPTION_STATUSES.has(subscription.status),
   );
   const autoSchedulingAvailable =
-    hasActiveWorkspaceTrial(trialEndsOn) || hasEligibleSubscription;
+    hasActiveWorkspaceTrial(workspace.trialEndsOn) || hasEligibleSubscription;
 
   return {
     autoSchedulingAvailable,

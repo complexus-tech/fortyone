@@ -1,13 +1,10 @@
 import type { UIMessage } from "ai";
 import { memo } from "react";
-import { Linking, Pressable, StyleSheet, View } from "react-native";
+import { Linking, StyleSheet, View } from "react-native";
 import Markdown from "react-native-markdown-display";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
 import { toast } from "sonner-native";
-import type { Status } from "@/types/statuses";
 import { Text } from "@/components/ui";
-import { StatusIcon } from "@/components/icons/status";
 import { themeColors } from "@/constants/colors";
 import { useTheme } from "@/hooks";
 import { ApprovalCard } from "./approval-card";
@@ -16,7 +13,7 @@ import {
   humanize,
   messageLinkURL,
   record,
-  resultStories,
+  toolResultError,
 } from "./message-model";
 
 export const MayaMessage = memo(function MayaMessage({
@@ -25,18 +22,15 @@ export const MayaMessage = memo(function MayaMessage({
   allowApproval,
   busy,
   onApprove,
-  statuses = [],
 }: {
   message: UIMessage;
   names: ReadonlyMap<string, string>;
   allowApproval: boolean;
   busy: boolean;
   onApprove: (id: string, approved: boolean) => void;
-  statuses?: readonly Status[];
 }) {
   const { resolvedTheme } = useTheme();
   const theme = themeColors[resolvedTheme];
-  const router = useRouter();
   const isUser = message.role === "user";
   const markdownStyles = {
     body: {
@@ -197,92 +191,13 @@ export const MayaMessage = memo(function MayaMessage({
               </Text>
             );
           const output = record(tool.output);
-          if (output) {
-            const stories = resultStories(output);
-            const resultText =
-              typeof output.message === "string"
-                ? output.message
-                : typeof output.error === "string"
-                  ? output.error
-                  : null;
-            if (!stories.length && !resultText) return null;
+          const error = output ? toolResultError(output) : null;
+          if (error)
             return (
-              <View key={index} style={{ gap: 8 }}>
-                {resultText ? (
-                  <Text
-                    fontSize="sm"
-                    color={output.success === false ? "danger" : "muted"}
-                  >
-                    {resultText}
-                  </Text>
-                ) : null}
-                {stories.map((story) => {
-                  const status =
-                    statuses.find((item) => item.id === story.statusId) ??
-                    story.status;
-                  return (
-                    <Pressable
-                      key={story.id}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Open ${story.reference ? `${story.reference}, ` : ""}${story.title}${status?.name ? `, ${status.name}` : ""}`}
-                      onPress={() =>
-                        router.push({
-                          pathname: "/story/[storyId]",
-                          params: { storyId: story.id },
-                        })
-                      }
-                      style={({ pressed }) => [
-                        styles.result,
-                        {
-                          backgroundColor: pressed
-                            ? theme.stateActive
-                            : theme.surfaceMuted,
-                        },
-                      ]}
-                    >
-                      {status ? (
-                        <StatusIcon
-                          category={status.category}
-                          color={status.color}
-                          size={18}
-                        />
-                      ) : (
-                        <Ionicons
-                          name="document-text-outline"
-                          size={18}
-                          color={theme.textMuted}
-                        />
-                      )}
-                      <View style={{ flex: 1, gap: 2 }}>
-                        {story.reference ? (
-                          <Text
-                            color="muted"
-                            fontSize="xs"
-                            numberOfLines={1}
-                            ellipsizeMode="tail"
-                          >
-                            {story.reference}
-                          </Text>
-                        ) : null}
-                        <Text
-                          numberOfLines={1}
-                          ellipsizeMode="tail"
-                          fontWeight="semibold"
-                        >
-                          {story.title}
-                        </Text>
-                      </View>
-                      <Ionicons
-                        name="chevron-forward"
-                        size={14}
-                        color={theme.textMuted}
-                      />
-                    </Pressable>
-                  );
-                })}
-              </View>
+              <Text key={index} fontSize="sm" color="danger">
+                {error}
+              </Text>
             );
-          }
           return null;
         })}
       </View>
@@ -295,12 +210,4 @@ const styles = StyleSheet.create({
   user: { alignItems: "flex-end", paddingLeft: 48 },
   body: { gap: 10, maxWidth: "100%" },
   attachment: { flexDirection: "row", alignItems: "center", gap: 8 },
-  result: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    padding: 14,
-    borderRadius: 14,
-    minHeight: 54,
-  },
 });

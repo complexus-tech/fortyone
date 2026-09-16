@@ -13,7 +13,7 @@ export const SprintBadge = ({
   disabled,
   onSprintChange,
 }: {
-  story: Story;
+  story: Pick<Story, "teamId" | "sprintId">;
   disabled?: boolean;
   onSprintChange: (id: string | null) => Promise<void>;
 }) => {

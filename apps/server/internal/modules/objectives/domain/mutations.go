@@ -262,7 +262,15 @@ func (command UpdateCommand) Validate() error {
 	if command.ObjectiveID == uuid.Nil || command.WorkspaceID == uuid.Nil || command.ActorID == uuid.Nil {
 		return fmt.Errorf("%w: objective, workspace, and actor are required", ErrInvalid)
 	}
-	return command.Patch.Validate()
+	return ValidateObjectiveUpdate(command.Patch, command.Comment)
+}
+
+// ValidateObjectiveUpdate accepts a standalone comment without inventing a property change.
+func ValidateObjectiveUpdate(patch ObjectivePatch, comment string) error {
+	if patch.Empty() && strings.TrimSpace(comment) != "" {
+		return nil
+	}
+	return patch.Validate()
 }
 
 type DeleteCommand struct {

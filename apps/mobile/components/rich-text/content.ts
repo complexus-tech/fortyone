@@ -2,6 +2,7 @@ export type RichTextValue = {
   html: string;
   text: string;
   mentions: string[];
+  markdown?: string;
 };
 
 export const EMPTY_RICH_TEXT: RichTextValue = {
@@ -16,6 +17,7 @@ export const isRichTextValue = (value: unknown): value is RichTextValue => {
   return (
     typeof record.html === "string" &&
     typeof record.text === "string" &&
+    (record.markdown === undefined || typeof record.markdown === "string") &&
     Array.isArray(record.mentions) &&
     record.mentions.every((id) => typeof id === "string")
   );

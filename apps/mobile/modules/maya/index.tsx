@@ -393,7 +393,6 @@ function MayaContent() {
         <MayaMessage
           message={item.message}
           names={names}
-          statuses={statuses}
           allowApproval={item.message.id === chat.messages.at(-1)?.id}
           busy={
             approving ||
@@ -407,7 +406,6 @@ function MayaContent() {
       ),
     [
       names,
-      statuses,
       chat.messages,
       approving,
       busy,

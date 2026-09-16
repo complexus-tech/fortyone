@@ -21,7 +21,6 @@ import { useTheme } from "@/hooks/theme";
 import type { MayaMessage, MayaScreenContext } from "../types";
 import { createMayaCloudClient } from "../lib/cloud-client";
 import { createMayaChatRuntime } from "../lib/chat-runtime";
-import { loadMayaRequestContext } from "../lib/load-request-context";
 import {
   createMayaSessionGuard,
   type MayaSessionScope,
@@ -237,13 +236,8 @@ export const useMayaChat = (context: MayaScreenContext = {}) => {
     };
   }, [lifetime, queryClient, sessionListKey]);
 
-  const requestBody = async (signal: AbortSignal) => ({
-    ...(await loadMayaRequestContext({
-      scope,
-      queryClient,
-      signal,
-      assertCurrent: runtime.guard.assertCurrent,
-    })),
+  // Trusted workspace, billing, and memory context is hydrated by the server.
+  const requestBody = async () => ({
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     currentPath: getMayaScreenPath(context.storyReference),
     currentTheme: theme,

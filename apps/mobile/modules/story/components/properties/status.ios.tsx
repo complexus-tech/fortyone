@@ -81,7 +81,7 @@ export const StatusBadge = ({
   onStatusChange,
   disabled = false,
 }: {
-  story: Story;
+  story: Pick<Story, "teamId" | "statusId">;
   onStatusChange: (statusId: string) => Promise<void>;
   disabled?: boolean;
 }) => {

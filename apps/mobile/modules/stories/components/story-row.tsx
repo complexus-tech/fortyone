@@ -72,6 +72,7 @@ export const StoryRow = memo(function StoryRow({
 
   return (
     <SwipeableRow
+      actionMenuTitle="Mark this task as completed?"
       action={
         canComplete
           ? {
@@ -100,7 +101,7 @@ export const StoryRow = memo(function StoryRow({
       className="active:bg-gray-50 dark:active:bg-dark-200"
       style={{
         flexDirection: "row",
-        alignItems: "flex-start",
+        alignItems: "center",
         gap: 10,
         paddingHorizontal: 20,
         paddingVertical: 11,

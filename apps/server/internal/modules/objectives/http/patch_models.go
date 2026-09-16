@@ -55,7 +55,11 @@ type AppUpdateObjective struct {
 }
 
 func (request AppUpdateObjective) Validate() error {
-	return request.ObjectivePatch().Validate()
+	comment := ""
+	if request.Comment != nil {
+		comment = *request.Comment
+	}
+	return objectivesdomain.ValidateObjectiveUpdate(request.ObjectivePatch(), comment)
 }
 
 func (request AppUpdateObjective) ObjectivePatch() objectivesdomain.ObjectivePatch {

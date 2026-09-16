@@ -10,6 +10,7 @@ import {
 } from "@tiptap/extension-table";
 import { Placeholder } from "@tiptap/extension-placeholder";
 import { isSafeLink, type RichTextValue } from "./content";
+import { serializeCommentToGitHubMarkdown } from "./comment-markdown";
 import { sanitizeRichText } from "./sanitize";
 
 const attachmentAttribute = {
@@ -161,5 +162,8 @@ export const getRichTextValue = (editor: Editor): RichTextValue => {
     html: editor.isEmpty ? "" : sanitizeRichText(editor.getHTML()),
     text: editor.isEmpty ? "" : editor.getText(),
     mentions: [...mentions],
+    markdown: editor.isEmpty
+      ? ""
+      : serializeCommentToGitHubMarkdown(editor.getJSON()),
   };
 };

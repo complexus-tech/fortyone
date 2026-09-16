@@ -17,7 +17,7 @@ export const LabelsBadge = ({
   disabled,
   onLabelsChange,
 }: {
-  story: Story;
+  story: Pick<Story, "teamId" | "labels">;
   disabled?: boolean;
   onLabelsChange: (ids: string[]) => Promise<void>;
 }) => {

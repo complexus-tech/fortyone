@@ -9,7 +9,7 @@ export const StatusBadge = ({
   disabled,
   onStatusChange,
 }: {
-  story: Story;
+  story: Pick<Story, "teamId" | "statusId">;
   disabled?: boolean;
   onStatusChange: (id: string) => Promise<void>;
 }) => {

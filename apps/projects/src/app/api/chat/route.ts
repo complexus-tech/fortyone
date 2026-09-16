@@ -161,10 +161,21 @@ const handleChatRequest = async (
   }
 
   assertLatestUserTextWithinContextBudget(uiMessages);
-  const usage = await get<ApiResponse<{ count: number }>>(
-    "chat-sessions/messages/count",
-    { session, workspaceSlug: workspace.slug },
-  );
+  const [usage, joinedTeams, storyCreationDefaults] =
+    await runWithMayaHttpRequestContext(req.signal, () =>
+      Promise.all([
+        get<ApiResponse<{ count: number }>>("chat-sessions/messages/count", {
+          session,
+          workspaceSlug: workspace.slug,
+        }),
+        resolveJoinedTeams({ session, workspaceSlug: workspace.slug }),
+        resolveStoryCreationDefaults({
+          ctx: { session, workspaceSlug: workspace.slug },
+          workspace,
+          subscription,
+        }),
+      ]),
+    );
   assertChatAdmission({
     current: usage.data?.count ?? NaN,
     limit: messageLimit,
@@ -235,19 +246,6 @@ const handleChatRequest = async (
       pruneChatModelMessages(convertedMessages),
     ),
   );
-  const [joinedTeams, storyCreationDefaults] =
-    await runWithMayaHttpRequestContext(req.signal, () =>
-      Promise.all([
-        resolveJoinedTeams({
-          session,
-          workspaceSlug: workspace.slug,
-        }),
-        resolveStoryCreationDefaults({
-          ctx: { session, workspaceSlug: workspace.slug },
-        }),
-      ]),
-    );
-
   // Get user context for "me" resolution
   const userContext =
     getUserContext({

@@ -79,26 +79,38 @@ const ComposeComment = ({
   );
 };
 
-export const CommentComposer = ({ storyId }: { storyId: string }) => {
-  const [editing, setEditing] = useState(false);
+export const CommentComposerTrigger = ({
+  onPress,
+  label = "Write a comment…",
+}: {
+  onPress: () => void;
+  label?: string;
+}) => {
   const { resolvedTheme } = useTheme();
   return (
+    <GlassInputSurface>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        onPress={onPress}
+        className="min-h-[48px] flex-row items-center gap-[10px] rounded-full px-[16px] py-[10px] active:opacity-60"
+      >
+        <Ionicons
+          name="add"
+          size={22}
+          color={themeColors[resolvedTheme].textMuted}
+        />
+        <Text color="muted">{label}</Text>
+      </Pressable>
+    </GlassInputSurface>
+  );
+};
+
+export const CommentComposer = ({ storyId }: { storyId: string }) => {
+  const [editing, setEditing] = useState(false);
+  return (
     <View>
-      <GlassInputSurface>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Add a comment"
-          onPress={() => setEditing(true)}
-          className="min-h-[48px] flex-row items-center gap-[10px] rounded-full px-[16px] py-[10px] active:opacity-60"
-        >
-          <Ionicons
-            name="add"
-            size={22}
-            color={themeColors[resolvedTheme].textMuted}
-          />
-          <Text color="muted">Write a comment…</Text>
-        </Pressable>
-      </GlassInputSurface>
+      <CommentComposerTrigger onPress={() => setEditing(true)} />
       {editing && (
         <ComposeComment storyId={storyId} onClose={() => setEditing(false)} />
       )}

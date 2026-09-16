@@ -169,3 +169,23 @@ func TestStrategyInputsRespectDatabaseLimits(t *testing.T) {
 		t.Fatalf("long pillar name error = %v, want ErrInvalid", err)
 	}
 }
+
+func TestStandaloneObjectiveCommentValidation(t *testing.T) {
+	command := UpdateCommand{ObjectiveID: uuid.New(), WorkspaceID: uuid.New(), ActorID: uuid.New(), Comment: "Progress looks good"}
+	if err := command.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	command.Comment = "  "
+	if err := command.Validate(); !errors.Is(err, ErrInvalid) {
+		t.Fatalf("blank comment error = %v", err)
+	}
+	command.Comment = "Valid comment"
+	command.Patch.Name = ClearField[string]()
+	if err := command.Validate(); !errors.Is(err, ErrInvalid) {
+		t.Fatalf("invalid property with comment error = %v", err)
+	}
+	command.ActorID = uuid.Nil
+	if err := command.Validate(); !errors.Is(err, ErrInvalid) {
+		t.Fatalf("missing actor error = %v", err)
+	}
+}

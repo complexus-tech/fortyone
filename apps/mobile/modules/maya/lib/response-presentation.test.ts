@@ -333,3 +333,42 @@ test("a later request does not treat the previous reply as its response", () => 
   });
   assert.equal(rows.at(-1)?.id, "maya-response:next");
 });
+
+test("successful tool results leave no empty history rows while errors and replies remain", () => {
+  const message = (id: string, output: unknown): UIMessage => ({
+    id,
+    role: "assistant",
+    parts: [
+      {
+        type: "tool-searchStories",
+        toolCallId: id,
+        state: "output-available",
+        input: {},
+        output,
+      },
+    ],
+  });
+  const rows = selectMayaResponseRows({
+    chatId: "chat",
+    active: false,
+    response: null,
+    messages: [
+      message("empty", {
+        message: "Found 0 stories in this team.",
+        stories: [],
+      }),
+      message("card", {
+        message: "Found 1 story in this team.",
+        stories: [
+          { id: "01234567-1234-4234-8234-0123456789ab", title: "Task" },
+        ],
+      }),
+      message("error", { success: false, message: "Access denied" }),
+      text("reply", "assistant", "Here is today's focus."),
+    ],
+  });
+  assert.deepEqual(
+    rows.map((row) => row.id),
+    ["error", "reply"],
+  );
+});

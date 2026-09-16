@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { messageLinkURL, resultStories } from "./message-model.ts";
+import {
+  messageLinkURL,
+  resultStories,
+  toolResultError,
+} from "./message-model.ts";
 
 const first = "01234567-1234-4234-8234-0123456789ab";
 const second = "01234567-1234-4234-8234-0123456789ac";
@@ -130,4 +134,26 @@ test("message links only open valid HTTP pages and reject unsupported or credent
     "http://",
   ])
     assert.equal(messageLinkURL(target), null);
+});
+
+test("tool summaries stay hidden while failures remain actionable", () => {
+  for (const message of [
+    "Found 0 stories in this team.",
+    "Found 1 story in this team.",
+    "Task updated.",
+  ]) {
+    assert.equal(toolResultError({ success: true, message }), null);
+  }
+  assert.equal(
+    toolResultError({ success: false, message: "Access denied" }),
+    "Access denied",
+  );
+  assert.equal(
+    toolResultError({ error: "Network unavailable" }),
+    "Network unavailable",
+  );
+  assert.equal(
+    toolResultError({ success: false }),
+    "This action could not be completed.",
+  );
 });

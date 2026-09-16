@@ -13,7 +13,7 @@ export const ObjectiveBadge = ({
   disabled,
   onObjectiveChange,
 }: {
-  story: Story;
+  story: Pick<Story, "teamId" | "objectiveId">;
   disabled?: boolean;
   onObjectiveChange: (id: string | null) => Promise<void>;
 }) => {

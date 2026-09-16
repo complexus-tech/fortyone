@@ -11,6 +11,7 @@ export const MOBILE_MAYA_TOOL_NAMES = new Set<string>([
   "listTeamMembers",
   "listTeamStories",
   "searchStories",
+  "focusBrief",
   "getStoryDetails",
   "createStory",
   "updateStory",
