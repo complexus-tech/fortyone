@@ -70,7 +70,7 @@ func (h *Handlers) CreateCheckoutSession(ctx context.Context, w http.ResponseWri
 		return nil
 	}
 
-	url, err := h.subscriptions.CreateCheckoutSession(ctx, workspace.ID, req.PriceLookupKey, user.Email, workspace.Name, req.SuccessURL, req.CancelURL)
+	url, err := h.subscriptions.CreateCheckoutSession(ctx, workspace.ID, workspace.Slug, req.PriceLookupKey, user.Email, workspace.Name, req.SuccessURL, req.CancelURL)
 	if err != nil {
 		if errors.Is(err, subscriptions.ErrWorkspaceHasActiveSub) ||
 			errors.Is(err, subscriptions.ErrInvalidBillingRedirect) ||
@@ -131,7 +131,7 @@ func (h *Handlers) CreateCustomerPortal(ctx context.Context, w http.ResponseWrit
 		return nil
 	}
 
-	url, err := h.subscriptions.CreateCustomerPortalSession(ctx, workspace.ID, req.ReturnURL)
+	url, err := h.subscriptions.CreateCustomerPortalSession(ctx, workspace.ID, workspace.Slug, req.ReturnURL)
 	if err != nil {
 		if errors.Is(err, subscriptions.ErrInvalidBillingRedirect) {
 			web.RespondError(ctx, w, err, http.StatusBadRequest)

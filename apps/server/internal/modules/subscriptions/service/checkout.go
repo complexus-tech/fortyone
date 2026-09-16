@@ -16,6 +16,7 @@ import (
 func (s *Service) CreateCheckoutSession(
 	ctx context.Context,
 	workspaceID uuid.UUID,
+	workspaceSlug string,
 	lookupKey string,
 	userEmail string,
 	workspaceName string,
@@ -28,11 +29,11 @@ func (s *Service) CreateCheckoutSession(
 	if !supportedPaidLookupKey(lookupKey) {
 		return "", ErrInvalidPriceLookupKey
 	}
-	successRedirect, err := s.checkoutSuccessRedirect(successURL)
+	successRedirect, err := s.checkoutSuccessRedirect(successURL, workspaceSlug)
 	if err != nil {
 		return "", err
 	}
-	cancelRedirect, err := s.billingRedirect(cancelURL)
+	cancelRedirect, err := s.billingRedirect(cancelURL, workspaceSlug)
 	if err != nil {
 		return "", err
 	}

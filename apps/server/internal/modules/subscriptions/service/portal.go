@@ -11,11 +11,11 @@ import (
 
 // CreateCustomerPortalSession creates a short-lived provider portal URL for
 // the workspace's bound Stripe customer.
-func (s *Service) CreateCustomerPortalSession(ctx context.Context, workspaceID uuid.UUID, returnURL string) (string, error) {
+func (s *Service) CreateCustomerPortalSession(ctx context.Context, workspaceID uuid.UUID, workspaceSlug, returnURL string) (string, error) {
 	ctx, span := otel.Tracer("subscriptions.service").Start(ctx, "subscriptions.CreateCustomerPortalSession")
 	defer span.End()
 
-	returnRedirect, err := s.billingRedirect(returnURL)
+	returnRedirect, err := s.billingRedirect(returnURL, workspaceSlug)
 	if err != nil {
 		return "", err
 	}
