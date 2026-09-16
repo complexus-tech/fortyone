@@ -76,7 +76,7 @@ export function SearchHeader({
         <Row
           align="center"
           gap={2}
-          className="min-h-[48px] rounded-2xl pl-[12px]"
+          className="min-h-[48px] rounded-full pl-[12px]"
           style={{ backgroundColor: theme.surfaceMuted }}
         >
           <View pointerEvents="none" style={searchInputStyles.icon}>
