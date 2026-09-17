@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 
@@ -17,10 +16,31 @@ import (
 	"golang.org/x/oauth2"
 )
 
+type googleAuthenticationService interface {
+	VerifyToken(context.Context, string) (google.Identity, error)
+	AuthCodeURL(string) (string, error)
+	ExchangeCode(context.Context, string) (google.Identity, error)
+}
+
+type microsoftAuthenticationService interface {
+	AuthCodeURL(string, string, string) (string, error)
+	ExchangeCode(context.Context, string, string, string) (microsoft.Identity, error)
+}
+
+const (
+	oauthFailureGeneric     = "oauth_failed"
+	oauthFailureCancelled   = "oauth_cancelled"
+	oauthFailureExpired     = "oauth_expired"
+	oauthFailureUnavailable = "account_unavailable"
+)
+
 func (h *Handlers) GoogleAuth(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	var req GoogleAuthRequest
 	if err := web.Decode(r, &req); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	if h.googleService == nil {
+		return web.RespondError(ctx, w, google.ErrNotConfigured, http.StatusServiceUnavailable)
 	}
 
 	identity, err := h.googleService.VerifyToken(ctx, req.Token)
@@ -49,36 +69,30 @@ func (h *Handlers) GoogleAuth(ctx context.Context, w http.ResponseWriter, r *htt
 }
 
 func (h *Handlers) StartGoogleAuth(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	if h.cache == nil {
-		return web.RespondError(ctx, w, errors.New("auth session cache is not configured"), http.StatusServiceUnavailable)
-	}
-
 	callbackURL, err := oauthCallbackURLQuery(r)
 	if err == nil {
 		callbackURL, err = sanitizeCallbackURL(callbackURL, h.cookieDomain, h.websiteURL)
 	}
 	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return h.redirectOAuthFailure(ctx, w, r, "", oauthFailureGeneric)
+	}
+	if h.cache == nil || h.googleService == nil {
+		return h.redirectOAuthFailure(ctx, w, r, callbackURL, oauthFailureGeneric)
 	}
 
 	state, err := h.createSessionToken()
 	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return h.redirectOAuthFailure(ctx, w, r, callbackURL, oauthFailureGeneric)
 	}
 
 	if err := h.cache.Set(ctx, cache.AuthGoogleStateCacheKey(state), googleAuthState{CallbackURL: callbackURL}, oauthStateTTL); err != nil {
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return h.redirectOAuthFailure(ctx, w, r, callbackURL, oauthFailureGeneric)
 	}
 
 	authURL, err := h.googleService.AuthCodeURL(state)
 	if err != nil {
 		_ = h.cache.Delete(ctx, cache.AuthGoogleStateCacheKey(state))
-		switch {
-		case errors.Is(err, google.ErrNotConfigured):
-			return web.RespondError(ctx, w, err, http.StatusServiceUnavailable)
-		default:
-			return web.RespondError(ctx, w, err, http.StatusInternalServerError)
-		}
+		return h.redirectOAuthFailure(ctx, w, r, callbackURL, oauthFailureGeneric)
 	}
 
 	http.Redirect(w, r, authURL, http.StatusTemporaryRedirect)
@@ -86,27 +100,23 @@ func (h *Handlers) StartGoogleAuth(ctx context.Context, w http.ResponseWriter, r
 }
 
 func (h *Handlers) StartMicrosoftAuth(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	if h.cache == nil {
-		return web.RespondError(ctx, w, errors.New("auth session cache is not configured"), http.StatusServiceUnavailable)
-	}
-	if h.microsoftService == nil {
-		return web.RespondError(ctx, w, microsoft.ErrNotConfigured, http.StatusServiceUnavailable)
-	}
-
 	callbackURL, err := oauthCallbackURLQuery(r)
 	if err == nil {
 		callbackURL, err = sanitizeCallbackURL(callbackURL, h.cookieDomain, h.websiteURL)
 	}
 	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return h.redirectOAuthFailure(ctx, w, r, "", oauthFailureGeneric)
+	}
+	if h.cache == nil || h.microsoftService == nil {
+		return h.redirectOAuthFailure(ctx, w, r, callbackURL, oauthFailureGeneric)
 	}
 	state, err := h.createSessionToken()
 	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return h.redirectOAuthFailure(ctx, w, r, callbackURL, oauthFailureGeneric)
 	}
 	nonce, err := h.createSessionToken()
 	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return h.redirectOAuthFailure(ctx, w, r, callbackURL, oauthFailureGeneric)
 	}
 	verifier := oauth2.GenerateVerifier()
 	if err := h.cache.Set(ctx, cache.AuthMicrosoftStateCacheKey(state), microsoftAuthState{
@@ -114,17 +124,13 @@ func (h *Handlers) StartMicrosoftAuth(ctx context.Context, w http.ResponseWriter
 		Verifier:    verifier,
 		Nonce:       nonce,
 	}, oauthStateTTL); err != nil {
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return h.redirectOAuthFailure(ctx, w, r, callbackURL, oauthFailureGeneric)
 	}
 
 	authURL, err := h.microsoftService.AuthCodeURL(state, nonce, verifier)
 	if err != nil {
 		_ = h.cache.Delete(ctx, cache.AuthMicrosoftStateCacheKey(state))
-		status := http.StatusInternalServerError
-		if errors.Is(err, microsoft.ErrNotConfigured) {
-			status = http.StatusServiceUnavailable
-		}
-		return web.RespondError(ctx, w, err, status)
+		return h.redirectOAuthFailure(ctx, w, r, callbackURL, oauthFailureGeneric)
 	}
 	http.Redirect(w, r, authURL, http.StatusTemporaryRedirect)
 	return nil
@@ -132,15 +138,15 @@ func (h *Handlers) StartMicrosoftAuth(ctx context.Context, w http.ResponseWriter
 
 func (h *Handlers) CompleteMicrosoftAuth(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	if h.cache == nil {
-		return web.RespondError(ctx, w, errors.New("auth session cache is not configured"), http.StatusServiceUnavailable)
+		return h.redirectOAuthFailure(ctx, w, r, "", oauthFailureGeneric)
 	}
 	if h.microsoftService == nil {
-		return web.RespondError(ctx, w, microsoft.ErrNotConfigured, http.StatusServiceUnavailable)
+		return h.redirectOAuthFailure(ctx, w, r, "", oauthFailureGeneric)
 	}
 
 	callback, err := web.ParseOAuthCallbackQuery(r.URL.Query())
 	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return h.redirectOAuthFailure(ctx, w, r, "", oauthFailureGeneric)
 	}
 	state := callback.State
 	var authState microsoftAuthState
@@ -151,32 +157,21 @@ func (h *Handlers) CompleteMicrosoftAuth(ctx context.Context, w http.ResponseWri
 		cache.LegacyAuthMicrosoftStateCacheKey(state),
 		&authState,
 	); err != nil {
-		return web.RespondError(ctx, w, errors.New("invalid oauth state"), http.StatusUnauthorized)
+		return h.redirectOAuthFailure(ctx, w, r, "", oauthStateFailureCode(err))
 	}
 
 	if providerError := callback.ProviderError; providerError != "" {
-		if failureURL := microsoftFailureURL(authState.CallbackURL, providerError); failureURL != "" {
-			http.Redirect(w, r, failureURL, http.StatusTemporaryRedirect)
-			return nil
-		}
-		return web.RespondError(ctx, w, errors.New("microsoft sign-in was not completed"), http.StatusUnauthorized)
+		return h.redirectOAuthFailure(ctx, w, r, authState.CallbackURL, oauthProviderFailureCode(providerError))
 	}
 
 	identity, err := h.microsoftService.ExchangeCode(ctx, callback.Code, authState.Verifier, authState.Nonce)
 	if err != nil {
-		status := http.StatusInternalServerError
-		switch {
-		case errors.Is(err, microsoft.ErrInvalidToken):
-			status = http.StatusUnauthorized
-		case errors.Is(err, microsoft.ErrNotConfigured):
-			status = http.StatusServiceUnavailable
-		}
-		return web.RespondError(ctx, w, err, status)
+		return h.redirectOAuthFailure(ctx, w, r, authState.CallbackURL, oauthFailureGeneric)
 	}
 
 	email, err := validate.Email(identity.Email)
 	if err != nil {
-		return web.RespondError(ctx, w, errors.New("microsoft account did not provide a valid email address"), http.StatusUnauthorized)
+		return h.redirectOAuthFailure(ctx, w, r, authState.CallbackURL, oauthFailureGeneric)
 	}
 	user, err := h.users.AuthenticateExternalIdentity(ctx, users.CoreExternalIdentityInput{
 		Provider: "microsoft",
@@ -187,22 +182,20 @@ func (h *Handlers) CompleteMicrosoftAuth(ctx context.Context, w http.ResponseWri
 		Timezone: "Antarctica/Troll",
 	})
 	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return h.redirectOAuthFailure(ctx, w, r, authState.CallbackURL, oauthSignInFailureCode(err))
 	}
 	user, err = h.reactivateUserForSignIn(ctx, user)
 	if err != nil {
-		status, publicError := publicSignInError(err)
-		return web.RespondError(ctx, w, publicError, status)
+		return h.redirectOAuthFailure(ctx, w, r, authState.CallbackURL, oauthSignInFailureCode(err))
 	}
 
 	tokenString, err := h.createSessionToken()
 	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return h.redirectOAuthFailure(ctx, w, r, authState.CallbackURL, oauthFailureGeneric)
 	}
 	expiresAt := time.Now().Add(SessionDuration)
 	if err := h.persistSession(ctx, user.ID, tokenString, expiresAt); err != nil {
-		status, publicError := publicSignInError(err)
-		return web.RespondError(ctx, w, publicError, status)
+		return h.redirectOAuthFailure(ctx, w, r, authState.CallbackURL, oauthSignInFailureCode(err))
 	}
 	h.setSessionCookie(w, r, tokenString, expiresAt)
 
@@ -231,35 +224,17 @@ func buildMicrosoftFullName(identity microsoft.Identity, email string) string {
 	return "User"
 }
 
-func microsoftFailureURL(callbackURL, providerError string) string {
-	parsed, err := url.Parse(strings.TrimSpace(callbackURL))
-	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
-		return ""
-	}
-	query := parsed.Query()
-	if parsed.Path == "/auth-callback" {
-		parsed.Path = "/"
-	}
-	message := "Microsoft sign-in failed. Please try again."
-	if providerError == "access_denied" {
-		message = "Microsoft sign-in was cancelled."
-	}
-	query.Set("error", message)
-	parsed.RawQuery = query.Encode()
-	return parsed.String()
-}
-
 func (h *Handlers) CompleteGoogleAuth(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	if h.cache == nil {
-		return web.RespondError(ctx, w, errors.New("auth session cache is not configured"), http.StatusServiceUnavailable)
+		return h.redirectOAuthFailure(ctx, w, r, "", oauthFailureGeneric)
+	}
+	if h.googleService == nil {
+		return h.redirectOAuthFailure(ctx, w, r, "", oauthFailureGeneric)
 	}
 
 	callback, err := web.ParseOAuthCallbackQuery(r.URL.Query())
 	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusBadRequest)
-	}
-	if callback.ProviderError != "" {
-		return web.RespondError(ctx, w, errors.New("google sign-in was not completed"), http.StatusBadRequest)
+		return h.redirectOAuthFailure(ctx, w, r, "", oauthFailureGeneric)
 	}
 
 	var authState googleAuthState
@@ -270,29 +245,24 @@ func (h *Handlers) CompleteGoogleAuth(ctx context.Context, w http.ResponseWriter
 		cache.LegacyAuthGoogleStateCacheKey(callback.State),
 		&authState,
 	); err != nil {
-		return web.RespondError(ctx, w, errors.New("invalid oauth state"), http.StatusUnauthorized)
+		return h.redirectOAuthFailure(ctx, w, r, "", oauthStateFailureCode(err))
+	}
+	if callback.ProviderError != "" {
+		return h.redirectOAuthFailure(ctx, w, r, authState.CallbackURL, oauthProviderFailureCode(callback.ProviderError))
 	}
 
 	identity, err := h.googleService.ExchangeCode(ctx, callback.Code)
 	if err != nil {
-		switch {
-		case errors.Is(err, google.ErrInvalidToken):
-			return web.RespondError(ctx, w, err, http.StatusUnauthorized)
-		case errors.Is(err, google.ErrNotConfigured):
-			return web.RespondError(ctx, w, err, http.StatusServiceUnavailable)
-		default:
-			return web.RespondError(ctx, w, err, http.StatusInternalServerError)
-		}
+		return h.redirectOAuthFailure(ctx, w, r, authState.CallbackURL, oauthFailureGeneric)
 	}
 
 	if !identity.EmailVerified {
-		return web.RespondError(ctx, w, errors.New("email not verified by google"), http.StatusUnauthorized)
+		return h.redirectOAuthFailure(ctx, w, r, authState.CallbackURL, oauthFailureGeneric)
 	}
 
 	user, err := h.authenticateWithGoogleIdentity(ctx, w, r, identity)
 	if err != nil {
-		status, publicError := publicSignInError(err)
-		return web.RespondError(ctx, w, publicError, status)
+		return h.redirectOAuthFailure(ctx, w, r, authState.CallbackURL, oauthSignInFailureCode(err))
 	}
 
 	if authState.CallbackURL != "" {

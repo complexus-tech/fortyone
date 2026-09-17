@@ -322,7 +322,6 @@ SET
     inactivity_warning_sent_at = NULL,
     updated_at = CAST(sqlc.arg(signed_in_at) AS timestamptz)
 WHERE user_id = CAST(sqlc.arg(user_id) AS uuid)
-  AND is_active = FALSE
   AND login_reactivation_policy = 'verified_sign_in'
 RETURNING
     user_id,

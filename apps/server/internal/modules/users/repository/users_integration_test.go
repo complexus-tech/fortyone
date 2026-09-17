@@ -349,6 +349,65 @@ func TestUserAccountLifecycleAndCallerTransactionRollback(t *testing.T) {
 	}
 }
 
+func TestVerifiedSignInRefreshesActivityAndAllowsConcurrentReturns(t *testing.T) {
+	postgres := testkit.NewPostgres(t)
+	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
+	defer cancel()
+
+	repository := New(postgres.Pool)
+	signedInAt := time.Date(2026, time.September, 17, 12, 0, 0, 0, time.UTC)
+	for _, initiallyActive := range []bool{false, true} {
+		t.Run(fmt.Sprintf("initially_active_%t", initiallyActive), func(t *testing.T) {
+			userID := insertUserTestAccount(t, ctx, postgres.Pool, "concurrent-return", initiallyActive, false)
+			if _, err := postgres.Pool.Exec(ctx, `
+				UPDATE users
+				SET auth_session_version = 7,
+				    last_login_at = $2,
+				    inactivity_warning_sent_at = $3
+				WHERE user_id = $1
+			`, userID, signedInAt.AddDate(0, -9, 0), signedInAt.Add(-31*24*time.Hour)); err != nil {
+				t.Fatalf("arrange inactive account: %v", err)
+			}
+
+			const attempts = 4
+			start := make(chan struct{})
+			signInErrors := make(chan error, attempts)
+			for range attempts {
+				go func() {
+					<-start
+					user, err := repository.ReactivateUserForVerifiedSignIn(ctx, users.VerifiedSignInReactivation{
+						UserID: userID, SignedInAt: signedInAt,
+					})
+					if err == nil && (!user.IsActive || user.ID != userID || !user.LastLoginAt.Equal(signedInAt)) {
+						err = fmt.Errorf("unexpected returned account state: active=%t last_login_at=%v", user.IsActive, user.LastLoginAt)
+					}
+					signInErrors <- err
+				}()
+			}
+			close(start)
+			for range attempts {
+				if err := <-signInErrors; err != nil {
+					t.Errorf("concurrent verified sign-in: %v", err)
+				}
+			}
+
+			var sessionVersion int64
+			var warningAt *time.Time
+			var membershipCount int
+			if err := postgres.Pool.QueryRow(ctx, `
+				SELECT auth_session_version, inactivity_warning_sent_at,
+				       (SELECT COUNT(*) FROM workspace_members WHERE user_id = $1)
+				FROM users WHERE user_id = $1
+			`, userID).Scan(&sessionVersion, &warningAt, &membershipCount); err != nil {
+				t.Fatalf("inspect returning account: %v", err)
+			}
+			if sessionVersion != 7 || warningAt != nil || membershipCount != 0 {
+				t.Fatalf("unexpected session/activity state: version=%d warning=%v memberships=%d", sessionVersion, warningAt, membershipCount)
+			}
+		})
+	}
+}
+
 func TestVerifiedSignInReactivationFailsClosedForAdministratorAndLegacyPolicies(t *testing.T) {
 	postgres := testkit.NewPostgres(t)
 	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)

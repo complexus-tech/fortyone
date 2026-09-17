@@ -43,13 +43,13 @@ type Handlers struct {
 	log                    *logger.Logger
 	deploymentMode         deployment.Mode
 	verificationRateLimits verificationRateLimitStore
-	googleService          *google.Service
-	microsoftService       *microsoft.Service
+	googleService          googleAuthenticationService
+	microsoftService       microsoftAuthenticationService
 	publisher              *publisher.Publisher
 }
 
 func New(users *users.Service, attachments users.AttachmentsService, secretKey, cookieDomain, websiteURL string, cacheService *cache.Service, log *logger.Logger, deploymentMode deployment.Mode, googleService *google.Service, microsoftService *microsoft.Service, publisher *publisher.Publisher) *Handlers {
-	return &Handlers{
+	handlers := &Handlers{
 		users:                  users,
 		attachments:            attachments,
 		secretKey:              secretKey,
@@ -59,10 +59,15 @@ func New(users *users.Service, attachments users.AttachmentsService, secretKey, 
 		log:                    log,
 		deploymentMode:         deploymentMode,
 		verificationRateLimits: cacheService,
-		googleService:          googleService,
-		microsoftService:       microsoftService,
 		publisher:              publisher,
 	}
+	if googleService != nil {
+		handlers.googleService = googleService
+	}
+	if microsoftService != nil {
+		handlers.microsoftService = microsoftService
+	}
+	return handlers
 }
 
 func (h *Handlers) resolveUserAvatarURL(ctx context.Context, avatar string) string {
@@ -293,10 +298,8 @@ func buildGoogleFullName(identity google.Identity) string {
 }
 
 func (h *Handlers) reactivateUserForSignIn(ctx context.Context, user users.CoreUser) (users.CoreUser, error) {
-	if user.IsActive {
-		return user, nil
-	}
-
+	// Recheck the current policy atomically even when the earlier account read
+	// was active, and count verified sign-in as activity without a workspace.
 	return h.users.ReactivateUserForVerifiedSignIn(ctx, user.ID)
 }
 

@@ -99,6 +99,41 @@ beforeEach(() => {
 });
 
 describe("mobile email-only login", () => {
+  it("shows account recovery guidance for a blocked sign-in without blaming the email input", () => {
+    render(<AuthLayout errorMessage="account_unavailable" page="login" />);
+    expect(
+      screen.getByText(
+        "We couldn’t sign you in to this account. Contact support for help restoring access.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Contact support" }),
+    ).toHaveAttribute("href", "https://fortyone.app/contact");
+    expect(screen.queryByText("account_unavailable")).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Enter your email"), {
+      target: { value: "another@example.com" },
+    });
+    expect(
+      screen.getByRole("link", { name: "Contact support" }),
+    ).toBeInTheDocument();
+  });
+
+  it.each([
+    ["oauth_failed", "We couldn’t complete sign-in. Please try again."],
+    ["oauth_expired", "Your sign-in attempt expired. Please start again."],
+    [
+      "oauth_cancelled",
+      "Sign-in was cancelled. Please try again when you’re ready.",
+    ],
+  ])("shows actionable provider feedback for %s", (errorMessage, message) => {
+    render(<AuthLayout errorMessage={errorMessage} page="login" />);
+    expect(screen.getByText(message)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Continue with Google" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(errorMessage)).not.toBeInTheDocument();
+  });
+
   it("shows a static deletion confirmation and optional pending calendar cleanup", () => {
     const { rerender } = render(
       <AuthLayout accountDeleted cleanupPending page="login" />,

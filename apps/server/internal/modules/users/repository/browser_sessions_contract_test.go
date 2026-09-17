@@ -34,7 +34,6 @@ func TestBrowserSessionQueriesPreserveMonotonicRevocation(t *testing.T) {
 		t.Fatal("reactivation must never reset or decrement the browser session version")
 	}
 	for _, clause := range []string{
-		"and is_active = false",
 		"and login_reactivation_policy = 'verified_sign_in'",
 		"last_login_at = cast(sqlc.arg(signed_in_at) as timestamptz)",
 		"updated_at = cast(sqlc.arg(signed_in_at) as timestamptz)",
@@ -42,6 +41,9 @@ func TestBrowserSessionQueriesPreserveMonotonicRevocation(t *testing.T) {
 		if !strings.Contains(activation, clause) {
 			t.Fatalf("verified sign-in reactivation is missing %q", clause)
 		}
+	}
+	if strings.Contains(activation, "and is_active = false") {
+		t.Fatal("verified sign-in must also refresh active accounts and allow concurrent returns")
 	}
 }
 

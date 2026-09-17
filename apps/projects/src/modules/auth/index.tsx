@@ -12,6 +12,7 @@ import { requestMagicEmail } from "@/lib/actions/request-magic-email";
 import { signInWithGoogle, signInWithMicrosoft } from "@/lib/actions/sign-in";
 import { getSafeCallbackUrl, withCallbackUrl } from "@/utils/callback-url";
 import { isMobileAuthFlow } from "@/lib/mobile-auth";
+import { getSignInErrorMessage } from "./errors";
 
 const COPYRIGHT_NOTICE =
   "\u00a9 2026 \u2022 Product of Complexus LLC \u2022 All Rights Reserved.";
@@ -40,6 +41,7 @@ export const AuthLayout = ({
   const router = useRouter();
   const safeCallbackUrl = getSafeCallbackUrl(callbackUrl);
   const isMobileApp = mobileApp || isMobileAuthFlow(safeCallbackUrl);
+  const signInError = getSignInErrorMessage(errorMessage);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -186,11 +188,29 @@ export const AuthLayout = ({
               </Link>
             </Text>
           )}
+          {signInError ? (
+            <Box
+              className="border-danger/20 bg-danger/10 mb-6 rounded-lg border p-4"
+              role="alert"
+            >
+              <Text>{signInError}</Text>
+              {errorMessage === "account_unavailable" ? (
+                <Link
+                  className="text-primary mt-2 inline-block underline"
+                  href="https://fortyone.app/contact"
+                >
+                  Contact support
+                </Link>
+              ) : null}
+            </Box>
+          ) : null}
           <form onSubmit={handleSubmit}>
             <Input
               className="rounded-lg"
-              hasError={Boolean(errorMessage) && !email && !isTouched}
-              helpText={errorMessage && !isTouched ? errorMessage : undefined}
+              hasError={
+                Boolean(errorMessage) && !signInError && !email && !isTouched
+              }
+              helpText={!signInError && !isTouched ? errorMessage : undefined}
               label="Enter your email"
               name="email"
               onChange={(e) => {

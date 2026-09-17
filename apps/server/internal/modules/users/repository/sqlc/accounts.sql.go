@@ -676,7 +676,6 @@ SET
     inactivity_warning_sent_at = NULL,
     updated_at = CAST($1 AS timestamptz)
 WHERE user_id = CAST($2 AS uuid)
-  AND is_active = FALSE
   AND login_reactivation_policy = 'verified_sign_in'
 RETURNING
     user_id,

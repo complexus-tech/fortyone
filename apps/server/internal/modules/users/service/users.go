@@ -261,10 +261,11 @@ func (s *Service) AuthenticateExternalIdentity(ctx context.Context, input CoreEx
 	return result.User, nil
 }
 
-// ReactivateUserForVerifiedSignIn reactivates only an account whose durable
-// policy permits a verified authentication to do so. Administrator-disabled
-// and conservatively backfilled legacy accounts fail with the same generic
-// invalid-credentials error used by authentication endpoints.
+// ReactivateUserForVerifiedSignIn records verified sign-in activity and
+// reactivates an inactive account only when its durable policy permits it.
+// Repeated sign-ins remain valid without resetting the session epoch.
+// Administrator-disabled and conservatively backfilled legacy accounts fail
+// with the same generic invalid-credentials error used by authentication endpoints.
 func (s *Service) ReactivateUserForVerifiedSignIn(ctx context.Context, userID uuid.UUID) (CoreUser, error) {
 	s.log.Info(ctx, "business.core.users.ReactivateUserForVerifiedSignIn")
 	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.users.ReactivateUserForVerifiedSignIn")

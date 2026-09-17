@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { OnboardingLayout } from "@/components/layouts/onboarding-layout";
 import { AuthLayout } from "@/modules/auth";
+import { getSignInErrorMessage } from "@/modules/auth/errors";
 import { auth } from "@/auth";
 import { isMobileAuthFlow } from "@/lib/mobile-auth";
 import { getProfile } from "@/lib/queries/profile";
@@ -34,7 +35,7 @@ export default async function Page({
   const session = await auth();
 
   // Only redirect web users if they're already logged in
-  if (session && !isMobileApp) {
+  if (session && !isMobileApp && !getSignInErrorMessage(errorMessage)) {
     const [workspaces, profile] = await Promise.all([
       getWorkspaces(),
       getProfile(),

@@ -73,8 +73,11 @@ row. The adapter maps PostgreSQL unique violations to `users.ErrEmailTaken`
 where the domain contract exposes an email conflict. It never activates an
 existing inactive account inside the identity-link transaction.
 
-After the email or OAuth identity has been verified, the service may invoke the
-separate typed reactivation mutation. That mutation accepts only
+After the email or OAuth identity has been verified, the service invokes the
+typed sign-in mutation for both active and inactive accounts. It refreshes
+`last_login_at` and clears the inactivity warning even when the account has no
+workspace. Repeated or concurrent sign-ins can reactivate the same account
+without changing its browser-session version. That mutation accepts only
 `login_reactivation_policy = 'verified_sign_in'`. Administrator-disabled
 (`admin_only`) and ambiguous legacy (`legacy_admin_review`) accounts remain
 inactive and map to the same generic invalid-credentials result as an unknown
