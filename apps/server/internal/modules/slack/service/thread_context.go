@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"sort"
+	"strconv"
 	"strings"
 	"unicode"
 
@@ -25,6 +27,7 @@ const (
 	assistantThreadContextIncompleteReply    = "I couldn't safely read the complete Slack thread, so I haven't created or changed any FortyOne work. Slack returned only part of the conversation or the thread was too large to process. Please paste the relevant messages and try again."
 	assistantThreadContextInvalidReply       = "I couldn't read this Slack thread, so I haven't created or changed any FortyOne work. The thread may no longer exist or may have been started from a Slack message type that does not support replies."
 	assistantThreadContextUnavailableReply   = "I couldn't read the earlier messages in this Slack thread, so I haven't created or changed any FortyOne work. Make sure Maya is a member of the channel and can read its history, then try again."
+	assistantThreadContextReadFailedReply    = "I couldn't load the earlier messages in this Slack thread, so I haven't created or changed any FortyOne work. Please paste the relevant messages in a new request so I can help."
 )
 
 var errSlackThreadContextIncomplete = errors.New("slack thread context is incomplete")
@@ -133,13 +136,14 @@ func (p *EventProcessor) loadSlackThreadReference(
 	if installation.BotUserID != nil {
 		botUserID = strings.TrimSpace(*installation.BotUserID)
 	}
-	payload := map[string]any{
-		"channel": channelID,
-		"ts":      threadTS,
-		"limit":   slackThreadRepliesPageLimit,
+	query := url.Values{
+		"channel": {channelID},
+		"ts":      {threadTS},
+		"limit":   {strconv.Itoa(slackThreadRepliesPageLimit)},
 	}
 	var response slackThreadRepliesResponse
-	if err := p.webClient.callJSON(ctx, botToken, "conversations.replies", payload, &response); err != nil {
+	// conversations.replies uses GET with query parameters, like Slack's SDK.
+	if err := p.webClient.callJSON(ctx, botToken, "conversations.replies?"+query.Encode(), nil, &response); err != nil {
 		return slackThreadReference{}, err
 	}
 	if response.HasMore || strings.TrimSpace(response.Metadata.NextCursor) != "" {
@@ -328,6 +332,8 @@ func slackThreadContextFailureReply(err error) (string, bool) {
 		return assistantThreadContextInvalidReply, true
 	case "missing_scope", "not_allowed_token_type", "team_access_not_granted":
 		return assistantThreadContextConfigurationReply, true
+	case "invalid_arguments":
+		return assistantThreadContextReadFailedReply, true
 	default:
 		return "", false
 	}

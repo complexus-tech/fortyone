@@ -128,6 +128,13 @@ func (p *EventProcessor) generateAssistantReply(
 				}
 			}
 			if failureReply, handled := slackThreadContextFailureReply(threadErr); handled {
+				if p.log != nil {
+					p.log.Warn(ctx, "Slack Maya thread history could not be loaded",
+						"workspace_id", input.workspace.ID,
+						"event_id", input.event.EventID,
+						"error", threadErr,
+					)
+				}
 				state.reply = failureReply
 			} else {
 				if failErr := failOutboundDeliveryDetached(ctx, p.store, state.record.ID, truncateError(threadErr)); failErr != nil {

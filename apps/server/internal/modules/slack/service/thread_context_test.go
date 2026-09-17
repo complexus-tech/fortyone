@@ -2,8 +2,8 @@ package slack
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -47,15 +47,19 @@ func TestLoadSlackThreadReferenceFiltersDeduplicatesAndSortsWithOneRequest(t *te
 	requests := 0
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
 		requests++
+		require.Equal(t, http.MethodGet, request.Method)
 		require.Equal(t, "/conversations.replies", request.URL.Path)
 		require.Equal(t, "Bearer xoxb-thread", request.Header.Get("Authorization"))
-		var payload map[string]any
-		require.NoError(t, json.NewDecoder(request.Body).Decode(&payload))
-		require.Equal(t, "C1", payload["channel"])
-		require.Equal(t, "10.1", payload["ts"])
-		require.Equal(t, float64(15), payload["limit"])
+		query := request.URL.Query()
+		require.Equal(t, "C1", query.Get("channel"))
+		require.Equal(t, "10.1", query.Get("ts"))
+		require.Equal(t, "15", query.Get("limit"))
+		body, err := io.ReadAll(request.Body)
+		require.NoError(t, err)
+		require.Empty(t, body)
 		w.Header().Set("Content-Type", "application/json")
-		require.NotContains(t, payload, "cursor")
+		require.NotContains(t, query, "cursor")
+		require.NotContains(t, query, "token")
 		_, _ = w.Write([]byte(`{
 			"ok": true,
 			"messages": [
@@ -321,6 +325,68 @@ func TestEventProcessorSetsThreadSourceWithoutHydratingConfirmationApproval(t *t
 	require.Empty(t, assistant.requests[0].Conversation)
 }
 
+func TestEventProcessorJoinsExistingHumanThread(t *testing.T) {
+	const rootTS = "1789399800.000001"
+	const mentionTS = "1789399800.000003"
+	repo := newEventRepositoryStub()
+	repo.linkedUserID = uuidPointer(testLinkedUserID)
+	repo.installation.SlackTeamDomain = "acme"
+	store := newEventStoreStub()
+	assistant := &assistantStub{response: AssistantResponse{Text: "The team agreed to add Microsoft and Facebook sign-in."}}
+	sender := &messageSenderStub{externalMessageID: "1789399800.000004"}
+	processor := newTestEventProcessor(t, repo, store, assistant, &accessCheckerStub{allowed: true}, sender)
+	statusSetter := processor.statusSetter.(*assistantStatusSetterStub)
+	assistant.onRespond = func() {
+		require.Len(t, statusSetter.calls, 1)
+		require.Equal(t, slackAssistantThinkingStatus, statusSetter.calls[0].status)
+	}
+	requests := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+		requests++
+		w.Header().Set("Content-Type", "application/json")
+		query := request.URL.Query()
+		if request.Method != http.MethodGet || request.URL.Path != "/conversations.replies" ||
+			query.Get("channel") != "C1" || query.Get("ts") != rootTS || query.Get("limit") != "15" {
+			_, _ = w.Write([]byte(`{"ok":false,"error":"invalid_arguments"}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{
+			"ok":true,
+			"messages":[
+				{"ts":"1789399800.000001","user":"U2","text":"Add Microsoft sign-in"},
+				{"ts":"1789399800.000002","thread_ts":"1789399800.000001","user":"U3","text":"Also add Facebook"},
+				{"ts":"1789399800.000003","thread_ts":"1789399800.000001","user":"U1","text":"<@B1> summarize this thread"}
+			]
+		}`))
+	}))
+	defer server.Close()
+	processor.webClient = newSlackWebClient(server.Client())
+	processor.webClient.baseURL = server.URL
+
+	rawEvent := fmt.Sprintf(
+		`{"type":"event_callback","team_id":"T1","event_id":"Ev-join-human-thread","event":{"type":"app_mention","user":"U1","channel":"C1","ts":%q,"thread_ts":%q,"text":"<@B1> summarize this thread"}}`,
+		mentionTS, rootTS,
+	)
+	require.NoError(t, processSlackRaw(t, processor, []byte(rawEvent)))
+	require.Equal(t, 1, requests)
+	require.Len(t, assistant.requests, 1)
+	require.Len(t, assistant.requests[0].Conversation, 1)
+	reference := assistant.requests[0].Conversation[0].Text
+	require.Contains(t, reference, `"author_id":"U2"`)
+	require.Contains(t, reference, "Add Microsoft sign-in")
+	require.Contains(t, reference, `"author_id":"U3"`)
+	require.Contains(t, reference, "Also add Facebook")
+	require.NotContains(t, reference, "summarize this thread")
+	require.Len(t, sender.messages, 1)
+	require.Equal(t, assistant.response.Text, sender.messages[0].Text)
+	require.Equal(t, "C1", sender.messages[0].ChannelID)
+	require.Equal(t, rootTS, sender.messages[0].ThreadTS)
+	require.Len(t, statusSetter.calls, 2)
+	require.Equal(t, rootTS, statusSetter.calls[0].threadTS)
+	require.Equal(t, rootTS, statusSetter.calls[1].threadTS)
+	require.Empty(t, statusSetter.calls[1].status)
+}
+
 func TestEventProcessorRejectsIncompleteThreadWithoutCallingAssistant(t *testing.T) {
 	repo := newEventRepositoryStub()
 	repo.linkedUserID = uuidPointer(testLinkedUserID)
@@ -400,6 +466,7 @@ func TestEventProcessorHandlesThreadReadFailuresByCategory(t *testing.T) {
 		{errorCode: "not_allowed_token_type", wantReply: assistantThreadContextConfigurationReply},
 		{errorCode: "method_not_supported_for_channel_type", wantReply: assistantThreadContextInvalidReply},
 		{errorCode: "thread_not_found", wantReply: assistantThreadContextInvalidReply},
+		{errorCode: "invalid_arguments", wantReply: assistantThreadContextReadFailedReply},
 	}
 	for _, test := range tests {
 		t.Run(test.errorCode, func(t *testing.T) {
@@ -429,10 +496,16 @@ func TestEventProcessorHandlesThreadReadFailuresByCategory(t *testing.T) {
 			)
 			err := processSlackRaw(t, processor, []byte(rawEvent))
 			require.Empty(t, assistant.requests)
+			statusSetter := processor.statusSetter.(*assistantStatusSetterStub)
+			require.Len(t, statusSetter.calls, 2)
+			require.Equal(t, slackAssistantThinkingStatus, statusSetter.calls[0].status)
+			require.Empty(t, statusSetter.calls[1].status)
 			if test.wantReply != "" {
 				require.NoError(t, err)
 				require.Len(t, sender.messages, 1)
 				require.Equal(t, test.wantReply, sender.messages[0].Text)
+				require.Equal(t, "C1", sender.messages[0].ChannelID)
+				require.Equal(t, "10.1", sender.messages[0].ThreadTS)
 			} else {
 				require.Error(t, err)
 				actualCode, ok := SlackAPIErrorCode(err)
@@ -469,6 +542,9 @@ func TestSlackThreadContextFailureClassification(t *testing.T) {
 		require.True(t, handled, errorCode)
 		require.Equal(t, assistantThreadContextConfigurationReply, reply)
 	}
+	reply, handled := slackThreadContextFailureReply(&SlackAPIError{Method: "conversations.replies", Code: "invalid_arguments"})
+	require.True(t, handled)
+	require.Equal(t, assistantThreadContextReadFailedReply, reply)
 	for _, errorCode := range []string{"account_inactive", "internal_error", "invalid_auth", "request_timeout", "service_unavailable", "token_revoked"} {
 		reply, handled := slackThreadContextFailureReply(&SlackAPIError{Method: "conversations.replies", Code: errorCode})
 		require.False(t, handled, errorCode)
@@ -489,7 +565,7 @@ func TestSlackThreadContextFailureClassification(t *testing.T) {
 		)
 	}
 
-	reply, handled := slackThreadContextFailureReply(fmt.Errorf("%w: paginated", errSlackThreadContextIncomplete))
+	reply, handled = slackThreadContextFailureReply(fmt.Errorf("%w: paginated", errSlackThreadContextIncomplete))
 	require.True(t, handled)
 	require.Equal(t, assistantThreadContextIncompleteReply, reply)
 }
