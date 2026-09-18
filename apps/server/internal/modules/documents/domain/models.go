@@ -37,21 +37,25 @@ type RelatedWork struct {
 }
 
 type Document struct {
-	ID               uuid.UUID
-	WorkspaceID      uuid.UUID
-	Title            string
-	ContentHTML      string
-	ContentText      string
-	Visibility       Visibility
-	CreatedBy        uuid.UUID
-	UpdatedBy        uuid.UUID
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
-	ArchivedAt       *time.Time
-	CanEdit          bool
-	SharedWith       []Member
-	RelatedWork      []RelatedWork
-	RelatedWorkCount int
+	Revision           int64
+	CollaborationEpoch int64
+	Collaborative      bool
+	PublicToken        *string
+	ID                 uuid.UUID
+	WorkspaceID        uuid.UUID
+	Title              string
+	ContentHTML        string
+	ContentText        string
+	Visibility         Visibility
+	CreatedBy          uuid.UUID
+	UpdatedBy          uuid.UUID
+	CreatedAt          time.Time
+	UpdatedAt          time.Time
+	ArchivedAt         *time.Time
+	CanEdit            bool
+	SharedWith         []Member
+	RelatedWork        []RelatedWork
+	RelatedWorkCount   int
 }
 
 type Summary struct {
@@ -85,12 +89,13 @@ type CreateInput struct {
 }
 
 type UpdateInput struct {
-	WorkspaceID uuid.UUID
-	UserID      uuid.UUID
-	DocumentID  uuid.UUID
-	Title       *string
-	ContentHTML *string
-	ContentText *string
+	ExpectedRevision int64
+	WorkspaceID      uuid.UUID
+	UserID           uuid.UUID
+	DocumentID       uuid.UUID
+	Title            *string
+	ContentHTML      *string
+	ContentText      *string
 }
 
 type AccessInput struct {
@@ -114,4 +119,28 @@ type MediaInput struct {
 	UserID       uuid.UUID
 	DocumentID   uuid.UUID
 	AttachmentID uuid.UUID
+}
+
+// Revision is an immutable content snapshot; access always follows the current document.
+type Revision struct {
+	Revision    int64      `json:"revision"`
+	Title       string     `json:"title"`
+	ContentHTML string     `json:"contentHtml,omitempty"`
+	ContentText string     `json:"contentText,omitempty"`
+	EditedBy    *uuid.UUID `json:"editedBy"`
+	CreatedAt   time.Time  `json:"createdAt"`
+}
+
+type PublicDocument struct {
+	ID          uuid.UUID `json:"-"`
+	WorkspaceID uuid.UUID `json:"-"`
+	Title       string    `json:"title"`
+	ContentHTML string    `json:"contentHtml"`
+	ContentText string    `json:"contentText"`
+	UpdatedAt   time.Time `json:"updatedAt"`
+}
+
+type CollaborationSession struct {
+	Token string `json:"token"`
+	Name  string `json:"name"`
 }

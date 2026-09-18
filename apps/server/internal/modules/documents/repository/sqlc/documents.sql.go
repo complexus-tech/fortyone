@@ -537,6 +537,8 @@ INNER JOIN public.workspaces AS workspace
 WHERE document.document_id = $5
   AND document.workspace_id = $6
   AND document.archived_at IS NULL
+  AND document.collaboration_state IS NULL
+  AND document.revision = $7
   AND membership.workspace_id = document.workspace_id
   AND membership.user_id = $4
   AND membership.role <> CAST('guest' AS public.user_role)
@@ -568,12 +570,13 @@ RETURNING
 `
 
 type UpdateEditableDocumentParams struct {
-	Title       *string
-	ContentHtml *string
-	ContentText *string
-	ActorID     uuid.UUID
-	DocumentID  uuid.UUID
-	WorkspaceID uuid.UUID
+	Title            *string
+	ContentHtml      *string
+	ContentText      *string
+	ActorID          uuid.UUID
+	DocumentID       uuid.UUID
+	WorkspaceID      uuid.UUID
+	ExpectedRevision int64
 }
 
 type UpdateEditableDocumentRow struct {
@@ -599,6 +602,7 @@ func (q *Queries) UpdateEditableDocument(ctx context.Context, arg UpdateEditable
 		arg.ActorID,
 		arg.DocumentID,
 		arg.WorkspaceID,
+		arg.ExpectedRevision,
 	)
 	var i UpdateEditableDocumentRow
 	err := row.Scan(

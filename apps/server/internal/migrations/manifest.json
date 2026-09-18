@@ -1598,6 +1598,41 @@
         "Retained shared content may contain personal details voluntarily included in prose; this operation erases account identity rather than rewriting organization-owned content.",
         "Private documents, credentials and account-specific stores are erased; referenced shared attachment objects remain available."
       ]
+    },
+    {
+      "version": 194,
+      "slug": "document_collaboration",
+      "classification": "forward-only",
+      "files": {
+        "up": "000194_document_collaboration.up.sql",
+        "down": "000194_document_collaboration.down.sql"
+      },
+      "compatibility": {
+        "schema": "Additive document revision, CRDT state, public links, and scoped collaboration sessions.",
+        "api": "New API requires migration 194. Legacy content writes are fenced after collaboration activation.",
+        "worker": "Existing workers remain compatible.",
+        "mixed_versions": "Apply schema first, then replace API and frontend before enabling collaboration."
+      },
+      "rollout": {
+        "sequence": 43,
+        "mode": "schema-first",
+        "steps": [
+          "Apply migration 194 before deploying the API.",
+          "Deploy the API and Projects app, then the self-hosted collaboration service with database access and a TLS WebSocket endpoint.",
+          "Configure the Projects collaboration URL and verify two-editor convergence, recovery, and public-link revocation."
+        ]
+      },
+      "recovery": {
+        "strategy": "forward-fix",
+        "procedure": [
+          "Disable collaboration connections, retain revisions and binary state, and deploy a compatible forward fix."
+        ]
+      },
+      "operational_notes": [
+        "Public links are opt-in and view-only. Re-enabling a revoked link creates a new token.",
+        "Collaboration sessions are scoped to a document epoch, account session version, current membership and expiry.",
+        "Restore advances the collaboration epoch so stale editors cannot replay pre-restore changes."
+      ]
     }
   ]
 }

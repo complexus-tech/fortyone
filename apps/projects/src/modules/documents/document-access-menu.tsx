@@ -10,6 +10,7 @@ import {
 } from "icons";
 import { cn } from "lib";
 import { useMembers } from "@/lib/hooks/members";
+import { DocumentPublicLink } from "./document-public-link";
 import { useUpdateDocumentAccess } from "./hooks";
 import type {
   DocumentMember,
@@ -203,6 +204,7 @@ export const DocumentAccessMenu = ({
             {updateAccess.isPending ? "Saving..." : "Save access"}
           </Button>
         </Flex>
+        <DocumentPublicLink document={document} />
       </Popover.Content>
     </Popover>
   );

@@ -242,6 +242,8 @@ INNER JOIN public.workspaces AS workspace
 WHERE document.document_id = sqlc.arg(document_id)
   AND document.workspace_id = sqlc.arg(workspace_id)
   AND document.archived_at IS NULL
+  AND document.collaboration_state IS NULL
+  AND document.revision = sqlc.arg(expected_revision)
   AND membership.workspace_id = document.workspace_id
   AND membership.user_id = sqlc.arg(actor_id)
   AND membership.role <> CAST('guest' AS public.user_role)

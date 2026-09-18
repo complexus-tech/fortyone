@@ -10,6 +10,7 @@ import (
 )
 
 type repositoryStub struct {
+	Repository
 	listed       CoreListInput
 	created      CoreCreateInput
 	duplicated   [3]uuid.UUID

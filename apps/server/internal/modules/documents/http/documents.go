@@ -172,7 +172,7 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 	}
 	document, err := h.documents.Update(ctx, documents.CoreUpdateInput{
 		WorkspaceID: workspace.ID, UserID: userID, DocumentID: documentID,
-		Title: input.Title, ContentHTML: input.ContentHTML, ContentText: input.ContentText,
+		Title: input.Title, ContentHTML: input.ContentHTML, ContentText: input.ContentText, ExpectedRevision: input.ExpectedRevision,
 	})
 	if err != nil {
 		return web.RespondError(ctx, w, err, documentHTTPStatus(err))
@@ -457,6 +457,8 @@ func documentMediaURL(workspaceSlug string, documentID, attachmentID uuid.UUID) 
 
 func documentHTTPStatus(err error) int {
 	switch {
+	case errors.Is(err, documents.ErrConflict):
+		return http.StatusConflict
 	case errors.Is(err, documents.ErrInvalidInput):
 		return http.StatusBadRequest
 	case errors.Is(err, documents.ErrForbidden):

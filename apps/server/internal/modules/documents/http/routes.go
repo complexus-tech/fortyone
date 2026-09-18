@@ -27,6 +27,13 @@ func Routes(cfg Config, app *web.App) {
 
 	h := New(documentsService, cfg.Attachments, cfg.Log)
 
+	app.Get("/public/documents/{token}", h.PublicDocument)
+	app.Get("/public/documents/{token}/media/{attachmentId}", h.PublicMedia)
+	app.Get("/workspaces/{workspaceSlug}/documents/{id}/revisions", h.ListRevisions, auth, workspace)
+	app.Get("/workspaces/{workspaceSlug}/documents/{id}/revisions/{revision}", h.GetRevision, auth, workspace)
+	app.Post("/workspaces/{workspaceSlug}/documents/{id}/restore", h.RestoreRevision, auth, workspace, memberAndAdmin)
+	app.Put("/workspaces/{workspaceSlug}/documents/{id}/public-link", h.SetPublicLink, auth, workspace, memberAndAdmin)
+	app.Post("/workspaces/{workspaceSlug}/documents/{id}/collaboration-session", h.CollaborationSession, auth, workspace)
 	app.Get("/workspaces/{workspaceSlug}/documents", h.List, auth, workspace)
 	app.Get("/workspaces/{workspaceSlug}/documents/related", h.ListRelatedDocuments, auth, workspace)
 	app.Post("/workspaces/{workspaceSlug}/documents", h.Create, auth, workspace, memberAndAdmin)

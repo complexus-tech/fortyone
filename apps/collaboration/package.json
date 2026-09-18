@@ -1,0 +1,32 @@
+{
+  "name": "collaboration",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev:collaboration": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "type-check": "tsc --noEmit",
+    "test": "tsx --test src/*.test.ts",
+    "test:integration": "tsx --test tests/*.test.ts"
+  },
+  "dependencies": {
+    "@fortyone/document-editor": "workspace:*",
+    "@hocuspocus/extension-redis": "4.7.0",
+    "@hocuspocus/server": "4.7.0",
+    "@tiptap/core": "3.20.4",
+    "@tiptap/html": "3.20.4",
+    "@tiptap/y-tiptap": "^3.0.2",
+    "pg": "^8.16.3",
+    "tsx": "^4.20.6",
+    "yjs": "^13.6.27"
+  },
+  "devDependencies": {
+    "@hocuspocus/provider": "4.7.0",
+    "@types/node": "^22.0.0",
+    "@types/pg": "^8.15.6",
+    "@types/ws": "^8.18.1",
+    "typescript": "7.0.2",
+    "ws": "^8.21.3"
+  }
+}

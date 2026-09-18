@@ -73,14 +73,14 @@ func TestRepositoryEnforcesTenantVisibilityAndEditPolicy(t *testing.T) {
 	newTitle := "viewer overwrite"
 	if _, err := repository.Update(ctx, documentdomain.UpdateInput{
 		WorkspaceID: fixture.workspaceA, UserID: fixture.viewerA,
-		DocumentID: restricted.ID, Title: &newTitle,
+		DocumentID: restricted.ID, ExpectedRevision: restricted.Revision, Title: &newTitle,
 	}); !errors.Is(err, documentdomain.ErrNotFound) {
 		t.Fatalf("viewer Update() error = %v, want hidden not found", err)
 	}
 	editorTitle := "Editor revision"
 	if _, err := repository.Update(ctx, documentdomain.UpdateInput{
 		WorkspaceID: fixture.workspaceA, UserID: fixture.editorA,
-		DocumentID: restricted.ID, Title: &editorTitle,
+		DocumentID: restricted.ID, ExpectedRevision: restricted.Revision, Title: &editorTitle,
 	}); err != nil {
 		t.Fatalf("editor Update() error = %v", err)
 	}
@@ -289,7 +289,7 @@ func TestRepositoryMediaTransactionsPreserveOrphanRules(t *testing.T) {
 	newHTML := fmt.Sprintf(`<img src="/documents/%s/media/%s">`, documentA.ID, orphanOnly)
 	if _, err := repository.Update(ctx, documentdomain.UpdateInput{
 		WorkspaceID: fixture.workspaceA, UserID: fixture.ownerA,
-		DocumentID: documentA.ID, ContentHTML: &newHTML,
+		DocumentID: documentA.ID, ExpectedRevision: documentA.Revision, ContentHTML: &newHTML,
 	}); err != nil {
 		t.Fatalf("update stable media URL: %v", err)
 	}
@@ -350,8 +350,8 @@ func TestConcurrentPartialUpdatesComposeWithoutLostFields(t *testing.T) {
 	title := "Concurrent title"
 	content := "<p>Concurrent content</p>"
 	for _, input := range []documentdomain.UpdateInput{
-		{WorkspaceID: fixture.workspaceA, UserID: fixture.ownerA, DocumentID: document.ID, Title: &title},
-		{WorkspaceID: fixture.workspaceA, UserID: fixture.editorA, DocumentID: document.ID, ContentHTML: &content},
+		{WorkspaceID: fixture.workspaceA, UserID: fixture.ownerA, DocumentID: document.ID, ExpectedRevision: document.Revision, Title: &title},
+		{WorkspaceID: fixture.workspaceA, UserID: fixture.editorA, DocumentID: document.ID, ExpectedRevision: document.Revision, ContentHTML: &content},
 	} {
 		input := input
 		go func() {
@@ -363,14 +363,19 @@ func TestConcurrentPartialUpdatesComposeWithoutLostFields(t *testing.T) {
 	}
 	ready.Wait()
 	close(start)
+	conflicts := 0
 	for range 2 {
-		if err := <-result; err != nil {
-			t.Fatalf("concurrent Update() error = %v", err)
+		if err := <-result; errors.Is(err, documentdomain.ErrConflict) {
+			conflicts++
+		} else if err != nil {
+			t.Fatal(err)
 		}
 	}
-
+	if conflicts != 1 {
+		t.Fatalf("want one stale writer rejected, got %d", conflicts)
+	}
 	stored, err := repository.Get(ctx, fixture.workspaceA, fixture.ownerA, document.ID)
-	if err != nil || stored.Title != title || stored.ContentHTML != content {
+	if err != nil || stored.Revision != 2 {
 		t.Fatalf("concurrent document = %#v, %v", stored, err)
 	}
 }

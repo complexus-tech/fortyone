@@ -57,7 +57,7 @@ func newDocument(
 	canEdit bool,
 ) documentdomain.Document {
 	return documentdomain.Document{
-		ID: id, WorkspaceID: workspaceID, Title: title, ContentHTML: contentHTML,
+		Revision: 1, CollaborationEpoch: 1, ID: id, WorkspaceID: workspaceID, Title: title, ContentHTML: contentHTML,
 		ContentText: contentText, Visibility: documentdomain.Visibility(visibility),
 		CreatedBy: createdBy, UpdatedBy: updatedBy, CreatedAt: createdAt,
 		UpdatedAt: updatedAt, ArchivedAt: archivedAt, CanEdit: canEdit,

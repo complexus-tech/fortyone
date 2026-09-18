@@ -1,0 +1,22 @@
+{
+  "name": "@fortyone/document-editor",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./image-utils": "./src/image-utils.ts"
+  },
+  "dependencies": {
+    "@tiptap/core": "3.20.4",
+    "@tiptap/starter-kit": "3.20.4",
+    "@tiptap/extension-image": "3.20.4",
+    "@tiptap/extension-link": "3.20.4",
+    "@tiptap/extension-list": "3.20.4",
+    "@tiptap/extension-table": "3.20.4",
+    "@tiptap/extension-table-cell": "3.20.4",
+    "@tiptap/extension-table-header": "3.20.4",
+    "@tiptap/extension-table-row": "3.20.4",
+    "@tiptap/extension-underline": "3.20.4"
+  }
+}

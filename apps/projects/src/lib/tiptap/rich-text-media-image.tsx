@@ -2,8 +2,8 @@
 
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { useEffect, useRef } from "react";
-import { mergeAttributes, Node, type Editor } from "@tiptap/core";
-import Image from "@tiptap/extension-image";
+import type { Editor } from "@tiptap/core";
+import { DocumentImage, DocumentVideo } from "@fortyone/document-editor";
 import {
   NodeViewWrapper,
   ReactNodeViewRenderer,
@@ -20,13 +20,9 @@ import {
 import { cn } from "lib";
 import {
   clampNumber,
-  DEFAULT_RICH_TEXT_IMAGE_ALIGNMENT,
-  DEFAULT_RICH_TEXT_IMAGE_WIDTH,
   getRichTextImageStyle,
-  getRichTextImageStyleString,
   MIN_RICH_TEXT_IMAGE_WIDTH_PX,
   normalizeRichTextImageAlignment,
-  normalizeRichTextImageWidth,
   parseRichTextImageWidthToPixels,
   type RichTextImageAlignment,
 } from "./rich-text-media-image-utils";
@@ -235,103 +231,12 @@ const RichTextVideoView = ({
   );
 };
 
-export const RichTextImage = Image.extend({
-  addAttributes() {
-    return {
-      ...this.parent?.(),
-      width: {
-        default: DEFAULT_RICH_TEXT_IMAGE_WIDTH,
-        parseHTML: (element) =>
-          normalizeRichTextImageWidth(
-            element.getAttribute("data-width") || element.style.width,
-          ),
-        renderHTML: (attributes) => ({
-          "data-width": normalizeRichTextImageWidth(attributes.width),
-          style: getRichTextImageStyleString(
-            attributes.width,
-            attributes.align,
-          ),
-        }),
-      },
-      align: {
-        default: DEFAULT_RICH_TEXT_IMAGE_ALIGNMENT,
-        parseHTML: (element) =>
-          normalizeRichTextImageAlignment(element.getAttribute("data-align")),
-        renderHTML: (attributes) => ({
-          "data-align": normalizeRichTextImageAlignment(attributes.align),
-        }),
-      },
-      attachmentId: {
-        default: null,
-        parseHTML: (element) => element.getAttribute("data-attachment-id"),
-        renderHTML: (attributes) =>
-          typeof attributes.attachmentId === "string" &&
-          attributes.attachmentId.trim()
-            ? { "data-attachment-id": attributes.attachmentId }
-            : {},
-      },
-      uploadId: {
-        default: null,
-        parseHTML: () => null,
-        renderHTML: () => ({}),
-      },
-      isUploading: {
-        default: false,
-        parseHTML: () => false,
-        renderHTML: () => ({}),
-      },
-    };
-  },
+export const RichTextImage = DocumentImage.extend({
   addNodeView() {
     return ReactNodeViewRenderer(ResizableRichTextImageView);
   },
 });
-
-export const RichTextVideo = Node.create({
-  name: "documentVideo",
-  group: "block",
-  atom: true,
-  draggable: true,
-  selectable: true,
-  addAttributes() {
-    return {
-      src: { default: null },
-      attachmentId: {
-        default: null,
-        parseHTML: (element) => element.getAttribute("data-attachment-id"),
-        renderHTML: (attributes) =>
-          typeof attributes.attachmentId === "string" &&
-          attributes.attachmentId.trim()
-            ? { "data-attachment-id": attributes.attachmentId }
-            : {},
-      },
-      uploadId: {
-        default: null,
-        parseHTML: () => null,
-        renderHTML: () => ({}),
-      },
-      isUploading: {
-        default: false,
-        parseHTML: () => false,
-        renderHTML: () => ({}),
-      },
-    };
-  },
-  parseHTML() {
-    return [{ tag: "video[data-document-media-video]" }];
-  },
-  renderHTML({ HTMLAttributes }) {
-    return [
-      "video",
-      mergeAttributes(HTMLAttributes, {
-        class:
-          "my-5 aspect-video w-full max-w-full rounded-xl border border-border bg-black object-contain",
-        controls: "true",
-        "data-document-media-video": "true",
-        preload: "metadata",
-      }),
-    ];
-  },
+export const RichTextVideo = DocumentVideo.extend({
   addNodeView() {
     return ReactNodeViewRenderer(RichTextVideoView);
   },

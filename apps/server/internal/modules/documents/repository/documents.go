@@ -87,6 +87,16 @@ func hydrateDocument(
 	document *documentdomain.Document,
 	actorID uuid.UUID,
 ) error {
+	metadata, err := queries.GetDocumentEditingMetadata(ctx, documentssql.GetDocumentEditingMetadataParams{DocumentID: document.ID, ActorID: actorID})
+	if err != nil {
+		return fmt.Errorf("get document editing metadata: %w", err)
+	}
+	document.Revision = metadata.Revision
+	document.CollaborationEpoch = metadata.CollaborationEpoch
+	document.Collaborative = metadata.Collaborative
+	if metadata.PublicToken != "" {
+		document.PublicToken = &metadata.PublicToken
+	}
 	members, err := queries.ListAccessibleDocumentMembers(ctx, documentssql.ListAccessibleDocumentMembersParams{
 		ActorID: actorID, DocumentID: document.ID, WorkspaceID: document.WorkspaceID,
 	})
@@ -135,8 +145,18 @@ func (repository *Repository) Update(
 	}
 	var document documentdomain.Document
 	err := repository.withinSerializable(ctx, func(queries *documentssql.Queries) error {
+		current, err := getDocument(ctx, queries, input.WorkspaceID, input.UserID, input.DocumentID)
+		if err != nil {
+			return err
+		}
+		if !current.CanEdit {
+			return documentdomain.ErrNotFound
+		}
+		if current.Collaborative || current.Revision != input.ExpectedRevision {
+			return documentdomain.ErrConflict
+		}
 		row, err := queries.UpdateEditableDocument(ctx, documentssql.UpdateEditableDocumentParams{
-			Title: input.Title, ContentHtml: input.ContentHTML, ContentText: input.ContentText,
+			ExpectedRevision: input.ExpectedRevision, Title: input.Title, ContentHtml: input.ContentHTML, ContentText: input.ContentText,
 			ActorID: input.UserID, DocumentID: input.DocumentID, WorkspaceID: input.WorkspaceID,
 		})
 		if err != nil {

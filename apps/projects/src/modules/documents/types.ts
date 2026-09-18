@@ -16,6 +16,10 @@ export type RelatedWork = {
 };
 
 export type WorkspaceDocument = {
+  revision: number;
+  collaborationEpoch: number;
+  collaborative: boolean;
+  publicToken: string | null;
   id: string;
   workspaceId: string;
   title: string;
@@ -68,7 +72,7 @@ export type DocumentCreate = {
   visibility?: DocumentVisibility;
 };
 
-export type DocumentUpdate = Partial<
+export type DocumentUpdate = { expectedRevision: number } & Partial<
   Pick<WorkspaceDocument, "title" | "contentHtml" | "contentText">
 >;
 
@@ -86,3 +90,13 @@ export type DocumentMedia = {
   createdAt: string;
   uploadedBy: string;
 };
+
+export type DocumentRevision = {
+  revision: number;
+  title: string;
+  contentHtml?: string;
+  contentText?: string;
+  editedBy: string | null;
+  createdAt: string;
+};
+export type CollaborationSession = { token: string; name: string };

@@ -22,20 +22,24 @@ type AppRelatedWork struct {
 }
 
 type AppDocument struct {
-	ID               uuid.UUID           `json:"id"`
-	WorkspaceID      uuid.UUID           `json:"workspaceId"`
-	Title            string              `json:"title"`
-	ContentHTML      string              `json:"contentHtml"`
-	ContentText      string              `json:"contentText"`
-	Visibility       string              `json:"visibility"`
-	CreatedBy        uuid.UUID           `json:"createdBy"`
-	UpdatedBy        uuid.UUID           `json:"updatedBy"`
-	CreatedAt        time.Time           `json:"createdAt"`
-	UpdatedAt        time.Time           `json:"updatedAt"`
-	CanEdit          bool                `json:"canEdit"`
-	SharedWith       []AppDocumentMember `json:"sharedWith"`
-	RelatedWork      []AppRelatedWork    `json:"relatedWork"`
-	RelatedWorkCount int                 `json:"relatedWorkCount"`
+	Revision           int64               `json:"revision"`
+	CollaborationEpoch int64               `json:"collaborationEpoch"`
+	Collaborative      bool                `json:"collaborative"`
+	PublicToken        *string             `json:"publicToken"`
+	ID                 uuid.UUID           `json:"id"`
+	WorkspaceID        uuid.UUID           `json:"workspaceId"`
+	Title              string              `json:"title"`
+	ContentHTML        string              `json:"contentHtml"`
+	ContentText        string              `json:"contentText"`
+	Visibility         string              `json:"visibility"`
+	CreatedBy          uuid.UUID           `json:"createdBy"`
+	UpdatedBy          uuid.UUID           `json:"updatedBy"`
+	CreatedAt          time.Time           `json:"createdAt"`
+	UpdatedAt          time.Time           `json:"updatedAt"`
+	CanEdit            bool                `json:"canEdit"`
+	SharedWith         []AppDocumentMember `json:"sharedWith"`
+	RelatedWork        []AppRelatedWork    `json:"relatedWork"`
+	RelatedWorkCount   int                 `json:"relatedWorkCount"`
 }
 
 type AppDocumentSummary struct {
@@ -59,9 +63,10 @@ type AppCreateDocument struct {
 }
 
 type AppUpdateDocument struct {
-	Title       *string `json:"title"`
-	ContentHTML *string `json:"contentHtml"`
-	ContentText *string `json:"contentText"`
+	ExpectedRevision int64   `json:"expectedRevision"`
+	Title            *string `json:"title"`
+	ContentHTML      *string `json:"contentHtml"`
+	ContentText      *string `json:"contentText"`
 }
 
 type AppDocumentAccess struct {
@@ -97,6 +102,7 @@ func toAppDocument(document documents.CoreDocument, canMutate bool) AppDocument 
 		}
 	}
 	return AppDocument{
+		Revision: document.Revision, CollaborationEpoch: document.CollaborationEpoch, Collaborative: document.Collaborative, PublicToken: document.PublicToken,
 		ID: document.ID, WorkspaceID: document.WorkspaceID, Title: document.Title,
 		ContentHTML: document.ContentHTML, ContentText: document.ContentText,
 		Visibility: string(document.Visibility), CreatedBy: document.CreatedBy,

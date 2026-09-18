@@ -3,6 +3,7 @@ import type { WorkspaceCtx } from "@/lib/http";
 import type { ApiResponse } from "@/types";
 import type {
   DocumentRelationType,
+  DocumentRevision,
   WorkspaceDocument,
   WorkspaceDocumentSummary,
 } from "./types";
@@ -42,4 +43,28 @@ export const getRelatedDocuments = async (
     ctx,
   );
   return response.data ?? [];
+};
+
+export const getDocumentRevisions = async (
+  documentId: string,
+  ctx: WorkspaceCtx,
+  before = 0,
+) => {
+  const response = await get<ApiResponse<DocumentRevision[]>>(
+    `documents/${documentId}/revisions${before ? `?before=${before}` : ""}`,
+    ctx,
+  );
+  return response.data ?? [];
+};
+
+export const getDocumentRevision = async (
+  documentId: string,
+  revision: number,
+  ctx: WorkspaceCtx,
+) => {
+  const response = await get<ApiResponse<DocumentRevision>>(
+    `documents/${documentId}/revisions/${revision}`,
+    ctx,
+  );
+  return response.data!;
 };

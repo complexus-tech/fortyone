@@ -4,6 +4,7 @@ import { post, put, remove } from "@/lib/http";
 import type { ApiResponse } from "@/types";
 import { getApiError } from "@/utils";
 import type {
+  CollaborationSession,
   DocumentAccessUpdate,
   DocumentCreate,
   DocumentMedia,
@@ -188,4 +189,62 @@ export const removeDocumentRelationshipAction = async (
   } catch (error) {
     return getApiError(error);
   }
+};
+
+export const createCollaborationSessionAction = async (
+  documentId: string,
+  workspaceSlug: string,
+) => {
+  const response = await post<
+    Record<string, never>,
+    ApiResponse<CollaborationSession>
+  >(
+    `documents/${documentId}/collaboration-session`,
+    {},
+    await workspaceContext(workspaceSlug),
+  );
+  if (response.error || !response.data)
+    throw new Error("Could not join the document");
+  return response.data;
+};
+
+export const setDocumentPublicLinkAction = async (
+  documentId: string,
+  workspaceSlug: string,
+  enabled: boolean,
+) => {
+  const response = await put<
+    { enabled: boolean },
+    ApiResponse<WorkspaceDocument>
+  >(
+    `documents/${documentId}/public-link`,
+    { enabled },
+    await workspaceContext(workspaceSlug),
+  );
+  if (response.error || !response.data)
+    throw new Error(
+      response.error?.message ?? "Could not update the public link",
+    );
+  return response.data;
+};
+
+export const restoreDocumentRevisionAction = async (
+  documentId: string,
+  workspaceSlug: string,
+  revision: number,
+  expectedRevision: number,
+) => {
+  const response = await post<
+    { revision: number; expectedRevision: number },
+    ApiResponse<WorkspaceDocument>
+  >(
+    `documents/${documentId}/restore`,
+    { revision, expectedRevision },
+    await workspaceContext(workspaceSlug),
+  );
+  if (response.error || !response.data)
+    throw new Error(
+      response.error?.message ?? "Could not restore this version",
+    );
+  return response.data;
 };

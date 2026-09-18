@@ -4,9 +4,12 @@ import type { Dispatch, SetStateAction } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useEditor } from "@tiptap/react";
+import Collaboration from "@tiptap/extension-collaboration";
+import CollaborationCaret from "@tiptap/extension-collaboration-caret";
 import { cn } from "lib";
 import { toast } from "sonner";
 import {
+  Avatar,
   Box,
   Button,
   Divider,
@@ -57,6 +60,11 @@ import {
 import { RichTextTableMenu } from "@/lib/tiptap/rich-text-table-menu";
 import { GoogleDriveFileSection } from "@/modules/google-drive/public/files";
 import { useGoogleDriveDescriptionPaste } from "@/modules/google-drive/public/editor";
+import {
+  collaborationColor,
+  useDocumentCollaboration,
+} from "./use-document-collaboration";
+import { DocumentHistory } from "./document-history";
 import { DocumentAccessMenu } from "./document-access-menu";
 import {
   deleteDocumentMediaAction,
@@ -120,7 +128,11 @@ const DocumentPageSkeleton = () => (
   </Box>
 );
 
-export const DocumentPage = ({ documentId }: { documentId: string }) => {
+export const DocumentPage = ({ documentId }: { documentId: string }) => (
+  <DocumentPageContent documentId={documentId} key={documentId} />
+);
+
+const DocumentPageContent = ({ documentId }: { documentId: string }) => {
   const router = useRouter();
   const { data: session } = useSession();
   const features = useFeatures();
@@ -129,6 +141,21 @@ export const DocumentPage = ({ documentId }: { documentId: string }) => {
   const { withWorkspace, workspaceSlug } = useWorkspacePath();
   const { data: document, isPending } = useDocument(documentId);
   const updateDocument = useUpdateDocument(documentId);
+  const collaboration = useDocumentCollaboration(
+    document?.id ?? "",
+    workspaceSlug,
+    session?.user,
+  );
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const canEditContent = Boolean(
+    document?.canEdit &&
+      (collaboration.configured
+        ? collaboration.ready &&
+          collaboration.writable &&
+          collaboration.status !== "offline" &&
+          collaboration.status !== "blocked"
+        : !document.collaborative && !updateDocument.isError),
+  );
   const archiveDocument = useArchiveDocument();
   const duplicateDocument = useDuplicateDocument();
   const deleteDocument = useDeleteDocument();
@@ -150,6 +177,9 @@ export const DocumentPage = ({ documentId }: { documentId: string }) => {
   );
   const titleRef = useRef<HTMLTextAreaElement>(null);
   const loadedDocumentIdRef = useRef<string | null>(null);
+  const editingRevision = useRef(0);
+  const saveQueue = useRef<Promise<void> | null>(null);
+  const saveFailed = useRef(false);
   const closeRelatedWork = useCallback(() => {
     setIsRelatedWorkOpen(false);
   }, [setIsRelatedWorkOpen]);
@@ -209,40 +239,75 @@ export const DocumentPage = ({ documentId }: { documentId: string }) => {
     [documentId, workspaceSlug],
   );
 
-  const persist = (payload: DocumentUpdate) => {
-    updateDocument.mutate(payload);
+  const persist = (payload: Omit<DocumentUpdate, "expectedRevision">) => {
+    if (collaboration.configured || !document) return Promise.resolve();
+    const pending = (saveQueue.current ?? Promise.resolve()).then(async () => {
+      if (saveFailed.current) throw new Error("Reload before saving again");
+      const response = await updateDocument.mutateAsync({
+        ...payload,
+        expectedRevision: editingRevision.current,
+      });
+      if (!response.data) throw new Error("Document was not saved");
+      editingRevision.current = response.data.revision;
+    });
+    saveQueue.current = pending.catch(() => {
+      saveFailed.current = true;
+    });
+    return pending;
   };
   const { callback: saveTitle, flush: flushTitle } = useDebouncedCallback(
     (nextTitle: string) => {
-      persist({ title: nextTitle });
+      void persist({ title: nextTitle }).catch(() => {});
     },
     700,
     { flushOnUnmount: true },
   );
   const { callback: saveContent, flush: flushContent } = useDebouncedCallback(
     (content: Pick<DocumentUpdate, "contentHtml" | "contentText">) => {
-      persist(content);
+      void persist(content).catch(() => {});
     },
     700,
     { flushOnUnmount: true },
   );
 
-  const editor = useEditor({
-    extensions: createRichTextExtensions({
-      onMediaFiles: handleMediaFiles,
-      onMediaRequest: () => {
-        window.document.getElementById(DOCUMENT_MEDIA_INPUT_ID)?.click();
+  const editor = useEditor(
+    {
+      extensions: [
+        ...createRichTextExtensions({
+          collaborative: Boolean(collaboration.connection),
+          onMediaFiles: handleMediaFiles,
+          onMediaRequest: () => {
+            window.document.getElementById(DOCUMENT_MEDIA_INPUT_ID)?.click();
+          },
+          placeholder: "Type / for commands",
+        }),
+        ...(collaboration.connection
+          ? [
+              Collaboration.configure({
+                document: collaboration.connection.document,
+              }),
+              CollaborationCaret.configure({
+                provider: collaboration.connection.provider,
+                user: {
+                  id: session?.user.id,
+                  name: session?.user.name || "Teammate",
+                  color: collaborationColor(session?.user.id ?? ""),
+                },
+              }),
+            ]
+          : []),
+      ],
+      content: "",
+      editable: false,
+      immediatelyRender: false,
+      onUpdate: ({ editor: currentEditor }) => {
+        if (!collaboration.configured)
+          saveContent(getPersistableRichTextContent(currentEditor));
       },
-      placeholder: "Type / for commands",
-    }),
-    content: "",
-    editable: false,
-    immediatelyRender: false,
-    onUpdate: ({ editor: currentEditor }) => {
-      saveContent(getPersistableRichTextContent(currentEditor));
+      onBlur: flushContent,
     },
-    onBlur: flushContent,
-  });
+    [collaboration.connection],
+  );
   const { onPaste: handleGoogleDrivePaste, picker: googleDrivePastePicker } =
     useGoogleDriveDescriptionPaste({
       editor,
@@ -251,19 +316,25 @@ export const DocumentPage = ({ documentId }: { documentId: string }) => {
 
   useEffect(() => {
     if (!document) return;
-    editor?.setEditable(document.canEdit);
-    if (editor && loadedDocumentIdRef.current !== document.id) {
+    editor?.setEditable(canEditContent, false);
+    if (
+      !collaboration.connection &&
+      editor &&
+      loadedDocumentIdRef.current !== document.id
+    ) {
       editor.commands.setContent(document.contentHtml, { emitUpdate: false });
       loadedDocumentIdRef.current = document.id;
+      editingRevision.current = document.revision;
+      setTitleDraft({ documentId: document.id, value: document.title });
     }
-  }, [document, editor]);
+  }, [document, editor, canEditContent, collaboration.connection]);
 
   useEffect(() => {
     const element = titleRef.current;
     if (!element) return;
     element.style.height = "0px";
     element.style.height = `${element.scrollHeight}px`;
-  }, [document?.title, titleDraft]);
+  }, [document?.title, titleDraft, collaboration.title]);
 
   if (isPending) return <DocumentPageSkeleton />;
 
@@ -282,8 +353,20 @@ export const DocumentPage = ({ documentId }: { documentId: string }) => {
     );
   }
 
-  const title =
+  let title =
     titleDraft.documentId === documentId ? titleDraft.value : document.title;
+  if (collaboration.ready) title = collaboration.title;
+  let saveStatus = "Saved";
+  if (updateDocument.isPending) saveStatus = "Saving…";
+  if (updateDocument.isError) saveStatus = "Not saved";
+  if (collaboration.configured)
+    saveStatus = {
+      connecting: "Connecting…",
+      saved: "Saved",
+      saving: "Saving…",
+      offline: "Reconnecting…",
+      blocked: "Connection needs attention",
+    }[collaboration.status];
   const canManageDocument =
     session?.user.id === document.createdBy && document.canEdit;
   const accessLabel = documentAccessLabels[document.visibility];
@@ -344,7 +427,11 @@ export const DocumentPage = ({ documentId }: { documentId: string }) => {
           contentText: document.contentText,
         };
     try {
-      await updateDocument.mutateAsync({ title, ...content });
+      if (!collaboration.configured) {
+        flushTitle();
+        flushContent();
+        await persist({ title, ...content });
+      }
       duplicateDocument.mutate(document.id, {
         onSuccess: (response) => {
           if (response.data) {
@@ -417,7 +504,11 @@ export const DocumentPage = ({ documentId }: { documentId: string }) => {
                   Copy link
                 </Menu.Item>
                 <Menu.Item
-                  disabled={!document.canEdit || duplicateDocument.isPending}
+                  disabled={
+                    !canEditContent ||
+                    collaboration.status === "saving" ||
+                    duplicateDocument.isPending
+                  }
                   onSelect={() => void handleDuplicate()}
                 >
                   <DuplicateIcon />
@@ -427,6 +518,13 @@ export const DocumentPage = ({ documentId }: { documentId: string }) => {
                 </Menu.Item>
               </Menu.Group>
               <Menu.Group>
+                <Menu.Item
+                  onSelect={() => {
+                    setHistoryOpen(true);
+                  }}
+                >
+                  Version history
+                </Menu.Item>
                 {canManageDocument ? (
                   <Menu.Item onSelect={handleArchive}>
                     <ArchiveIcon />
@@ -456,6 +554,16 @@ export const DocumentPage = ({ documentId }: { documentId: string }) => {
           </Menu>
         </Flex>
         <Flex align="center" gap={2}>
+          <span aria-live="polite" className="text-text-muted hidden md:inline">
+            {saveStatus}
+          </span>
+          <Flex className="-space-x-2">
+            {collaboration.peers.slice(0, 3).map((peer) => (
+              <span key={peer.id} title={peer.name}>
+                <Avatar name={peer.name} size="xs" />
+              </span>
+            ))}
+          </Flex>
           {canManageDocument ? (
             <DocumentAccessMenu document={document} />
           ) : (
@@ -523,12 +631,42 @@ export const DocumentPage = ({ documentId }: { documentId: string }) => {
                 ref={setScrollContainer}
               >
                 <Box className="mx-auto w-full max-w-5xl px-8 pt-30 pb-32 sm:px-10 lg:px-12 lg:pt-34">
+                  {(collaboration.configured &&
+                    (collaboration.status === "blocked" ||
+                      collaboration.status === "offline")) ||
+                  updateDocument.isError ||
+                  (!collaboration.configured && document.collaborative) ? (
+                    <Box
+                      className="bg-surface-elevated border-border mb-6 rounded-xl border p-4"
+                      role="status"
+                    >
+                      <Text>
+                        Editing is paused. Your connection or document access
+                        changed. Copy any unsaved text before reloading.
+                      </Text>
+                      <Button
+                        className="mt-3"
+                        color="tertiary"
+                        onClick={() => {
+                          window.location.reload();
+                        }}
+                        size="sm"
+                      >
+                        Reload document
+                      </Button>
+                    </Box>
+                  ) : null}
                   <textarea
                     aria-label="Document title"
                     className="text-foreground placeholder:text-text-muted mb-6 block min-h-14 w-full resize-none overflow-hidden bg-transparent text-4xl leading-tight font-semibold outline-none md:text-5xl"
-                    disabled={!document.canEdit}
+                    disabled={!canEditContent}
+                    maxLength={255}
                     onBlur={flushTitle}
                     onChange={(event) => {
+                      if (collaboration.configured) {
+                        collaboration.setTitle(event.target.value);
+                        return;
+                      }
                       setTitleDraft({
                         documentId,
                         value: event.target.value,
@@ -544,7 +682,10 @@ export const DocumentPage = ({ documentId }: { documentId: string }) => {
                   <TextEditor
                     bubbleMenuCreateActions={bubbleMenuCreateActions}
                     bubbleMenuShouldShow={shouldShowDocumentTextMenu}
-                    className="rich-document-editor min-h-[55dvh] text-[1.1rem] leading-7"
+                    className={cn(
+                      "rich-document-editor min-h-[55dvh] text-[1.1rem] leading-7",
+                      styles.collaborativeEditor,
+                    )}
                     editor={editor}
                     onPaste={handleGoogleDrivePaste}
                   />
@@ -571,6 +712,20 @@ export const DocumentPage = ({ documentId }: { documentId: string }) => {
           </BoardDividedPanel.SideBar>
         </BoardDividedPanel>
       </Box>
+      {historyOpen ? (
+        <DocumentHistory
+          canRestore={Boolean(
+            canEditContent &&
+              collaboration.status !== "saving" &&
+              !updateDocument.isPending,
+          )}
+          document={document}
+          isOpen
+          onClose={() => {
+            setHistoryOpen(false);
+          }}
+        />
+      ) : null}
       {isDeleteDialogOpen ? (
         <ConfirmDialog
           confirmPhrase="delete"

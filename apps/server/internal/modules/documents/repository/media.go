@@ -30,6 +30,20 @@ func (repository *Repository) UnlinkMedia(
 	}
 	isOrphaned := false
 	err := repository.withinSerializable(ctx, func(queries *documentssql.Queries) error {
+		document, err := getDocument(ctx, queries, input.WorkspaceID, input.UserID, input.DocumentID)
+		if err != nil {
+			return err
+		}
+		if !document.CanEdit {
+			return documentdomain.ErrForbidden
+		}
+		retained, err := queries.DocumentMediaHasHistory(ctx, documentssql.DocumentMediaHasHistoryParams{DocumentID: input.DocumentID, AttachmentID: input.AttachmentID.String()})
+		if err != nil {
+			return err
+		}
+		if retained {
+			return documentdomain.ErrConflict
+		}
 		attachmentID, err := queries.UnlinkEditableDocumentMedia(ctx, documentssql.UnlinkEditableDocumentMediaParams{
 			DocumentID: input.DocumentID, AttachmentID: input.AttachmentID,
 			WorkspaceID: input.WorkspaceID, ActorID: input.UserID,

@@ -11,7 +11,7 @@ function PostHogPageView(): null {
 
   useEffect(() => {
     // Track pageviews
-    if (pathname) {
+    if (pathname && !pathname.startsWith("/shared/docs/")) {
       let url = window.origin + pathname;
       if (searchParams.toString()) {
         url = `${url}?${searchParams.toString()}`;

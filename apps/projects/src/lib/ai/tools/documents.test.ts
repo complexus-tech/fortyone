@@ -117,6 +117,10 @@ describe("Maya document tools", () => {
   it("returns full plain text and related work for an accessible document", async () => {
     const document: WorkspaceDocument = {
       ...summary("document-1"),
+      revision: 1,
+      collaborationEpoch: 1,
+      collaborative: false,
+      publicToken: null,
       contentHtml: "<p>Delivery plan</p>",
       contentText: "Delivery plan",
       sharedWith: [],
@@ -161,6 +165,10 @@ describe("Maya document tools", () => {
   it("bounds very large document content and marks it as incomplete", async () => {
     getDocumentMock.mockResolvedValue({
       ...summary("document-1"),
+      revision: 1,
+      collaborationEpoch: 1,
+      collaborative: false,
+      publicToken: null,
       contentHtml: "",
       contentText: "x".repeat(20_100),
       sharedWith: [],

@@ -8,6 +8,7 @@ const isProduction = process.env.NODE_ENV === "production";
 if (
   typeof window !== "undefined" &&
   isProduction &&
+  !window.location.pathname.startsWith("/shared/docs/") &&
   process.env.NEXT_PUBLIC_POSTHOG_KEY
 ) {
   posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
@@ -15,6 +16,8 @@ if (
     ui_host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
     person_profiles: "identified_only", // or 'always' to create profiles for anonymous users as well
     capture_pageview: false,
+    before_send: (event) =>
+      window.location.pathname.startsWith("/shared/docs/") ? null : event,
     capture_pageleave: true,
     disable_session_recording:
       process.env.NODE_ENV === "development" ? true : undefined,

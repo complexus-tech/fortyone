@@ -58,6 +58,7 @@ The machine-readable source of truth is [`internal/migrations/manifest.json`](..
 | `000191` | `permanent_account_deletion` | `forward-only` | `schema-first` | New authenticated DELETE /users/account permanently erases personal data and login access; 409 lists live workspaces needing another administrator; 202 means connected-service cleanup remains. Existing DELETE /users/profile remains deactivation. | Deploy the account finalizer and existing calendar/object/Drive cleanup dispatchers before exposing deletion. Remote calendar cleanup temporarily retains sealed credentials and an anonymous account FK. |
 | `000192` | `account_subscriber_deletions` | `forward-only` | `schema-first` | Permanent account deletion stages the outbox in the erasure transaction and reports 202 cleanup_pending for connected-service cleanup. | The account cleanup worker deletes Brevo contacts with bounded retry and purges addresses after 204 or 404. Subscriber updates check active identity under the same email lifecycle lock used by deletion. |
 | `000193` | `account_deletion_shared_history` | `forward-only` | `schema-first` | The new account deletion implementation retains shared comments, feedback submissions and activity history under generic attribution, while erasing identity and private account data. | Existing account finalization, subscriber and provider cleanup contracts are unchanged. |
+| `000194` | `document_collaboration` | `forward-only` | `schema-first` | New API requires migration 194. Legacy content writes are fenced after collaboration activation. | Existing workers remain compatible. |
 
 ## `000152_harden_verification_tokens`
 
@@ -1266,6 +1267,32 @@ Operational notes:
 - The shared Former user actor remains inactive, system-owned and protected from update/reactivation.
 - Retained shared content may contain personal details voluntarily included in prose; this operation erases account identity rather than rewriting organization-owned content.
 - Private documents, credentials and account-specific stores are erased; referenced shared attachment objects remain available.
+
+## `000194_document_collaboration`
+
+- **Classification:** `forward-only`
+- **Files:** `000194_document_collaboration.up.sql`, `000194_document_collaboration.down.sql`
+- **Schema:** Additive document revision, CRDT state, public links, and scoped collaboration sessions.
+- **API:** New API requires migration 194. Legacy content writes are fenced after collaboration activation.
+- **Worker:** Existing workers remain compatible.
+- **Mixed versions:** Apply schema first, then replace API and frontend before enabling collaboration.
+- **Rollout mode:** `schema-first`
+
+Rollout:
+
+1. Apply migration 194 before deploying the API.
+2. Deploy the API and Projects app, then the self-hosted collaboration service with database access and a TLS WebSocket endpoint.
+3. Configure the Projects collaboration URL and verify two-editor convergence, recovery, and public-link revocation.
+
+Recovery (`forward-fix`):
+
+1. Disable collaboration connections, retain revisions and binary state, and deploy a compatible forward fix.
+
+Operational notes:
+
+- Public links are opt-in and view-only. Re-enabling a revoked link creates a new token.
+- Collaboration sessions are scoped to a document epoch, account session version, current membership and expiry.
+- Restore advances the collaboration epoch so stale editors cannot replay pre-restore changes.
 
 ## Adding the next migration
 

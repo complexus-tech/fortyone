@@ -13,14 +13,22 @@ import (
 type Querier interface {
 	ArchiveOwnedDocument(ctx context.Context, arg ArchiveOwnedDocumentParams) (uuid.UUID, error)
 	AuthorizeAccessibleDocumentMedia(ctx context.Context, arg AuthorizeAccessibleDocumentMediaParams) (uuid.UUID, error)
+	AuthorizePublicDocumentMedia(ctx context.Context, arg AuthorizePublicDocumentMediaParams) (uuid.UUID, error)
 	CopyWorkspaceDocumentMedia(ctx context.Context, arg CopyWorkspaceDocumentMediaParams) error
 	CreateDocument(ctx context.Context, arg CreateDocumentParams) (CreateDocumentRow, error)
+	CreateDocumentCollaborationSession(ctx context.Context, arg CreateDocumentCollaborationSessionParams) error
 	CreateDocumentWithID(ctx context.Context, arg CreateDocumentWithIDParams) (CreateDocumentWithIDRow, error)
 	DeleteEditableDocumentRelationship(ctx context.Context, arg DeleteEditableDocumentRelationshipParams) (uuid.UUID, error)
+	DeleteExpiredDocumentCollaborationSessions(ctx context.Context) error
 	DeleteOwnedDocument(ctx context.Context, arg DeleteOwnedDocumentParams) (uuid.UUID, error)
 	DeleteOwnedDocumentMembers(ctx context.Context, arg DeleteOwnedDocumentMembersParams) error
+	DocumentMediaHasHistory(ctx context.Context, arg DocumentMediaHasHistoryParams) (bool, error)
 	GetAccessibleDocument(ctx context.Context, arg GetAccessibleDocumentParams) (GetAccessibleDocumentRow, error)
 	GetAccessibleDocumentForDuplicate(ctx context.Context, arg GetAccessibleDocumentForDuplicateParams) (GetAccessibleDocumentForDuplicateRow, error)
+	// Access is checked with GetAccessibleDocument in the same serializable transaction.
+	GetDocumentEditingMetadata(ctx context.Context, arg GetDocumentEditingMetadataParams) (GetDocumentEditingMetadataRow, error)
+	GetDocumentRevision(ctx context.Context, arg GetDocumentRevisionParams) (GetDocumentRevisionRow, error)
+	GetPublicDocument(ctx context.Context, arg GetPublicDocumentParams) (GetPublicDocumentRow, error)
 	GetVisibleObjectiveRelationshipTarget(ctx context.Context, arg GetVisibleObjectiveRelationshipTargetParams) (GetVisibleObjectiveRelationshipTargetRow, error)
 	GetVisibleStoryRelationshipTarget(ctx context.Context, arg GetVisibleStoryRelationshipTargetParams) (GetVisibleStoryRelationshipTargetRow, error)
 	InsertActiveWorkspaceDocumentMembers(ctx context.Context, arg InsertActiveWorkspaceDocumentMembersParams) (int64, error)
@@ -32,9 +40,12 @@ type Querier interface {
 	ListAccessibleDocumentMembers(ctx context.Context, arg ListAccessibleDocumentMembersParams) ([]ListAccessibleDocumentMembersRow, error)
 	ListAccessibleDocuments(ctx context.Context, arg ListAccessibleDocumentsParams) ([]ListAccessibleDocumentsRow, error)
 	ListAccessibleDocumentsForRelationship(ctx context.Context, arg ListAccessibleDocumentsForRelationshipParams) ([]ListAccessibleDocumentsForRelationshipRow, error)
+	ListDocumentRevisions(ctx context.Context, arg ListDocumentRevisionsParams) ([]ListDocumentRevisionsRow, error)
 	ListOrphanedDocumentMediaCandidates(ctx context.Context, arg ListOrphanedDocumentMediaCandidatesParams) ([]uuid.UUID, error)
 	ListVisibleDocumentRelationships(ctx context.Context, arg ListVisibleDocumentRelationshipsParams) ([]ListVisibleDocumentRelationshipsRow, error)
 	LockOwnedDocumentForDelete(ctx context.Context, arg LockOwnedDocumentForDeleteParams) (uuid.UUID, error)
+	RestoreDocumentRevision(ctx context.Context, arg RestoreDocumentRevisionParams) (uuid.UUID, error)
+	SetDocumentPublicToken(ctx context.Context, arg SetDocumentPublicTokenParams) error
 	SetOwnedDocumentVisibility(ctx context.Context, arg SetOwnedDocumentVisibilityParams) (uuid.UUID, error)
 	UnlinkEditableDocumentMedia(ctx context.Context, arg UnlinkEditableDocumentMediaParams) (uuid.UUID, error)
 	UpdateEditableDocument(ctx context.Context, arg UpdateEditableDocumentParams) (UpdateEditableDocumentRow, error)

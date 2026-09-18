@@ -10,6 +10,7 @@ import (
 )
 
 var (
+	ErrConflict     = documentdomain.ErrConflict
 	ErrInvalidInput = documentdomain.ErrInvalidInput
 	ErrForbidden    = documentdomain.ErrForbidden
 	ErrNotFound     = documentdomain.ErrNotFound
@@ -21,6 +22,14 @@ const maxListLimit = 100
 
 // Repository provides persistence for workspace documents and their relationships.
 type Repository interface {
+	ListRevisions(context.Context, uuid.UUID, uuid.UUID, uuid.UUID, int64) ([]documentdomain.Revision, error)
+	GetRevision(context.Context, uuid.UUID, uuid.UUID, uuid.UUID, int64) (documentdomain.Revision, error)
+	RestoreRevision(context.Context, uuid.UUID, uuid.UUID, uuid.UUID, int64, int64) (CoreDocument, error)
+	SetPublicLink(context.Context, uuid.UUID, uuid.UUID, uuid.UUID, bool) (CoreDocument, error)
+	GetPublicDocument(context.Context, string) (documentdomain.PublicDocument, error)
+	AuthorizePublicMedia(context.Context, string, uuid.UUID) (documentdomain.PublicDocument, error)
+	CreateCollaborationSession(context.Context, uuid.UUID, uuid.UUID, uuid.UUID) (documentdomain.CollaborationSession, error)
+
 	List(ctx context.Context, input CoreListInput) ([]CoreDocumentSummary, error)
 	Get(ctx context.Context, workspaceID, userID, documentID uuid.UUID) (CoreDocument, error)
 	Create(ctx context.Context, input CoreCreateInput) (CoreDocument, error)
@@ -96,6 +105,9 @@ func (s *Service) Duplicate(ctx context.Context, workspaceID, userID, documentID
 func (s *Service) Update(ctx context.Context, input CoreUpdateInput) (CoreDocument, error) {
 	if input.WorkspaceID == uuid.Nil || input.UserID == uuid.Nil || input.DocumentID == uuid.Nil {
 		return CoreDocument{}, ErrInvalidInput
+	}
+	if input.ExpectedRevision < 1 {
+		return CoreDocument{}, ErrConflict
 	}
 	if input.Title == nil && input.ContentHTML == nil && input.ContentText == nil {
 		return CoreDocument{}, ErrInvalidInput

@@ -2,7 +2,21 @@
 const nextConfig = {
   reactStrictMode: true,
   // productionBrowserSourceMaps: true,
-  transpilePackages: ["ui", "icons", "ky", "marked", "next-public-env"],
+  transpilePackages: [
+    "@fortyone/document-editor",
+    "sanitize-html",
+    "htmlparser2",
+    "domhandler",
+    "domutils",
+    "domelementtype",
+    "dom-serializer",
+    "entities",
+    "ui",
+    "icons",
+    "ky",
+    "marked",
+    "next-public-env",
+  ],
   devIndicators: false,
   reactCompiler: true,
   experimental: {

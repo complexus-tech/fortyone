@@ -93,7 +93,13 @@
     "tailwind-config": "workspace:*",
     "tippy.js": "^6.3.7",
     "ui": "workspace:*",
-    "zod": "^4.4.3"
+    "zod": "^4.4.3",
+    "@fortyone/document-editor": "workspace:*",
+    "@hocuspocus/provider": "4.7.0",
+    "@tiptap/extension-collaboration": "3.20.4",
+    "@tiptap/extension-collaboration-caret": "3.20.4",
+    "yjs": "^13.6.27",
+    "sanitize-html": "^2.17.0"
   },
   "devDependencies": {
     "@next/eslint-plugin-next": "16.2.9",
@@ -119,7 +125,8 @@
     "tailwindcss": "^4.1.18",
     "ts-node": "^10.9.2",
     "tsconfig": "workspace:*",
-    "typescript": "7.0.2"
+    "typescript": "7.0.2",
+    "@types/sanitize-html": "^2.16.0"
   },
   "pnpm": {
     "overrides": {
