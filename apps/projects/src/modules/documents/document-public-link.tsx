@@ -76,6 +76,7 @@ export function DocumentPublicLink({
       {path ? (
         <Flex className="border-border -mx-5 mt-4 border-t px-5 pt-4" gap={2}>
           <Button
+            align="center"
             className="flex-1"
             color="tertiary"
             disabled={update.isPending}

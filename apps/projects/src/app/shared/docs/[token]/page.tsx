@@ -28,7 +28,7 @@ export default async function SharedDocumentPage({
     data: { title: string; contentHtml: string; updatedAt: string };
   };
   return (
-    <main className="bg-background text-foreground min-h-dvh">
+    <main className="bg-background text-foreground h-dvh overflow-y-auto">
       <article className="mx-auto max-w-3xl px-6 pt-14 pb-28 md:pt-20">
         <h1 className="mb-4 text-4xl leading-tight font-semibold md:text-5xl">
           {data.title}

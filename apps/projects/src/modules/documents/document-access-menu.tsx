@@ -126,6 +126,7 @@ export const DocumentAccessMenu = ({
           aria-label="Share document"
           color="tertiary"
           leftIcon={<ShareIcon className="size-4" />}
+          rounded="full"
           size="sm"
           variant="outline"
         >
