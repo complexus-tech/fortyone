@@ -16,6 +16,7 @@ import type {
   CalendarEventSummary,
 } from "@/lib/queries/calendar/types";
 import { parseCalendarDate } from "./calendar-layout";
+import { CalendarEventDescription } from "./calendar-event-description";
 
 const getSafeExternalUrl = (value?: string) => {
   if (!value) return null;
@@ -313,13 +314,9 @@ export const CalendarEventDetailsDialog = ({
                       <Text className="mb-2" fontSize="md" fontWeight="medium">
                         Description
                       </Text>
-                      <Text
-                        className="whitespace-pre-wrap"
-                        color="muted"
-                        fontSize="md"
-                      >
-                        {details.description}
-                      </Text>
+                      <CalendarEventDescription
+                        description={details.description}
+                      />
                     </Box>
                   ) : null}
                 </>
