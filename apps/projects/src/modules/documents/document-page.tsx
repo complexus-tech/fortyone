@@ -611,7 +611,6 @@ const DocumentPageContent = ({ documentId }: { documentId: string }) => {
                       onClick={() => {
                         setIsRelatedWorkOpen(true);
                       }}
-                      rounded="full"
                       size="sm"
                       variant="outline"
                     >
