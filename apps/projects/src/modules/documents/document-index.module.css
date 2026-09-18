@@ -1,0 +1,30 @@
+.host {
+  container: document-reading / inline-size;
+}
+.desktop {
+  display: none;
+  position: absolute;
+  top: 9rem;
+  left: 1.5rem;
+  width: 11rem;
+  max-height: calc(100% - 11rem);
+  overflow-y: auto;
+  z-index: 20;
+}
+.compact {
+  position: absolute;
+  bottom: max(1.5rem, env(safe-area-inset-bottom));
+  left: 1.5rem;
+  z-index: 20;
+}
+@container document-reading (min-width: 1100px) {
+  .desktop {
+    display: block;
+  }
+  .compact {
+    display: none;
+  }
+  .host:has([data-document-index]) .contentPadding {
+    padding-left: 13rem;
+  }
+}

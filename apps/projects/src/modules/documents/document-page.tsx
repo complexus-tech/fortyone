@@ -61,6 +61,8 @@ import {
 import { RichTextTableMenu } from "@/lib/tiptap/rich-text-table-menu";
 import { GoogleDriveFileSection } from "@/modules/google-drive/public/files";
 import { useGoogleDriveDescriptionPaste } from "@/modules/google-drive/public/editor";
+import indexStyles from "./document-index.module.css";
+import { DocumentIndex } from "./document-index";
 import {
   collaborationColor,
   useDocumentCollaboration,
@@ -590,7 +592,12 @@ const DocumentPageContent = ({ documentId }: { documentId: string }) => {
       <Box className="min-h-0 flex-1">
         <BoardDividedPanel autoSaveId="workspace:documents:related-work:divided-panel">
           <BoardDividedPanel.MainPanel>
-            <Box className="relative h-full min-w-0">
+            <Box className={cn("relative h-full min-w-0", indexStyles.host)}>
+              <DocumentIndex
+                contentSelector=".ProseMirror"
+                readingOffset={112}
+                scrollContainer={scrollContainer}
+              />
               {documentHeader}
               {isDesktop && !isRelatedWorkOpen ? (
                 <Box className="absolute top-24 right-5 z-30">
@@ -632,77 +639,79 @@ const DocumentPageContent = ({ documentId }: { documentId: string }) => {
                 className="h-full min-w-0 overflow-y-auto"
                 ref={setScrollContainer}
               >
-                <Box className="mx-auto w-full max-w-5xl px-8 pt-30 pb-32 sm:px-10 lg:px-12 lg:pt-34">
-                  {(collaboration.configured &&
-                    (collaboration.status === "blocked" ||
-                      collaboration.status === "offline")) ||
-                  updateDocument.isError ||
-                  (!collaboration.configured && document.collaborative) ? (
-                    <Box
-                      className="bg-surface-elevated border-border mb-6 rounded-xl border p-4"
-                      role="status"
-                    >
-                      <Text>
-                        Editing is paused. Your connection or document access
-                        changed. Copy any unsaved text before reloading.
-                      </Text>
-                      <Button
-                        className="mt-3"
-                        color="tertiary"
-                        onClick={() => {
-                          window.location.reload();
-                        }}
-                        size="sm"
+                <div className={indexStyles.contentPadding}>
+                  <Box className="mx-auto w-full max-w-5xl px-8 pt-30 pb-32 sm:px-10 lg:px-12 lg:pt-34">
+                    {(collaboration.configured &&
+                      (collaboration.status === "blocked" ||
+                        collaboration.status === "offline")) ||
+                    updateDocument.isError ||
+                    (!collaboration.configured && document.collaborative) ? (
+                      <Box
+                        className="bg-surface-elevated border-border mb-6 rounded-xl border p-4"
+                        role="status"
                       >
-                        Reload document
-                      </Button>
-                    </Box>
-                  ) : null}
-                  <textarea
-                    aria-label="Document title"
-                    className="text-foreground placeholder:text-text-muted mb-6 block min-h-14 w-full resize-none overflow-hidden bg-transparent text-4xl leading-tight font-semibold outline-none md:text-5xl"
-                    disabled={!canEditContent}
-                    maxLength={255}
-                    onBlur={flushTitle}
-                    onChange={(event) => {
-                      if (collaboration.configured) {
-                        collaboration.setTitle(event.target.value);
-                        return;
-                      }
-                      setTitleDraft({
-                        documentId,
-                        value: event.target.value,
-                      });
-                      saveTitle(event.target.value);
-                    }}
-                    placeholder="Untitled document"
-                    ref={titleRef}
-                    rows={1}
-                    value={title}
-                  />
-                  <Divider className="mb-8" />
-                  <TextEditor
-                    bubbleMenuCreateActions={bubbleMenuCreateActions}
-                    bubbleMenuShouldShow={shouldShowDocumentTextMenu}
-                    className={cn(
-                      "rich-document-editor min-h-[55dvh] text-[1.1rem] leading-7",
-                      styles.collaborativeEditor,
-                    )}
-                    editor={editor}
-                    onPaste={handleGoogleDrivePaste}
-                  />
-                  {googleDrivePastePicker}
-                  <RichTextTableMenu
-                    editor={editor}
-                    scrollTarget={scrollContainer}
-                  />
-                  <GoogleDriveFileSection
-                    canEdit={canEditGoogleDriveFiles}
-                    className="mt-10"
-                    suggestedTitle={title}
-                    target={{ id: documentId, type: "document" }}
-                  />
-                </Box>
+                        <Text>
+                          Editing is paused. Your connection or document access
+                          changed. Copy any unsaved text before reloading.
+                        </Text>
+                        <Button
+                          className="mt-3"
+                          color="tertiary"
+                          onClick={() => {
+                            window.location.reload();
+                          }}
+                          size="sm"
+                        >
+                          Reload document
+                        </Button>
+                      </Box>
+                    ) : null}
+                    <textarea
+                      aria-label="Document title"
+                      className="text-foreground placeholder:text-text-muted mb-6 block min-h-14 w-full resize-none overflow-hidden bg-transparent text-4xl leading-tight font-semibold outline-none md:text-5xl"
+                      disabled={!canEditContent}
+                      maxLength={255}
+                      onBlur={flushTitle}
+                      onChange={(event) => {
+                        if (collaboration.configured) {
+                          collaboration.setTitle(event.target.value);
+                          return;
+                        }
+                        setTitleDraft({
+                          documentId,
+                          value: event.target.value,
+                        });
+                        saveTitle(event.target.value);
+                      }}
+                      placeholder="Untitled document"
+                      ref={titleRef}
+                      rows={1}
+                      value={title}
+                    />
+                    <Divider className="mb-8" />
+                    <TextEditor
+                      bubbleMenuCreateActions={bubbleMenuCreateActions}
+                      bubbleMenuShouldShow={shouldShowDocumentTextMenu}
+                      className={cn(
+                        "rich-document-editor min-h-[55dvh] text-[1.1rem] leading-7",
+                        styles.collaborativeEditor,
+                      )}
+                      editor={editor}
+                      onPaste={handleGoogleDrivePaste}
+                    />
+                    {googleDrivePastePicker}
+                    <RichTextTableMenu
+                      editor={editor}
+                      scrollTarget={scrollContainer}
+                    />
+                    <GoogleDriveFileSection
+                      canEdit={canEditGoogleDriveFiles}
+                      className="mt-10"
+                      suggestedTitle={title}
+                      target={{ id: documentId, type: "document" }}
+                    />
+                  </Box>
+                </div>
               </div>
             </Box>
           </BoardDividedPanel.MainPanel>

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { PublicBranding } from "@/components/ui/public-branding";
+import { PublicDocumentLayout } from "@/modules/documents/public-document-layout";
 import { getApiUrl } from "@/lib/api-url";
 import { publicDocumentHTML } from "@/modules/documents/public-document-html";
 
@@ -28,7 +28,7 @@ export default async function SharedDocumentPage({
     data: { title: string; contentHtml: string; updatedAt: string };
   };
   return (
-    <main className="bg-background text-foreground h-dvh overflow-y-auto">
+    <PublicDocumentLayout>
       <article className="mx-auto max-w-3xl px-6 pt-14 pb-28 md:pt-20">
         <h1 className="mb-4 text-4xl leading-tight font-semibold md:text-5xl">
           {data.title}
@@ -46,7 +46,6 @@ export default async function SharedDocumentPage({
           }}
         />
       </article>
-      <PublicBranding />
-    </main>
+    </PublicDocumentLayout>
   );
 }

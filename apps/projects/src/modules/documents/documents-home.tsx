@@ -6,6 +6,10 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Box, Button, Flex, Skeleton, Text } from "ui";
 import {
+  BookIcon,
+  CalendarPlusIcon,
+  CheckListIcon,
+  SearchIcon,
   CalendarIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -26,6 +30,7 @@ import { DocumentRow } from "./document-row";
 import { DocumentFilters, DocumentSortMenu } from "./documents-home-controls";
 import {
   documentTemplates,
+  documentTemplateCategories,
   type DocumentTemplate,
   type DocumentTemplateIcon,
 } from "./document-templates";
@@ -69,6 +74,10 @@ const templateIcons: Record<
   project: ObjectiveIcon,
   "one-to-one": UserIcon,
   update: CalendarIcon,
+  guide: BookIcon,
+  research: SearchIcon,
+  event: CalendarPlusIcon,
+  checklist: CheckListIcon,
 };
 
 const templateIconStyles: Record<DocumentTemplateIcon, string> = {
@@ -78,6 +87,10 @@ const templateIconStyles: Record<DocumentTemplateIcon, string> = {
   project: "border-secondary/25 bg-secondary/10 text-secondary",
   "one-to-one": "border-success/25 bg-success/10 text-success",
   update: "border-primary/25 bg-primary/10 text-primary",
+  guide: "border-secondary/25 bg-secondary/10 text-secondary",
+  research: "border-info/25 bg-info/10 text-info",
+  event: "border-primary/25 bg-primary/10 text-primary",
+  checklist: "border-success/25 bg-success/10 text-success",
 };
 
 const isDocumentScope = (value: string | null): value is DocumentScope =>
@@ -311,9 +324,7 @@ export const DocumentsHome = () => {
     );
   };
 
-  const visibleTemplates = showTemplateGallery
-    ? documentTemplates
-    : documentTemplates.slice(0, 5);
+  const visibleTemplates = documentTemplates.slice(0, 5);
   const copy = scopeCopy[scope];
   const activeFilterCount = [
     listState.access !== "all",
@@ -394,30 +405,76 @@ export const DocumentsHome = () => {
         </Box>
 
         <Box className="mb-8">
-          <Flex align="center" className="mb-3" gap={3}>
+          <Flex align="center" className="mb-3" gap={3} justify="between">
             <Text fontWeight="semibold">
               {showTemplateGallery
                 ? "Choose a template"
                 : "Start a new document"}
             </Text>
-          </Flex>
-          <Box
-            className={
-              showTemplateGallery
-                ? "grid gap-3 sm:grid-cols-2 xl:grid-cols-3"
-                : "grid auto-cols-[minmax(13.5rem,1fr)] grid-flow-col gap-3 overflow-x-auto pb-2"
-            }
-          >
-            {visibleTemplates.map((template) => (
-              <TemplateCard
+            {showTemplateGallery ? (
+              <Button
+                color="tertiary"
                 disabled={!canCreateDocuments || createDocument.isPending}
-                isCreating={creatingTemplateId === template.id}
-                key={template.id}
-                onCreate={handleCreate}
-                template={template}
-              />
-            ))}
-          </Box>
+                leftIcon={<PlusIcon className="size-4" />}
+                onClick={() => {
+                  handleCreate(documentTemplates[0]);
+                }}
+                size="sm"
+                variant="outline"
+              >
+                {creatingTemplateId === "blank"
+                  ? "Creating…"
+                  : "Blank document"}
+              </Button>
+            ) : null}
+          </Flex>
+          {showTemplateGallery ? (
+            <Box className="space-y-8">
+              {documentTemplateCategories.map((category) => (
+                <section
+                  aria-labelledby={`template-category-${category.id}`}
+                  key={category.id}
+                >
+                  <Text
+                    as="h2"
+                    className="mb-3"
+                    fontSize="lg"
+                    fontWeight="semibold"
+                    id={`template-category-${category.id}`}
+                  >
+                    {category.label}
+                  </Text>
+                  <Box className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                    {documentTemplates
+                      .filter((template) => template.category === category.id)
+                      .map((template) => (
+                        <TemplateCard
+                          disabled={
+                            !canCreateDocuments || createDocument.isPending
+                          }
+                          isCreating={creatingTemplateId === template.id}
+                          key={template.id}
+                          onCreate={handleCreate}
+                          template={template}
+                        />
+                      ))}
+                  </Box>
+                </section>
+              ))}
+            </Box>
+          ) : (
+            <Box className="grid auto-cols-[minmax(13.5rem,1fr)] grid-flow-col gap-3 overflow-x-auto pb-2">
+              {visibleTemplates.map((template) => (
+                <TemplateCard
+                  disabled={!canCreateDocuments || createDocument.isPending}
+                  isCreating={creatingTemplateId === template.id}
+                  key={template.id}
+                  onCreate={handleCreate}
+                  template={template}
+                />
+              ))}
+            </Box>
+          )}
         </Box>
 
         {!showTemplateGallery ? (
