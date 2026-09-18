@@ -59,6 +59,7 @@ The machine-readable source of truth is [`internal/migrations/manifest.json`](..
 | `000192` | `account_subscriber_deletions` | `forward-only` | `schema-first` | Permanent account deletion stages the outbox in the erasure transaction and reports 202 cleanup_pending for connected-service cleanup. | The account cleanup worker deletes Brevo contacts with bounded retry and purges addresses after 204 or 404. Subscriber updates check active identity under the same email lifecycle lock used by deletion. |
 | `000193` | `account_deletion_shared_history` | `forward-only` | `schema-first` | The new account deletion implementation retains shared comments, feedback submissions and activity history under generic attribution, while erasing identity and private account data. | Existing account finalization, subscriber and provider cleanup contracts are unchanged. |
 | `000194` | `document_collaboration` | `forward-only` | `schema-first` | New API requires migration 194. Legacy content writes are fenced after collaboration activation. | Existing workers remain compatible. |
+| `000195` | `document_history_checkpoints` | `forward-only` | `schema-first` | Existing revision APIs remain compatible. Autosave revision counters and restore fencing remain unchanged. | No background worker or new environment configuration is required. |
 
 ## `000152_harden_verification_tokens`
 
@@ -1293,6 +1294,31 @@ Operational notes:
 - Public links are opt-in and view-only. Re-enabling a revoked link creates a new token.
 - Collaboration sessions are scoped to a document epoch, account session version, current membership and expiry.
 - Restore advances the collaboration epoch so stale editors cannot replay pre-restore changes.
+
+## `000195_document_history_checkpoints`
+
+- **Classification:** `forward-only`
+- **Files:** `000195_document_history_checkpoints.up.sql`, `000195_document_history_checkpoints.down.sql`
+- **Schema:** Bound document history to ten editing checkpoints and consolidate legacy autosave snapshots.
+- **API:** Existing revision APIs remain compatible. Autosave revision counters and restore fencing remain unchanged.
+- **Worker:** No background worker or new environment configuration is required.
+- **Mixed versions:** Schema-first; old and new API instances use the checkpoint trigger.
+- **Rollout mode:** `schema-first`
+
+Rollout:
+
+1. Apply migration 195 to consolidate existing autosave snapshots and prune beyond ten entries.
+2. Deploy the Projects history and sharing UI.
+
+Recovery (`forward-fix`):
+
+1. Deploy a forward fix; consolidated and expired snapshots cannot be reconstructed.
+
+Operational notes:
+
+- Autosaves from one editor coalesce for up to ten minutes, unless there has been a two-minute pause.
+- Initial content, editor changes and restores start distinct checkpoints. CRDT-only and access-only updates do not create history.
+- The newest ten checkpoints are retained per document; the initial version expires when it falls outside that window.
 
 ## Adding the next migration
 

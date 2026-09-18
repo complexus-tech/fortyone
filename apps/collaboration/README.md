@@ -6,7 +6,7 @@ Self-hosted Tiptap + Yjs + Hocuspocus, with PostgreSQL persistence and no paid s
 
 No new environment variables or collaboration service are required for this release:
 
-1. Apply migration **194** through the normal database migration process.
+1. Apply migrations through **195** through the normal database migration process. Migration 195 groups autosaves and caps existing and future history at ten entries.
 2. Deploy the updated Go API and Projects app using their existing environment configuration.
 3. Leave `NEXT_PUBLIC_COLLABORATION_URL` unset. Documents use the existing HTTP autosave with revision checks; version history, restoration, and public link sharing are available.
 
@@ -16,7 +16,7 @@ Public sharing uses the existing API URL and application host. Owners enable vie
 
 ## Enable collaboration later
 
-1. Apply migration **194** using the existing migration process. It adds document revisions, CRDT state, scoped sessions, public tokens, and history triggers. The migration backfills the current version of existing documents; it cannot reconstruct earlier edits. Take a database backup using the normal production process.
+1. Apply migrations through **195** using the existing migration process. It adds document revisions, CRDT state, scoped sessions, public tokens, and history triggers. The migration backfills the current version of existing documents; it cannot reconstruct earlier edits. Take a database backup using the normal production process.
 2. Deploy the updated Go API and Projects app together. Document REST updates now require `expectedRevision`. Existing open tabs should reload. Leave `NEXT_PUBLIC_COLLABORATION_URL` unset until the collaboration service is available; version history/public links work independently.
 3. Run one collaboration instance against the same database. Supply `DATABASE_URL`, `DATABASE_CA_FILE` (production), and `COLLABORATION_ALLOWED_ORIGINS`. Do not put `sslmode`, `sslcert`, `sslkey`, or `sslrootcert` in the URL: node-postgres URL SSL options can override the explicit verified CA configuration.
 4. Expose port 1234 through a TLS proxy with WebSocket upgrade support. Set the proxy's idle timeout above 60 seconds and apply connection/rate limits. `/healthz` returns 200 only when PostgreSQL is reachable. Use `COLLABORATION_ALLOWED_ORIGINS=https://cloud.fortyone.app,https://*.fortyone.app` for the production workspace hosts, or an explicit comma-separated list. Only HTTPS suffix wildcards are supported.
@@ -29,7 +29,7 @@ Build from the repository root with `docker build -f apps/collaboration/Dockerfi
 
 - Accepted edits are committed before broadcast/acknowledgement. The editor shows Saved only after synchronization acknowledgement. Reconnects merge unacknowledged updates while the editing session remains valid.
 - Permissions are checked for each message, again inside write transactions, and every five seconds for idle connections. Tokens expire after one hour and are refreshed on reconnect; password/session revocation is enforced through `auth_session_version`.
-- Every durable content/state change creates an immutable revision. History is paginated. There is no automatic retention purge: budget storage accordingly. Media referenced by historical versions is retained until document deletion.
+- Autosaves advance the conflict-detection revision, but history groups one editor’s saves into a rolling checkpoint: a new entry starts after a two-minute editing pause, ten minutes since that checkpoint began, an editor change, or a restore. Initial and restored versions are not coalesced. CRDT-only and access-only updates do not create history. Migration 195 consolidates legacy autosaves and retains at most ten checkpoints per document, pruning the oldest in the same transaction. Media referenced by retained history remains accessible.
 - Restore creates a new version and advances the document's collaboration epoch. Existing editors pause and must reload; stale/offline updates cannot undo the restore. There is no offline browser persistence: copy unsaved text before closing a disconnected editor.
 - Once collaboration is activated on a document, legacy HTML writes are fenced in both API and database. Do not disable the service as a rollback without a deliberate state migration: activated documents become read-only when collaboration is unavailable.
 - Public links are **view only**, owner-controlled, disabled by default, and revocable. Re-enabling creates a new unguessable link. No account is required to view. They expose title/body and embedded media, not history, members, related work, or Drive attachments. Search engines receive noindex, and responses are not cached. Recipients can still copy content they have already viewed. Media redirects are signed for one minute, so an already-issued URL can remain usable briefly after revocation.

@@ -1,14 +1,26 @@
 "use client";
 
 import { useState } from "react";
-import { Avatar, Box, Button, Command, Divider, Flex, Popover, Text } from "ui";
+import {
+  Avatar,
+  Box,
+  Button,
+  Command,
+  Divider,
+  Flex,
+  Popover,
+  Select,
+  Text,
+} from "ui";
 import {
   CheckIcon,
+  CloseIcon,
   LockKeyholeIcon,
   ShareIcon,
   UserMultiple02Icon,
+  WorkspaceIcon,
 } from "icons";
-import { cn } from "lib";
+import { useSession } from "@/lib/auth/client";
 import { useMembers } from "@/lib/hooks/members";
 import { DocumentPublicLink } from "./document-public-link";
 import { useUpdateDocumentAccess } from "./hooks";
@@ -26,20 +38,20 @@ const visibilityOptions: {
 }[] = [
   {
     value: "workspace",
-    label: "Everyone in the workspace",
-    description: "Everyone in the workspace can find and access this document.",
-    icon: UserMultiple02Icon,
+    label: "Workspace",
+    description: "Workspace members can edit. Guests can view.",
+    icon: WorkspaceIcon,
   },
   {
     value: "restricted",
     label: "Selected people",
-    description: "Only you and invited people can access this document.",
+    description: "Only you and selected people.",
     icon: UserMultiple02Icon,
   },
   {
     value: "private",
     label: "Only me",
-    description: "This document is private to its creator.",
+    description: "Only you can access it in the workspace.",
     icon: LockKeyholeIcon,
   },
 ];
@@ -50,6 +62,7 @@ export const DocumentAccessMenu = ({
   document: WorkspaceDocument;
 }) => {
   const [open, setOpen] = useState(false);
+  const { data: session } = useSession();
   const [visibility, setVisibility] = useState<DocumentVisibility>("workspace");
   const [members, setMembers] = useState<DocumentMember[]>([]);
   const [search, setSearch] = useState("");
@@ -82,10 +95,21 @@ export const DocumentAccessMenu = ({
     );
   };
 
-  const activeOption = visibilityOptions.find(
-    (option) => option.value === document.visibility,
-  );
-  const ActiveIcon = activeOption?.icon ?? ShareIcon;
+  const selectedOption = visibilityOptions.find(
+    (option) => option.value === visibility,
+  )!;
+  const SelectedIcon = selectedOption.icon;
+  const accessChanged =
+    visibility !== document.visibility ||
+    (visibility === "restricted" &&
+      (members.length !== document.sharedWith.length ||
+        members.some(
+          (member) =>
+            !document.sharedWith.some(
+              (saved) =>
+                saved.userId === member.userId && saved.role === member.role,
+            ),
+        )));
 
   const handleOpenChange = (nextOpen: boolean) => {
     setOpen(nextOpen);
@@ -99,52 +123,97 @@ export const DocumentAccessMenu = ({
     <Popover onOpenChange={handleOpenChange} open={open}>
       <Popover.Trigger asChild>
         <Button
-          aria-label={`Document access: ${activeOption?.label ?? "Share"}`}
-          asIcon
+          aria-label="Share document"
           color="tertiary"
+          leftIcon={<ShareIcon className="size-4" />}
           size="sm"
           variant="outline"
         >
-          <ActiveIcon className="size-4" />
+          Share
         </Button>
       </Popover.Trigger>
       <Popover.Content
         align="end"
-        className="bg-surface-elevated dark:bg-surface-elevated/80 mr-0 max-h-[87vh] w-[26rem] max-w-[calc(100vw-1rem)] overflow-y-auto rounded-2xl pb-2"
+        className="bg-surface-elevated dark:bg-surface-elevated/80 mr-0 max-h-[87vh] w-[26rem] max-w-[calc(100vw-1rem)] overflow-y-auto rounded-2xl py-0"
       >
-        <Flex align="center" className="h-11 px-4">
-          <Text fontWeight="semibold">Document access</Text>
-        </Flex>
-        <Divider className="mb-1.5" />
-        <Box className="space-y-1 px-2">
-          {visibilityOptions.map(
-            ({ description, icon: Icon, label, value }) => (
-              <button
-                className={cn(
-                  "hover:bg-state-hover flex w-full items-start gap-3 rounded-xl px-2.5 py-2.5 text-left",
-                  { "bg-state-active": visibility === value },
-                )}
-                key={value}
-                onClick={() => {
-                  setVisibility(value);
-                }}
-                type="button"
-              >
-                <Icon className="text-text-muted mt-0.5 size-5 shrink-0" />
-                <span className="min-w-0 flex-1">
-                  <Text fontWeight="medium">{label}</Text>
-                  <Text color="muted">{description}</Text>
-                </span>
-                {visibility === value ? (
-                  <CheckIcon className="text-primary mt-0.5 size-5" />
-                ) : null}
-              </button>
-            ),
-          )}
+        <Box className="border-border border-b px-5 py-4">
+          <Flex align="center" justify="between">
+            <Text as="h2" fontSize="lg" fontWeight="semibold">
+              Share document
+            </Text>
+            <Button
+              aria-label="Close sharing"
+              asIcon
+              color="tertiary"
+              onClick={() => {
+                setOpen(false);
+              }}
+              size="sm"
+              variant="naked"
+            >
+              <CloseIcon className="size-5" />
+            </Button>
+          </Flex>
+          <Text className="mt-1 truncate" color="muted">
+            {document.title}
+          </Text>
         </Box>
-
+        <Box className="px-5 pt-4 pb-3">
+          <label
+            className="mb-2 block font-medium"
+            htmlFor="document-workspace-access"
+          >
+            Who has access
+          </label>
+          <Select
+            disabled={updateAccess.isPending}
+            onValueChange={(value) => {
+              setVisibility(value as DocumentVisibility);
+            }}
+            value={visibility}
+          >
+            <Select.Trigger
+              className="h-11 text-base"
+              id="document-workspace-access"
+            >
+              <Flex align="center" gap={2}>
+                <SelectedIcon className="size-4" />
+                <span>{selectedOption.label}</span>
+              </Flex>
+            </Select.Trigger>
+            <Select.Content>
+              {visibilityOptions.map(({ icon: Icon, label, value }) => (
+                <Select.Option key={value} value={value}>
+                  <Flex align="center" gap={2}>
+                    <Icon className="size-4" />
+                    <span>{label}</span>
+                  </Flex>
+                </Select.Option>
+              ))}
+            </Select.Content>
+          </Select>
+          <Text className="mt-2 leading-relaxed" color="muted">
+            {selectedOption.description}
+          </Text>
+        </Box>
+        <Flex align="center" className="px-5 pt-1 pb-4" gap={3}>
+          <Avatar
+            name={session?.user.name || "Document owner"}
+            size="sm"
+            src={session?.user.image}
+          />
+          <Box className="min-w-0 flex-1">
+            <Text className="truncate" fontWeight="medium">
+              {session?.user.name || "You"}
+            </Text>
+            <Text className="truncate" color="muted">
+              {session?.user.email}
+            </Text>
+          </Box>
+          <Text color="muted">Owner</Text>
+        </Flex>
         {visibility === "restricted" ? (
-          <Box className="mt-3">
+          <Box className="px-3 pb-4">
             <Divider className="mb-3" />
             <Box className="px-2">
               <Command shouldFilter={false}>
@@ -161,6 +230,7 @@ export const DocumentAccessMenu = ({
                   const selected = selectedMemberIds.has(member.id);
                   return (
                     <button
+                      aria-pressed={selected}
                       className="hover:bg-state-hover flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left"
                       key={member.id}
                       onClick={() => {
@@ -193,17 +263,25 @@ export const DocumentAccessMenu = ({
           </Box>
         ) : null}
 
-        <Divider className="mt-3" />
-        <Flex className="px-4 pt-2" justify="end">
-          <Button
-            color="primary"
-            disabled={updateAccess.isPending}
-            onClick={save}
-            size="sm"
-          >
-            {updateAccess.isPending ? "Saving..." : "Save access"}
-          </Button>
-        </Flex>
+        {accessChanged ? (
+          <Flex className="px-5 pb-4" gap={2} justify="end">
+            <Button
+              color="tertiary"
+              disabled={updateAccess.isPending}
+              onClick={() => {
+                setVisibility(document.visibility);
+                setMembers(document.sharedWith);
+              }}
+              size="sm"
+              variant="outline"
+            >
+              Cancel
+            </Button>
+            <Button disabled={updateAccess.isPending} onClick={save} size="sm">
+              {updateAccess.isPending ? "Saving…" : "Save changes"}
+            </Button>
+          </Flex>
+        ) : null}
         <DocumentPublicLink document={document} />
       </Popover.Content>
     </Popover>

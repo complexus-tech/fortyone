@@ -1,7 +1,8 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Box, Button, Flex, Text } from "ui";
+import { Box, Button, Flex, Switch, Text } from "ui";
+import { ArrowUpRightIcon, CopyIcon, LinkIcon } from "icons";
 import { toast } from "sonner";
 import { useWorkspacePath } from "@/hooks";
 import { documentKeys } from "@/shared/documents/keys";
@@ -43,57 +44,58 @@ export function DocumentPublicLink({
       toast.error("Could not copy the link");
     }
   };
+  let accessLabel = path
+    ? "Anyone with the link can view"
+    : "Off · Enable view-only access";
+  if (update.isPending) accessLabel = "Updating public access…";
   return (
-    <Box className="border-border border-t px-4 py-4">
-      <Text fontWeight="semibold">Public link</Text>
-      <Text className="mt-1" color="muted">
-        {path
-          ? "Anyone with this link can view this document without signing in."
-          : "Allow anyone with the link to view. Your workspace sharing settings stay the same."}
-      </Text>
+    <Box className="border-border border-t px-5 py-4">
+      <Flex align="center" gap={3}>
+        <LinkIcon className="size-5 shrink-0" />
+        <Box className="min-w-0 flex-1">
+          <label
+            className="block font-medium"
+            htmlFor={`public-link-${document.id}`}
+          >
+            Public link
+          </label>
+          <Text aria-live="polite" className="mt-0.5" color="muted">
+            {accessLabel}
+          </Text>
+        </Box>
+        <Switch
+          aria-label="Enable public link"
+          checked={Boolean(path)}
+          disabled={update.isPending}
+          id={`public-link-${document.id}`}
+          onCheckedChange={(enabled) => {
+            update.mutate(enabled);
+          }}
+        />
+      </Flex>
       {path ? (
-        <>
-          <Flex className="mt-3" gap={2}>
-            <Button
-              disabled={update.isPending}
-              onClick={() => void copy()}
-              size="sm"
-            >
-              Copy public link
-            </Button>
-            <a
-              className="hover:bg-state-hover rounded-lg px-3 py-2 font-medium"
-              href={path}
-              rel="noreferrer"
-              target="_blank"
-            >
-              Open
-            </a>
-          </Flex>
+        <Flex className="border-border -mx-5 mt-4 border-t px-5 pt-4" gap={2}>
           <Button
-            className="mt-3"
+            className="flex-1"
             color="tertiary"
             disabled={update.isPending}
-            onClick={() => {
-              update.mutate(false);
-            }}
-            size="sm"
+            leftIcon={<CopyIcon className="size-4" />}
+            onClick={() => void copy()}
+            variant="outline"
           >
-            {update.isPending ? "Revoking…" : "Revoke public link"}
+            Copy public link
           </Button>
-        </>
-      ) : (
-        <Button
-          className="mt-3"
-          disabled={update.isPending}
-          onClick={() => {
-            update.mutate(true);
-          }}
-          size="sm"
-        >
-          {update.isPending ? "Enabling…" : "Enable public link"}
-        </Button>
-      )}
+          <a
+            aria-label="Open public document in a new tab"
+            className="border-border hover:bg-state-hover focus-visible:ring-ring flex size-10 items-center justify-center rounded-xl border outline-none focus-visible:ring-2"
+            href={path}
+            rel="noreferrer"
+            target="_blank"
+          >
+            <ArrowUpRightIcon className="size-4" />
+          </a>
+        </Flex>
+      ) : null}
     </Box>
   );
 }

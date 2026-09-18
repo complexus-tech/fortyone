@@ -3,6 +3,7 @@ import Link from "next/link";
 import { RequestsIcon, RoadmapIcon, UpdatesIcon } from "icons";
 import { Avatar, Box, Button, Flex, Text } from "ui";
 import { cn, getReadableTextColor } from "lib";
+import { PublicBranding } from "@/components/ui/public-branding";
 import { getLoginUrl } from "@/utils/callback-url";
 import type {
   PublicPortal,
@@ -172,19 +173,14 @@ export const PublicPortalShell = ({
       <Box className="bg-background min-h-0 flex-1 overflow-y-auto">
         {children}
       </Box>
-      <Button
-        className="bg-surface-elevated/90 shadow-shadow fixed right-4 bottom-4 z-30 h-10 border-[0.5px] px-3 shadow-lg backdrop-blur md:right-6 md:bottom-6"
-        color="tertiary"
+      <PublicBranding
         href={
           isAccountParticipant(participant)
             ? participant.feedbackSetupHref
             : getFeedbackSignupPath()
         }
-        size="sm"
-        variant="outline"
-      >
-        Create your own board
-      </Button>
+        label="Create your own board"
+      />
     </Box>
   );
 };

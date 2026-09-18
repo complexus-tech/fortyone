@@ -15,7 +15,8 @@ export const Switch = ({ className, children, ...props }: SwitchProps) => {
       )}
       {...props}
     >
-      <SwitchPrimitive.Thumb className="pointer-events-none block size-3 shrink-0 translate-x-0.5 rounded-full bg-white shadow-sm transition-transform data-[state=checked]:translate-x-3" />
+      {/* Match the vertical inset, accounting for the track's 1px border. */}
+      <SwitchPrimitive.Thumb className="pointer-events-none relative left-[calc(0.125rem-1px)] block size-3 shrink-0 translate-x-0 rounded-full bg-white shadow-sm transition-transform data-[state=checked]:translate-x-3" />
     </SwitchPrimitive.Root>
   );
 };

@@ -203,7 +203,7 @@ test(
         [docId],
       );
       assert.equal(revisions.rows[0].title, "Restored");
-      assert.ok(revisions.rowCount! >= 4);
+      assert.ok(revisions.rowCount! >= 3);
     } finally {
       for (const client of clients) {
         client.destroy();

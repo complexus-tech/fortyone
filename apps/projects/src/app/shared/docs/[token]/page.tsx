@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { PublicBranding } from "@/components/ui/public-branding";
 import { getApiUrl } from "@/lib/api-url";
 import { publicDocumentHTML } from "@/modules/documents/public-document-html";
 
@@ -28,13 +29,7 @@ export default async function SharedDocumentPage({
   };
   return (
     <main className="bg-background text-foreground min-h-dvh">
-      <header className="border-border border-b px-6 py-5">
-        <div className="mx-auto flex max-w-4xl items-center justify-between">
-          <span className="font-semibold">FortyOne</span>
-          <span className="text-text-muted">Shared document · View only</span>
-        </div>
-      </header>
-      <article className="mx-auto max-w-4xl px-6 py-14 md:py-20">
+      <article className="mx-auto max-w-3xl px-6 pt-14 pb-28 md:pt-20">
         <h1 className="mb-4 text-4xl leading-tight font-semibold md:text-5xl">
           {data.title}
         </h1>
@@ -51,6 +46,7 @@ export default async function SharedDocumentPage({
           }}
         />
       </article>
+      <PublicBranding />
     </main>
   );
 }

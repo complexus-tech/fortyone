@@ -23,6 +23,7 @@ import {
 } from "ui";
 import {
   ArchiveIcon,
+  HistoryIcon,
   ArrowLeftIcon,
   CopyIcon,
   DeleteIcon,
@@ -523,6 +524,7 @@ const DocumentPageContent = ({ documentId }: { documentId: string }) => {
                     setHistoryOpen(true);
                   }}
                 >
+                  <HistoryIcon />
                   Version history
                 </Menu.Item>
                 {canManageDocument ? (

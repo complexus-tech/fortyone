@@ -9,7 +9,7 @@ SELECT revision, title, edited_by, created_at
 FROM public.document_revisions
 WHERE document_id = sqlc.arg(document_id)
   AND (CAST(sqlc.arg(before_revision) AS bigint) = 0 OR revision < sqlc.arg(before_revision))
-ORDER BY revision DESC LIMIT 50;
+ORDER BY revision DESC LIMIT 10;
 
 -- name: GetDocumentRevision :one
 SELECT revision, title, content_html, content_text, edited_by, created_at

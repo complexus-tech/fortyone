@@ -188,7 +188,7 @@ SELECT revision, title, edited_by, created_at
 FROM public.document_revisions
 WHERE document_id = $1
   AND (CAST($2 AS bigint) = 0 OR revision < $2)
-ORDER BY revision DESC LIMIT 50
+ORDER BY revision DESC LIMIT 10
 `
 
 type ListDocumentRevisionsParams struct {

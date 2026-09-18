@@ -1633,6 +1633,40 @@
         "Collaboration sessions are scoped to a document epoch, account session version, current membership and expiry.",
         "Restore advances the collaboration epoch so stale editors cannot replay pre-restore changes."
       ]
+    },
+    {
+      "version": 195,
+      "slug": "document_history_checkpoints",
+      "classification": "forward-only",
+      "files": {
+        "up": "000195_document_history_checkpoints.up.sql",
+        "down": "000195_document_history_checkpoints.down.sql"
+      },
+      "compatibility": {
+        "schema": "Bound document history to ten editing checkpoints and consolidate legacy autosave snapshots.",
+        "api": "Existing revision APIs remain compatible. Autosave revision counters and restore fencing remain unchanged.",
+        "worker": "No background worker or new environment configuration is required.",
+        "mixed_versions": "Schema-first; old and new API instances use the checkpoint trigger."
+      },
+      "rollout": {
+        "sequence": 44,
+        "mode": "schema-first",
+        "steps": [
+          "Apply migration 195 to consolidate existing autosave snapshots and prune beyond ten entries.",
+          "Deploy the Projects history and sharing UI."
+        ]
+      },
+      "recovery": {
+        "strategy": "forward-fix",
+        "procedure": [
+          "Deploy a forward fix; consolidated and expired snapshots cannot be reconstructed."
+        ]
+      },
+      "operational_notes": [
+        "Autosaves from one editor coalesce for up to ten minutes, unless there has been a two-minute pause.",
+        "Initial content, editor changes and restores start distinct checkpoints. CRDT-only and access-only updates do not create history.",
+        "The newest ten checkpoints are retained per document; the initial version expires when it falls outside that window."
+      ]
     }
   ]
 }
