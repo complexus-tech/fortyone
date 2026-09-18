@@ -80,7 +80,7 @@ export const ObjectiveViewOptionsButton = ({
               }}
               value={viewOptions.orderBy}
             >
-              <Select.Trigger className="bg-surface-muted dark:bg-surface-prominent/70 w-28">
+              <Select.Trigger className="bg-surface-muted dark:bg-surface-prominent/70 w-32">
                 <Select.Input>
                   {
                     ORDER_OPTIONS.find(
