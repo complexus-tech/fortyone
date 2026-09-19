@@ -13,10 +13,38 @@ import {
   getAttachmentRejectionMessage,
   MAX_ATTACHMENT_BATCH_FILES,
   PAID_ATTACHMENT_SIZE_LIMIT,
+  STORY_ATTACHMENT_ACCEPT,
   uploadAttachmentsConcurrently,
 } from "./attachment-upload";
 import { AttachmentsSkeleton } from "./attachments-skeleton";
 import { StoryAttachmentPreview } from "./story-attachment-preview";
+
+const downloadAttachment = async (url: string, filename: string) => {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Attachment download failed with ${response.status}`);
+    }
+
+    const objectURL = URL.createObjectURL(await response.blob());
+    const link = document.createElement("a");
+    link.href = objectURL;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => {
+      URL.revokeObjectURL(objectURL);
+    }, 0);
+  } catch {
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.rel = "noopener noreferrer";
+    link.target = "_blank";
+    link.click();
+  }
+};
 
 export const Attachments = ({
   className,
@@ -72,11 +100,7 @@ export const Attachments = ({
     multiple: true,
     maxFiles: MAX_ATTACHMENT_BATCH_FILES,
     maxSize: maxFileSize,
-    accept: {
-      "image/*": [".png", ".jpg", ".jpeg", ".webp"],
-      "video/*": [".mp4"],
-      "application/pdf": [".pdf"],
-    },
+    accept: STORY_ATTACHMENT_ACCEPT,
     noClick: attachments.length > 0,
     noKeyboard: attachments.length > 0,
   });
@@ -90,7 +114,7 @@ export const Attachments = ({
       !file.mimeType.startsWith("image/") &&
       !file.mimeType.startsWith("video/"),
   );
-  const uploadedAttachments = [...imagesAndVideos, ...otherFiles].filter(
+  const previewableAttachments = imagesAndVideos.filter(
     (file) => !file.id.startsWith("temp-"),
   );
 
@@ -158,7 +182,7 @@ export const Attachments = ({
           {imagesAndVideos.map((file) => (
             <StoryAttachmentPreview
               file={file}
-              files={uploadedAttachments}
+              files={previewableAttachments}
               key={file.id}
               onDelete={() => {
                 handleDelete(file.id);
@@ -166,7 +190,9 @@ export const Attachments = ({
               onDeleteFile={(attachment) => {
                 handleDelete(attachment.id);
               }}
-              onDownload={() => window.open(file.url, "_blank")}
+              onDownload={(attachment) => {
+                void downloadAttachment(attachment.url, attachment.filename);
+              }}
             />
           ))}
         </Box>
@@ -176,7 +202,7 @@ export const Attachments = ({
           {otherFiles.map((file) => (
             <StoryAttachmentPreview
               file={file}
-              files={uploadedAttachments}
+              files={previewableAttachments}
               key={file.id}
               onDelete={() => {
                 handleDelete(file.id);
@@ -184,7 +210,9 @@ export const Attachments = ({
               onDeleteFile={(attachment) => {
                 handleDelete(attachment.id);
               }}
-              onDownload={() => window.open(file.url, "_blank")}
+              onDownload={(attachment) => {
+                void downloadAttachment(attachment.url, attachment.filename);
+              }}
             />
           ))}
         </Box>

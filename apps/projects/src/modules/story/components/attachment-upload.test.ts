@@ -4,6 +4,7 @@ import type { FileRejection } from "react-dropzone";
 import {
   getAttachmentRejectionMessage,
   PAID_ATTACHMENT_SIZE_LIMIT,
+  STORY_ATTACHMENT_ACCEPT,
   uploadAttachmentsConcurrently,
 } from "./attachment-upload";
 
@@ -44,5 +45,36 @@ describe("attachment uploads", () => {
     expect(
       getAttachmentRejectionMessage(rejection, PAID_ATTACHMENT_SIZE_LIMIT),
     ).toBe("large-photo.jpg is 26 MB. The maximum file size is 25 MB.");
+  });
+
+  it("accepts the supported document formats", () => {
+    expect(STORY_ATTACHMENT_ACCEPT).toMatchObject({
+      "application/msword": [".doc"],
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+        [".docx"],
+      "application/vnd.ms-excel": [".xls"],
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [
+        ".xlsx",
+      ],
+      "application/vnd.ms-powerpoint": [".ppt"],
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation":
+        [".pptx"],
+      "text/plain": [".txt"],
+      "text/csv": [".csv"],
+    });
+  });
+
+  it("describes every supported document family in invalid-type errors", () => {
+    const file = new File(["archive"], "archive.zip", {
+      type: "application/zip",
+    });
+    const rejection = {
+      file,
+      errors: [{ code: "file-invalid-type", message: "Invalid type" }],
+    } satisfies FileRejection;
+
+    expect(
+      getAttachmentRejectionMessage(rejection, PAID_ATTACHMENT_SIZE_LIMIT),
+    ).toContain("Word, Excel, PowerPoint, text, or CSV");
   });
 });

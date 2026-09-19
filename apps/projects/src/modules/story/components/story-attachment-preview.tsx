@@ -48,6 +48,22 @@ const getDocumentTypeLabel = (mimeType: string) => {
   ) {
     return "Word document";
   }
+  if (
+    mimeType === "application/vnd.ms-excel" ||
+    mimeType ===
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  ) {
+    return "Excel spreadsheet";
+  }
+  if (
+    mimeType === "application/vnd.ms-powerpoint" ||
+    mimeType ===
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+  ) {
+    return "PowerPoint presentation";
+  }
+  if (mimeType === "text/csv") return "CSV file";
+  if (mimeType === "text/plain") return "Text file";
   return "Document";
 };
 
@@ -56,7 +72,7 @@ interface StoryAttachmentPreviewProps {
   files?: StoryAttachment[];
   className?: string;
   children?: ReactNode;
-  onDownload?: () => void;
+  onDownload?: (file: StoryAttachment) => void;
   onDelete?: () => void;
   onDeleteFile?: (file: StoryAttachment) => void;
   isInChat?: boolean;
@@ -103,6 +119,15 @@ export const StoryAttachmentPreview = ({
     if (isUploading || !canPreview) return;
     setPreviewIndex(fileIndex);
     setIsOpen(true);
+  };
+
+  const openOrDownload = () => {
+    if (isUploading) return;
+    if (canPreview) {
+      openPreview();
+      return;
+    }
+    onDownload?.(file);
   };
 
   const showPreviousFile = () => {
@@ -176,9 +201,18 @@ export const StoryAttachmentPreview = ({
           <Flex align="center" className="gap-3 md:gap-6" justify="between">
             <Flex
               align="center"
+              aria-label={`${canPreview ? "Preview" : "Download"} ${file.filename}`}
               className="flex-1"
               gap={3}
-              onClick={openPreview}
+              onClick={openOrDownload}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  openOrDownload();
+                }
+              }}
+              role="button"
+              tabIndex={isUploading ? -1 : 0}
             >
               <Box className="bg-surface-muted rounded-lg">
                 {isUploading ? (
@@ -229,7 +263,9 @@ export const StoryAttachmentPreview = ({
                   asIcon
                   color="tertiary"
                   disabled={isUploading}
-                  onClick={onDownload}
+                  onClick={() => {
+                    onDownload?.(file);
+                  }}
                   variant="naked"
                 >
                   <DownloadIcon className="h-5" />
@@ -368,10 +404,11 @@ export const StoryAttachmentPreview = ({
                     <Button
                       asIcon
                       color="tertiary"
-                      href={activeFile.url}
                       leftIcon={<DownloadIcon className="h-4.5" />}
+                      onClick={() => {
+                        onDownload?.(activeFile);
+                      }}
                       size="sm"
-                      target="_blank"
                     >
                       <span className="sr-only">Download</span>
                     </Button>

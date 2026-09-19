@@ -55,7 +55,7 @@ describe("voice history HTTP boundary", () => {
       >);
     jest.mocked(getWorkspace).mockResolvedValue({
       id: "workspace",
-      isActive: true,
+      isActive: false,
       deletedAt: null,
     } as Awaited<ReturnType<typeof getWorkspace>>);
     jest.mocked(getAiChatMessages).mockResolvedValue([]);
@@ -125,5 +125,18 @@ describe("voice history HTTP boundary", () => {
     expect(await response.json()).toMatchObject({
       messages: [{ id: "voice-user" }, { id: "voice-assistant" }],
     });
+  });
+  it("rejects voice history for a workspace scheduled for deletion", async () => {
+    jest.mocked(getWorkspace).mockResolvedValue({
+      id: "workspace",
+      isActive: false,
+      deletedAt: "2026-09-19T08:00:00.000Z",
+    } as Awaited<ReturnType<typeof getWorkspace>>);
+
+    const response = await POST(request(body));
+
+    expect(response.status).toBe(403);
+    expect(await response.text()).toBe("Workspace access is unavailable.");
+    expect(beginChatWrite).not.toHaveBeenCalled();
   });
 });

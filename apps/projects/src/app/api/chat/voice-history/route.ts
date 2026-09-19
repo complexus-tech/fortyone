@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     const { id, workspace, messages } = parsed.data;
     const ctx = { session, workspaceSlug: workspace.slug };
     const authorizedWorkspace = await getWorkspace(ctx);
-    if (!authorizedWorkspace.isActive || authorizedWorkspace.deletedAt)
+    if (!authorizedWorkspace.id || authorizedWorkspace.deletedAt)
       return new Response("Workspace access is unavailable.", { status: 403 });
     const saved = await appendVoiceHistory(messages, {
       read: async () => {

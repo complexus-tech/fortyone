@@ -32,7 +32,7 @@ export const resolveTrustedChatContext = async (
   const timezone = resolveChatTimezone(request.timezone);
   const ctx = { session, workspaceSlug: slug };
   const workspace = await getWorkspace(ctx);
-  if (!workspace.id || !workspace.isActive || workspace.deletedAt)
+  if (!workspace.id || workspace.deletedAt)
     throw new ChatAdmissionError("Workspace access is unavailable.", 403);
   const [settings, memories, subscription] = await Promise.all([
     getWorkspaceSettings(ctx),

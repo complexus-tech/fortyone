@@ -87,6 +87,29 @@ describe("trusted chat context", () => {
       workspaceSlug: "acme",
     });
   });
+  it("allows a member workspace that is not the user's last-used workspace", async () => {
+    jest.mocked(getWorkspace).mockResolvedValue({
+      ...workspace,
+      isActive: false,
+    } as Awaited<ReturnType<typeof getWorkspace>>);
+
+    await expect(
+      resolveTrustedChatContext(request, session),
+    ).resolves.toMatchObject({ workspace: { id: "trusted-workspace" } });
+  });
+  it("rejects a workspace scheduled for deletion", async () => {
+    jest.mocked(getWorkspace).mockResolvedValue({
+      ...workspace,
+      deletedAt: "2026-09-19T08:00:00.000Z",
+    } as Awaited<ReturnType<typeof getWorkspace>>);
+
+    await expect(
+      resolveTrustedChatContext(request, session),
+    ).rejects.toMatchObject({
+      message: "Workspace access is unavailable.",
+      status: 403,
+    });
+  });
   it("does not reinterpret a billing outage as a free subscription", async () => {
     jest.mocked(get).mockRejectedValue(new ApiError("unavailable", 503, {}));
     await expect(

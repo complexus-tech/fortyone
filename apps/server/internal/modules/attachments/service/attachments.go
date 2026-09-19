@@ -4,9 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"mime/multipart"
-	"net/http"
 	"strings"
 	"time"
 
@@ -275,23 +273,7 @@ func attachmentValidationError(err error) error {
 }
 
 func detectFileContentType(file multipart.File, fileHeader *multipart.FileHeader) (string, error) {
-	buffer := make([]byte, 512)
-	n, err := file.Read(buffer)
-	if err != nil && err != io.EOF {
-		return "", err
-	}
-	if _, err := file.Seek(0, io.SeekStart); err != nil {
-		return "", err
-	}
-
-	contentType := http.DetectContentType(buffer[:n])
-	if contentType == "application/octet-stream" {
-		if headerContentType := strings.TrimSpace(fileHeader.Header.Get("Content-Type")); headerContentType != "" {
-			contentType = headerContentType
-		}
-	}
-
-	return strings.ToLower(strings.TrimSpace(strings.Split(contentType, ";")[0])), nil
+	return validate.AttachmentContentType(file, fileHeader)
 }
 
 func optimizationStatus(contentType string, optimizerConfigured bool) attachmentdomain.OptimizationStatus {
