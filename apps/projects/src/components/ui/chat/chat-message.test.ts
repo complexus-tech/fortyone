@@ -59,6 +59,15 @@ describe("ChatMessage", () => {
     expect(source).not.toMatch(/\.chat-tables[\s\S]*text-foreground/);
   });
 
+  it("aligns Markdown list markers with the surrounding text edge", () => {
+    const source = readSource("src/styles/global.css");
+
+    expect(source).toContain('[data-streamdown="unordered-list"]');
+    expect(source).toContain('[data-streamdown="ordered-list"]');
+    expect(source).toContain("list-style-position: outside");
+    expect(source).toContain("padding-inline-start: 1.25rem");
+  });
+
   it("lets the chat composer inherit theme text color", () => {
     const source = readSource("src/components/ui/chat/chat-input.tsx");
 

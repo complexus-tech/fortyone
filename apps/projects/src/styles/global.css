@@ -412,6 +412,12 @@ ul[data-type="taskList"] > li ol[data-type="taskList"] {
   @apply bg-state-hover;
 }
 
+.chat-tables
+  :is([data-streamdown="unordered-list"], [data-streamdown="ordered-list"]) {
+  list-style-position: outside;
+  padding-inline-start: 1.25rem;
+}
+
 .chat-tables ul[data-type="taskList"] {
   @apply list-none pl-0;
 }
