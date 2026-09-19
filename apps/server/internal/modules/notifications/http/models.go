@@ -80,6 +80,7 @@ type AppUnreadCount struct {
 type NotificationChannel struct {
 	Email bool `json:"email"`
 	InApp bool `json:"inApp"`
+	Push  bool `json:"push"`
 }
 
 // AppNotificationPreferences represents the notification preferences for a user in a workspace
@@ -95,6 +96,7 @@ type AppNotificationPreferences struct {
 type AppUpdatePreference struct {
 	EmailEnabled *bool `json:"emailEnabled,omitempty"`
 	InAppEnabled *bool `json:"inAppEnabled,omitempty"`
+	PushEnabled  *bool `json:"pushEnabled,omitempty"`
 }
 
 type AppPushDeviceInput struct {
@@ -233,6 +235,7 @@ func toAppNotificationPreferences(p notifications.CoreNotificationPreferences) A
 		appPrefs.Preferences[string(key)] = NotificationChannel{
 			Email: channels.Email,
 			InApp: channels.InApp,
+			Push:  channels.Push,
 		}
 	}
 

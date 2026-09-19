@@ -10,6 +10,7 @@ import { getSprint } from "@/modules/sprints/queries/get-sprint";
 import { readNotification } from "../actions/read";
 import { resolveNotificationDestination } from "../utils/destination";
 import { registerPushDevice } from "../push/device";
+import { getPushEnabledPreference } from "../push/preference";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -61,9 +62,12 @@ export const usePushNotifications = () => {
 
   useEffect(() => {
     if (!isAuthenticated || !workspace || !userId) return;
-    void registerPushDevice({ requestPermission: false }).catch(
-      () => undefined,
-    );
+    const registerIfEnabled = () =>
+      getPushEnabledPreference().then((enabled) => {
+        if (!enabled) return;
+        return registerPushDevice({ requestPermission: false });
+      });
+    void registerIfEnabled().catch(() => undefined);
 
     const openResponse = async (
       response: Notifications.NotificationResponse,
@@ -116,9 +120,7 @@ export const usePushNotifications = () => {
       },
     );
     const tokenSubscription = Notifications.addPushTokenListener(() => {
-      void registerPushDevice({ requestPermission: false }).catch(
-        () => undefined,
-      );
+      void registerIfEnabled().catch(() => undefined);
     });
     void Notifications.getLastNotificationResponseAsync().then((response) => {
       if (!response) return;

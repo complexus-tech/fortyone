@@ -1,15 +1,14 @@
-import type { ComponentProps } from "react";
-import { useEffect, useRef, useState } from "react";
+import type { ComponentProps, ReactNode } from "react";
+import { useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  AppState,
-  Linking,
   Pressable,
   StyleSheet,
   View,
   useColorScheme,
 } from "react-native";
+import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { openBrowserAsync } from "expo-web-browser";
 import { toast } from "sonner-native";
@@ -29,11 +28,6 @@ import {
 } from "@/lib/account-deletion";
 import { useDeleteAccountMutation } from "../hooks/use-delete-account-mutation";
 import { isAccountDeletionSession } from "../actions/delete-account";
-import {
-  getPushPermissionState,
-  registerPushDevice,
-  type PushPermissionState,
-} from "@/modules/notifications/push/device";
 
 type SettingsRowProps = {
   label: string;
@@ -129,13 +123,26 @@ const GroupDivider = () => {
   );
 };
 
+const SettingsGroup = ({ children }: { children: ReactNode }) => {
+  const dark = useColorScheme() === "dark";
+  const theme = themeColors[dark ? "dark" : "light"];
+  return (
+    <View
+      style={[
+        styles.group,
+        { backgroundColor: theme.surface, borderColor: theme.border },
+      ]}
+    >
+      {children}
+    </View>
+  );
+};
+
 export const Form = () => {
+  const router = useRouter();
   const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
   const [isAppearanceOpen, setIsAppearanceOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
-  const [pushPermission, setPushPermission] =
-    useState<PushPermissionState>("undetermined");
-  const [isUpdatingPush, setIsUpdatingPush] = useState(false);
   const [deletionError, setDeletionError] = useState<string | null>(null);
   const [deletionAccepted, setDeletionAccepted] = useState(false);
   const [needsOwnershipResolution, setNeedsOwnershipResolution] =
@@ -150,41 +157,6 @@ export const Form = () => {
   const appearance =
     theme === "system" ? "Automatic" : theme === "dark" ? "Dark" : "Light";
   const isBusy = isSigningOut || deleteMutation.isPending;
-
-  useEffect(() => {
-    const refresh = () => {
-      void getPushPermissionState()
-        .then(setPushPermission)
-        .catch(() => undefined);
-    };
-    refresh();
-    const subscription = AppState.addEventListener("change", (state) => {
-      if (state === "active") refresh();
-    });
-    return () => subscription.remove();
-  }, []);
-
-  const handlePushNotifications = () => {
-    if (isUpdatingPush || pushPermission === "unsupported") return;
-    if (pushPermission === "denied" || pushPermission === "granted") {
-      void Linking.openSettings();
-      return;
-    }
-    setIsUpdatingPush(true);
-    void registerPushDevice({ requestPermission: true })
-      .then((permission) => {
-        setPushPermission(permission);
-        if (permission === "granted")
-          toast.success("Push notifications enabled");
-      })
-      .catch((error: unknown) => {
-        toast.error("Could not enable push notifications", {
-          description:
-            error instanceof Error ? error.message : "Please try again.",
-        });
-      })
-      .finally(() => setIsUpdatingPush(false));
-  };
 
   const runDeletion = (scope: AccountDeletionScope) => {
     if (!isAccountDeletionSession(scope)) {
@@ -313,88 +285,98 @@ export const Form = () => {
   };
 
   return (
-    <>
-      <SettingsRow
-        label="Workspace"
-        value={workspace?.name || "Choose workspace"}
-        icon="chevron-expand"
-        onPress={() => setIsWorkspaceOpen(true)}
-        disabled={isBusy}
-      />
-      <SettingsRow
-        label="Appearance"
-        value={appearance}
-        icon="chevron-expand"
-        onPress={() => setIsAppearanceOpen(true)}
-      />
-      <SettingsRow
-        label="Push notifications"
-        value={
-          pushPermission === "granted"
-            ? "On"
-            : pushPermission === "unsupported"
-              ? "Unavailable"
-              : "Off"
-        }
-        icon="notifications-outline"
-        onPress={handlePushNotifications}
-        busy={isUpdatingPush}
-        disabled={isBusy || pushPermission === "unsupported"}
-      />
-      <GroupDivider />
-      <Text color="muted" fontSize="xs" style={styles.sectionLabel}>
-        Account
-      </Text>
-      <SettingsRow label="Name" value={profile?.fullName || "—"} />
-      <SettingsRow label="Email" value={profile?.email || "—"} />
-      <SettingsRow
-        label="Username"
-        value={profile?.username ? `@${profile.username}` : "—"}
-      />
-      <GroupDivider />
-      <SettingsRow
-        label="Support and feedback"
-        icon="open-outline"
-        onPress={() => openPublicPage("support")}
-        external
-      />
-      <SettingsRow
-        label="Privacy policy"
-        icon="open-outline"
-        onPress={() => openPublicPage("privacy")}
-        external
-      />
-      <SettingsRow
-        label="Terms of service"
-        icon="open-outline"
-        onPress={() => openPublicPage("terms")}
-        external
-      />
-      <GroupDivider />
-      <SettingsRow
-        label={isSigningOut ? "Signing out…" : "Log out"}
-        icon="log-out-outline"
-        onPress={handleSignOut}
-        destructive
-        busy={isSigningOut}
-        disabled={deleteMutation.isPending}
-      />
-      <SettingsRow
-        label={
-          deletionAccepted
-            ? deleteMutation.isPending
-              ? "Signing out…"
-              : "Finish signing out"
-            : deleteMutation.isPending
-              ? "Deleting account…"
-              : "Delete account"
-        }
-        icon="trash-outline"
-        onPress={handleDeleteAccount}
-        destructive
-        busy={deleteMutation.isPending}
-        disabled={isSigningOut}
-      />
+    <View style={styles.form}>
+      <SettingsGroup>
+        <SettingsRow
+          label="Workspace"
+          value={workspace?.name || "Choose workspace"}
+          icon="chevron-expand"
+          onPress={() => setIsWorkspaceOpen(true)}
+          disabled={isBusy}
+        />
+        <GroupDivider />
+        <SettingsRow
+          label="Appearance"
+          value={appearance}
+          icon="chevron-expand"
+          onPress={() => setIsAppearanceOpen(true)}
+        />
+        <GroupDivider />
+        <SettingsRow
+          label="Notifications"
+          value="Manage"
+          icon="chevron-forward"
+          onPress={() => router.push("/settings/notifications")}
+          disabled={isBusy}
+        />
+      </SettingsGroup>
+
+      <View style={styles.section}>
+        <Text color="muted" fontSize="sm" style={styles.sectionLabel}>
+          Account
+        </Text>
+        <SettingsGroup>
+          <SettingsRow label="Name" value={profile?.fullName || "—"} />
+          <GroupDivider />
+          <SettingsRow label="Email" value={profile?.email || "—"} />
+          <GroupDivider />
+          <SettingsRow
+            label="Username"
+            value={profile?.username ? `@${profile.username}` : "—"}
+          />
+        </SettingsGroup>
+      </View>
+
+      <SettingsGroup>
+        <SettingsRow
+          label="Support and feedback"
+          icon="open-outline"
+          onPress={() => openPublicPage("support")}
+          external
+        />
+        <GroupDivider />
+        <SettingsRow
+          label="Privacy policy"
+          icon="open-outline"
+          onPress={() => openPublicPage("privacy")}
+          external
+        />
+        <GroupDivider />
+        <SettingsRow
+          label="Terms of service"
+          icon="open-outline"
+          onPress={() => openPublicPage("terms")}
+          external
+        />
+      </SettingsGroup>
+
+      <SettingsGroup>
+        <SettingsRow
+          label={isSigningOut ? "Signing out…" : "Log out"}
+          icon="log-out-outline"
+          onPress={handleSignOut}
+          destructive
+          busy={isSigningOut}
+          disabled={deleteMutation.isPending}
+        />
+        <GroupDivider />
+        <SettingsRow
+          label={
+            deletionAccepted
+              ? deleteMutation.isPending
+                ? "Signing out…"
+                : "Finish signing out"
+              : deleteMutation.isPending
+                ? "Deleting account…"
+                : "Delete account"
+          }
+          icon="trash-outline"
+          onPress={handleDeleteAccount}
+          destructive
+          busy={deleteMutation.isPending}
+          disabled={isSigningOut}
+        />
+      </SettingsGroup>
       {deletionError ? (
         <Text
           color="danger"
@@ -423,14 +405,21 @@ export const Form = () => {
         isOpened={isWorkspaceOpen}
         setIsOpened={setIsWorkspaceOpen}
       />
-    </>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  form: { gap: 20 },
+  section: { gap: 8 },
+  group: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 14,
+    overflow: "hidden",
+  },
   row: {
     minHeight: 56,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingVertical: 14,
     flexDirection: "row",
     alignItems: "center",
@@ -439,7 +428,10 @@ const styles = StyleSheet.create({
   label: { flexShrink: 1 },
   labelOnly: { flex: 1 },
   value: { flex: 1, minWidth: 0 },
-  divider: { height: StyleSheet.hairlineWidth, marginVertical: 8 },
-  sectionLabel: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 4 },
-  deletionError: { paddingHorizontal: 20, paddingBottom: 16 },
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    marginLeft: 16,
+  },
+  sectionLabel: { paddingHorizontal: 4 },
+  deletionError: { paddingHorizontal: 4 },
 });

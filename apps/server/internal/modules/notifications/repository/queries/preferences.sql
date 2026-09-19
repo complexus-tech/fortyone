@@ -109,6 +109,15 @@ WITH authorized_actor AS (
                             CAST(desired.defaults -> desired.preference_type ->> 'in_app' AS boolean),
                             TRUE
                         )
+                    END,
+                    'push', CASE
+                        WHEN NOT CAST(sqlc.arg(supports_push) AS boolean) THEN FALSE
+                        WHEN CAST(sqlc.arg(push_present) AS boolean)
+                            THEN CAST(sqlc.arg(push_enabled) AS boolean)
+                        ELSE COALESCE(
+                            CAST(desired.defaults -> desired.preference_type ->> 'push' AS boolean),
+                            TRUE
+                        )
                     END
                 )
         ),
@@ -157,6 +166,26 @@ WITH authorized_actor AS (
                             CAST(sqlc.arg(default_preferences) AS jsonb)
                                 -> CAST(sqlc.arg(preference_type) AS text)
                                 ->> 'in_app'
+                            AS boolean
+                        ),
+                        TRUE
+                    )
+                END,
+                'push', CASE
+                    WHEN NOT CAST(sqlc.arg(supports_push) AS boolean) THEN FALSE
+                    WHEN CAST(sqlc.arg(push_present) AS boolean)
+                        THEN CAST(sqlc.arg(push_enabled) AS boolean)
+                    ELSE COALESCE(
+                        CAST(
+                            notification_preferences.preferences
+                                -> CAST(sqlc.arg(preference_type) AS text)
+                                ->> 'push'
+                            AS boolean
+                        ),
+                        CAST(
+                            CAST(sqlc.arg(default_preferences) AS jsonb)
+                                -> CAST(sqlc.arg(preference_type) AS text)
+                                ->> 'push'
                             AS boolean
                         ),
                         TRUE

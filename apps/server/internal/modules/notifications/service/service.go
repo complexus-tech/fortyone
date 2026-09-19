@@ -37,6 +37,7 @@ type Repository interface {
 type PushRepository interface {
 	RegisterPushDevice(context.Context, notificationsdomain.RegisterPushDevice) (notificationsdomain.PushDevice, error)
 	UnregisterPushDevice(context.Context, uuid.UUID, string) error
+	ListPushTokens(context.Context, uuid.UUID) ([]string, error)
 	GetPushDelivery(context.Context, uuid.UUID) (*notificationsdomain.PushDelivery, error)
 	MarkPushSent(context.Context, uuid.UUID, time.Time) error
 	DisablePushDevices(context.Context, []string, time.Time) error
@@ -48,6 +49,7 @@ type TasksService interface {
 
 type PushTasksService interface {
 	EnqueueNotificationPush(tasks.NotificationPushPayload, ...asynq.Option) (*asynq.TaskInfo, error)
+	EnqueueNotificationPushTest(tasks.NotificationPushTestPayload, ...asynq.Option) (*asynq.TaskInfo, error)
 }
 
 type Option func(*Service)

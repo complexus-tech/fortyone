@@ -1,6 +1,7 @@
 package notifications
 
 import (
+	"encoding/json"
 	"errors"
 	"testing"
 	"time"
@@ -64,6 +65,9 @@ func TestPreferenceDefaultsBackfillAndTypedPatch(t *testing.T) {
 		if channels.InApp != preferenceType.SupportsInAppDelivery() {
 			t.Fatalf("default %q in-app = %t, want %t", preferenceType, channels.InApp, preferenceType.SupportsInAppDelivery())
 		}
+		if channels.Push != preferenceType.SupportsPushDelivery() {
+			t.Fatalf("default %q push = %t, want %t", preferenceType, channels.Push, preferenceType.SupportsPushDelivery())
+		}
 	}
 
 	partial := PreferenceSet{
@@ -92,10 +96,24 @@ func TestPreferenceDefaultsBackfillAndTypedPatch(t *testing.T) {
 	if patch.InApp.Specified() {
 		t.Fatal("omitted in-app channel became specified")
 	}
+	if patch.Push.Specified() {
+		t.Fatal("omitted push channel became specified")
+	}
 	normalized := ChannelPatch{InApp: platformpatch.Set(true)}.Normalized(PreferenceTypeWeeklyDigest)
 	inApp, specified := normalized.InApp.Value()
 	if !specified || inApp == nil || *inApp {
 		t.Fatalf("email-only in-app patch = %v/%t, want explicit false", inApp, specified)
+	}
+}
+
+func TestChannelsBackfillPushForLegacyPreferenceJSON(t *testing.T) {
+	t.Parallel()
+	var channels Channels
+	if err := json.Unmarshal([]byte(`{"email":false,"in_app":true}`), &channels); err != nil {
+		t.Fatalf("decode legacy channels: %v", err)
+	}
+	if channels.Email || !channels.InApp || !channels.Push {
+		t.Fatalf("decoded legacy channels = %#v", channels)
 	}
 }
 

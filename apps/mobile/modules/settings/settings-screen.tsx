@@ -1,19 +1,19 @@
-import { ScrollView, View } from "react-native";
+import { ScrollView, StyleSheet } from "react-native";
 import { SafeContainer } from "@/components/ui";
 import { Form } from "./components/form";
-import { Header } from "./components/header";
 
 export const Settings = () => (
   <SafeContainer isFull edges={["bottom"]}>
-    <View style={{ paddingTop: 20 }}>
-      <Header />
-    </View>
     <ScrollView
       showsVerticalScrollIndicator={false}
       contentInsetAdjustmentBehavior="automatic"
-      contentContainerStyle={{ paddingBottom: 40 }}
+      contentContainerStyle={styles.content}
     >
       <Form />
     </ScrollView>
   </SafeContainer>
 );
+
+const styles = StyleSheet.create({
+  content: { paddingHorizontal: 16, paddingTop: 20, paddingBottom: 40 },
+});

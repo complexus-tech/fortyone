@@ -43,6 +43,7 @@ func (repository *Repository) UpdatePreference(ctx context.Context, command noti
 	}
 	email, emailPresent := patchValue(command.Patch.Email.Value())
 	inApp, inAppPresent := patchValue(command.Patch.InApp.Value())
+	push, pushPresent := patchValue(command.Patch.Push.Value())
 	row, err := repository.queries.UpdateNotificationPreference(ctx, notificationssql.UpdateNotificationPreferenceParams{
 		WorkspaceID:        command.Access.WorkspaceID,
 		ActorID:            command.Access.ActorID,
@@ -53,6 +54,9 @@ func (repository *Repository) UpdatePreference(ctx context.Context, command noti
 		SupportsInApp:      command.Type.SupportsInAppDelivery(),
 		InAppPresent:       inAppPresent,
 		InAppEnabled:       inApp,
+		SupportsPush:       command.Type.SupportsPushDelivery(),
+		PushPresent:        pushPresent,
+		PushEnabled:        push,
 		UpdatedAt:          command.At,
 	})
 	if err != nil {

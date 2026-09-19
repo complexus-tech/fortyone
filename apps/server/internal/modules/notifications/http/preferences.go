@@ -41,6 +41,9 @@ func (handlers *Handlers) UpdatePreference(ctx context.Context, response http.Re
 	if input.InAppEnabled != nil {
 		patch.InApp = platformpatch.Set(*input.InAppEnabled)
 	}
+	if input.PushEnabled != nil {
+		patch.Push = platformpatch.Set(*input.PushEnabled)
+	}
 	if _, err := handlers.notifications.UpdatePreference(ctx, actorID, workspaceID, preferenceType, patch); err != nil {
 		return respondNotificationError(ctx, response, err)
 	}

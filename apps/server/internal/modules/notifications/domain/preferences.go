@@ -1,6 +1,7 @@
 package notifications
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -70,9 +71,24 @@ func (preferenceType PreferenceType) SupportsInAppDelivery() bool {
 	}
 }
 
+func (preferenceType PreferenceType) SupportsPushDelivery() bool {
+	return preferenceType.SupportsInAppDelivery()
+}
+
 type Channels struct {
 	Email bool `json:"email"`
 	InApp bool `json:"in_app"`
+	Push  bool `json:"push"`
+}
+
+func (channels *Channels) UnmarshalJSON(data []byte) error {
+	type channelsJSON Channels
+	decoded := channelsJSON{Email: true, InApp: true, Push: true}
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		return err
+	}
+	*channels = Channels(decoded)
+	return nil
 }
 
 type PreferenceSet map[PreferenceType]Channels
@@ -83,6 +99,7 @@ func DefaultPreferences() PreferenceSet {
 		preferences[preferenceType] = Channels{
 			Email: true,
 			InApp: preferenceType.SupportsInAppDelivery(),
+			Push:  preferenceType.SupportsPushDelivery(),
 		}
 	}
 	return preferences
@@ -97,6 +114,9 @@ func (preferences PreferenceSet) WithDefaults() PreferenceSet {
 		if !preferenceType.SupportsInAppDelivery() {
 			channels.InApp = false
 		}
+		if !preferenceType.SupportsPushDelivery() {
+			channels.Push = false
+		}
 		result[preferenceType] = channels
 	}
 	return result
@@ -105,15 +125,19 @@ func (preferences PreferenceSet) WithDefaults() PreferenceSet {
 type ChannelPatch struct {
 	Email platformpatch.Field[bool]
 	InApp platformpatch.Field[bool]
+	Push  platformpatch.Field[bool]
 }
 
 func (patch ChannelPatch) Empty() bool {
-	return !patch.Email.Specified() && !patch.InApp.Specified()
+	return !patch.Email.Specified() && !patch.InApp.Specified() && !patch.Push.Specified()
 }
 
 func (patch ChannelPatch) Normalized(preferenceType PreferenceType) ChannelPatch {
 	if value, specified := patch.InApp.Value(); specified && value != nil && *value && !preferenceType.SupportsInAppDelivery() {
 		patch.InApp = platformpatch.Set(false)
+	}
+	if value, specified := patch.Push.Value(); specified && value != nil && *value && !preferenceType.SupportsPushDelivery() {
+		patch.Push = platformpatch.Set(false)
 	}
 	return patch
 }

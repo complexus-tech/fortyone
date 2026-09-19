@@ -259,7 +259,7 @@ func TestNotificationPreferenceHTTPCreatesPresenceAwarePatch(t *testing.T) {
 	request := httptest.NewRequest(
 		http.MethodPut,
 		"/workspaces/workspace/notification-preferences/mention",
-		bytes.NewBufferString(`{"emailEnabled":false}`),
+		bytes.NewBufferString(`{"emailEnabled":false,"pushEnabled":false}`),
 	)
 	request.Header.Set("Content-Type", "application/json")
 	request.SetPathValue("workspaceSlug", "workspace")
@@ -276,8 +276,10 @@ func TestNotificationPreferenceHTTPCreatesPresenceAwarePatch(t *testing.T) {
 		t.Fatalf("repository preference command = %#v", repository.preference)
 	}
 	email, emailSpecified := repository.preference.Patch.Email.Value()
-	if !emailSpecified || email == nil || *email || repository.preference.Patch.InApp.Specified() {
-		t.Fatalf("preference channel presence = email %v/%t, in-app %t", email, emailSpecified, repository.preference.Patch.InApp.Specified())
+	push, pushSpecified := repository.preference.Patch.Push.Value()
+	if !emailSpecified || email == nil || *email || repository.preference.Patch.InApp.Specified() ||
+		!pushSpecified || push == nil || *push {
+		t.Fatalf("preference channel presence = email %v/%t, in-app %t, push %v/%t", email, emailSpecified, repository.preference.Patch.InApp.Specified(), push, pushSpecified)
 	}
 
 	invalidRequest := httptest.NewRequest(

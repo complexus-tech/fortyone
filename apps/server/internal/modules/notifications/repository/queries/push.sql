@@ -29,6 +29,17 @@ DELETE FROM public.notification_push_devices
 WHERE user_id = CAST(sqlc.arg(user_id) AS uuid)
   AND expo_push_token = CAST(sqlc.arg(expo_push_token) AS text);
 
+-- name: ListNotificationPushTokensForUser :many
+SELECT device.expo_push_token
+FROM public.notification_push_devices AS device
+INNER JOIN public.users AS recipient
+    ON recipient.user_id = device.user_id
+   AND recipient.is_active = TRUE
+   AND recipient.is_system = FALSE
+WHERE device.user_id = CAST(sqlc.arg(user_id) AS uuid)
+  AND device.disabled_at IS NULL
+ORDER BY device.device_id;
+
 -- GetNotificationPushDelivery repeats the inbox visibility boundary so a
 -- queued delivery cannot reveal content after workspace or team access changes.
 -- name: GetNotificationPushDelivery :many
@@ -55,10 +66,22 @@ WITH notification_scope AS (
         ON membership.workspace_id = notification.workspace_id
        AND membership.user_id = notification.recipient_id
        AND membership.role IN ('admin', 'member', 'guest')
+    LEFT JOIN public.notification_preferences AS preference
+        ON preference.user_id = notification.recipient_id
+       AND preference.workspace_id = notification.workspace_id
     WHERE notification.notification_id = CAST(sqlc.arg(notification_id) AS uuid)
       AND notification.in_app_enabled = TRUE
       AND notification.push_sent_at IS NULL
       AND CAST(notification.entity_type AS text) <> 'feedback'
+      AND COALESCE(
+          CAST(
+              preference.preferences
+                  -> CAST(notification.type AS text)
+                  ->> 'push'
+              AS boolean
+          ),
+          TRUE
+      ) = TRUE
 ), visible_notification AS (
     SELECT scope.*
     FROM notification_scope AS scope

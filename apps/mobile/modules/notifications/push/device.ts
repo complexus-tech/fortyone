@@ -40,18 +40,27 @@ export const getPushPermissionState =
     return permission.canAskAgain ? "undetermined" : "denied";
   };
 
+export const requestNotificationPermission =
+  async (): Promise<PushPermissionState> => {
+    if (Platform.OS === "web") return "unsupported";
+    await configureAndroidChannel();
+    let permission = await Notifications.getPermissionsAsync();
+    if (!permission.granted && permission.canAskAgain)
+      permission = await Notifications.requestPermissionsAsync();
+    if (permission.granted) return "granted";
+    return permission.canAskAgain ? "undetermined" : "denied";
+  };
+
 export const registerPushDevice = async ({
   requestPermission,
 }: {
   requestPermission: boolean;
 }): Promise<PushPermissionState> => {
   if (Platform.OS === "web") return "unsupported";
-  await configureAndroidChannel();
-  let permission = await Notifications.getPermissionsAsync();
-  if (!permission.granted && requestPermission && permission.canAskAgain)
-    permission = await Notifications.requestPermissionsAsync();
-  if (!permission.granted)
-    return permission.canAskAgain ? "undetermined" : "denied";
+  const permission = requestPermission
+    ? await requestNotificationPermission()
+    : await getPushPermissionState();
+  if (permission !== "granted") return permission;
   if (!projectId)
     throw new Error("The Expo project ID is missing from the app build.");
   const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;

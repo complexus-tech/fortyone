@@ -172,6 +172,7 @@ func buildTaskMux(dependencies taskMuxDependencies) *asynq.ServeMux {
 	mux.HandleFunc(tasks.TypeNotificationEmail, workerTaskService.HandleNotificationEmail)
 	mux.HandleFunc(tasks.TypeNotificationEmailDigest, workerTaskService.HandleNotificationEmailDigest)
 	mux.HandleFunc(tasks.TypeNotificationPush, workerTaskService.HandleNotificationPush)
+	mux.HandleFunc(tasks.TypeNotificationPushTest, workerTaskService.HandleNotificationPushTest)
 	mux.HandleFunc(tasks.TypeFeedbackContributorDelivery, workerTaskService.HandleFeedbackContributorDelivery)
 	mux.HandleFunc(tasks.TypeFeedbackContributorDeliveryRecovery, workerTaskService.HandleFeedbackContributorDeliveryRecovery)
 	mux.HandleFunc(tasks.TypeFeedbackOutboxDispatch, workerTaskService.HandleFeedbackOutboxDispatch)

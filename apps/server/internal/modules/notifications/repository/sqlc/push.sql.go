@@ -57,10 +57,22 @@ WITH notification_scope AS (
         ON membership.workspace_id = notification.workspace_id
        AND membership.user_id = notification.recipient_id
        AND membership.role IN ('admin', 'member', 'guest')
+    LEFT JOIN public.notification_preferences AS preference
+        ON preference.user_id = notification.recipient_id
+       AND preference.workspace_id = notification.workspace_id
     WHERE notification.notification_id = CAST($1 AS uuid)
       AND notification.in_app_enabled = TRUE
       AND notification.push_sent_at IS NULL
       AND CAST(notification.entity_type AS text) <> 'feedback'
+      AND COALESCE(
+          CAST(
+              preference.preferences
+                  -> CAST(notification.type AS text)
+                  ->> 'push'
+              AS boolean
+          ),
+          TRUE
+      ) = TRUE
 ), visible_notification AS (
     SELECT scope.notification_id, scope.recipient_id, scope.workspace_id, scope.entity_type, scope.entity_id, scope.title, scope.message, scope.workspace_slug, scope.role
     FROM notification_scope AS scope
@@ -209,6 +221,42 @@ func (q *Queries) GetNotificationPushDelivery(ctx context.Context, arg GetNotifi
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listNotificationPushTokensForUser = `-- name: ListNotificationPushTokensForUser :many
+SELECT device.expo_push_token
+FROM public.notification_push_devices AS device
+INNER JOIN public.users AS recipient
+    ON recipient.user_id = device.user_id
+   AND recipient.is_active = TRUE
+   AND recipient.is_system = FALSE
+WHERE device.user_id = CAST($1 AS uuid)
+  AND device.disabled_at IS NULL
+ORDER BY device.device_id
+`
+
+type ListNotificationPushTokensForUserParams struct {
+	UserID uuid.UUID
+}
+
+func (q *Queries) ListNotificationPushTokensForUser(ctx context.Context, arg ListNotificationPushTokensForUserParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, listNotificationPushTokensForUser, arg.UserID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var expo_push_token string
+		if err := rows.Scan(&expo_push_token); err != nil {
+			return nil, err
+		}
+		items = append(items, expo_push_token)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

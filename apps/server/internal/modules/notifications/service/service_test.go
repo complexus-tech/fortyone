@@ -96,6 +96,7 @@ func (*repositoryStub) MarkEmailSent(context.Context, notificationsdomain.MarkEm
 type taskStub struct {
 	payloads     []tasks.NotificationEmailDigestPayload
 	pushPayloads []tasks.NotificationPushPayload
+	testPushes   []tasks.NotificationPushTestPayload
 	err          error
 	pushErr      error
 }
@@ -108,6 +109,11 @@ func (stub *taskStub) EnqueueNotificationEmailDigest(payload tasks.NotificationE
 func (stub *taskStub) EnqueueNotificationPush(payload tasks.NotificationPushPayload, _ ...asynq.Option) (*asynq.TaskInfo, error) {
 	stub.pushPayloads = append(stub.pushPayloads, payload)
 	return &asynq.TaskInfo{ID: "push"}, stub.pushErr
+}
+
+func (stub *taskStub) EnqueueNotificationPushTest(payload tasks.NotificationPushTestPayload, _ ...asynq.Option) (*asynq.TaskInfo, error) {
+	stub.testPushes = append(stub.testPushes, payload)
+	return &asynq.TaskInfo{ID: "test-push"}, stub.pushErr
 }
 
 type fixedClock struct{ now time.Time }

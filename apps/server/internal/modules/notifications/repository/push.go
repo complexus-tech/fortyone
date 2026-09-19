@@ -47,6 +47,19 @@ func (repository *Repository) UnregisterPushDevice(ctx context.Context, userID u
 	return mapWriteError("unregister push device", err)
 }
 
+func (repository *Repository) ListPushTokens(ctx context.Context, userID uuid.UUID) ([]string, error) {
+	if userID == uuid.Nil {
+		return nil, fmt.Errorf("%w: user ID is required", notificationsdomain.ErrInvalid)
+	}
+	tokens, err := repository.queries.ListNotificationPushTokensForUser(ctx, notificationssql.ListNotificationPushTokensForUserParams{
+		UserID: userID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("list notification push tokens: %w", err)
+	}
+	return tokens, nil
+}
+
 func (repository *Repository) GetPushDelivery(ctx context.Context, notificationID uuid.UUID) (*notificationsdomain.PushDelivery, error) {
 	if notificationID == uuid.Nil {
 		return nil, fmt.Errorf("%w: notification ID is required", notificationsdomain.ErrInvalid)

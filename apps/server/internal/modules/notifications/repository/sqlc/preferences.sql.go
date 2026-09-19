@@ -150,10 +150,19 @@ WITH authorized_actor AS (
                             CAST(desired.defaults -> desired.preference_type ->> 'in_app' AS boolean),
                             TRUE
                         )
+                    END,
+                    'push', CASE
+                        WHEN NOT CAST($10 AS boolean) THEN FALSE
+                        WHEN CAST($11 AS boolean)
+                            THEN CAST($12 AS boolean)
+                        ELSE COALESCE(
+                            CAST(desired.defaults -> desired.preference_type ->> 'push' AS boolean),
+                            TRUE
+                        )
                     END
                 )
         ),
-        CAST($10 AS timestamptz)
+        CAST($13 AS timestamptz)
     FROM desired_channels AS desired
     ON CONFLICT (user_id, workspace_id) DO UPDATE
     SET
@@ -202,10 +211,30 @@ WITH authorized_actor AS (
                         ),
                         TRUE
                     )
+                END,
+                'push', CASE
+                    WHEN NOT CAST($10 AS boolean) THEN FALSE
+                    WHEN CAST($11 AS boolean)
+                        THEN CAST($12 AS boolean)
+                    ELSE COALESCE(
+                        CAST(
+                            notification_preferences.preferences
+                                -> CAST($4 AS text)
+                                ->> 'push'
+                            AS boolean
+                        ),
+                        CAST(
+                            CAST($3 AS jsonb)
+                                -> CAST($4 AS text)
+                                ->> 'push'
+                            AS boolean
+                        ),
+                        TRUE
+                    )
                 END
             )
         ),
-        updated_at = CAST($10 AS timestamptz)
+        updated_at = CAST($13 AS timestamptz)
     RETURNING
         preference_id,
         user_id,
@@ -234,6 +263,9 @@ type UpdateNotificationPreferenceParams struct {
 	SupportsInApp      bool
 	InAppPresent       bool
 	InAppEnabled       bool
+	SupportsPush       bool
+	PushPresent        bool
+	PushEnabled        bool
 	UpdatedAt          time.Time
 }
 
@@ -260,6 +292,9 @@ func (q *Queries) UpdateNotificationPreference(ctx context.Context, arg UpdateNo
 		arg.SupportsInApp,
 		arg.InAppPresent,
 		arg.InAppEnabled,
+		arg.SupportsPush,
+		arg.PushPresent,
+		arg.PushEnabled,
 		arg.UpdatedAt,
 	)
 	var i UpdateNotificationPreferenceRow

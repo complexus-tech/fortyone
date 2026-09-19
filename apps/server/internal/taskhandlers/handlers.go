@@ -102,6 +102,7 @@ type NotificationDeliveryStore interface {
 }
 
 type PushDeliveryStore interface {
+	ListPushTokens(context.Context, uuid.UUID) ([]string, error)
 	GetPushDelivery(context.Context, uuid.UUID) (*notificationsdomain.PushDelivery, error)
 	MarkPushSent(context.Context, uuid.UUID) error
 	DisablePushDevices(context.Context, []string) error

@@ -48,3 +48,14 @@ func (handlers *Handlers) UnregisterPushDevice(ctx context.Context, response htt
 	}
 	return web.Respond(ctx, response, nil, http.StatusNoContent)
 }
+
+func (handlers *Handlers) SendTestPush(ctx context.Context, response http.ResponseWriter, _ *http.Request) error {
+	actorID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, response, err, http.StatusUnauthorized)
+	}
+	if err := handlers.notifications.SendTestPush(ctx, actorID); err != nil {
+		return respondNotificationError(ctx, response, err)
+	}
+	return web.Respond(ctx, response, map[string]string{"status": "queued"}, http.StatusAccepted)
+}

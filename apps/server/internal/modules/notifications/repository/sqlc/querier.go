@@ -50,6 +50,7 @@ type Querier interface {
 	// ListNotificationEmailDigestDeliveries applies the same current-access policy
 	// to every pending row and uses a deterministic oldest-first order.
 	ListNotificationEmailDigestDeliveries(ctx context.Context, arg ListNotificationEmailDigestDeliveriesParams) ([]ListNotificationEmailDigestDeliveriesRow, error)
+	ListNotificationPushTokensForUser(ctx context.Context, arg ListNotificationPushTokensForUserParams) ([]string, error)
 	// ListPortalFeedbackNotifications keeps the public portal inbox isolated from
 	// workspace membership. Access instead requires an active account contributor
 	// that has not been blocked from the exact public portal.

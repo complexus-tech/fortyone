@@ -23,6 +23,13 @@ func (store *pushDeliveryStoreStub) GetPushDelivery(context.Context, uuid.UUID) 
 	return store.delivery, nil
 }
 
+func (store *pushDeliveryStoreStub) ListPushTokens(context.Context, uuid.UUID) ([]string, error) {
+	if store.delivery == nil {
+		return nil, nil
+	}
+	return store.delivery.Tokens, nil
+}
+
 func (store *pushDeliveryStoreStub) DisablePushDevices(_ context.Context, tokens []string) error {
 	store.disabled = append([]string(nil), tokens...)
 	return nil
@@ -68,4 +75,25 @@ func TestNotificationPushUsesPublicNavigationMetadataAndDisablesDeadTokens(t *te
 	require.Equal(t, recipientID.String(), sender.messages[0].Data["recipientId"])
 	require.Equal(t, "fortyone", sender.messages[0].Data["workspaceSlug"])
 	require.Equal(t, entityID.String(), sender.messages[0].Data["entityId"])
+}
+
+func TestNotificationPushTestUsesRegisteredDevices(t *testing.T) {
+	t.Parallel()
+	recipientID := uuid.New()
+	store := &pushDeliveryStoreStub{delivery: &notificationsdomain.PushDelivery{
+		Tokens: []string{"ExponentPushToken[test-device]"},
+	}}
+	sender := &pushSenderStub{}
+	handler := &handlers{pushDeliveries: store, pushSender: sender}
+	payload, err := json.Marshal(tasks.NotificationPushTestPayload{RecipientID: recipientID})
+	require.NoError(t, err)
+
+	err = handler.HandleNotificationPushTest(context.Background(), asynq.NewTask(tasks.TypeNotificationPushTest, payload))
+
+	require.NoError(t, err)
+	require.Len(t, sender.messages, 1)
+	require.Equal(t, "FortyOne", sender.messages[0].Title)
+	require.Equal(t, "Push notifications are working.", sender.messages[0].Body)
+	require.Equal(t, "test", sender.messages[0].Data["kind"])
+	require.Equal(t, recipientID.String(), sender.messages[0].Data["recipientId"])
 }

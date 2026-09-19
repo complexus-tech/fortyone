@@ -11,13 +11,7 @@ import { useEffect } from "react";
 import { SessionQueryProvider } from "@/lib/query-provider";
 import { QueryState } from "@/components/ui/query-state";
 import { KeyboardProvider } from "react-native-keyboard-controller";
-import {
-  AppState,
-  Platform,
-  Pressable,
-  Text as NativeText,
-  View,
-} from "react-native";
+import { AppState, Pressable, Text as NativeText, View } from "react-native";
 import { Text, Button } from "@/components/ui";
 import NetInfo from "@react-native-community/netinfo";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -112,6 +106,8 @@ function useReactQueryAppLifecycle() {
 }
 const RenderApp = () => {
   const queryClient = useQueryClient();
+  const { resolvedTheme } = useTheme();
+  const navigationTheme = themeColors[resolvedTheme];
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const isLoading = useAuthStore((state) => state.isLoading);
   const workspace = useAuthStore((state) => state.workspace);
@@ -164,25 +160,31 @@ const RenderApp = () => {
           <Stack.Screen name="story/[storyId]" />
           <Stack.Screen
             name="settings"
-            options={
-              Platform.OS === "ios"
-                ? {
-                    presentation: "transparentModal",
-                    animation: "none",
-                    gestureEnabled: false,
-                    contentStyle: { backgroundColor: "transparent" },
-                  }
-                : {
-                    presentation: "formSheet",
-                    gestureDirection: "vertical",
-                    animation: "slide_from_bottom",
-                    sheetGrabberVisible: true,
-                    sheetExpandsWhenScrolledToEdge: true,
-                    sheetElevation: 24,
-                    sheetInitialDetentIndex: 0,
-                    sheetAllowedDetents: [0.8, 1],
-                  }
-            }
+            options={{
+              headerShown: true,
+              title: "Settings",
+              headerBackButtonDisplayMode: "minimal",
+              headerShadowVisible: false,
+              headerTitleAlign: "left",
+              headerTitleStyle: { fontSize: 22, fontWeight: "700" },
+              headerStyle: { backgroundColor: navigationTheme.background },
+              headerTintColor: navigationTheme.foreground,
+              contentStyle: { backgroundColor: navigationTheme.background },
+            }}
+          />
+          <Stack.Screen
+            name="settings/notifications"
+            options={{
+              headerShown: true,
+              title: "Notifications",
+              headerBackButtonDisplayMode: "minimal",
+              headerShadowVisible: false,
+              headerTitleAlign: "left",
+              headerTitleStyle: { fontSize: 22, fontWeight: "700" },
+              headerStyle: { backgroundColor: navigationTheme.background },
+              headerTintColor: navigationTheme.foreground,
+              contentStyle: { backgroundColor: navigationTheme.background },
+            }}
           />
           <Stack.Screen
             name="new"
