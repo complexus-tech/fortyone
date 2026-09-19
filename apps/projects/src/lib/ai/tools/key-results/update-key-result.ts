@@ -62,7 +62,7 @@ export const updateKeyResultTool = tool({
       lead,
       contributors,
     },
-    { experimental_context: experimentalContext },
+    { context: experimentalContext },
   ) => {
     const session = await auth();
 

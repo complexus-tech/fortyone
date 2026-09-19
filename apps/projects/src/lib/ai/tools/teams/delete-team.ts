@@ -11,10 +11,7 @@ export const deleteTeam = tool({
     teamId: z.string().describe("Team ID to delete (required)"),
   }),
 
-  execute: async (
-    { teamId },
-    { experimental_context: experimentalContext },
-  ) => {
+  execute: async ({ teamId }, { context: experimentalContext }) => {
     try {
       const session = await auth();
 

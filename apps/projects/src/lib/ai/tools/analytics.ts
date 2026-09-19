@@ -76,10 +76,7 @@ export const workspacePerformanceReportTool = tool({
   inputSchema: z.object({
     filters: analyticsFiltersSchema.optional(),
   }),
-  execute: async (
-    { filters },
-    { experimental_context: experimentalContext },
-  ) => {
+  execute: async ({ filters }, { context: experimentalContext }) => {
     try {
       const ctx = await getAuthenticatedContext(experimentalContext);
       if ("error" in ctx) return { success: false, error: ctx.error };
@@ -111,10 +108,7 @@ export const workspaceCommandCenterReportTool = tool({
   inputSchema: z.object({
     filters: analyticsFiltersSchema.optional(),
   }),
-  execute: async (
-    { filters },
-    { experimental_context: experimentalContext },
-  ) => {
+  execute: async ({ filters }, { context: experimentalContext }) => {
     try {
       const ctx = await getAuthenticatedContext(experimentalContext);
       if ("error" in ctx) return { success: false, error: ctx.error };
@@ -147,10 +141,7 @@ export const pulseReportTool = tool({
   inputSchema: z.object({
     filters: analyticsFiltersSchema.optional(),
   }),
-  execute: async (
-    { filters },
-    { experimental_context: experimentalContext },
-  ) => {
+  execute: async ({ filters }, { context: experimentalContext }) => {
     try {
       const ctx = await getAuthenticatedContext(experimentalContext);
       if ("error" in ctx) return { success: false, error: ctx.error };
@@ -183,10 +174,7 @@ export const storyPerformanceReportTool = tool({
   inputSchema: z.object({
     filters: analyticsFiltersSchema.optional(),
   }),
-  execute: async (
-    { filters },
-    { experimental_context: experimentalContext },
-  ) => {
+  execute: async ({ filters }, { context: experimentalContext }) => {
     try {
       const ctx = await getAuthenticatedContext(experimentalContext);
       if ("error" in ctx) return { success: false, error: ctx.error };
@@ -218,10 +206,7 @@ export const objectiveProgressReportTool = tool({
   inputSchema: z.object({
     filters: analyticsFiltersSchema.optional(),
   }),
-  execute: async (
-    { filters },
-    { experimental_context: experimentalContext },
-  ) => {
+  execute: async ({ filters }, { context: experimentalContext }) => {
     try {
       const ctx = await getAuthenticatedContext(experimentalContext);
       if ("error" in ctx) return { success: false, error: ctx.error };
@@ -259,10 +244,7 @@ export const teamPerformanceReportTool = tool({
         "Specific user ID for person performance. Use resolveMember first when needed.",
       ),
   }),
-  execute: async (
-    { filters, userId },
-    { experimental_context: experimentalContext },
-  ) => {
+  execute: async ({ filters, userId }, { context: experimentalContext }) => {
     try {
       const ctx = await getAuthenticatedContext(experimentalContext);
       if ("error" in ctx) return { success: false, error: ctx.error };
@@ -306,10 +288,7 @@ export const sprintPerformanceReportTool = tool({
   inputSchema: z.object({
     filters: analyticsFiltersSchema.optional(),
   }),
-  execute: async (
-    { filters },
-    { experimental_context: experimentalContext },
-  ) => {
+  execute: async ({ filters }, { context: experimentalContext }) => {
     try {
       const ctx = await getAuthenticatedContext(experimentalContext);
       if ("error" in ctx) return { success: false, error: ctx.error };
@@ -341,10 +320,7 @@ export const timelineTrendsReportTool = tool({
   inputSchema: z.object({
     filters: analyticsFiltersSchema.optional(),
   }),
-  execute: async (
-    { filters },
-    { experimental_context: experimentalContext },
-  ) => {
+  execute: async ({ filters }, { context: experimentalContext }) => {
     try {
       const ctx = await getAuthenticatedContext(experimentalContext);
       if ("error" in ctx) return { success: false, error: ctx.error };

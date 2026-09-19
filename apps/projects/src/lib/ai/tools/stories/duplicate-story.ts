@@ -14,10 +14,7 @@ export const duplicateStory = tool({
       .describe("Story ID to duplicate (required)"),
   }),
 
-  execute: async (
-    { storyId },
-    { experimental_context: experimentalContext },
-  ) => {
+  execute: async ({ storyId }, { context: experimentalContext }) => {
     try {
       const session = await auth();
 

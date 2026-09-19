@@ -15,7 +15,7 @@ export const storyLabelsTool = tool({
   }),
   execute: async (
     { action, storyId, labelIds = [] },
-    { experimental_context: experimentalContext },
+    { context: experimentalContext },
   ) => {
     try {
       const session = await auth();

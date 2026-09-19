@@ -33,7 +33,7 @@ export const createIntegrationRequestReadTools = (
         page,
         pageSize,
       },
-      { experimental_context: experimentalContext },
+      { context: experimentalContext },
     ) => {
       try {
         const ctx =
@@ -103,7 +103,7 @@ export const createIntegrationRequestReadTools = (
     inputSchema: getIntegrationRequestInputSchema,
     execute: async (
       { requestId, includeGitHubComments },
-      { experimental_context: experimentalContext },
+      { context: experimentalContext },
     ) => {
       try {
         const ctx =
@@ -141,10 +141,7 @@ export const createIntegrationRequestReadTools = (
     description:
       "Get GitHub comments attached to a GitHub integration request before triage.",
     inputSchema: getIntegrationRequestInputSchema.pick({ requestId: true }),
-    execute: async (
-      { requestId },
-      { experimental_context: experimentalContext },
-    ) => {
+    execute: async ({ requestId }, { context: experimentalContext }) => {
       try {
         const ctx =
           await getAuthenticatedIntegrationRequestContext(experimentalContext);

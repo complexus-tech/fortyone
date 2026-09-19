@@ -28,7 +28,7 @@ export const deleteStory = tool({
 
   execute: async (
     { storyId, storyTitle, confirmed },
-    { experimental_context: experimentalContext },
+    { context: experimentalContext },
   ) => {
     try {
       if (!confirmed) {

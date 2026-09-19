@@ -8,6 +8,8 @@ import { searchQuery } from "@/modules/search/queries/search";
 import { getTeams } from "@/modules/teams/queries/get-teams";
 import { searchTool } from "./search";
 
+type Context = Record<string, unknown>;
+
 jest.mock("ai", () => ({
   tool: (definition: unknown) => definition,
 }));
@@ -51,14 +53,14 @@ const session = {
   },
 };
 
-const toolOptions: ToolExecutionOptions = {
+const toolOptions: ToolExecutionOptions<Context> = {
   toolCallId: "search-call",
   messages: [],
-  experimental_context: { workspaceSlug: "complexus" },
+  context: { workspaceSlug: "complexus" },
 };
 
 const executeTool = async <Input, Output>(
-  execute: ToolExecuteFunction<Input, Output> | undefined,
+  execute: ToolExecuteFunction<Input, Output, Context> | undefined,
   input: Input,
 ): Promise<Output> => {
   if (!execute) throw new Error("Tool does not have an execute function");

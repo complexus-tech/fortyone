@@ -1,9 +1,11 @@
 import type { ToolSet, UIMessage } from "ai";
 import type { MayaToolName } from "./tool-names";
 
-const EAGER_OPENAI_TOOL_NAMES = new Set<string>(
-  ["navigation", "suggestions", "theme"] satisfies readonly MayaToolName[],
-);
+const EAGER_OPENAI_TOOL_NAMES = new Set<string>([
+  "navigation",
+  "suggestions",
+  "theme",
+] satisfies readonly MayaToolName[]);
 
 export const MAYA_TOOL_SEARCH_NAME = "mayaToolSearch" as const;
 const MAYA_TOOL_SEARCH_UI_PART_TYPE = `tool-${MAYA_TOOL_SEARCH_NAME}`;
@@ -16,9 +18,7 @@ const MAYA_TOOL_SEARCH_UI_PART_TYPE = `tool-${MAYA_TOOL_SEARCH_NAME}`;
  * before model conversion while retaining the discovered tool calls, their
  * outputs, and the user-visible answer.
  */
-export const omitMayaToolSearchHistory = (
-  messages: UIMessage[],
-): UIMessage[] =>
+export const omitMayaToolSearchHistory = (messages: UIMessage[]): UIMessage[] =>
   messages.map((message) => {
     const parts = message.parts.filter(
       (part) => part.type !== MAYA_TOOL_SEARCH_UI_PART_TYPE,
@@ -35,18 +35,22 @@ export const omitMayaToolSearchHistory = (
  * semantic, so availability does not depend on language, vocabulary, route,
  * or whichever domain was discussed previously.
  */
-export const withOpenAIToolDiscovery = <TOOLS extends ToolSet>(
+export const withOpenAIToolDiscovery = <
+  TOOLS extends ToolSet,
+  SEARCH extends ToolSet[string],
+>(
   toolSet: TOOLS,
-  toolSearch: ToolSet[string],
-): TOOLS & Record<typeof MAYA_TOOL_SEARCH_NAME, ToolSet[string]> => {
+  toolSearch: SEARCH,
+): TOOLS & Record<typeof MAYA_TOOL_SEARCH_NAME, SEARCH> => {
   const deferredTools = Object.entries(toolSet).map(
     ([name, registeredTool]) => {
       if (EAGER_OPENAI_TOOL_NAMES.has(name)) return [name, registeredTool];
 
       const existingProviderOptions = registeredTool.providerOptions ?? {};
       const existingOpenAIOptions =
-        (existingProviderOptions.openai as Record<string, unknown> | undefined) ??
-        {};
+        (existingProviderOptions.openai as
+          | Record<string, unknown>
+          | undefined) ?? {};
 
       return [
         name,
@@ -67,5 +71,5 @@ export const withOpenAIToolDiscovery = <TOOLS extends ToolSet>(
   return Object.fromEntries([
     ...deferredTools,
     [MAYA_TOOL_SEARCH_NAME, toolSearch],
-  ]) as TOOLS & Record<typeof MAYA_TOOL_SEARCH_NAME, ToolSet[string]>;
+  ]) as TOOLS & Record<typeof MAYA_TOOL_SEARCH_NAME, SEARCH>;
 };

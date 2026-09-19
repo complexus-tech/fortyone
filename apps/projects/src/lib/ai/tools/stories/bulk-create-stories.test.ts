@@ -10,6 +10,8 @@ import type { Workspace } from "@/types";
 import { bulkCreateStories } from "./bulk-create-stories";
 import { bulkCreateStoriesInputSchema } from "./story-creation-schema";
 
+type Context = Record<string, unknown>;
+
 jest.mock("ai", () => ({
   tool: (definition: unknown) => definition,
 }));
@@ -74,17 +76,17 @@ const workspace: Workspace = {
   updatedAt: "2026-08-01T08:00:00.000Z",
 };
 
-const toolOptions: ToolExecutionOptions = {
+const toolOptions: ToolExecutionOptions<Context> = {
   toolCallId: "bulk-create-call",
   messages: [],
-  experimental_context: {
+  context: {
     chatId: "chat-123",
     workspaceSlug: "complexus",
   },
 };
 
 const executeTool = async <Input, Output>(
-  execute: ToolExecuteFunction<Input, Output> | undefined,
+  execute: ToolExecuteFunction<Input, Output, Context> | undefined,
   input: Input,
 ): Promise<Output> => {
   if (!execute) throw new Error("Tool does not have an execute function");

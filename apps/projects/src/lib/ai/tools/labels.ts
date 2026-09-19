@@ -29,7 +29,7 @@ export const labelsTool = tool({
   }),
   execute: async (
     { action, labelId, name, color, teamId, searchQuery, page, pageSize },
-    { experimental_context: experimentalContext },
+    { context: experimentalContext },
   ) => {
     try {
       const session = await auth();

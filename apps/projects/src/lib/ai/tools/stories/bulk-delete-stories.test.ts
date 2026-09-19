@@ -8,6 +8,8 @@ import { bulkDeleteAction } from "@/modules/stories/actions/bulk-delete-stories"
 import type { Workspace } from "@/types";
 import { bulkDeleteStories } from "./bulk-delete-stories";
 
+type Context = Record<string, unknown>;
+
 jest.mock("ai", () => ({
   tool: (definition: unknown) => definition,
 }));
@@ -62,14 +64,14 @@ const storyIds = Array.from(
 );
 const storyTitles = storyIds.map((_, index) => `Story ${index + 1}`);
 
-const toolOptions: ToolExecutionOptions = {
+const toolOptions: ToolExecutionOptions<Context> = {
   toolCallId: "bulk-delete-call",
   messages: [],
-  experimental_context: { workspaceSlug: "complexus" },
+  context: { workspaceSlug: "complexus" },
 };
 
 const executeTool = async <Input, Output>(
-  execute: ToolExecuteFunction<Input, Output> | undefined,
+  execute: ToolExecuteFunction<Input, Output, Context> | undefined,
   input: Input,
 ): Promise<Output> => {
   if (!execute) throw new Error("Tool does not have an execute function");

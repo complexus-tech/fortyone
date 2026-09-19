@@ -60,7 +60,10 @@ export const mobileMayaTools = <T extends ToolSet>(tools: T): T =>
           {
             ...registered,
             description: `Mobile supports only these read operations: ${actions.join(", ")}. Workflow or label management is available in the web app.`,
-            execute: (input: unknown, options: ToolExecutionOptions) => {
+            execute: (
+              input: unknown,
+              options: ToolExecutionOptions<unknown>,
+            ) => {
               if (!canUseMobileMayaTool(name, input))
                 return {
                   success: false,

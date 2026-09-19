@@ -9,10 +9,7 @@ export const getSprintAnalyticsTool = tool({
   inputSchema: z.object({
     sprintId: z.string().describe("Sprint ID to get analytics for (required)"),
   }),
-  execute: async (
-    { sprintId },
-    { experimental_context: experimentalContext },
-  ) => {
+  execute: async ({ sprintId }, { context: experimentalContext }) => {
     try {
       const session = await auth();
 

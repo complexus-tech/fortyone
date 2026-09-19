@@ -162,7 +162,7 @@ export const listTeamStories = tool({
 
   execute: async (
     { teamId, filters, groupBy, orderBy, orderDirection },
-    { experimental_context: experimentalContext },
+    { context: experimentalContext },
   ) => {
     try {
       const session = await auth();

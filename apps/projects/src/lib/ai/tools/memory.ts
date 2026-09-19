@@ -11,7 +11,7 @@ import { getSubscription } from "@/lib/queries/subscriptions/get-subscription";
 export const listMemories = tool({
   description: "List all memories about the user.",
   inputSchema: z.object({}),
-  execute: async (_input, { experimental_context: experimentalContext }) => {
+  execute: async (_input, { context: experimentalContext }) => {
     try {
       const session = await auth();
       if (!session) {
@@ -51,10 +51,7 @@ export const createMemory = tool({
         "The content of the memory to save (e.g., 'The user is a senior frontend engineer') max length 200 words",
       ),
   }),
-  execute: async (
-    { content },
-    { experimental_context: experimentalContext },
-  ) => {
+  execute: async ({ content }, { context: experimentalContext }) => {
     try {
       const session = await auth();
       if (!session) {
@@ -114,10 +111,7 @@ export const updateMemory = tool({
       .string()
       .describe("The new content of the memory. max length 200 words"),
   }),
-  execute: async (
-    { id, content },
-    { experimental_context: experimentalContext },
-  ) => {
+  execute: async ({ id, content }, { context: experimentalContext }) => {
     try {
       const session = await auth();
       if (!session) {
@@ -156,7 +150,7 @@ export const deleteMemory = tool({
   inputSchema: z.object({
     id: z.uuid().describe("The ID of the memory to delete"),
   }),
-  execute: async ({ id }, { experimental_context: experimentalContext }) => {
+  execute: async ({ id }, { context: experimentalContext }) => {
     try {
       const session = await auth();
       if (!session) {

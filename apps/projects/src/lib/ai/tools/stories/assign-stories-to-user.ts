@@ -21,7 +21,7 @@ export const assignStoriesToUser = tool({
 
   execute: async (
     { storyIds, assigneeId },
-    { experimental_context: experimentalContext },
+    { context: experimentalContext },
   ) => {
     try {
       const session = await auth();

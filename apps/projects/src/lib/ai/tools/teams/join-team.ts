@@ -10,10 +10,7 @@ export const joinTeam = tool({
     teamId: z.uuid().describe("Public team ID to join (required)"),
   }),
 
-  execute: async (
-    { teamId },
-    { experimental_context: experimentalContext },
-  ) => {
+  execute: async ({ teamId }, { context: experimentalContext }) => {
     try {
       const session = await auth();
 

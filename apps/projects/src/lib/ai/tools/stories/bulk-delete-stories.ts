@@ -42,7 +42,7 @@ export const bulkDeleteStories = tool({
 
   execute: async (
     { storyIds, confirmed },
-    { experimental_context: experimentalContext },
+    { context: experimentalContext },
   ) => {
     try {
       if (!confirmed) {

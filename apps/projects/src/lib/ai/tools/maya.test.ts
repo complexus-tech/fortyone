@@ -7,6 +7,8 @@ import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 import type { Workspace } from "@/types";
 import { applyMayaWorkPlanTool, mayaWorkPlanTool } from "./maya";
 
+type Context = Record<string, unknown>;
+
 jest.mock("ai", () => ({
   tool: (definition: unknown) => definition,
 }));
@@ -68,14 +70,14 @@ const workPlan = {
   },
 };
 
-const toolOptions: ToolExecutionOptions = {
+const toolOptions: ToolExecutionOptions<Context> = {
   toolCallId: "work-plan-call",
   messages: [],
-  experimental_context: { workspaceSlug: "complexus" },
+  context: { workspaceSlug: "complexus" },
 };
 
 const executeTool = async <Input, Output>(
-  execute: ToolExecuteFunction<Input, Output> | undefined,
+  execute: ToolExecuteFunction<Input, Output, Context> | undefined,
   input: Input,
 ): Promise<Output> => {
   if (!execute) throw new Error("Tool does not have an execute function");

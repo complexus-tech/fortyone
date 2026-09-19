@@ -134,7 +134,7 @@ export const createMutationToolApprovalResponse = ({
           });
         }
       },
-      onFinish: async ({ messages: finishedMessages }) => {
+      onEnd: async ({ messages: finishedMessages }) => {
         let finalizationError: unknown;
         let applied = false;
         try {

@@ -13,6 +13,8 @@ import {
   updateGitHubWorkspaceSettingsTool,
 } from "./github";
 
+type Context = Record<string, unknown>;
+
 jest.mock("ai", () => ({
   tool: (definition: unknown) => definition,
 }));
@@ -55,16 +57,16 @@ const session = {
   },
 };
 
-const toolOptions: ToolExecutionOptions = {
-  experimental_context: { workspaceSlug: "complexus" },
+const toolOptions: ToolExecutionOptions<Context> = {
+  context: { workspaceSlug: "complexus" },
   messages: [],
   toolCallId: "tool-call-1",
 };
 
 const executeTool = async <Input, Output>(
-  execute: ToolExecuteFunction<Input, Output> | undefined,
+  execute: ToolExecuteFunction<Input, Output, Context> | undefined,
   input: Input,
-  options: ToolExecutionOptions = toolOptions,
+  options: ToolExecutionOptions<Context> = toolOptions,
 ): Promise<Output> => {
   if (!execute) throw new Error("Tool does not have an execute function");
 
@@ -102,7 +104,7 @@ describe("GitHub AI tools", () => {
     const result = await executeTool(
       getGitHubIntegrationTool.execute,
       {},
-      { ...toolOptions, experimental_context: {} },
+      { ...toolOptions, context: {} },
     );
 
     expect(result).toEqual({

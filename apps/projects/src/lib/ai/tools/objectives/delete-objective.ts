@@ -12,10 +12,7 @@ export const deleteObjectiveTool = tool({
     objectiveId: z.string().describe("Objective ID to delete (required)"),
   }),
 
-  execute: async (
-    { objectiveId },
-    { experimental_context: experimentalContext },
-  ) => {
+  execute: async ({ objectiveId }, { context: experimentalContext }) => {
     try {
       const session = await auth();
 

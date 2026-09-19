@@ -146,7 +146,7 @@ export const mayaWorkPlanTool = tool({
   toModelOutput: toMayaWorkPlanModelOutput,
   execute: async (
     { storyId, durationMinutes, windowStart, windowEnd, candidateUserIds },
-    { experimental_context: experimentalContext },
+    { context: experimentalContext },
   ) => {
     try {
       const context = await getMemberMayaContext(experimentalContext);
@@ -208,7 +208,7 @@ export const applyMayaWorkPlanTool = tool({
     runId: z.string().uuid().describe("Exact run ID from mayaWorkPlanTool."),
   }),
   toModelOutput: toMayaWorkPlanModelOutput,
-  execute: async ({ runId }, { experimental_context: experimentalContext }) => {
+  execute: async ({ runId }, { context: experimentalContext }) => {
     try {
       const context = await getMemberMayaContext(experimentalContext);
       if ("error" in context) return { success: false, error: context.error };

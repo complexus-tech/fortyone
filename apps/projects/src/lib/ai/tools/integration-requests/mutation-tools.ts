@@ -90,7 +90,7 @@ export const createIntegrationRequestMutationTools = (
         startDate,
         endDate,
       },
-      { experimental_context: experimentalContext },
+      { context: experimentalContext },
     ) => {
       try {
         if (!confirmed) {
@@ -154,7 +154,7 @@ export const createIntegrationRequestMutationTools = (
     ),
     execute: async (
       { requestId, confirmed },
-      { experimental_context: experimentalContext },
+      { context: experimentalContext },
     ) => {
       try {
         if (!confirmed) {
@@ -207,7 +207,7 @@ export const createIntegrationRequestMutationTools = (
     ),
     execute: async (
       { requestId, confirmed },
-      { experimental_context: experimentalContext },
+      { context: experimentalContext },
     ) => {
       try {
         if (!confirmed) {
@@ -260,7 +260,7 @@ export const createIntegrationRequestMutationTools = (
     ),
     execute: async (
       { teamId, confirmed },
-      { experimental_context: experimentalContext },
+      { context: experimentalContext },
     ) => {
       try {
         if (!confirmed) {
@@ -312,7 +312,7 @@ export const createIntegrationRequestMutationTools = (
     ),
     execute: async (
       { teamId, confirmed },
-      { experimental_context: experimentalContext },
+      { context: experimentalContext },
     ) => {
       try {
         if (!confirmed) {
@@ -369,7 +369,7 @@ export const createIntegrationRequestMutationTools = (
     }),
     execute: async (
       { requestId, body, confirmed },
-      { experimental_context: experimentalContext },
+      { context: experimentalContext },
     ) => {
       try {
         if (!confirmed) {

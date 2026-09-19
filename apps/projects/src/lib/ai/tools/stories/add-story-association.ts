@@ -18,7 +18,7 @@ export const addStoryAssociation = tool({
   }),
   execute: async (
     { fromStoryId, toStoryId, type },
-    { experimental_context: experimentalContext },
+    { context: experimentalContext },
   ) => {
     try {
       const session = await auth();

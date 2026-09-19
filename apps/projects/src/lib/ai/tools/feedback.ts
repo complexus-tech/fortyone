@@ -165,7 +165,7 @@ export const listCustomerFeedbackTool = tool({
   }),
   execute: async (
     { teamIds, status = "active", search, page, pageSize },
-    { experimental_context: experimentalContext },
+    { context: experimentalContext },
   ) => {
     try {
       const ctx = await getAuthenticatedContext(experimentalContext);
@@ -235,10 +235,7 @@ export const getCustomerFeedbackTool = tool({
       .string()
       .describe("Feedback item ID returned by the list tool."),
   }),
-  execute: async (
-    { feedbackId },
-    { experimental_context: experimentalContext },
-  ) => {
+  execute: async ({ feedbackId }, { context: experimentalContext }) => {
     try {
       const ctx = await getAuthenticatedContext(experimentalContext);
       if ("error" in ctx) return { success: false, error: ctx.error };

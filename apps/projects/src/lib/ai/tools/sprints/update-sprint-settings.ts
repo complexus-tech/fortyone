@@ -66,7 +66,7 @@ export const updateSprintSettings = tool({
       moveIncompleteStoriesEnabled,
       nextAutoSprintNumber,
     },
-    { experimental_context: experimentalContext },
+    { context: experimentalContext },
   ) => {
     try {
       const session = await auth();

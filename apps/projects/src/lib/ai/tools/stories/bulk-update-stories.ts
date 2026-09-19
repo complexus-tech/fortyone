@@ -107,7 +107,7 @@ export const bulkUpdateStories = tool({
 
   execute: async (
     { storyIds, confirmed, updateData },
-    { experimental_context: experimentalContext },
+    { context: experimentalContext },
   ) => {
     try {
       if (!confirmed) {

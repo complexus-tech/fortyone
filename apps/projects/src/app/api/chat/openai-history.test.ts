@@ -54,7 +54,7 @@ describe("OpenAI model history", () => {
     expect(fetch).toHaveBeenCalledTimes(1);
     expect(requestBody?.input).toEqual([
       {
-        content: [{ text: "Earlier answer", type: "output_text" }],
+        content: "Earlier answer",
         phase: "final_answer",
         role: "assistant",
       },

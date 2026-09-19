@@ -50,7 +50,7 @@ export const objectiveStatusesTool = tool({
   }),
   execute: async (
     { action, statusId, name, color, category, isDefault },
-    { experimental_context: experimentalContext },
+    { context: experimentalContext },
   ) => {
     try {
       const session = await auth();

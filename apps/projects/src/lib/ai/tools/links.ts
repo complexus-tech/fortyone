@@ -37,7 +37,7 @@ export const linksTool = tool({
 
   execute: async (
     { action, storyId, linkId, url, title, limit = 20 },
-    { experimental_context: experimentalContext },
+    { context: experimentalContext },
   ) => {
     try {
       const session = await auth();

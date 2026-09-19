@@ -125,7 +125,7 @@ export const updateStory = tool({
       startDate,
       endDate,
     },
-    { experimental_context: experimentalContext },
+    { context: experimentalContext },
   ) => {
     try {
       if (!confirmed) {

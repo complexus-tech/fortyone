@@ -18,7 +18,7 @@ const needsApproval = async (
   const approval = registeredTool.needsApproval;
   return typeof approval === "function"
     ? approval(input, {
-        experimental_context: {},
+        context: {},
         messages: [],
         toolCallId: "tool-call-1",
       })
@@ -39,7 +39,7 @@ describe("withCompactModelOutputs", () => {
       }),
     });
 
-    expect(toolSet.example.execute?.({}, {} as never)).toEqual(rawOutput);
+    expect(toolSet.example.execute({}, {} as never)).toEqual(rawOutput);
     expect(
       await toolSet.example.toModelOutput?.({
         input: {},
@@ -129,7 +129,7 @@ describe("withCompactModelOutputs", () => {
     });
 
     expect(
-      toolSet.createGitHubInstallSessionTool.execute?.({}, {} as never),
+      toolSet.createGitHubInstallSessionTool.execute({}, {} as never),
     ).toEqual(rawOutput);
     expect(
       await toolSet.createGitHubInstallSessionTool.toModelOutput?.({

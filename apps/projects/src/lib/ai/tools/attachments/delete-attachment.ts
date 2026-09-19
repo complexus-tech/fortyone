@@ -17,7 +17,7 @@ export const deleteAttachment = tool({
 
   execute: async (
     { storyId, attachmentId },
-    { experimental_context: experimentalContext },
+    { context: experimentalContext },
   ) => {
     try {
       const session = await auth();

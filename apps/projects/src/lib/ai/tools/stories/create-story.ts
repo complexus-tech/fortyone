@@ -44,7 +44,7 @@ export const createStory = tool({
       startDate,
       endDate,
     },
-    { experimental_context: experimentalContext, toolCallId },
+    { context: experimentalContext, toolCallId },
   ) => {
     try {
       const session = await auth();

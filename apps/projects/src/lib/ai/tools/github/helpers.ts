@@ -37,8 +37,8 @@ const getStoryAtPath = async (path: string, ctx: WorkspaceCtx) => {
 };
 
 export const getAuthenticatedGitHubContext = async ({
-  experimental_context: experimentalContext,
-}: ToolExecutionOptions): Promise<AuthenticatedContextResult> => {
+  context: experimentalContext,
+}: ToolExecutionOptions<unknown>): Promise<AuthenticatedContextResult> => {
   const session = await auth();
 
   if (!session) {

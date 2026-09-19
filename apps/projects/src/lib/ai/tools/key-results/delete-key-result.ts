@@ -11,10 +11,7 @@ export const deleteKeyResultTool = tool({
     keyResultId: z.string().describe("Key result ID to delete"),
   }),
 
-  execute: async (
-    { keyResultId },
-    { experimental_context: experimentalContext },
-  ) => {
+  execute: async ({ keyResultId }, { context: experimentalContext }) => {
     const session = await auth();
 
     if (!session) {

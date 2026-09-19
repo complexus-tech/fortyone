@@ -17,10 +17,7 @@ export const listRunningSprints = tool({
       .describe("Number of running sprints per page. Default 20, max 100."),
   }),
 
-  execute: async (
-    { page, pageSize },
-    { experimental_context: experimentalContext },
-  ) => {
+  execute: async ({ page, pageSize }, { context: experimentalContext }) => {
     try {
       const session = await auth();
 

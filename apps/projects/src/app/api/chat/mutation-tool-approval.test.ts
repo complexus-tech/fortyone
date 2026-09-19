@@ -277,7 +277,11 @@ describe("mutation tool approval response", () => {
     expect(mockCreateStoryExecute).toHaveBeenCalledWith(
       input,
       expect.objectContaining({
-        experimental_context: { chatId: "chat-1", workspaceSlug: "acme" },
+        context: {
+          chatId: "chat-1",
+          selectedGoogleDriveFiles: [],
+          workspaceSlug: "acme",
+        },
         toolCallId: "call-1",
       }),
     );

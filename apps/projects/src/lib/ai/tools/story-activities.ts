@@ -97,7 +97,7 @@ export const storyActivitiesTool = tool({
       page,
       pageSize,
     },
-    { experimental_context: experimentalContext },
+    { context: experimentalContext },
   ) => {
     try {
       const session = await auth();

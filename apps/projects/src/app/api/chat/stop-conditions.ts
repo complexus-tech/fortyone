@@ -1,5 +1,4 @@
-import type { StopCondition } from "ai";
-import type { tools } from "@/lib/ai/tools";
+import type { StepResult, ToolSet } from "ai";
 import {
   isMutationToolCall,
   isTerminalMutationToolCall,
@@ -15,8 +14,10 @@ const getOutputState = (output: unknown) => {
   return undefined;
 };
 
-export const hasTerminalMutationResult: StopCondition<typeof tools> = ({
+export const hasTerminalMutationResult = <TOOLS extends ToolSet>({
   steps,
+}: {
+  steps: StepResult<TOOLS>[];
 }) =>
   steps.at(-1)?.toolResults.some((result) => {
     const outputState = getOutputState(result.output);

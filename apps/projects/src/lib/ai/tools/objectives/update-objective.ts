@@ -63,7 +63,7 @@ export const updateObjectiveTool = tool({
       priority,
       health,
     },
-    { experimental_context: experimentalContext },
+    { context: experimentalContext },
   ) => {
     try {
       const session = await auth();

@@ -20,7 +20,7 @@ export const getObjectiveActivitiesTool = tool({
 
   execute: async (
     { objectiveId, page = 1, pageSize = 20 },
-    { experimental_context: experimentalContext },
+    { context: experimentalContext },
   ) => {
     try {
       const session = await auth();

@@ -5,6 +5,8 @@ import { auth } from "@/auth";
 import { leaveTeamAction } from "@/modules/teams/actions/leave-team";
 import { leaveTeam } from "./leave-team";
 
+type Context = Record<string, unknown>;
+
 jest.mock("ai", () => ({
   tool: (definition: unknown) => definition,
 }));
@@ -33,14 +35,14 @@ const session = {
   },
 };
 
-const toolOptions: ToolExecutionOptions = {
+const toolOptions: ToolExecutionOptions<Context> = {
   toolCallId: "leave-team-call",
   messages: [],
-  experimental_context: { workspaceSlug: "complexus" },
+  context: { workspaceSlug: "complexus" },
 };
 
 const executeTool = async <Input, Output>(
-  execute: ToolExecuteFunction<Input, Output> | undefined,
+  execute: ToolExecuteFunction<Input, Output, Context> | undefined,
   input: Input,
 ): Promise<Output> => {
   if (!execute) throw new Error("Tool does not have an execute function");

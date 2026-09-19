@@ -65,7 +65,7 @@ export const statusesTool = tool({
   }),
   execute: async (
     { action, teamId, statusId, statusName, name, color, category, isDefault },
-    { experimental_context: experimentalContext },
+    { context: experimentalContext },
   ) => {
     try {
       const session = await auth();

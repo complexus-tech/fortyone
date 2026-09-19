@@ -30,7 +30,7 @@ export const updateTeam = tool({
 
   execute: async (
     { teamId, name, color, code, isPrivate },
-    { experimental_context: experimentalContext },
+    { context: experimentalContext },
   ) => {
     try {
       const session = await auth();

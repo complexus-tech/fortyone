@@ -71,7 +71,7 @@ const execute = async (definition: unknown, input: Record<string, unknown>) => {
   return executeTool(
     input as never,
     {
-      experimental_context: { workspaceSlug: "acme" },
+      context: { workspaceSlug: "acme" },
       messages: [],
       toolCallId: "integration-request-call",
     } as never,

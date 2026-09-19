@@ -24,7 +24,7 @@ export const listTeamObjectivesTool = tool({
 
   execute: async (
     { teamId, searchQuery, page, pageSize },
-    { experimental_context: experimentalContext },
+    { context: experimentalContext },
   ) => {
     try {
       const session = await auth();

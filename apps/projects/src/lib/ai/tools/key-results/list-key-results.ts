@@ -59,10 +59,7 @@ export const listKeyResultsTool = tool({
       .describe("Filter options for listing key results"),
   }),
 
-  execute: async (
-    { filters },
-    { experimental_context: experimentalContext },
-  ) => {
+  execute: async ({ filters }, { context: experimentalContext }) => {
     const session = await auth();
 
     if (!session) {

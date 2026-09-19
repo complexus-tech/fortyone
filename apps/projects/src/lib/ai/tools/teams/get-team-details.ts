@@ -24,7 +24,7 @@ export const getTeamDetails = tool({
 
   execute: async (
     { teamId, includeMembers = true, membersPageSize = 20 },
-    { experimental_context: experimentalContext },
+    { context: experimentalContext },
   ) => {
     try {
       const session = await auth();

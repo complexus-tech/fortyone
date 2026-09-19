@@ -57,7 +57,7 @@ export const listDocumentsTool = tool({
   }),
   execute: async (
     { search, scope = "all", limit = 20 },
-    { experimental_context: experimentalContext },
+    { context: experimentalContext },
   ) => {
     try {
       const ctx = await getAuthenticatedContext(experimentalContext);
@@ -106,10 +106,7 @@ export const getDocumentDetailsTool = tool({
   inputSchema: z.object({
     documentId: z.string().min(1).describe("Document ID to retrieve."),
   }),
-  execute: async (
-    { documentId },
-    { experimental_context: experimentalContext },
-  ) => {
+  execute: async ({ documentId }, { context: experimentalContext }) => {
     try {
       const ctx = await getAuthenticatedContext(experimentalContext);
       if ("error" in ctx) return { success: false, error: ctx.error };

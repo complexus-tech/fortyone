@@ -63,7 +63,7 @@ export const bulkCreateStories = tool({
 
   execute: async (
     { sharedValues, storiesData },
-    { experimental_context: experimentalContext, toolCallId },
+    { context: experimentalContext, toolCallId },
   ) => {
     try {
       const session = await auth();

@@ -66,7 +66,7 @@ const execute = async (
   return definition.execute(
     input as never,
     {
-      experimental_context: { workspaceSlug: "acme" },
+      context: { workspaceSlug: "acme" },
       messages: [],
       toolCallId: "status-call",
     } as never,

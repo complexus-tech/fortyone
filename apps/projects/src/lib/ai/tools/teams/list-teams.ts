@@ -23,7 +23,7 @@ export const listTeams = tool({
 
   execute: async (
     { searchQuery, page, pageSize },
-    { experimental_context: experimentalContext },
+    { context: experimentalContext },
   ) => {
     try {
       const session = await auth();

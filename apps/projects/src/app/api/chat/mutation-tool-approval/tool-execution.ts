@@ -6,7 +6,10 @@ import {
   type ApiErrorOutcomeReport,
   installApiErrorOutcomeReporter,
 } from "@/utils/api-error-outcome";
-import { runWithMayaHttpRequestContext } from "../maya-http-request-context";
+import {
+  type MayaToolContext,
+  runWithMayaHttpRequestContext,
+} from "../maya-http-request-context";
 import type { MutationToolApproval } from "./approval-fingerprint";
 import type { PreparedApprovedMutation } from "./approval-policy";
 
@@ -112,9 +115,9 @@ export const executeApprovedMutation = async ({
     throw abortSignal.reason ?? new Error("The approval request was aborted.");
   }
 
-  const options: ToolExecutionOptions = {
+  const options: ToolExecutionOptions<MayaToolContext> = {
     abortSignal,
-    experimental_context: { chatId, workspaceSlug },
+    context: { chatId, selectedGoogleDriveFiles: [], workspaceSlug },
     messages: [],
     toolCallId: approval.toolCallId,
   };

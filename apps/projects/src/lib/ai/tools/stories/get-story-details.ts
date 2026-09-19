@@ -22,10 +22,7 @@ export const getStoryDetails = tool({
       ),
   }),
 
-  execute: async (
-    { storyId, storyRef },
-    { experimental_context: experimentalContext },
-  ) => {
+  execute: async ({ storyId, storyRef }, { context: experimentalContext }) => {
     if (!storyId && !storyRef) {
       return {
         success: false,

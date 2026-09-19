@@ -1,9 +1,29 @@
 import "@testing-library/jest-dom";
+import {
+  ReadableStream,
+  TransformStream,
+  WritableStream,
+} from "node:stream/web";
 import { TextDecoder, TextEncoder } from "node:util";
 
 Object.defineProperties(globalThis, {
   TextDecoder: { configurable: true, value: TextDecoder, writable: true },
   TextEncoder: { configurable: true, value: TextEncoder, writable: true },
+  ReadableStream: {
+    configurable: true,
+    value: ReadableStream,
+    writable: true,
+  },
+  TransformStream: {
+    configurable: true,
+    value: TransformStream,
+    writable: true,
+  },
+  WritableStream: {
+    configurable: true,
+    value: WritableStream,
+    writable: true,
+  },
 });
 
 if (typeof window !== "undefined") {

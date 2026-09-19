@@ -1,7 +1,15 @@
 import "server-only";
 
 import { AsyncLocalStorage } from "node:async_hooks";
-import type { ToolExecutionOptions, ToolSet } from "ai";
+import type {
+  InferToolInput,
+  InferToolOutput,
+  Tool,
+  ToolExecutionOptions,
+  ToolSet,
+} from "ai";
+import { z } from "zod";
+import { googleDriveFileContextSchema } from "@/lib/ai/google-drive-context";
 import {
   installRequestOptionsScopeResolver,
   type RequestOptionsScope,
@@ -29,6 +37,22 @@ installRequestOptionsScopeResolver(() =>
   mayaHttpRequestContextStorage.getStore(),
 );
 
+export const mayaToolContextSchema = z.object({
+  chatId: z.string(),
+  selectedGoogleDriveFiles: z.array(googleDriveFileContextSchema).default([]),
+  workspaceSlug: z.string(),
+});
+
+export type MayaToolContext = z.infer<typeof mayaToolContextSchema>;
+
+type MayaContextToolSet<TOOLS extends ToolSet> = {
+  [NAME in keyof TOOLS]: Tool<
+    InferToolInput<TOOLS[NAME]>,
+    InferToolOutput<TOOLS[NAME]>,
+    MayaToolContext
+  >;
+};
+
 export const runWithMayaHttpRequestContext = <T>(
   signal: AbortSignal,
   callback: () => T,
@@ -41,19 +65,27 @@ export const runWithMayaHttpRequestContext = <T>(
  */
 export const withMayaHttpRequestContext = <TOOLS extends ToolSet>(
   toolSet: TOOLS,
-): TOOLS =>
+): MayaContextToolSet<TOOLS> =>
   Object.fromEntries(
     Object.entries(toolSet).map(([name, registeredTool]) => {
       const execute = registeredTool.execute as
         | NonNullable<ToolSet[string]["execute"]>
         | undefined;
-      if (!execute) return [name, registeredTool];
+      if (!execute)
+        return [
+          name,
+          { ...registeredTool, contextSchema: mayaToolContextSchema },
+        ];
 
       return [
         name,
         {
           ...registeredTool,
-          execute: (input: unknown, options: ToolExecutionOptions) => {
+          contextSchema: mayaToolContextSchema,
+          execute: (
+            input: unknown,
+            options: ToolExecutionOptions<MayaToolContext>,
+          ) => {
             if (!options.abortSignal) return execute(input, options);
 
             return runWithMayaHttpRequestContext(options.abortSignal, () =>
@@ -63,4 +95,12 @@ export const withMayaHttpRequestContext = <TOOLS extends ToolSet>(
         },
       ];
     }),
-  ) as unknown as TOOLS;
+  ) as unknown as MayaContextToolSet<TOOLS>;
+
+export const createMayaToolsContext = <TOOLS extends ToolSet>(
+  toolSet: TOOLS,
+  context: MayaToolContext,
+) =>
+  Object.fromEntries(Object.keys(toolSet).map((name) => [name, context])) as {
+    [NAME in keyof TOOLS]: MayaToolContext;
+  };

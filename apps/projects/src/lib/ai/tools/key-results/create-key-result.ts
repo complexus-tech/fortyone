@@ -53,7 +53,7 @@ export const createKeyResultTool = tool({
       lead,
       contributors,
     },
-    { experimental_context: experimentalContext },
+    { context: experimentalContext },
   ) => {
     const session = await auth();
 

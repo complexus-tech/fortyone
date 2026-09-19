@@ -12,10 +12,7 @@ export const getObjectiveDetailsTool = tool({
       .describe("Objective ID to get details for (required)"),
   }),
 
-  execute: async (
-    { objectiveId },
-    { experimental_context: experimentalContext },
-  ) => {
+  execute: async ({ objectiveId }, { context: experimentalContext }) => {
     try {
       const session = await auth();
       if (!session) {

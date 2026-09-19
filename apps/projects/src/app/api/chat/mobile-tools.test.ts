@@ -3,6 +3,8 @@ import { z } from "zod";
 import type { ToolExecutionOptions } from "ai";
 import { canUseMobileMayaTool, mobileMayaTools } from "./mobile-tools";
 
+type Context = Record<string, unknown>;
+
 describe("mobile Maya capability boundary", () => {
   it("exposes the focus briefing tool used by daily-priority prompts", () => {
     const focusBrief = {
@@ -32,7 +34,7 @@ describe("mobile Maya capability boundary", () => {
   it("denies unsupported mixed-tool mutations before calling their executor", async () => {
     const execute = jest.fn<
       Promise<{ success: boolean }>,
-      [unknown, ToolExecutionOptions]
+      [unknown, ToolExecutionOptions<Context>]
     >(async () => ({ success: true }));
     const registered = {
       inputSchema: z.object({ action: z.string() }),
@@ -43,7 +45,7 @@ describe("mobile Maya capability boundary", () => {
       navigation: registered,
     });
     expect(Object.keys(selected)).toEqual(["statuses"]);
-    const options = { toolCallId: "call", messages: [] };
+    const options = { context: {}, toolCallId: "call", messages: [] };
     expect(
       await selected.statuses.execute({ action: "delete-status" }, options),
     ).toMatchObject({ success: false });

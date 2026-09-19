@@ -73,7 +73,7 @@ export const searchTool = tool({
       pageSize = 20,
       includeDetails = false,
     },
-    { experimental_context: experimentalContext },
+    { context: experimentalContext },
   ) => {
     try {
       const session = await auth();

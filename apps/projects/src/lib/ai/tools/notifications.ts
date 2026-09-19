@@ -104,7 +104,7 @@ export const notificationsTool = tool({
       inAppEnabled,
       includeDetails = false,
     },
-    { experimental_context: experimentalContext },
+    { context: experimentalContext },
   ) => {
     try {
       const session = await auth();

@@ -7,6 +7,8 @@ import { getTeamFeedbackItem } from "@/modules/team-feedback/queries/get-feedbac
 import { getTeamFeedbackPage } from "@/modules/team-feedback/queries/get-team-feedback";
 import { getCustomerFeedbackTool, listCustomerFeedbackTool } from "./feedback";
 
+type Context = Record<string, unknown>;
+
 jest.mock("ai", () => ({
   tool: (definition: unknown) => definition,
 }));
@@ -40,16 +42,16 @@ const session = {
   },
 };
 
-const toolOptions: ToolExecutionOptions = {
+const toolOptions: ToolExecutionOptions<Context> = {
   toolCallId: "tool-call-1",
   messages: [],
-  experimental_context: { workspaceSlug: "complexus" },
+  context: { workspaceSlug: "complexus" },
 };
 
 const executeTool = async <Input, Output>(
-  execute: ToolExecuteFunction<Input, Output> | undefined,
+  execute: ToolExecuteFunction<Input, Output, Context> | undefined,
   input: Input,
-  options: ToolExecutionOptions = toolOptions,
+  options: ToolExecutionOptions<Context> = toolOptions,
 ): Promise<Output> => {
   if (!execute) throw new Error("Tool does not have an execute function");
 
@@ -329,7 +331,7 @@ describe("Maya feedback tools", () => {
       { teamIds: ["team-1"] },
       {
         ...toolOptions,
-        experimental_context: undefined,
+        context: {},
       },
     );
 

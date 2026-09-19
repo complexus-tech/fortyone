@@ -6,6 +6,8 @@ import { deleteStoryAction } from "@/modules/story/actions/delete-story";
 import { StoryDeletionOutcomeUncertainError } from "@/shared/story/deletion";
 import { deleteStory } from "./delete-story";
 
+type Context = Record<string, unknown>;
+
 jest.mock("ai", () => ({
   tool: (definition: unknown) => definition,
 }));
@@ -39,14 +41,14 @@ const story = {
   title: "Prepare launch",
 };
 
-const toolOptions: ToolExecutionOptions = {
+const toolOptions: ToolExecutionOptions<Context> = {
   toolCallId: "delete-story-call",
   messages: [],
-  experimental_context: { workspaceSlug: "complexus" },
+  context: { workspaceSlug: "complexus" },
 };
 
 const executeTool = async <Input, Output>(
-  execute: ToolExecuteFunction<Input, Output> | undefined,
+  execute: ToolExecuteFunction<Input, Output, Context> | undefined,
   input: Input,
 ): Promise<Output> => {
   if (!execute) throw new Error("Tool does not have an execute function");

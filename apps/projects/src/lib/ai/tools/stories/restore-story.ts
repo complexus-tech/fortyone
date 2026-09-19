@@ -14,10 +14,7 @@ export const restoreStory = tool({
       .describe("Story ID to restore (required)"),
   }),
 
-  execute: async (
-    { storyId },
-    { experimental_context: experimentalContext },
-  ) => {
+  execute: async ({ storyId }, { context: experimentalContext }) => {
     try {
       const session = await auth();
 

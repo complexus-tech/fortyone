@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { experimental_transcribe as transcribe } from "ai";
+import { transcribe } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { auth } from "@/auth";
 

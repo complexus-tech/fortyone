@@ -15,6 +15,7 @@ export const useAnalytics = () => {
       posthog.stopSessionRecording();
     },
     identify: (userId, properties, propertiesToSetOnce) => {
+      if (!userId) return;
       posthog.identify(userId, properties, propertiesToSetOnce);
     },
     logout: () => {

@@ -2,18 +2,17 @@
 import type { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
 import { ApiError } from "api-client";
 import { createOpenAI } from "@ai-sdk/openai";
-import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { createGoogle } from "@ai-sdk/google";
 import { devToolsMiddleware } from "@ai-sdk/devtools";
 import {
   consumeStream,
   convertToModelMessages,
   generateId,
-  stepCountIs,
+  isStepCount,
   streamText,
   wrapLanguageModel,
 } from "ai";
 import type { NextRequest } from "next/server";
-import { withTracing } from "@posthog/ai";
 import {
   OPENAI_DEFAULT_REASONING_EFFORT,
   OPENAI_TEXT_MODEL,
@@ -31,7 +30,7 @@ import {
   withOpenAIToolDiscovery,
 } from "@/lib/ai/tool-discovery";
 import { auth } from "@/auth";
-import posthogServer from "@/app/posthog-server";
+import { createPostHogAiTelemetry, flushAiTelemetry } from "@/lib/ai/telemetry";
 import { get } from "@/lib/http";
 import type { ApiResponse } from "@/types";
 import { systemPrompt } from "./system";
@@ -58,6 +57,7 @@ import { createMutationToolApprovalResponse } from "./mutation-tool-approval";
 import { resolveStoryCreationDefaults } from "./story-creation-defaults";
 import { sanitizeOpenAIHistoryItemReferences } from "./openai-history";
 import {
+  createMayaToolsContext,
   runWithMayaHttpRequestContext,
   withMayaHttpRequestContext,
 } from "./maya-http-request-context";
@@ -214,7 +214,7 @@ const handleChatRequest = async (
   const openaiClient = createOpenAI({
     apiKey: process.env.OPENAI_API_KEY,
   });
-  const googleClient = createGoogleGenerativeAI({
+  const googleClient = createGoogle({
     apiKey: process.env.GOOGLE_API_KEY,
   });
   // OpenAI hosted tool-search requires stored Responses. Drive-bearing turns
@@ -222,12 +222,14 @@ const handleChatRequest = async (
   // storage so extracted source content exists only for the active model run.
   const availableTools =
     requestBody.client === "mobile" ? mobileMayaTools(modelTools) : modelTools;
-  const runtimeTools =
+  const hostedToolSearch = openaiClient.tools.toolSearch({
+    execution: "server",
+  });
+  const runtimeTools: typeof availableTools & {
+    mayaToolSearch?: typeof hostedToolSearch;
+  } =
     provider === "openai" && !containsGoogleDriveContent
-      ? withOpenAIToolDiscovery(
-          availableTools,
-          openaiClient.tools.toolSearch({ execution: "server" }),
-        )
+      ? withOpenAIToolDiscovery(availableTools, hostedToolSearch)
       : availableTools;
   const runtimeToolNames = new Set(Object.keys(runtimeTools));
   // Compact copies determine the byte-bounded suffix and tool routing. Convert
@@ -263,8 +265,6 @@ const handleChatRequest = async (
       username,
     }) + getGoogleDriveSelectionRuntimeContext(selectedGoogleDriveFiles);
 
-  const phClient = posthogServer();
-
   let client =
     provider === "openai"
       ? openaiClient(OPENAI_TEXT_MODEL)
@@ -280,30 +280,32 @@ const handleChatRequest = async (
     });
   }
 
-  const model = withTracing(client, phClient, {
-    posthogDistinctId: session.user.id,
-    posthogPrivacyMode: true,
-    posthogProperties: {
-      active_tool_count: runtimeToolNames.size,
-      chat_context_message_count: contextMessages.length,
-      conversation_id: id,
-      paid: subscription?.status === "active",
-      tool_selection_source: activeToolPlan.source,
-    },
-  });
+  const toolContext = {
+    chatId: id,
+    selectedGoogleDriveFiles,
+    workspaceSlug: workspace.slug,
+  };
 
   const result = streamText({
     abortSignal: req.signal,
-    model,
+    model: client,
     messages: modelMessages,
-    stopWhen: [hasTerminalMutationResult, stepCountIs(MAX_TOOL_STEPS)],
+    stopWhen: [hasTerminalMutationResult, isStepCount(MAX_TOOL_STEPS)],
     tools: runtimeTools,
-    system: systemPrompt + userContext,
-    experimental_context: {
-      chatId: id,
-      selectedGoogleDriveFiles,
-      workspaceSlug: workspace.slug,
-    },
+    instructions: systemPrompt + userContext,
+    toolsContext: createMayaToolsContext(availableTools, toolContext),
+    telemetry: createPostHogAiTelemetry({
+      distinctId: session.user.id,
+      functionId: "maya-chat",
+      privacyMode: true,
+      properties: {
+        active_tool_count: runtimeToolNames.size,
+        chat_context_message_count: contextMessages.length,
+        conversation_id: id,
+        paid: subscription?.status === "active",
+        tool_selection_source: activeToolPlan.source,
+      },
+    }),
     providerOptions: {
       openai: {
         passThroughUnsupportedFiles: true,
@@ -326,7 +328,7 @@ const handleChatRequest = async (
         formatChatErrorDiagnostic(error),
       );
     },
-    onStepFinish: ({ finishReason, toolCalls, usage }) => {
+    onStepEnd: ({ finishReason, toolCalls, usage }) => {
       if (finishReason !== "length" && finishReason !== "error") return;
 
       // eslint-disable-next-line no-console -- Payload-free diagnostics for provider truncation and failures.
@@ -352,13 +354,17 @@ const handleChatRequest = async (
     sendReasoning: false,
     sendSources: false,
     originalMessages: canonicalUiMessages,
-    onFinish: async ({ messages }) => {
-      await saveChat({
-        id,
-        messages: redactGoogleDriveContentFromMessages(messages),
-        reservation: writeReservation,
-        workspaceSlug: workspace.slug,
-      });
+    onEnd: async ({ messages }) => {
+      try {
+        await saveChat({
+          id,
+          messages: redactGoogleDriveContentFromMessages(messages),
+          reservation: writeReservation,
+          workspaceSlug: workspace.slug,
+        });
+      } finally {
+        await flushAiTelemetry();
+      }
     },
     onError: getChatResponseErrorMessage,
   });

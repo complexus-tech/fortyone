@@ -49,7 +49,7 @@ export const membersTool = tool({
 
   execute: async (
     { action, teamId, searchQuery, memberId, page, pageSize },
-    { experimental_context: experimentalContext },
+    { context: experimentalContext },
   ) => {
     try {
       const session = await auth();
@@ -230,10 +230,7 @@ export const resolveMemberTool = tool({
       .optional()
       .describe("Optional team ID when the member must belong to one team."),
   }),
-  execute: async (
-    { query, teamId },
-    { experimental_context: experimentalContext },
-  ) => {
+  execute: async ({ query, teamId }, { context: experimentalContext }) => {
     try {
       const session = await auth();
 

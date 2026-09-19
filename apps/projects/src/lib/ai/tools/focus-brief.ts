@@ -185,7 +185,7 @@ export const focusBriefTool = tool({
   }),
   execute: async (
     { subject, teamIds: inputTeamIds, sprintIds: inputSprintIds, objectiveId },
-    { experimental_context: experimentalContext },
+    { context: experimentalContext },
   ) => {
     try {
       const session = await auth();
