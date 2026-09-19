@@ -14,6 +14,7 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/brevo"
 	"github.com/complexus-tech/projects-api/pkg/emailcopy"
 	"github.com/complexus-tech/projects-api/pkg/emailthread"
+	"github.com/complexus-tech/projects-api/pkg/expopush"
 	"github.com/complexus-tech/projects-api/pkg/jobs"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/mailer"
@@ -100,6 +101,12 @@ type NotificationDeliveryStore interface {
 	MarkEmailSent(context.Context, notificationsdomain.DeliveryScope, []uuid.UUID) error
 }
 
+type PushDeliveryStore interface {
+	GetPushDelivery(context.Context, uuid.UUID) (*notificationsdomain.PushDelivery, error)
+	MarkPushSent(context.Context, uuid.UUID) error
+	DisablePushDevices(context.Context, []string) error
+}
+
 type handlers struct {
 	emailAvatars           EmailAvatarHandleStore
 	apiPublicURL           string
@@ -114,6 +121,8 @@ type handlers struct {
 	emailCopy              emailcopy.Generator
 	emailThreads           emailthread.GuidancePreparer
 	notificationDeliveries NotificationDeliveryStore
+	pushDeliveries         PushDeliveryStore
+	pushSender             expopush.Sender
 	routineDeliveries      RoutineDeliveryStore
 	briefingSources        jobs.BriefingSources
 	slackEvents            SlackEventProcessor
@@ -149,6 +158,8 @@ type WorkerHandlerDependencies struct {
 	EmailCopy              emailcopy.Generator
 	EmailThreads           emailthread.GuidancePreparer
 	NotificationDeliveries NotificationDeliveryStore
+	PushDeliveries         PushDeliveryStore
+	PushSender             expopush.Sender
 	RoutineDeliveries      RoutineDeliveryStore
 	BriefingSources        jobs.BriefingSources
 	SlackEvents            SlackEventProcessor
@@ -183,6 +194,8 @@ func NewWorkerHandlers(dependencies WorkerHandlerDependencies) *handlers {
 		emailCopy:              dependencies.EmailCopy,
 		emailThreads:           dependencies.EmailThreads,
 		notificationDeliveries: dependencies.NotificationDeliveries,
+		pushDeliveries:         dependencies.PushDeliveries,
+		pushSender:             dependencies.PushSender,
 		routineDeliveries:      dependencies.RoutineDeliveries,
 		briefingSources:        dependencies.BriefingSources,
 		slackEvents:            dependencies.SlackEvents,

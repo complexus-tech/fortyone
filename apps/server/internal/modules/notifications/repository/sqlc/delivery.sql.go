@@ -566,7 +566,7 @@ WITH covered AS (
     WHERE notification.recipient_id = CAST($2 AS uuid)
       AND notification.workspace_id = CAST($3 AS uuid)
       AND notification.notification_id = ANY(CAST($4 AS uuid[]))
-    RETURNING notification.notification_id, notification.recipient_id, notification.workspace_id, notification.type, notification.entity_type, notification.entity_id, notification.actor_id, notification.title, notification.created_at, notification.read_at, notification.message, notification.email_sent_at, notification.dedupe_key, notification.in_app_enabled
+    RETURNING notification.notification_id, notification.recipient_id, notification.workspace_id, notification.type, notification.entity_type, notification.entity_id, notification.actor_id, notification.title, notification.created_at, notification.read_at, notification.message, notification.email_sent_at, notification.dedupe_key, notification.in_app_enabled, notification.push_sent_at
 )
 INSERT INTO public.notification_email_receipts (recipient_id, workspace_id, content_hash, sent_at)
 SELECT covered.recipient_id, covered.workspace_id, sha256(convert_to(CAST(jsonb_build_array(covered.type, covered.entity_type, covered.entity_id, covered.actor_id, covered.title, covered.message) AS text), 'UTF8')), MIN(covered.email_sent_at)

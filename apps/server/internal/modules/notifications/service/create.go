@@ -34,6 +34,12 @@ func (service *Service) Create(ctx context.Context, input CoreNewNotification) (
 			return notification, fmt.Errorf("publish notification realtime event: %w", err)
 		}
 	}
+	if notification.InAppEnabled && notification.EntityType != notificationsdomain.EntityTypeFeedback {
+		if err := service.enqueuePush(notification); err != nil {
+			span.RecordError(err)
+			return notification, err
+		}
+	}
 	if err := service.enqueueDigest(notification); err != nil {
 		span.RecordError(err)
 		return notification, err
@@ -43,6 +49,23 @@ func (service *Service) Create(ctx context.Context, input CoreNewNotification) (
 		attribute.Bool("notification.inserted", inserted),
 	)
 	return notification, nil
+}
+
+func (service *Service) enqueuePush(notification CoreNotification) error {
+	if service.tasksService == nil {
+		return fmt.Errorf("enqueue notification push: task service is unavailable")
+	}
+	pushTasks, ok := service.tasksService.(PushTasksService)
+	if !ok {
+		return fmt.Errorf("enqueue notification push: task service is unavailable")
+	}
+	_, err := pushTasks.EnqueueNotificationPush(tasks.NotificationPushPayload{
+		NotificationID: notification.ID,
+	})
+	if err != nil {
+		return fmt.Errorf("enqueue notification push: %w", err)
+	}
+	return nil
 }
 
 func (service *Service) enqueueDigest(notification CoreNotification) error {

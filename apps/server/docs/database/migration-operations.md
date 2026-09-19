@@ -60,6 +60,7 @@ The machine-readable source of truth is [`internal/migrations/manifest.json`](..
 | `000193` | `account_deletion_shared_history` | `forward-only` | `schema-first` | The new account deletion implementation retains shared comments, feedback submissions and activity history under generic attribution, while erasing identity and private account data. | Existing account finalization, subscriber and provider cleanup contracts are unchanged. |
 | `000194` | `document_collaboration` | `forward-only` | `schema-first` | New API requires migration 194. Legacy content writes are fenced after collaboration activation. | Existing workers remain compatible. |
 | `000195` | `document_history_checkpoints` | `forward-only` | `schema-first` | Existing revision APIs remain compatible. Autosave revision counters and restore fencing remain unchanged. | No background worker or new environment configuration is required. |
+| `000196` | `notification_push_delivery` | `forward-only` | `schema-first` | New authenticated notification-device endpoints require migration 196. Existing inbox and preference APIs remain compatible. | The push task requires migration 196 and outbound HTTPS access to the Expo Push API. No new worker environment variable is required. |
 
 ## `000152_harden_verification_tokens`
 
@@ -1319,6 +1320,34 @@ Operational notes:
 - Autosaves from one editor coalesce for up to ten minutes, unless there has been a two-minute pause.
 - Initial content, editor changes and restores start distinct checkpoints. CRDT-only and access-only updates do not create history.
 - The newest ten checkpoints are retained per document; the initial version expires when it falls outside that window.
+
+## `000196_notification_push_delivery`
+
+- **Classification:** `forward-only`
+- **Files:** `000196_notification_push_delivery.up.sql`, `000196_notification_push_delivery.down.sql`
+- **Schema:** Adds account-scoped Expo push device tokens and a push acceptance timestamp on notifications.
+- **API:** New authenticated notification-device endpoints require migration 196. Existing inbox and preference APIs remain compatible.
+- **Worker:** The push task requires migration 196 and outbound HTTPS access to the Expo Push API. No new worker environment variable is required.
+- **Mixed versions:** Apply the schema first. Older API and worker instances ignore the additive tables and column; deploy the push-capable API and worker before distributing the mobile build.
+- **Rollout mode:** `schema-first`
+
+Rollout:
+
+1. Apply migration 000196.
+2. Deploy the API and worker with Expo egress enabled, then configure APNs and FCM credentials for the Expo project.
+3. Distribute a new native mobile build, enable push from Settings on a controlled device, and verify registration, background delivery, tap routing, read state, logout cleanup, and invalid-token cleanup.
+
+Recovery (`forward-fix`):
+
+1. Stop enqueueing new push tasks or pause the notifications queue while retaining inbox and email delivery.
+2. Repair credentials, Expo connectivity, or worker behavior forward; active device tokens and unsent notification intent remain in PostgreSQL.
+3. Do not roll back after mobile clients register unless device tokens and pending push intent may be discarded.
+
+Operational notes:
+
+- Push follows the existing in-app preference and excludes public-feedback notifications.
+- Every queued delivery rechecks active account, workspace membership, team access, and live resource state before sending.
+- Expo acceptance is an at-least-once transport boundary; DeviceNotRegistered tokens are disabled and provider/network failures retry through Asynq.
 
 ## Adding the next migration
 

@@ -4,10 +4,7 @@
   "policy": {
     "baseline_rule": "versions-at-or-below-baseline-are-established",
     "applied_migration_mutation": "immutable",
-    "required_directions": [
-      "up",
-      "down"
-    ],
+    "required_directions": ["up", "down"],
     "production_recovery": "classification-driven",
     "forward_only_recovery": "forward-fix",
     "reversible_recovery": "down-migration"
@@ -1666,6 +1663,43 @@
         "Autosaves from one editor coalesce for up to ten minutes, unless there has been a two-minute pause.",
         "Initial content, editor changes and restores start distinct checkpoints. CRDT-only and access-only updates do not create history.",
         "The newest ten checkpoints are retained per document; the initial version expires when it falls outside that window."
+      ]
+    },
+    {
+      "version": 196,
+      "slug": "notification_push_delivery",
+      "classification": "forward-only",
+      "files": {
+        "up": "000196_notification_push_delivery.up.sql",
+        "down": "000196_notification_push_delivery.down.sql"
+      },
+      "compatibility": {
+        "schema": "Adds account-scoped Expo push device tokens and a push acceptance timestamp on notifications.",
+        "api": "New authenticated notification-device endpoints require migration 196. Existing inbox and preference APIs remain compatible.",
+        "worker": "The push task requires migration 196 and outbound HTTPS access to the Expo Push API. No new worker environment variable is required.",
+        "mixed_versions": "Apply the schema first. Older API and worker instances ignore the additive tables and column; deploy the push-capable API and worker before distributing the mobile build."
+      },
+      "rollout": {
+        "sequence": 45,
+        "mode": "schema-first",
+        "steps": [
+          "Apply migration 000196.",
+          "Deploy the API and worker with Expo egress enabled, then configure APNs and FCM credentials for the Expo project.",
+          "Distribute a new native mobile build, enable push from Settings on a controlled device, and verify registration, background delivery, tap routing, read state, logout cleanup, and invalid-token cleanup."
+        ]
+      },
+      "recovery": {
+        "strategy": "forward-fix",
+        "procedure": [
+          "Stop enqueueing new push tasks or pause the notifications queue while retaining inbox and email delivery.",
+          "Repair credentials, Expo connectivity, or worker behavior forward; active device tokens and unsent notification intent remain in PostgreSQL.",
+          "Do not roll back after mobile clients register unless device tokens and pending push intent may be discarded."
+        ]
+      },
+      "operational_notes": [
+        "Push follows the existing in-app preference and excludes public-feedback notifications.",
+        "Every queued delivery rechecks active account, workspace membership, team access, and live resource state before sending.",
+        "Expo acceptance is an at-least-once transport boundary; DeviceNotRegistered tokens are disabled and provider/network failures retry through Asynq."
       ]
     }
   ]

@@ -118,7 +118,10 @@ export function resolveActivityActor(
   };
 }
 
-const scheduleFormatters = new Map<string, Intl.DateTimeFormat>();
+const scheduleFormatters = new Map<
+  string,
+  { date: Intl.DateTimeFormat; time: Intl.DateTimeFormat }
+>();
 
 function timestampText(value: unknown, timezone?: string): string | null {
   if (typeof value !== "string" || !timezone?.trim()) return null;
@@ -126,23 +129,29 @@ function timestampText(value: unknown, timezone?: string): string | null {
   if (!isValid(date)) return null;
   try {
     const zone = timezone.trim();
-    let formatter = scheduleFormatters.get(zone);
-    if (!formatter) {
-      formatter = new Intl.DateTimeFormat("en-GB", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        hourCycle: "h23",
-        timeZone: zone,
-      });
-      scheduleFormatters.set(zone, formatter);
+    let formatters = scheduleFormatters.get(zone);
+    if (!formatters) {
+      formatters = {
+        date: new Intl.DateTimeFormat("en-GB", {
+          day: "numeric",
+          month: "short",
+          timeZone: zone,
+          year: "numeric",
+        }),
+        time: new Intl.DateTimeFormat("en-GB", {
+          hour: "2-digit",
+          hourCycle: "h23",
+          minute: "2-digit",
+          timeZone: zone,
+        }),
+      };
+      scheduleFormatters.set(zone, formatters);
     }
-    const parts = new Map(
-      formatter.formatToParts(date).map(({ type, value }) => [type, value]),
-    );
-    return `${parts.get("day")} ${parts.get("month")} ${parts.get("year")} at ${parts.get("hour")}:${parts.get("minute")}`;
+
+    // Match the web formatter and avoid relying on formatToParts support in
+    // the native Intl runtime. Missing parts previously leaked into the feed
+    // as the literal text `undefined:undefined` on iOS.
+    return `${formatters.date.format(date)} at ${formatters.time.format(date)}`;
   } catch {
     // A stale/invalid profile timezone must not break the activity feed.
     return null;

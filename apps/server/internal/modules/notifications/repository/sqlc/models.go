@@ -7,6 +7,9 @@ package notificationssql
 import (
 	"database/sql/driver"
 	"fmt"
+	"time"
+
+	"github.com/google/uuid"
 )
 
 type EntityType string
@@ -135,4 +138,15 @@ func (e NotificationType) Valid() bool {
 		return true
 	}
 	return false
+}
+
+// Expo push tokens registered by authenticated native app installations. A token can belong to only one account at a time.
+type NotificationPushDevice struct {
+	DeviceID      uuid.UUID
+	UserID        uuid.UUID
+	ExpoPushToken string
+	Platform      string
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+	DisabledAt    *time.Time
 }

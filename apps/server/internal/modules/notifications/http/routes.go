@@ -46,6 +46,8 @@ func Routes(cfg Config, app *web.App) {
 	app.Delete("/workspaces/{workspaceSlug}/notifications/{id}", h.DeleteNotification, auth, workspace)
 	app.Delete("/workspaces/{workspaceSlug}/notifications", h.DeleteAllNotifications, auth, workspace)
 	app.Delete("/workspaces/{workspaceSlug}/notifications/read", h.DeleteReadNotifications, auth, workspace)
+	app.Post("/users/notification-devices", h.RegisterPushDevice, auth)
+	app.Delete("/users/notification-devices", h.UnregisterPushDevice, auth)
 
 	// Notification Preferences
 	app.Get("/workspaces/{workspaceSlug}/notification-preferences", h.GetPreferences, auth, workspace)

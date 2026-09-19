@@ -68,5 +68,14 @@ export function useObjectiveCommands(id: string) {
         command.type === "update" ? command.patch : undefined,
       ),
     [objectiveKeys.all, storyKeys.all, homeKeys.all, searchKeys.all],
+    (command) => {
+      if (command.type !== "update") return null;
+      const {
+        comment: _comment,
+        expectedUpdatedAt: _expectedUpdatedAt,
+        ...patch
+      } = command.patch;
+      return { entityId: id, patch };
+    },
   );
 }

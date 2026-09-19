@@ -31,12 +31,12 @@ The native commands generate/build local native projects and require working pla
 
 - Home overview, joined teams, My Work, grouped story lists, search, objectives, sprints, and story details.
 - Story creation and updates, properties, labels, archive/delete/restore actions, links, subtasks, and comments through the existing API.
-- Paginated in-app inbox with read/unread/delete actions and native story/objective destinations. Unsupported native destinations open the canonical FortyOne web page. This is an inbox, not operating-system push delivery.
+- Paginated in-app inbox with read/unread/delete actions and native story/objective destinations, plus opt-in Expo push delivery. Notification taps switch to the owning workspace, open supported native destinations, and mark the inbox item read.
 - Shared HTML rendering and editing through TipTap in Expo DOM components/WebView. Existing descriptions prefer `descriptionHTML` with escaped plain-text fallback. Editors send HTML plus plain text, retain supported web document structures, sanitize content, and preserve local drafts by account, workspace, and document. Drafts are cleared on sign-out/account replacement. Rendering existing media does not implement camera capture or attachment upload.
 - Explicit loading, retry, empty, and mutation failure feedback. Grouped stories use a single virtualized SectionList with per-group pagination.
 - Protected native routes, scoped request cancellation and persistence, theme preferences, and platform-specific controls.
 
-There is no implemented biometric sign-in, push token registration, background sync service, or offline mutation queue. The presence of `expo-updates` does not establish an operational OTA release pipeline. NativeWind remains on the v5 preview line because the app uses Tailwind 4; its native styling needs device regression testing before release. The root pnpm override pins only `@expo/metro-config > lightningcss` to 1.30.1 for a reproduced native CSS AST visitor regression ([upstream issue](https://github.com/parcel-bundler/lightningcss/issues/1081)). It does not change the web Tailwind pipeline. Keep the narrow pin until an upstream fix passes native bundle and device checks.
+There is no implemented biometric sign-in, background sync service, or offline mutation queue. The presence of `expo-updates` does not establish an operational OTA release pipeline. NativeWind remains on the v5 preview line because the app uses Tailwind 4; its native styling needs device regression testing before release. The root pnpm override pins only `@expo/metro-config > lightningcss` to 1.30.1 for a reproduced native CSS AST visitor regression ([upstream issue](https://github.com/parcel-bundler/lightningcss/issues/1081)). It does not change the web Tailwind pipeline. Keep the narrow pin until an upstream fix passes native bundle and device checks.
 
 ## Authentication and data lifetime
 

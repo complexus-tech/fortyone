@@ -1,8 +1,10 @@
 import type { ComponentProps } from "react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  AppState,
+  Linking,
   Pressable,
   StyleSheet,
   View,
@@ -27,6 +29,11 @@ import {
 } from "@/lib/account-deletion";
 import { useDeleteAccountMutation } from "../hooks/use-delete-account-mutation";
 import { isAccountDeletionSession } from "../actions/delete-account";
+import {
+  getPushPermissionState,
+  registerPushDevice,
+  type PushPermissionState,
+} from "@/modules/notifications/push/device";
 
 type SettingsRowProps = {
   label: string;
@@ -126,6 +133,9 @@ export const Form = () => {
   const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
   const [isAppearanceOpen, setIsAppearanceOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [pushPermission, setPushPermission] =
+    useState<PushPermissionState>("undetermined");
+  const [isUpdatingPush, setIsUpdatingPush] = useState(false);
   const [deletionError, setDeletionError] = useState<string | null>(null);
   const [deletionAccepted, setDeletionAccepted] = useState(false);
   const [needsOwnershipResolution, setNeedsOwnershipResolution] =
@@ -140,6 +150,41 @@ export const Form = () => {
   const appearance =
     theme === "system" ? "Automatic" : theme === "dark" ? "Dark" : "Light";
   const isBusy = isSigningOut || deleteMutation.isPending;
+
+  useEffect(() => {
+    const refresh = () => {
+      void getPushPermissionState()
+        .then(setPushPermission)
+        .catch(() => undefined);
+    };
+    refresh();
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state === "active") refresh();
+    });
+    return () => subscription.remove();
+  }, []);
+
+  const handlePushNotifications = () => {
+    if (isUpdatingPush || pushPermission === "unsupported") return;
+    if (pushPermission === "denied" || pushPermission === "granted") {
+      void Linking.openSettings();
+      return;
+    }
+    setIsUpdatingPush(true);
+    void registerPushDevice({ requestPermission: true })
+      .then((permission) => {
+        setPushPermission(permission);
+        if (permission === "granted")
+          toast.success("Push notifications enabled");
+      })
+      .catch((error: unknown) => {
+        toast.error("Could not enable push notifications", {
+          description:
+            error instanceof Error ? error.message : "Please try again.",
+        });
+      })
+      .finally(() => setIsUpdatingPush(false));
+  };
 
   const runDeletion = (scope: AccountDeletionScope) => {
     if (!isAccountDeletionSession(scope)) {
@@ -281,6 +326,20 @@ export const Form = () => {
         value={appearance}
         icon="chevron-expand"
         onPress={() => setIsAppearanceOpen(true)}
+      />
+      <SettingsRow
+        label="Push notifications"
+        value={
+          pushPermission === "granted"
+            ? "On"
+            : pushPermission === "unsupported"
+              ? "Unavailable"
+              : "Off"
+        }
+        icon="notifications-outline"
+        onPress={handlePushNotifications}
+        busy={isUpdatingPush}
+        disabled={isBusy || pushPermission === "unsupported"}
       />
       <GroupDivider />
       <Text color="muted" fontSize="xs" style={styles.sectionLabel}>

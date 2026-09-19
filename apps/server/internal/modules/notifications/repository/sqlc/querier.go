@@ -23,6 +23,7 @@ type Querier interface {
 	// durable email-delivery intent; dedupe replays return the original row without
 	// changing read/email timestamps or publishing a second realtime mutation.
 	CreateNotification(ctx context.Context, arg CreateNotificationParams) (CreateNotificationRow, error)
+	DisableNotificationPushDevices(ctx context.Context, arg DisableNotificationPushDevicesParams) (int64, error)
 	FailRoutineEmail(ctx context.Context, arg FailRoutineEmailParams) (int64, error)
 	// GetNotificationEmailDelivery returns one pending email only when the task
 	// payload's recipient/workspace scope still owns the notification and retains
@@ -31,6 +32,9 @@ type Querier interface {
 	// GetNotificationPreferences creates the typed default document on first read,
 	// but only for an active workspace member in a live workspace.
 	GetNotificationPreferences(ctx context.Context, arg GetNotificationPreferencesParams) (GetNotificationPreferencesRow, error)
+	// GetNotificationPushDelivery repeats the inbox visibility boundary so a
+	// queued delivery cannot reveal content after workspace or team access changes.
+	GetNotificationPushDelivery(ctx context.Context, arg GetNotificationPushDeliveryParams) ([]GetNotificationPushDeliveryRow, error)
 	GetRoutineEmailRecipient(ctx context.Context, arg GetRoutineEmailRecipientParams) (GetRoutineEmailRecipientRow, error)
 	// GetWeeklyDigestStats revalidates delivery eligibility and computes every
 	// signal against one caller-supplied UTC as-of time. Current entity access is
@@ -64,6 +68,7 @@ type Querier interface {
 	MarkAllPortalFeedbackNotificationsRead(ctx context.Context, arg MarkAllPortalFeedbackNotificationsReadParams) (int64, error)
 	// Sent timestamps and content receipts are committed in the same statement.
 	MarkNotificationEmailsSent(ctx context.Context, arg MarkNotificationEmailsSentParams) (int64, error)
+	MarkNotificationPushSent(ctx context.Context, arg MarkNotificationPushSentParams) (int64, error)
 	MarkPortalFeedbackNotificationRead(ctx context.Context, arg MarkPortalFeedbackNotificationReadParams) (uuid.UUID, error)
 	// MutateWorkspaceNotification performs one finite notification mutation. The
 	// adapter maps the typed domain intent to delete/read flags; SQL never accepts
@@ -75,6 +80,8 @@ type Querier interface {
 	NotificationDedupeKeyExists(ctx context.Context, arg NotificationDedupeKeyExistsParams) (bool, error)
 	PortalNotificationActorAuthorized(ctx context.Context, arg PortalNotificationActorAuthorizedParams) (bool, error)
 	RecordRoutineEmailGuidance(ctx context.Context, arg RecordRoutineEmailGuidanceParams) error
+	RegisterNotificationPushDevice(ctx context.Context, arg RegisterNotificationPushDeviceParams) (NotificationPushDevice, error)
+	UnregisterNotificationPushDevice(ctx context.Context, arg UnregisterNotificationPushDeviceParams) (int64, error)
 	// UpdateNotificationPreference applies one presence-aware channel patch inside
 	// PostgreSQL. Concurrent updates to different preference types or channels do
 	// not overwrite the rest of the JSON document.

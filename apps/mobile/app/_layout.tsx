@@ -29,6 +29,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { themeColors } from "@/constants/colors";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { captureAppError, initializeObservability } from "@/lib/observability";
+import { usePushNotifications } from "@/modules/notifications/hooks/use-push-notifications";
 
 initializeObservability();
 
@@ -115,6 +116,7 @@ const RenderApp = () => {
   const isLoading = useAuthStore((state) => state.isLoading);
   const workspace = useAuthStore((state) => state.workspace);
   const sessionError = useAuthStore((state) => state.sessionError);
+  usePushNotifications();
 
   useEffect(() => {
     if (isAuthenticated && workspace) {

@@ -60,7 +60,16 @@
       "expo-web-browser",
       "expo-font",
       "expo-image",
+      "expo-asset",
       "expo-status-bar",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/android-icon-monochrome.png",
+          "color": "#000000",
+          "defaultChannel": "default"
+        }
+      ],
       "@react-native-community/datetimepicker"
     ],
     "experiments": {

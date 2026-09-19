@@ -2,16 +2,37 @@ import type { QueryKey } from "@tanstack/react-query";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRef } from "react";
 import { useSessionMutation } from "@/lib/use-session-mutation";
+import { optimisticallyPatchEntity, restoreEntityCache } from "./cache";
+
+type OptimisticEntityUpdate = {
+  entityId: string;
+  patch: Record<string, unknown>;
+};
 
 export function useDetailMutation<Input, Output>(
   mutationFn: (input: Input) => Promise<Output>,
   queryKeys: QueryKey[],
+  getOptimisticUpdate?: (input: Input) => OptimisticEntityUpdate | null,
 ) {
   const client = useQueryClient();
   const pending = useRef(false);
   const mutation = useSessionMutation({
     mutationFn,
     retry: false,
+    onMutate: (input) => {
+      const update = getOptimisticUpdate?.(input);
+      return update
+        ? optimisticallyPatchEntity(
+            client,
+            queryKeys,
+            update.entityId,
+            update.patch,
+          )
+        : Promise.resolve([]);
+    },
+    onError: (_error, _input, snapshots) => {
+      if (snapshots) restoreEntityCache(client, snapshots);
+    },
     onSuccess: () => {
       // Cache refresh errors must never turn a completed write into a retryable send.
       for (const queryKey of queryKeys)

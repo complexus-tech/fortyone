@@ -20,6 +20,7 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/brevo"
 	"github.com/complexus-tech/projects-api/pkg/emailcopy"
 	"github.com/complexus-tech/projects-api/pkg/emailthread"
+	"github.com/complexus-tech/projects-api/pkg/expopush"
 	"github.com/complexus-tech/projects-api/pkg/jobs"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/mailer"
@@ -77,6 +78,8 @@ func buildTaskMux(dependencies taskMuxDependencies) *asynq.ServeMux {
 		MayaAssignments: dependencies.MayaRepository,
 		Attachments:     dependencies.Attachments, EmailCopy: dependencies.EmailCopy,
 		EmailThreads: dependencies.EmailThreads, NotificationDeliveries: dependencies.Notifications,
+		PushDeliveries:    dependencies.Notifications,
+		PushSender:        expopush.New(nil),
 		RoutineDeliveries: notificationsrepository.New(dependencies.DatabasePool),
 		EmailAvatars:      users, APIPublicURL: dependencies.APIPublicURL,
 		BriefingSources: jobs.BriefingSources{Stories: storyStore, Objectives: objectiveGuidance, Weekly: dependencies.WeeklyDigest},
@@ -168,6 +171,7 @@ func buildTaskMux(dependencies taskMuxDependencies) *asynq.ServeMux {
 	mux.Handle(tasks.TypeSubscriberUpdate, subscriberUpdateHandler(dependencies.SubscriberCleanup))
 	mux.HandleFunc(tasks.TypeNotificationEmail, workerTaskService.HandleNotificationEmail)
 	mux.HandleFunc(tasks.TypeNotificationEmailDigest, workerTaskService.HandleNotificationEmailDigest)
+	mux.HandleFunc(tasks.TypeNotificationPush, workerTaskService.HandleNotificationPush)
 	mux.HandleFunc(tasks.TypeFeedbackContributorDelivery, workerTaskService.HandleFeedbackContributorDelivery)
 	mux.HandleFunc(tasks.TypeFeedbackContributorDeliveryRecovery, workerTaskService.HandleFeedbackContributorDeliveryRecovery)
 	mux.HandleFunc(tasks.TypeFeedbackOutboxDispatch, workerTaskService.HandleFeedbackOutboxDispatch)

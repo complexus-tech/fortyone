@@ -15,6 +15,8 @@ Every persistence operation rechecks current actor and resource state.
 | get/update preferences        |            recipient actor |       required |                     admin/member/guest |                              not applicable |                                          not applicable |
 | list/count/read portal inbox  |            recipient actor |       required |                           not required |                          live feedback item | public portal plus active unblocked account contributor |
 | read pending email/digest     |                  recipient |       required |              required for non-feedback |                       current resource team | public portal plus active unblocked account contributor |
+| register/remove push device   |            recipient actor | not applicable |                         not applicable |                              not applicable |                                          not applicable |
+| read pending push             |                  recipient |       required |                               required |                       current resource team |                                       feedback excluded |
 | key-result audience           | event actor and recipients |       required |                               required |                              objective team |                                          not applicable |
 
 Admin membership can see workspace resources across teams where the existing

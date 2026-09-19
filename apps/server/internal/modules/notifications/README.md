@@ -2,7 +2,7 @@
 
 This module turns internal product events into durable, tenant-scoped
 notifications. It owns the workspace inbox, public-feedback portal inbox,
-channel preferences, email-delivery reads, and the key-result audience lookup
+channel preferences, email and Expo push delivery reads, and the key-result audience lookup
 used by the event consumer.
 
 ## Where to find things
@@ -39,7 +39,7 @@ notification rules                    notification HTTP handler
                              v
                          PostgreSQL
 
-email task handler -> notifications delivery port -> the same repository
+email/push task handler -> notifications delivery port -> the same repository
 ```
 
 The consumer and email task handler do not own notification SQL or a raw

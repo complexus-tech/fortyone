@@ -94,13 +94,20 @@ func (*repositoryStub) MarkEmailSent(context.Context, notificationsdomain.MarkEm
 }
 
 type taskStub struct {
-	payloads []tasks.NotificationEmailDigestPayload
-	err      error
+	payloads     []tasks.NotificationEmailDigestPayload
+	pushPayloads []tasks.NotificationPushPayload
+	err          error
+	pushErr      error
 }
 
 func (stub *taskStub) EnqueueNotificationEmailDigest(payload tasks.NotificationEmailDigestPayload, _ ...asynq.Option) (*asynq.TaskInfo, error) {
 	stub.payloads = append(stub.payloads, payload)
 	return &asynq.TaskInfo{ID: "digest"}, stub.err
+}
+
+func (stub *taskStub) EnqueueNotificationPush(payload tasks.NotificationPushPayload, _ ...asynq.Option) (*asynq.TaskInfo, error) {
+	stub.pushPayloads = append(stub.pushPayloads, payload)
+	return &asynq.TaskInfo{ID: "push"}, stub.pushErr
 }
 
 type fixedClock struct{ now time.Time }
@@ -143,7 +150,22 @@ func TestCreateDuplicateReplayRequeuesDigestWithoutRealtimeFanout(t *testing.T) 
 	require.NoError(t, err)
 	require.Equal(t, created.ID, result.ID)
 	require.Zero(t, published)
+	require.Equal(t, []tasks.NotificationPushPayload{{NotificationID: created.ID}}, queue.pushPayloads)
 	require.Equal(t, []tasks.NotificationEmailDigestPayload{{RecipientID: input.RecipientID, WorkspaceID: input.WorkspaceID}}, queue.payloads)
+}
+
+func TestCreateReturnsPushQueueFailureSoDurableIntentCanBeRetried(t *testing.T) {
+	t.Parallel()
+	input, created := validNotification()
+	repository := &repositoryStub{created: created, inserted: true}
+	queue := &taskStub{pushErr: errors.New("push queue unavailable")}
+	service := newTestService(repository, queue)
+
+	result, err := service.Create(context.Background(), input)
+
+	require.ErrorContains(t, err, "enqueue notification push")
+	require.Equal(t, created.ID, result.ID)
+	require.Empty(t, queue.payloads)
 }
 
 func TestCreateReturnsQueueFailureSoDurableIntentCanBeRetried(t *testing.T) {
@@ -223,6 +245,7 @@ func TestCreateSkipsRealtimeForPortalAndEmailOnlyRows(t *testing.T) {
 			require.NoError(t, err)
 			require.Zero(t, published)
 			require.Len(t, queue.payloads, 1)
+			require.Empty(t, queue.pushPayloads)
 		})
 	}
 }

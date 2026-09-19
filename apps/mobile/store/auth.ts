@@ -15,6 +15,7 @@ import {
   type AccountDeletionResult,
 } from "@/lib/account-deletion";
 import { clearLocalAccountData } from "@/lib/session-cleanup";
+import { runPushCleanup } from "@/lib/push-cleanup";
 
 type AuthData = { workspace: string; userId: string };
 interface AuthState {
@@ -49,6 +50,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
     clearingSession = clearLocalAccountData({
       resetCache: resetSessionCache,
       clearCredentials: async () => {
+        await runPushCleanup().catch(() => undefined);
         await Promise.all([
           clearStoredSession(),
           ...(clearTransaction ? [clearSignInTransaction()] : []),
@@ -85,22 +87,29 @@ export const useAuthStore = create<AuthState>((set, get) => {
       const session = await getStoredSession();
       if (!session)
         throw new Error("Your session expired. Please sign in again.");
+      if (get().workspace === workspace) return;
       const version = ++operationVersion;
-      await saveSession(
-        { ...session, workspace },
-        () => version === operationVersion,
-      );
-      if (version !== operationVersion) return;
+      const previousWorkspace = get().workspace;
+      // Remount the workspace-scoped query client immediately. Its persisted
+      // snapshot can render while the credential update is written securely.
+      set((state) => ({
+        workspace,
+        sessionEpoch: state.sessionEpoch + 1,
+        sessionError: null,
+      }));
       try {
-        await resetSessionCache();
-      } finally {
+        await saveSession(
+          { ...session, workspace },
+          () => version === operationVersion,
+        );
+      } catch (error) {
         if (version === operationVersion) {
           set((state) => ({
-            workspace,
+            workspace: previousWorkspace,
             sessionEpoch: state.sessionEpoch + 1,
-            sessionError: null,
           }));
         }
+        throw error;
       }
     },
 

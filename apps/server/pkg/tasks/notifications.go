@@ -14,6 +14,7 @@ import (
 const (
 	TypeNotificationEmail       = "notification:email:send"
 	TypeNotificationEmailDigest = "notification:email:digest"
+	TypeNotificationPush        = "notification:push:send"
 	TypeMorningBriefing         = "email:briefing:morning"
 	TypeWeeklyDigestEmail       = "email:digest:weekly"
 	TypeFeedbackDigestEmail     = "feedback:email:digest"
@@ -36,6 +37,36 @@ type NotificationEmailPayload struct {
 type NotificationEmailDigestPayload struct {
 	RecipientID uuid.UUID `json:"recipientId"`
 	WorkspaceID uuid.UUID `json:"workspaceId"`
+}
+
+type NotificationPushPayload struct {
+	NotificationID uuid.UUID `json:"notificationId"`
+}
+
+// EnqueueNotificationPush schedules one immediate, idempotent push attempt.
+// The notification row remains the durable delivery intent and the worker
+// covers it only after Expo accepts the payload or no active device remains.
+func (s *Service) EnqueueNotificationPush(payload NotificationPushPayload, opts ...asynq.Option) (*asynq.TaskInfo, error) {
+	if payload.NotificationID == uuid.Nil {
+		return nil, fmt.Errorf("tasks: notification push ID is required")
+	}
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		return nil, fmt.Errorf("tasks: marshal %s payload: %w", TypeNotificationPush, err)
+	}
+	defaultOpts := []asynq.Option{
+		asynq.Queue("notifications"),
+		asynq.MaxRetry(5),
+		asynq.Unique(10 * time.Minute),
+	}
+	info, err := s.asynqClient.Enqueue(asynq.NewTask(TypeNotificationPush, payloadBytes, append(defaultOpts, opts...)...))
+	if errors.Is(err, asynq.ErrDuplicateTask) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("tasks: enqueue %s task: %w", TypeNotificationPush, err)
+	}
+	return info, nil
 }
 
 // EnqueueNotificationEmail enqueues a task to send an email notification after 1 hour delay.

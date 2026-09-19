@@ -11,9 +11,11 @@ workspaces ──────────┼─> notifications <─ unique dedup
 workspace_members ──┤         |
 team_members ────────┤         +─ read_at       inbox state
 resource table ──────┘         +─ email_sent_at delivery state
+                               +─ push_sent_at  Expo acceptance state
                                +─ in_app_enabled channel snapshot
 
 users + workspaces ─> notification_preferences (one row per pair)
+users ──────────────> notification_push_devices (active Expo tokens)
 
 feedback_portal + feedback_contributor + feedback_item
                   └──────────────────────> portal feedback notifications
@@ -35,6 +37,7 @@ exist; the SQLC queries prove current authorization to the referenced resource.
 | `repository/queries/portal.sql`          | public-portal contributor inbox and read state     |
 | `repository/queries/contexts.sql`        | key-result/objective context and audience          |
 | `repository/queries/delivery.sql`        | pending email, digest, team scope, sent marker     |
+| `repository/queries/push.sql`            | device registry, push eligibility, sent marker     |
 
 SQL under these files is handwritten and reviewed. `repository/sqlc` is
 generated. The adapter accepts and returns domain types, validates enum and
@@ -116,6 +119,19 @@ and acknowledgement; otherwise a successfully sent email could retry forever.
 The task payload never grants access. It contains IDs that are revalidated by
 the repository.
 
+## Push delivery boundary
+
+The authenticated device endpoint registers only Expo tokens for the current
+active account. Token uniqueness transfers a reused app installation to the
+most recently authenticated account, and logout removes only that account's
+matching token. Provider-rejected `DeviceNotRegistered` tokens are disabled.
+
+`GetNotificationPushDelivery` repeats the inbox's current workspace,
+membership, team, and resource checks. The worker sends public title/body text
+plus typed navigation IDs through Expo, then sets `push_sent_at` only after all
+current tokens are accepted or no active token remains. Asynq retries network
+or provider failures; the notification row is the durable intent.
+
 ## Transactions and failure recovery
 
 Notification creation and its pending-email intent are the same row and commit
@@ -128,6 +144,7 @@ this recovery sequence:
 ```text
 persist durable row
   -> publish realtime only for a new visible inbox row
+  -> enqueue immediate push delivery
   -> enqueue unique recipient/workspace digest wake-up
 
 retry after queue failure
@@ -148,7 +165,8 @@ The migration chain already provides:
 - unique `idx_notifications_dedupe_key` for idempotency;
 - `idx_notifications_in_app_recipient_workspace_created` for inbox selection;
 - recipient/entity created and unread indexes for portal/resource filtering;
-- `idx_notifications_pending_email_digest` for pending digest scans; and
+- `idx_notifications_pending_email_digest` for pending digest scans;
+- `idx_notifications_pending_push` plus the active-user device index; and
 - the unique user/workspace preference index.
 
 PostgreSQL 18 integration tests disable sequential scans for focused plan

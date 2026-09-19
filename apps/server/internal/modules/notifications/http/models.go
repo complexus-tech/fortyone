@@ -97,6 +97,18 @@ type AppUpdatePreference struct {
 	InAppEnabled *bool `json:"inAppEnabled,omitempty"`
 }
 
+type AppPushDeviceInput struct {
+	Token    string `json:"token"`
+	Platform string `json:"platform"`
+}
+
+type AppPushDevice struct {
+	ID        uuid.UUID `json:"id"`
+	Platform  string    `json:"platform"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
 func toAppNotification(n notifications.CoreNotification) AppNotification {
 	n = n.Public()
 	n.Message = normalizeSystemActorMessage(n.Message, n.Actor)

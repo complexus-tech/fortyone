@@ -59,6 +59,23 @@ export function useFeedbackCommands(id: string) {
       }
     },
     [feedbackKeys.all, storyKeys.all, homeKeys.all, searchKeys.all],
+    (command) => {
+      const now = new Date().toISOString();
+      switch (command.type) {
+        case "status":
+          return { entityId: id, patch: { status: command.status } };
+        case "read":
+          return { entityId: id, patch: { readAt: now } };
+        case "unread":
+          return { entityId: id, patch: { readAt: null } };
+        case "trash":
+          return { entityId: id, patch: { deletedAt: now } };
+        case "restore":
+          return { entityId: id, patch: { deletedAt: null } };
+        default:
+          return null;
+      }
+    },
   );
 }
 export type IntakePatch = Partial<
@@ -107,6 +124,18 @@ export function useIntakeCommands(id: string) {
       return writeEntity<IntakeItem>("post", `${base}/${command.type}`, {});
     },
     [intakeKeys.all, storyKeys.all, homeKeys.all, searchKeys.all],
+    (command) => {
+      switch (command.type) {
+        case "update":
+          return { entityId: id, patch: command.patch };
+        case "accept":
+          return { entityId: id, patch: { status: "accepted" } };
+        case "decline":
+          return { entityId: id, patch: { status: "declined" } };
+        default:
+          return null;
+      }
+    },
   );
 }
 type ProviderComment = {
