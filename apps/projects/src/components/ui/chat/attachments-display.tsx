@@ -18,8 +18,8 @@ export const AttachmentsDisplay = ({ message }: { message: MayaUIMessage }) => {
   const imageParts = fileParts.filter((part) =>
     part.mediaType.startsWith("image/"),
   );
-  const pdfParts = fileParts.filter(
-    (part) => part.mediaType === "application/pdf",
+  const documentParts = fileParts.filter(
+    (part) => !part.mediaType.startsWith("image/"),
   );
 
   return (
@@ -43,7 +43,7 @@ export const AttachmentsDisplay = ({ message }: { message: MayaUIMessage }) => {
         ))}
       </Flex>
       <Flex direction="column" gap={2}>
-        {pdfParts.map((part) => (
+        {documentParts.map((part) => (
           <StoryAttachmentPreview
             file={{
               id: getFilePartKey(part),

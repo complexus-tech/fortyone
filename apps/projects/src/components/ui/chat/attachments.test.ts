@@ -25,7 +25,32 @@ describe("Maya chat attachments", () => {
     expect(source).not.toMatch(/\n\s+name: file\.name/);
   });
 
-  it("renders clickable previews for sent images and PDFs", () => {
+  it("accepts and renders Word documents end to end", () => {
+    const inputSource = readSource("src/components/ui/chat/chat-input.tsx");
+    const attachmentTypesSource = readSource(
+      "src/components/ui/chat/chat-attachment-types.ts",
+    );
+    const displaySource = readSource(
+      "src/components/ui/chat/attachments-display.tsx",
+    );
+    const routeSource = readSource("src/app/api/chat/route.ts");
+
+    expect(inputSource).toContain("accept: CHAT_ATTACHMENT_ACCEPT");
+    expect(attachmentTypesSource).toContain('"application/msword"');
+    expect(attachmentTypesSource).toContain(
+      '"application/vnd.openxmlformats-officedocument.wordprocessingml.document"',
+    );
+    expect(attachmentTypesSource).toContain(
+      '[WORD_DOCUMENT_MIME_TYPES.doc]: [".doc"]',
+    );
+    expect(attachmentTypesSource).toContain(
+      '[WORD_DOCUMENT_MIME_TYPES.docx]: [".docx"]',
+    );
+    expect(displaySource).toContain('!part.mediaType.startsWith("image/")');
+    expect(routeSource).toContain("passThroughUnsupportedFiles: true");
+  });
+
+  it("renders clickable previews for sent images and document cards", () => {
     const displaySource = readSource(
       "src/components/ui/chat/attachments-display.tsx",
     );
@@ -35,7 +60,7 @@ describe("Maya chat attachments", () => {
 
     expect(displaySource).toContain('part.mediaType.startsWith("image/")');
     expect(displaySource).not.toContain('startsWith("/image")');
-    expect(displaySource).toContain('part.mediaType === "application/pdf"');
+    expect(displaySource).toContain('!part.mediaType.startsWith("image/")');
     expect(displaySource).toContain("<StoryAttachmentPreview");
     expect(previewSource).toContain("setIsOpen(true)");
     expect(previewSource).toContain("<ObjectViewer");

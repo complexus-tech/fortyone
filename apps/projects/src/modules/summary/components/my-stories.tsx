@@ -49,17 +49,21 @@ const StoryRow = ({
 
   return (
     <Link
+      className="block min-w-0"
       href={withWorkspace(
         getStoryPath({ id, sequenceId, teamCode: team?.code }),
       )}
     >
-      <RowWrapper className="gap-4 px-0 md:px-0" key={id}>
+      <RowWrapper
+        className="min-w-0 gap-4 overflow-hidden px-0 md:px-0"
+        key={id}
+      >
         <Flex
           align="center"
           className="relative min-w-0 flex-1 select-none"
           gap={2}
         >
-          <Flex align="center" className="min-w-0" gap={2}>
+          <Flex align="center" className="min-w-0 flex-1" gap={2}>
             <Text
               className="hidden shrink-0 whitespace-nowrap opacity-80 md:block"
               color="muted"
@@ -196,7 +200,7 @@ export const MyStories = () => {
   }
 
   return (
-    <Wrapper className="min-h-100 md:min-h-120">
+    <Wrapper className="min-h-100 min-w-0 overflow-hidden md:min-h-120">
       <Flex align="center" className="mb-2 md:mb-0" justify="between">
         <Text className="mb-2" fontSize="lg">
           {getTermDisplay("storyTerm", {

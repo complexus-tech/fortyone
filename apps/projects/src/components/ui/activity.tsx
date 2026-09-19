@@ -264,13 +264,13 @@ export const Activity = ({
     type,
   });
   return (
-    <Box className="relative pb-2 last-of-type:pb-0 md:pb-4">
+    <Box className="relative min-w-0 overflow-hidden pb-2 last-of-type:pb-0 md:pb-4">
       <Box
         className={cn(
           "border-border pointer-events-none absolute top-0 left-4 z-0 h-full border-l border-dashed",
         )}
       />
-      <Flex align="center" className="z-1 min-w-0" gap={1}>
+      <Flex align="center" className="z-1 w-full min-w-0" gap={1}>
         <ActivityActor
           avatarSurfaceClassName={avatarSurfaceClassName}
           displayName={actorDisplayName}

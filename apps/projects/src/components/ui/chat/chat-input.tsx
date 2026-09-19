@@ -24,6 +24,10 @@ import { useVoiceRecording } from "@/hooks/use-voice-recording";
 import { useTerminology } from "@/hooks";
 import { walkthroughTargets } from "@/shared/walkthrough/targets";
 import type { GoogleDriveFileContext } from "@/lib/ai/google-drive-context";
+import {
+  CHAT_ATTACHMENT_ACCEPT,
+  getChatAttachmentMediaType,
+} from "./chat-attachment-types";
 import { GoogleDriveContextChips } from "./google-drive-context-chips";
 import styles from "./chat-input.module.css";
 
@@ -48,7 +52,6 @@ type ChatInputProps = {
 const MAX_ATTACHMENT_COUNT = 5;
 const MAX_ATTACHMENT_SIZE_BYTES = 5 * 1024 * 1024;
 const MAX_TOTAL_ATTACHMENT_SIZE_BYTES = 8 * 1024 * 1024;
-
 const SendIcon = () => {
   return (
     <svg
@@ -100,7 +103,7 @@ const AttachmentPreviewItem = ({
         id: file.name,
         filename: file.name,
         size: file.size,
-        mimeType: file.type,
+        mimeType: getChatAttachmentMediaType(file),
         url: objectUrl,
         createdAt: new Date(file.lastModified).toISOString(),
         uploadedBy: "me",
@@ -200,13 +203,7 @@ export const ChatInput = ({
   const { getInputProps, open } = useDropzone({
     noClick: true,
     noKeyboard: true,
-    accept: {
-      "image/jpeg": [".jpg", ".jpeg"],
-      "image/png": [".png"],
-      "image/webp": [".webp"],
-      "image/gif": [".gif"],
-      "application/pdf": [".pdf"],
-    },
+    accept: CHAT_ATTACHMENT_ACCEPT,
     maxFiles: MAX_ATTACHMENT_COUNT,
     maxSize: MAX_ATTACHMENT_SIZE_BYTES,
     minSize: 100, // 100 bytes
@@ -277,8 +274,8 @@ export const ChatInput = ({
   const images = attachments.filter((attachment) =>
     attachment.type.startsWith("image/"),
   );
-  const pdfs = attachments.filter((attachment) =>
-    attachment.type.startsWith("application/pdf"),
+  const documents = attachments.filter(
+    (attachment) => !attachment.type.startsWith("image/"),
   );
 
   const handleVoiceRecording = async () => {
@@ -405,9 +402,9 @@ export const ChatInput = ({
               ))}
             </Box>
           )}
-          {pdfs.length > 0 && (
+          {documents.length > 0 && (
             <Box className="mt-2.5 grid grid-cols-1 gap-3 px-4">
-              {pdfs.map((attachment) => (
+              {documents.map((attachment) => (
                 <AttachmentPreviewItem
                   file={attachment}
                   key={getAttachmentKey(attachment)}

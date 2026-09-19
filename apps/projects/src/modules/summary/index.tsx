@@ -62,9 +62,9 @@ export const SummaryPage = () => {
             <Contributions />
           </ErrorBoundary>
         </Box>
-        <Box className="my-4 grid grid-cols-1 gap-4 @5xl:grid-cols-2">
+        <Box className="my-4 grid min-w-0 grid-cols-1 gap-4 @5xl:grid-cols-2">
           <Box
-            className="grid"
+            className="grid min-w-0"
             data-walkthrough-target={walkthroughTargets.summaryMyWork}
           >
             <ErrorBoundary
@@ -81,7 +81,7 @@ export const SummaryPage = () => {
             </ErrorBoundary>
           </Box>
           <Box
-            className="grid"
+            className="grid min-w-0"
             data-walkthrough-target={walkthroughTargets.summaryActivityFeed}
           >
             <ErrorBoundary fallback={<div>Error loading activities</div>}>

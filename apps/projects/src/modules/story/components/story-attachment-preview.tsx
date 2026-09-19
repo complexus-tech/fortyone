@@ -39,6 +39,18 @@ export const ObjectViewer = ({
   );
 };
 
+const getDocumentTypeLabel = (mimeType: string) => {
+  if (mimeType === "application/pdf") return "PDF file";
+  if (
+    mimeType === "application/msword" ||
+    mimeType ===
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  ) {
+    return "Word document";
+  }
+  return "Document";
+};
+
 interface StoryAttachmentPreviewProps {
   file: StoryAttachment;
   files?: StoryAttachment[];
@@ -76,6 +88,7 @@ export const StoryAttachmentPreview = ({
   const isImage = file.mimeType.startsWith("image/");
   const isVideo = file.mimeType.startsWith("video");
   const isPdf = file.mimeType.includes("pdf");
+  const canPreview = isImage || isVideo || isPdf;
   const isActiveImage = activeFile.mimeType.startsWith("image/");
   const isActiveVideo = activeFile.mimeType.startsWith("video");
   const isActivePdf = activeFile.mimeType.includes("pdf");
@@ -87,7 +100,7 @@ export const StoryAttachmentPreview = ({
   const canNavigate = previewFiles.length > 1;
 
   const openPreview = () => {
-    if (isUploading) return;
+    if (isUploading || !canPreview) return;
     setPreviewIndex(fileIndex);
     setIsOpen(true);
   };
@@ -117,7 +130,7 @@ export const StoryAttachmentPreview = ({
       thumbnail = (
         <Box
           className="group border-border bg-surface-muted ring-accent relative h-24 overflow-hidden rounded-xl border hover:ring-2 md:h-28 2xl:h-36 dark:shadow-none"
-          onClick={openPreview}
+          onClick={canPreview ? openPreview : undefined}
         >
           {isImage ? (
             <BlurImage
@@ -179,7 +192,9 @@ export const StoryAttachmentPreview = ({
                   {isUploading ? "Uploading..." : file.filename}
                 </Text>
                 <Text className="text-[0.95rem]" color="muted">
-                  {file.size > 0 ? formatFileSize(file.size) : "PDF file"}
+                  {file.size > 0
+                    ? formatFileSize(file.size)
+                    : getDocumentTypeLabel(file.mimeType)}
                 </Text>
               </Box>
             </Flex>

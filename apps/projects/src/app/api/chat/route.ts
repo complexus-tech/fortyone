@@ -306,6 +306,7 @@ const handleChatRequest = async (
     },
     providerOptions: {
       openai: {
+        passThroughUnsupportedFiles: true,
         promptCacheKey: getMayaPromptCacheKey(workspace.id),
         reasoningEffort: OPENAI_DEFAULT_REASONING_EFFORT,
         ...(containsGoogleDriveContent ? { store: false } : {}),

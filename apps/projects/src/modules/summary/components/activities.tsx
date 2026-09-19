@@ -13,7 +13,7 @@ export const Activities = () => {
     return <ActivitiesSkeleton />;
   }
   return (
-    <Wrapper className="min-h-100 md:min-h-120">
+    <Wrapper className="min-h-100 min-w-0 overflow-hidden md:min-h-120">
       <Flex align="center" className="mb-5" justify="between">
         <Text fontSize="lg">Your Activities</Text>
       </Flex>

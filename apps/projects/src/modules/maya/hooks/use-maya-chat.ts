@@ -10,6 +10,7 @@ import {
   generateId,
   lastAssistantMessageIsCompleteWithApprovalResponses,
 } from "ai";
+import { getChatAttachmentMediaType } from "@/components/ui/chat/chat-attachment-types";
 import { useSession } from "@/lib/auth/client";
 import { useSubscription } from "@/lib/hooks/subscriptions/subscription";
 import { fileToBase64 } from "@/lib/utils/files";
@@ -319,7 +320,7 @@ export const useMayaChat = (config: MayaChatConfig) => {
         const attachmentData: FileUIPart[] = await Promise.all(
           pendingAttachments.map(async (file) => ({
             type: "file",
-            mediaType: file.type,
+            mediaType: getChatAttachmentMediaType(file),
             filename: file.name,
             url: await fileToBase64(file),
           })),
