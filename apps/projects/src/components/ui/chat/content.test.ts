@@ -77,6 +77,8 @@ describe("ChatContent", () => {
 
     expect(source).toContain("Hi, {name}! Ask me anything!");
     expect(source).toContain("What should I focus on today?");
+    expect(source).toContain("What deadlines are coming up?");
+    expect(source.toLowerCase()).not.toContain("sprint");
     expect(source).toContain("min-h-[52px]");
     expect(source).toContain("text-foreground");
     expect(source).toContain("text-[1.1rem] leading-[1.4rem]");

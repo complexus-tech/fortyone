@@ -160,7 +160,7 @@ export const ChatInput = ({
         ]
       : [
           "Take me to my work...",
-          "Show me the current sprint...",
+          "Show me upcoming deadlines...",
           "Open my objectives...",
           "Navigate to the roadmap...",
           `Find ${getTermDisplay("storyTerm", { variant: "plural" })} in progress...`,

@@ -54,9 +54,10 @@ describe("MayaChat", () => {
     expect(suggestionsSource).toContain('type="button"');
     expect(suggestionsSource).not.toContain("tabIndex={0}");
     expect(suggestionsSource).toContain('label: "Plan project"');
-    expect(suggestionsSource).toContain('label: "Sprint summary"');
+    expect(suggestionsSource).toContain('label: "Upcoming deadlines"');
     expect(suggestionsSource).toContain('label: "Status report"');
     expect(suggestionsSource).toContain('label: "Active work"');
+    expect(suggestionsSource.toLowerCase()).not.toContain("sprint");
     expect(suggestionsSource).toContain("size-[1.1875rem]");
     expect(suggestionsSource).toContain("min-h-[6.25rem]");
   });

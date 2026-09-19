@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "FortyOne",
-    "slug": "fortyone",
+    "slug": "mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",

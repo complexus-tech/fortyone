@@ -15,7 +15,7 @@ const POPUP_PROMPTS = [
   "What should I focus on today?",
   "What changed since I last checked?",
   "Which work is at risk?",
-  "Show me the current sprint",
+  "What deadlines are coming up?",
   "What is blocking my team?",
   "Help me plan my highest-priority task",
 ];
@@ -41,8 +41,8 @@ export const SuggestedPrompts = ({
       icon: (
         <StoryIcon className="text-warning dark:text-warning size-[1.1875rem]" />
       ),
-      label: "Sprint summary",
-      value: "Summarize the current sprint.",
+      label: "Upcoming deadlines",
+      value: "Show me work with upcoming deadlines.",
     },
     {
       icon: (
