@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PublicDocumentLayout } from "@/modules/documents/public-document-layout";
 import { getApiUrl } from "@/lib/api-url";
+import { richTextHTMLToMarkdown } from "@/lib/tiptap/markdown-server";
 import { publicDocumentHTML } from "@/modules/documents/public-document-html";
 
 export const metadata: Metadata = {
@@ -25,27 +26,23 @@ export default async function SharedDocumentPage({
   if (!response.ok)
     throw new Error("The shared document is temporarily unavailable");
   const { data } = (await response.json()) as {
-    data: { title: string; contentHtml: string; updatedAt: string };
+    data: {
+      title: string;
+      contentHtml: string;
+      contentText: string;
+      updatedAt: string;
+    };
   };
+  const contentHtml = publicDocumentHTML(data.contentHtml, token, apiUrl);
+  const updatedAt = new Date(data.updatedAt).toLocaleDateString("en", {
+    dateStyle: "long",
+  });
   return (
-    <PublicDocumentLayout>
-      <article className="mx-auto max-w-3xl px-6 pt-14 pb-28 md:pt-20">
-        <h1 className="mb-4 text-4xl leading-tight font-semibold md:text-5xl">
-          {data.title}
-        </h1>
-        <p className="text-text-muted mb-10">
-          Updated{" "}
-          {new Date(data.updatedAt).toLocaleDateString("en", {
-            dateStyle: "long",
-          })}
-        </p>
-        <div
-          className="rich-document-editor prose prose-lg dark:prose-invert prose-img:max-w-full max-w-none"
-          dangerouslySetInnerHTML={{
-            __html: publicDocumentHTML(data.contentHtml, token, apiUrl),
-          }}
-        />
-      </article>
-    </PublicDocumentLayout>
+    <PublicDocumentLayout
+      contentHtml={contentHtml}
+      markdown={richTextHTMLToMarkdown(contentHtml)}
+      title={data.title}
+      updatedAt={updatedAt}
+    />
   );
 }

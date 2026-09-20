@@ -278,37 +278,60 @@ ul[data-type="taskList"] > li ol[data-type="taskList"] {
   @apply font-semibold;
 }
 
-.rich-document-editor .tiptap table {
+.rich-document-editor img {
+  @apply border-border max-w-full rounded-xl border;
+}
+
+.rich-document-editor video {
+  @apply border-border my-5 aspect-video w-full max-w-full rounded-xl border bg-black object-contain;
+}
+
+.rich-document-editor table {
   @apply border-border text-foreground dark:border-border-strong/80 overflow-hidden rounded-md border-[0.5px];
   border-collapse: separate;
   border-spacing: 0;
 }
 
+.rich-document-editor:not(:has(.tiptap)) .tableWrapper {
+  @apply my-6 w-full max-w-full overflow-x-auto rounded-md;
+}
+
+.rich-document-editor:not(:has(.tiptap)) .tableWrapper > table {
+  @apply m-0;
+  min-width: 100%;
+  width: max-content;
+}
+
 @supports (corner-shape: squircle) {
-  .rich-document-editor .tiptap table {
+  .rich-document-editor img,
+  .rich-document-editor video,
+  .rich-document-editor:not(:has(.tiptap)) .tableWrapper,
+  .rich-document-editor table {
     corner-shape: squircle;
   }
 }
 
-.rich-document-editor .tiptap table td,
-.rich-document-editor .tiptap table th {
+.rich-document-editor table td,
+.rich-document-editor table th {
   @apply border-border dark:border-border-strong/80 border-0 border-r-[0.5px] border-b-[0.5px] px-3 py-2.5;
+  text-align: left !important;
+  vertical-align: top;
 }
 
-.rich-document-editor .tiptap table tr > :last-child {
+.rich-document-editor table tr > :last-child {
   border-right-width: 0;
 }
 
-.rich-document-editor .tiptap table tr:last-child > * {
+.rich-document-editor table tr:last-child > * {
   border-bottom-width: 0;
 }
 
-.rich-document-editor .tiptap table th {
+.rich-document-editor table th {
   @apply bg-surface-muted/45 dark:bg-surface-elevated/45;
 }
 
-.rich-document-editor .tiptap table tr,
-.rich-document-editor .tiptap table tr:hover {
+.rich-document-editor table tr,
+.rich-document-editor table tr:hover {
   @apply bg-transparent;
 }
 

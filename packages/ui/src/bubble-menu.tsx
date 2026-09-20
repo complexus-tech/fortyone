@@ -13,6 +13,9 @@ import "@tiptap/extension-task-item";
 import "@tiptap/extension-task-list";
 import "@tiptap/extension-link";
 import "@tiptap/extension-heading";
+import "@tiptap/extension-highlight";
+import "@tiptap/extension-color";
+import "@tiptap/extension-text-style";
 import { useEditorState, type Editor } from "@tiptap/react";
 import {
   BoldIcon,
@@ -21,6 +24,7 @@ import {
   ArrowDown2Icon,
   CodeIcon,
   DeleteIcon,
+  EditIcon,
   ItalicIcon,
   LinkIcon,
   OrderedListIcon,
@@ -69,7 +73,7 @@ export type BubbleMenuCreateAction = {
   onSelect: (selectedText: string) => void;
 };
 
-export type BubbleMenuPanel = "text" | "create" | "link" | null;
+export type BubbleMenuPanel = "text" | "create" | "color" | "link" | null;
 
 type ToolbarMenuProps = {
   activeMenu: BubbleMenuPanel;
@@ -89,6 +93,8 @@ const getBubbleMenuEditorState = (editor: Editor) => ({
     4: editor.isActive("heading", { level: 4 }),
   },
   italic: editor.isActive("italic"),
+  highlight: editor.isActive("highlight"),
+  textColor: String(editor.getAttributes("textStyle").color ?? ""),
   link: editor.isActive("link"),
   orderedList: editor.isActive("orderedList"),
   paragraph: editor.isActive("paragraph"),
@@ -98,6 +104,23 @@ const getBubbleMenuEditorState = (editor: Editor) => ({
 });
 
 type BubbleMenuEditorState = ReturnType<typeof getBubbleMenuEditorState>;
+
+const highlightColors = [
+  { color: "#FDE68A", label: "Yellow" },
+  { color: "#BFDBFE", label: "Blue" },
+  { color: "#BBF7D0", label: "Green" },
+  { color: "#FED7AA", label: "Orange" },
+  { color: "#E9D5FF", label: "Purple" },
+] as const;
+
+const textColors = [
+  { color: "#475569", label: "Slate" },
+  { color: "#DC2626", label: "Red" },
+  { color: "#C2410C", label: "Orange" },
+  { color: "#15803D", label: "Green" },
+  { color: "#2563EB", label: "Blue" },
+  { color: "#7C3AED", label: "Purple" },
+] as const;
 
 const preserveEditorSelection = (event: ReactMouseEvent) => {
   event.preventDefault();
@@ -253,6 +276,120 @@ const CreateMenu = ({
   );
 };
 
+const ColorMenu = ({
+  activeMenu,
+  editor,
+  editorState,
+  setActiveMenu,
+}: ToolbarMenuProps & { editorState: BubbleMenuEditorState }) => (
+  <Menu
+    onOpenChange={(open) => {
+      setActiveMenu((current) =>
+        open ? "color" : current === "color" ? null : current,
+      );
+    }}
+    open={activeMenu === "color"}
+  >
+    <Menu.Button>
+      <Button
+        active={editorState.highlight || Boolean(editorState.textColor)}
+        aria-label="Text and highlight color"
+        aria-pressed={editorState.highlight || Boolean(editorState.textColor)}
+        color="tertiary"
+        onMouseDown={preserveEditorSelection}
+        size="sm"
+        variant="naked"
+      >
+        <EditIcon className="text-warning" />
+      </Button>
+    </Menu.Button>
+    <Menu.Items
+      align="center"
+      className="border-border-strong bg-surface-elevated w-56 border-[0.5px] p-1.5 shadow-xl dark:bg-surface-elevated"
+      onCloseAutoFocus={(event) => {
+        event.preventDefault();
+        editor.commands.focus();
+      }}
+      portal={false}
+    >
+      <Menu.Group className="px-0">
+        <Text className="text-text-muted px-2 pt-1 pb-2" fontSize="sm">
+          Text color
+        </Text>
+        <div className="grid grid-cols-6 gap-1 px-1 pb-2">
+          {textColors.map(({ color, label }) => (
+            <Menu.Item
+              aria-label={`${label} text`}
+              className={cn(
+                "focus-visible:ring-ring flex size-8 items-center justify-center rounded-md p-0 outline-none focus-visible:ring-2",
+                editorState.textColor.toLowerCase() === color.toLowerCase() &&
+                  "bg-state-active",
+              )}
+              key={color}
+              onSelect={() => {
+                editor.chain().focus().setColor(color).run();
+              }}
+              title={`${label} text`}
+            >
+              <span
+                aria-hidden="true"
+                className="border-border size-4 rounded-full border"
+                style={{ backgroundColor: color }}
+              />
+            </Menu.Item>
+          ))}
+        </div>
+        <Menu.Item
+          className="hover:bg-state-active focus-visible:bg-state-active flex w-full items-center gap-2 rounded-md px-2 py-2 text-left outline-none"
+          disabled={!editorState.textColor}
+          onSelect={() => {
+            editor.chain().focus().unsetColor().run();
+          }}
+        >
+          <DeleteIcon className="h-4" />
+          Reset text color
+        </Menu.Item>
+        <Menu.Separator />
+        <Text className="text-text-muted px-2 pt-1 pb-2" fontSize="sm">
+          Highlight
+        </Text>
+        <div className="grid grid-cols-6 gap-1 px-1 pb-2">
+          {highlightColors.map(({ color, label }) => (
+            <Menu.Item
+              aria-label={`${label} highlight`}
+              className={cn(
+                "focus-visible:ring-ring flex size-8 items-center justify-center rounded-md p-0 outline-none focus-visible:ring-2",
+                editor.isActive("highlight", { color }) && "bg-state-active",
+              )}
+              key={color}
+              onSelect={() => {
+                editor.chain().focus().setHighlight({ color }).run();
+              }}
+              title={`${label} highlight`}
+            >
+              <span
+                aria-hidden="true"
+                className="border-border size-4 rounded-full border"
+                style={{ backgroundColor: color }}
+              />
+            </Menu.Item>
+          ))}
+        </div>
+        <Menu.Item
+          className="hover:bg-state-active focus-visible:bg-state-active flex w-full items-center gap-2 rounded-md px-2 py-2 text-left outline-none"
+          disabled={!editorState.highlight}
+          onSelect={() => {
+            editor.chain().focus().unsetHighlight().run();
+          }}
+        >
+          <DeleteIcon className="h-4" />
+          Remove highlight
+        </Menu.Item>
+      </Menu.Group>
+    </Menu.Items>
+  </Menu>
+);
+
 const getLinkHref = (editor: Editor): string => {
   const attributes = editor.getAttributes("link") as { href?: unknown };
   return typeof attributes.href === "string" ? attributes.href : "";
@@ -362,6 +499,16 @@ export const BubbleMenu = ({
           >
             <UnderlineIcon />
           </Button>
+        </Tooltip>
+        <Tooltip title="Color">
+          <span>
+            <ColorMenu
+              activeMenu={activeMenu}
+              editor={editor}
+              editorState={editorState}
+              setActiveMenu={setActiveMenu}
+            />
+          </span>
         </Tooltip>
         <Tooltip title="Link">
           <Button

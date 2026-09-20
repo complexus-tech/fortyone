@@ -104,8 +104,81 @@
     --button-gradient-primary-border: 62%;
   }
 
-  .rich-text-editor.prose-lg {
+  .prose.rich-text-editor.prose-lg {
     line-height: 1.65 !important;
+  }
+
+  /* Keep Tailwind Typography aligned with FortyOne's semantic theme in both modes. */
+  .prose.rich-text-editor {
+    --tw-prose-body: var(--color-foreground) !important;
+    --tw-prose-headings: var(--color-foreground) !important;
+    --tw-prose-lead: var(--color-text-description) !important;
+    --tw-prose-links: var(--color-foreground) !important;
+    --tw-prose-bold: var(--color-foreground) !important;
+    --tw-prose-counters: var(--color-text-muted) !important;
+    --tw-prose-bullets: var(--color-text-muted) !important;
+    --tw-prose-hr: var(--color-border) !important;
+    --tw-prose-quotes: var(--color-text-description) !important;
+    --tw-prose-quote-borders: var(--color-primary) !important;
+    --tw-prose-captions: var(--color-text-muted) !important;
+    --tw-prose-kbd: var(--color-foreground) !important;
+    --tw-prose-kbd-shadows: color-mix(
+      in oklab,
+      var(--color-foreground) 18%,
+      transparent
+    );
+    --tw-prose-code: var(--color-foreground) !important;
+    --tw-prose-pre-code: var(--color-foreground) !important;
+    --tw-prose-pre-bg: var(--color-surface-muted) !important;
+    --tw-prose-th-borders: var(--color-border-strong) !important;
+    --tw-prose-td-borders: var(--color-border) !important;
+  }
+
+  .prose.rich-text-editor :where(a) {
+    text-decoration-color: color-mix(
+      in oklab,
+      var(--color-primary) 58%,
+      transparent
+    ) !important;
+    text-underline-offset: 0.18em !important;
+  }
+
+  .prose.rich-text-editor :where(a:hover) {
+    color: var(--color-primary) !important;
+    text-decoration-color: var(--color-primary) !important;
+  }
+
+  .prose.rich-text-editor :where(code):not(:where(pre *)) {
+    background: var(--color-surface-muted) !important;
+    border: 0.5px solid var(--color-border) !important;
+    border-radius: var(--radius-sm) !important;
+    color: var(--color-foreground) !important;
+    font-weight: 500 !important;
+    padding: 0.12em 0.32em !important;
+  }
+
+  .prose.rich-text-editor :where(code):not(:where(pre *))::before,
+  .prose.rich-text-editor :where(code):not(:where(pre *))::after {
+    content: none !important;
+  }
+
+  .prose.rich-text-editor :where(pre) {
+    border: 0.5px solid var(--color-border) !important;
+    box-shadow: inset 0 1px 0
+      color-mix(in oklab, var(--color-white) 4%, transparent);
+  }
+
+  .prose.rich-text-editor :where(blockquote) {
+    border-inline-start-color: var(--color-primary) !important;
+    color: var(--color-text-description) !important;
+  }
+
+  .prose.rich-text-editor :where(mark) {
+    border-radius: var(--radius-xs);
+    box-decoration-break: clone;
+    color: var(--color-foreground) !important;
+    padding-inline: 0.08em;
+    -webkit-box-decoration-break: clone;
   }
 
   .rich-text-editor p {

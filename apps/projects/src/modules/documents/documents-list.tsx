@@ -115,10 +115,7 @@ export const DocumentsList = () => {
           label="Search documents"
           leading={
             <Flex align="center" className="min-w-0" gap={2}>
-              <DocsIcon
-                className="text-text-muted size-5 shrink-0"
-                strokeWidth={2}
-              />
+              <DocsIcon className="text-info size-5 shrink-0" strokeWidth={2} />
               <Text className="truncate" fontSize="lg" fontWeight="semibold">
                 Documents
               </Text>
@@ -200,7 +197,7 @@ export const DocumentsList = () => {
                 >
                   {document.visibility === "private" ? (
                     <LockKeyholeIcon
-                      className="size-[1.1rem] shrink-0"
+                      className="text-info size-[1.1rem] shrink-0"
                       strokeWidth={2}
                     />
                   ) : (

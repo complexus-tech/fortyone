@@ -1,5 +1,7 @@
 import { mergeAttributes, Node, type Extensions } from "@tiptap/core";
+import Color from "@tiptap/extension-color";
 import Image from "@tiptap/extension-image";
+import Highlight from "@tiptap/extension-highlight";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
 import { TaskItem, TaskList } from "@tiptap/extension-list";
@@ -7,6 +9,7 @@ import { Table } from "@tiptap/extension-table";
 import TableCell from "@tiptap/extension-table-cell";
 import TableHeader from "@tiptap/extension-table-header";
 import TableRow from "@tiptap/extension-table-row";
+import { TextStyle } from "@tiptap/extension-text-style";
 import Underline from "@tiptap/extension-underline";
 import {
   DEFAULT_RICH_TEXT_IMAGE_ALIGNMENT,
@@ -125,6 +128,9 @@ export const createDocumentExtensions = ({
     undoRedo: collaborative ? false : undefined,
   }),
   Underline,
+  TextStyle,
+  Color,
+  Highlight.configure({ multicolor: true }),
   TaskList,
   TaskItem.configure({ nested: true }),
   Link.configure({ autolink: true }),

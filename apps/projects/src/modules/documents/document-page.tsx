@@ -18,7 +18,6 @@ import {
   Skeleton,
   Text,
   TextEditor,
-  Tooltip,
   type BubbleMenuCreateAction,
 } from "ui";
 import {
@@ -28,7 +27,6 @@ import {
   CopyIcon,
   DeleteIcon,
   DuplicateIcon,
-  LinkIcon,
   LockKeyholeIcon,
   MoreHorizontalIcon,
   ObjectiveIcon,
@@ -80,7 +78,10 @@ import {
   useDuplicateDocument,
   useUpdateDocument,
 } from "./hooks";
-import { RelatedWorkPanel } from "./related-work-panel";
+import {
+  DocumentRelationshipControl,
+  RelatedWorkPanel,
+} from "./related-work-panel";
 import type { DocumentUpdate } from "./types";
 import styles from "./document-page.module.css";
 
@@ -599,26 +600,6 @@ const DocumentPageContent = ({ documentId }: { documentId: string }) => {
                 scrollContainer={scrollContainer}
               />
               {documentHeader}
-              {isDesktop && !isRelatedWorkOpen ? (
-                <Box className="absolute top-24 right-5 z-30">
-                  <Tooltip title="Show related work">
-                    <Button
-                      aria-expanded="false"
-                      aria-label="Show related work"
-                      className="border-border/70 bg-surface-elevated/90 shadow-shadow hover:border-border-strong hover:bg-surface-elevated dark:border-border-strong/80 dark:bg-surface-elevated/90 dark:hover:bg-surface-elevated gap-1.5 border-[0.5px] px-3 shadow-lg backdrop-blur-xl transition-[background-color,border-color,box-shadow,transform] hover:-translate-y-0.5"
-                      color="tertiary"
-                      leftIcon={<LinkIcon className="size-4" />}
-                      onClick={() => {
-                        setIsRelatedWorkOpen(true);
-                      }}
-                      size="sm"
-                      variant="outline"
-                    >
-                      Related work
-                    </Button>
-                  </Tooltip>
-                </Box>
-              ) : null}
               <input
                 accept={RICH_TEXT_MEDIA_ACCEPT}
                 aria-label="Upload document media"
@@ -665,6 +646,12 @@ const DocumentPageContent = ({ documentId }: { documentId: string }) => {
                         </Button>
                       </Box>
                     ) : null}
+                    <DocumentRelationshipControl
+                      document={document}
+                      onShowRelationships={() => {
+                        setIsRelatedWorkOpen(true);
+                      }}
+                    />
                     <textarea
                       aria-label="Document title"
                       className="text-foreground placeholder:text-text-muted mb-6 block min-h-14 w-full resize-none overflow-hidden bg-transparent text-4xl leading-tight font-semibold outline-none md:text-5xl"

@@ -129,6 +129,7 @@ export * from "./new-tab";
 export * from "./external-link";
 export * from "./sub-story";
 export * from "./download";
+export * from "./download-04";
 export * from "./crown";
 export * from "./blog";
 export * from "./at";

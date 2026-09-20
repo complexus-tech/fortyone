@@ -7,8 +7,8 @@ export function publicDocumentHTML(
   token: string,
   apiUrl: string,
 ) {
-  return sanitizeHtml(html, {
-    allowedTags: [...defaults.allowedTags, "img", "video", "input"],
+  const sanitizedHTML = sanitizeHtml(html, {
+    allowedTags: [...defaults.allowedTags, "img", "video", "input", "mark"],
     allowedAttributes: {
       a: ["href", "title", "rel", "target"],
       img: [
@@ -26,6 +26,8 @@ export function publicDocumentHTML(
       th: ["colspan", "rowspan"],
       ul: ["data-type"],
       li: ["data-type", "data-checked"],
+      mark: ["style"],
+      span: ["style"],
     },
     allowedStyles: {
       img: {
@@ -34,6 +36,18 @@ export function publicDocumentHTML(
         display: [/^block$/],
         "margin-left": [/^(?:auto|0)$/],
         "margin-right": [/^(?:auto|0)$/],
+      },
+      mark: {
+        "background-color": [
+          /^#[0-9a-f]{6}$/i,
+          /^rgb\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*\)$/i,
+        ],
+      },
+      span: {
+        color: [
+          /^#[0-9a-f]{6}$/i,
+          /^rgb\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*\)$/i,
+        ],
       },
     },
     allowedSchemes: ["https", "http", "mailto"],
@@ -65,7 +79,72 @@ export function publicDocumentHTML(
       }),
     },
   });
+
+  return wrapPublicDocumentTables(
+    normalizeLegacyMarkdownArtifacts(sanitizedHTML),
+  );
 }
+
+const MARKDOWN_TABLE_ROW = /^\s*\|.+\|\s*$/u;
+const MARKDOWN_TABLE_SEPARATOR_CELL = /^:?-{3,}:?$/u;
+const MARKDOWN_TABLE_BLOCK = /(?:<p>\s*\|(?:(?!<\/p>)[\s\S])+\|\s*<\/p>){2,}/gu;
+/* eslint-disable prefer-named-capture-group -- the app target is below ES2018. */
+const PARAGRAPH_CONTENT = /<p>([\s\S]*?)<\/p>/gu;
+const TABLE_ELEMENT = /<table(?:\s[^>]*)?>[\s\S]*?<\/table>/gu;
+
+function wrapPublicDocumentTables(html: string) {
+  return html.replace(
+    TABLE_ELEMENT,
+    (table) => `<div class="tableWrapper">${table}</div>`,
+  );
+}
+
+const parseMarkdownTableRow = (value: string) =>
+  value
+    .trim()
+    .replace(/^\||\|$/gu, "")
+    .split("|")
+    .map((cell) => cell.trim());
+
+function normalizeLegacyMarkdownArtifacts(html: string) {
+  const normalizedLists = html
+    .replace(/<ul([^>]*)>([\s\S]*?)<\/ul>/gu, (_match, attributes, items) => {
+      const normalizedItems = String(items).replace(
+        /(<li[^>]*>\s*<p[^>]*>)\s*[-+*]\s+/gu,
+        "$1",
+      );
+      return `<ul${String(attributes)}>${normalizedItems}</ul>`;
+    })
+    .replace(/<ol([^>]*)>([\s\S]*?)<\/ol>/gu, (_match, attributes, items) => {
+      const normalizedItems = String(items).replace(
+        /(<li[^>]*>\s*<p[^>]*>)\s*\d+[.)]\s+/gu,
+        "$1",
+      );
+      return `<ol${String(attributes)}>${normalizedItems}</ol>`;
+    });
+
+  return normalizedLists.replace(MARKDOWN_TABLE_BLOCK, (block) => {
+    const rows = [...block.matchAll(PARAGRAPH_CONTENT)].map((match) =>
+      parseMarkdownTableRow(match[1]),
+    );
+    if (
+      rows.length < 2 ||
+      !MARKDOWN_TABLE_ROW.test(`|${rows[0].join("|")}|`) ||
+      !rows[1].every((cell) => MARKDOWN_TABLE_SEPARATOR_CELL.test(cell))
+    )
+      return block;
+
+    const header = rows[0].map((cell) => `<th>${cell}</th>`).join("");
+    const body = rows
+      .slice(2)
+      .map(
+        (row) => `<tr>${row.map((cell) => `<td>${cell}</td>`).join("")}</tr>`,
+      )
+      .join("");
+    return `<table><thead><tr>${header}</tr></thead><tbody>${body}</tbody></table>`;
+  });
+}
+/* eslint-enable prefer-named-capture-group -- End the ES2017 compatibility parser exception. */
 
 function rewriteMedia(
   attributes: Record<string, string>,

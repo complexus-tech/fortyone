@@ -357,7 +357,7 @@ export const DocumentsHome = () => {
           leading={
             <Flex align="center" className="min-w-0" gap={2}>
               <MobileMenuButton />
-              <DocsIcon className="text-text-muted size-5 shrink-0" />
+              <DocsIcon className="text-info size-5 shrink-0" />
               <Text className="truncate" fontSize="lg" fontWeight="semibold">
                 Documents
               </Text>

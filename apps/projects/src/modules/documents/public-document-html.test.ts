@@ -1,6 +1,28 @@
 import { publicDocumentHTML } from "./public-document-html";
 
 describe("public document rendering", () => {
+  it("keeps safe text highlights", () => {
+    const html = publicDocumentHTML(
+      '<p><mark style="background-color: #FDE68A">Important</mark></p>',
+      "token",
+      "https://api.example",
+    );
+    expect(html).toContain(
+      '<mark style="background-color:#FDE68A">Important</mark>',
+    );
+  });
+
+  it("keeps safe text colors and removes unrelated inline styles", () => {
+    const html = publicDocumentHTML(
+      '<p><span style="color: #2563EB; position: fixed">Blue note</span></p>',
+      "token",
+      "https://api.example",
+    );
+
+    expect(html).toContain('<span style="color:#2563EB">Blue note</span>');
+    expect(html).not.toContain("position");
+  });
+
   it("removes executable HTML and unsafe URLs", () => {
     const html = publicDocumentHTML(
       '<script>alert(1)</script><p onclick="alert(1)">Plan</p><a href="javascript:alert(1)">Link</a><img src="x" onerror="alert(1)"><iframe src="https://evil.example"></iframe>',
@@ -28,9 +50,26 @@ describe("public document rendering", () => {
       "token",
       "https://api.example",
     );
+    expect(html).toContain('<div class="tableWrapper"><table>');
     expect(html).toContain('colspan="2"');
     expect(html).toContain("disabled");
     expect(html).not.toContain("password");
     expect(html).not.toContain("secret");
+  });
+
+  it("repairs table and list markers left by legacy Markdown pastes", () => {
+    const html = publicDocumentHTML(
+      "<ul><li><p>Keep context close.</p></li><li><p>- Make decisions scannable.</p></li></ul><ol><li><p>First risk</p></li><li><p>2. Second risk</p></li></ol><p>| Workstream | Status |</p><p>| --- | --- |</p><p>| Editor | Ready |</p>",
+      "token",
+      "https://api.example",
+    );
+
+    expect(html).toContain("<p>Make decisions scannable.</p>");
+    expect(html).toContain("<p>Second risk</p>");
+    expect(html).toContain("<table>");
+    expect(html).toContain('<div class="tableWrapper"><table>');
+    expect(html).toContain("<th>Workstream</th>");
+    expect(html).toContain("<td>Ready</td>");
+    expect(html).not.toContain("| --- | --- |");
   });
 });

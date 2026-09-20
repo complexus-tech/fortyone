@@ -29,7 +29,7 @@ const RelatedDocumentRow = ({
         className="flex min-w-0 flex-1 items-center gap-2"
         href={documentPath}
       >
-        <DocsIcon className="text-text-muted mx-0.5 h-[1.3rem] shrink-0" />
+        <DocsIcon className="text-info mx-0.5 h-[1.3rem] shrink-0" />
         <Text className="truncate font-medium" title={document.title}>
           {document.title}
         </Text>
@@ -58,7 +58,7 @@ const RelatedDocumentRow = ({
                   router.push(documentPath);
                 }}
               >
-                <DocsIcon className="h-[1.15rem]" />
+                <DocsIcon className="text-info h-[1.15rem]" />
                 Open document
               </Menu.Item>
             </Menu.Group>
@@ -107,7 +107,7 @@ export const RelatedDocuments = ({
         className="border-border border-b-[0.5px] pb-2"
         gap={2}
       >
-        <DocsIcon className="text-text-muted size-5" />
+        <DocsIcon className="text-info size-5" />
         <Text fontWeight="semibold">Related documents</Text>
       </Flex>
       {isPending ? <Skeleton className="h-11 w-full rounded-none" /> : null}

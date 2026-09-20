@@ -1,9 +1,10 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useState } from "react";
 import Link from "next/link";
 import { Box, Button, Command, Divider, Flex, Popover, Text } from "ui";
-import { CloseIcon, DocsIcon, ObjectiveIcon, StoryIcon } from "icons";
+import { CloseIcon, DocsIcon, LinkIcon, ObjectiveIcon, StoryIcon } from "icons";
 import { useWorkspacePath } from "@/hooks";
 import { useSearch } from "@/modules/search/hooks/use-search";
 import { useTeams } from "@/modules/teams/hooks/teams";
@@ -26,12 +27,20 @@ const getRelatedWorkPath = (
 
 const WorkIcon = ({ type }: { type: DocumentRelationType }) =>
   type === "story" ? (
-    <StoryIcon className="size-4" />
+    <StoryIcon className="text-primary size-4" />
   ) : (
-    <ObjectiveIcon className="size-4" />
+    <ObjectiveIcon className="text-secondary size-4" />
   );
 
-const RelationshipPicker = ({ document }: { document: WorkspaceDocument }) => {
+const RelationshipPicker = ({
+  document,
+  onShowRelationships,
+  trigger,
+}: {
+  document: WorkspaceDocument;
+  onShowRelationships?: () => void;
+  trigger?: ReactNode;
+}) => {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const { data: teams = [] } = useTeams();
@@ -82,20 +91,43 @@ const RelationshipPicker = ({ document }: { document: WorkspaceDocument }) => {
   return (
     <Popover onOpenChange={setOpen} open={open}>
       <Popover.Trigger asChild>
-        <Button
-          align="center"
-          color="tertiary"
-          fullWidth
-          size="md"
-          variant="outline"
-        >
-          Add new relationship
-        </Button>
+        {trigger ?? (
+          <Button
+            align="center"
+            color="tertiary"
+            fullWidth
+            size="md"
+            variant="outline"
+          >
+            Add new relationship
+          </Button>
+        )}
       </Popover.Trigger>
       <Popover.Content
         align="end"
         className="border-border-strong bg-surface-elevated w-[22rem] border"
       >
+        {document.relatedWork.length > 0 && onShowRelationships ? (
+          <Box className="px-1.5 pb-2">
+            <button
+              className="hover:bg-state-hover focus-visible:ring-ring/40 flex w-full items-center gap-2 rounded-md px-2 py-2 text-left outline-none focus-visible:ring-1"
+              onClick={() => {
+                setOpen(false);
+                onShowRelationships();
+              }}
+              type="button"
+            >
+              <LinkIcon className="text-info size-4" />
+              <Text>
+                View {document.relatedWork.length}{" "}
+                {document.relatedWork.length === 1
+                  ? "relationship"
+                  : "relationships"}
+              </Text>
+            </button>
+            <Divider className="mt-2" />
+          </Box>
+        ) : null}
         <Command shouldFilter={false}>
           <Command.Input
             autoFocus
@@ -142,6 +174,36 @@ const RelationshipPicker = ({ document }: { document: WorkspaceDocument }) => {
         </Box>
       </Popover.Content>
     </Popover>
+  );
+};
+
+export const DocumentRelationshipControl = ({
+  document,
+  onShowRelationships,
+}: {
+  document: WorkspaceDocument;
+  onShowRelationships: () => void;
+}) => {
+  const count = document.relatedWork.length;
+  return (
+    <RelationshipPicker
+      document={document}
+      onShowRelationships={onShowRelationships}
+      trigger={
+        <Button
+          aria-label={count === 0 ? "Link work" : `${count} relationships`}
+          className="text-text-muted hover:text-foreground -ml-2 h-8 px-2"
+          color="tertiary"
+          leftIcon={<LinkIcon className="text-info size-4" />}
+          size="sm"
+          variant="naked"
+        >
+          {count === 0
+            ? "Link work"
+            : `${count} ${count === 1 ? "relationship" : "relationships"}`}
+        </Button>
+      }
+    />
   );
 };
 
@@ -195,7 +257,7 @@ export const RelatedWorkPanel = ({
             justify="center"
           >
             <DocsIcon
-              className="text-text-muted mb-5 h-16 w-auto"
+              className="text-info/70 mb-5 h-16 w-auto"
               strokeWidth={1.3}
             />
             <Text className="mb-2" fontSize="lg" fontWeight="semibold">

@@ -35,10 +35,9 @@ describe("document page header", () => {
     expect(source).toContain("lg:pt-34");
   });
 
-  it("keeps related work clear of the access controls", () => {
-    expect(source).toContain('className="absolute top-24 right-5 z-30"');
-    expect(source).toContain('rounded="full"');
-    expect(source).toContain("Related work");
-    expect(source).not.toContain("rounded-r-none border-r-0");
+  it("places relationships inline with the document metadata", () => {
+    expect(source).toContain("<DocumentRelationshipControl");
+    expect(source).not.toContain('className="absolute top-24 right-5 z-30"');
+    expect(source).not.toContain('aria-label="Show related work"');
   });
 });

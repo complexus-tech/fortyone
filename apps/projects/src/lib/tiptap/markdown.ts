@@ -1,4 +1,4 @@
-import { Extension, generateHTML } from "@tiptap/core";
+import { Extension, generateHTML, generateJSON } from "@tiptap/core";
 import Link from "@tiptap/extension-link";
 import { TaskItem, TaskList } from "@tiptap/extension-list";
 import { Table } from "@tiptap/extension-table";
@@ -13,9 +13,13 @@ const MARKDOWN_BLOCK_PATTERN =
   /(?:^|\n)\s{0,3}(?:#{1,6}\s+\S|[-+*]\s+(?:\[[ xX]\]\s+)?\S|\d+[.)]\s+\S|>\s+\S|```|~~~)/u;
 const MARKDOWN_INLINE_PATTERN =
   /(?:\*\*[^*\n]+\*\*|__[^_\n]+__|~~[^~\n]+~~|\[[^\]\n]+\]\((?:https?:\/\/|mailto:)[^)\s]+\))/u;
+const MARKDOWN_TABLE_PATTERN =
+  /(?:^|\n)\s*\|?[^\n|]+\|[^\n]+\n\s*\|?\s*:?-{3,}:?\s*\|/u;
 
 export const looksLikeMarkdown = (value: string) =>
-  MARKDOWN_BLOCK_PATTERN.test(value) || MARKDOWN_INLINE_PATTERN.test(value);
+  MARKDOWN_BLOCK_PATTERN.test(value) ||
+  MARKDOWN_INLINE_PATTERN.test(value) ||
+  MARKDOWN_TABLE_PATTERN.test(value);
 
 export const getRichTextContentType = (
   description: string,
@@ -29,7 +33,7 @@ export const RichTextMarkdown = Markdown.configure({
   markedOptions: { gfm: true },
 });
 
-const markdownDocumentExtensions = [
+export const markdownDocumentExtensions = [
   createRichTextStarterKit(),
   TaskList,
   TaskItem.configure({ nested: true }),
@@ -40,13 +44,16 @@ const markdownDocumentExtensions = [
   TableCell,
   RichTextMarkdown,
 ];
-const markdownManager = new MarkdownManager({
+export const markdownManager = new MarkdownManager({
   extensions: markdownDocumentExtensions,
   markedOptions: { gfm: true },
 });
 
 export const markdownToRichTextHTML = (markdown: string) =>
   generateHTML(markdownManager.parse(markdown), markdownDocumentExtensions);
+
+export const richTextHTMLToMarkdown = (html: string) =>
+  markdownManager.serialize(generateJSON(html, markdownDocumentExtensions));
 
 export const RichTextMarkdownPaste = Extension.create({
   name: "richTextMarkdownPaste",

@@ -13,10 +13,7 @@ type Heading = {
   text: string;
 };
 
-export function collectDocumentHeadings(
-  container: HTMLElement,
-  selector: string,
-) {
+function collectDocumentHeadings(container: HTMLElement, selector: string) {
   const content = container.querySelector(selector);
   if (!content) return [];
   return Array.from(
@@ -36,6 +33,33 @@ export function DocumentIndex({
   const [headings, setHeadings] = useState<Heading[]>([]);
   const [active, setActive] = useState<HTMLElement | null>(null);
   const [open, setOpen] = useState(false);
+  const [compactPosition, setCompactPosition] = useState({
+    bottom: 24,
+    left: 24,
+  });
+
+  useEffect(() => {
+    if (!scrollContainer) return;
+    const measure = () => {
+      const bounds = scrollContainer.getBoundingClientRect();
+      const left = Number.isFinite(bounds.left) ? bounds.left : 0;
+      const bottom = Number.isFinite(bounds.bottom)
+        ? bounds.bottom
+        : window.innerHeight;
+      setCompactPosition({
+        bottom: Math.max(16, window.innerHeight - bottom + 24),
+        left: Math.max(16, left + 24),
+      });
+    };
+    const resizeObserver = new ResizeObserver(measure);
+    resizeObserver.observe(scrollContainer);
+    window.addEventListener("resize", measure);
+    measure();
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [scrollContainer]);
 
   useEffect(() => {
     if (!scrollContainer) return;
@@ -62,7 +86,8 @@ export function DocumentIndex({
         ).map((element) => {
           let id = ids.get(element);
           if (id === undefined) {
-            id = nextId++;
+            id = nextId;
+            nextId += 1;
             ids.set(element, id);
           }
           return {
@@ -194,13 +219,19 @@ export function DocumentIndex({
       <nav aria-label="Document index" className={styles.desktop}>
         {links}
       </nav>
-      <div className={styles.compact}>
+      <div
+        className={styles.compact}
+        style={{
+          bottom: `calc(${compactPosition.bottom}px + env(safe-area-inset-bottom))`,
+          left: compactPosition.left,
+        }}
+      >
         <Popover onOpenChange={setOpen} open={open}>
           <Popover.Trigger asChild>
             <Button
               aria-label="Open document index"
               asIcon
-              className="border-border bg-surface-elevated shadow-shadow size-10 shadow-lg"
+              className="border-border/80 bg-surface-elevated/85! shadow-shadow dark:bg-surface-elevated/85! size-10 shadow-lg backdrop-blur-xl"
               color="tertiary"
               rounded="full"
               variant="outline"

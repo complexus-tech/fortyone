@@ -7,6 +7,8 @@ import StarterKit from "@tiptap/starter-kit";
 import {
   getRichTextContentType,
   looksLikeMarkdown,
+  markdownToRichTextHTML,
+  richTextHTMLToMarkdown,
   RichTextMarkdown,
   RichTextMarkdownPaste,
 } from "./markdown";
@@ -15,9 +17,32 @@ describe("rich-text Markdown", () => {
   it("recognizes supported block and inline Markdown without treating prose as Markdown", () => {
     expect(looksLikeMarkdown("### Checklist\n- [ ] Upload proof")).toBe(true);
     expect(looksLikeMarkdown("Paste **bold text** here")).toBe(true);
+    expect(looksLikeMarkdown("Name | Status\n--- | ---\nEditor | Ready")).toBe(
+      true,
+    );
     expect(looksLikeMarkdown("A normal description with [brackets].")).toBe(
       false,
     );
+  });
+
+  it("converts a pasted GFM table into table nodes", () => {
+    const html = markdownToRichTextHTML(
+      "Workstream | Owner | Status\n--- | --- | ---\nEditor | Product | In progress",
+    );
+
+    expect(html).toContain("<table");
+    expect(html).toMatch(/<th[^>]*>.*Workstream.*<\/th>/);
+    expect(html).toMatch(/<td[^>]*>.*In progress.*<\/td>/);
+    expect(html).not.toContain("--- | ---");
+  });
+
+  it("serializes rich-text tables for Markdown downloads", () => {
+    const markdown = richTextHTMLToMarkdown(
+      '<div class="tableWrapper"><table><thead><tr><th>Workstream</th><th>Status</th></tr></thead><tbody><tr><td>Editor</td><td>Ready</td></tr></tbody></table></div>',
+    );
+
+    expect(markdown).toContain("| Workstream | Status |");
+    expect(markdown).toMatch(/\| Editor\s+\| Ready\s+\|/);
   });
 
   it("only treats legacy plain descriptions as Markdown", () => {

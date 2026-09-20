@@ -9,6 +9,8 @@
   },
   "dependencies": {
     "@tiptap/core": "3.20.4",
+    "@tiptap/extension-color": "3.20.4",
+    "@tiptap/extension-highlight": "3.20.4",
     "@tiptap/starter-kit": "3.20.4",
     "@tiptap/extension-image": "3.20.4",
     "@tiptap/extension-link": "3.20.4",
@@ -17,6 +19,7 @@
     "@tiptap/extension-table-cell": "3.20.4",
     "@tiptap/extension-table-header": "3.20.4",
     "@tiptap/extension-table-row": "3.20.4",
+    "@tiptap/extension-text-style": "3.20.4",
     "@tiptap/extension-underline": "3.20.4"
   }
 }
