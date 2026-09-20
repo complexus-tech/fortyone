@@ -24,12 +24,12 @@ import {
   ArrowDown2Icon,
   CodeIcon,
   DeleteIcon,
-  EditIcon,
   ItalicIcon,
   LinkIcon,
   OrderedListIcon,
   QuoteIcon,
   StrikeThroughIcon,
+  TextColorIcon,
   UnderlineIcon,
   UnorderedListIcon,
 } from "icons";
@@ -300,7 +300,7 @@ const ColorMenu = ({
         size="sm"
         variant="naked"
       >
-        <EditIcon className="text-warning" />
+        <TextColorIcon />
       </Button>
     </Menu.Button>
     <Menu.Items

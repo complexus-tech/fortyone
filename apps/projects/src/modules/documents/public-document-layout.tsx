@@ -65,12 +65,16 @@ export function PublicDocumentLayout({
   return (
     <main
       className={cn(
-        "bg-surface-muted text-foreground h-dvh overflow-hidden p-2 sm:p-3 print:h-auto print:overflow-visible print:bg-white print:p-0 print:text-black",
-        styles.host,
+        "bg-background text-foreground h-dvh overflow-hidden p-2 sm:p-3 print:h-auto print:overflow-visible print:bg-white print:p-0 print:text-black",
       )}
     >
-      <section className="border-border/80 bg-background shadow-shadow mx-auto flex h-[calc(100dvh-1rem)] max-w-[96rem] flex-col overflow-hidden rounded-xl border-[0.5px] shadow-sm sm:h-[calc(100dvh-1.5rem)] print:h-auto print:max-w-none print:overflow-visible print:rounded-none print:border-0 print:bg-white print:shadow-none">
-        <header className="border-border/70 bg-background/95 sticky top-0 z-40 flex h-14 shrink-0 items-center justify-between border-b px-3 backdrop-blur-xl sm:px-4 print:hidden">
+      <section
+        className={cn(
+          "app-content-canvas-gradient border-border/80 bg-surface-muted/60 shadow-shadow dark:bg-surface-muted/40 relative flex h-[calc(100dvh-1rem)] w-full flex-col overflow-hidden rounded-xl border-[0.5px] shadow-sm sm:h-[calc(100dvh-1.5rem)] print:h-auto print:overflow-visible print:rounded-none print:border-0 print:bg-white print:shadow-none",
+          styles.host,
+        )}
+      >
+        <header className="border-border/70 bg-surface-muted/80 dark:bg-surface-muted/80 sticky top-0 z-40 flex h-14 shrink-0 items-center justify-between border-b px-3 backdrop-blur-xl sm:px-4 print:hidden">
           <Flex align="center" className="min-w-0" gap={2}>
             <DocsIcon className="text-info size-4.5 shrink-0" />
             <Text className="truncate" fontWeight="medium">
@@ -180,44 +184,46 @@ export function PublicDocumentLayout({
           </Flex>
         </header>
 
+        <DocumentIndex
+          contentSelector=".rich-document-editor"
+          readingOffset={88}
+          scrollContainer={scrollContainer}
+        />
         <div
           className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain print:overflow-visible"
           ref={setScrollContainer}
         >
-          <DocumentIndex
-            contentSelector=".rich-document-editor"
-            readingOffset={88}
-            scrollContainer={scrollContainer}
-          />
-          <article className="mx-auto max-w-3xl px-6 pt-12 pb-24 sm:px-10 md:pt-16 lg:pt-20 print:max-w-none print:px-0 print:pt-6 print:pb-10">
-            <h1 className="mb-3 text-4xl leading-[1.08] font-semibold tracking-[-0.035em] md:text-5xl">
-              {title}
-            </h1>
-            <p className="text-text-muted mb-12 text-[0.95rem]">
-              Last updated {updatedAt}
-            </p>
-            <div
-              className="rich-document-editor rich-text-editor prose prose-lg prose-headings:tracking-[-0.02em] prose-img:max-w-full max-w-none print:text-black"
-              dangerouslySetInnerHTML={{ __html: contentHtml }}
-            />
-          </article>
-          <footer className="border-border/70 mx-auto flex max-w-3xl items-center justify-between border-t px-6 py-6 sm:px-10 print:hidden">
-            <Flex align="center" className="text-text-muted" gap={2}>
-              <Logo asIcon className="text-foreground h-3.5! w-auto!" />
-              <Text color="muted" fontSize="sm">
-                Published with FortyOne
-              </Text>
-            </Flex>
-            <Button
-              className="sm:hidden"
-              color="tertiary"
-              href="https://fortyone.app"
-              size="sm"
-              variant="outline"
-            >
-              Get FortyOne Free
-            </Button>
-          </footer>
+          <div className={styles.contentPadding}>
+            <article className="mx-auto w-full max-w-5xl px-8 pt-12 pb-24 sm:px-10 md:pt-16 lg:px-12 lg:pt-20 print:max-w-none print:px-0 print:pt-6 print:pb-10">
+              <h1 className="mb-3 text-4xl leading-[1.08] font-semibold tracking-[-0.035em] md:text-5xl">
+                {title}
+              </h1>
+              <p className="text-text-muted mb-12 text-[0.95rem]">
+                Last updated {updatedAt}
+              </p>
+              <div
+                className="rich-document-editor rich-text-editor prose prose-lg prose-headings:font-medium prose-headings:tracking-[-0.02em] prose-pre:text-[1.1rem] prose-strong:font-bold prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-h4:text-lg prose-h5:text-lg prose-h6:text-lg prose-img:max-w-full w-full max-w-none text-[1.1rem] leading-7 print:text-black"
+                dangerouslySetInnerHTML={{ __html: contentHtml }}
+              />
+            </article>
+            <footer className="border-border/70 mx-auto flex w-full max-w-5xl items-center justify-between border-t px-8 py-6 sm:px-10 lg:px-12 print:hidden">
+              <Flex align="center" className="text-text-muted" gap={2}>
+                <Logo asIcon className="text-foreground h-3.5! w-auto!" />
+                <Text color="muted" fontSize="sm">
+                  Published with FortyOne
+                </Text>
+              </Flex>
+              <Button
+                className="sm:hidden"
+                color="tertiary"
+                href="https://fortyone.app"
+                size="sm"
+                variant="outline"
+              >
+                Get FortyOne Free
+              </Button>
+            </footer>
+          </div>
         </div>
       </section>
       <span aria-live="polite" className="sr-only">

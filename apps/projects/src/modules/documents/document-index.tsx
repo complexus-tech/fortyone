@@ -6,12 +6,40 @@ import { ListIcon } from "icons";
 import { cn } from "lib";
 import styles from "./document-index.module.css";
 
+const MAX_DESKTOP_HEADINGS = 9;
+
 type Heading = {
   element: HTMLElement;
   id: number;
   level: number;
   text: string;
 };
+
+function getDesktopHeadingIndexes(headingCount: number, activeIndex: number) {
+  if (headingCount <= MAX_DESKTOP_HEADINGS) {
+    return Array.from({ length: headingCount }, (_, index) => index);
+  }
+
+  const safeActiveIndex = Math.max(0, activeIndex);
+  const indexes = new Set([0, headingCount - 1, safeActiveIndex]);
+  let distance = 1;
+
+  while (indexes.size < MAX_DESKTOP_HEADINGS && distance < headingCount) {
+    const before = safeActiveIndex - distance;
+    const after = safeActiveIndex + distance;
+    if (before > 0) indexes.add(before);
+    if (indexes.size < MAX_DESKTOP_HEADINGS && after < headingCount - 1) {
+      indexes.add(after);
+    }
+    distance += 1;
+  }
+
+  for (let index = 1; indexes.size < MAX_DESKTOP_HEADINGS; index += 1) {
+    indexes.add(index);
+  }
+
+  return [...indexes].sort((first, second) => first - second);
+}
 
 function collectDocumentHeadings(container: HTMLElement, selector: string) {
   const content = container.querySelector(selector);
@@ -177,47 +205,70 @@ export function DocumentIndex({
   };
 
   const minimumLevel = Math.min(...headings.map((heading) => heading.level));
-  const links = (
+  const renderLinks = (visibleHeadings: Heading[], showGaps = false) => (
     <ol className="space-y-1">
-      {headings.map((heading) => (
-        <li
-          key={heading.id}
-          style={{
-            paddingLeft: Math.min(heading.level - minimumLevel, 2) * 10,
-          }}
-        >
-          <button
-            aria-current={active === heading.element ? "location" : undefined}
-            className={cn(
-              "group hover:text-foreground focus-visible:ring-ring grid w-full grid-cols-[12px_minmax(0,1fr)] items-start gap-2 rounded py-1 text-left outline-none focus-visible:ring-2",
-              active === heading.element
-                ? "text-foreground"
-                : "text-text-muted",
-            )}
-            onClick={() => {
-              navigate(heading);
+      {visibleHeadings.map((heading, index) => {
+        const previousHeading = visibleHeadings[index - 1];
+        const hasGap =
+          showGaps &&
+          previousHeading &&
+          headings.indexOf(heading) - headings.indexOf(previousHeading) > 1;
+
+        return (
+          <li
+            key={heading.id}
+            style={{
+              paddingLeft: Math.min(heading.level - minimumLevel, 2) * 10,
             }}
-            title={heading.text}
-            type="button"
           >
-            <span
-              aria-hidden
+            {hasGap ? (
+              <span
+                aria-hidden
+                className="text-text-muted block h-4 pl-5 text-xs leading-none"
+              >
+                …
+              </span>
+            ) : null}
+            <button
+              aria-current={active === heading.element ? "location" : undefined}
               className={cn(
-                "mt-[0.6em] h-px w-2.5 origin-left bg-current transition-transform motion-reduce:transition-none",
-                active === heading.element ? "scale-x-125" : "opacity-40",
+                "group hover:text-foreground focus-visible:ring-ring grid w-full grid-cols-[12px_minmax(0,1fr)] items-start gap-2 rounded py-1 text-left outline-none focus-visible:ring-2",
+                active === heading.element
+                  ? "text-foreground"
+                  : "text-text-muted",
               )}
-            />
-            <span className="line-clamp-2 leading-snug">{heading.text}</span>
-          </button>
-        </li>
-      ))}
+              onClick={() => {
+                navigate(heading);
+              }}
+              title={heading.text}
+              type="button"
+            >
+              <span
+                aria-hidden
+                className={cn(
+                  "mt-[0.6em] h-px w-2.5 origin-left bg-current transition-transform motion-reduce:transition-none",
+                  active === heading.element ? "scale-x-125" : "opacity-40",
+                )}
+              />
+              <span className="line-clamp-2 leading-snug">{heading.text}</span>
+            </button>
+          </li>
+        );
+      })}
     </ol>
   );
+  const activeIndex = headings.findIndex(
+    (heading) => heading.element === active,
+  );
+  const desktopHeadings = getDesktopHeadingIndexes(
+    headings.length,
+    activeIndex,
+  ).map((index) => headings[index]);
 
   return (
     <div data-document-index>
       <nav aria-label="Document index" className={styles.desktop}>
-        {links}
+        {renderLinks(desktopHeadings, true)}
       </nav>
       <div
         className={styles.compact}
@@ -248,7 +299,7 @@ export function DocumentIndex({
             <Text className="mb-3" fontWeight="medium">
               On this page
             </Text>
-            <nav aria-label="Document index">{links}</nav>
+            <nav aria-label="Document index">{renderLinks(headings)}</nav>
           </Popover.Content>
         </Popover>
       </div>

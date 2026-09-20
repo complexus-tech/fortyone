@@ -89,3 +89,28 @@ test("navigates duplicate heading names by element within the correct scroll con
   view.unmount();
   container.remove();
 });
+
+test("collapses a long desktop index while keeping the full compact outline", async () => {
+  const { container } = fixture();
+  container.querySelector("article")!.innerHTML = Array.from(
+    { length: 15 },
+    (_, index) => `<h2>Section ${index + 1}</h2>`,
+  ).join("");
+  const view = render(
+    <DocumentIndex contentSelector="article" scrollContainer={container} />,
+  );
+
+  await waitFor(() => {
+    expect(screen.getAllByRole("button", { name: "Section 1" })).toHaveLength(
+      2,
+    );
+  });
+  expect(
+    view.container.querySelectorAll('button[title^="Section "]'),
+  ).toHaveLength(24);
+  expect(screen.getAllByRole("button", { name: "Section 15" })).toHaveLength(2);
+  expect(screen.getAllByRole("button", { name: "Section 2" })).toHaveLength(1);
+
+  view.unmount();
+  container.remove();
+});

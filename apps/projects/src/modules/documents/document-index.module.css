@@ -4,11 +4,9 @@
 .desktop {
   display: none;
   position: absolute;
-  top: 9rem;
+  top: 7rem;
   left: 1.5rem;
   width: 11rem;
-  max-height: calc(100% - 11rem);
-  overflow-y: auto;
   z-index: 20;
 }
 .compact {

@@ -4,7 +4,13 @@ import type { ReactNode } from "react";
 import { useState } from "react";
 import Link from "next/link";
 import { Box, Button, Command, Divider, Flex, Popover, Text } from "ui";
-import { CloseIcon, DocsIcon, LinkIcon, ObjectiveIcon, StoryIcon } from "icons";
+import {
+  AttachmentSquareIcon,
+  CloseIcon,
+  DocsIcon,
+  ObjectiveIcon,
+  StoryIcon,
+} from "icons";
 import { useWorkspacePath } from "@/hooks";
 import { useSearch } from "@/modules/search/hooks/use-search";
 import { useTeams } from "@/modules/teams/hooks/teams";
@@ -117,7 +123,7 @@ const RelationshipPicker = ({
               }}
               type="button"
             >
-              <LinkIcon className="text-info size-4" />
+              <AttachmentSquareIcon className="size-4" />
               <Text>
                 View {document.relatedWork.length}{" "}
                 {document.relatedWork.length === 1
@@ -194,7 +200,7 @@ export const DocumentRelationshipControl = ({
           aria-label={count === 0 ? "Link work" : `${count} relationships`}
           className="text-text-muted hover:text-foreground -ml-2 h-8 px-2"
           color="tertiary"
-          leftIcon={<LinkIcon className="text-info size-4" />}
+          leftIcon={<AttachmentSquareIcon className="size-4" />}
           size="sm"
           variant="naked"
         >
