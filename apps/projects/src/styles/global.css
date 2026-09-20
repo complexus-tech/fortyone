@@ -322,12 +322,12 @@ ul[data-type="taskList"] > li ol[data-type="taskList"] {
   border-right-width: 0;
 }
 
-.rich-document-editor table tr:last-child > * {
+.rich-document-editor table > tbody > tr:last-child > * {
   border-bottom-width: 0;
 }
 
 .rich-document-editor table th {
-  @apply bg-surface-muted/45 dark:bg-surface-elevated/45;
+  @apply border-border-strong/60 bg-surface-muted/45 dark:border-border-strong/80 dark:bg-surface-elevated/45 border-b-[0.5px];
 }
 
 .rich-document-editor table tr,

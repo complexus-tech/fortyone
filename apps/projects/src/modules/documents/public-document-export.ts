@@ -35,7 +35,7 @@ export const createStandaloneDocumentHTML = ({
     .content .tableWrapper { border-radius: 8px; corner-shape: squircle; margin: 1.5rem 0; max-width: 100%; overflow-x: auto; }
     .content table { border-collapse: separate; border-spacing: 0; margin: 0; min-width: 100%; width: max-content; }
     .content td, .content th { border: 1px solid #d4d4d4; min-width: 140px; padding: 10px 12px; text-align: left; vertical-align: top; }
-    .content th { background: #fafafa; font-weight: 600; }
+    .content th { background: #fafafa; border-bottom-color: #a3a3a3; font-weight: 600; }
     .content blockquote { border-left: 3px solid #a3a3a3; color: #525252; margin-left: 0; padding-left: 18px; }
     .content img, .content video { border: 1px solid #e5e5e5; border-radius: 13px; corner-shape: squircle; height: auto; max-width: 100%; }
     .content mark { border-radius: 3px; padding: 0 0.08em; }
