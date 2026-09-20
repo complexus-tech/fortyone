@@ -9,15 +9,25 @@ import {
   addDocumentRelationshipAction,
   archiveDocumentAction,
   createDocumentAction,
+  createDocumentCommentAction,
   deleteDocumentAction,
   duplicateDocumentAction,
   removeDocumentRelationshipAction,
+  replyToDocumentCommentAction,
+  resolveDocumentCommentAction,
   updateDocumentAccessAction,
   updateDocumentAction,
 } from "./actions";
-import { getDocument, getDocuments, getRelatedDocuments } from "./queries";
+import {
+  getDocument,
+  getDocumentComments,
+  getDocuments,
+  getRelatedDocuments,
+} from "./queries";
 import type {
   DocumentAccessUpdate,
+  DocumentComment,
+  DocumentCommentThread,
   DocumentCreate,
   DocumentRelationType,
   DocumentUpdate,
@@ -44,6 +54,193 @@ export const useDocument = (documentId: string) => {
       getDocument(documentId, { session: session!, workspaceSlug }),
     enabled: Boolean(session && documentId),
   });
+};
+
+export const useDocumentComments = (documentId: string) => {
+  const { data: session } = useSession();
+  const { workspaceSlug } = useWorkspacePath();
+  return useQuery({
+    queryKey: documentKeys.comments(workspaceSlug, documentId),
+    queryFn: () =>
+      getDocumentComments(documentId, {
+        session: session!,
+        workspaceSlug,
+      }),
+    enabled: Boolean(session && documentId),
+  });
+};
+
+export const useDocumentCommentMutations = (documentId: string) => {
+  const queryClient = useQueryClient();
+  const { data: session } = useSession();
+  const { workspaceSlug } = useWorkspacePath();
+  const queryKey = documentKeys.comments(workspaceSlug, documentId);
+  const optimisticId = (kind: "comment" | "thread") =>
+    `optimistic-${kind}-${crypto.randomUUID()}`;
+  const optimisticComment = (body: string): DocumentComment => {
+    const timestamp = new Date().toISOString();
+    return {
+      id: optimisticId("comment"),
+      body,
+      createdBy: session?.user.id ?? "",
+      authorName: session?.user.name ?? "You",
+      authorAvatar: session?.user.image ?? null,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    };
+  };
+  const create = useMutation({
+    mutationFn: async (payload: {
+      body: string;
+      quote: string;
+      anchorStart: number;
+      anchorEnd: number;
+    }) => {
+      const response = await createDocumentCommentAction(
+        documentId,
+        payload,
+        workspaceSlug,
+      );
+      if (response.error || !response.data)
+        throw new Error(
+          response.error?.message ?? "The comment was not returned",
+        );
+      return response.data;
+    },
+    onMutate: async (payload) => {
+      await queryClient.cancelQueries({ queryKey });
+      const previous =
+        queryClient.getQueryData<DocumentCommentThread[]>(queryKey);
+      const comment = optimisticComment(payload.body);
+      const thread: DocumentCommentThread = {
+        id: optimisticId("thread"),
+        documentId,
+        quote: payload.quote,
+        anchorStart: payload.anchorStart,
+        anchorEnd: payload.anchorEnd,
+        createdBy: session?.user.id ?? "",
+        resolvedAt: null,
+        resolvedBy: null,
+        createdAt: comment.createdAt,
+        comments: [comment],
+      };
+      queryClient.setQueryData<DocumentCommentThread[]>(queryKey, (threads) => [
+        thread,
+        ...(threads ?? []),
+      ]);
+      return { optimisticThreadId: thread.id, previous };
+    },
+    onError: (error, _payload, context) => {
+      queryClient.setQueryData(queryKey, context?.previous);
+      toast.error("Could not add the comment", {
+        description: error.message,
+      });
+    },
+    onSuccess: (thread, _payload, context) => {
+      queryClient.setQueryData<DocumentCommentThread[]>(queryKey, (threads) =>
+        threads?.map((cached) =>
+          cached.id === context.optimisticThreadId ? thread : cached,
+        ),
+      );
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey }),
+  });
+  const reply = useMutation({
+    mutationFn: async ({
+      threadId,
+      body,
+    }: {
+      threadId: string;
+      body: string;
+    }) => {
+      const response = await replyToDocumentCommentAction(
+        documentId,
+        threadId,
+        body,
+        workspaceSlug,
+      );
+      if (response.error || !response.data)
+        throw new Error(
+          response.error?.message ?? "The reply was not returned",
+        );
+      return response.data;
+    },
+    onMutate: async ({ body, threadId }) => {
+      await queryClient.cancelQueries({ queryKey });
+      const previous =
+        queryClient.getQueryData<DocumentCommentThread[]>(queryKey);
+      const comment = optimisticComment(body);
+      queryClient.setQueryData<DocumentCommentThread[]>(queryKey, (threads) =>
+        threads?.map((thread) =>
+          thread.id === threadId
+            ? { ...thread, comments: [...thread.comments, comment] }
+            : thread,
+        ),
+      );
+      return { optimisticCommentId: comment.id, previous, threadId };
+    },
+    onError: (error, _payload, context) => {
+      queryClient.setQueryData(queryKey, context?.previous);
+      toast.error("Could not add the reply", { description: error.message });
+    },
+    onSuccess: (comment, _payload, context) => {
+      queryClient.setQueryData<DocumentCommentThread[]>(queryKey, (threads) =>
+        threads?.map((thread) =>
+          thread.id === context.threadId
+            ? {
+                ...thread,
+                comments: thread.comments.map((cached) =>
+                  cached.id === context.optimisticCommentId ? comment : cached,
+                ),
+              }
+            : thread,
+        ),
+      );
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey }),
+  });
+  const resolve = useMutation({
+    mutationFn: async ({
+      threadId,
+      resolved,
+    }: {
+      threadId: string;
+      resolved: boolean;
+    }) => {
+      const response = await resolveDocumentCommentAction(
+        documentId,
+        threadId,
+        resolved,
+        workspaceSlug,
+      );
+      if (response.error) throw new Error(response.error.message);
+    },
+    onMutate: async ({ resolved, threadId }) => {
+      await queryClient.cancelQueries({ queryKey });
+      const previous =
+        queryClient.getQueryData<DocumentCommentThread[]>(queryKey);
+      queryClient.setQueryData<DocumentCommentThread[]>(queryKey, (threads) =>
+        threads?.map((thread) =>
+          thread.id === threadId
+            ? {
+                ...thread,
+                resolvedAt: resolved ? new Date().toISOString() : null,
+                resolvedBy: resolved ? session?.user.id ?? null : null,
+              }
+            : thread,
+        ),
+      );
+      return { previous };
+    },
+    onError: (error, _payload, context) => {
+      queryClient.setQueryData(queryKey, context?.previous);
+      toast.error("Could not update the comment", {
+        description: error.message,
+      });
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey }),
+  });
+  return { create, reply, resolve };
 };
 
 export const useRelatedDocuments = (

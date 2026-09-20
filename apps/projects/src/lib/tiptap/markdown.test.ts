@@ -1,9 +1,12 @@
 /* global describe, expect, it -- Jest globals are provided by the projects test runner. */
 
 import { Editor } from "@tiptap/core";
+import Collaboration from "@tiptap/extension-collaboration";
 import { TaskItem, TaskList } from "@tiptap/extension-list";
 import { Slice } from "@tiptap/pm/model";
 import StarterKit from "@tiptap/starter-kit";
+import * as Y from "yjs";
+import { createRichTextExtensions } from "./rich-text-extensions";
 import {
   getRichTextContentType,
   looksLikeMarkdown,
@@ -109,5 +112,61 @@ describe("rich-text Markdown", () => {
     });
 
     editor.destroy();
+  });
+
+  it("preserves aligned tables and the content that follows them on paste", () => {
+    const collaborationDocument = new Y.Doc();
+    const richTextExtensions = createRichTextExtensions({
+      collaborative: true,
+      onMediaFiles: () => {},
+      onMediaRequest: () => {},
+      placeholder: "Type / for commands",
+    });
+    const editor = new Editor({
+      extensions: [
+        ...richTextExtensions,
+        Collaboration.configure({ document: collaborationDocument }),
+      ],
+    });
+    const preventDefault = jest.fn();
+    const markdown = `## Workstream status
+
+| Workstream | Owner | Status |
+| :--------- | :---- | :----- |
+| Editor | Design | In progress |
+
+## Alignment test
+
+| Item | Quantity | Progress |
+| :--- | -------: | :------: |
+| Editor polish | 4 | 75% |
+
+## Final checks
+
+Content after tables must remain intact.`;
+    const event = {
+      clipboardData: { getData: () => markdown },
+      preventDefault,
+    } as unknown as ClipboardEvent;
+
+    const handled = editor.view.someProp("handlePaste", (handler) =>
+      handler(editor.view, event, Slice.empty),
+    );
+    const document = editor.getJSON();
+
+    expect(handled).toBe(true);
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+    expect(
+      document.content.filter((node) => node.type === "table"),
+    ).toHaveLength(2);
+    expect(editor.getText()).toContain("Workstream");
+    expect(editor.getText()).toContain("Editor polish");
+    expect(editor.getText()).toContain("Final checks");
+    expect(editor.getText()).toContain(
+      "Content after tables must remain intact.",
+    );
+
+    editor.destroy();
+    collaborationDocument.destroy();
   });
 });

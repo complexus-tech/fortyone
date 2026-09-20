@@ -44,6 +44,10 @@ type Repository interface {
 	LinkMedia(ctx context.Context, input CoreMediaInput) error
 	UnlinkMedia(ctx context.Context, input CoreMediaInput) (bool, error)
 	AuthorizeMedia(ctx context.Context, input CoreMediaInput) error
+	ListComments(context.Context, uuid.UUID, uuid.UUID, uuid.UUID) ([]CoreCommentThread, error)
+	CreateComment(context.Context, CoreCreateCommentInput) (CoreCommentThread, error)
+	ReplyToComment(context.Context, CoreReplyCommentInput) (CoreComment, error)
+	ResolveComment(context.Context, CoreResolveCommentInput) error
 }
 
 type Service struct {
@@ -202,6 +206,37 @@ func (s *Service) AuthorizeMedia(ctx context.Context, input CoreMediaInput) erro
 		return ErrInvalidInput
 	}
 	return s.repo.AuthorizeMedia(ctx, input)
+}
+
+func (s *Service) ListComments(ctx context.Context, workspaceID, userID, documentID uuid.UUID) ([]CoreCommentThread, error) {
+	if workspaceID == uuid.Nil || userID == uuid.Nil || documentID == uuid.Nil {
+		return nil, ErrInvalidInput
+	}
+	return s.repo.ListComments(ctx, workspaceID, userID, documentID)
+}
+
+func (s *Service) CreateComment(ctx context.Context, input CoreCreateCommentInput) (CoreCommentThread, error) {
+	input.Body = strings.TrimSpace(input.Body)
+	input.Quote = strings.TrimSpace(input.Quote)
+	if input.WorkspaceID == uuid.Nil || input.UserID == uuid.Nil || input.DocumentID == uuid.Nil || input.Body == "" || len([]rune(input.Body)) > 10000 || len([]rune(input.Quote)) > 2000 || input.AnchorStart < 0 || input.AnchorEnd < input.AnchorStart {
+		return CoreCommentThread{}, ErrInvalidInput
+	}
+	return s.repo.CreateComment(ctx, input)
+}
+
+func (s *Service) ReplyToComment(ctx context.Context, input CoreReplyCommentInput) (CoreComment, error) {
+	input.Body = strings.TrimSpace(input.Body)
+	if input.WorkspaceID == uuid.Nil || input.UserID == uuid.Nil || input.DocumentID == uuid.Nil || input.ThreadID == uuid.Nil || input.Body == "" || len([]rune(input.Body)) > 10000 {
+		return CoreComment{}, ErrInvalidInput
+	}
+	return s.repo.ReplyToComment(ctx, input)
+}
+
+func (s *Service) ResolveComment(ctx context.Context, input CoreResolveCommentInput) error {
+	if input.WorkspaceID == uuid.Nil || input.UserID == uuid.Nil || input.DocumentID == uuid.Nil || input.ThreadID == uuid.Nil {
+		return ErrInvalidInput
+	}
+	return s.repo.ResolveComment(ctx, input)
 }
 
 func validVisibility(visibility Visibility) bool {

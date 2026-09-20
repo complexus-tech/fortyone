@@ -1701,6 +1701,41 @@
         "Every queued delivery rechecks active account, workspace membership, team access, and live resource state before sending.",
         "Expo acceptance is an at-least-once transport boundary; DeviceNotRegistered tokens are disabled and provider/network failures retry through Asynq."
       ]
+    },
+    {
+      "version": 197,
+      "slug": "document_comments",
+      "classification": "forward-only",
+      "files": {
+        "up": "000197_document_comments.up.sql",
+        "down": "000197_document_comments.down.sql"
+      },
+      "compatibility": {
+        "schema": "Adds document comment threads and replies with text anchors and resolution state.",
+        "api": "New authenticated document comment endpoints require migration 197. Existing document endpoints remain compatible.",
+        "worker": "No background worker or new environment configuration is required.",
+        "mixed_versions": "Apply the additive schema before deploying the comment-capable API and Projects app."
+      },
+      "rollout": {
+        "sequence": 46,
+        "mode": "schema-first",
+        "steps": [
+          "Apply migration 000197.",
+          "Deploy the API and Projects app, then verify create, reply, resolve, reopen, and document deletion cleanup."
+        ]
+      },
+      "recovery": {
+        "strategy": "forward-fix",
+        "procedure": [
+          "Disable the document comment controls while preserving stored threads and replies.",
+          "Repair API or client behavior forward; do not roll back after comments have been created unless their loss is explicitly accepted."
+        ]
+      },
+      "operational_notes": [
+        "Only authenticated non-guest workspace members with current document access can create, reply to, resolve, or reopen threads.",
+        "Public document links remain read-only and never expose workspace comments.",
+        "Deleting a document cascades to its comment threads and replies."
+      ]
     }
   ]
 }

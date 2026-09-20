@@ -27,6 +27,7 @@ import {
   CopyIcon,
   DeleteIcon,
   DuplicateIcon,
+  Comment01Icon,
   LockKeyholeIcon,
   MoreHorizontalIcon,
   ObjectiveIcon,
@@ -57,6 +58,10 @@ import {
   uploadRichTextMediaFiles,
 } from "@/lib/tiptap/rich-text-media";
 import { RichTextTableMenu } from "@/lib/tiptap/rich-text-table-menu";
+import {
+  CommentHighlights,
+  updateCommentHighlights,
+} from "@/lib/tiptap/comment-highlights";
 import { GoogleDriveFileSection } from "@/modules/google-drive/public/files";
 import { useGoogleDriveDescriptionPaste } from "@/modules/google-drive/public/editor";
 import indexStyles from "./document-index.module.css";
@@ -66,6 +71,7 @@ import {
   useDocumentCollaboration,
 } from "./use-document-collaboration";
 import { DocumentHistory } from "./document-history";
+import { DocumentCommentsPanel } from "./document-comments";
 import { DocumentAccessMenu } from "./document-access-menu";
 import {
   deleteDocumentMediaAction,
@@ -75,6 +81,7 @@ import {
   useArchiveDocument,
   useDeleteDocument,
   useDocument,
+  useDocumentComments,
   useDuplicateDocument,
   useUpdateDocument,
 } from "./hooks";
@@ -82,7 +89,7 @@ import {
   DocumentRelationshipControl,
   RelatedWorkPanel,
 } from "./related-work-panel";
-import type { DocumentUpdate } from "./types";
+import type { DocumentCommentSelection, DocumentUpdate } from "./types";
 import styles from "./document-page.module.css";
 
 const documentAccessLabels = {
@@ -145,6 +152,7 @@ const DocumentPageContent = ({ documentId }: { documentId: string }) => {
   const { withWorkspace, workspaceSlug } = useWorkspacePath();
   const { data: document, isPending } = useDocument(documentId);
   const updateDocument = useUpdateDocument(documentId);
+  const { data: commentThreads = [] } = useDocumentComments(documentId);
   const collaboration = useDocumentCollaboration(
     document?.id ?? "",
     workspaceSlug,
@@ -175,6 +183,9 @@ const DocumentPageContent = ({ documentId }: { documentId: string }) => {
     "workspace:documents:related-work:isExpanded",
     false,
   );
+  const [isCommentsOpen, setIsCommentsOpen] = useState(false);
+  const [commentDraft, setCommentDraft] =
+    useState<DocumentCommentSelection | null>(null);
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const [scrollContainer, setScrollContainer] = useState<HTMLDivElement | null>(
     null,
@@ -187,6 +198,10 @@ const DocumentPageContent = ({ documentId }: { documentId: string }) => {
   const closeRelatedWork = useCallback(() => {
     setIsRelatedWorkOpen(false);
   }, [setIsRelatedWorkOpen]);
+  const closeComments = useCallback(() => {
+    setIsCommentsOpen(false);
+    setCommentDraft(null);
+  }, []);
   const setCreationDialogOpen: Dispatch<SetStateAction<boolean>> = (
     nextOpen,
   ) => {
@@ -277,6 +292,7 @@ const DocumentPageContent = ({ documentId }: { documentId: string }) => {
   const editor = useEditor(
     {
       extensions: [
+        CommentHighlights,
         ...createRichTextExtensions({
           collaborative: Boolean(collaboration.connection),
           onMediaFiles: handleMediaFiles,
@@ -332,6 +348,20 @@ const DocumentPageContent = ({ documentId }: { documentId: string }) => {
       setTitleDraft({ documentId: document.id, value: document.title });
     }
   }, [document, editor, canEditContent, collaboration.connection]);
+
+  useEffect(() => {
+    if (!editor) return;
+    updateCommentHighlights(
+      editor,
+      commentThreads
+        .filter((thread) => !thread.resolvedAt)
+        .map((thread) => ({
+          from: thread.anchorStart,
+          id: thread.id,
+          to: thread.anchorEnd,
+        })),
+    );
+  }, [commentThreads, editor, document?.revision, collaboration.ready]);
 
   useEffect(() => {
     const element = titleRef.current;
@@ -569,6 +599,20 @@ const DocumentPageContent = ({ documentId }: { documentId: string }) => {
               </span>
             ))}
           </Flex>
+          <Button
+            aria-label={`${commentThreads.length} ${commentThreads.length === 1 ? "comment" : "comments"}`}
+            className="gap-1.5"
+            color="tertiary"
+            leftIcon={<Comment01Icon className="size-4" strokeWidth={2} />}
+            onClick={() => {
+              setIsRelatedWorkOpen(false);
+              setIsCommentsOpen(true);
+            }}
+            size="sm"
+            variant="naked"
+          >
+            {commentThreads.length > 0 ? commentThreads.length : "Comments"}
+          </Button>
           {canManageDocument ? (
             <DocumentAccessMenu document={document} />
           ) : (
@@ -649,6 +693,7 @@ const DocumentPageContent = ({ documentId }: { documentId: string }) => {
                     <DocumentRelationshipControl
                       document={document}
                       onShowRelationships={() => {
+                        setIsCommentsOpen(false);
                         setIsRelatedWorkOpen(true);
                       }}
                     />
@@ -676,6 +721,15 @@ const DocumentPageContent = ({ documentId }: { documentId: string }) => {
                     />
                     <Divider className="mb-8" />
                     <TextEditor
+                      bubbleMenuCommentAction={
+                        canEditContent && userRole !== "guest"
+                          ? (selection) => {
+                              setCommentDraft(selection);
+                              setIsRelatedWorkOpen(false);
+                              setIsCommentsOpen(true);
+                            }
+                          : undefined
+                      }
                       bubbleMenuCreateActions={bubbleMenuCreateActions}
                       bubbleMenuShouldShow={shouldShowDocumentTextMenu}
                       className={cn(
@@ -703,9 +757,22 @@ const DocumentPageContent = ({ documentId }: { documentId: string }) => {
           </BoardDividedPanel.MainPanel>
           <BoardDividedPanel.SideBar
             className="h-full!"
-            isExpanded={isDesktop ? isRelatedWorkOpen : false}
+            isExpanded={isDesktop ? isRelatedWorkOpen || isCommentsOpen : false}
           >
-            <RelatedWorkPanel document={document} onClose={closeRelatedWork} />
+            {isCommentsOpen ? (
+              <DocumentCommentsPanel
+                documentId={document.id}
+                draft={commentDraft}
+                editor={editor}
+                onClose={closeComments}
+                onDraftChange={setCommentDraft}
+              />
+            ) : (
+              <RelatedWorkPanel
+                document={document}
+                onClose={closeRelatedWork}
+              />
+            )}
           </BoardDividedPanel.SideBar>
         </BoardDividedPanel>
       </Box>

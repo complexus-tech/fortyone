@@ -100,3 +100,32 @@ export type DocumentRevision = {
   createdAt: string;
 };
 export type CollaborationSession = { token: string; name: string };
+
+export type DocumentComment = {
+  id: string;
+  body: string;
+  createdBy: string;
+  authorName: string;
+  authorAvatar: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type DocumentCommentThread = {
+  id: string;
+  documentId: string;
+  quote: string;
+  anchorStart: number;
+  anchorEnd: number;
+  createdBy: string;
+  resolvedAt: string | null;
+  resolvedBy: string | null;
+  createdAt: string;
+  comments: DocumentComment[];
+};
+
+export type DocumentCommentSelection = {
+  from: number;
+  text: string;
+  to: number;
+};

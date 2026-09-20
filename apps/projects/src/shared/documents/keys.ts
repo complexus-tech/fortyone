@@ -11,6 +11,8 @@ export const documentKeys = {
     [...documentKeys.all(workspaceSlug), "detail"] as const,
   detail: (workspaceSlug: string, documentId: string) =>
     [...documentKeys.details(workspaceSlug), documentId] as const,
+  comments: (workspaceSlug: string, documentId: string) =>
+    [...documentKeys.detail(workspaceSlug, documentId), "comments"] as const,
   related: (
     workspaceSlug: string,
     entityType: "story" | "objective",

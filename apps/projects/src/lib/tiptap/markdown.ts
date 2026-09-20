@@ -7,6 +7,7 @@ import TableHeader from "@tiptap/extension-table-header";
 import TableRow from "@tiptap/extension-table-row";
 import { Markdown, MarkdownManager } from "@tiptap/markdown";
 import { Plugin } from "@tiptap/pm/state";
+import { marked } from "marked";
 import { createRichTextStarterKit } from "./starter-kit";
 
 const MARKDOWN_BLOCK_PATTERN =
@@ -29,21 +30,23 @@ export const getRichTextContentType = (
     ? ("markdown" as const)
     : ("html" as const);
 
+const createMarkdownDocumentExtensions = () => [
+  createRichTextStarterKit(),
+  TaskList.configure({}),
+  TaskItem.configure({ nested: true }),
+  Link.configure({ autolink: true }),
+  Table.configure({}),
+  TableRow.configure({}),
+  TableHeader.configure({}),
+  TableCell.configure({}),
+  Markdown.configure({ markedOptions: { gfm: true } }),
+];
+
 export const RichTextMarkdown = Markdown.configure({
   markedOptions: { gfm: true },
 });
 
-export const markdownDocumentExtensions = [
-  createRichTextStarterKit(),
-  TaskList,
-  TaskItem.configure({ nested: true }),
-  Link.configure({ autolink: true }),
-  Table,
-  TableRow,
-  TableHeader,
-  TableCell,
-  RichTextMarkdown,
-];
+export const markdownDocumentExtensions = createMarkdownDocumentExtensions();
 export const markdownManager = new MarkdownManager({
   extensions: markdownDocumentExtensions,
   markedOptions: { gfm: true },
@@ -54,6 +57,26 @@ export const markdownToRichTextHTML = (markdown: string) =>
 
 export const richTextHTMLToMarkdown = (html: string) =>
   markdownManager.serialize(generateJSON(html, markdownDocumentExtensions));
+
+const markdownPasteHTML = (markdown: string) => {
+  const template = document.createElement("template");
+  template.innerHTML = marked.parse(markdown, { async: false, gfm: true });
+
+  template.content.querySelectorAll("li").forEach((item) => {
+    const checkbox = item.querySelector(":scope > input[type='checkbox']");
+    if (!checkbox) return;
+
+    item.dataset.type = "taskItem";
+    item.dataset.checked = String(
+      checkbox.hasAttribute("checked") ||
+        (checkbox as HTMLInputElement).checked,
+    );
+    item.parentElement?.setAttribute("data-type", "taskList");
+    checkbox.remove();
+  });
+
+  return template.innerHTML;
+};
 
 export const RichTextMarkdownPaste = Extension.create({
   name: "richTextMarkdownPaste",
@@ -68,9 +91,12 @@ export const RichTextMarkdownPaste = Extension.create({
             const markdown = event.clipboardData?.getData("text/plain");
             if (!markdown || !looksLikeMarkdown(markdown)) return false;
 
-            const inserted = editor.commands.insertContent(markdown, {
-              contentType: "markdown",
-            });
+            // Parse the clipboard independently of the live editor's Markdown
+            // manager. Its extension state is shared with the collaborative
+            // editor and can lose nested table content after earlier blocks.
+            const inserted = editor.commands.insertContent(
+              markdownPasteHTML(markdown),
+            );
             if (!inserted) return false;
 
             event.preventDefault();

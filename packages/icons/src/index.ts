@@ -50,6 +50,8 @@ export * from "./calendar-plus";
 export * from "./attachment";
 export * from "./attachment-square";
 export * from "./comment";
+export * from "./comment-01";
+export * from "./comment-add-01";
 export * from "./updates";
 export * from "./arrow-up";
 export * from "./bell";

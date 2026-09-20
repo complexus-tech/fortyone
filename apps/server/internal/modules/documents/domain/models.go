@@ -121,6 +121,55 @@ type MediaInput struct {
 	AttachmentID uuid.UUID
 }
 
+type Comment struct {
+	ID           uuid.UUID
+	Body         string
+	CreatedBy    uuid.UUID
+	AuthorName   string
+	AuthorAvatar *string
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+}
+
+type CommentThread struct {
+	ID          uuid.UUID
+	DocumentID  uuid.UUID
+	Quote       string
+	AnchorStart int32
+	AnchorEnd   int32
+	CreatedBy   uuid.UUID
+	ResolvedAt  *time.Time
+	ResolvedBy  *uuid.UUID
+	CreatedAt   time.Time
+	Comments    []Comment
+}
+
+type CreateCommentInput struct {
+	WorkspaceID uuid.UUID
+	UserID      uuid.UUID
+	DocumentID  uuid.UUID
+	Body        string
+	Quote       string
+	AnchorStart int32
+	AnchorEnd   int32
+}
+
+type ReplyCommentInput struct {
+	WorkspaceID uuid.UUID
+	UserID      uuid.UUID
+	DocumentID  uuid.UUID
+	ThreadID    uuid.UUID
+	Body        string
+}
+
+type ResolveCommentInput struct {
+	WorkspaceID uuid.UUID
+	UserID      uuid.UUID
+	DocumentID  uuid.UUID
+	ThreadID    uuid.UUID
+	Resolved    bool
+}
+
 // Revision is an immutable content snapshot; access always follows the current document.
 type Revision struct {
 	Revision    int64      `json:"revision"`

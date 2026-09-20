@@ -11,12 +11,14 @@ import (
 )
 
 type Querier interface {
+	AddDocumentCommentReply(ctx context.Context, arg AddDocumentCommentReplyParams) (AddDocumentCommentReplyRow, error)
 	ArchiveOwnedDocument(ctx context.Context, arg ArchiveOwnedDocumentParams) (uuid.UUID, error)
 	AuthorizeAccessibleDocumentMedia(ctx context.Context, arg AuthorizeAccessibleDocumentMediaParams) (uuid.UUID, error)
 	AuthorizePublicDocumentMedia(ctx context.Context, arg AuthorizePublicDocumentMediaParams) (uuid.UUID, error)
 	CopyWorkspaceDocumentMedia(ctx context.Context, arg CopyWorkspaceDocumentMediaParams) error
 	CreateDocument(ctx context.Context, arg CreateDocumentParams) (CreateDocumentRow, error)
 	CreateDocumentCollaborationSession(ctx context.Context, arg CreateDocumentCollaborationSessionParams) error
+	CreateDocumentCommentThread(ctx context.Context, arg CreateDocumentCommentThreadParams) (CreateDocumentCommentThreadRow, error)
 	CreateDocumentWithID(ctx context.Context, arg CreateDocumentWithIDParams) (CreateDocumentWithIDRow, error)
 	DeleteEditableDocumentRelationship(ctx context.Context, arg DeleteEditableDocumentRelationshipParams) (uuid.UUID, error)
 	DeleteExpiredDocumentCollaborationSessions(ctx context.Context) error
@@ -40,11 +42,13 @@ type Querier interface {
 	ListAccessibleDocumentMembers(ctx context.Context, arg ListAccessibleDocumentMembersParams) ([]ListAccessibleDocumentMembersRow, error)
 	ListAccessibleDocuments(ctx context.Context, arg ListAccessibleDocumentsParams) ([]ListAccessibleDocumentsRow, error)
 	ListAccessibleDocumentsForRelationship(ctx context.Context, arg ListAccessibleDocumentsForRelationshipParams) ([]ListAccessibleDocumentsForRelationshipRow, error)
+	ListDocumentComments(ctx context.Context, arg ListDocumentCommentsParams) ([]ListDocumentCommentsRow, error)
 	ListDocumentRevisions(ctx context.Context, arg ListDocumentRevisionsParams) ([]ListDocumentRevisionsRow, error)
 	ListOrphanedDocumentMediaCandidates(ctx context.Context, arg ListOrphanedDocumentMediaCandidatesParams) ([]uuid.UUID, error)
 	ListVisibleDocumentRelationships(ctx context.Context, arg ListVisibleDocumentRelationshipsParams) ([]ListVisibleDocumentRelationshipsRow, error)
 	LockOwnedDocumentForDelete(ctx context.Context, arg LockOwnedDocumentForDeleteParams) (uuid.UUID, error)
 	RestoreDocumentRevision(ctx context.Context, arg RestoreDocumentRevisionParams) (uuid.UUID, error)
+	SetDocumentCommentResolved(ctx context.Context, arg SetDocumentCommentResolvedParams) (uuid.UUID, error)
 	SetDocumentPublicToken(ctx context.Context, arg SetDocumentPublicTokenParams) error
 	SetOwnedDocumentVisibility(ctx context.Context, arg SetOwnedDocumentVisibilityParams) (uuid.UUID, error)
 	UnlinkEditableDocumentMedia(ctx context.Context, arg UnlinkEditableDocumentMediaParams) (uuid.UUID, error)

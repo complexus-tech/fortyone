@@ -22,6 +22,7 @@ import {
   CancelIcon,
   CheckIcon,
   CheckListIcon,
+  CommentAdd01Icon,
   ArrowDown2Icon,
   CodeIcon,
   DeleteIcon,
@@ -73,6 +74,12 @@ export type BubbleMenuCreateAction = {
   label: string;
   onSelect: (selectedText: string) => void;
 };
+
+export type BubbleMenuCommentAction = (selection: {
+  from: number;
+  text: string;
+  to: number;
+}) => void;
 
 export type BubbleMenuPanel = "text" | "create" | "color" | "link" | null;
 
@@ -311,7 +318,7 @@ const ColorMenu = ({
     </Menu.Button>
     <Menu.Items
       align="center"
-      className="border-border-strong bg-surface-elevated w-[22rem] border-[0.5px] p-4 shadow-xl dark:bg-surface-elevated"
+      className="border-border-strong bg-surface-elevated w-[22rem] border-[0.5px] px-4 pt-3 pb-4 shadow-xl dark:bg-surface-elevated"
       onCloseAutoFocus={(event) => {
         event.preventDefault();
         editor.commands.focus();
@@ -401,11 +408,13 @@ const getLinkHref = (editor: Editor): string => {
 
 export const BubbleMenu = ({
   activeMenu,
+  commentAction,
   createActions = [],
   editor,
   setActiveMenu,
 }: {
   activeMenu: BubbleMenuPanel;
+  commentAction?: BubbleMenuCommentAction;
   createActions?: readonly BubbleMenuCreateAction[];
   editor: Editor;
   setActiveMenu: Dispatch<SetStateAction<BubbleMenuPanel>>;
@@ -451,6 +460,24 @@ export const BubbleMenu = ({
           editorState={editorState}
           setActiveMenu={setActiveMenu}
         />
+        {commentAction ? (
+          <ButtonBase
+            aria-label="Comment"
+            className="hover:bg-state-active focus-visible:bg-state-active h-8 gap-1.5 px-2 text-sm font-medium"
+            color="tertiary"
+            leftIcon={<CommentAdd01Icon className="size-4" strokeWidth={2} />}
+            onMouseDown={preserveEditorSelection}
+            onClick={() => {
+              const { from, to } = editor.state.selection;
+              commentAction({ from, text: getSelectedText(editor), to });
+            }}
+            size="sm"
+            type="button"
+            variant="naked"
+          >
+            Comment
+          </ButtonBase>
+        ) : null}
         <span className="bg-border-strong mx-1 h-5 w-px" />
         <Tooltip title="Bold">
           <Button

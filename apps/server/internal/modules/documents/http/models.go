@@ -89,6 +89,44 @@ type AppDocumentMedia struct {
 	UploadedBy uuid.UUID `json:"uploadedBy"`
 }
 
+type AppDocumentComment struct {
+	ID           uuid.UUID `json:"id"`
+	Body         string    `json:"body"`
+	CreatedBy    uuid.UUID `json:"createdBy"`
+	AuthorName   string    `json:"authorName"`
+	AuthorAvatar *string   `json:"authorAvatar"`
+	CreatedAt    time.Time `json:"createdAt"`
+	UpdatedAt    time.Time `json:"updatedAt"`
+}
+
+type AppDocumentCommentThread struct {
+	ID          uuid.UUID            `json:"id"`
+	DocumentID  uuid.UUID            `json:"documentId"`
+	Quote       string               `json:"quote"`
+	AnchorStart int32                `json:"anchorStart"`
+	AnchorEnd   int32                `json:"anchorEnd"`
+	CreatedBy   uuid.UUID            `json:"createdBy"`
+	ResolvedAt  *time.Time           `json:"resolvedAt"`
+	ResolvedBy  *uuid.UUID           `json:"resolvedBy"`
+	CreatedAt   time.Time            `json:"createdAt"`
+	Comments    []AppDocumentComment `json:"comments"`
+}
+
+type AppCreateDocumentComment struct {
+	Body        string `json:"body"`
+	Quote       string `json:"quote"`
+	AnchorStart int32  `json:"anchorStart"`
+	AnchorEnd   int32  `json:"anchorEnd"`
+}
+
+type AppDocumentCommentReply struct {
+	Body string `json:"body"`
+}
+
+type AppResolveDocumentComment struct {
+	Resolved bool `json:"resolved"`
+}
+
 func toAppDocument(document documents.CoreDocument, canMutate bool) AppDocument {
 	sharedWith := make([]AppDocumentMember, len(document.SharedWith))
 	for i, member := range document.SharedWith {
@@ -149,4 +187,33 @@ func toAppDocumentMedia(file attachments.FileInfo, stableURL string) AppDocument
 		CreatedAt:  file.CreatedAt,
 		UploadedBy: file.UploadedBy,
 	}
+}
+
+func toAppDocumentComment(comment documents.CoreComment) AppDocumentComment {
+	return AppDocumentComment{
+		ID: comment.ID, Body: comment.Body, CreatedBy: comment.CreatedBy,
+		AuthorName: comment.AuthorName, AuthorAvatar: comment.AuthorAvatar,
+		CreatedAt: comment.CreatedAt, UpdatedAt: comment.UpdatedAt,
+	}
+}
+
+func toAppDocumentCommentThread(thread documents.CoreCommentThread) AppDocumentCommentThread {
+	comments := make([]AppDocumentComment, len(thread.Comments))
+	for index, comment := range thread.Comments {
+		comments[index] = toAppDocumentComment(comment)
+	}
+	return AppDocumentCommentThread{
+		ID: thread.ID, DocumentID: thread.DocumentID, Quote: thread.Quote,
+		AnchorStart: thread.AnchorStart, AnchorEnd: thread.AnchorEnd,
+		CreatedBy: thread.CreatedBy, ResolvedAt: thread.ResolvedAt,
+		ResolvedBy: thread.ResolvedBy, CreatedAt: thread.CreatedAt, Comments: comments,
+	}
+}
+
+func toAppDocumentCommentThreads(threads []documents.CoreCommentThread) []AppDocumentCommentThread {
+	result := make([]AppDocumentCommentThread, len(threads))
+	for index, thread := range threads {
+		result[index] = toAppDocumentCommentThread(thread)
+	}
+	return result
 }

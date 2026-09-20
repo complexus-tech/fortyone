@@ -274,6 +274,12 @@ ul[data-type="taskList"] > li ol[data-type="taskList"] {
   @apply my-4 rounded-md;
 }
 
+.rich-document-editor .document-comment-highlight {
+  @apply bg-warning/10 decoration-warning underline decoration-2 underline-offset-4;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
 .rich-document-editor .tiptap :is(h1, h2, h3, h4, h5, h6) {
   @apply font-semibold;
 }

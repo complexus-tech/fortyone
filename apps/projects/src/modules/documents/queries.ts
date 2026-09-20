@@ -3,6 +3,7 @@ import type { WorkspaceCtx } from "@/lib/http";
 import type { ApiResponse } from "@/types";
 import type {
   DocumentRelationType,
+  DocumentCommentThread,
   DocumentRevision,
   WorkspaceDocument,
   WorkspaceDocumentSummary,
@@ -30,6 +31,17 @@ export const getDocument = async (documentId: string, ctx: WorkspaceCtx) => {
     ctx,
   );
   return response.data!;
+};
+
+export const getDocumentComments = async (
+  documentId: string,
+  ctx: WorkspaceCtx,
+) => {
+  const response = await get<ApiResponse<DocumentCommentThread[]>>(
+    `documents/${documentId}/comments`,
+    ctx,
+  );
+  return response.data ?? [];
 };
 
 export const getRelatedDocuments = async (

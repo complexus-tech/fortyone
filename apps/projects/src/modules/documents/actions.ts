@@ -9,6 +9,8 @@ import type {
   DocumentCreate,
   DocumentMedia,
   DocumentRelationType,
+  DocumentComment,
+  DocumentCommentThread,
   DocumentUpdate,
   RelatedWork,
   WorkspaceDocument,
@@ -70,6 +72,61 @@ export const updateDocumentAction = async (
     return await put<DocumentUpdate, ApiResponse<WorkspaceDocument>>(
       `documents/${documentId}`,
       payload,
+      await workspaceContext(workspaceSlug),
+    );
+  } catch (error) {
+    return getApiError(error);
+  }
+};
+
+export const createDocumentCommentAction = async (
+  documentId: string,
+  payload: {
+    body: string;
+    quote: string;
+    anchorStart: number;
+    anchorEnd: number;
+  },
+  workspaceSlug: string,
+) => {
+  try {
+    return await post<typeof payload, ApiResponse<DocumentCommentThread>>(
+      `documents/${documentId}/comments`,
+      payload,
+      await workspaceContext(workspaceSlug),
+    );
+  } catch (error) {
+    return getApiError(error);
+  }
+};
+
+export const replyToDocumentCommentAction = async (
+  documentId: string,
+  threadId: string,
+  body: string,
+  workspaceSlug: string,
+) => {
+  try {
+    return await post<{ body: string }, ApiResponse<DocumentComment>>(
+      `documents/${documentId}/comments/${threadId}/replies`,
+      { body },
+      await workspaceContext(workspaceSlug),
+    );
+  } catch (error) {
+    return getApiError(error);
+  }
+};
+
+export const resolveDocumentCommentAction = async (
+  documentId: string,
+  threadId: string,
+  resolved: boolean,
+  workspaceSlug: string,
+) => {
+  try {
+    return await put<{ resolved: boolean }, ApiResponse<null>>(
+      `documents/${documentId}/comments/${threadId}`,
+      { resolved },
       await workspaceContext(workspaceSlug),
     );
   } catch (error) {
