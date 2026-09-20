@@ -69,9 +69,13 @@ export const useNewStoryDialogLifecycle = <
   }, [currentTeamId, dispatch, statusId, storyForm.statusId, teamStatuses]);
 
   useEffect(() => {
-    if (!teams.some((team) => team.id === activeTeamId)) {
-      setActiveTeam(firstTeam);
-    }
+    if (
+      teams.length === 0 ||
+      teams.some((team) => team.id === activeTeamId) ||
+      firstTeam?.id === activeTeamId
+    )
+      return;
+    setActiveTeam(firstTeam);
   }, [activeTeamId, firstTeam, setActiveTeam, teams]);
 
   useEffect(() => {
