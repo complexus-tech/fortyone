@@ -6,7 +6,7 @@
   position: absolute;
   top: 7rem;
   left: 1.5rem;
-  width: 11rem;
+  width: clamp(11rem, 16cqi, 18rem);
   z-index: 20;
 }
 .compact {

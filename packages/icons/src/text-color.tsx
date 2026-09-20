@@ -4,7 +4,7 @@ import type { Icon } from "./types";
 // Hugeicons TextColorIcon, Stroke Rounded, copied from
 // @hugeicons/core-free-icons@4.3.4 (MIT license).
 export const TextColorIcon = (props: Icon) => {
-  const { className, strokeWidth = 1.5, ...rest } = props;
+  const { className, strokeWidth = 2, ...rest } = props;
   return (
     <svg
       {...rest}

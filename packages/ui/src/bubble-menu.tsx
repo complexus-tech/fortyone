@@ -19,6 +19,7 @@ import "@tiptap/extension-text-style";
 import { useEditorState, type Editor } from "@tiptap/react";
 import {
   BoldIcon,
+  CancelIcon,
   CheckIcon,
   CheckListIcon,
   ArrowDown2Icon,
@@ -107,19 +108,24 @@ type BubbleMenuEditorState = ReturnType<typeof getBubbleMenuEditorState>;
 
 const highlightColors = [
   { color: "#FDE68A", label: "Yellow" },
-  { color: "#BFDBFE", label: "Blue" },
-  { color: "#BBF7D0", label: "Green" },
   { color: "#FED7AA", label: "Orange" },
-  { color: "#E9D5FF", label: "Purple" },
+  { color: "#FECACA", label: "Red" },
+  { color: "#BFDBFE", label: "Blue" },
+  { color: "#C4B5FD", label: "Violet" },
+  { color: "#FBCFE8", label: "Pink" },
+  { color: "#BBF7D0", label: "Green" },
+  { color: "#D1D5DB", label: "Gray" },
 ] as const;
 
 const textColors = [
-  { color: "#475569", label: "Slate" },
-  { color: "#DC2626", label: "Red" },
-  { color: "#C2410C", label: "Orange" },
-  { color: "#15803D", label: "Green" },
-  { color: "#2563EB", label: "Blue" },
-  { color: "#7C3AED", label: "Purple" },
+  { color: "#EF4444", label: "Red" },
+  { color: "#F97316", label: "Orange" },
+  { color: "#EAB308", label: "Yellow" },
+  { color: "#3B82F6", label: "Blue" },
+  { color: "#8B5CF6", label: "Violet" },
+  { color: "#EC4899", label: "Pink" },
+  { color: "#22C55E", label: "Green" },
+  { color: "#94A3B8", label: "Slate" },
 ] as const;
 
 const preserveEditorSelection = (event: ReactMouseEvent) => {
@@ -300,90 +306,88 @@ const ColorMenu = ({
         size="sm"
         variant="naked"
       >
-        <TextColorIcon />
+        <TextColorIcon strokeWidth={2} />
       </Button>
     </Menu.Button>
     <Menu.Items
       align="center"
-      className="border-border-strong bg-surface-elevated w-56 border-[0.5px] p-1.5 shadow-xl dark:bg-surface-elevated"
+      className="border-border-strong bg-surface-elevated w-[22rem] border-[0.5px] p-4 shadow-xl dark:bg-surface-elevated"
       onCloseAutoFocus={(event) => {
         event.preventDefault();
         editor.commands.focus();
       }}
       portal={false}
     >
-      <Menu.Group className="px-0">
-        <Text className="text-text-muted px-2 pt-1 pb-2" fontSize="sm">
-          Text color
-        </Text>
-        <div className="grid grid-cols-6 gap-1 px-1 pb-2">
-          {textColors.map(({ color, label }) => (
-            <Menu.Item
-              aria-label={`${label} text`}
-              className={cn(
-                "focus-visible:ring-ring flex size-8 items-center justify-center rounded-md p-0 outline-none focus-visible:ring-2",
-                editorState.textColor.toLowerCase() === color.toLowerCase() &&
-                  "bg-state-active",
-              )}
-              key={color}
-              onSelect={() => {
-                editor.chain().focus().setColor(color).run();
-              }}
-              title={`${label} text`}
-            >
-              <span
-                aria-hidden="true"
-                className="border-border size-4 rounded-full border"
-                style={{ backgroundColor: color }}
-              />
-            </Menu.Item>
-          ))}
-        </div>
+      <Menu.Group className="space-y-4 px-0">
+        <section>
+          <Text
+            className="text-text-muted mb-2 text-[0.95rem]"
+            fontWeight="medium"
+          >
+            Text colors
+          </Text>
+          <div className="grid grid-cols-8 gap-2">
+            {textColors.map(({ color, label }) => (
+              <Menu.Item
+                aria-label={`${label} text`}
+                className={cn(
+                  "border-border hover:bg-state-hover focus-visible:ring-ring flex size-8 items-center justify-center rounded-lg border-[0.5px] p-0 text-lg font-semibold outline-none focus-visible:ring-2",
+                  editorState.textColor.toLowerCase() === color.toLowerCase() &&
+                    "ring-primary bg-state-active ring-2",
+                )}
+                key={color}
+                onSelect={() => {
+                  editor.chain().focus().setColor(color).run();
+                }}
+                title={`${label} text`}
+              >
+                <span aria-hidden="true" style={{ color }}>
+                  A
+                </span>
+              </Menu.Item>
+            ))}
+          </div>
+        </section>
+        <section>
+          <Text
+            className="text-text-muted mb-2 text-[0.95rem]"
+            fontWeight="medium"
+          >
+            Text highlights
+          </Text>
+          <div className="grid grid-cols-8 gap-2">
+            {highlightColors.map(({ color, label }) => (
+              <Menu.Item
+                aria-label={`${label} highlight`}
+                className={cn(
+                  "hover:bg-state-hover focus-visible:ring-ring flex size-8 items-center justify-center rounded-full p-0 outline-none focus-visible:ring-2",
+                  editor.isActive("highlight", { color }) &&
+                    "ring-primary bg-state-active ring-2",
+                )}
+                key={color}
+                onSelect={() => {
+                  editor.chain().focus().setHighlight({ color }).run();
+                }}
+                title={`${label} highlight`}
+              >
+                <span
+                  aria-hidden="true"
+                  className="border-border size-7 rounded-full border-[0.5px]"
+                  style={{ backgroundColor: color }}
+                />
+              </Menu.Item>
+            ))}
+          </div>
+        </section>
         <Menu.Item
-          className="hover:bg-state-active focus-visible:bg-state-active flex w-full items-center gap-2 rounded-md px-2 py-2 text-left outline-none"
-          disabled={!editorState.textColor}
+          className="border-border hover:bg-state-active focus-visible:bg-state-active flex h-10 w-full items-center justify-center gap-2 rounded-lg border-[0.5px] px-3 text-center outline-none"
+          disabled={!editorState.highlight && !editorState.textColor}
           onSelect={() => {
-            editor.chain().focus().unsetColor().run();
+            editor.chain().focus().unsetColor().unsetHighlight().run();
           }}
         >
-          <DeleteIcon className="h-4" />
-          Reset text color
-        </Menu.Item>
-        <Menu.Separator />
-        <Text className="text-text-muted px-2 pt-1 pb-2" fontSize="sm">
-          Highlight
-        </Text>
-        <div className="grid grid-cols-6 gap-1 px-1 pb-2">
-          {highlightColors.map(({ color, label }) => (
-            <Menu.Item
-              aria-label={`${label} highlight`}
-              className={cn(
-                "focus-visible:ring-ring flex size-8 items-center justify-center rounded-md p-0 outline-none focus-visible:ring-2",
-                editor.isActive("highlight", { color }) && "bg-state-active",
-              )}
-              key={color}
-              onSelect={() => {
-                editor.chain().focus().setHighlight({ color }).run();
-              }}
-              title={`${label} highlight`}
-            >
-              <span
-                aria-hidden="true"
-                className="border-border size-4 rounded-full border"
-                style={{ backgroundColor: color }}
-              />
-            </Menu.Item>
-          ))}
-        </div>
-        <Menu.Item
-          className="hover:bg-state-active focus-visible:bg-state-active flex w-full items-center gap-2 rounded-md px-2 py-2 text-left outline-none"
-          disabled={!editorState.highlight}
-          onSelect={() => {
-            editor.chain().focus().unsetHighlight().run();
-          }}
-        >
-          <DeleteIcon className="h-4" />
-          Remove highlight
+          <CancelIcon className="size-4" />
+          Remove color
         </Menu.Item>
       </Menu.Group>
     </Menu.Items>
