@@ -184,7 +184,7 @@ func TestFortyOneToolExecutorMyTasksSetsActorAndFiltersUnjoinedTeams(t *testing.
 
 	raw, err := executor.Execute(context.Background(), scope, ToolCall{
 		Name:      toolListMyTasks,
-		Arguments: json.RawMessage(`{"limit":null}`),
+		Arguments: json.RawMessage(`{"limit":null,"assigned_by":null}`),
 	})
 	if err != nil {
 		t.Fatalf("execute list my tasks: %v", err)

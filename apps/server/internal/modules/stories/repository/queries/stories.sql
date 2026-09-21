@@ -251,6 +251,11 @@ SELECT
     story.workspace_id,
     story.status_id,
     story.assignee_id,
+    assignment_actor.user_id AS assigned_by_id,
+    assignment_actor.username AS assigned_by_username,
+    assignment_actor.full_name AS assigned_by_full_name,
+    assignment_actor.is_active AS assigned_by_is_active,
+    assignment_actor.is_system AS assigned_by_is_system,
     CAST((SELECT COUNT(*) FROM story_collaborators AS collaborator WHERE collaborator.story_id = story.id) AS integer) AS collaborator_count,
     CAST(ARRAY(SELECT collaborator.user_id FROM story_collaborators AS collaborator WHERE collaborator.story_id = story.id ORDER BY collaborator.created_at, collaborator.user_id) AS uuid[]) AS collaborator_ids,
     story.reporter_id,
@@ -290,6 +295,37 @@ LEFT JOIN sprints AS sprint
 LEFT JOIN team_estimation_settings AS estimation
     ON estimation.team_id = story.team_id
    AND estimation.workspace_id = story.workspace_id
+LEFT JOIN LATERAL (
+    SELECT candidate.actor_id, candidate.assigned_at
+    FROM (
+        SELECT
+            activity.user_id AS actor_id,
+            activity.created_at AS assigned_at,
+            1 AS source_priority
+        FROM story_activities AS activity
+        WHERE activity.story_id = story.id
+          AND activity.workspace_id = story.workspace_id
+          AND activity.activity_type = 'update'
+          AND activity.field_changed = 'assignee_id'
+          AND activity.new_value = to_jsonb(story.assignee_id)
+
+        UNION ALL
+
+        SELECT
+            event.actor_id,
+            event.occurred_at AS assigned_at,
+            2 AS source_priority
+        FROM story_mutation_events AS event
+        WHERE event.story_id = story.id
+          AND event.workspace_id = story.workspace_id
+          AND event.event_type = 'story.created'
+          AND event.payload ->> 'assigneeId' = CAST(story.assignee_id AS text)
+    ) AS candidate
+    ORDER BY candidate.assigned_at DESC, candidate.source_priority
+    LIMIT 1
+) AS assignment ON story.assignee_id IS NOT NULL
+LEFT JOIN users AS assignment_actor
+    ON assignment_actor.user_id = assignment.actor_id
 WHERE story.workspace_id = sqlc.arg(workspace_id)
   AND story.deleted_at IS NULL
   AND story.parent_id IS NULL

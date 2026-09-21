@@ -39,6 +39,8 @@ func TestDefaultInstructionsRouteCurrentPersonalWorkToTeamScope(t *testing.T) {
 		"list_team_work with assignee_scope me and mode in_progress",
 		"if multiple teams are plausible, ask which team",
 		"list_my_tasks is only the broader active-assignment list across joined teams",
+		"call list_my_tasks with assigned_by set to that name",
+		"never substitute a task creator or reporter",
 		"must not be described as work performed today",
 		"not the person who moved each task to Done",
 		"assignees_truncated is true",

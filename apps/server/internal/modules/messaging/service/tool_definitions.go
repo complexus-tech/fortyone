@@ -24,6 +24,14 @@ func fortyOneToolDefinitions() []ToolDefinition {
 			"description": "A team UUID returned by list_teams, or null for all joined teams.",
 		}
 	}
+	nullableAssignedBy := func() map[string]any {
+		return map[string]any{
+			"type":        []string{"string", "null"},
+			"description": "Optional assigner name or username. Use this for questions such as 'what did Daria assign to me?'.",
+			"minLength":   1,
+			"maxLength":   100,
+		}
+	}
 
 	return []ToolDefinition{
 		{
@@ -39,8 +47,9 @@ func fortyOneToolDefinitions() []ToolDefinition {
 			Description: "List active tasks assigned to the current user across only their joined teams. Completed, cancelled, deleted, and archived work is excluded.",
 			Strict:      true,
 			Parameters: strictObjectSchema(map[string]any{
-				"limit": nullableLimit(),
-			}, []string{"limit"}),
+				"limit":       nullableLimit(),
+				"assigned_by": nullableAssignedBy(),
+			}, []string{"limit", "assigned_by"}),
 		},
 		{
 			Type:        "function",
@@ -215,6 +224,9 @@ type taskResult struct {
 	AssigneeID               *uuid.UUID `json:"assignee_id"`
 	AssigneeName             string     `json:"assignee_name"`
 	AssigneeUsername         string     `json:"assignee_username"`
+	AssignedByID             *uuid.UUID `json:"assigned_by_id,omitempty"`
+	AssignedByName           string     `json:"assigned_by_name,omitempty"`
+	AssignedByUsername       string     `json:"assigned_by_username,omitempty"`
 	Priority                 string     `json:"priority"`
 	EstimateLabel            *string    `json:"estimate_label"`
 	EstimateValue            *int16     `json:"estimate_value"`
@@ -231,10 +243,23 @@ type taskResult struct {
 	UpdatedAt                time.Time  `json:"updated_at"`
 }
 
+type assignmentActorResult struct {
+	Name     string `json:"name"`
+	Username string `json:"username,omitempty"`
+}
+
+type assignmentFilterResult struct {
+	Query      string                  `json:"query"`
+	Status     string                  `json:"status"`
+	Resolved   *assignmentActorResult  `json:"resolved,omitempty"`
+	Candidates []assignmentActorResult `json:"candidates,omitempty"`
+}
+
 type listTasksResult struct {
-	Total     int          `json:"total"`
-	Truncated bool         `json:"truncated"`
-	Tasks     []taskResult `json:"tasks"`
+	Total            int                     `json:"total"`
+	Truncated        bool                    `json:"truncated"`
+	AssignmentFilter *assignmentFilterResult `json:"assignment_filter,omitempty"`
+	Tasks            []taskResult            `json:"tasks"`
 }
 
 type searchStoryResult struct {

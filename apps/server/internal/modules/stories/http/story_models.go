@@ -100,6 +100,7 @@ type AppStoryList struct {
 	Status                   *uuid.UUID           `json:"statusId"`
 	AssigneeID               *uuid.UUID           `json:"assigneeId"`
 	Assignee                 *AppUserSummary      `json:"assignee"`
+	AssignedBy               *AppUserSummary      `json:"assignedBy,omitempty"`
 	Collaborators            []AppUserSummary     `json:"collaborators"`
 	CollaboratorCount        int                  `json:"collaboratorCount"`
 	ReporterID               *uuid.UUID           `json:"reporterId"`
@@ -240,6 +241,7 @@ func toAppStoryListItem(story stories.CoreStoryList, usersByID map[uuid.UUID]App
 		Status:                   story.Status,
 		AssigneeID:               story.Assignee,
 		Assignee:                 findAppUserSummary(usersByID, story.Assignee),
+		AssignedBy:               findAssignmentActorSummary(usersByID, story.AssignedBy),
 		CollaboratorCount:        story.CollaboratorCount,
 		Collaborators:            findAppUserSummaries(usersByID, story.Collaborators),
 		ReporterID:               story.Reporter,
@@ -257,6 +259,23 @@ func toAppStoryListItem(story stories.CoreStoryList, usersByID map[uuid.UUID]App
 		ArchivedAt:               story.ArchivedAt,
 		Labels:                   story.Labels,
 		SubStories:               toAppStories(story.SubStories, usersByID),
+	}
+}
+
+func findAssignmentActorSummary(
+	usersByID map[uuid.UUID]AppUserSummary,
+	actor *stories.AssignmentActor,
+) *AppUserSummary {
+	if actor == nil {
+		return nil
+	}
+	if summary, exists := usersByID[actor.ID]; exists {
+		value := summary
+		return &value
+	}
+	return &AppUserSummary{
+		ID: actor.ID, Username: actor.Username, FullName: actor.FullName,
+		IsActive: actor.IsActive, IsSystem: actor.IsSystem,
 	}
 }
 

@@ -173,6 +173,14 @@ type CoreKeyResultReference struct {
 
 type CoreActivity = storydomain.Activity
 
+type AssignmentFilterResult = storydomain.AssignmentFilterResult
+
+type AssignmentActor = storydomain.AssignmentActor
+
+func FilterStoriesAssignedBy(stories []CoreStoryList, query string) AssignmentFilterResult {
+	return storydomain.FilterStoriesAssignedBy(stories, query)
+}
+
 // CoreActivityWithUser represents an activity with embedded user details
 type CoreActivityWithUser struct {
 	ID           uuid.UUID   `json:"id"`

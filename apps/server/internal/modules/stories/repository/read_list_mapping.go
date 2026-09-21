@@ -37,6 +37,11 @@ type storyListRecord struct {
 	workspaceID              uuid.UUID
 	statusID                 *uuid.UUID
 	assigneeID               *uuid.UUID
+	assignedByID             *uuid.UUID
+	assignedByUsername       *string
+	assignedByFullName       *string
+	assignedByIsActive       *bool
+	assignedByIsSystem       *bool
 	collaboratorIDs          []uuid.UUID
 	collaboratorCount        int32
 	reporterID               *uuid.UUID
@@ -108,6 +113,7 @@ func mapStoryListRecord(record storyListRecord) (storydomain.StoryList, error) {
 		Workspace:                record.workspaceID,
 		Status:                   record.statusID,
 		Assignee:                 record.assigneeID,
+		AssignedBy:               assignmentActor(record),
 		CollaboratorCount:        int(record.collaboratorCount),
 		Collaborators:            append([]uuid.UUID(nil), record.collaboratorIDs...),
 		Reporter:                 record.reporterID,
@@ -124,6 +130,26 @@ func mapStoryListRecord(record storyListRecord) (storydomain.StoryList, error) {
 	}, nil
 }
 
+func assignmentActor(record storyListRecord) *storydomain.AssignmentActor {
+	if record.assignedByID == nil {
+		return nil
+	}
+	actor := &storydomain.AssignmentActor{ID: *record.assignedByID}
+	if record.assignedByUsername != nil {
+		actor.Username = *record.assignedByUsername
+	}
+	if record.assignedByFullName != nil {
+		actor.FullName = *record.assignedByFullName
+	}
+	if record.assignedByIsActive != nil {
+		actor.IsActive = *record.assignedByIsActive
+	}
+	if record.assignedByIsSystem != nil {
+		actor.IsSystem = *record.assignedByIsSystem
+	}
+	return actor
+}
+
 func storyListRecordFromMyStory(row storyreadsql.ListMyVisibleStoriesRow) storyListRecord {
 	return storyListRecord{
 		id: row.ID, sequenceID: row.SequenceID, title: row.Title, priority: row.Priority,
@@ -136,7 +162,11 @@ func storyListRecordFromMyStory(row storyreadsql.ListMyVisibleStoriesRow) storyL
 		sprintID: row.SprintID, sprintName: row.SprintName, sprintGoal: row.SprintGoal,
 		sprintStartDate: row.SprintStartDate, sprintEndDate: row.SprintEndDate,
 		teamID: row.TeamID, teamCode: row.TeamCode, teamName: row.TeamName, workspaceID: row.WorkspaceID,
-		statusID: row.StatusID, assigneeID: row.AssigneeID, collaboratorCount: row.CollaboratorCount, collaboratorIDs: row.CollaboratorIds,
+		statusID: row.StatusID, assigneeID: row.AssigneeID,
+		assignedByID: row.AssignedByID, assignedByUsername: row.AssignedByUsername,
+		assignedByFullName: row.AssignedByFullName, assignedByIsActive: row.AssignedByIsActive,
+		assignedByIsSystem: row.AssignedByIsSystem,
+		collaboratorCount:  row.CollaboratorCount, collaboratorIDs: row.CollaboratorIds,
 		reporterID: row.ReporterID, keyResultID: row.KeyResultID, startDate: row.StartDate, endDate: row.EndDate,
 		createdAt: row.CreatedAt, updatedAt: row.UpdatedAt, completedAt: row.CompletedAt,
 		deletedAt: row.DeletedAt, archivedAt: row.ArchivedAt, labelIDs: row.LabelIds,

@@ -62,6 +62,17 @@ type SprintSummary struct {
 	EndDate   time.Time `json:"endDate"`
 }
 
+// AssignmentActor is the human account that most recently assigned a story to
+// its current assignee. Nil attribution means the retained audit history is not
+// sufficient to identify an assigner safely.
+type AssignmentActor struct {
+	ID       uuid.UUID `json:"id"`
+	Username string    `json:"username"`
+	FullName string    `json:"fullName"`
+	IsActive bool      `json:"isActive"`
+	IsSystem bool      `json:"isSystem"`
+}
+
 type StoryList struct {
 	ID                       uuid.UUID         `json:"id"`
 	SequenceID               int               `json:"sequence_id"`
@@ -82,6 +93,7 @@ type StoryList struct {
 	Epic                     *uuid.UUID        `json:"epic_id"`
 	Status                   *uuid.UUID        `json:"status_id"`
 	Assignee                 *uuid.UUID        `json:"assignee_id"`
+	AssignedBy               *AssignmentActor  `json:"assigned_by,omitempty"`
 	Collaborators            []uuid.UUID       `json:"collaborator_ids"`
 	CollaboratorCount        int               `json:"collaborator_count"`
 	Reporter                 *uuid.UUID        `json:"reporter_id"`

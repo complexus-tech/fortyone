@@ -8,7 +8,9 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"unicode/utf8"
 
+	storydomain "github.com/complexus-tech/projects-api/internal/modules/stories/domain"
 	"github.com/google/uuid"
 )
 
@@ -46,9 +48,10 @@ func (e *FortyOneToolExecutor) listTeams(ctx context.Context, scope ToolScope, r
 
 func (e *FortyOneToolExecutor) listMyTasks(ctx context.Context, scope ToolScope, raw json.RawMessage) (json.RawMessage, error) {
 	var args struct {
-		Limit *int `json:"limit"`
+		Limit      *int    `json:"limit"`
+		AssignedBy *string `json:"assigned_by"`
 	}
-	if err := decodeToolArguments(raw, &args, "limit"); err != nil {
+	if err := decodeToolArguments(raw, &args, "limit", "assigned_by"); err != nil {
 		return nil, err
 	}
 	limit, err := normalizedLimit(args.Limit)
@@ -87,31 +90,55 @@ func (e *FortyOneToolExecutor) listMyTasks(ctx context.Context, scope ToolScope,
 		assigneeUsername = strings.TrimSpace(currentUser.Username)
 	}
 
-	filtered := make([]taskResult, 0, min(len(items), limit))
-	total := 0
+	eligible := make([]storydomain.StoryList, 0, len(items))
 	for _, story := range items {
-		team, allowed := joinedByID[story.Team]
+		_, allowed := joinedByID[story.Team]
 		if !allowed || story.Workspace != scope.WorkspaceID || story.Assignee == nil || *story.Assignee != scope.UserID {
 			continue
 		}
 		if story.CompletedAt != nil || story.DeletedAt != nil || story.ArchivedAt != nil {
 			continue
 		}
+		if story.Status != nil && statusesByID != nil {
+			if status, visible := statusesByID[*story.Status]; visible {
+				if statusIsClosed(status.Category) {
+					continue
+				}
+			}
+		}
+		eligible = append(eligible, story)
+	}
+
+	var assignmentFilter *assignmentFilterResult
+	if args.AssignedBy != nil {
+		query := strings.TrimSpace(*args.AssignedBy)
+		if query == "" {
+			return nil, errors.New("assigned_by must not be empty")
+		}
+		if utf8.RuneCountInString(query) > 100 {
+			return nil, errors.New("assigned_by must be 100 characters or fewer")
+		}
+		matched := storydomain.FilterStoriesAssignedBy(eligible, query)
+		assignmentFilter = assignmentFilterToolResult(query, matched)
+		eligible = matched.Stories
+	}
+
+	total := len(eligible)
+	filtered := make([]taskResult, 0, min(total, limit))
+	for _, story := range eligible {
+		if len(filtered) == limit {
+			break
+		}
+		team := joinedByID[story.Team]
 		var statusName string
 		var statusCategory string
 		if story.Status != nil && statusesByID != nil {
 			if status, visible := statusesByID[*story.Status]; visible {
 				statusName = status.Name
 				statusCategory = status.Category
-				if statusIsClosed(status.Category) {
-					continue
-				}
 			}
 		}
-		total++
-		if len(filtered) == limit {
-			continue
-		}
+		assignedByID, assignedByName, assignedByUsername := assignmentActorFields(story.AssignedBy)
 		filtered = append(filtered, taskResult{
 			ID:                       story.ID,
 			Reference:                storyReference(team.Code, story.SequenceID),
@@ -126,6 +153,9 @@ func (e *FortyOneToolExecutor) listMyTasks(ctx context.Context, scope ToolScope,
 			AssigneeID:               story.Assignee,
 			AssigneeName:             assigneeName,
 			AssigneeUsername:         assigneeUsername,
+			AssignedByID:             assignedByID,
+			AssignedByName:           assignedByName,
+			AssignedByUsername:       assignedByUsername,
 			Priority:                 story.Priority,
 			EstimateLabel:            story.EstimateLabel,
 			EstimateValue:            story.EstimateValue,
@@ -143,10 +173,47 @@ func (e *FortyOneToolExecutor) listMyTasks(ctx context.Context, scope ToolScope,
 	}
 
 	return marshalToolResult(listTasksResult{
-		Total:     total,
-		Truncated: total > len(filtered),
-		Tasks:     filtered,
+		Total:            total,
+		Truncated:        total > len(filtered),
+		AssignmentFilter: assignmentFilter,
+		Tasks:            filtered,
 	})
+}
+
+func assignmentFilterToolResult(query string, result storydomain.AssignmentFilterResult) *assignmentFilterResult {
+	filter := &assignmentFilterResult{Query: query, Status: "not_found"}
+	if len(result.Candidates) > 1 {
+		filter.Status = "ambiguous"
+	}
+	filter.Candidates = make([]assignmentActorResult, 0, len(result.Candidates))
+	for _, candidate := range result.Candidates {
+		filter.Candidates = append(filter.Candidates, assignmentActorToolResult(candidate))
+	}
+	if result.Resolved != nil {
+		resolved := assignmentActorToolResult(*result.Resolved)
+		filter.Status = "matched"
+		filter.Resolved = &resolved
+	}
+	return filter
+}
+
+func assignmentActorToolResult(actor storydomain.AssignmentActor) assignmentActorResult {
+	return assignmentActorResult{Name: assignmentActorDisplayName(actor), Username: strings.TrimSpace(actor.Username)}
+}
+
+func assignmentActorFields(actor *storydomain.AssignmentActor) (*uuid.UUID, string, string) {
+	if actor == nil {
+		return nil, "", ""
+	}
+	id := actor.ID
+	return &id, assignmentActorDisplayName(*actor), strings.TrimSpace(actor.Username)
+}
+
+func assignmentActorDisplayName(actor storydomain.AssignmentActor) string {
+	if name := strings.TrimSpace(actor.FullName); name != "" {
+		return name
+	}
+	return strings.TrimSpace(actor.Username)
 }
 
 func (e *FortyOneToolExecutor) listCompletedTasks(ctx context.Context, scope ToolScope, raw json.RawMessage) (json.RawMessage, error) {

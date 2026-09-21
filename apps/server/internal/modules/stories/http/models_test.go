@@ -228,6 +228,7 @@ func TestToAppStoryListItemIncludesEmbeddedSummaries(t *testing.T) {
 	endDate := time.Date(2026, time.June, 14, 0, 0, 0, 0, time.UTC)
 	description := "Improve conversion from trial teams"
 	goal := "Ship the onboarding pass"
+	assignerID := uuid.New()
 
 	story := stories.CoreStoryList{
 		ID:        uuid.New(),
@@ -236,6 +237,9 @@ func TestToAppStoryListItemIncludesEmbeddedSummaries(t *testing.T) {
 		Sprint:    &sprintID,
 		Team:      teamID,
 		Workspace: workspaceID,
+		AssignedBy: &stories.AssignmentActor{
+			ID: assignerID, Username: "daria", FullName: "Daria Jones", IsActive: true,
+		},
 		TeamSummary: &stories.CoreTeamSummary{
 			ID:   teamID,
 			Name: "Growth",
@@ -280,6 +284,9 @@ func TestToAppStoryListItemIncludesEmbeddedSummaries(t *testing.T) {
 	}
 	if appStory.SprintSummary.Goal == nil || *appStory.SprintSummary.Goal != goal {
 		t.Fatalf("expected sprint goal %q, got %#v", goal, appStory.SprintSummary.Goal)
+	}
+	if appStory.AssignedBy == nil || appStory.AssignedBy.ID != assignerID || appStory.AssignedBy.FullName != "Daria Jones" {
+		t.Fatalf("expected assignment actor to be embedded, got %#v", appStory.AssignedBy)
 	}
 }
 

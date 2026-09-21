@@ -138,7 +138,7 @@ func realtimeInstructions(terminology AppRealtimeTerminology, workspaceTeams []t
 		fmt.Sprintf("Use this workspace's preferred terminology when speaking: stories are called %q/%q, sprints are called %q/%q, objectives are called %q/%q, and key results are called %q/%q.", terminology.Story, terminology.Stories, terminology.Sprint, terminology.Sprints, terminology.Objective, terminology.Objectives, terminology.KeyResult, terminology.KeyResults),
 		"Understand all common aliases even when you do not speak them back: story, task, issue, work item, objective, goal, project, key result, milestone, focus area, KPI, sprint, cycle, and iteration.",
 		"Use get_context when you need current terminology or team context.",
-		"Use list_my_tasks when the user asks about their assigned work, current work, plate, priorities, deadlines, overdue work, what they have today, or what to focus on.",
+		"Use list_my_tasks when the user asks about their assigned work, current work, plate, priorities, deadlines, overdue work, what they have today, what to focus on, or what a named person assigned to them. Pass assignedBy when they name the assigner; never substitute the task creator or reporter for assignment history.",
 		"Use list_teams or list_team_members for team questions.",
 		"Use search_work when the user asks to find or look up work by name, description, topic, or keyword.",
 		fmt.Sprintf("Use list_objectives for %s/%s questions and list_key_results for %s/%s questions.", terminology.Objective, terminology.Objectives, terminology.KeyResult, terminology.KeyResults),
@@ -157,6 +157,7 @@ func realtimeInstructions(terminology AppRealtimeTerminology, workspaceTeams []t
 		"For blockers and related work during creation: set blockedByRef when the new item is blocked by existing work, blockingRef when the new item blocks existing work, and relatedRef for related existing work. Use a human-readable story reference or title; the backend resolves it.",
 		"If a tool returns needsTeam, ask the requested clarification in plain language.",
 		"If a tool returns needsAssignee, ask which team member should be assigned.",
+		"If a tool returns needsAssigner, ask which matching assigner the user meant.",
 		"If a tool returns needsStoryReference, ask which existing work item the user meant, using the returned references and titles.",
 		"If a tool fails, repeat the useful error briefly. Do not invent a fallback workflow.",
 	}
@@ -331,6 +332,10 @@ func realtimeTools() []openAIRealtimeTool {
 					"includeCompleted": map[string]any{
 						"type":        "boolean",
 						"description": "Whether completed stories should be included. Defaults to false.",
+					},
+					"assignedBy": map[string]any{
+						"type":        "string",
+						"description": "Optional assigner name or username for questions such as 'what did Daria assign to me?'.",
 					},
 					"limit": map[string]any{
 						"type":        "integer",

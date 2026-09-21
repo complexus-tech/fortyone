@@ -128,6 +128,9 @@ func TestNewRealtimeSessionConfigMatchesPortfolioVoice(t *testing.T) {
 	if !strings.Contains(config.Instructions, "FortyOne's AI agent for project management") {
 		t.Fatalf("Instructions do not contain Maya's AI agent identity")
 	}
+	if !strings.Contains(config.Instructions, "what a named person assigned to them") || !strings.Contains(config.Instructions, "never substitute the task creator or reporter") {
+		t.Fatalf("Instructions do not contain verified assignment-attribution guidance")
+	}
 	if !strings.Contains(config.Instructions, `path "/maya"`) {
 		t.Fatalf("Instructions do not contain the current path")
 	}
@@ -194,6 +197,26 @@ func TestRealtimeToolsExposeProductCapabilityBundle(t *testing.T) {
 			t.Errorf("realtimeTools() missing %q", name)
 		}
 	}
+}
+
+func TestRealtimeListMyTasksAcceptsAssignedByFilter(t *testing.T) {
+	t.Parallel()
+
+	for _, tool := range realtimeTools() {
+		if tool.Name != "list_my_tasks" {
+			continue
+		}
+		properties, ok := tool.Parameters["properties"].(map[string]any)
+		if !ok {
+			t.Fatalf("list_my_tasks properties = %#v", tool.Parameters["properties"])
+		}
+		assignedBy, ok := properties["assignedBy"].(map[string]any)
+		if !ok || assignedBy["type"] != "string" {
+			t.Fatalf("assignedBy schema = %#v", properties["assignedBy"])
+		}
+		return
+	}
+	t.Fatal("list_my_tasks tool is missing")
 }
 
 func TestRealtimeConfirmationTokenBindsSessionToolAndPayload(t *testing.T) {

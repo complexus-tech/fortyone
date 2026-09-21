@@ -66,6 +66,7 @@ export type Story = {
   workspaceId: string;
   assigneeId: string | null;
   assignee?: UserSummary | null;
+  assignedBy?: UserSummary | null;
   collaborators?: UserSummary[];
   collaboratorCount: number;
   reporterId: string;

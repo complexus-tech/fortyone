@@ -107,8 +107,9 @@ func (r AppRealtimeToolRequest) Validate() error {
 }
 
 type AppRealtimeListMyTasksArguments struct {
-	IncludeCompleted bool `json:"includeCompleted"`
-	Limit            int  `json:"limit"`
+	IncludeCompleted bool   `json:"includeCompleted"`
+	AssignedBy       string `json:"assignedBy"`
+	Limit            int    `json:"limit"`
 }
 
 type AppRealtimeListTeamsArguments struct {
@@ -251,6 +252,7 @@ type AppRealtimeToolResponse struct {
 	RequiresConfirmation bool                           `json:"requiresConfirmation,omitempty"`
 	NeedsTeam            bool                           `json:"needsTeam,omitempty"`
 	NeedsAssignee        bool                           `json:"needsAssignee,omitempty"`
+	NeedsAssigner        bool                           `json:"needsAssigner,omitempty"`
 	NeedsStoryReference  bool                           `json:"needsStoryReference,omitempty"`
 	Count                int                            `json:"count,omitempty"`
 	Message              string                         `json:"message,omitempty"`
@@ -261,6 +263,7 @@ type AppRealtimeToolResponse struct {
 	Objectives           []AppRealtimeVoiceObjective    `json:"objectives,omitempty"`
 	KeyResults           []AppRealtimeVoiceKeyResult    `json:"keyResults,omitempty"`
 	Members              []AppRealtimeVoiceMember       `json:"members,omitempty"`
+	Assigners            []AppRealtimeVoiceMember       `json:"assigners,omitempty"`
 	User                 *AppRealtimeVoiceUser          `json:"user,omitempty"`
 	Terminology          *AppRealtimeTerminology        `json:"terminology,omitempty"`
 	Confirmation         *AppRealtimeConfirmation       `json:"confirmation,omitempty"`
@@ -393,6 +396,7 @@ type AppRealtimeVoiceStory struct {
 	EstimateValue *int16                  `json:"estimateValue,omitempty"`
 	Team          string                  `json:"team,omitempty"`
 	Assignee      string                  `json:"assignee,omitempty"`
+	AssignedBy    string                  `json:"assignedBy,omitempty"`
 	Sprint        string                  `json:"sprint,omitempty"`
 	Objective     string                  `json:"objective,omitempty"`
 	Status        *AppRealtimeVoiceStatus `json:"status,omitempty"`

@@ -3,10 +3,12 @@ package mayahttp
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"html"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	keyresults "github.com/complexus-tech/projects-api/internal/modules/keyresults/service"
 	search "github.com/complexus-tech/projects-api/internal/modules/search/service"
@@ -45,14 +47,52 @@ func (h *Handlers) executeListMyTasks(ctx context.Context, workspaceID, userID u
 		return AppRealtimeToolResponse{}, fmt.Errorf("list my stories: %w", err)
 	}
 
-	voiceStories := make([]AppRealtimeVoiceStory, 0, min(args.Limit, len(allStories)))
+	eligible := make([]stories.CoreStoryList, 0, len(allStories))
 	for _, story := range allStories {
+		if story.Assignee == nil || *story.Assignee != userID {
+			continue
+		}
 		if !args.IncludeCompleted && story.CompletedAt != nil {
 			continue
 		}
 		if story.DeletedAt != nil || story.ArchivedAt != nil {
 			continue
 		}
+		if !args.IncludeCompleted && story.Status != nil {
+			if status, ok := statusesByID[*story.Status]; ok && (status.Category == "completed" || status.Category == "cancelled") {
+				continue
+			}
+		}
+		eligible = append(eligible, story)
+	}
+
+	assignedBy := strings.TrimSpace(args.AssignedBy)
+	if utf8.RuneCountInString(assignedBy) > 100 {
+		return AppRealtimeToolResponse{}, errors.New("assignedBy must be 100 characters or fewer")
+	}
+	if assignedBy != "" {
+		matched := stories.FilterStoriesAssignedBy(eligible, assignedBy)
+		if len(matched.Candidates) > 1 {
+			assigners := make([]AppRealtimeVoiceMember, 0, len(matched.Candidates))
+			for _, candidate := range matched.Candidates {
+				name := strings.TrimSpace(candidate.FullName)
+				if name == "" {
+					name = strings.TrimSpace(candidate.Username)
+				}
+				assigners = append(assigners, AppRealtimeVoiceMember{Name: name, Username: candidate.Username})
+			}
+			return AppRealtimeToolResponse{
+				Success:       true,
+				NeedsAssigner: true,
+				Assigners:     assigners,
+				Message:       fmt.Sprintf("More than one assigner matches %q.", assignedBy),
+			}, nil
+		}
+		eligible = matched.Stories
+	}
+
+	voiceStories := make([]AppRealtimeVoiceStory, 0, min(args.Limit, len(eligible)))
+	for _, story := range eligible {
 		voiceStories = append(voiceStories, toRealtimeVoiceStory(story, statusesByID))
 		if len(voiceStories) >= args.Limit {
 			break
@@ -61,6 +101,9 @@ func (h *Handlers) executeListMyTasks(ctx context.Context, workspaceID, userID u
 
 	terminology := h.realtimeTerminology(ctx, workspaceID)
 	message := fmt.Sprintf("No assigned %s matched the request.", terminology.Stories)
+	if assignedBy != "" && len(voiceStories) == 0 {
+		message = fmt.Sprintf("No active %s with verified assignment history from %q matched the request.", terminology.Stories, assignedBy)
+	}
 	if len(voiceStories) == 1 {
 		message = fmt.Sprintf("Found 1 assigned %s.", terminology.Story)
 	} else if len(voiceStories) > 1 {

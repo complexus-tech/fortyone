@@ -241,6 +241,14 @@ func toRealtimeVoiceStory(story stories.CoreStoryList, statusesByID map[uuid.UUI
 		}
 	}
 
+	assignedBy := ""
+	if story.AssignedBy != nil {
+		assignedBy = strings.TrimSpace(story.AssignedBy.FullName)
+		if assignedBy == "" {
+			assignedBy = strings.TrimSpace(story.AssignedBy.Username)
+		}
+	}
+
 	return AppRealtimeVoiceStory{
 		Reference:     storyReference(teamCode, story.SequenceID),
 		Title:         story.Title,
@@ -248,6 +256,7 @@ func toRealtimeVoiceStory(story stories.CoreStoryList, statusesByID map[uuid.UUI
 		EstimateLabel: story.EstimateLabel,
 		EstimateValue: story.EstimateValue,
 		Team:          teamName,
+		AssignedBy:    assignedBy,
 		Status:        status,
 		StartDate:     story.StartDate,
 		EndDate:       story.EndDate,

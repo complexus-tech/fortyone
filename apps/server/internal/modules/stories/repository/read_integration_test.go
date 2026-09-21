@@ -22,6 +22,7 @@ type storyReadFixture struct {
 	teamHidden  uuid.UUID
 	teamB       uuid.UUID
 	actor       uuid.UUID
+	assigner    uuid.UUID
 	inactive    uuid.UUID
 	visible     uuid.UUID
 	visibleTwo  uuid.UUID
@@ -76,6 +77,16 @@ func TestStoryReadRepositoryEnforcesActorTenantAndTeamVisibility(t *testing.T) {
 		if item.Workspace != fixture.workspaceA || item.Team != fixture.teamA {
 			t.Fatalf("actor story escaped scope: %#v", item)
 		}
+	}
+	var attributed *storydomain.StoryList
+	for index := range myStories {
+		if myStories[index].ID == fixture.visible {
+			attributed = &myStories[index]
+			break
+		}
+	}
+	if attributed == nil || attributed.AssignedBy == nil || attributed.AssignedBy.ID != fixture.assigner || attributed.AssignedBy.FullName != "Daria Jones" {
+		t.Fatalf("assignment attribution = %#v", attributed)
 	}
 }
 
@@ -271,22 +282,24 @@ func seedStoryReadFixture(t *testing.T, ctx context.Context, pool *pgxpool.Pool)
 	t.Helper()
 	fixture := storyReadFixture{
 		workspaceA: uuid.New(), workspaceB: uuid.New(), teamA: uuid.New(), teamHidden: uuid.New(), teamB: uuid.New(),
-		actor: uuid.New(), inactive: uuid.New(), visible: uuid.New(), visibleTwo: uuid.New(),
+		actor: uuid.New(), assigner: uuid.New(), inactive: uuid.New(), visible: uuid.New(), visibleTwo: uuid.New(),
 		visibleSub: uuid.New(), hidden: uuid.New(), crossTenant: uuid.New(), foreignTeam: uuid.New(), foreignUser: uuid.New(),
 	}
 	insertStoryReadUser(t, ctx, pool, fixture.actor, true)
+	insertStoryReadUser(t, ctx, pool, fixture.assigner, true)
+	mustStoryReadExec(t, ctx, pool, "UPDATE users SET full_name = 'Daria Jones' WHERE user_id = $1", fixture.assigner)
 	insertStoryReadUser(t, ctx, pool, fixture.inactive, false)
 	insertStoryReadUser(t, ctx, pool, fixture.foreignUser, true)
 	insertStoryReadWorkspace(t, ctx, pool, fixture.workspaceA, fixture.actor, "a")
 	insertStoryReadWorkspace(t, ctx, pool, fixture.workspaceB, fixture.foreignUser, "b")
-	for _, userID := range []uuid.UUID{fixture.actor, fixture.inactive} {
+	for _, userID := range []uuid.UUID{fixture.actor, fixture.assigner, fixture.inactive} {
 		mustStoryReadExec(t, ctx, pool, "INSERT INTO workspace_members (workspace_id, user_id, role) VALUES ($1, $2, 'member')", fixture.workspaceA, userID)
 	}
 	mustStoryReadExec(t, ctx, pool, "INSERT INTO workspace_members (workspace_id, user_id, role) VALUES ($1, $2, 'member')", fixture.workspaceB, fixture.foreignUser)
 	insertStoryReadTeam(t, ctx, pool, fixture.teamA, fixture.workspaceA, "A")
 	insertStoryReadTeam(t, ctx, pool, fixture.teamHidden, fixture.workspaceA, "HIDDEN")
 	insertStoryReadTeam(t, ctx, pool, fixture.teamB, fixture.workspaceB, "B")
-	for _, userID := range []uuid.UUID{fixture.actor, fixture.inactive} {
+	for _, userID := range []uuid.UUID{fixture.actor, fixture.assigner, fixture.inactive} {
 		mustStoryReadExec(t, ctx, pool, "INSERT INTO team_members (team_id, user_id) VALUES ($1, $2)", fixture.teamA, userID)
 	}
 	// Deliberately malformed memberships and story rows prove that reads enforce
@@ -299,6 +312,12 @@ func seedStoryReadFixture(t *testing.T, ctx context.Context, pool *pgxpool.Pool)
 	statusB := insertStoryReadStatus(t, ctx, pool, fixture.workspaceB, fixture.teamB)
 	createdAt := time.Date(2026, time.August, 28, 9, 0, 0, 0, time.UTC)
 	insertStoryReadStory(t, ctx, pool, fixture.visible, fixture.workspaceA, fixture.teamA, statusA, fixture.actor, 1, nil, createdAt)
+	mustStoryReadExec(t, ctx, pool, `
+		INSERT INTO story_activities (
+			activity_id, story_id, user_id, activity_type, field_changed,
+			current_value, workspace_id, old_value, new_value, created_at
+		) VALUES ($1, $2, $3, 'update', 'assignee_id', $4, $5, 'null'::jsonb, to_jsonb($6::uuid), $7)
+	`, uuid.New(), fixture.visible, fixture.assigner, fixture.actor.String(), fixture.workspaceA, fixture.actor, createdAt)
 	insertStoryReadStory(t, ctx, pool, fixture.visibleTwo, fixture.workspaceA, fixture.teamA, statusA, fixture.actor, 2, nil, createdAt)
 	insertStoryReadStory(t, ctx, pool, fixture.visibleSub, fixture.workspaceA, fixture.teamA, statusA, fixture.actor, 3, &fixture.visible, createdAt)
 	insertStoryReadStory(t, ctx, pool, fixture.hidden, fixture.workspaceA, fixture.teamHidden, statusHidden, fixture.actor, 1, nil, createdAt)

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	states "github.com/complexus-tech/projects-api/internal/modules/states/service"
+	storydomain "github.com/complexus-tech/projects-api/internal/modules/stories/domain"
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
 	teams "github.com/complexus-tech/projects-api/internal/modules/teams/service"
 	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
@@ -248,7 +249,7 @@ func TestFortyOneToolExecutorMyTasksReturnsOnlyActiveAssignmentsWithHumanFields(
 		WithOperationalTools(OperationalToolServices{States: statesService, Users: usersService}),
 	)
 
-	raw, err := executor.Execute(context.Background(), scope, ToolCall{Name: toolListMyTasks, Arguments: json.RawMessage(`{"limit":20}`)})
+	raw, err := executor.Execute(context.Background(), scope, ToolCall{Name: toolListMyTasks, Arguments: json.RawMessage(`{"limit":20,"assigned_by":null}`)})
 	if err != nil {
 		t.Fatalf("list my tasks: %v", err)
 	}
@@ -266,6 +267,97 @@ func TestFortyOneToolExecutorMyTasksReturnsOnlyActiveAssignmentsWithHumanFields(
 	call := storiesService.lastCall()
 	if call.actorID != scope.UserID || call.actorErr != nil {
 		t.Fatalf("MyStories did not receive the authenticated actor: %#v", call)
+	}
+}
+
+func TestFortyOneToolExecutorMyTasksFiltersByVerifiedAssigner(t *testing.T) {
+	t.Parallel()
+
+	scope := testToolScope()
+	team := teams.CoreTeam{ID: uuid.New(), Name: "Product", Code: "PRD", Workspace: scope.WorkspaceID}
+	dariaID := uuid.New()
+	otherID := uuid.New()
+	currentUserID := scope.UserID
+	storiesService := &storiesServiceStub{items: []stories.CoreStoryList{
+		{
+			ID: uuid.New(), SequenceID: 1, Title: "Daria task", Team: team.ID, Workspace: scope.WorkspaceID,
+			Assignee:   &currentUserID,
+			AssignedBy: &storydomain.AssignmentActor{ID: dariaID, Username: "daria", FullName: "Daria Jones"},
+		},
+		{
+			ID: uuid.New(), SequenceID: 2, Title: "Other task", Team: team.ID, Workspace: scope.WorkspaceID,
+			Assignee:   &currentUserID,
+			AssignedBy: &storydomain.AssignmentActor{ID: otherID, Username: "sam", FullName: "Sam Lee"},
+		},
+		{ID: uuid.New(), SequenceID: 3, Title: "Legacy task", Team: team.ID, Workspace: scope.WorkspaceID, Assignee: &currentUserID},
+	}}
+	executor := newToolExecutorForTest(
+		t,
+		&teamsServiceStub{joined: []teams.CoreTeam{team}},
+		storiesService,
+		&searchServiceStub{},
+		&objectivesServiceStub{},
+	)
+
+	raw, err := executor.Execute(context.Background(), scope, ToolCall{
+		Name: toolListMyTasks, Arguments: json.RawMessage(`{"limit":20,"assigned_by":"Daria"}`),
+	})
+	if err != nil {
+		t.Fatalf("list tasks assigned by Daria: %v", err)
+	}
+	var result listTasksResult
+	if err := json.Unmarshal(raw, &result); err != nil {
+		t.Fatalf("decode tasks: %v", err)
+	}
+	if result.Total != 1 || len(result.Tasks) != 1 || result.Tasks[0].Title != "Daria task" {
+		t.Fatalf("filtered tasks = %#v", result)
+	}
+	if result.AssignmentFilter == nil || result.AssignmentFilter.Status != "matched" || result.AssignmentFilter.Resolved == nil || result.AssignmentFilter.Resolved.Name != "Daria Jones" {
+		t.Fatalf("assignment filter = %#v", result.AssignmentFilter)
+	}
+	if result.Tasks[0].AssignedByID == nil || *result.Tasks[0].AssignedByID != dariaID || result.Tasks[0].AssignedByName != "Daria Jones" {
+		t.Fatalf("assignment attribution = %#v", result.Tasks[0])
+	}
+}
+
+func TestFortyOneToolExecutorMyTasksReportsAmbiguousAssigner(t *testing.T) {
+	t.Parallel()
+
+	scope := testToolScope()
+	team := teams.CoreTeam{ID: uuid.New(), Name: "Product", Code: "PRD", Workspace: scope.WorkspaceID}
+	currentUserID := scope.UserID
+	storiesService := &storiesServiceStub{items: []stories.CoreStoryList{
+		{
+			ID: uuid.New(), SequenceID: 1, Title: "First", Team: team.ID, Workspace: scope.WorkspaceID,
+			Assignee:   &currentUserID,
+			AssignedBy: &storydomain.AssignmentActor{ID: uuid.New(), Username: "daria.j", FullName: "Daria Jones"},
+		},
+		{
+			ID: uuid.New(), SequenceID: 2, Title: "Second", Team: team.ID, Workspace: scope.WorkspaceID,
+			Assignee:   &currentUserID,
+			AssignedBy: &storydomain.AssignmentActor{ID: uuid.New(), Username: "daria.m", FullName: "Daria Morgan"},
+		},
+	}}
+	executor := newToolExecutorForTest(
+		t,
+		&teamsServiceStub{joined: []teams.CoreTeam{team}},
+		storiesService,
+		&searchServiceStub{},
+		&objectivesServiceStub{},
+	)
+
+	raw, err := executor.Execute(context.Background(), scope, ToolCall{
+		Name: toolListMyTasks, Arguments: json.RawMessage(`{"limit":20,"assigned_by":"Daria"}`),
+	})
+	if err != nil {
+		t.Fatalf("list tasks for ambiguous assigner: %v", err)
+	}
+	var result listTasksResult
+	if err := json.Unmarshal(raw, &result); err != nil {
+		t.Fatalf("decode tasks: %v", err)
+	}
+	if result.Total != 0 || len(result.Tasks) != 0 || result.AssignmentFilter == nil || result.AssignmentFilter.Status != "ambiguous" || len(result.AssignmentFilter.Candidates) != 2 {
+		t.Fatalf("ambiguous result = %#v", result)
 	}
 }
 

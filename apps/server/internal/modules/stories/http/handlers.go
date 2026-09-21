@@ -218,6 +218,9 @@ func collectStoryListUserIDs(story stories.CoreStoryList, userIDs map[uuid.UUID]
 	if story.Assignee != nil {
 		userIDs[*story.Assignee] = struct{}{}
 	}
+	if story.AssignedBy != nil {
+		userIDs[story.AssignedBy.ID] = struct{}{}
+	}
 	if story.Reporter != nil {
 		userIDs[*story.Reporter] = struct{}{}
 	}
