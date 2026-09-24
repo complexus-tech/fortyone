@@ -26,6 +26,7 @@ const (
 
 	StoryMutationCreate      StoryMutationOperation = "create_story"
 	StoryMutationCreateBatch StoryMutationOperation = "create_stories"
+	StoryMutationAttachFile  StoryMutationOperation = "attach_story_file"
 )
 
 // IntegrationRequest is the provider-neutral request projection needed by
@@ -442,6 +443,7 @@ type AssistantRequest struct {
 	AllowMutations bool
 	WebsiteURL     string
 	SourceURL      string
+	AvailableFiles []StoryAttachmentSource
 	Conversation   []AssistantConversationTurn
 	Prompt         string
 }
@@ -508,7 +510,20 @@ type StoryMutationResult struct {
 	AutoSchedulingUpdatedAt  *time.Time
 	CommentID                *uuid.UUID
 	AssociationID            *uuid.UUID
+	Attachment               *StoryAttachmentSource
 	Items                    []StoryMutationItemResult
+}
+
+// StoryAttachmentSource identifies a Slack-hosted file from the active
+// conversation. It intentionally excludes URLs, bytes and credentials.
+type StoryAttachmentSource struct {
+	Provider            string
+	ExternalWorkspaceID string
+	ChannelID           string
+	ThreadTS            string
+	MessageTS           string
+	FileID              string
+	Name                string
 }
 
 type StoryMutationItemResult struct {

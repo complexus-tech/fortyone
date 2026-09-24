@@ -33,6 +33,7 @@ func (a *OpenAIAssistant) Respond(ctx context.Context, request Request) (Respons
 		AllowMutations: request.AllowMutations,
 		WebsiteURL:     request.WebsiteURL,
 		SourceURL:      request.SourceURL,
+		AvailableFiles: append([]StoryAttachmentSource(nil), request.AvailableFiles...),
 		WorkspaceSlug:  runtimeWorkspaceSlug(request.RuntimeContext),
 		Timezone:       runtimeTimezone(request.RuntimeContext),
 	}
@@ -41,7 +42,7 @@ func (a *OpenAIAssistant) Respond(ctx context.Context, request Request) (Respons
 	if err != nil {
 		return Response{}, fmt.Errorf("%w: render runtime context: %v", ErrInvalidRequest, err)
 	}
-	definitions := toolDefinitionsForRequest(a.definitions, request.AllowMutations)
+	definitions := toolDefinitionsForRequest(a.definitions, request.AllowMutations, len(request.AvailableFiles) > 0)
 	usage := Usage{}
 	toolSteps := 0
 

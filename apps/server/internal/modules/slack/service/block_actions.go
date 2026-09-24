@@ -96,12 +96,15 @@ func (s *Service) handleBlockActions(ctx context.Context, payload interactionPay
 	}
 
 	view, err := s.buildCreateTaskModalView(ctx, createTaskModalViewInput{
-		Title:       submission.Title,
-		Description: submission.Description,
-		Source:      submission.Source,
-		WorkspaceID: slackWorkspace.WorkspaceID,
-		ActorID:     actorID,
-		Selection:   selection,
+		Title:                 submission.Title,
+		Description:           submission.Description,
+		Source:                submission.Source,
+		SourceFiles:           metadata.SourceFiles,
+		SelectedSourceFileIDs: append([]string{}, submission.SourceFileIDs...),
+		EnableFiles:           slackBotHasScope(slackWorkspace.Scope, "files:read"),
+		WorkspaceID:           slackWorkspace.WorkspaceID,
+		ActorID:               actorID,
+		Selection:             selection,
 	})
 	if err != nil {
 		return InteractionResponse{}, err

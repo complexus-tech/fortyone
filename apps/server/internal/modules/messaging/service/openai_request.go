@@ -42,13 +42,11 @@ func runtimeTimezone(context *RuntimeContext) string {
 	return context.LocalTime.Location().String()
 }
 
-func toolDefinitionsForRequest(definitions []ToolDefinition, allowMutations bool) []ToolDefinition {
-	if allowMutations {
-		return definitions
-	}
+func toolDefinitionsForRequest(definitions []ToolDefinition, allowMutations, hasAvailableFiles bool) []ToolDefinition {
 	filtered := make([]ToolDefinition, 0, len(definitions))
 	for _, definition := range definitions {
-		if isStoryMutationTool(definition.Name) {
+		if (!allowMutations && isStoryMutationTool(definition.Name)) ||
+			(definition.Name == toolAttachStoryFile && !hasAvailableFiles) {
 			continue
 		}
 		filtered = append(filtered, definition)

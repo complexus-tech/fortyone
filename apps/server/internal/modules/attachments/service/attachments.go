@@ -25,7 +25,9 @@ var serviceTracer = otel.Tracer("github.com/complexus-tech/projects-api/internal
 // Repository defines the storage interface for attachments
 type Repository interface {
 	CreateAttachment(ctx context.Context, attachment CoreAttachment) (CoreAttachment, error)
+	CreateSlackImportAttachment(ctx context.Context, attachment CoreAttachment) (CoreAttachment, error)
 	GetAttachmentByID(ctx context.Context, id, workspaceID uuid.UUID) (CoreAttachment, error)
+	GetAttachmentBySlackImportID(ctx context.Context, importID, workspaceID uuid.UUID) (CoreAttachment, error)
 	GetAttachmentsByStoryID(ctx context.Context, storyID, workspaceID uuid.UUID) ([]CoreAttachment, error)
 	StoryExistsInWorkspace(ctx context.Context, storyID, workspaceID uuid.UUID) (bool, error)
 	AuthorizeStoryAttachment(ctx context.Context, storyID, attachmentID, workspaceID uuid.UUID) (CoreAttachment, error)
@@ -97,13 +99,13 @@ func newDefaultRemoteImageDownloader() RemoteImageDownloader {
 
 // UploadAttachment uploads a file and creates an attachment record
 func (s *Service) UploadAttachment(ctx context.Context, file multipart.File, fileHeader *multipart.FileHeader, userID uuid.UUID, workspaceID uuid.UUID) (FileInfo, error) {
-	return s.uploadAttachment(ctx, file, fileHeader, userID, workspaceID, nil)
+	return s.uploadAttachment(ctx, file, fileHeader, userID, workspaceID, uuid.Nil, validate.Attachment, nil)
 }
 
 // UploadDocumentMedia uploads an image or MP4 video for use inside a document.
 // The content type is derived from the file bytes, not the multipart header.
 func (s *Service) UploadDocumentMedia(ctx context.Context, file multipart.File, fileHeader *multipart.FileHeader, userID uuid.UUID, workspaceID uuid.UUID) (FileInfo, error) {
-	return s.uploadAttachment(ctx, file, fileHeader, userID, workspaceID, validateInlineMediaContentType)
+	return s.uploadAttachment(ctx, file, fileHeader, userID, workspaceID, uuid.Nil, validate.Attachment, validateInlineMediaContentType)
 }
 
 // UploadStoryMedia uploads an image or MP4 video and links it through the
@@ -133,6 +135,8 @@ func (s *Service) UploadStoryMedia(
 		fileHeader,
 		userID,
 		workspaceID,
+		uuid.Nil,
+		validate.Attachment,
 		validateInlineMediaContentType,
 	)
 	if err != nil {
@@ -166,6 +170,8 @@ func (s *Service) uploadAttachment(
 	fileHeader *multipart.FileHeader,
 	userID uuid.UUID,
 	workspaceID uuid.UUID,
+	importID uuid.UUID,
+	validateFile func(multipart.File, *multipart.FileHeader) error,
 	validateContentType func(string) error,
 ) (FileInfo, error) {
 	s.log.Info(ctx, "core.attachments.upload")
@@ -173,7 +179,7 @@ func (s *Service) uploadAttachment(
 	defer span.End()
 
 	// Validate file
-	if err := validate.Attachment(file, fileHeader); err != nil {
+	if err := validateFile(file, fileHeader); err != nil {
 		span.RecordError(err)
 		return FileInfo{}, attachmentValidationError(err)
 	}
@@ -206,16 +212,25 @@ func (s *Service) uploadAttachment(
 	}
 
 	// Create attachment record in database
-	attachment, err := s.repo.CreateAttachment(ctx, CoreAttachment{
-		Filename:           fileHeader.Filename,
-		BlobName:           blobName,
-		Size:               fileHeader.Size,
-		MimeType:           contentType,
-		UploadedBy:         userID,
-		WorkspaceID:        workspaceID,
-		ScanStatus:         attachmentdomain.ScanStatusUnscanned,
-		OptimizationStatus: optimizationStatus(contentType, s.optimizer != nil),
-	})
+	attachmentInput := CoreAttachment{
+		Filename:          fileHeader.Filename,
+		BlobName:          blobName,
+		Size:              fileHeader.Size,
+		MimeType:          contentType,
+		UploadedBy:        userID,
+		WorkspaceID:       workspaceID,
+		SlackFileImportID: importID,
+		ScanStatus:        attachmentdomain.ScanStatusUnscanned,
+		// The current optimizer reads the complete object into memory and has a
+		// 25 MB download ceiling. Larger Slack imports remain available as
+		// original files instead of enqueueing a job that cannot succeed.
+		OptimizationStatus: optimizationStatus(contentType, s.optimizer != nil && fileHeader.Size <= validate.MaxAttachmentSize),
+	}
+	createAttachment := s.repo.CreateAttachment
+	if importID != uuid.Nil {
+		createAttachment = s.repo.CreateSlackImportAttachment
+	}
+	attachment, err := createAttachment(ctx, attachmentInput)
 	if err != nil {
 		span.RecordError(err)
 		// Try to clean up the blob since DB insert failed
@@ -232,8 +247,10 @@ func (s *Service) uploadAttachment(
 	)
 	if err != nil {
 		span.RecordError(err)
-		if cleanupErr := s.DeleteAttachment(ctx, attachment.ID, workspaceID, userID); cleanupErr != nil {
-			s.log.Error(ctx, "failed to clean up attachment after access URL failure", "error", cleanupErr, "attachment_id", attachment.ID)
+		if importID == uuid.Nil {
+			if cleanupErr := s.DeleteAttachment(ctx, attachment.ID, workspaceID, userID); cleanupErr != nil {
+				s.log.Error(ctx, "failed to clean up attachment after access URL failure", "error", cleanupErr, "attachment_id", attachment.ID)
+			}
 		}
 		return FileInfo{}, fmt.Errorf("failed to generate access URL: %w", err)
 	}

@@ -100,7 +100,7 @@ func (s *Service) processCommand(ctx context.Context, triggerID, title string, s
 	if err != nil {
 		return "", err
 	}
-	if err := s.openCreateTaskModal(ctx, triggerID, title, "", source, slackWorkspace.WorkspaceID, linkedUserID, botToken); err != nil {
+	if err := s.openCreateTaskModal(ctx, triggerID, title, "", source, nil, slackBotHasScope(slackWorkspace.Scope, "files:read"), slackWorkspace.WorkspaceID, linkedUserID, botToken); err != nil {
 		return "", err
 	}
 	return "", nil

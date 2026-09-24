@@ -59,6 +59,54 @@ func (repository *Repository) CreateAttachment(
 	return toDomain(row), nil
 }
 
+func (repository *Repository) CreateSlackImportAttachment(
+	ctx context.Context,
+	attachment attachmentdomain.Attachment,
+) (attachmentdomain.Attachment, error) {
+	if err := repository.configured(); err != nil {
+		return attachmentdomain.Attachment{}, err
+	}
+	if attachment.SlackFileImportID == uuid.Nil {
+		return attachmentdomain.Attachment{}, errors.New("Slack file import ID is required")
+	}
+	var uploaderID *uuid.UUID
+	if attachment.UploadedBy != uuid.Nil {
+		uploaderID = &attachment.UploadedBy
+	}
+	row, err := repository.queries.CreateSlackImportAttachment(ctx, attachmentssql.CreateSlackImportAttachmentParams{
+		Filename:           attachment.Filename,
+		BlobName:           attachment.BlobName,
+		Size:               attachment.Size,
+		MimeType:           attachment.MimeType,
+		UploadedBy:         uploaderID,
+		WorkspaceID:        attachment.WorkspaceID,
+		ScanStatus:         string(defaultScanStatus(attachment.ScanStatus)),
+		OptimizationStatus: string(defaultOptimizationStatus(attachment.OptimizationStatus)),
+		SlackFileImportID:  &attachment.SlackFileImportID,
+	})
+	if err != nil {
+		return attachmentdomain.Attachment{}, fmt.Errorf("create Slack import attachment: %w", err)
+	}
+	return toDomain(row), nil
+}
+
+func (repository *Repository) GetAttachmentBySlackImportID(
+	ctx context.Context,
+	importID, workspaceID uuid.UUID,
+) (attachmentdomain.Attachment, error) {
+	if err := repository.configured(); err != nil {
+		return attachmentdomain.Attachment{}, err
+	}
+	row, err := repository.queries.GetWorkspaceSlackImportAttachment(ctx, attachmentssql.GetWorkspaceSlackImportAttachmentParams{
+		SlackFileImportID: &importID,
+		WorkspaceID:       workspaceID,
+	})
+	if err != nil {
+		return attachmentdomain.Attachment{}, mapNotFound("get Slack import attachment", err)
+	}
+	return toDomain(row), nil
+}
+
 func (repository *Repository) GetAttachmentByID(
 	ctx context.Context,
 	attachmentID, workspaceID uuid.UUID,

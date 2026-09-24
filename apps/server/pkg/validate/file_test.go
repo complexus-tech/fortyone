@@ -92,6 +92,23 @@ func TestAttachmentContentTypeCSV(t *testing.T) {
 	}
 }
 
+func TestAttachmentWithoutSizeLimitPreservesTypeValidation(t *testing.T) {
+	content := []byte("story notes\n")
+	header := &multipart.FileHeader{Filename: "notes.txt", Size: MaxAttachmentSize + 1}
+	file := &memoryMultipartFile{Reader: bytes.NewReader(content)}
+	if err := Attachment(file, header); err != ErrFileTooLarge {
+		t.Fatalf("direct attachment error = %v, want %v", err, ErrFileTooLarge)
+	}
+	if err := AttachmentWithoutSizeLimit(file, header); err != nil {
+		t.Fatalf("provider attachment error = %v", err)
+	}
+
+	invalid := &memoryMultipartFile{Reader: bytes.NewReader([]byte("<html>not an attachment</html>"))}
+	if err := AttachmentWithoutSizeLimit(invalid, &multipart.FileHeader{Filename: "fake.txt", Size: 30}); err != ErrInvalidFileType {
+		t.Fatalf("invalid provider attachment error = %v, want %v", err, ErrInvalidFileType)
+	}
+}
+
 func TestAttachmentContentTypeLegacyOffice(t *testing.T) {
 	t.Parallel()
 

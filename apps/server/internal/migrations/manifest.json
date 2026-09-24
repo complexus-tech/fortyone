@@ -1736,6 +1736,43 @@
         "Public document links remain read-only and never expose workspace comments.",
         "Deleting a document cascades to its comment threads and replies."
       ]
+    },
+    {
+      "version": 198,
+      "slug": "slack_file_imports",
+      "classification": "forward-only",
+      "files": {
+        "up": "000198_slack_file_imports.up.sql",
+        "down": "000198_slack_file_imports.down.sql"
+      },
+      "compatibility": {
+        "schema": "Adds durable Slack file import records and an attachment import key, and extends Maya story mutation confirmations to accept file attachment.",
+        "api": "The replacement Slack API requires migration 198 before it can queue selected modal and Maya files. The previous API remains compatible with this additive schema.",
+        "worker": "The replacement worker requires migration 198 to claim, import, and recover queued files. Deploy it before enabling the replacement API; previous workers do not know the new task type.",
+        "mixed_versions": "Apply the schema first, then deploy the file-capable worker and API as one coordinated release. Reauthorize existing Slack installations to grant files:read and any newly requested history scope."
+      },
+      "rollout": {
+        "sequence": 47,
+        "mode": "schema-first",
+        "steps": [
+          "Apply migration 000198 before deploying the replacement worker or API.",
+          "Deploy the worker with Slack file import processing and recovery, then deploy the API with file-capable shortcuts and Maya confirmations.",
+          "Reauthorize connected Slack workspaces to grant the new scopes and verify one shortcut upload and one Maya thread-file attachment."
+        ]
+      },
+      "recovery": {
+        "strategy": "forward-fix",
+        "procedure": [
+          "Pause new Slack file submissions if imports fail and keep the durable import rows and attachment keys intact.",
+          "Repair the API, worker, provider permissions, or storage configuration forward and let recovery retry pending imports.",
+          "Avoid applying the down migration after attachments have imported because it removes the import ledger and Maya file confirmation state."
+        ]
+      },
+      "operational_notes": [
+        "Slack file transfers use authenticated private URLs in the worker; queued payloads contain only import IDs.",
+        "Slack imports bypass FortyOne's direct-upload size cap while preserving content type validation.",
+        "The worker rechecks installation, account link, workspace membership, team access, story state, and provider source before saving an attachment."
+      ]
     }
   ]
 }

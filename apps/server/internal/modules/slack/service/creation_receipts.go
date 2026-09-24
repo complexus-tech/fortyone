@@ -48,6 +48,10 @@ func (s *Service) postSlackRequestAck(ctx context.Context, workspaceID, installG
 }
 
 func (s *Service) postSlackTaskAck(ctx context.Context, workspaceID, installGeneration uuid.UUID, idempotencyKey string, source requestSourceContext, botToken, workspaceSlug, teamCode, creatorName, creatorSlackUserID string, action slackStoryReceiptAction, story singleStory) string {
+	return s.postSlackTaskAckWithNote(ctx, workspaceID, installGeneration, idempotencyKey, source, botToken, workspaceSlug, teamCode, creatorName, creatorSlackUserID, action, story, "")
+}
+
+func (s *Service) postSlackTaskAckWithNote(ctx context.Context, workspaceID, installGeneration uuid.UUID, idempotencyKey string, source requestSourceContext, botToken, workspaceSlug, teamCode, creatorName, creatorSlackUserID string, action slackStoryReceiptAction, story singleStory, note string) string {
 	storyCode := buildStoryCode(teamCode, story.SequenceID)
 	taskURL := buildTaskURL(
 		s.cfg.WebsiteURL,
@@ -55,6 +59,9 @@ func (s *Service) postSlackTaskAck(ctx context.Context, workspaceID, installGene
 		buildStoryReference(teamCode, story.SequenceID, story.ID.String()),
 	)
 	text := buildSlackStoryReceiptText(action, creatorName, storyCode, taskURL)
+	if note = strings.TrimSpace(note); note != "" {
+		text += ". " + note
+	}
 	authorization := &SlackDeliveryAuthorization{
 		AllowedTeamIDs: []uuid.UUID{story.Team},
 		Scope:          slackDeliveryAuthorizationScopeActorMembership,

@@ -21,6 +21,37 @@ VALUES (
 )
 RETURNING *;
 
+-- name: CreateSlackImportAttachment :one
+INSERT INTO public.attachments (
+    filename,
+    blob_name,
+    size,
+    mime_type,
+    uploaded_by,
+    workspace_id,
+    scan_status,
+    optimization_status,
+    slack_file_import_id
+)
+VALUES (
+    sqlc.arg(filename),
+    sqlc.arg(blob_name),
+    sqlc.arg(size),
+    sqlc.arg(mime_type),
+    sqlc.arg(uploaded_by),
+    sqlc.arg(workspace_id),
+    sqlc.arg(scan_status),
+    sqlc.arg(optimization_status),
+    sqlc.arg(slack_file_import_id)
+)
+RETURNING *;
+
+-- name: GetWorkspaceSlackImportAttachment :one
+SELECT *
+FROM public.attachments
+WHERE slack_file_import_id = sqlc.arg(slack_file_import_id)
+  AND workspace_id = sqlc.arg(workspace_id);
+
 -- name: GetWorkspaceAttachment :one
 SELECT *
 FROM public.attachments

@@ -44,11 +44,13 @@ oauth_config:
       - chat:write
       - chat:write.public
       - commands
+      - files:read
       - groups:history
       - groups:read
       - im:history
       - links:read
       - links:write
+      - mpim:history
       - users:read
       - users:read.email
   pkce_enabled: false

@@ -29,4 +29,5 @@ type Attachment struct {
 	OptimizationLeaseExpiresAt *time.Time
 	OptimizationLastError      *string
 	UpdatedAt                  time.Time
+	SlackFileImportID          *uuid.UUID
 }

@@ -53,6 +53,8 @@ const (
 	modalBlockTeam        = "team"
 	modalBlockTitle       = "title"
 	modalBlockDescription = "description"
+	modalBlockSourceFiles = "source_files"
+	modalBlockUploadFiles = "upload_files"
 	modalBlockStatus      = "status"
 	modalBlockPriority    = "priority"
 	modalBlockAssignee    = "assignee"
@@ -62,6 +64,8 @@ const (
 	modalActionTeamSelect        = "team_select"
 	modalActionTitleInput        = "title_input"
 	modalActionDescriptionInput  = "description_input"
+	modalActionSourceFilesSelect = "source_files_select"
+	modalActionUploadFilesInput  = "upload_files_input"
 	modalActionStatusSelect      = "status_select"
 	modalActionPrioritySelect    = "priority_select"
 	modalActionAssigneeSelect    = "assignee_select"
@@ -95,6 +99,7 @@ type Service struct {
 	credentials              *credentialCodec
 	webClient                *slackWebClient
 	mutationConfirmer        storyMutationConfirmer
+	fileImportQueue          SlackFileImportQueue
 	objectiveReader          SlackObjectiveReader
 	sprintReader             SlackSprintReader
 	workObjectTriggerTimeout time.Duration
@@ -119,6 +124,12 @@ func WithNonceStore(store NonceStore) Option {
 func WithMutationConfirmer(confirmer storyMutationConfirmer) Option {
 	return func(service *Service) {
 		service.mutationConfirmer = confirmer
+	}
+}
+
+func WithSlackFileImportQueue(queue SlackFileImportQueue) Option {
+	return func(service *Service) {
+		service.fileImportQueue = queue
 	}
 }
 

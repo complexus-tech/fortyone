@@ -13,6 +13,7 @@ func toDomain(row attachmentssql.Attachment) attachmentdomain.Attachment {
 	}
 	return attachmentdomain.Attachment{
 		ID:                       row.AttachmentID,
+		SlackFileImportID:        uuidValue(row.SlackFileImportID),
 		Filename:                 row.Filename,
 		BlobName:                 row.BlobName,
 		Size:                     row.Size,
@@ -31,6 +32,13 @@ func toDomain(row attachmentssql.Attachment) attachmentdomain.Attachment {
 		OptimizationLeaseExpires: row.OptimizationLeaseExpiresAt,
 		OptimizationLastError:    stringValue(row.OptimizationLastError),
 	}
+}
+
+func uuidValue(value *uuid.UUID) uuid.UUID {
+	if value == nil {
+		return uuid.Nil
+	}
+	return *value
 }
 
 func stringValue(value *string) string {

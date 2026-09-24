@@ -34,6 +34,29 @@ func parseViewSubmission(payload interactionPayload) (viewSubmissionData, error)
 	}
 	source := metadata.Source
 
+	selectedSourceFiles := state[modalBlockSourceFiles][modalActionSourceFilesSelect]
+	selectedSourceFileIDs := make([]string, 0, len(selectedSourceFiles.SelectedOptions))
+	selectedSourceFileSet := make(map[string]struct{}, len(selectedSourceFiles.SelectedOptions))
+	for _, option := range selectedSourceFiles.SelectedOptions {
+		id := strings.TrimSpace(option.Value)
+		if isSlackModalFileID(id) {
+			selectedSourceFileSet[id] = struct{}{}
+		}
+	}
+	// The source-message selection must come from options in this modal. The
+	// importer will independently verify the file still belongs to the message.
+	for _, file := range metadata.SourceFiles {
+		if _, selected := selectedSourceFileSet[file.ID]; selected {
+			selectedSourceFileIDs = append(selectedSourceFileIDs, file.ID)
+		}
+	}
+
+	uploadedFromState := make([]string, 0)
+	for _, file := range state[modalBlockUploadFiles][modalActionUploadFilesInput].Files {
+		uploadedFromState = append(uploadedFromState, file.ID)
+	}
+	uploadedFileIDs := uniqueSlackModalFileIDs(uploadedFromState)
+
 	selectedTeamID := readSelectedOption(modalBlockTeam)
 	if selectedTeamID == "" {
 		selectedTeamID = strings.TrimSpace(metadata.SelectedTeamID)
@@ -118,16 +141,18 @@ func parseViewSubmission(payload interactionPayload) (viewSubmissionData, error)
 	}
 
 	return viewSubmissionData{
-		Title:       readValue(modalBlockTitle),
-		Description: readValue(modalBlockDescription),
-		TeamID:      teamID,
-		StatusKind:  statusKind,
-		StatusID:    statusID,
-		Priority:    readSelectedOption(modalBlockPriority),
-		AssigneeID:  assigneeID,
-		LabelIDs:    selectedLabelIDs,
-		ObjectiveID: objectiveID,
-		Source:      source,
+		Title:           readValue(modalBlockTitle),
+		Description:     readValue(modalBlockDescription),
+		SourceFileIDs:   selectedSourceFileIDs,
+		UploadedFileIDs: uploadedFileIDs,
+		TeamID:          teamID,
+		StatusKind:      statusKind,
+		StatusID:        statusID,
+		Priority:        readSelectedOption(modalBlockPriority),
+		AssigneeID:      assigneeID,
+		LabelIDs:        selectedLabelIDs,
+		ObjectiveID:     objectiveID,
+		Source:          source,
 		BlockIDs: modalDependentBlockIDs{
 			Status:    statusBlockID,
 			Assignee:  assigneeBlockID,

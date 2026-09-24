@@ -348,6 +348,7 @@ func buildServices(cfg mux.Config, dependencies Dependencies) services {
 		slack.WithMutationConfirmer(slackadapter.NewMutationConfirmer(mutationConfirmer)),
 		slack.WithObjectiveReader(slackadapter.NewObjectiveReader(objectivesService)),
 		slack.WithSprintReader(slackadapter.NewSprintReader(sprintsService)),
+		slack.WithSlackFileImportQueue(slack.NewSlackFileImportDispatcher(slackRepository, cfg.TasksService)),
 	)
 	calendarService := calendar.New(
 		cfg.Log,

@@ -71,7 +71,8 @@ func storyMutationToolDefinitions() []ToolDefinition {
 					"type":        "boolean",
 					"description": "Enable Maya auto-scheduling only when the user explicitly requests it; otherwise false.",
 				},
-			}, []string{"team_id", "title", "priority", "assignee", "estimated_duration_minutes", "minimum_focus_block_minutes", "auto_scheduling_enabled"}),
+				"file_id": map[string]any{"type": []string{"string", "null"}, "description": "An exact file ID from the server-verified files in the current Slack conversation when the user asks to attach one to this new story; otherwise null."},
+			}, []string{"team_id", "title", "priority", "assignee", "estimated_duration_minutes", "minimum_focus_block_minutes", "auto_scheduling_enabled", "file_id"}),
 		},
 		{
 			Type:        "function",
@@ -173,6 +174,15 @@ func storyMutationToolDefinitions() []ToolDefinition {
 				"to_story_reference":   map[string]any{"type": []string{"string", "null"}},
 				"association_type":     map[string]any{"type": "string", "enum": []string{"blocking", "related", "duplicate"}},
 			}, []string{"from_story_id", "from_story_reference", "to_story_id", "to_story_reference", "association_type"}),
+		},
+		{
+			Type: "function", Name: toolAttachStoryFile,
+			Description: "Prepare a confirmation proposal to attach one server-verified file from the current Slack conversation to an accessible existing story. Use an exact file ID listed in the conversation. This tool never imports the file without user confirmation.", Strict: true,
+			Parameters: strictObjectSchema(map[string]any{
+				"story_id":        map[string]any{"type": []string{"string", "null"}, "description": "An exact story UUID returned by a read tool, or null when story_reference is supplied."},
+				"story_reference": map[string]any{"type": []string{"string", "null"}, "description": "An exact reference such as WEB-123, or null when story_id is supplied."},
+				"file_id":         map[string]any{"type": "string", "description": "An exact server-verified file ID in the current Slack conversation."},
+			}, []string{"story_id", "story_reference", "file_id"}),
 		},
 	}
 }

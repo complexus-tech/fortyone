@@ -6,6 +6,7 @@ import (
 	"strings"
 	"sync/atomic"
 
+	"github.com/complexus-tech/projects-api/internal/bootstrap/slackadapter"
 	attachmentsrepository "github.com/complexus-tech/projects-api/internal/modules/attachments/repository"
 	attachments "github.com/complexus-tech/projects-api/internal/modules/attachments/service"
 	calendarrepository "github.com/complexus-tech/projects-api/internal/modules/calendar/repository"
@@ -21,6 +22,7 @@ import (
 	messagingrepository "github.com/complexus-tech/projects-api/internal/modules/messaging/repository"
 	notificationsrepository "github.com/complexus-tech/projects-api/internal/modules/notifications/repository"
 	notifications "github.com/complexus-tech/projects-api/internal/modules/notifications/service"
+	slackrepository "github.com/complexus-tech/projects-api/internal/modules/slack/repository"
 	slack "github.com/complexus-tech/projects-api/internal/modules/slack/service"
 	storiesrepository "github.com/complexus-tech/projects-api/internal/modules/stories/repository"
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
@@ -349,6 +351,16 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 	if err != nil {
 		return App{}, workerSlackInitializationFailure.WrapIfUnclassified(err)
 	}
+	slackFileImports, err := slack.NewSlackFileImportProcessor(
+		log,
+		slackrepository.New(connections.Pool),
+		tasksService,
+		slack.NewSlackFileImporter(slackadapter.NewAttachmentUploader(attachmentsService), nil),
+		credentialVault,
+	)
+	if err != nil {
+		return App{}, fmt.Errorf("initialize Slack file import processor: %w", err)
+	}
 	upgradedGitHubCredentials, err := githubService.BackfillLegacyUserCredentials(ctx)
 	if err != nil {
 		return App{}, fmt.Errorf("encrypt legacy GitHub user credentials: %w", err)
@@ -414,7 +426,8 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 		Attachments:    attachmentsService, EmailCopy: emailCopyGenerator,
 		EmailThreads: emailThreads, Notifications: notificationsService,
 		WeeklyDigest: notificationsStore,
-		SlackEvents:  slackEvents, EmailReplies: emailReplyProcessor,
+		SlackEvents:  slackEvents, SlackFileImports: slackFileImports,
+		EmailReplies:  emailReplyProcessor,
 		EmailRecovery: emailReplyIngress, Calendar: calendarService,
 		SystemUserID: systemUserID, FeedbackTasks: tasksService,
 		FeedbackOutbox:         feedbackOutbox,

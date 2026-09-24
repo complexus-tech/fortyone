@@ -12,8 +12,11 @@ const (
 )
 
 type interactionViewStateValue struct {
-	Type           string `json:"type"`
-	Value          string `json:"value"`
+	Type  string `json:"type"`
+	Value string `json:"value"`
+	Files []struct {
+		ID string `json:"id"`
+	} `json:"files"`
 	SelectedDate   string `json:"selected_date"`
 	SelectedOption struct {
 		Value string `json:"value"`

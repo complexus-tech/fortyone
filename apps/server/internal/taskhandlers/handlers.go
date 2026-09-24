@@ -26,6 +26,11 @@ type SlackEventProcessor interface {
 	ProcessWebhook(ctx context.Context, provider integrations.ProviderKey, inboxID uuid.UUID) error
 }
 
+type SlackFileImportProcessor interface {
+	ProcessSlackFileImport(context.Context, uuid.UUID) error
+	RecoverSlackFileImports(context.Context) (int, error)
+}
+
 type FigmaWebhookProcessor interface {
 	ProcessWebhook(ctx context.Context, provider integrations.ProviderKey, inboxID uuid.UUID) error
 }
@@ -127,6 +132,7 @@ type handlers struct {
 	routineDeliveries      RoutineDeliveryStore
 	briefingSources        jobs.BriefingSources
 	slackEvents            SlackEventProcessor
+	slackFileImports       SlackFileImportProcessor
 	slackRecovery          SlackInboxRecoverer
 	figmaWebhooks          FigmaWebhookProcessor
 	figmaRecovery          FigmaWebhookRecoverer
@@ -164,6 +170,7 @@ type WorkerHandlerDependencies struct {
 	RoutineDeliveries      RoutineDeliveryStore
 	BriefingSources        jobs.BriefingSources
 	SlackEvents            SlackEventProcessor
+	SlackFileImports       SlackFileImportProcessor
 	FigmaWebhooks          FigmaWebhookProcessor
 	EmailReplies           EmailReplyProcessor
 	EmailRecovery          EmailReplyRecoverer
@@ -200,6 +207,7 @@ func NewWorkerHandlers(dependencies WorkerHandlerDependencies) *handlers {
 		routineDeliveries:      dependencies.RoutineDeliveries,
 		briefingSources:        dependencies.BriefingSources,
 		slackEvents:            dependencies.SlackEvents,
+		slackFileImports:       dependencies.SlackFileImports,
 		slackRecovery:          slackRecovery,
 		figmaWebhooks:          dependencies.FigmaWebhooks,
 		figmaRecovery:          figmaRecovery,

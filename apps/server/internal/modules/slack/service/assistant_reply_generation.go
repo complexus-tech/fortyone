@@ -108,6 +108,7 @@ func (p *EventProcessor) generateAssistantReply(
 	}
 
 	threadSourceURL := slackThreadSourceURL(input.installation, input.event)
+	var threadFiles []slackMessageFile
 	if slackEventCanHydrateThread(input.event) && slackPromptRequestsThreadContext(input.prompt) {
 		threadReference, threadErr := p.loadSlackThreadReference(
 			ctx,
@@ -143,6 +144,7 @@ func (p *EventProcessor) generateAssistantReply(
 				return threadErr
 			}
 		} else {
+			threadFiles = threadReference.Files
 			// Keep imported participants out of persisted conversation state.
 			// This final ephemeral turn survives the assistant's newest-history
 			// bound while remaining clearly marked as untrusted reference data.
@@ -151,6 +153,17 @@ func (p *EventProcessor) generateAssistantReply(
 	}
 	if state.reply != "" {
 		return nil
+	}
+	var availableFiles []StoryAttachmentSource
+	if slackBotHasScope(input.installation.Scope, "files:read") {
+		availableFiles = assistantAvailableFiles(input.event, threadFiles)
+	}
+	if len(availableFiles) > 0 {
+		fileTurn, fileErr := assistantFileReferenceTurn(availableFiles)
+		if fileErr != nil {
+			return fileErr
+		}
+		turns = append(turns, fileTurn)
 	}
 
 	runtimeContext, contextErr := p.contextProvider.Load(
@@ -177,6 +190,7 @@ func (p *EventProcessor) generateAssistantReply(
 		AllowMutations: true,
 		WebsiteURL:     p.website,
 		SourceURL:      threadSourceURL,
+		AvailableFiles: availableFiles,
 		Conversation:   turns,
 		Prompt:         input.prompt,
 	})

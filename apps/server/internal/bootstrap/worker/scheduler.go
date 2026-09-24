@@ -332,6 +332,18 @@ func registerSchedules(scheduler scheduleRegistrar) error {
 	}
 
 	_, err = scheduler.Register(
+		"*/1 * * * *",
+		asynq.NewTask(tasks.TypeSlackFileImportRecovery, nil),
+		asynq.Queue("cleanup"),
+		asynq.MaxRetry(2),
+		asynq.Timeout(45*time.Second),
+		asynq.Unique(55*time.Second),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register Slack file import recovery task: %w", err)
+	}
+
+	_, err = scheduler.Register(
 		"*/1 * * * *", // Every minute
 		asynq.NewTask(tasks.TypeBrevoEmailReplyRecovery, nil),
 		asynq.Queue("cleanup"),

@@ -40,6 +40,15 @@ func validateStoryTimeMutationClaims(mutation storyTimeMutation) error {
 }
 
 func validateStoryMutationClaims(claims storyMutationClaims) error {
+	if claims.Attachment != nil {
+		attachment, err := normalizedAttachmentSource(*claims.Attachment)
+		if err != nil || attachment != *claims.Attachment {
+			return fmt.Errorf("%w: invalid attachment claim", ErrInvalidConfirmation)
+		}
+		if claims.Operation != StoryMutationCreate && claims.Operation != StoryMutationAttachFile {
+			return fmt.Errorf("%w: unexpected attachment claim", ErrInvalidConfirmation)
+		}
+	}
 	if claims.Title != nil {
 		title, err := normalizedStoryTitle(*claims.Title)
 		if err != nil || title != *claims.Title {
@@ -98,6 +107,11 @@ func validateStoryMutationClaims(claims storyMutationClaims) error {
 		}
 		if claims.RelationType != "blocking" && claims.RelationType != "related" && claims.RelationType != "duplicate" {
 			return fmt.Errorf("%w: invalid relationship type", ErrInvalidConfirmation)
+		}
+	case StoryMutationAttachFile:
+		if claims.StoryID == nil || *claims.StoryID == uuid.Nil || claims.Attachment == nil ||
+			claims.Title != nil || claims.Priority != nil || claims.RelationStoryID != nil || claims.Comment != nil {
+			return fmt.Errorf("%w: malformed file attachment claims", ErrInvalidConfirmation)
 		}
 	default:
 		return fmt.Errorf("%w: unsupported operation", ErrInvalidConfirmation)
@@ -165,6 +179,10 @@ func validateToolScope(scope *ToolScope) error {
 	}
 	scope.AllowedTeamIDs = allowedTeamIDs
 	scope.SourceURL, err = normalizedSourceURL(scope.SourceURL)
+	if err != nil {
+		return err
+	}
+	scope.AvailableFiles, err = normalizedAttachmentSources(scope.AvailableFiles)
 	if err != nil {
 		return err
 	}

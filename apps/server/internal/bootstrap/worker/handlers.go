@@ -46,6 +46,7 @@ type taskMuxDependencies struct {
 	Notifications          *notifications.Service
 	WeeklyDigest           jobs.WeeklyDigestStore
 	SlackEvents            taskhandlers.SlackEventProcessor
+	SlackFileImports       taskhandlers.SlackFileImportProcessor
 	EmailReplies           taskhandlers.EmailReplyProcessor
 	EmailRecovery          taskhandlers.EmailReplyRecoverer
 	Calendar               taskhandlers.CalendarSyncProcessor
@@ -83,7 +84,8 @@ func buildTaskMux(dependencies taskMuxDependencies) *asynq.ServeMux {
 		RoutineDeliveries: notificationsrepository.New(dependencies.DatabasePool),
 		EmailAvatars:      users, APIPublicURL: dependencies.APIPublicURL,
 		BriefingSources: jobs.BriefingSources{Stories: storyStore, Objectives: objectiveGuidance, Weekly: dependencies.WeeklyDigest},
-		SlackEvents:     dependencies.SlackEvents, EmailReplies: dependencies.EmailReplies,
+		SlackEvents:     dependencies.SlackEvents, SlackFileImports: dependencies.SlackFileImports,
+		EmailReplies:  dependencies.EmailReplies,
 		EmailRecovery: dependencies.EmailRecovery, Calendar: dependencies.Calendar,
 		SystemUserID: dependencies.SystemUserID, FeedbackTasks: dependencies.FeedbackTasks,
 		FeedbackOutbox:         dependencies.FeedbackOutbox,
@@ -185,8 +187,10 @@ func buildTaskMux(dependencies taskMuxDependencies) *asynq.ServeMux {
 	mux.HandleFunc(tasks.TypeMayaScheduleRecovery, workerTaskService.HandleMayaScheduleRecovery)
 	mux.HandleFunc(tasks.TypeAttachmentImageOptimization, workerTaskService.HandleAttachmentImageOptimization)
 	mux.HandleFunc(tasks.TypeSlackEvent, workerTaskService.HandleSlackEvent)
+	mux.HandleFunc(tasks.TypeSlackFileImport, workerTaskService.HandleSlackFileImport)
 	mux.HandleFunc(tasks.TypeSlackCredentialBackfill, workerTaskService.HandleSlackCredentialBackfill)
 	mux.HandleFunc(tasks.TypeSlackInboxRecovery, workerTaskService.HandleSlackInboxRecovery)
+	mux.HandleFunc(tasks.TypeSlackFileImportRecovery, workerTaskService.HandleSlackFileImportRecovery)
 	mux.HandleFunc(tasks.TypeBrevoEmailReply, workerTaskService.HandleBrevoEmailReply)
 	mux.HandleFunc(tasks.TypeBrevoEmailReplyRecovery, workerTaskService.HandleBrevoEmailReplyRecovery)
 	mux.HandleFunc(tasks.TypeCalendarSync, workerTaskService.HandleCalendarSync)

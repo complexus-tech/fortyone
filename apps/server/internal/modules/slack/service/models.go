@@ -229,17 +229,19 @@ type EventResponse struct {
 }
 
 type viewSubmissionData struct {
-	Title       string
-	Description string
-	TeamID      uuid.UUID
-	StatusKind  string
-	StatusID    *uuid.UUID
-	Priority    string
-	AssigneeID  *uuid.UUID
-	LabelIDs    []uuid.UUID
-	ObjectiveID *uuid.UUID
-	Source      requestSourceContext
-	BlockIDs    modalDependentBlockIDs
+	Title           string
+	Description     string
+	SourceFileIDs   []string
+	UploadedFileIDs []string
+	TeamID          uuid.UUID
+	StatusKind      string
+	StatusID        *uuid.UUID
+	Priority        string
+	AssigneeID      *uuid.UUID
+	LabelIDs        []uuid.UUID
+	ObjectiveID     *uuid.UUID
+	Source          requestSourceContext
+	BlockIDs        modalDependentBlockIDs
 }
 
 type modalDependentBlockIDs struct {

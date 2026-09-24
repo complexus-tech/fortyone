@@ -23,7 +23,20 @@ const (
 	StoryMutationUpdate      StoryMutationOperation = "update_story"
 	StoryMutationComment     StoryMutationOperation = "add_story_comment"
 	StoryMutationRelation    StoryMutationOperation = "add_story_relationship"
+	StoryMutationAttachFile  StoryMutationOperation = "attach_story_file"
 )
+
+// StoryAttachmentSource is a server-verified provider file reference. It never
+// contains a download URL or file bytes.
+type StoryAttachmentSource struct {
+	Provider            string `json:"provider"`
+	ExternalWorkspaceID string `json:"external_workspace_id"`
+	ChannelID           string `json:"channel_id"`
+	ThreadTS            string `json:"thread_ts"`
+	MessageTS           string `json:"message_ts,omitempty"`
+	FileID              string `json:"file_id"`
+	Name                string `json:"name"`
+}
 
 type StoryMutationResult struct {
 	Status                   string                    `json:"status"`
@@ -43,6 +56,7 @@ type StoryMutationResult struct {
 	AutoSchedulingUpdatedAt  *time.Time                `json:"auto_scheduling_updated_at,omitempty"`
 	CommentID                *uuid.UUID                `json:"comment_id,omitempty"`
 	AssociationID            *uuid.UUID                `json:"association_id,omitempty"`
+	Attachment               *StoryAttachmentSource    `json:"attachment,omitempty"`
 	Items                    []StoryMutationItemResult `json:"items,omitempty"`
 }
 

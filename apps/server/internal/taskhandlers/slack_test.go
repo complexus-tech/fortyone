@@ -9,6 +9,7 @@ import (
 
 	"github.com/complexus-tech/projects-api/internal/platform/integrations"
 	"github.com/complexus-tech/projects-api/pkg/logger"
+	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
 	"github.com/stretchr/testify/require"
@@ -118,4 +119,45 @@ func TestHandleSlackInboxRecovery(t *testing.T) {
 	processor.recoveryErr = expected
 	err := handler.HandleSlackInboxRecovery(context.Background(), asynq.NewTask("cleanup:slack_inbox", nil))
 	require.ErrorIs(t, err, expected)
+}
+
+type slackFileImportProcessorStub struct {
+	processed uuid.UUID
+	recovered int
+	err       error
+}
+
+func (s *slackFileImportProcessorStub) ProcessSlackFileImport(_ context.Context, id uuid.UUID) error {
+	s.processed = id
+	return s.err
+}
+
+func (s *slackFileImportProcessorStub) RecoverSlackFileImports(context.Context) (int, error) {
+	return s.recovered, s.err
+}
+
+func TestHandleSlackFileImport(t *testing.T) {
+	importID := uuid.New()
+	processor := &slackFileImportProcessorStub{}
+	handler := &handlers{slackFileImports: processor}
+	task := asynq.NewTask(tasks.TypeSlackFileImport, []byte(`{"importId":"`+importID.String()+`"}`))
+	require.NoError(t, handler.HandleSlackFileImport(context.Background(), task))
+	require.Equal(t, importID, processor.processed)
+
+	err := handler.HandleSlackFileImport(context.Background(), asynq.NewTask(tasks.TypeSlackFileImport, []byte(`{}`)))
+	require.ErrorIs(t, err, asynq.SkipRetry)
+}
+
+func TestHandleSlackFileImportRecovery(t *testing.T) {
+	processor := &slackFileImportProcessorStub{recovered: 2}
+	handler := &handlers{
+		log:              logger.NewWithText(io.Discard, slog.LevelError, "test"),
+		slackFileImports: processor,
+	}
+	require.NoError(t, handler.HandleSlackFileImportRecovery(context.Background(), asynq.NewTask(tasks.TypeSlackFileImportRecovery, nil)))
+	processor.err = errors.New("queue unavailable")
+	require.ErrorIs(t,
+		handler.HandleSlackFileImportRecovery(context.Background(), asynq.NewTask(tasks.TypeSlackFileImportRecovery, nil)),
+		processor.err,
+	)
 }

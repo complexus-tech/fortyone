@@ -35,6 +35,7 @@ type slackInnerEvent struct {
 	Subtype      string                `json:"subtype"`
 	User         string                `json:"user"`
 	Text         string                `json:"text"`
+	Files        []slackMessageFile    `json:"files"`
 	Channel      string                `json:"channel"`
 	ChannelID    string                `json:"channel_id"`
 	ChannelType  string                `json:"channel_type"`
@@ -88,6 +89,7 @@ type normalizedSlackEvent struct {
 	ThreadTS            string
 	ReplyTS             string
 	Text                string
+	Files               []slackMessageFile
 	Source              string
 	UnfurlID            string
 	TriggerID           string
@@ -132,6 +134,7 @@ func normalizeSlackEvent(envelope slackEventEnvelope) (normalizedSlackEvent, boo
 		MessageTS:    strings.TrimSpace(event.TS),
 		ThreadTS:     strings.TrimSpace(event.ThreadTS),
 		Text:         strings.TrimSpace(event.Text),
+		Files:        append([]slackMessageFile(nil), event.Files...),
 		Source:       strings.TrimSpace(event.Source),
 		UnfurlID:     strings.TrimSpace(event.UnfurlID),
 		TriggerID:    strings.TrimSpace(event.TriggerID),
@@ -204,7 +207,9 @@ func normalizeSlackEvent(envelope slackEventEnvelope) (normalizedSlackEvent, boo
 	default:
 		return normalizedSlackEvent{}, false
 	}
-	if strings.TrimSpace(event.Subtype) != "" || strings.TrimSpace(event.BotID) != "" || event.BotProfile != nil {
+	subtype := strings.TrimSpace(event.Subtype)
+	if (subtype != "" && (subtype != "file_share" || len(normalized.Files) == 0)) ||
+		strings.TrimSpace(event.BotID) != "" || event.BotProfile != nil {
 		return normalizedSlackEvent{}, false
 	}
 	if envelope.IsExtSharedChannel && (normalized.Kind == slackEventKindMention || normalized.Kind == slackEventKindChannelThread) {

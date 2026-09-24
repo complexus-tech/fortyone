@@ -29,9 +29,25 @@ func (adapter *Assistant) Respond(ctx context.Context, input slack.AssistantRequ
 		RuntimeContext: mapRuntimeContextToMessaging(input.RuntimeContext),
 		Guidance:       input.Guidance, AllowMutations: input.AllowMutations,
 		WebsiteURL: input.WebsiteURL, SourceURL: input.SourceURL,
-		Conversation: mapConversationToMessaging(input.Conversation), Prompt: input.Prompt,
+		AvailableFiles: mapAttachmentSourcesToMessaging(input.AvailableFiles),
+		Conversation:   mapConversationToMessaging(input.Conversation), Prompt: input.Prompt,
 	})
 	return mapAssistantResponse(response), mapAssistantError(err)
+}
+
+func mapAttachmentSourcesToMessaging(files []slack.StoryAttachmentSource) []messaging.StoryAttachmentSource {
+	if len(files) == 0 {
+		return nil
+	}
+	result := make([]messaging.StoryAttachmentSource, 0, len(files))
+	for _, file := range files {
+		result = append(result, messaging.StoryAttachmentSource{
+			Provider: file.Provider, ExternalWorkspaceID: file.ExternalWorkspaceID,
+			ChannelID: file.ChannelID, ThreadTS: file.ThreadTS, MessageTS: file.MessageTS,
+			FileID: file.FileID, Name: file.Name,
+		})
+	}
+	return result
 }
 
 func mapConversationToMessaging(turns []slack.AssistantConversationTurn) []messaging.ConversationTurn {

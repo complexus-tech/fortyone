@@ -71,6 +71,10 @@ func NormalizeRequest(request Request) (Request, error) {
 	if err != nil {
 		return Request{}, err
 	}
+	request.AvailableFiles, err = normalizedAttachmentSources(request.AvailableFiles)
+	if err != nil {
+		return Request{}, err
+	}
 	request.Guidance = strings.TrimSpace(request.Guidance)
 	if guidanceRunes := len([]rune(request.Guidance)); guidanceRunes > MaximumGuidanceRunes {
 		return Request{}, fmt.Errorf("%w: workspace guidance is %d characters; maximum is %d", ErrInvalidRequest, guidanceRunes, MaximumGuidanceRunes)

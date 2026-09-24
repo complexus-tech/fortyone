@@ -175,6 +175,8 @@ func TestOpenCreateTaskModalConsumesTriggerBeforeTeamLookups(t *testing.T) {
 			"Ship it",
 			"Created from Slack",
 			requestSourceContext{SlackTeamID: "T123", SlackUserID: "U123"},
+			nil,
+			false,
 			workspaceID,
 			actorID,
 			"xoxb-token",

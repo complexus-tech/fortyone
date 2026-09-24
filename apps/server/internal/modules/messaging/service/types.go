@@ -73,9 +73,12 @@ type Request struct {
 	// SourceURL is a provider-adapter supplied, server-authoritative link to
 	// the exact conversation source used for this request. It must never be
 	// populated from model tool arguments or untrusted message content.
-	SourceURL    string
-	Conversation []ConversationTurn
-	Prompt       string
+	SourceURL string
+	// AvailableFiles contains provider-verified file IDs from the active
+	// conversation. File bytes and provider download URLs stay outside Maya.
+	AvailableFiles []StoryAttachmentSource
+	Conversation   []ConversationTurn
+	Prompt         string
 }
 
 // RuntimeContext is provider-neutral, display-safe context for one assistant
@@ -184,9 +187,10 @@ type ToolScope struct {
 	// SourceURL is copied from Request.SourceURL after provider-neutral HTTPS
 	// validation. Mutation tools may attach it as attribution, but cannot
 	// accept or replace it through model-authored arguments.
-	SourceURL     string
-	WorkspaceSlug string
-	Timezone      string
+	SourceURL      string
+	AvailableFiles []StoryAttachmentSource
+	WorkspaceSlug  string
+	Timezone       string
 }
 
 type StoryMutationOperation = messagingdomain.StoryMutationOperation
@@ -195,6 +199,7 @@ const (
 	StoryMutationCreate      = messagingdomain.StoryMutationCreate
 	StoryMutationCreateBatch = messagingdomain.StoryMutationCreateBatch
 	StoryMutationUpdate      = messagingdomain.StoryMutationUpdate
+	StoryMutationAttachFile  = messagingdomain.StoryMutationAttachFile
 	StoryMutationComment     = messagingdomain.StoryMutationComment
 	StoryMutationRelation    = messagingdomain.StoryMutationRelation
 )
@@ -235,6 +240,7 @@ type StoryMutationPreview struct {
 }
 
 type StoryMutationResult = messagingdomain.StoryMutationResult
+type StoryAttachmentSource = messagingdomain.StoryAttachmentSource
 type StoryMutationItemResult = messagingdomain.StoryMutationItemResult
 type StoryMutationCancellationResult = messagingdomain.StoryMutationCancellationResult
 type StoryMutationConfirmationStatus = messagingdomain.StoryMutationConfirmationStatus

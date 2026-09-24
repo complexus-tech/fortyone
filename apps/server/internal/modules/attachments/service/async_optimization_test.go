@@ -30,6 +30,7 @@ func (testMultipartFile) Close() error {
 
 type attachmentRepositoryStub struct {
 	attachment                 CoreAttachment
+	createCount                int
 	deletedAttachmentID        uuid.UUID
 	storyExists                bool
 	storyAttachment            CoreAttachment
@@ -45,10 +46,20 @@ type attachmentRepositoryStub struct {
 }
 
 func (r *attachmentRepositoryStub) CreateAttachment(_ context.Context, attachment CoreAttachment) (CoreAttachment, error) {
+	r.createCount++
 	attachment.ID = uuid.New()
 	attachment.CreatedAt = time.Now()
 	r.attachment = attachment
 	return attachment, nil
+}
+func (r *attachmentRepositoryStub) CreateSlackImportAttachment(ctx context.Context, attachment CoreAttachment) (CoreAttachment, error) {
+	return r.CreateAttachment(ctx, attachment)
+}
+func (r *attachmentRepositoryStub) GetAttachmentBySlackImportID(_ context.Context, importID, workspaceID uuid.UUID) (CoreAttachment, error) {
+	if r.attachment.ID == uuid.Nil || r.attachment.SlackFileImportID != importID || r.attachment.WorkspaceID != workspaceID {
+		return CoreAttachment{}, ErrNotFound
+	}
+	return r.attachment, nil
 }
 func (r *attachmentRepositoryStub) GetAttachmentByID(_ context.Context, id, workspaceID uuid.UUID) (CoreAttachment, error) {
 	if r.attachment.ID != id || r.attachment.WorkspaceID != workspaceID {

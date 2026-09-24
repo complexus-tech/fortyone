@@ -124,7 +124,7 @@ func containsStoryMutationCall(calls []ToolCall) bool {
 }
 
 func isStoryMutationTool(name string) bool {
-	return name == toolCreateStory || name == toolCreateStories || name == toolUpdateStory || name == toolAddComment || name == toolAddRelationship
+	return name == toolCreateStory || name == toolCreateStories || name == toolUpdateStory || name == toolAddComment || name == toolAddRelationship || name == toolAttachStoryFile
 }
 
 func validateStrictObjectSchema(schema map[string]any, path string) error {

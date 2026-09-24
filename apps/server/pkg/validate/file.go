@@ -122,13 +122,26 @@ func WorkspaceLogo(file multipart.File, fileHeader *multipart.FileHeader) error 
 
 // Attachment validates a file for use as a story attachment
 func Attachment(file multipart.File, fileHeader *multipart.FileHeader) error {
-	// Check file size
-	if fileHeader.Size > MaxAttachmentSize {
+	return validateAttachment(file, fileHeader, MaxAttachmentSize)
+}
+
+// AttachmentWithoutSizeLimit validates a trusted provider download using the
+// same content and filename rules as direct uploads, without the direct-upload
+// size limit. Callers must bound the stream independently before using it.
+func AttachmentWithoutSizeLimit(file multipart.File, fileHeader *multipart.FileHeader) error {
+	return validateAttachment(file, fileHeader, 0)
+}
+
+func validateAttachment(file multipart.File, fileHeader *multipart.FileHeader, maxSize int64) error {
+	if fileHeader == nil || file == nil {
+		return ErrEmptyFile
+	}
+	if maxSize > 0 && fileHeader.Size > maxSize {
 		return ErrFileTooLarge
 	}
 
 	// Check if file is empty
-	if fileHeader.Size == 0 {
+	if fileHeader.Size <= 0 {
 		return ErrEmptyFile
 	}
 

@@ -214,7 +214,7 @@ func TestSlackBotOAuthScopeValueIncludesChannelInventoryAndLinkScopes(t *testing
 	t.Parallel()
 
 	require.Equal(t,
-		"app_mentions:read,channels:history,channels:read,chat:write,chat:write.public,commands,groups:history,groups:read,im:history,links:read,links:write,users:read,users:read.email",
+		"app_mentions:read,channels:history,channels:read,chat:write,chat:write.public,commands,files:read,groups:history,groups:read,im:history,links:read,links:write,mpim:history,users:read,users:read.email",
 		slackBotOAuthScopeValue(),
 	)
 }

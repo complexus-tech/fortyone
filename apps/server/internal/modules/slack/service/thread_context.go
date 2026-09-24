@@ -35,18 +35,29 @@ var errSlackThreadContextIncomplete = errors.New("slack thread context is incomp
 type slackThreadReference struct {
 	Turn      AssistantConversationTurn
 	SourceURL string
+	Files     []slackMessageFile
+}
+
+type slackMessageFile struct {
+	ID         string `json:"id"`
+	Name       string `json:"name"`
+	Title      string `json:"title"`
+	Mode       string `json:"mode"`
+	IsExternal bool   `json:"is_external"`
+	MessageTS  string `json:"-"`
 }
 
 type slackThreadMessage struct {
-	TS         string          `json:"ts"`
-	ThreadTS   string          `json:"thread_ts"`
-	UserID     string          `json:"user"`
-	Text       string          `json:"text"`
-	Subtype    string          `json:"subtype"`
-	BotID      string          `json:"bot_id"`
-	AppID      string          `json:"app_id"`
-	BotProfile json.RawMessage `json:"bot_profile"`
-	Hidden     bool            `json:"hidden"`
+	TS         string             `json:"ts"`
+	ThreadTS   string             `json:"thread_ts"`
+	UserID     string             `json:"user"`
+	Text       string             `json:"text"`
+	Files      []slackMessageFile `json:"files"`
+	Subtype    string             `json:"subtype"`
+	BotID      string             `json:"bot_id"`
+	AppID      string             `json:"app_id"`
+	BotProfile json.RawMessage    `json:"bot_profile"`
+	Hidden     bool               `json:"hidden"`
 }
 
 type slackThreadRepliesResponse struct {
@@ -84,6 +95,11 @@ func slackPromptRequestsThreadContext(prompt string) bool {
 	}
 
 	if has("thread", "threads", "message", "messages", "conversation", "conversations", "chat") {
+		return true
+	}
+	if has("attach", "attached", "upload") ||
+		(has("file", "files", "attachment", "attachments", "document", "pdf", "image", "photo") &&
+			has("this", "that", "the", "above", "here", "which", "find", "include", "add")) {
 		return true
 	}
 	if has("review", "summarize", "summarise", "summary", "recap") {
@@ -154,6 +170,7 @@ func (p *EventProcessor) loadSlackThreadReference(
 	}
 
 	messages := make([]slackThreadMessage, 0, min(len(response.Messages), slackThreadRepliesPageLimit))
+	files := make([]slackMessageFile, 0)
 	seenMessageIDs := make(map[string]struct{}, min(len(response.Messages), slackThreadRepliesPageLimit))
 	filteredCount := 0
 	for _, message := range response.Messages {
@@ -169,6 +186,10 @@ func (p *EventProcessor) loadSlackThreadReference(
 			!supportedSlackThreadMessage(message, botUserID) {
 			filteredCount++
 			continue
+		}
+		for _, file := range message.Files {
+			file.MessageTS = message.TS
+			files = append(files, file)
 		}
 		if _, excluded := excludedMessageIDs[message.TS]; excluded {
 			filteredCount++
@@ -190,7 +211,7 @@ func (p *EventProcessor) loadSlackThreadReference(
 	if err != nil {
 		return slackThreadReference{}, err
 	}
-	return slackThreadReference{Turn: turn, SourceURL: sourceURL}, nil
+	return slackThreadReference{Turn: turn, SourceURL: sourceURL, Files: files}, nil
 }
 
 func slackMessageBelongsToThread(message slackThreadMessage, threadTS string) bool {
@@ -201,7 +222,7 @@ func slackMessageBelongsToThread(message slackThreadMessage, threadTS string) bo
 }
 
 func supportedSlackThreadMessage(message slackThreadMessage, botUserID string) bool {
-	if message.TS == "" || message.UserID == "" || message.Text == "" || message.Hidden {
+	if message.TS == "" || message.UserID == "" || (message.Text == "" && len(message.Files) == 0) || message.Hidden {
 		return false
 	}
 	if botUserID != "" && message.UserID == botUserID {
@@ -211,7 +232,8 @@ func supportedSlackThreadMessage(message slackThreadMessage, botUserID string) b
 	if message.BotID != "" || message.AppID != "" || (botProfile != "" && botProfile != "null") {
 		return false
 	}
-	if message.Subtype != "" && message.Subtype != "thread_broadcast" {
+	if message.Subtype != "" && message.Subtype != "thread_broadcast" &&
+		(message.Subtype != "file_share" || len(message.Files) == 0) {
 		return false
 	}
 	return !strings.EqualFold(message.Text, "This message was deleted.")

@@ -330,7 +330,8 @@ func validateStoryMutationConfirmationStateInput(input messaging.StoryMutationCo
 		messaging.StoryMutationCreateBatch,
 		messaging.StoryMutationUpdate,
 		messaging.StoryMutationComment,
-		messaging.StoryMutationRelation:
+		messaging.StoryMutationRelation,
+		messaging.StoryMutationAttachFile:
 	default:
 		return fmt.Errorf("%w: unsupported operation %q", messaging.ErrInvalidConfirmation, input.Operation)
 	}

@@ -12,7 +12,7 @@ import (
 )
 
 const authorizeWorkspaceStoryAttachment = `-- name: AuthorizeWorkspaceStoryAttachment :one
-SELECT attachment.attachment_id, attachment.filename, attachment.size, attachment.mime_type, attachment.uploaded_by, attachment.workspace_id, attachment.created_at, attachment.blob_name, attachment.scan_status, attachment.scan_completed_at, attachment.scan_failure_reason, attachment.optimization_status, attachment.optimization_attempts, attachment.optimization_started_at, attachment.optimization_completed_at, attachment.optimization_lease_expires_at, attachment.optimization_last_error, attachment.updated_at
+SELECT attachment.attachment_id, attachment.filename, attachment.size, attachment.mime_type, attachment.uploaded_by, attachment.workspace_id, attachment.created_at, attachment.blob_name, attachment.scan_status, attachment.scan_completed_at, attachment.scan_failure_reason, attachment.optimization_status, attachment.optimization_attempts, attachment.optimization_started_at, attachment.optimization_completed_at, attachment.optimization_lease_expires_at, attachment.optimization_last_error, attachment.updated_at, attachment.slack_file_import_id
 FROM public.story_attachments AS relation
 INNER JOIN public.stories AS story ON story.id = relation.story_id
 INNER JOIN public.attachments AS attachment
@@ -51,12 +51,13 @@ func (q *Queries) AuthorizeWorkspaceStoryAttachment(ctx context.Context, arg Aut
 		&i.OptimizationLeaseExpiresAt,
 		&i.OptimizationLastError,
 		&i.UpdatedAt,
+		&i.SlackFileImportID,
 	)
 	return i, err
 }
 
 const authorizeWorkspaceStoryMedia = `-- name: AuthorizeWorkspaceStoryMedia :one
-SELECT attachment.attachment_id, attachment.filename, attachment.size, attachment.mime_type, attachment.uploaded_by, attachment.workspace_id, attachment.created_at, attachment.blob_name, attachment.scan_status, attachment.scan_completed_at, attachment.scan_failure_reason, attachment.optimization_status, attachment.optimization_attempts, attachment.optimization_started_at, attachment.optimization_completed_at, attachment.optimization_lease_expires_at, attachment.optimization_last_error, attachment.updated_at
+SELECT attachment.attachment_id, attachment.filename, attachment.size, attachment.mime_type, attachment.uploaded_by, attachment.workspace_id, attachment.created_at, attachment.blob_name, attachment.scan_status, attachment.scan_completed_at, attachment.scan_failure_reason, attachment.optimization_status, attachment.optimization_attempts, attachment.optimization_started_at, attachment.optimization_completed_at, attachment.optimization_lease_expires_at, attachment.optimization_last_error, attachment.updated_at, attachment.slack_file_import_id
 FROM public.story_inline_attachments AS media
 INNER JOIN public.stories AS story ON story.id = media.story_id
 INNER JOIN public.attachments AS attachment
@@ -95,6 +96,7 @@ func (q *Queries) AuthorizeWorkspaceStoryMedia(ctx context.Context, arg Authoriz
 		&i.OptimizationLeaseExpiresAt,
 		&i.OptimizationLastError,
 		&i.UpdatedAt,
+		&i.SlackFileImportID,
 	)
 	return i, err
 }
@@ -156,7 +158,7 @@ VALUES (
     $7,
     $8
 )
-RETURNING attachment_id, filename, size, mime_type, uploaded_by, workspace_id, created_at, blob_name, scan_status, scan_completed_at, scan_failure_reason, optimization_status, optimization_attempts, optimization_started_at, optimization_completed_at, optimization_lease_expires_at, optimization_last_error, updated_at
+RETURNING attachment_id, filename, size, mime_type, uploaded_by, workspace_id, created_at, blob_name, scan_status, scan_completed_at, scan_failure_reason, optimization_status, optimization_attempts, optimization_started_at, optimization_completed_at, optimization_lease_expires_at, optimization_last_error, updated_at, slack_file_import_id
 `
 
 type CreateAttachmentParams struct {
@@ -201,6 +203,82 @@ func (q *Queries) CreateAttachment(ctx context.Context, arg CreateAttachmentPara
 		&i.OptimizationLeaseExpiresAt,
 		&i.OptimizationLastError,
 		&i.UpdatedAt,
+		&i.SlackFileImportID,
+	)
+	return i, err
+}
+
+const createSlackImportAttachment = `-- name: CreateSlackImportAttachment :one
+INSERT INTO public.attachments (
+    filename,
+    blob_name,
+    size,
+    mime_type,
+    uploaded_by,
+    workspace_id,
+    scan_status,
+    optimization_status,
+    slack_file_import_id
+)
+VALUES (
+    $1,
+    $2,
+    $3,
+    $4,
+    $5,
+    $6,
+    $7,
+    $8,
+    $9
+)
+RETURNING attachment_id, filename, size, mime_type, uploaded_by, workspace_id, created_at, blob_name, scan_status, scan_completed_at, scan_failure_reason, optimization_status, optimization_attempts, optimization_started_at, optimization_completed_at, optimization_lease_expires_at, optimization_last_error, updated_at, slack_file_import_id
+`
+
+type CreateSlackImportAttachmentParams struct {
+	Filename           string
+	BlobName           string
+	Size               int64
+	MimeType           string
+	UploadedBy         *uuid.UUID
+	WorkspaceID        uuid.UUID
+	ScanStatus         string
+	OptimizationStatus string
+	SlackFileImportID  *uuid.UUID
+}
+
+func (q *Queries) CreateSlackImportAttachment(ctx context.Context, arg CreateSlackImportAttachmentParams) (Attachment, error) {
+	row := q.db.QueryRow(ctx, createSlackImportAttachment,
+		arg.Filename,
+		arg.BlobName,
+		arg.Size,
+		arg.MimeType,
+		arg.UploadedBy,
+		arg.WorkspaceID,
+		arg.ScanStatus,
+		arg.OptimizationStatus,
+		arg.SlackFileImportID,
+	)
+	var i Attachment
+	err := row.Scan(
+		&i.AttachmentID,
+		&i.Filename,
+		&i.Size,
+		&i.MimeType,
+		&i.UploadedBy,
+		&i.WorkspaceID,
+		&i.CreatedAt,
+		&i.BlobName,
+		&i.ScanStatus,
+		&i.ScanCompletedAt,
+		&i.ScanFailureReason,
+		&i.OptimizationStatus,
+		&i.OptimizationAttempts,
+		&i.OptimizationStartedAt,
+		&i.OptimizationCompletedAt,
+		&i.OptimizationLeaseExpiresAt,
+		&i.OptimizationLastError,
+		&i.UpdatedAt,
+		&i.SlackFileImportID,
 	)
 	return i, err
 }
@@ -229,7 +307,7 @@ WHERE attachment.attachment_id = $1
       FROM public.feedback_item_attachments AS feedback_relation
       WHERE feedback_relation.attachment_id = attachment.attachment_id
   )
-RETURNING attachment.attachment_id, attachment.filename, attachment.size, attachment.mime_type, attachment.uploaded_by, attachment.workspace_id, attachment.created_at, attachment.blob_name, attachment.scan_status, attachment.scan_completed_at, attachment.scan_failure_reason, attachment.optimization_status, attachment.optimization_attempts, attachment.optimization_started_at, attachment.optimization_completed_at, attachment.optimization_lease_expires_at, attachment.optimization_last_error, attachment.updated_at
+RETURNING attachment.attachment_id, attachment.filename, attachment.size, attachment.mime_type, attachment.uploaded_by, attachment.workspace_id, attachment.created_at, attachment.blob_name, attachment.scan_status, attachment.scan_completed_at, attachment.scan_failure_reason, attachment.optimization_status, attachment.optimization_attempts, attachment.optimization_started_at, attachment.optimization_completed_at, attachment.optimization_lease_expires_at, attachment.optimization_last_error, attachment.updated_at, attachment.slack_file_import_id
 `
 
 type DeleteUnreferencedWorkspaceAttachmentParams struct {
@@ -259,6 +337,7 @@ func (q *Queries) DeleteUnreferencedWorkspaceAttachment(ctx context.Context, arg
 		&i.OptimizationLeaseExpiresAt,
 		&i.OptimizationLastError,
 		&i.UpdatedAt,
+		&i.SlackFileImportID,
 	)
 	return i, err
 }
@@ -335,7 +414,7 @@ func (q *Queries) FailWorkspaceAttachmentOptimization(ctx context.Context, arg F
 }
 
 const getWorkspaceAttachment = `-- name: GetWorkspaceAttachment :one
-SELECT attachment_id, filename, size, mime_type, uploaded_by, workspace_id, created_at, blob_name, scan_status, scan_completed_at, scan_failure_reason, optimization_status, optimization_attempts, optimization_started_at, optimization_completed_at, optimization_lease_expires_at, optimization_last_error, updated_at
+SELECT attachment_id, filename, size, mime_type, uploaded_by, workspace_id, created_at, blob_name, scan_status, scan_completed_at, scan_failure_reason, optimization_status, optimization_attempts, optimization_started_at, optimization_completed_at, optimization_lease_expires_at, optimization_last_error, updated_at, slack_file_import_id
 FROM public.attachments
 WHERE attachment_id = $1
   AND workspace_id = $2
@@ -368,6 +447,46 @@ func (q *Queries) GetWorkspaceAttachment(ctx context.Context, arg GetWorkspaceAt
 		&i.OptimizationLeaseExpiresAt,
 		&i.OptimizationLastError,
 		&i.UpdatedAt,
+		&i.SlackFileImportID,
+	)
+	return i, err
+}
+
+const getWorkspaceSlackImportAttachment = `-- name: GetWorkspaceSlackImportAttachment :one
+SELECT attachment_id, filename, size, mime_type, uploaded_by, workspace_id, created_at, blob_name, scan_status, scan_completed_at, scan_failure_reason, optimization_status, optimization_attempts, optimization_started_at, optimization_completed_at, optimization_lease_expires_at, optimization_last_error, updated_at, slack_file_import_id
+FROM public.attachments
+WHERE slack_file_import_id = $1
+  AND workspace_id = $2
+`
+
+type GetWorkspaceSlackImportAttachmentParams struct {
+	SlackFileImportID *uuid.UUID
+	WorkspaceID       uuid.UUID
+}
+
+func (q *Queries) GetWorkspaceSlackImportAttachment(ctx context.Context, arg GetWorkspaceSlackImportAttachmentParams) (Attachment, error) {
+	row := q.db.QueryRow(ctx, getWorkspaceSlackImportAttachment, arg.SlackFileImportID, arg.WorkspaceID)
+	var i Attachment
+	err := row.Scan(
+		&i.AttachmentID,
+		&i.Filename,
+		&i.Size,
+		&i.MimeType,
+		&i.UploadedBy,
+		&i.WorkspaceID,
+		&i.CreatedAt,
+		&i.BlobName,
+		&i.ScanStatus,
+		&i.ScanCompletedAt,
+		&i.ScanFailureReason,
+		&i.OptimizationStatus,
+		&i.OptimizationAttempts,
+		&i.OptimizationStartedAt,
+		&i.OptimizationCompletedAt,
+		&i.OptimizationLeaseExpiresAt,
+		&i.OptimizationLastError,
+		&i.UpdatedAt,
+		&i.SlackFileImportID,
 	)
 	return i, err
 }
@@ -436,7 +555,7 @@ func (q *Queries) LinkWorkspaceStoryMedia(ctx context.Context, arg LinkWorkspace
 }
 
 const listStoryAttachments = `-- name: ListStoryAttachments :many
-SELECT attachment.attachment_id, attachment.filename, attachment.size, attachment.mime_type, attachment.uploaded_by, attachment.workspace_id, attachment.created_at, attachment.blob_name, attachment.scan_status, attachment.scan_completed_at, attachment.scan_failure_reason, attachment.optimization_status, attachment.optimization_attempts, attachment.optimization_started_at, attachment.optimization_completed_at, attachment.optimization_lease_expires_at, attachment.optimization_last_error, attachment.updated_at
+SELECT attachment.attachment_id, attachment.filename, attachment.size, attachment.mime_type, attachment.uploaded_by, attachment.workspace_id, attachment.created_at, attachment.blob_name, attachment.scan_status, attachment.scan_completed_at, attachment.scan_failure_reason, attachment.optimization_status, attachment.optimization_attempts, attachment.optimization_started_at, attachment.optimization_completed_at, attachment.optimization_lease_expires_at, attachment.optimization_last_error, attachment.updated_at, attachment.slack_file_import_id
 FROM public.attachments AS attachment
 INNER JOIN public.story_attachments AS relation
     ON relation.attachment_id = attachment.attachment_id
@@ -481,6 +600,7 @@ func (q *Queries) ListStoryAttachments(ctx context.Context, arg ListStoryAttachm
 			&i.OptimizationLeaseExpiresAt,
 			&i.OptimizationLastError,
 			&i.UpdatedAt,
+			&i.SlackFileImportID,
 		); err != nil {
 			return nil, err
 		}
@@ -510,7 +630,7 @@ WHERE attachment_id = $2
           AND optimization_lease_expires_at < CURRENT_TIMESTAMP
       )
   )
-RETURNING attachment_id, filename, size, mime_type, uploaded_by, workspace_id, created_at, blob_name, scan_status, scan_completed_at, scan_failure_reason, optimization_status, optimization_attempts, optimization_started_at, optimization_completed_at, optimization_lease_expires_at, optimization_last_error, updated_at
+RETURNING attachment_id, filename, size, mime_type, uploaded_by, workspace_id, created_at, blob_name, scan_status, scan_completed_at, scan_failure_reason, optimization_status, optimization_attempts, optimization_started_at, optimization_completed_at, optimization_lease_expires_at, optimization_last_error, updated_at, slack_file_import_id
 `
 
 type StartWorkspaceAttachmentOptimizationParams struct {
@@ -541,6 +661,7 @@ func (q *Queries) StartWorkspaceAttachmentOptimization(ctx context.Context, arg 
 		&i.OptimizationLeaseExpiresAt,
 		&i.OptimizationLastError,
 		&i.UpdatedAt,
+		&i.SlackFileImportID,
 	)
 	return i, err
 }

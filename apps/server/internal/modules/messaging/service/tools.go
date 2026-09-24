@@ -34,6 +34,7 @@ const (
 	toolGetStory            = "get_story"
 	toolCreateStory         = "create_story"
 	toolCreateStories       = "create_stories"
+	toolAttachStoryFile     = "attach_story_file"
 	toolUpdateStory         = "update_story"
 	toolAddComment          = "add_story_comment"
 	toolAddRelationship     = "add_story_relationship"
@@ -414,6 +415,11 @@ func (e *FortyOneToolExecutor) Execute(ctx context.Context, scope ToolScope, cal
 			return nil, ErrMutationNotAllowed
 		}
 		return e.mutations.proposeCreateBatch(ctx, e, scope, call.Arguments)
+	case toolAttachStoryFile:
+		if e.mutations == nil || !scope.AllowMutations {
+			return nil, ErrMutationNotAllowed
+		}
+		return e.mutations.proposeAttachFile(ctx, e, scope, call.Arguments)
 	case toolUpdateStory:
 		if e.mutations == nil {
 			return nil, fmt.Errorf("%w: %s", ErrUnknownTool, call.Name)

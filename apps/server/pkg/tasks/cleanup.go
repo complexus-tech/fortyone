@@ -20,6 +20,7 @@ const (
 	TypeAPIIdempotencyCleanup     = "cleanup:api_idempotency_receipts"
 	TypeSlackCredentialBackfill   = "cleanup:slack_credentials" // #nosec G101 -- Asynq task type, not a credential value.
 	TypeSlackInboxRecovery        = "cleanup:slack_inbox"
+	TypeSlackFileImportRecovery   = "cleanup:slack_file_imports"
 	TypeBrevoEmailReplyRecovery   = "cleanup:brevo_email_reply_inbox"
 )
 

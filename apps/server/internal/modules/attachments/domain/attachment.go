@@ -36,6 +36,7 @@ const (
 
 type Attachment struct {
 	ID                       uuid.UUID
+	SlackFileImportID        uuid.UUID
 	Filename                 string
 	BlobName                 string
 	Size                     int64

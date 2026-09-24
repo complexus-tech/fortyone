@@ -12,7 +12,40 @@ import (
 	"github.com/hibiken/asynq"
 )
 
-const TypeSlackEvent = "slack:event:process"
+const (
+	TypeSlackEvent      = "slack:event:process"
+	TypeSlackFileImport = "slack:file:import"
+)
+
+type SlackFileImportPayload struct {
+	ImportID uuid.UUID `json:"importId"`
+}
+
+func (s *Service) EnqueueSlackFileImport(ctx context.Context, importID uuid.UUID) error {
+	if s == nil || s.asynqClient == nil {
+		return errors.New("tasks: Slack file import queue is not configured")
+	}
+	if importID == uuid.Nil {
+		return errors.New("tasks: Slack file import ID is required")
+	}
+	payload, err := json.Marshal(SlackFileImportPayload{ImportID: importID})
+	if err != nil {
+		return fmt.Errorf("tasks: marshal Slack file import payload: %w", err)
+	}
+	_, err = s.asynqClient.Enqueue(asynq.NewTask(TypeSlackFileImport, payload),
+		asynq.Queue("integrations"),
+		asynq.MaxRetry(8),
+		asynq.Timeout(75*time.Minute),
+		asynq.Retention(24*time.Hour),
+	)
+	if errors.Is(err, asynq.ErrTaskIDConflict) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("tasks: enqueue Slack file import: %w", err)
+	}
+	return nil
+}
 
 type SlackEventPayload struct {
 	Provider            string    `json:"provider,omitempty"`

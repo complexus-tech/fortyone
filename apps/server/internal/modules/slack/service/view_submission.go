@@ -121,6 +121,7 @@ func (s *Service) handleViewSubmission(ctx context.Context, payload interactionP
 	}
 
 	sendToRequests := submission.StatusKind == slackStatusKindRequest
+	selectedFileIDs := uniqueSlackModalFileIDs(submission.SourceFileIDs, submission.UploadedFileIDs)
 
 	if submission.StatusID != nil {
 		statuses, statusErr := s.repo.ListTeamStatuses(ctx, team.ID)
@@ -137,6 +138,26 @@ func (s *Service) handleViewSubmission(ctx context.Context, payload interactionP
 	}
 	if submission.StatusKind == slackStatusKindStory && submission.StatusID == nil {
 		return interactionValidationErrors(map[string]string{submission.BlockIDs.Status: "Selected status is no longer available"})
+	}
+	if sendToRequests && len(selectedFileIDs) > 0 {
+		return interactionValidationErrors(map[string]string{submission.BlockIDs.Status: "Choose a story status to attach files."})
+	}
+	if len(selectedFileIDs) > 0 {
+		fileBlockID := modalBlockUploadFiles
+		if len(submission.SourceFileIDs) > 0 {
+			fileBlockID = modalBlockSourceFiles
+		}
+		if !slackBotHasScope(slackWorkspace.Scope, "files:read") {
+			return interactionValidationErrors(map[string]string{fileBlockID: "Reconnect FortyOne to Slack to attach files."})
+		}
+		if s.fileImportQueue == nil {
+			s.log.Error(ctx, "Slack file import queue is not configured")
+			return interactionValidationErrors(map[string]string{fileBlockID: "Files cannot be attached right now. Please try again later."})
+		}
+		if len(submission.SourceFileIDs) > 0 &&
+			(strings.TrimSpace(submission.Source.SlackChannelID) == "" || strings.TrimSpace(submission.Source.SlackMessageTS) == "") {
+			return interactionValidationErrors(map[string]string{fileBlockID: "The source message is unavailable. Open the shortcut again."})
+		}
 	}
 
 	var assigneeID *uuid.UUID
@@ -244,7 +265,47 @@ func (s *Service) handleViewSubmission(ctx context.Context, payload interactionP
 		s.log.Error(ctx, "failed creating story from slack submission", "error", err, "workspace_id", workspace.ID, "team_id", team.ID)
 		return interactionValidationErrors(map[string]string{"title": interactionErrorMessage(err)})
 	}
+	if len(selectedFileIDs) > 0 {
+		sourceFileIDs := make(map[string]struct{}, len(submission.SourceFileIDs))
+		for _, id := range submission.SourceFileIDs {
+			sourceFileIDs[id] = struct{}{}
+		}
+		for _, fileID := range selectedFileIDs {
+			intent := SlackFileImportIntent{
+				IdempotencyKey:    creationKey + ":file:" + fileID,
+				WorkspaceID:       workspace.ID,
+				ActorID:           actorID,
+				InstallationID:    slackWorkspace.ID,
+				InstallGeneration: slackWorkspace.InstallGeneration,
+				StoryID:           story.ID,
+				SlackTeamID:       slackWorkspace.SlackTeamID,
+				SlackUserID:       submission.Source.SlackUserID,
+				FileID:            fileID,
+			}
+			_, isSourceFile := sourceFileIDs[fileID]
+			if isSourceFile {
+				intent.ChannelID = submission.Source.SlackChannelID
+				intent.MessageTS = submission.Source.SlackMessageTS
+				intent.ThreadTS = submission.Source.SlackThreadTS
+				if intent.ThreadTS == "" {
+					intent.ThreadTS = intent.MessageTS
+				}
+			}
+			if queueErr := s.fileImportQueue.QueueSlackFileImport(ctx, intent); queueErr != nil {
+				s.log.Error(ctx, "failed queueing Slack story file import", "error", queueErr, "workspace_id", workspace.ID, "story_id", story.ID, "file_id", fileID)
+				fileBlockID := modalBlockUploadFiles
+				if isSourceFile {
+					fileBlockID = modalBlockSourceFiles
+				}
+				return interactionValidationErrors(map[string]string{fileBlockID: "Story saved, but its files could not be attached. Submit again to retry."})
+			}
+		}
+	}
 
-	s.postSlackTaskAck(ctx, workspace.ID, slackWorkspace.InstallGeneration, creationKey+":confirmation", submission.Source, botToken, workspace.Slug, team.Code, creatorName, submission.Source.SlackUserID, slackStoryReceiptActionCreated, story)
+	pendingFileNote := ""
+	if len(selectedFileIDs) > 0 {
+		pendingFileNote = "Files are being attached in the background."
+	}
+	s.postSlackTaskAckWithNote(ctx, workspace.ID, slackWorkspace.InstallGeneration, creationKey+":confirmation", submission.Source, botToken, workspace.Slug, team.Code, creatorName, submission.Source.SlackUserID, slackStoryReceiptActionCreated, story, pendingFileNote)
 	return interactionClearResponse()
 }

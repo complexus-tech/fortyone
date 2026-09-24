@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"html"
 	"strings"
 
 	"github.com/google/uuid"
@@ -23,6 +24,7 @@ func (m *storyMutationExecutor) proposeCreate(
 		EstimatedDurationMinutes *int    `json:"estimated_duration_minutes"`
 		MinimumFocusBlockMinutes *int    `json:"minimum_focus_block_minutes"`
 		AutoSchedulingEnabled    bool    `json:"auto_scheduling_enabled"`
+		FileID                   *string `json:"file_id"`
 	}
 	if err := decodeToolArguments(raw, &args, "team_id", "title", "priority", "assignee"); err != nil {
 		return nil, err
@@ -53,6 +55,10 @@ func (m *storyMutationExecutor) proposeCreate(
 	if err := validateStoryAutoSchedulingContract(args.AutoSchedulingEnabled, false, storyAutoSchedulingStatusOff); err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrInvalidToolArguments, err)
 	}
+	attachment, err := selectedConversationFile(scope, args.FileID)
+	if err != nil {
+		return nil, err
+	}
 
 	team := joinedByID[teamID]
 	confirmationID, err := uuid.NewRandomFromReader(m.random)
@@ -73,6 +79,7 @@ func (m *storyMutationExecutor) proposeCreate(
 		EstimatedDurationMinutes: args.EstimatedDurationMinutes,
 		MinimumFocusBlockMinutes: args.MinimumFocusBlockMinutes,
 		AutoSchedulingEnabled:    boolPointer(args.AutoSchedulingEnabled),
+		Attachment:               attachment,
 		ExpiresAt:                now.Add(storyMutationConfirmationTTL),
 	}
 	return m.marshalProposal(ctx, claims, StoryMutationPreview{
@@ -85,7 +92,15 @@ func (m *storyMutationExecutor) proposeCreate(
 		EstimatedDurationMinutes: args.EstimatedDurationMinutes,
 		MinimumFocusBlockMinutes: args.MinimumFocusBlockMinutes,
 		AutoSchedulingEnabled:    boolPointer(args.AutoSchedulingEnabled),
-	}, fmt.Sprintf("Create %q in %s (%s)?", title, team.Name, strings.ToUpper(team.Code)))
+	}, createStoryConfirmationPrompt(title, team, attachment))
+}
+
+func createStoryConfirmationPrompt(title string, team messagingTeam, attachment *StoryAttachmentSource) string {
+	prompt := fmt.Sprintf("Create %q in %s (%s)?", title, team.Name, strings.ToUpper(team.Code))
+	if attachment != nil {
+		prompt = fmt.Sprintf("Create %q in %s (%s) and attach %q?", title, team.Name, strings.ToUpper(team.Code), html.EscapeString(attachment.Name))
+	}
+	return prompt
 }
 
 func (m *storyMutationExecutor) proposeCreateBatch(

@@ -79,6 +79,7 @@ type storyMutationClaims struct {
 	LabelIDs                 []uuid.UUID            `json:"l,omitempty"`
 	RelationStoryID          *uuid.UUID             `json:"r,omitempty"`
 	RelationType             string                 `json:"rt,omitempty"`
+	Attachment               *StoryAttachmentSource `json:"at,omitempty"`
 	ExpiresAt                time.Time              `json:"x"`
 }
 

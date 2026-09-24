@@ -59,6 +59,8 @@ func (e *FortyOneToolExecutor) ConfirmStoryMutation(ctx context.Context, scope T
 				return e.mutations.confirmComment(applyCtx, scope, team, claims)
 			case StoryMutationRelation:
 				return e.mutations.confirmRelationship(applyCtx, scope, team, claims)
+			case StoryMutationAttachFile:
+				return e.mutations.confirmAttachFile(applyCtx, scope, team, claims)
 			default:
 				return StoryMutationResult{}, fmt.Errorf("%w: unsupported operation", ErrInvalidConfirmation)
 			}
@@ -225,7 +227,12 @@ func (m *storyMutationExecutor) confirmCreate(
 	if story.CreatedNow {
 		status = storyMutationStatusApplied
 	}
-	return storyMutationResult(status, StoryMutationCreate, story, team.Code), nil
+	result := storyMutationResult(status, StoryMutationCreate, story, team.Code)
+	if claims.Attachment != nil {
+		attachment := *claims.Attachment
+		result.Attachment = &attachment
+	}
+	return result, nil
 }
 
 func (m *storyMutationExecutor) confirmCreateBatch(

@@ -8,6 +8,20 @@ import (
 type slackModalPrivateMetadata struct {
 	Source         requestSourceContext `json:"source"`
 	SelectedTeamID string               `json:"selected_team_id,omitempty"`
+	SourceFiles    []slackSourceFile    `json:"source_files,omitempty"`
+}
+
+type slackSourceFile struct {
+	ID   string `json:"id"`
+	Name string `json:"name,omitempty"`
+}
+
+type slackPayloadFile struct {
+	ID         string `json:"id"`
+	Name       string `json:"name"`
+	Title      string `json:"title"`
+	Mode       string `json:"mode"`
+	IsExternal bool   `json:"is_external"`
 }
 
 func parseSlackModalPrivateMetadata(raw string) (slackModalPrivateMetadata, error) {
@@ -49,10 +63,11 @@ type interactionPayload struct {
 		Name string `json:"name"`
 	} `json:"channel"`
 	Message struct {
-		Text     string `json:"text"`
-		TS       string `json:"ts"`
-		ThreadTS string `json:"thread_ts"`
-		User     string `json:"user"`
+		Text     string             `json:"text"`
+		TS       string             `json:"ts"`
+		ThreadTS string             `json:"thread_ts"`
+		User     string             `json:"user"`
+		Files    []slackPayloadFile `json:"files"`
 	} `json:"message"`
 	Container struct {
 		MessageTS    string `json:"message_ts"`

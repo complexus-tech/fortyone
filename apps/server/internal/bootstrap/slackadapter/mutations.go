@@ -52,6 +52,17 @@ func mapMutationResult(result messaging.StoryMutationResult) slack.StoryMutation
 		AutoSchedulingUpdatedAt: result.AutoSchedulingUpdatedAt,
 		CommentID:               result.CommentID, AssociationID: result.AssociationID,
 	}
+	if result.Attachment != nil {
+		mapped.Attachment = &slack.StoryAttachmentSource{
+			Provider:            result.Attachment.Provider,
+			ExternalWorkspaceID: result.Attachment.ExternalWorkspaceID,
+			ChannelID:           result.Attachment.ChannelID,
+			ThreadTS:            result.Attachment.ThreadTS,
+			MessageTS:           result.Attachment.MessageTS,
+			FileID:              result.Attachment.FileID,
+			Name:                result.Attachment.Name,
+		}
+	}
 	if result.Items != nil {
 		mapped.Items = make([]slack.StoryMutationItemResult, 0, len(result.Items))
 		for _, item := range result.Items {

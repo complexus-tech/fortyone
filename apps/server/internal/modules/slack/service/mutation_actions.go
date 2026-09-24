@@ -2,6 +2,8 @@ package slack
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"net/http"
@@ -161,6 +163,32 @@ func (s *Service) handleMutationAction(ctx context.Context, payload interactionP
 		}
 		return InteractionResponse{}, err
 	}
+	if result.Attachment != nil {
+		attachment := result.Attachment
+		if s.fileImportQueue == nil {
+			return InteractionResponse{}, errors.New("Slack file import queue is not configured")
+		}
+		if result.StoryID == uuid.Nil || attachment.Provider != ProviderSlack ||
+			attachment.ExternalWorkspaceID != installation.SlackTeamID || attachment.ChannelID != channelID ||
+			attachment.FileID == "" || attachment.ThreadTS == "" {
+			return InteractionResponse{}, fmt.Errorf("invalid confirmed Slack attachment source")
+		}
+		if payload.Message.ThreadTS != "" && payload.Message.ThreadTS != attachment.ThreadTS {
+			return InteractionResponse{}, fmt.Errorf("confirmed Slack attachment source thread changed")
+		}
+		digest := sha256.Sum256([]byte(actionValue.Token))
+		if err := s.fileImportQueue.QueueSlackFileImport(ctx, SlackFileImportIntent{
+			IdempotencyKey: "maya-file:" + hex.EncodeToString(digest[:]),
+			WorkspaceID:    installation.WorkspaceID, ActorID: *linkedUserID,
+			InstallationID: installation.ID, InstallGeneration: installation.InstallGeneration,
+			StoryID: result.StoryID, SlackTeamID: installation.SlackTeamID,
+			SlackUserID: payload.User.ID, ChannelID: attachment.ChannelID,
+			ThreadTS: attachment.ThreadTS, MessageTS: attachment.MessageTS,
+			FileID: attachment.FileID,
+		}); err != nil {
+			return InteractionResponse{}, fmt.Errorf("queue confirmed Slack file import: %w", err)
+		}
+	}
 	creatorName := ""
 	if member, memberErr := s.repo.FindTeamMemberByID(ctx, result.TeamID, *linkedUserID); memberErr == nil {
 		creatorName = slackMemberDisplayName(member)
@@ -182,6 +210,9 @@ func (s *Service) handleMutationAction(ctx context.Context, payload interactionP
 	} else {
 		storyURL := buildTaskURL(s.cfg.WebsiteURL, workspace.Slug, reference)
 		text = buildSlackStoryMutationReceiptText(creatorName, reference, storyURL, result.Operation)
+		if result.Attachment != nil {
+			text += fmt.Sprintf(". File %q is being attached.", slackMrkdwnTextEscaper.Replace(result.Attachment.Name))
+		}
 	}
 	if err := s.updateSlackInteractiveMessage(ctx, botToken, channelID, messageTS, text); err != nil {
 		return InteractionResponse{}, err
@@ -264,6 +295,8 @@ func buildSlackStoryMutationReceiptText(creatorName, reference, storyURL string,
 	verb := "updated"
 	if operation == storyMutationCreate {
 		verb = "created"
+	} else if operation == StoryMutationAttachFile {
+		verb = "requested an attachment for"
 	}
 	return fmt.Sprintf("%s %s %s", creatorLabel, verb, storyLabel)
 }

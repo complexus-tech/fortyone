@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (s *Service) openCreateTaskModal(ctx context.Context, triggerID, title, description string, source requestSourceContext, workspaceID, actorID uuid.UUID, botToken string) error {
+func (s *Service) openCreateTaskModal(ctx context.Context, triggerID, title, description string, source requestSourceContext, sourceFiles []slackSourceFile, enableFiles bool, workspaceID, actorID uuid.UUID, botToken string) error {
 	if strings.TrimSpace(botToken) == "" {
 		return errors.New("missing slack bot token")
 	}
@@ -48,6 +48,8 @@ func (s *Service) openCreateTaskModal(ctx context.Context, triggerID, title, des
 		Title:       title,
 		Description: description,
 		Source:      source,
+		SourceFiles: sourceFiles,
+		EnableFiles: enableFiles,
 		WorkspaceID: workspaceID,
 		ActorID:     actorID,
 	})
@@ -121,12 +123,15 @@ func (s *Service) replaceCreateTaskModalWithError(ctx context.Context, botToken,
 }
 
 type createTaskModalViewInput struct {
-	Title       string
-	Description string
-	Source      requestSourceContext
-	WorkspaceID uuid.UUID
-	ActorID     uuid.UUID
-	Selection   createTaskModalSelection
+	Title                 string
+	Description           string
+	Source                requestSourceContext
+	SourceFiles           []slackSourceFile
+	SelectedSourceFileIDs []string
+	EnableFiles           bool
+	WorkspaceID           uuid.UUID
+	ActorID               uuid.UUID
+	Selection             createTaskModalSelection
 }
 
 type createTaskModalSelection struct {
@@ -209,19 +214,20 @@ func (s *Service) buildCreateTaskModalView(ctx context.Context, input createTask
 	}
 	metadataSource := input.Source
 	metadataSource.SlackText = truncateRunes(metadataSource.SlackText, modalSourceTextMaxRunes)
-	metadataPayload, err := json.Marshal(slackModalPrivateMetadata{
+	metadata := slackModalPrivateMetadata{
 		Source:         metadataSource,
 		SelectedTeamID: selectedTeam.ID.String(),
-	})
+	}
+	if input.EnableFiles {
+		metadata.SourceFiles = input.SourceFiles
+	}
+	metadataPayload, err := json.Marshal(metadata)
 	if err != nil {
 		return nil, err
 	}
 	if len(metadataPayload) > modalMetadataMaxBytes {
-		metadataSource.SlackText = ""
-		metadataPayload, err = json.Marshal(slackModalPrivateMetadata{
-			Source:         metadataSource,
-			SelectedTeamID: selectedTeam.ID.String(),
-		})
+		metadata.Source.SlackText = ""
+		metadataPayload, err = json.Marshal(metadata)
 		if err != nil {
 			return nil, err
 		}
@@ -248,11 +254,21 @@ func (s *Service) buildCreateTaskModalView(ctx context.Context, input createTask
 		externalSelectInputBlock(modalBlockTeam, modalActionTeamSelect, "Team", selectedTeamOption, false, slackExternalSearchMinRunes, true),
 		plainInputBlock(modalBlockTitle, modalActionTitleInput, "Title", truncateRunes(title, modalTitleMaxRunes), false, "", false),
 		plainInputBlock(modalBlockDescription, modalActionDescriptionInput, "Description", truncateRunes(input.Description, modalDescriptionMaxRunes), true, "", true),
+	}
+	if input.EnableFiles {
+		if len(input.SourceFiles) > 0 {
+			blocks = append(blocks, sourceFileInputBlock(input.SourceFiles, input.SelectedSourceFileIDs))
+		}
+		// Slack preserves input state through views.update when these block and
+		// action IDs stay stable, including the file input after a team change.
+		blocks = append(blocks, uploadFileInputBlock())
+	}
+	blocks = append(blocks,
 		statusBlock,
 		externalSelectInputBlock(assigneeBlockID, assigneeActionID, "Assignee", selectedAssigneeOption, true, 2, false),
 		externalMultiSelectInputBlock(labelsBlockID, labelsActionID, "Labels", selectedLabelOptions, true, 2),
 		externalSelectInputBlock(objectiveBlockID, objectiveActionID, "Objective", selectedObjectiveOption, true, 2, false),
-	}
+	)
 	blocks = append(blocks, selectInputBlock(modalBlockPriority, modalActionPrioritySelect, "Priority", slackPriorityOptions(), priorityOption, true, false))
 
 	return map[string]any{

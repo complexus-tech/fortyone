@@ -66,7 +66,7 @@ func (s *Service) handleMessageAction(ctx context.Context, payload interactionPa
 		return InteractionResponse{StatusCode: http.StatusOK}, nil
 	}
 
-	if err := s.openCreateTaskModal(ctx, payload.TriggerID, title, description, source, slackWorkspace.WorkspaceID, linkedUserID, botToken); err != nil {
+	if err := s.openCreateTaskModal(ctx, payload.TriggerID, title, description, source, sourceFilesFromShortcut(payload.Message.Files), slackBotHasScope(slackWorkspace.Scope, "files:read"), slackWorkspace.WorkspaceID, linkedUserID, botToken); err != nil {
 		return InteractionResponse{}, err
 	}
 	return InteractionResponse{StatusCode: http.StatusOK}, nil

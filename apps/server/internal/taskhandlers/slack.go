@@ -71,3 +71,31 @@ func (h *handlers) HandleSlackInboxRecovery(ctx context.Context, task *asynq.Tas
 	}
 	return nil
 }
+
+func (h *handlers) HandleSlackFileImport(ctx context.Context, task *asynq.Task) error {
+	if h.slackFileImports == nil {
+		return fmt.Errorf("Slack file import processor is not configured: %w", asynq.SkipRetry)
+	}
+	var payload tasks.SlackFileImportPayload
+	if err := json.Unmarshal(task.Payload(), &payload); err != nil || payload.ImportID == uuid.Nil {
+		return fmt.Errorf("Slack file import task has an invalid payload: %w", asynq.SkipRetry)
+	}
+	if err := h.slackFileImports.ProcessSlackFileImport(ctx, payload.ImportID); err != nil {
+		return fmt.Errorf("process Slack file import %s: %w", payload.ImportID, err)
+	}
+	return nil
+}
+
+func (h *handlers) HandleSlackFileImportRecovery(ctx context.Context, _ *asynq.Task) error {
+	if h.slackFileImports == nil {
+		return fmt.Errorf("Slack file import processor is not configured: %w", asynq.SkipRetry)
+	}
+	recovered, err := h.slackFileImports.RecoverSlackFileImports(ctx)
+	if err != nil {
+		return fmt.Errorf("recover Slack file imports: %w", err)
+	}
+	if recovered > 0 {
+		h.log.Info(ctx, "Recovered pending Slack file imports", "recovered", recovered)
+	}
+	return nil
+}

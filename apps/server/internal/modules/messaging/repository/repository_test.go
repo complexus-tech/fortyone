@@ -44,6 +44,10 @@ func TestValidateStoryMutationConfirmationStateInputBindsBatchProposalShape(t *t
 	comment.Operation = messaging.StoryMutationComment
 	comment.Proposal = nil
 	require.NoError(t, validateStoryMutationConfirmationStateInput(comment))
+
+	attachment := comment
+	attachment.Operation = messaging.StoryMutationAttachFile
+	require.NoError(t, validateStoryMutationConfirmationStateInput(attachment))
 }
 
 func TestStartOutboundDeliveryRequiresExternalWorkspaceBinding(t *testing.T) {
