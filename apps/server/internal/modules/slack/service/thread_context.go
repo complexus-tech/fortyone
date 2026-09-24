@@ -45,6 +45,7 @@ type slackMessageFile struct {
 	Mode       string `json:"mode"`
 	IsExternal bool   `json:"is_external"`
 	MessageTS  string `json:"-"`
+	ThreadTS   string `json:"-"`
 }
 
 type slackThreadMessage struct {

@@ -86,6 +86,15 @@ func (p *EventProcessor) generateAssistantReply(
 	if err != nil {
 		return err
 	}
+	hasFileScope := slackBotHasScope(input.installation.Scope, "files:read")
+	explicitFileRequest := slackPromptRequestsFileContext(input.prompt)
+	priorFileRequest := slackBriefFileFollowUp(input.prompt) && assistantRecentlyAskedAboutFile(input.event, history)
+	fileRequired := len(input.event.Files) > 0 || explicitFileRequest || priorFileRequest
+	loadDirectMessageFiles := assistantShouldLoadDirectMessageFiles(input.event, input.prompt)
+	if !hasFileScope && fileRequired {
+		state.reply = "I can't access Slack files with this connection yet. Ask a FortyOne workspace admin to open Settings → Integrations → Slack → Update connection and grant files:read, then try again."
+		return nil
+	}
 	turns := make([]assistantConversationTurn, 0, len(history)+1)
 	excludedThreadMessageIDs := map[string]struct{}{
 		strings.TrimSpace(input.event.MessageTS): {},
@@ -109,7 +118,8 @@ func (p *EventProcessor) generateAssistantReply(
 
 	threadSourceURL := slackThreadSourceURL(input.installation, input.event)
 	var threadFiles []slackMessageFile
-	if slackEventCanHydrateThread(input.event) && slackPromptRequestsThreadContext(input.prompt) {
+	if slackEventCanHydrateThread(input.event) &&
+		(slackPromptRequestsThreadContext(input.prompt) || slackBriefFileFollowUp(input.prompt)) {
 		threadReference, threadErr := p.loadSlackThreadReference(
 			ctx,
 			input.botToken,
@@ -154,9 +164,33 @@ func (p *EventProcessor) generateAssistantReply(
 	if state.reply != "" {
 		return nil
 	}
+	if loadDirectMessageFiles {
+		if hasFileScope {
+			recentFiles, fileErr := p.loadSlackDirectMessageFiles(ctx, input.botToken, input.event)
+			if fileErr != nil {
+				if p.log != nil {
+					p.log.Warn(ctx, "Slack Maya direct message files could not be loaded",
+						"workspace_id", input.workspace.ID,
+						"event_id", input.event.EventID,
+						"error", fileErr,
+					)
+				}
+				if fileRequired {
+					state.reply = slackDirectMessageFileFailureReply(fileErr)
+					return nil
+				}
+			} else {
+				threadFiles = append(threadFiles, recentFiles...)
+			}
+		}
+	}
 	var availableFiles []StoryAttachmentSource
-	if slackBotHasScope(input.installation.Scope, "files:read") {
+	if hasFileScope {
 		availableFiles = assistantAvailableFiles(input.event, threadFiles)
+	}
+	if loadDirectMessageFiles && len(availableFiles) == 0 && fileRequired {
+		state.reply = "I couldn't find a Slack file in the recent messages of this DM. Please attach it to your next message."
+		return nil
 	}
 	if len(availableFiles) > 0 {
 		fileTurn, fileErr := assistantFileReferenceTurn(availableFiles)
@@ -252,4 +286,14 @@ func (p *EventProcessor) generateAssistantReply(
 		state.reply = "I couldn't generate a useful response. Please try again."
 	}
 	return nil
+}
+
+func slackDirectMessageFileFailureReply(err error) string {
+	if code, ok := SlackAPIErrorCode(err); ok && code == "missing_scope" {
+		return "I can't read recent Slack DM files with this connection yet. Ask a FortyOne workspace admin to open Settings → Integrations → Slack → Update connection and grant im:history, then try again."
+	}
+	if _, limited := SlackRetryAfter(err); limited {
+		return "Slack is temporarily limiting file lookups. Please try again in a minute."
+	}
+	return "I couldn't check recent files in this Slack DM right now. Please try again shortly."
 }
