@@ -10,9 +10,7 @@ WORKDIR /app
 RUN apk add --no-cache git ca-certificates tzdata
 
 COPY go.mod go.sum ./
-RUN --mount=type=cache,target=/go/pkg/mod,sharing=locked \
-    --mount=type=cache,target=/root/.cache/go-build,sharing=locked \
-    go mod download
+RUN go mod download
 
 COPY . .
 
