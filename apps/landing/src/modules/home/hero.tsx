@@ -37,7 +37,7 @@ const HERO_PARTICLE_KEYWORDS: Partial<Record<string, HeroParticleConfig>> = {
 export const Hero = () => {
   return (
     <Box>
-      <Container className="pt-8 text-center md:pt-14">
+      <Container className="pt-8 md:pt-14">
         <Box className="mt-10 mb-6">
           <Text
             as="h1"
