@@ -80,15 +80,17 @@ const templateIcons: Record<
   checklist: CheckListIcon,
 };
 
+const NEUTRAL_TEMPLATE_ICON_STYLE =
+  "border-border/70 bg-surface-elevated text-foreground dark:border-border-strong/80";
+
 const templateIconStyles: Record<DocumentTemplateIcon, string> = {
-  blank:
-    "border-border/70 bg-surface-elevated text-foreground dark:border-border-strong/80",
-  meeting: "border-info/25 bg-info/10 text-info",
+  blank: NEUTRAL_TEMPLATE_ICON_STYLE,
+  meeting: NEUTRAL_TEMPLATE_ICON_STYLE,
   project: "border-secondary/25 bg-secondary/10 text-secondary",
   "one-to-one": "border-success/25 bg-success/10 text-success",
   update: "border-primary/25 bg-primary/10 text-primary",
   guide: "border-secondary/25 bg-secondary/10 text-secondary",
-  research: "border-info/25 bg-info/10 text-info",
+  research: NEUTRAL_TEMPLATE_ICON_STYLE,
   event: "border-primary/25 bg-primary/10 text-primary",
   checklist: "border-success/25 bg-success/10 text-success",
 };
@@ -357,7 +359,7 @@ export const DocumentsHome = () => {
           leading={
             <Flex align="center" className="min-w-0" gap={2}>
               <MobileMenuButton />
-              <DocsIcon className="text-info size-5 shrink-0" />
+              <DocsIcon className="size-5 shrink-0" />
               <Text className="truncate" fontSize="lg" fontWeight="semibold">
                 Documents
               </Text>

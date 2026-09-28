@@ -76,7 +76,7 @@ export function PublicDocumentLayout({
       >
         <header className="border-border/70 bg-surface-muted/80 dark:bg-surface-muted/80 sticky top-0 z-40 flex h-14 shrink-0 items-center justify-between border-b px-3 backdrop-blur-xl sm:px-4 print:hidden">
           <Flex align="center" className="min-w-0" gap={2}>
-            <DocsIcon className="text-info size-4.5 shrink-0" />
+            <DocsIcon className="size-4.5 shrink-0" />
             <Text className="truncate" fontWeight="medium">
               {title}
             </Text>

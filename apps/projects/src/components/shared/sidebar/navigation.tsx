@@ -111,7 +111,7 @@ export const Navigation = ({
     },
     {
       name: "Documents",
-      icon: <DocsIcon className={cn("text-info", isCollapsed && "h-5.5")} />,
+      icon: <DocsIcon className={isCollapsed ? "h-5.5" : undefined} />,
       href: withWorkspace("/docs"),
     },
   ];

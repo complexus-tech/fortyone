@@ -263,7 +263,7 @@ export const RelatedWorkPanel = ({
             justify="center"
           >
             <DocsIcon
-              className="text-info/70 mb-5 h-16 w-auto"
+              className="mb-5 h-16 w-auto opacity-70"
               strokeWidth={1.3}
             />
             <Text className="mb-2" fontSize="lg" fontWeight="semibold">

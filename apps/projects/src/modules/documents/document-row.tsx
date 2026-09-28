@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { Button, Flex, Menu, Text } from "ui";
-import { cn } from "lib";
 import {
   ArchiveIcon,
   DocsIcon,
@@ -41,10 +40,7 @@ export const DocumentRow = ({
         href={withWorkspace(`/docs/${document.id}`)}
       >
         <DocumentIcon
-          className={cn("size-[1.1rem] shrink-0", {
-            "text-info": document.visibility === "workspace",
-            "text-text-muted": document.visibility !== "workspace",
-          })}
+          className="text-text-muted size-[1.1rem] shrink-0"
           strokeWidth={2}
         />
         <span className="min-w-0 flex-1 truncate">{document.title}</span>
