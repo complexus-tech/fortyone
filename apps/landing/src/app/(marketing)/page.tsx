@@ -48,7 +48,7 @@ export default function Page() {
       <main className="[&_h1]:font-semibold [&_h2]:font-semibold">
         <div
           className={cn(
-            "landing-page-frame mt-16 rounded-2xl sm:mt-18 sm:rounded-[3rem] md:mt-20 md:rounded-[4rem]",
+            "landing-large-surface landing-page-frame mt-16 rounded-2xl sm:mt-18 sm:rounded-[3rem] md:mt-20 md:rounded-[4rem]",
             styles.heroShell,
           )}
         >
@@ -62,7 +62,7 @@ export default function Page() {
         </div>
         <div
           className={cn(
-            "rounded-b-2xl sm:rounded-b-[3rem] md:rounded-b-[4rem]",
+            "landing-large-surface-bottom rounded-b-2xl sm:rounded-b-[3rem] md:rounded-b-[4rem]",
             styles.progressBand,
           )}
         >
@@ -70,7 +70,7 @@ export default function Page() {
           <CustomerStories />
           <div
             className={cn(
-              "dark landing-light-contrast landing-page-frame rounded-2xl sm:rounded-[3rem] md:rounded-[4rem]",
+              "dark landing-light-contrast landing-large-surface landing-page-frame rounded-2xl sm:rounded-[3rem] md:rounded-[4rem]",
               styles.darkSection,
             )}
           >

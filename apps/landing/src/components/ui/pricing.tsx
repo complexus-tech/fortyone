@@ -474,8 +474,10 @@ const Package = ({
       <Box
         className={cn(
           "relative h-full",
+          recommended && styles.featured,
+          recommended && styles.featuredFrame,
           recommended &&
-            `${styles.featured} -mt-10 h-[calc(100%+2.5rem)] rounded-[2.75rem] p-2 pt-10 md:rounded-[3.5rem]`,
+            "-mt-10 h-[calc(100%+2.5rem)] rounded-[2.75rem] p-2 pt-10 md:rounded-[3.5rem]",
         )}
       >
         {recommended ? (
@@ -483,8 +485,18 @@ const Package = ({
             Most popular
           </Box>
         ) : null}
-        <Box className="border-border/60 bg-surface-muted dark:bg-surface-elevated shadow-shadow relative z-1 flex h-full flex-col gap-7 rounded-[2.5rem] border p-2 pb-7 shadow-xl md:min-h-[68rem] md:rounded-[3rem]">
-          <Box className="border-border/60 bg-surface shadow-shadow dark:bg-surface flex min-h-[18rem] flex-col rounded-[2rem] border p-7 shadow-lg md:min-h-[19rem] md:rounded-[2.5rem] md:p-8">
+        <Box
+          className={cn(
+            "border-border/60 bg-surface-muted dark:bg-surface-elevated shadow-shadow relative z-1 flex h-full flex-col gap-7 rounded-[2.5rem] border p-2 pb-7 shadow-xl md:min-h-[68rem] md:rounded-[3rem]",
+            styles.pageCard,
+          )}
+        >
+          <Box
+            className={cn(
+              "border-border/60 bg-surface shadow-shadow dark:bg-surface flex min-h-[18rem] flex-col rounded-[2rem] border p-7 shadow-lg md:min-h-[19rem] md:rounded-[2.5rem] md:p-8",
+              styles.pageCardHeader,
+            )}
+          >
             <Text className="text-3xl font-semibold tracking-[-0.035em] md:text-[2rem]">
               {name}
             </Text>

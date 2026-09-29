@@ -22,7 +22,7 @@ export function MarketingHero({
 }) {
   return (
     <section aria-labelledby={id} className="pt-24">
-      <div className="dark landing-light-contrast landing-footer-gradient landing-hero-shell landing-page-frame text-foreground rounded-2xl px-6 py-14 text-center sm:rounded-[3rem] md:rounded-[4rem] md:py-18">
+      <div className="dark landing-light-contrast landing-footer-gradient landing-hero-shell landing-large-surface landing-page-frame text-foreground rounded-2xl px-6 py-14 text-center sm:rounded-[3rem] md:rounded-[4rem] md:py-18">
         <p className="text-text-muted text-sm">{eyebrow}</p>
         <h1
           className="mx-auto mt-6 max-w-[22ch] text-5xl font-medium text-balance md:text-[3.5rem]"
@@ -54,7 +54,7 @@ export function MarketingResourceCard({
 }) {
   return (
     <Link
-      className="group bg-surface-muted/60 hover:bg-surface-muted focus-visible:outline-ring flex h-full flex-col rounded-2xl p-6 transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 md:rounded-[2rem] md:p-7"
+      className="landing-resource-card group bg-surface-muted/60 hover:bg-surface-muted focus-visible:outline-ring flex h-full flex-col rounded-2xl p-6 transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 md:rounded-[2rem] md:p-7"
       href={href}
     >
       <div className="flex items-center justify-between">

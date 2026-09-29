@@ -64,7 +64,7 @@ export function PostCard({
       >
         <div
           className={cn(
-            "bg-surface-muted relative aspect-[1.85/1] overflow-hidden rounded-2xl sm:rounded-[2rem]",
+            "landing-blog-cover bg-surface-muted relative aspect-[1.85/1] overflow-hidden rounded-2xl sm:rounded-[2rem]",
           )}
         >
           <Image

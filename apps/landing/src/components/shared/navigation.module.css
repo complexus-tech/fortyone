@@ -1,0 +1,19 @@
+@supports not (corner-shape: squircle) {
+  .navigationSurface {
+    border-radius: 0.375rem;
+  }
+
+  .topLevelLink {
+    border-radius: 0.625rem;
+  }
+
+  .dropdownPanel {
+    border-radius: 1.25rem;
+  }
+
+  @media (min-width: 48rem) {
+    .navigationSurface {
+      border-radius: 0.5rem;
+    }
+  }
+}

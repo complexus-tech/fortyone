@@ -15,6 +15,7 @@ import {
   type NavigationIconName,
   type NavigationIconTone,
 } from "./navigation-menu-icon";
+import styles from "./navigation.module.css";
 // import { RequestDemo } from "./request-demo";
 
 type NavigationLinkItem = {
@@ -237,7 +238,10 @@ const NavigationDropdown = ({
     <button
       aria-controls={`${value}-navigation-menu`}
       aria-expanded={isOpen}
-      className="hover:bg-state-hover focus-visible:bg-state-hover focus-visible:ring-ring flex cursor-pointer items-center gap-1 rounded-md px-3 py-1.5 text-[0.95rem] transition outline-none select-none focus:outline-none focus-visible:ring-2 focus-visible:outline-none"
+      className={cn(
+        "hover:bg-state-hover focus-visible:bg-state-hover focus-visible:ring-ring flex cursor-pointer items-center gap-1 rounded-md px-3 py-1.5 text-[0.95rem] transition outline-none select-none focus:outline-none focus-visible:ring-2 focus-visible:outline-none",
+        styles.topLevelLink,
+      )}
       onClick={() => {
         onOpenChange(value);
       }}
@@ -269,6 +273,7 @@ const NavigationDropdown = ({
       <Box
         className={cn(
           "border-border/60 bg-popover/98 text-popover-foreground shadow-shadow rounded-xl border p-3 shadow-[0_24px_60px_-24px_rgba(31,24,18,0.38)] backdrop-blur-xl dark:shadow-[0_24px_60px_-24px_rgba(0,0,0,0.78)]",
+          styles.dropdownPanel,
         )}
       >
         {heading ? (
@@ -295,7 +300,10 @@ const NavigationDropdown = ({
 const DesktopNavItem = ({ href, title }: NavigationLinkItem) => {
   return (
     <NavLink
-      className="hover:bg-state-hover flex items-center rounded-md px-3 py-1.5 transition"
+      className={cn(
+        "hover:bg-state-hover flex items-center rounded-md px-3 py-1.5 transition",
+        styles.topLevelLink,
+      )}
       href={href}
       prefetch
     >
@@ -361,6 +369,7 @@ export const Navigation = () => {
         aria-hidden="true"
         className={cn(
           "landing-page-frame dark:bg-surface-prominent/60 absolute inset-x-0 top-2 h-full rounded-xl bg-white/60 shadow-[0_16px_44px_-18px_rgba(31,24,18,0.3)] backdrop-blur-xl transition-[transform,opacity] duration-[220ms] [transition-timing-function:var(--landing-ease-out)] motion-reduce:transition-none md:top-3 md:rounded-3xl dark:shadow-[0_16px_44px_-18px_rgba(0,0,0,0.7)]",
+          styles.navigationSurface,
           isDocked
             ? "translate-y-0 scale-100 opacity-100"
             : "-translate-y-2 scale-[0.985] opacity-0",

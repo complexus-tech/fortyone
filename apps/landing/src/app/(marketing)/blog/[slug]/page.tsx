@@ -131,7 +131,7 @@ export default async function BlogPost({
             </p>
           </header>
           <div
-            className={`${styles.articleCover} bg-surface-muted relative overflow-hidden rounded-2xl sm:rounded-[2rem]`}
+            className={`${styles.articleCover} landing-blog-cover bg-surface-muted relative overflow-hidden rounded-2xl sm:rounded-[2rem]`}
           >
             <Image
               alt=""

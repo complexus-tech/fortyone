@@ -80,6 +80,43 @@ html:not(.dark) .landing-footer-gradient {
   }
 }
 
+/* Large circular corners need less radius than the squircle versions. */
+@supports not (corner-shape: squircle) {
+  @media (min-width: 40rem) {
+    .landing-large-surface {
+      border-radius: 1rem;
+    }
+
+    .landing-large-surface-bottom {
+      border-bottom-right-radius: 1rem;
+      border-bottom-left-radius: 1rem;
+    }
+
+    .landing-blog-cover {
+      border-radius: 1rem;
+    }
+  }
+
+  @media (min-width: 48rem) {
+    .landing-large-surface {
+      border-radius: 1.25rem;
+    }
+
+    .landing-large-surface-bottom {
+      border-bottom-right-radius: 1.25rem;
+      border-bottom-left-radius: 1.25rem;
+    }
+
+    .landing-resource-card {
+      border-radius: 1rem;
+    }
+
+    .landing-integration-tile {
+      border-radius: 0.625rem;
+    }
+  }
+}
+
 .landing-desktop-navigation {
   display: none;
 }

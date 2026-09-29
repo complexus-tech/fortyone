@@ -15,3 +15,31 @@
     color-mix(in oklab, var(--color-primary) 65%, var(--brand-ink))
   );
 }
+
+@supports not (corner-shape: squircle) {
+  .featuredFrame {
+    border-radius: 1.125rem;
+  }
+
+  .pageCard {
+    border-radius: 1rem;
+  }
+
+  .pageCardHeader {
+    border-radius: 0.75rem;
+  }
+
+  @media (min-width: 48rem) {
+    .featuredFrame {
+      border-radius: 1.25rem;
+    }
+
+    .pageCard {
+      border-radius: 1.125rem;
+    }
+
+    .pageCardHeader {
+      border-radius: 0.875rem;
+    }
+  }
+}
