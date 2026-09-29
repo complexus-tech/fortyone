@@ -49,6 +49,9 @@ const updateDetailQuery = (
   queryClient.setQueriesData(
     { queryKey },
     (data: DetailedStory | undefined) => {
+      if (data && storyIds.includes(data.id)) {
+        return { ...data, ...payload };
+      }
       if (data?.subStories) {
         return {
           ...data,

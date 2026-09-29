@@ -264,4 +264,62 @@ describe("useBulkUpdateStoriesMutation", () => {
     });
     expect(toast.error).not.toHaveBeenCalled();
   });
+
+  it("updates selected Maya stories before the bulk request completes", async () => {
+    const queryClient = createQueryClient();
+    const recentKey = [
+      ...storyKeys.detail(WORKSPACE_SLUG, "story-1"),
+      "maya-recent",
+      "user-1",
+    ] as const;
+    queryClient.setQueryData(recentKey, createStory("story-1"));
+    const recentObserver = new QueryObserver(queryClient, {
+      queryKey: recentKey,
+      queryFn: () =>
+        new Promise<Story>(() => {
+          // Keep the optimistic value visible until this test completes.
+        }),
+      staleTime: Infinity,
+    });
+    const unsubscribe = recentObserver.subscribe(() => undefined);
+    let completeUpdate: (() => void) | undefined;
+    mockBulkUpdateAction.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          completeUpdate = () => {
+            resolve({
+              data: {
+                totalCount: 1,
+                succeededCount: 1,
+                failedCount: 0,
+                partial: false,
+                items: [{ storyId: "story-1", success: true }],
+              },
+            });
+          };
+        }),
+    );
+    const { result } = renderHook(() => useBulkUpdateStoriesMutation(), {
+      wrapper: wrapperFor(queryClient),
+    });
+
+    act(() => {
+      result.current.mutate({
+        storyIds: ["story-1"],
+        payload: { statusId: "status-started" },
+      });
+    });
+    await waitFor(() => {
+      expect(queryClient.getQueryData<Story>(recentKey)?.statusId).toBe(
+        "status-started",
+      );
+    });
+    act(() => {
+      completeUpdate?.();
+    });
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+    unsubscribe();
+  });
 });

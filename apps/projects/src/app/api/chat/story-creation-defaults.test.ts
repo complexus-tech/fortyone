@@ -69,7 +69,7 @@ describe("resolveStoryCreationDefaults", () => {
       },
       singleStory: {
         autoSchedulingEnabled: false,
-        estimatedDurationMinutes: 60,
+        estimatedDurationMinutes: 240,
       },
     });
     expect(getAutomationPreferencesMock).toHaveBeenCalledWith(ctx);
@@ -90,7 +90,7 @@ describe("resolveStoryCreationDefaults", () => {
       },
       singleStory: {
         autoSchedulingEnabled: false,
-        estimatedDurationMinutes: 60,
+        estimatedDurationMinutes: 240,
       },
     });
   });
@@ -110,7 +110,7 @@ describe("resolveStoryCreationDefaults", () => {
       },
       singleStory: {
         autoSchedulingEnabled: true,
-        estimatedDurationMinutes: 60,
+        estimatedDurationMinutes: 240,
       },
     });
   });
@@ -149,7 +149,7 @@ describe("resolveStoryCreationDefaults", () => {
       },
       singleStory: {
         autoSchedulingEnabled: false,
-        estimatedDurationMinutes: 60,
+        estimatedDurationMinutes: 240,
       },
     });
   });

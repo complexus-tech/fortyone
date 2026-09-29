@@ -63,6 +63,7 @@ The machine-readable source of truth is [`internal/migrations/manifest.json`](..
 | `000196` | `notification_push_delivery` | `forward-only` | `schema-first` | New authenticated notification-device endpoints require migration 196. Existing inbox and preference APIs remain compatible. | The push task requires migration 196 and outbound HTTPS access to the Expo Push API. No new worker environment variable is required. |
 | `000197` | `document_comments` | `forward-only` | `schema-first` | New authenticated document comment endpoints require migration 197. Existing document endpoints remain compatible. | No background worker or new environment configuration is required. |
 | `000198` | `slack_file_imports` | `forward-only` | `schema-first` | The replacement Slack API requires migration 198 before it can queue selected modal and Maya files. The previous API remains compatible with this additive schema. | The replacement worker requires migration 198 to claim, import, and recover queued files. Deploy it before enabling the replacement API; previous workers do not know the new task type. |
+| `000199` | `auto_scheduling_preference_default_off` | `reversible` | `schema-first` | The replacement API creates new preference rows with auto-scheduling off. Previous API instances remain schema-compatible but still create rows with it on. | No worker change is required. |
 
 ## `000152_harden_verification_tokens`
 
@@ -1404,6 +1405,29 @@ Operational notes:
 - Slack file transfers use authenticated private URLs in the worker; queued payloads contain only import IDs.
 - Slack imports bypass FortyOne's direct-upload size cap while preserving content type validation.
 - The worker rechecks installation, account link, workspace membership, team access, story state, and provider source before saving an attachment.
+
+## `000199_auto_scheduling_preference_default_off`
+
+- **Classification:** `reversible`
+- **Files:** `000199_auto_scheduling_preference_default_off.up.sql`, `000199_auto_scheduling_preference_default_off.down.sql`
+- **Schema:** Changes the default auto-scheduling preference for new rows to false without changing existing preferences.
+- **API:** The replacement API creates new preference rows with auto-scheduling off. Previous API instances remain schema-compatible but still create rows with it on.
+- **Worker:** No worker change is required.
+- **Mixed versions:** Apply the migration before deploying the replacement API. During a mixed API rollout, new preference rows created by old instances may still have auto-scheduling on.
+- **Rollout mode:** `schema-first`
+
+Rollout:
+
+1. Apply migration 000199.
+2. Deploy the replacement API and Projects app, then verify a new preference row defaults to off and an existing user's saved choice remains intact.
+
+Recovery (`down-migration`):
+
+1. Apply the down migration only if the default must return to on; existing preference values remain unchanged.
+
+Operational notes:
+
+- The migration changes only the column default and never rewrites existing users' preferences.
 
 ## Adding the next migration
 

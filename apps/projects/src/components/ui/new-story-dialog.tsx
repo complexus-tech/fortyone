@@ -140,7 +140,7 @@ export const NewStoryDialog = ({
   const autoAssignSelf = automationPreferences?.autoAssignSelf ?? false;
   const canUseBackgroundMaya = hasFeature("backgroundMaya");
   const autoSchedulingDefaultEnabled =
-    canUseBackgroundMaya && (automationPreferences?.autoScheduling ?? true);
+    canUseBackgroundMaya && (automationPreferences?.autoScheduling ?? false);
   const { data: mayaAssignee, isLoading: isMayaAssigneeLoading } =
     useMayaAssignee(isOpen && canUseBackgroundMaya);
   const currentUserId = session.data?.user.id ?? null;

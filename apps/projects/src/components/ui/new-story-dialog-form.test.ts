@@ -30,7 +30,7 @@ describe("new story dialog form", () => {
       autoSchedulingEnabled: true,
       autoSchedulingLocked: false,
       endDate: "2026-06-20",
-      estimatedDurationMinutes: 60,
+      estimatedDurationMinutes: 240,
       labelIds: [],
       objectiveId: "objective-1",
       priority: "High",
@@ -182,7 +182,7 @@ describe("new story dialog form", () => {
     expect(payload.endDate).toBe("2026-06-20");
   });
 
-  it("defaults new stories to auto-scheduling when no choice is provided", () => {
+  it("leaves auto-scheduling off when no choice is provided", () => {
     const payload = buildNewStoryDialogPayload({
       currentTeamId: "team-1",
       description: "",
@@ -195,7 +195,7 @@ describe("new story dialog form", () => {
     });
 
     expect(payload).toMatchObject({
-      autoSchedulingEnabled: true,
+      autoSchedulingEnabled: false,
     });
     expect(payload).not.toHaveProperty("autoSchedulingLocked");
   });

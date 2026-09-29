@@ -30,6 +30,7 @@ type UpdateStoryVariables = {
 
 type UpdateStoryContext = {
   previousStory?: DetailedStory;
+  previousQueryStates: Map<readonly unknown[], unknown>;
 };
 
 export const useUpdateStoryMutation = () => {
@@ -52,12 +53,12 @@ export const useUpdateStoryMutation = () => {
       return response;
     },
 
-    onMutate: ({ storyId, payload }) => {
+    onMutate: async ({ storyId, payload }) => {
       const storyPayload = { ...payload };
       delete storyPayload.reconcileDescriptionMedia;
 
-      queryClient.cancelQueries({
-        queryKey: storyKeys.detail(workspaceSlug, storyId),
+      await queryClient.cancelQueries({
+        queryKey: storyKeys.all(workspaceSlug),
       });
       const previousStory = queryClient.getQueryData<DetailedStory>(
         storyKeys.detail(workspaceSlug, storyId),
@@ -69,28 +70,33 @@ export const useUpdateStoryMutation = () => {
         previousStory,
       );
 
-      const activeQueries = queryClient.getQueryCache().findAll({
-        queryKey: storyKeys.all(workspaceSlug),
-      });
+      const activeQueries = queryClient
+        .getQueryCache()
+        .findAll({
+          queryKey: storyKeys.all(workspaceSlug),
+        })
+        .filter((query) => query.isActive());
+      const previousQueryStates = new Map<readonly unknown[], unknown>();
 
       activeQueries.forEach((query) => {
-        if (query.isActive()) {
-          queryClient.cancelQueries({ queryKey: query.queryKey });
-          if (query.queryKey.includes("detail")) {
-            updateDetailQuery(
-              queryClient,
-              query.queryKey,
-              storyId,
-              optimisticPayload,
-            );
-          } else {
-            updateListQuery(
-              queryClient,
-              query.queryKey,
-              storyId,
-              optimisticPayload,
-            );
-          }
+        previousQueryStates.set(
+          query.queryKey,
+          queryClient.getQueryData(query.queryKey),
+        );
+        if (query.queryKey.includes("detail")) {
+          updateDetailQuery(
+            queryClient,
+            query.queryKey,
+            storyId,
+            optimisticPayload,
+          );
+        } else {
+          updateListQuery(
+            queryClient,
+            query.queryKey,
+            storyId,
+            optimisticPayload,
+          );
         }
       });
 
@@ -104,11 +110,14 @@ export const useUpdateStoryMutation = () => {
             ...optimisticPayload,
           },
         );
-        return { previousStory };
       }
+      return { previousStory, previousQueryStates };
     },
 
     onError: (error, variables, context) => {
+      context?.previousQueryStates.forEach((data, queryKey) => {
+        queryClient.setQueryData(queryKey, data);
+      });
       if (context?.previousStory) {
         queryClient.setQueryData<DetailedStory>(
           storyKeys.detail(workspaceSlug, variables.storyId),
@@ -139,6 +148,13 @@ export const useUpdateStoryMutation = () => {
       queryClient.invalidateQueries({
         queryKey: storyKeys.all(workspaceSlug),
         refetchType: "inactive",
+      });
+      queryClient.invalidateQueries({
+        queryKey: storyKeys.all(workspaceSlug),
+        predicate: (query) =>
+          query.queryKey.includes("maya-recent") ||
+          query.queryKey.includes("maya-work"),
+        refetchType: "active",
       });
       queryClient.invalidateQueries({
         queryKey: storyKeys.activitiesInfinite(workspaceSlug, storyId),
@@ -265,6 +281,13 @@ const updateDetailQuery = (
   payload: Partial<DetailedStory>,
 ) => {
   const parentStory = queryClient.getQueryData<DetailedStory>(queryKey);
+  if (parentStory?.id === storyId) {
+    queryClient.setQueryData<DetailedStory>(queryKey, {
+      ...parentStory,
+      ...payload,
+    });
+    return;
+  }
   if (parentStory?.subStories) {
     const subStories = patchStories(parentStory.subStories, storyId, payload);
     if (subStories === parentStory.subStories) return;

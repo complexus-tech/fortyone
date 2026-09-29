@@ -1773,6 +1773,38 @@
         "Slack imports bypass FortyOne's direct-upload size cap while preserving content type validation.",
         "The worker rechecks installation, account link, workspace membership, team access, story state, and provider source before saving an attachment."
       ]
+    },
+    {
+      "version": 199,
+      "slug": "auto_scheduling_preference_default_off",
+      "classification": "reversible",
+      "files": {
+        "up": "000199_auto_scheduling_preference_default_off.up.sql",
+        "down": "000199_auto_scheduling_preference_default_off.down.sql"
+      },
+      "compatibility": {
+        "schema": "Changes the default auto-scheduling preference for new rows to false without changing existing preferences.",
+        "api": "The replacement API creates new preference rows with auto-scheduling off. Previous API instances remain schema-compatible but still create rows with it on.",
+        "worker": "No worker change is required.",
+        "mixed_versions": "Apply the migration before deploying the replacement API. During a mixed API rollout, new preference rows created by old instances may still have auto-scheduling on."
+      },
+      "rollout": {
+        "sequence": 48,
+        "mode": "schema-first",
+        "steps": [
+          "Apply migration 000199.",
+          "Deploy the replacement API and Projects app, then verify a new preference row defaults to off and an existing user's saved choice remains intact."
+        ]
+      },
+      "recovery": {
+        "strategy": "down-migration",
+        "procedure": [
+          "Apply the down migration only if the default must return to on; existing preference values remain unchanged."
+        ]
+      },
+      "operational_notes": [
+        "The migration changes only the column default and never rewrites existing users' preferences."
+      ]
     }
   ]
 }

@@ -14,7 +14,7 @@ SELECT
     membership.user_id,
     membership.workspace_id,
     FALSE,
-    TRUE,
+    FALSE,
     FALSE,
     FALSE,
     TRUE,
@@ -31,7 +31,7 @@ RETURNING
     user_id,
     workspace_id,
     COALESCE(auto_assign_self, FALSE)::boolean AS auto_assign_self,
-    COALESCE(auto_scheduling, TRUE)::boolean AS auto_scheduling,
+    COALESCE(auto_scheduling, FALSE)::boolean AS auto_scheduling,
     COALESCE(assign_self_on_branch_copy, FALSE)::boolean AS assign_self_on_branch_copy,
     COALESCE(move_story_to_started_on_branch, FALSE)::boolean AS move_story_to_started_on_branch,
     COALESCE(open_story_in_dialog, TRUE)::boolean AS open_story_in_dialog,
@@ -61,7 +61,7 @@ SELECT
     CASE
         WHEN CAST(sqlc.arg(set_auto_scheduling) AS boolean)
             THEN CAST(sqlc.arg(auto_scheduling) AS boolean)
-        ELSE TRUE
+        ELSE FALSE
     END,
     CASE
         WHEN CAST(sqlc.arg(set_assign_self_on_branch_copy) AS boolean)

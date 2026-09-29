@@ -162,7 +162,7 @@ export const buildNewStoryDialogPayload = ({
       mayaAssigneeId,
     )
       ? true
-      : storyForm.autoSchedulingEnabled ?? true,
+      : storyForm.autoSchedulingEnabled ?? false,
     ...timeNeeded,
     labelIds: storyForm.labelIds ?? [],
   };
