@@ -16,6 +16,7 @@ import { useUnreadNotifications } from "@/modules/notifications/hooks/unread";
 import { useCurrentAppCommandAction } from "@/components/shared/app-command-action-context";
 import { useWalkthrough } from "@/components/walkthrough/walkthrough-provider";
 import { KeyboardShortcuts } from "@/components/shared/keyboard-shortcuts";
+import { WorkspaceActions } from "@/components/shared/workspace-actions";
 import { ProfileMenu } from "@/components/shared/sidebar/profile-menu";
 import { WorkspacesMenu } from "@/components/shared/sidebar/workspaces-menu";
 import { useSidebar } from "@/components/shared/sidebar/sidebar-context";
@@ -39,7 +40,7 @@ export const AppCommandBar = () => {
   } = useStoryCreationDialog();
   const [isObjectiveOpen, setIsObjectiveOpen] = useState(false);
   const [isKeyboardShortcutsOpen, setIsKeyboardShortcutsOpen] = useState(false);
-  const { isCollapsed } = useSidebar();
+  const { isCollapsed, hasAssistantCards } = useSidebar();
   const action = useCurrentAppCommandAction();
   const pathname = usePathname();
   const params = useParams<{
@@ -93,21 +94,30 @@ export const AppCommandBar = () => {
         >
           <WorkspacesMenu isCollapsed={isCollapsed} />
         </Flex>
-        <Flex align="center" className="min-w-0 flex-1 gap-4 pr-[16px] pl-2">
+        <Flex
+          align="center"
+          className="min-w-0 flex-1 gap-2 pr-4 pl-2 xl:gap-4"
+        >
           <Commands className="max-w-xl flex-1" showTrigger />
-          <Flex align="center" className="ml-auto shrink-0 gap-4">
+          <Flex align="center" className="ml-auto shrink-0 gap-2 xl:gap-3">
+            <WorkspaceActions
+              sidebarHasActions={!isCollapsed && !hasAssistantCards}
+            />
             <Menu>
-              <Menu.Button>
-                <Button
-                  className="h-11 px-3"
-                  color="tertiary"
-                  data-walkthrough-target={walkthroughTargets.help}
-                  leftIcon={<HelpIcon className="h-5" />}
-                  variant="naked"
-                >
-                  Help
-                </Button>
-              </Menu.Button>
+              <Tooltip title="Help">
+                <Menu.Button>
+                  <Button
+                    aria-label="Help"
+                    className="h-11 w-11 justify-center px-0 xl:w-auto xl:px-3"
+                    color="tertiary"
+                    data-walkthrough-target={walkthroughTargets.help}
+                    leftIcon={<HelpIcon className="h-5" />}
+                    variant="naked"
+                  >
+                    <span className="sr-only xl:not-sr-only">Help</span>
+                  </Button>
+                </Menu.Button>
+              </Tooltip>
               <Menu.Items align="end">
                 <Menu.Group>
                   <Menu.Item onSelect={startWalkthrough}>
@@ -175,26 +185,20 @@ export const AppCommandBar = () => {
                 </Button>
               </Box>
             </Tooltip>
-            <Tooltip title={label}>
-              <Button
-                aria-label={label}
-                asIcon
-                className="!size-9 !max-w-9 !min-w-9 shrink-0"
-                color="primary"
-                data-app-contextual-create-button
-                data-walkthrough-create-kind={
-                  createsStory ? "story" : undefined
-                }
-                data-walkthrough-target={walkthroughTargets.create}
-                disabled={isDisabled}
-                leftIcon={
-                  <PlusIcon className="text-current dark:text-current" />
-                }
-                onClick={handleCreate}
-                rounded="full"
-                variant="solid"
-              />
-            </Tooltip>
+            <Button
+              aria-label={label}
+              className="h-11 shrink-0 px-3 whitespace-nowrap"
+              color="primary"
+              data-app-contextual-create-button
+              data-walkthrough-create-kind={createsStory ? "story" : undefined}
+              data-walkthrough-target={walkthroughTargets.create}
+              disabled={isDisabled}
+              leftIcon={<PlusIcon className="text-current dark:text-current" />}
+              onClick={handleCreate}
+              variant="solid"
+            >
+              {label}
+            </Button>
             <ProfileMenu variant="topbar" />
           </Flex>
         </Flex>

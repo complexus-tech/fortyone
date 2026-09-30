@@ -12,6 +12,7 @@ import { UpcomingMeetingCard } from "./upcoming-meeting-card";
 const useCalendarSchedule = jest.fn();
 const syncCalendar = jest.fn();
 const overrideScheduleIssue = jest.fn();
+const mockSetHasAssistantCards = jest.fn();
 const mockObjectives: Objective[] = [];
 
 jest.mock("next/link", () => ({
@@ -174,6 +175,10 @@ jest.mock("@/lib/auth/client", () => ({
   useSession: () => ({ data: { user: { id: "user-1" } } }),
 }));
 
+jest.mock("./sidebar-context", () => ({
+  useSidebar: () => ({ setHasAssistantCards: mockSetHasAssistantCards }),
+}));
+
 jest.mock("@/modules/objectives/hooks/use-objectives", () => ({
   useObjectives: () => ({ data: mockObjectives }),
 }));
@@ -273,6 +278,7 @@ describe("UpcomingMeetingCard", () => {
     jest.setSystemTime(new Date("2026-08-08T10:00:00.000Z"));
     useCalendarSchedule.mockReset();
     overrideScheduleIssue.mockReset();
+    mockSetHasAssistantCards.mockReset();
     mockObjectives.length = 0;
     window.localStorage.clear();
     document.cookie =
@@ -293,12 +299,14 @@ describe("UpcomingMeetingCard", () => {
     expect(screen.getByText("Weekly planning")).toHaveClass("line-clamp-1");
     expect(screen.getByText("In 10 min")).toBeInTheDocument();
     expect(screen.queryByText("Upgrade plan")).toBeNull();
+    expect(mockSetHasAssistantCards).toHaveBeenLastCalledWith(true);
     expect(screen.getByRole("link", { name: /join meeting/i })).toHaveAttribute(
       "href",
       "https://meet.google.com/abc-defg-hij",
     );
 
     unmount();
+    expect(mockSetHasAssistantCards).toHaveBeenLastCalledWith(false);
   });
 
   it("uses a concise status while a meeting is in progress", () => {
@@ -330,6 +338,7 @@ describe("UpcomingMeetingCard", () => {
 
     expect(screen.getByText("Upgrade plan")).toBeInTheDocument();
     expect(screen.queryByText("Join meeting")).toBeNull();
+    expect(mockSetHasAssistantCards).toHaveBeenLastCalledWith(false);
 
     unmount();
   });
@@ -351,6 +360,7 @@ describe("UpcomingMeetingCard", () => {
     fireEvent.click(screen.getByRole("button", { name: "Dismiss meeting" }));
 
     expect(screen.getByText("Normal footer")).toBeInTheDocument();
+    expect(mockSetHasAssistantCards).toHaveBeenLastCalledWith(false);
     expect(screen.queryByRole("link", { name: /join meeting/i })).toBeNull();
     expect(document.cookie).toContain("fortyone_meeting_dismissed_meeting-1=1");
 

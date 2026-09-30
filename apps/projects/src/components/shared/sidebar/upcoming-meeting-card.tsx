@@ -37,6 +37,7 @@ import {
   isMeetingDismissed,
 } from "./upcoming-meeting";
 import type { UpcomingMeeting } from "./upcoming-meeting";
+import { useSidebar } from "./sidebar-context";
 import {
   dismissScheduleIssue,
   getScheduleIssueDismissalToken,
@@ -342,6 +343,7 @@ export const SidebarAssistantCards = ({
   fallback?: ReactNode;
   isCollapsed?: boolean;
 }) => {
+  const { setHasAssistantCards } = useSidebar();
   const now = useSyncExternalStore(
     subscribeToClock,
     getClockSnapshot,
@@ -451,6 +453,19 @@ export const SidebarAssistantCards = ({
       objective,
     })),
   ];
+  const hasAssistantCards = items.length > 0;
+
+  useEffect(() => {
+    setHasAssistantCards(hasAssistantCards);
+  }, [hasAssistantCards, setHasAssistantCards]);
+
+  useEffect(
+    () => () => {
+      setHasAssistantCards(false);
+    },
+    [setHasAssistantCards],
+  );
+
   if (items.length === 0) return fallback;
 
   const safeActiveIndex = activeIndex % items.length;

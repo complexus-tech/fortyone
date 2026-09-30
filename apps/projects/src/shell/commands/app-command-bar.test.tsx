@@ -15,12 +15,24 @@ let mockMembersPending = false;
 let mockTeamsPending = false;
 let mockHasTeams = true;
 let mockWalkthroughActive = false;
+let mockSidebarCollapsed = false;
+let mockHasAssistantCards = false;
+let mockPathname = "/acme/my-work";
+let mockParams: Record<string, string> = {};
+let mockStoryTerm = "story";
+let mockObjectiveTerm = "objective";
+let mockAction: {
+  disabled?: boolean;
+  id: string;
+  label: string;
+  onSelect: () => void;
+} | null = null;
 
 jest.mock("sonner", () => ({ toast: jest.fn() }));
 
 jest.mock("next/navigation", () => ({
-  useParams: () => ({}),
-  usePathname: () => "/acme/my-work",
+  useParams: () => mockParams,
+  usePathname: () => mockPathname,
   useRouter: () => ({ push: mockRouterPush }),
   useSearchParams: () => new URLSearchParams(window.location.search),
 }));
@@ -124,7 +136,8 @@ jest.mock("ui", () => {
 
 jest.mock("@/hooks/use-terminology-display", () => ({
   useTerminology: () => ({
-    getTermDisplay: () => "story",
+    getTermDisplay: (term: "storyTerm" | "objectiveTerm") =>
+      term === "objectiveTerm" ? mockObjectiveTerm : mockStoryTerm,
   }),
 }));
 
@@ -144,21 +157,38 @@ jest.mock("@/modules/notifications/hooks/unread", () => ({
 }));
 
 jest.mock("@/components/ui/new-objective", () => ({
-  NewObjectiveDialog: () => null,
+  NewObjectiveDialog: ({
+    isOpen,
+    teamId,
+  }: {
+    isOpen: boolean;
+    teamId?: string;
+  }) => (isOpen ? <div data-team-id={teamId}>New objective dialog</div> : null),
 }));
 
 jest.mock("@/components/ui/new-story-dialog", () => ({
   NewStoryDialog: ({
     isOpen,
+    objectiveId,
     onCreated,
     setIsOpen,
+    sprintId,
+    teamId,
   }: {
     isOpen: boolean;
+    objectiveId?: string;
     onCreated: () => void;
     setIsOpen: (isOpen: boolean) => void;
+    sprintId?: string;
+    teamId?: string;
   }) =>
     isOpen ? (
-      <div>
+      <div
+        data-objective-id={objectiveId}
+        data-sprint-id={sprintId}
+        data-team-id={teamId}
+        data-testid="new-story-dialog"
+      >
         <button onClick={onCreated} type="button">
           Simulate story created
         </button>
@@ -210,11 +240,22 @@ jest.mock("@/components/shared/sidebar/workspaces-menu", () => ({
 }));
 
 jest.mock("@/components/shared/sidebar/sidebar-context", () => ({
-  useSidebar: () => ({ isCollapsed: false }),
+  useSidebar: () => ({
+    isCollapsed: mockSidebarCollapsed,
+    hasAssistantCards: mockHasAssistantCards,
+  }),
+}));
+
+jest.mock("@/components/shared/workspace-actions", () => ({
+  WorkspaceActions: ({ sidebarHasActions }: { sidebarHasActions: boolean }) => (
+    <div data-sidebar-has-actions={String(sidebarHasActions)}>
+      Workspace actions
+    </div>
+  ),
 }));
 
 jest.mock("@/components/shared/app-command-action-context", () => ({
-  useCurrentAppCommandAction: () => null,
+  useCurrentAppCommandAction: () => mockAction,
 }));
 
 describe("AppCommandBar", () => {
@@ -229,6 +270,13 @@ describe("AppCommandBar", () => {
     mockTeamsPending = false;
     mockHasTeams = true;
     mockWalkthroughActive = false;
+    mockSidebarCollapsed = false;
+    mockHasAssistantCards = false;
+    mockPathname = "/acme/my-work";
+    mockParams = {};
+    mockStoryTerm = "story";
+    mockObjectiveTerm = "objective";
+    mockAction = null;
     window.history.replaceState(null, "", "/acme/my-work");
   });
 
@@ -255,6 +303,98 @@ describe("AppCommandBar", () => {
       walkthroughTargets.help,
     );
     expect(screen.getByText("Profile")).toBeInTheDocument();
+    expect(screen.getByText("Workspace actions")).toBeInTheDocument();
+  });
+
+  it("shows the configured task term and preserves route defaults", () => {
+    mockStoryTerm = "issue";
+    mockParams = {
+      teamId: "team-1",
+      objectiveId: "objective-1",
+      sprintId: "sprint-1",
+    };
+    render(<AppCommandBar />);
+
+    const createButton = screen.getByRole("button", { name: "Create issue" });
+    expect(createButton).toHaveTextContent("Create issue");
+    fireEvent.click(createButton);
+
+    const dialog = screen.getByTestId("new-story-dialog");
+    expect(dialog).toHaveAttribute("data-team-id", "team-1");
+    expect(dialog).toHaveAttribute("data-objective-id", "objective-1");
+    expect(dialog).toHaveAttribute("data-sprint-id", "sprint-1");
+  });
+
+  it.each([
+    [false, false, true],
+    [false, true, false],
+    [true, false, false],
+    [true, true, false],
+  ])(
+    "reports sidebar action availability for collapsed=%s and cards=%s",
+    (collapsed, hasCards, sidebarHasActions) => {
+      mockSidebarCollapsed = collapsed;
+      mockHasAssistantCards = hasCards;
+      render(<AppCommandBar />);
+
+      expect(screen.getByText("Workspace actions")).toHaveAttribute(
+        "data-sidebar-has-actions",
+        String(sidebarHasActions),
+      );
+    },
+  );
+
+  it.each(["/acme/roadmap", "/acme/teams/team-1/objectives"])(
+    "uses the configured objective term on %s",
+    (pathname) => {
+      mockPathname = pathname;
+      mockObjectiveTerm = "project";
+      mockParams = { teamId: "team-1" };
+      render(<AppCommandBar />);
+
+      const createButton = screen.getByRole("button", {
+        name: "Create project",
+      });
+      expect(createButton).toHaveTextContent("Create project");
+      fireEvent.click(createButton);
+
+      expect(screen.getByText("New objective dialog")).toHaveAttribute(
+        "data-team-id",
+        "team-1",
+      );
+      expect(screen.queryByTestId("new-story-dialog")).not.toBeInTheDocument();
+    },
+  );
+
+  it("shows and invokes the registered scheduling action", () => {
+    mockPathname = "/acme/calendar";
+    const onSelect = jest.fn();
+    mockAction = {
+      id: "calendar:schedule-story",
+      label: "Schedule issue",
+      onSelect,
+    };
+    render(<AppCommandBar />);
+
+    const scheduleButton = screen.getByRole("button", {
+      name: "Schedule issue",
+    });
+    expect(scheduleButton).toHaveTextContent("Schedule issue");
+    fireEvent.click(scheduleButton);
+
+    expect(onSelect).toHaveBeenCalledTimes(1);
+    expect(screen.queryByTestId("new-story-dialog")).not.toBeInTheDocument();
+    expect(screen.queryByText("New objective dialog")).not.toBeInTheDocument();
+  });
+
+  it("keeps contextual creation disabled for guests", () => {
+    mockUserRole = "guest";
+    render(<AppCommandBar />);
+
+    const createButton = screen.getByRole("button", { name: "Create story" });
+    expect(createButton).toBeDisabled();
+    fireEvent.click(createButton);
+    expect(screen.queryByTestId("new-story-dialog")).not.toBeInTheDocument();
   });
 
   it("opens keyboard shortcuts from Help", () => {

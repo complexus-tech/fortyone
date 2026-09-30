@@ -1,6 +1,6 @@
 /* global beforeEach, describe, expect, it, jest -- Jest globals are provided by the projects test runner. */
 
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { useLocalStorage, useWorkspacePath } from "@/hooks";
 import { SidebarProvider, useSidebar } from "./sidebar-context";
 
@@ -20,6 +20,34 @@ const SidebarState = () => {
   const { isCollapsed } = useSidebar();
 
   return <span>{isCollapsed ? "collapsed" : "expanded"}</span>;
+};
+
+const AssistantCardState = () => {
+  const { hasAssistantCards, setHasAssistantCards } = useSidebar();
+
+  return (
+    <>
+      <span>
+        {hasAssistantCards ? "assistant cards" : "no assistant cards"}
+      </span>
+      <button
+        onClick={() => {
+          setHasAssistantCards(true);
+        }}
+        type="button"
+      >
+        Show assistant cards
+      </button>
+      <button
+        onClick={() => {
+          setHasAssistantCards(false);
+        }}
+        type="button"
+      >
+        Hide assistant cards
+      </button>
+    </>
+  );
 };
 
 describe("SidebarProvider", () => {
@@ -57,5 +85,27 @@ describe("SidebarProvider", () => {
     );
 
     expect(screen.getByText("expanded")).toBeInTheDocument();
+  });
+
+  it("shares assistant-card visibility independently of the collapse preference", () => {
+    render(
+      <SidebarProvider>
+        <AssistantCardState />
+        <SidebarState />
+      </SidebarProvider>,
+    );
+
+    expect(screen.getByText("no assistant cards")).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Show assistant cards" }),
+    );
+    expect(screen.getByText("assistant cards")).toBeInTheDocument();
+    expect(screen.getByText("collapsed")).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Hide assistant cards" }),
+    );
+    expect(screen.getByText("no assistant cards")).toBeInTheDocument();
   });
 });

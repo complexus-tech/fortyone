@@ -5,6 +5,7 @@ import { MenuIcon } from "icons";
 import { Navigation } from "./sidebar/navigation";
 import { Teams } from "./sidebar/teams";
 import { Header } from "./sidebar/header";
+import { WorkspaceActions } from "./workspace-actions";
 
 export const MobileMenuButton = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -36,6 +37,9 @@ export const MobileMenuButton = () => {
           </Dialog.Header>
           <Dialog.Body className="max-h-dvh px-4">
             <Header />
+            <Box className="border-border mb-3 border-b pb-3 empty:hidden">
+              <WorkspaceActions variant="mobile" />
+            </Box>
             <Navigation />
             <Teams />
           </Dialog.Body>

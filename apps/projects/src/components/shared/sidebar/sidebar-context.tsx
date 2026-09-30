@@ -5,13 +5,16 @@ import {
   useCallback,
   useContext,
   useMemo,
+  useState,
   type ReactNode,
 } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useLocalStorage, useWorkspacePath } from "@/hooks";
 
 type SidebarContextValue = {
+  hasAssistantCards: boolean;
   isCollapsed: boolean;
+  setHasAssistantCards: (value: boolean) => void;
   setIsCollapsed: (
     value: boolean | ((currentValue: boolean) => boolean),
   ) => void;
@@ -22,6 +25,7 @@ const SidebarContext = createContext<SidebarContextValue | null>(null);
 
 export const SidebarProvider = ({ children }: { children: ReactNode }) => {
   const { workspaceSlug } = useWorkspacePath();
+  const [hasAssistantCards, setHasAssistantCards] = useState(false);
   const [isCollapsed, setIsCollapsed] = useLocalStorage(
     `sidebar:${workspaceSlug}:collapsed`,
     true,
@@ -33,8 +37,14 @@ export const SidebarProvider = ({ children }: { children: ReactNode }) => {
   useHotkeys("mod+b", toggleSidebar, { preventDefault: true });
 
   const value = useMemo(
-    () => ({ isCollapsed, setIsCollapsed, toggleSidebar }),
-    [isCollapsed, setIsCollapsed, toggleSidebar],
+    () => ({
+      hasAssistantCards,
+      isCollapsed,
+      setHasAssistantCards,
+      setIsCollapsed,
+      toggleSidebar,
+    }),
+    [hasAssistantCards, isCollapsed, setIsCollapsed, toggleSidebar],
   );
 
   return (
