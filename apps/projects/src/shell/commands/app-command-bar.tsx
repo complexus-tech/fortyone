@@ -195,7 +195,6 @@ export const AppCommandBar = () => {
               disabled={isDisabled}
               leftIcon={<PlusIcon className="text-current dark:text-current" />}
               onClick={handleCreate}
-              size="sm"
               variant="solid"
             >
               {label}
