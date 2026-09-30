@@ -58,14 +58,15 @@ const InvitePeopleButton = ({
         aria-label="Invite people"
         className={
           isMobile
-            ? "h-11 text-base whitespace-nowrap md:h-11"
-            : "h-11 w-11 justify-center px-0 text-base whitespace-nowrap md:h-11 lg:w-auto lg:px-3"
+            ? "text-base whitespace-nowrap"
+            : "w-[2.1rem] justify-center px-0 text-base whitespace-nowrap lg:w-auto lg:px-2"
         }
         color="tertiary"
         data-invite-button
         fullWidth={isMobile}
         leftIcon={<InviteMembersIcon aria-hidden className="h-5 shrink-0" />}
         onClick={onInvite}
+        size="sm"
         variant="outline"
       >
         <span className={isMobile ? undefined : "hidden lg:inline"}>
@@ -103,17 +104,18 @@ const WorkspacePlanStatus = ({
       <span className={isMobile ? "block w-full" : "block"}>
         {canManageBilling ? (
           <Button
-            className="text-text-muted h-11 px-2.5 text-base whitespace-nowrap md:h-11"
+            className="text-text-muted text-base whitespace-nowrap"
             color="tertiary"
             fullWidth={isMobile}
             href={withWorkspace("/settings/workspace/billing")}
             prefetch
+            size="sm"
             variant="naked"
           >
             {statusActionLabel}
           </Button>
         ) : (
-          <span className="text-text-muted flex h-11 items-center px-2.5 text-base whitespace-nowrap">
+          <span className="text-text-muted flex h-[2.1rem] items-center px-2 text-base whitespace-nowrap">
             {statusLabel}
           </span>
         )}

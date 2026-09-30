@@ -187,7 +187,7 @@ export const AppCommandBar = () => {
             </Tooltip>
             <Button
               aria-label={label}
-              className="h-11 shrink-0 px-3 whitespace-nowrap"
+              className="shrink-0 whitespace-nowrap"
               color="primary"
               data-app-contextual-create-button
               data-walkthrough-create-kind={createsStory ? "story" : undefined}
@@ -195,6 +195,7 @@ export const AppCommandBar = () => {
               disabled={isDisabled}
               leftIcon={<PlusIcon className="text-current dark:text-current" />}
               onClick={handleCreate}
+              size="sm"
               variant="solid"
             >
               {label}
