@@ -58,18 +58,18 @@ const InvitePeopleButton = ({
         aria-label="Invite people"
         className={
           isMobile
-            ? "text-base whitespace-nowrap"
-            : "w-[2.1rem] justify-center px-0 text-base whitespace-nowrap lg:w-auto lg:px-2"
+            ? "h-11 whitespace-nowrap"
+            : "h-11 w-11 justify-center px-0 whitespace-nowrap xl:w-auto xl:px-3"
         }
         color="tertiary"
         data-invite-button
         fullWidth={isMobile}
         leftIcon={<InviteMembersIcon aria-hidden className="h-5 shrink-0" />}
         onClick={onInvite}
-        size="sm"
-        variant="outline"
+        size="md"
+        variant="naked"
       >
-        <span className={isMobile ? undefined : "hidden lg:inline"}>
+        <span className={isMobile ? undefined : "sr-only xl:not-sr-only"}>
           Invite people
         </span>
       </Button>
