@@ -13,6 +13,65 @@ import { Teams } from "./teams";
 import { SidebarAssistantCards } from "./upcoming-meeting-card";
 import { useSidebar } from "./sidebar-context";
 
+const SidebarSubscriptionAction = ({
+  href,
+  isCollapsed,
+  isOnTrial,
+  trialDaysRemaining,
+}: {
+  href?: string;
+  isCollapsed: boolean;
+  isOnTrial: boolean;
+  trialDaysRemaining: number;
+}) => {
+  const upgradeAction = href ? "Upgrade" : "Ask your admin to upgrade";
+  const isTrialCollapsed = isOnTrial && isCollapsed;
+  const trialDaysLabel = `${trialDaysRemaining} day${trialDaysRemaining !== 1 ? "s" : ""}`;
+  const fullTrialLabel = `${trialDaysLabel} left in trial`;
+  const subscriptionTitle = isOnTrial
+    ? `${trialDaysLabel} left in your trial. ${upgradeAction} to a paid plan to get more premium features.`
+    : `You are on the free plan. ${upgradeAction} to a paid plan to get more features.`;
+  const trialLabel = isCollapsed
+    ? `${trialDaysRemaining}d left`
+    : fullTrialLabel;
+  const subscriptionLabel = isOnTrial ? trialLabel : "Upgrade";
+  return (
+    <Tooltip className="ml-2 max-w-56 py-3" title={subscriptionTitle}>
+      <span className={isOnTrial ? "block max-w-full min-w-0" : undefined}>
+        <Button
+          align={isTrialCollapsed ? "center" : undefined}
+          className={cn(
+            "text-primary border-primary/15 bg-primary/15 dark:bg-primary/10 dark:bg-border-primary/15 px-2.5",
+            isOnTrial && "max-w-full min-w-0 truncate",
+            isTrialCollapsed && "px-1 text-center",
+          )}
+          fullWidth={isTrialCollapsed}
+          href={href}
+          prefetch
+          rounded="lg"
+          size="sm"
+        >
+          {isOnTrial ? (
+            <>
+              <span
+                aria-hidden={isCollapsed || undefined}
+                className="min-w-0 truncate"
+              >
+                {subscriptionLabel}
+              </span>
+              {isCollapsed ? (
+                <span className="sr-only">{fullTrialLabel}</span>
+              ) : null}
+            </>
+          ) : (
+            subscriptionLabel
+          )}
+        </Button>
+      </span>
+    </Tooltip>
+  );
+};
+
 export const Sidebar = () => {
   const [isInviteMembersOpen, setIsInviteMembersOpen] = useState(false);
   const { workspace } = useCurrentWorkspace();
@@ -31,35 +90,19 @@ export const Sidebar = () => {
     if (hoursRemaining <= 0) return null;
     return hoursRemaining;
   };
-  const upgradeAction =
-    userRole === "admin" ? "Upgrade" : "Ask your admin to upgrade";
-  const subscriptionTitle =
-    tier === "trial"
-      ? `${trialDaysRemaining} days left in your trial. ${upgradeAction} to a paid plan to get more premium features.`
-      : `You are on the free plan. ${upgradeAction} to a paid plan to get more features.`;
-  const subscriptionLabel =
-    tier === "trial"
-      ? `${trialDaysRemaining} day${trialDaysRemaining !== 1 ? "s" : ""} left in trial`
-      : "Upgrade";
-  const showsUpgradeAction = tier === "free" || tier === "trial";
+  const isOnTrial = tier === "trial";
+  const showsUpgradeAction = tier === "free" || isOnTrial;
   const subscriptionAction = showsUpgradeAction ? (
-    <Tooltip className="ml-2 max-w-56 py-3" title={subscriptionTitle}>
-      <span>
-        <Button
-          className="text-primary border-primary/15 bg-primary/15 dark:bg-primary/10 dark:bg-border-primary/15 px-2.5"
-          href={
-            userRole === "admin"
-              ? withWorkspace("/settings/workspace/billing")
-              : undefined
-          }
-          prefetch
-          rounded="lg"
-          size="sm"
-        >
-          {subscriptionLabel}
-        </Button>
-      </span>
-    </Tooltip>
+    <SidebarSubscriptionAction
+      href={
+        userRole === "admin"
+          ? withWorkspace("/settings/workspace/billing")
+          : undefined
+      }
+      isCollapsed={isCollapsed}
+      isOnTrial={isOnTrial}
+      trialDaysRemaining={trialDaysRemaining}
+    />
   ) : null;
   const inviteMembersAction =
     userRole === "admin" && !showsUpgradeAction ? (
@@ -75,7 +118,8 @@ export const Sidebar = () => {
         <span className="line-clamp-1">Invite members</span>
       </button>
     ) : null;
-  const sidebarAction = subscriptionAction ?? inviteMembersAction;
+  const sidebarAction =
+    tier === "free" ? subscriptionAction : inviteMembersAction;
   return (
     <Box
       className={cn(
@@ -139,6 +183,14 @@ export const Sidebar = () => {
             />
           )}
         </Box>
+        {isOnTrial && !workspace?.deletedAt ? (
+          <Box
+            className={cn("px-3.5", isCollapsed && "px-0")}
+            data-sidebar-trial
+          >
+            {subscriptionAction}
+          </Box>
+        ) : null}
       </Box>
       <InviteMembersDialog
         isOpen={isInviteMembersOpen}

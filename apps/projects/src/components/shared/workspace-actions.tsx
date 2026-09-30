@@ -28,18 +28,22 @@ const getActionVisibility = ({
   isSubscriptionReady,
   sidebarHasActions,
   tier,
+  variant,
 }: {
   canInvite: boolean;
   isSubscriptionReady: boolean;
   sidebarHasActions: boolean;
   tier: SubscriptionTier;
+  variant: WorkspaceActionsVariant;
 }) => {
   const isLimitedPlan = tier === "free" || tier === "trial";
 
   return {
     showsInvite: canInvite && (!sidebarHasActions || isLimitedPlan),
     showsSubscriptionStatus:
-      isSubscriptionReady && isLimitedPlan && !sidebarHasActions,
+      isSubscriptionReady &&
+      !sidebarHasActions &&
+      (tier === "free" || (tier === "trial" && variant === "mobile")),
   };
 };
 
@@ -139,6 +143,7 @@ export const WorkspaceActions = ({
     isSubscriptionReady: !isPending && !isError,
     sidebarHasActions,
     tier,
+    variant,
   });
   const showsActions = showsInvite || showsSubscriptionStatus;
 

@@ -192,10 +192,10 @@ describe("WorkspaceActions", () => {
     [1, "1 day left in trial"],
     [14, "14 days left in trial"],
   ])(
-    "shows %s remaining trial days as an admin billing link",
+    "shows %s remaining trial days as a mobile sidebar billing link",
     (days, label) => {
       mockTrialDaysRemaining = days;
-      render(<TopbarActions />);
+      render(<WorkspaceActions variant="mobile" />);
 
       expect(screen.getByRole("link", { name: label })).toHaveAttribute(
         "href",
@@ -218,10 +218,10 @@ describe("WorkspaceActions", () => {
   });
 
   it.each(["member", "guest"] as const)(
-    "shows informational trial status to a %s without a billing control",
+    "shows informational trial status in the mobile sidebar to a %s without a billing control",
     (role) => {
       mockUserRole = role;
-      render(<TopbarActions />);
+      render(<WorkspaceActions variant="mobile" />);
 
       expect(screen.getByText("14 days left in trial")).toBeInTheDocument();
       expect(screen.queryByRole("link")).not.toBeInTheDocument();
@@ -357,15 +357,34 @@ describe("WorkspaceActions", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows plan status in the topbar when assistant cards occupy the sidebar", () => {
+  it("shows free-plan status in the topbar when assistant cards occupy the sidebar", () => {
+    mockTier = "free";
     mockSidebarCollapsed = false;
     mockHasAssistantCards = true;
     render(<TopbarActions />);
 
-    expect(
-      screen.getByRole("link", { name: "14 days left in trial" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Upgrade" })).toBeInTheDocument();
   });
+
+  it.each([
+    [false, false],
+    [false, true],
+    [true, false],
+    [true, true],
+  ])(
+    "keeps trial status off the topbar for collapsed=%s and assistant cards=%s",
+    (collapsed, hasCards) => {
+      mockSidebarCollapsed = collapsed;
+      mockHasAssistantCards = hasCards;
+      render(<TopbarActions />);
+
+      expect(screen.queryByText(/left in trial/)).not.toBeInTheDocument();
+      expect(screen.queryByRole("link")).not.toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Invite people" }),
+      ).toBeInTheDocument();
+    },
+  );
 
   it("does not duplicate paid-plan sidebar invitations when subscription refetching fails", () => {
     mockSidebarCollapsed = false;

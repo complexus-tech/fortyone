@@ -7,6 +7,8 @@ import { Sidebar } from "./sidebar";
 let mockUserRole = "admin";
 let mockHasMeeting = true;
 let mockTier = "free";
+let mockTrialDaysRemaining = 14;
+let mockWorkspaceDeletedAt: string | null = null;
 let mockSidebarCollapsed = false;
 let mockAssistantCollapsed = false;
 
@@ -16,17 +18,21 @@ jest.mock("ui", () => {
   );
   const MockButton = ({
     children,
+    className,
     href,
     onClick,
   }: {
     children: ReactNode;
+    className?: string;
     href?: string;
     onClick?: () => void;
   }) =>
     href ? (
-      <a href={href}>{children}</a>
+      <a className={className} href={href}>
+        {children}
+      </a>
     ) : (
-      <button onClick={onClick} type="button">
+      <button className={className} onClick={onClick} type="button">
         {children}
       </button>
     );
@@ -46,9 +52,13 @@ jest.mock("ui", () => {
   const MockText = ({ children }: { children: ReactNode }) => (
     <span>{children}</span>
   );
-  const MockTooltip = ({ children }: { children: ReactNode }) => (
-    <div>{children}</div>
-  );
+  const MockTooltip = ({
+    children,
+    title,
+  }: {
+    children: ReactNode;
+    title: string;
+  }) => <div title={title}>{children}</div>;
 
   return {
     Box: MockBox,
@@ -72,13 +82,15 @@ jest.mock("@/hooks", () => ({
 }));
 
 jest.mock("@/lib/hooks/workspaces", () => ({
-  useCurrentWorkspace: () => ({ workspace: { deletedAt: null } }),
+  useCurrentWorkspace: () => ({
+    workspace: { deletedAt: mockWorkspaceDeletedAt },
+  }),
 }));
 
 jest.mock("@/lib/hooks/subscription-features", () => ({
   useSubscriptionFeatures: () => ({
     tier: mockTier,
-    trialDaysRemaining: 14,
+    trialDaysRemaining: mockTrialDaysRemaining,
   }),
 }));
 
@@ -113,6 +125,8 @@ describe("Sidebar", () => {
   beforeEach(() => {
     mockHasMeeting = true;
     mockTier = "free";
+    mockTrialDaysRemaining = 14;
+    mockWorkspaceDeletedAt = null;
     mockUserRole = "admin";
     mockSidebarCollapsed = false;
     mockAssistantCollapsed = false;
@@ -205,5 +219,105 @@ describe("Sidebar", () => {
 
     expect(screen.queryByRole("button", { name: "Invite members" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Upgrade" })).toBeNull();
+  });
+
+  it.each([
+    [false, false],
+    [false, true],
+    [true, false],
+    [true, true],
+  ])(
+    "keeps the trial countdown visible when collapsed is %s and assistant cards are %s",
+    (isCollapsed, hasMeeting) => {
+      mockTier = "trial";
+      mockTrialDaysRemaining = 32;
+      mockSidebarCollapsed = isCollapsed;
+      mockHasMeeting = hasMeeting;
+
+      render(<Sidebar />);
+
+      const trialLink = screen.getByRole("link", {
+        name: "32 days left in trial",
+      });
+      expect(trialLink).toHaveAttribute(
+        "href",
+        "/acme/settings/workspace/billing",
+      );
+      expect(trialLink.closest("[data-sidebar-trial]")).not.toBeNull();
+      expect(trialLink.closest("[data-sidebar-footer]")).toHaveClass(
+        "shrink-0",
+      );
+      expect(
+        screen.getByText(isCollapsed ? "32d left" : "32 days left in trial"),
+      ).toBeInTheDocument();
+      expect(trialLink.closest("[title]")).toHaveAttribute(
+        "title",
+        "32 days left in your trial. Upgrade to a paid plan to get more premium features.",
+      );
+      if (isCollapsed) {
+        expect(trialLink).toHaveClass(
+          "max-w-full",
+          "min-w-0",
+          "truncate",
+          "px-1",
+        );
+        expect(screen.getByText("32d left")).toHaveClass("min-w-0", "truncate");
+      }
+      expect(screen.queryByText("Upcoming meeting") !== null).toBe(hasMeeting);
+    },
+  );
+
+  it("uses the singular trial label for the last day", () => {
+    mockTier = "trial";
+    mockTrialDaysRemaining = 1;
+
+    render(<Sidebar />);
+
+    const trialLink = screen.getByRole("link", { name: "1 day left in trial" });
+    expect(trialLink).toHaveAttribute(
+      "href",
+      "/acme/settings/workspace/billing",
+    );
+    expect(trialLink.closest("[title]")).toHaveAttribute(
+      "title",
+      "1 day left in your trial. Upgrade to a paid plan to get more premium features.",
+    );
+  });
+
+  it("keeps the trial countdown informational for non-admins", () => {
+    mockTier = "trial";
+    mockUserRole = "member";
+    mockSidebarCollapsed = true;
+
+    render(<Sidebar />);
+
+    const trialButton = screen.getByRole("button", {
+      name: "14 days left in trial",
+    });
+    expect(trialButton.closest("[title]")).toHaveAttribute(
+      "title",
+      "14 days left in your trial. Ask your admin to upgrade to a paid plan to get more premium features.",
+    );
+    expect(
+      screen.queryByRole("link", { name: "14 days left in trial" }),
+    ).toBeNull();
+  });
+
+  it("keeps the deletion warning and restore action instead of trial billing", () => {
+    mockTier = "trial";
+    mockWorkspaceDeletedAt = new Date().toISOString();
+
+    render(<Sidebar />);
+
+    expect(
+      screen.getByText("Workspace scheduled for deletion"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Restore workspace" }),
+    ).toHaveAttribute("href", "/acme/settings");
+    expect(screen.queryByText("Upcoming meeting")).toBeNull();
+    expect(
+      screen.queryByRole("link", { name: "14 days left in trial" }),
+    ).toBeNull();
   });
 });
