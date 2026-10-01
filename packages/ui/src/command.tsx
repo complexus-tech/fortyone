@@ -7,6 +7,8 @@ import { ComponentPropsWithoutRef, HTMLAttributes } from "react";
 import { cva, VariantProps } from "cva";
 import { SearchIcon } from "icons";
 
+export { defaultFilter as commandFilter } from "cmdk";
+
 export const Command = ({ className, ...props }: any) => (
   <CommandPrimitive
     className={cn(

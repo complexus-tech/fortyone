@@ -1,4 +1,4 @@
-import { Dialog, Command, Text, Flex, Kbd } from "ui";
+import { Dialog, Flex, Kbd } from "ui";
 import {
   PlusIcon,
   Notification02Icon,
@@ -28,6 +28,7 @@ import { useTerminology } from "@/hooks/use-terminology-display";
 import { useWorkspacePath } from "@/hooks/use-workspace-path";
 import { CommandPaletteContent } from "@/shell/commands/command-palette-content";
 import { clearAllStorage } from "@/components/shared/sidebar/utils";
+import type { CommandPaletteGroup } from "./command-palette-content";
 
 export const CommandBar = ({
   isOpen,
@@ -73,7 +74,7 @@ export const CommandBar = ({
     window.location.assign("/?signedOut=true");
   };
 
-  const commands = [
+  const commands: CommandPaletteGroup[] = [
     {
       group: "Quick Actions",
       items: [
@@ -291,41 +292,10 @@ export const CommandBar = ({
             <Dialog.Title className="sr-only">Command Menu</Dialog.Title>
           </Dialog.Header>
           {isOpen ? (
-            <CommandPaletteContent onNavigate={navigateFromPalette}>
-              {commands.map((command) => (
-                <Command.Group
-                  className="mb-4 px-0"
-                  heading={
-                    <Text
-                      className="mb-1.5 pl-3 dark:antialiased"
-                      color="muted"
-                    >
-                      {command.group}
-                    </Text>
-                  }
-                  key={command.group}
-                >
-                  {command.items.map((item) => (
-                    <Command.Item
-                      className="justify-between rounded-lg p-3 text-[1.1rem] opacity-85"
-                      disabled={item.disabled}
-                      key={item.label}
-                      onSelect={item.action}
-                    >
-                      <Flex
-                        align="center"
-                        className="font-medium antialiased"
-                        gap={3}
-                      >
-                        {item.icon}
-                        {item.label}
-                      </Flex>
-                      {item.shortcut}
-                    </Command.Item>
-                  ))}
-                </Command.Group>
-              ))}
-            </CommandPaletteContent>
+            <CommandPaletteContent
+              commands={commands}
+              onNavigate={navigateFromPalette}
+            />
           ) : null}
         </Dialog.Content>
       </Dialog>

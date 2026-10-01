@@ -1,9 +1,10 @@
 import type { ReactNode } from "react";
 import { useState } from "react";
-import { Command, Dialog, Divider } from "ui";
+import { Command, Dialog, Divider, Flex, Text, commandFilter } from "ui";
 import { useTerminology } from "@/hooks/use-terminology-display";
 import { useDebouncedCallback } from "@/hooks/debounce";
 import { useSearch } from "@/modules/search/hooks/use-search";
+import type { SearchResponse } from "@/modules/search/types";
 import { getStoryPath } from "@/shared/routing/story";
 import { CommandSearchResults } from "./command-search-results";
 
@@ -16,11 +17,51 @@ type CommandSelection = {
   value: string;
 };
 
+export type CommandPaletteGroup = {
+  group: string;
+  items: {
+    label: string;
+    icon: ReactNode;
+    shortcut: ReactNode;
+    disabled?: boolean;
+    action: () => void | Promise<void>;
+  }[];
+};
+
+const getMatchingCommands = (
+  commands: CommandPaletteGroup[],
+  query: string,
+) => {
+  if (!query) return commands;
+
+  return commands
+    .map((command) => ({
+      ...command,
+      items: command.items.filter(
+        (item) => commandFilter(item.label, query) > 0,
+      ),
+    }))
+    .filter((command) => command.items.length > 0);
+};
+
+const getFirstSearchResultValue = (
+  results: SearchResponse | undefined,
+  query: string,
+) => {
+  const story = results?.stories.at(0);
+  if (story) return `story ${story.id}`;
+
+  const objective = results?.objectives.at(0);
+  if (objective) return `objective ${objective.id}`;
+
+  return `search ${query}`;
+};
+
 export const CommandPaletteContent = ({
-  children,
+  commands,
   onNavigate,
 }: {
-  children: ReactNode;
+  commands: CommandPaletteGroup[];
   onNavigate: (path: string) => void;
 }) => {
   const { getTermDisplay } = useTerminology();
@@ -49,22 +90,43 @@ export const CommandPaletteContent = ({
     type: "all",
   });
 
+  const matchingCommands = getMatchingCommands(commands, normalizedInput);
+  const enabledCommandValues = matchingCommands.flatMap((command) =>
+    command.items
+      .filter((item) => !item.disabled)
+      .map((item) => `command ${item.label}`),
+  );
   const settledSearchResults =
-    hasSettledQuery && !isSearchFetching ? searchResults : undefined;
-  const firstStory = settledSearchResults?.stories.at(0);
-  const firstObjective = settledSearchResults?.objectives.at(0);
-  let firstSearchResultValue = `search ${normalizedInput}`;
-  if (firstObjective) {
-    firstSearchResultValue = `objective ${firstObjective.id}`;
+    hasSettledQuery && !isSearchFetching && !isSearchError
+      ? searchResults
+      : undefined;
+  const firstSearchResultValue = getFirstSearchResultValue(
+    settledSearchResults,
+    normalizedInput,
+  );
+  const selectableValues = new Set(enabledCommandValues);
+  if (hasSearchQuery) {
+    selectableValues.add(`search ${normalizedInput}`);
+    settledSearchResults?.stories
+      .slice(0, SEARCH_RESULT_LIMIT)
+      .forEach((story) => {
+        selectableValues.add(`story ${story.id}`);
+      });
+    settledSearchResults?.objectives
+      .slice(0, SEARCH_RESULT_LIMIT)
+      .forEach((objective) => {
+        selectableValues.add(`objective ${objective.id}`);
+      });
   }
-  if (firstStory) {
-    firstSearchResultValue = `story ${firstStory.id}`;
-  }
-  const selectionContext = hasSearchQuery
-    ? `${normalizedInput}:${firstSearchResultValue}`
-    : `commands:${normalizedInput}`;
-  let selectedValue = hasSearchQuery ? firstSearchResultValue : "";
-  if (selection.context === selectionContext) {
+  const firstSelectableValue =
+    enabledCommandValues.at(0) ??
+    (hasSearchQuery ? firstSearchResultValue : "");
+  const selectionContext = `${normalizedInput}:${firstSelectableValue}`;
+  let selectedValue = firstSelectableValue;
+  if (
+    selection.context === selectionContext &&
+    selectableValues.has(selection.value)
+  ) {
     selectedValue = selection.value;
   }
 
@@ -88,7 +150,7 @@ export const CommandPaletteContent = ({
         onValueChange={(value: string) => {
           setSelection({ context: selectionContext, value });
         }}
-        shouldFilter={!hasSearchQuery}
+        shouldFilter={false}
         value={selectedValue}
       >
         <Command.Input
@@ -100,6 +162,37 @@ export const CommandPaletteContent = ({
         />
         <Divider className="my-2.5" />
         <Command.List className="mt-0 max-h-140 w-full overflow-y-auto border-0 bg-transparent px-3 pt-2 pb-0 shadow-none backdrop-blur-none dark:bg-transparent">
+          {matchingCommands.map((command) => (
+            <Command.Group
+              className="mb-4 px-0"
+              heading={
+                <Text className="mb-1.5 pl-3 dark:antialiased" color="muted">
+                  {command.group}
+                </Text>
+              }
+              key={command.group}
+            >
+              {command.items.map((item) => (
+                <Command.Item
+                  className="justify-between rounded-lg p-3 text-[1.1rem] opacity-85"
+                  disabled={item.disabled}
+                  key={item.label}
+                  onSelect={item.action}
+                  value={`command ${item.label}`}
+                >
+                  <Flex
+                    align="center"
+                    className="font-medium antialiased"
+                    gap={3}
+                  >
+                    {item.icon}
+                    {item.label}
+                  </Flex>
+                  {item.shortcut}
+                </Command.Item>
+              ))}
+            </Command.Group>
+          ))}
           {hasSearchQuery ? (
             <CommandSearchResults
               hasSettledQuery={Boolean(hasSettledQuery && !isSearchFetching)}
@@ -123,9 +216,7 @@ export const CommandPaletteContent = ({
               query={normalizedInput}
               results={settledSearchResults}
             />
-          ) : (
-            children
-          )}
+          ) : null}
         </Command.List>
       </Command>
     </Dialog.Body>
