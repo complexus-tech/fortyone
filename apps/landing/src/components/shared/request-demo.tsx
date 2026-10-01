@@ -1,32 +1,27 @@
-"use client";
-
-import { getCalApi } from "@calcom/embed-react";
+import type { ComponentPropsWithoutRef } from "react";
 import { cn } from "lib";
-import { useEffect } from "react";
-import { buttonVariants } from "ui";
+import { NavLink } from "ui";
+import styles from "./navigation.module.css";
 
-export const RequestDemo = () => {
-  useEffect(() => {
-    void getCalApi({ namespace: "30min" }).then((cal) => {
-      cal("ui", { hideEventTypeDetails: false, layout: "month_view" });
-    });
-  }, []);
+type RequestDemoProps = Pick<
+  ComponentPropsWithoutRef<typeof NavLink>,
+  "className" | "onClick"
+>;
+
+export const RequestDemo = ({ className, onClick }: RequestDemoProps) => {
   return (
-    <button
+    <NavLink
       className={cn(
-        buttonVariants({
-          color: "tertiary",
-          variant: "naked",
-          rounded: "lg",
-        }),
-        "hidden text-[0.93rem] opacity-90 md:flex",
+        "hover:bg-state-hover flex items-center rounded-md px-3 py-1.5 whitespace-nowrap transition",
+        styles.topLevelLink,
+        className,
       )}
-      data-cal-config='{"layout":"month_view"}'
-      data-cal-link="complexus/30min"
-      data-cal-namespace="30min"
-      type="button"
+      href="https://cal.com/fortyoneapp/15min"
+      onClick={onClick}
+      prefetch={false}
+      rel="noreferrer"
     >
-      Book a demo
-    </button>
+      Book a meeting
+    </NavLink>
   );
 };

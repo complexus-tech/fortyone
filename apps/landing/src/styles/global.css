@@ -125,7 +125,7 @@ html:not(.dark) .landing-footer-gradient {
   display: block;
 }
 
-@media (min-width: 64rem) {
+@media (min-width: 80rem) {
   .landing-desktop-navigation {
     display: flex;
   }

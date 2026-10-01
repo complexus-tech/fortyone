@@ -8,6 +8,7 @@ import { Popover } from "ui";
 import { cn } from "lib";
 import { featureLinks } from "@/lib/feature-links";
 import { primaryUseCaseLinks } from "@/lib/use-case-links";
+import { RequestDemo } from "./request-demo";
 
 const resourceLinks = [
   { label: "Docs", href: "https://docs.fortyone.app" },
@@ -113,7 +114,7 @@ export const MobileNavigation = () => {
         <Popover.Content
           align="end"
           aria-label="Mobile navigation"
-          className="landing-hero-shell landing-large-surface border-border/50 dark:border-border/60 m-0 max-h-[calc(100dvh-6rem)] w-[calc(100vw-1rem)] max-w-none overflow-hidden rounded-2xl border bg-transparent p-0 shadow-[0_24px_64px_-24px_rgba(31,24,18,0.48)] outline-none sm:w-[calc(100vw-1.5rem)] sm:rounded-[3rem] md:w-[calc(100vw-3rem)] md:rounded-[4rem] lg:hidden dark:bg-transparent dark:shadow-[0_24px_64px_-24px_rgba(0,0,0,0.82)]"
+          className="landing-hero-shell landing-large-surface border-border/50 dark:border-border/60 m-0 max-h-[calc(100dvh-6rem)] w-[calc(100vw-1rem)] max-w-none overflow-hidden rounded-2xl border bg-transparent p-0 shadow-[0_24px_64px_-24px_rgba(31,24,18,0.48)] outline-none sm:w-[calc(100vw-1.5rem)] sm:rounded-[3rem] md:w-[calc(100vw-3rem)] md:rounded-[4rem] xl:hidden dark:bg-transparent dark:shadow-[0_24px_64px_-24px_rgba(0,0,0,0.82)]"
           collisionPadding={8}
           id={menuId}
           side="bottom"
@@ -200,6 +201,12 @@ export const MobileNavigation = () => {
                   >
                     Contact
                   </Link>
+                </li>
+                <li>
+                  <RequestDemo
+                    className="focus-visible:outline-primary min-h-12 px-2 text-base font-semibold outline-none focus-visible:outline-2 focus-visible:outline-offset-[-2px]"
+                    onClick={closeMenu}
+                  />
                 </li>
               </ul>
             </nav>

@@ -16,7 +16,7 @@ import {
   type NavigationIconTone,
 } from "./navigation-menu-icon";
 import styles from "./navigation.module.css";
-// import { RequestDemo } from "./request-demo";
+import { RequestDemo } from "./request-demo";
 
 type NavigationLinkItem = {
   href: string;
@@ -427,7 +427,7 @@ export const Navigation = () => {
           </nav>
         </Flex>
         <Flex align="center" className="ml-2 gap-1 sm:ml-4 sm:gap-2">
-          {/* <RequestDemo /> */}
+          <RequestDemo className="hidden h-11.5 px-5 text-[0.93rem] md:flex md:px-6" />
           <Button
             className="hidden px-5 text-[0.93rem] md:flex"
             color="gradient"
