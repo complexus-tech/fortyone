@@ -111,6 +111,7 @@ RETURNING
     name,
     code,
     color,
+    story_term,
     is_private,
     workspace_id,
     created_at,
@@ -130,6 +131,7 @@ type CreateTeamRow struct {
 	Name        string
 	Code        string
 	Color       string
+	StoryTerm   *string
 	IsPrivate   bool
 	WorkspaceID uuid.UUID
 	CreatedAt   time.Time
@@ -150,6 +152,7 @@ func (q *Queries) CreateTeam(ctx context.Context, arg CreateTeamParams) (CreateT
 		&i.Name,
 		&i.Code,
 		&i.Color,
+		&i.StoryTerm,
 		&i.IsPrivate,
 		&i.WorkspaceID,
 		&i.CreatedAt,
@@ -183,6 +186,7 @@ SELECT
     team.name,
     team.code,
     team.color,
+    team.story_term,
     team.is_private,
     team.workspace_id,
     team.created_at,
@@ -235,6 +239,7 @@ type GetTeamForActorRow struct {
 	Name           string
 	Code           string
 	Color          string
+	StoryTerm      *string
 	IsPrivate      bool
 	WorkspaceID    uuid.UUID
 	CreatedAt      time.Time
@@ -251,6 +256,7 @@ func (q *Queries) GetTeamForActor(ctx context.Context, arg GetTeamForActorParams
 		&i.Name,
 		&i.Code,
 		&i.Color,
+		&i.StoryTerm,
 		&i.IsPrivate,
 		&i.WorkspaceID,
 		&i.CreatedAt,
@@ -267,6 +273,7 @@ SELECT
     team.name,
     team.code,
     team.color,
+    team.story_term,
     team.is_private,
     team.workspace_id,
     team.created_at,
@@ -328,6 +335,7 @@ type ListPublicTeamsForActorRow struct {
 	Name           string
 	Code           string
 	Color          string
+	StoryTerm      *string
 	IsPrivate      bool
 	WorkspaceID    uuid.UUID
 	CreatedAt      time.Time
@@ -356,6 +364,7 @@ func (q *Queries) ListPublicTeamsForActor(ctx context.Context, arg ListPublicTea
 			&i.Name,
 			&i.Code,
 			&i.Color,
+			&i.StoryTerm,
 			&i.IsPrivate,
 			&i.WorkspaceID,
 			&i.CreatedAt,
@@ -379,6 +388,7 @@ SELECT
     team.name,
     team.code,
     team.color,
+    team.story_term,
     team.is_private,
     team.workspace_id,
     team.created_at,
@@ -460,6 +470,7 @@ type ListTeamsForActorRow struct {
 	Name           string
 	Code           string
 	Color          string
+	StoryTerm      *string
 	IsPrivate      bool
 	WorkspaceID    uuid.UUID
 	CreatedAt      time.Time
@@ -489,6 +500,7 @@ func (q *Queries) ListTeamsForActor(ctx context.Context, arg ListTeamsForActorPa
 			&i.Name,
 			&i.Code,
 			&i.Color,
+			&i.StoryTerm,
 			&i.IsPrivate,
 			&i.WorkspaceID,
 			&i.CreatedAt,
@@ -521,15 +533,19 @@ SET
         WHEN CAST($3 AS text) = '' THEN team.color
         ELSE CAST($3 AS text)
     END,
-    is_private = $4,
+    is_private = CASE WHEN CAST($4 AS boolean)
+        THEN $5 ELSE team.is_private END,
+    story_term = CASE WHEN CAST($6 AS boolean)
+        THEN CAST($7 AS text) ELSE team.story_term END,
     updated_at = CURRENT_TIMESTAMP
-WHERE team.team_id = $5
-  AND team.workspace_id = $6
+WHERE team.team_id = $8
+  AND team.workspace_id = $9
 RETURNING
     team_id,
     name,
     code,
     color,
+    story_term,
     is_private,
     workspace_id,
     created_at,
@@ -537,12 +553,15 @@ RETURNING
 `
 
 type UpdateTeamForWorkspaceParams struct {
-	Name        string
-	Code        string
-	Color       string
-	IsPrivate   bool
-	TeamID      uuid.UUID
-	WorkspaceID uuid.UUID
+	Name         string
+	Code         string
+	Color        string
+	IsPrivateSet bool
+	IsPrivate    bool
+	StoryTermSet bool
+	StoryTerm    *string
+	TeamID       uuid.UUID
+	WorkspaceID  uuid.UUID
 }
 
 type UpdateTeamForWorkspaceRow struct {
@@ -550,6 +569,7 @@ type UpdateTeamForWorkspaceRow struct {
 	Name        string
 	Code        string
 	Color       string
+	StoryTerm   *string
 	IsPrivate   bool
 	WorkspaceID uuid.UUID
 	CreatedAt   time.Time
@@ -561,7 +581,10 @@ func (q *Queries) UpdateTeamForWorkspace(ctx context.Context, arg UpdateTeamForW
 		arg.Name,
 		arg.Code,
 		arg.Color,
+		arg.IsPrivateSet,
 		arg.IsPrivate,
+		arg.StoryTermSet,
+		arg.StoryTerm,
 		arg.TeamID,
 		arg.WorkspaceID,
 	)
@@ -571,6 +594,7 @@ func (q *Queries) UpdateTeamForWorkspace(ctx context.Context, arg UpdateTeamForW
 		&i.Name,
 		&i.Code,
 		&i.Color,
+		&i.StoryTerm,
 		&i.IsPrivate,
 		&i.WorkspaceID,
 		&i.CreatedAt,

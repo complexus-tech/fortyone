@@ -4,12 +4,37 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
+
+type codedRecoveryError struct{}
+
+func (codedRecoveryError) Error() string     { return "a verified session is required" }
+func (codedRecoveryError) ErrorCode() string { return "verified_session_required" }
+
+func TestRespondErrorPreservesTrustedRecoveryCode(t *testing.T) {
+	t.Parallel()
+	for _, status := range []int{http.StatusForbidden, http.StatusInternalServerError} {
+		t.Run(http.StatusText(status), func(t *testing.T) {
+			recorder := httptest.NewRecorder()
+			err := fmt.Errorf("wrapped recovery: %w", codedRecoveryError{})
+			require.NoError(t, RespondError(t.Context(), recorder, err, status))
+			var response Response
+			require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &response))
+			if status == http.StatusForbidden {
+				require.Equal(t, "verified_session_required", response.Error.Code)
+			} else {
+				require.Equal(t, "internal_error", response.Error.Code)
+				require.Equal(t, "internal server error", response.Error.Message)
+			}
+		})
+	}
+}
 
 func TestRespondErrorReturnsMachineReadableDetail(t *testing.T) {
 	t.Parallel()

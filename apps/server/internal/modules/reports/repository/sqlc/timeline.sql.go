@@ -13,48 +13,91 @@ import (
 )
 
 const listKeyMetricsTimeline = `-- name: ListKeyMetricsTimeline :many
+WITH created_events AS (
+    SELECT CAST(story.created_at AS date) AS event_date, story.assignee_id, 1 AS created,
+           CAST(NULL AS numeric) AS cycle_days
+    FROM stories AS story
+    LEFT JOIN statuses AS status ON status.status_id = story.status_id
+    WHERE story.workspace_id = CAST($1 AS uuid)
+      AND story.deleted_at IS NULL
+      AND story.is_draft = FALSE
+      AND (cardinality(CAST($2 AS uuid[])) = 0 OR story.team_id = ANY(CAST($2 AS uuid[])))
+      AND (cardinality(CAST($3 AS uuid[])) = 0 OR story.assignee_id = ANY(CAST($3 AS uuid[])))
+      AND (cardinality(CAST($4 AS uuid[])) = 0 OR story.sprint_id = ANY(CAST($4 AS uuid[])))
+      AND (cardinality(CAST($5 AS uuid[])) = 0 OR story.objective_id = ANY(CAST($5 AS uuid[])))
+      AND story.created_at >= $6 AND story.created_at <= $7
+), completed_events AS (
+    SELECT CAST(story.completed_at AS date) AS event_date, story.assignee_id, 0 AS created,
+           EXTRACT(EPOCH FROM (story.completed_at - started.started_at)) / 86400 AS cycle_days
+    FROM stories AS story
+    LEFT JOIN statuses AS status ON status.status_id = story.status_id
+    LEFT JOIN LATERAL (
+        SELECT MIN(activity.created_at AT TIME ZONE 'UTC') AS started_at
+        FROM story_activities AS activity
+        INNER JOIN statuses AS started_status
+            ON CAST(started_status.status_id AS text) = COALESCE(activity.new_value #>> '{}', activity.current_value)
+           AND started_status.category = 'started'
+    WHERE activity.story_id = story.id
+          AND activity.workspace_id = CAST($1 AS uuid)
+          AND activity.field_changed = 'status_id'
+          AND activity.created_at AT TIME ZONE 'UTC' >= story.created_at
+          AND activity.created_at AT TIME ZONE 'UTC' <= story.completed_at
+    ) AS started ON TRUE
+    WHERE story.workspace_id = CAST($1 AS uuid)
+      AND story.deleted_at IS NULL
+      AND story.is_draft = FALSE
+      AND (cardinality(CAST($2 AS uuid[])) = 0 OR story.team_id = ANY(CAST($2 AS uuid[])))
+      AND (cardinality(CAST($3 AS uuid[])) = 0 OR story.assignee_id = ANY(CAST($3 AS uuid[])))
+      AND (cardinality(CAST($4 AS uuid[])) = 0 OR story.sprint_id = ANY(CAST($4 AS uuid[])))
+      AND (cardinality(CAST($5 AS uuid[])) = 0 OR story.objective_id = ANY(CAST($5 AS uuid[])))
+      AND status.category = 'completed'
+      AND story.completed_at >= $6 AND story.completed_at <= $7
+), events AS (
+    SELECT event_date, assignee_id, created, cycle_days FROM created_events
+    UNION ALL
+    SELECT event_date, assignee_id, created, cycle_days FROM completed_events
+)
 SELECT
-    CAST(story.created_at AS date) AS date,
-    CAST(COUNT(DISTINCT story.assignee_id) AS int) AS active_users,
-    CAST(COUNT(story.id) AS double precision) AS stories_per_day,
-    CAST(ROUND(COALESCE(AVG(EXTRACT(EPOCH FROM (story.updated_at - story.created_at)) / 86400), 0), 2) AS double precision) AS avg_cycle_time
-FROM stories AS story
-WHERE story.workspace_id = $1::uuid
-  AND story.deleted_at IS NULL
-  AND story.is_draft = FALSE
-  AND story.created_at >= $2
-  AND story.created_at <= $3
-  AND (cardinality($4::uuid[]) = 0 OR story.team_id = ANY($4::uuid[]))
-  AND (cardinality($5::uuid[]) = 0 OR story.sprint_id = ANY($5::uuid[]))
-  AND (cardinality($6::uuid[]) = 0 OR story.objective_id = ANY($6::uuid[]))
-GROUP BY CAST(story.created_at AS date)
+    events.event_date AS date,
+    CAST(COUNT(DISTINCT events.assignee_id) AS int) AS active_users,
+    CAST(SUM(events.created) AS double precision) AS stories_per_day,
+    CAST(ROUND(COALESCE(AVG(events.cycle_days), 0), 2) AS double precision) AS avg_cycle_time,
+    CAST(COUNT(events.cycle_days) AS int) AS cycle_time_samples
+FROM events
+GROUP BY events.event_date
 ORDER BY date
 `
 
 type ListKeyMetricsTimelineParams struct {
 	WorkspaceID  uuid.UUID
-	StartDate    time.Time
-	EndDate      time.Time
 	TeamIds      []uuid.UUID
+	AssigneeIds  []uuid.UUID
 	SprintIds    []uuid.UUID
 	ObjectiveIds []uuid.UUID
+	StartDate    time.Time
+	EndDate      time.Time
 }
 
 type ListKeyMetricsTimelineRow struct {
-	Date          time.Time
-	ActiveUsers   int32
-	StoriesPerDay float64
-	AvgCycleTime  float64
+	Date             time.Time
+	ActiveUsers      int32
+	StoriesPerDay    float64
+	AvgCycleTime     float64
+	CycleTimeSamples int32
 }
 
+// Cycle time is elapsed time from the first recorded entry into a started
+// state to completion. Missing start history is excluded, never replaced by
+// creation or last-edit time. Samples are grouped by the actual completion day.
 func (q *Queries) ListKeyMetricsTimeline(ctx context.Context, arg ListKeyMetricsTimelineParams) ([]ListKeyMetricsTimelineRow, error) {
 	rows, err := q.db.Query(ctx, listKeyMetricsTimeline,
 		arg.WorkspaceID,
-		arg.StartDate,
-		arg.EndDate,
 		arg.TeamIds,
+		arg.AssigneeIds,
 		arg.SprintIds,
 		arg.ObjectiveIds,
+		arg.StartDate,
+		arg.EndDate,
 	)
 	if err != nil {
 		return nil, err
@@ -68,6 +111,7 @@ func (q *Queries) ListKeyMetricsTimeline(ctx context.Context, arg ListKeyMetrics
 			&i.ActiveUsers,
 			&i.StoriesPerDay,
 			&i.AvgCycleTime,
+			&i.CycleTimeSamples,
 		); err != nil {
 			return nil, err
 		}
@@ -86,11 +130,11 @@ SELECT
     CAST(COUNT(objective.objective_id) FILTER (WHERE status.category = 'completed') AS int) AS completed_objectives
 FROM objectives AS objective
 LEFT JOIN objective_statuses AS status ON status.status_id = objective.status_id
-WHERE objective.workspace_id = $1::uuid
+WHERE objective.workspace_id = CAST($1 AS uuid)
   AND objective.created_at >= $2
   AND objective.created_at <= $3
-  AND (cardinality($4::uuid[]) = 0 OR objective.team_id = ANY($4::uuid[]))
-  AND (cardinality($5::uuid[]) = 0 OR objective.objective_id = ANY($5::uuid[]))
+  AND (cardinality(CAST($4 AS uuid[])) = 0 OR objective.team_id = ANY(CAST($4 AS uuid[])))
+  AND (cardinality(CAST($5 AS uuid[])) = 0 OR objective.objective_id = ANY(CAST($5 AS uuid[])))
 GROUP BY CAST(objective.created_at AS date)
 ORDER BY date
 `
@@ -136,34 +180,53 @@ func (q *Queries) ListObjectiveProgressTimeline(ctx context.Context, arg ListObj
 }
 
 const listStoryCompletionTimeline = `-- name: ListStoryCompletionTimeline :many
+WITH created_events AS (
+    SELECT CAST(scoped.created_at AS date) AS event_date, 1 AS created, 0 AS completed
+    FROM stories AS scoped
+    LEFT JOIN statuses AS status ON status.status_id = scoped.status_id
+    WHERE scoped.workspace_id = CAST($1 AS uuid)
+      AND scoped.deleted_at IS NULL
+      AND scoped.is_draft = FALSE
+      AND (cardinality(CAST($2 AS uuid[])) = 0 OR scoped.team_id = ANY(CAST($2 AS uuid[])))
+      AND (cardinality(CAST($3 AS uuid[])) = 0 OR scoped.assignee_id = ANY(CAST($3 AS uuid[])))
+      AND (cardinality(CAST($4 AS uuid[])) = 0 OR scoped.sprint_id = ANY(CAST($4 AS uuid[])))
+      AND (cardinality(CAST($5 AS uuid[])) = 0 OR scoped.objective_id = ANY(CAST($5 AS uuid[])))
+      AND scoped.created_at >= $6 AND scoped.created_at <= $7
+), completed_events AS (
+    SELECT CAST(scoped.completed_at AS date) AS event_date, 0 AS created, 1 AS completed
+    FROM stories AS scoped
+    LEFT JOIN statuses AS status ON status.status_id = scoped.status_id
+    WHERE scoped.workspace_id = CAST($1 AS uuid)
+      AND scoped.deleted_at IS NULL
+      AND scoped.is_draft = FALSE
+      AND (cardinality(CAST($2 AS uuid[])) = 0 OR scoped.team_id = ANY(CAST($2 AS uuid[])))
+      AND (cardinality(CAST($3 AS uuid[])) = 0 OR scoped.assignee_id = ANY(CAST($3 AS uuid[])))
+      AND (cardinality(CAST($4 AS uuid[])) = 0 OR scoped.sprint_id = ANY(CAST($4 AS uuid[])))
+      AND (cardinality(CAST($5 AS uuid[])) = 0 OR scoped.objective_id = ANY(CAST($5 AS uuid[])))
+      AND status.category = 'completed'
+      AND scoped.completed_at >= $6 AND scoped.completed_at <= $7
+), events AS (
+    SELECT event_date, created, completed FROM created_events
+    UNION ALL
+    SELECT event_date, created, completed FROM completed_events
+)
 SELECT
-    CAST(story.created_at AS date) AS date,
-    CAST(COUNT(story.id) AS int) AS created,
-    CAST(COUNT(story.id) FILTER (
-        WHERE status.category = 'completed'
-          AND CAST(story.updated_at AS date) = CAST(story.created_at AS date)
-    ) AS int) AS completed
-FROM stories AS story
-LEFT JOIN statuses AS status ON status.status_id = story.status_id
-WHERE story.workspace_id = $1::uuid
-  AND story.deleted_at IS NULL
-  AND story.is_draft = FALSE
-  AND story.created_at >= $2
-  AND story.created_at <= $3
-  AND (cardinality($4::uuid[]) = 0 OR story.team_id = ANY($4::uuid[]))
-  AND (cardinality($5::uuid[]) = 0 OR story.sprint_id = ANY($5::uuid[]))
-  AND (cardinality($6::uuid[]) = 0 OR story.objective_id = ANY($6::uuid[]))
-GROUP BY CAST(story.created_at AS date)
+    events.event_date AS date,
+    CAST(SUM(events.created) AS int) AS created,
+    CAST(SUM(events.completed) AS int) AS completed
+FROM events
+GROUP BY events.event_date
 ORDER BY date
 `
 
 type ListStoryCompletionTimelineParams struct {
 	WorkspaceID  uuid.UUID
-	StartDate    time.Time
-	EndDate      time.Time
 	TeamIds      []uuid.UUID
+	AssigneeIds  []uuid.UUID
 	SprintIds    []uuid.UUID
 	ObjectiveIds []uuid.UUID
+	StartDate    time.Time
+	EndDate      time.Time
 }
 
 type ListStoryCompletionTimelineRow struct {
@@ -175,11 +238,12 @@ type ListStoryCompletionTimelineRow struct {
 func (q *Queries) ListStoryCompletionTimeline(ctx context.Context, arg ListStoryCompletionTimelineParams) ([]ListStoryCompletionTimelineRow, error) {
 	rows, err := q.db.Query(ctx, listStoryCompletionTimeline,
 		arg.WorkspaceID,
-		arg.StartDate,
-		arg.EndDate,
 		arg.TeamIds,
+		arg.AssigneeIds,
 		arg.SprintIds,
 		arg.ObjectiveIds,
+		arg.StartDate,
+		arg.EndDate,
 	)
 	if err != nil {
 		return nil, err
@@ -201,30 +265,32 @@ func (q *Queries) ListStoryCompletionTimeline(ctx context.Context, arg ListStory
 
 const listTeamVelocityTimeline = `-- name: ListTeamVelocityTimeline :many
 SELECT
-    CAST(story.updated_at AS date) AS date,
+    CAST(story.completed_at AS date) AS date,
     story.team_id,
     CAST(COUNT(story.id) AS int) AS velocity
 FROM stories AS story
 INNER JOIN statuses AS status
     ON status.status_id = story.status_id
    AND status.category = 'completed'
-WHERE story.workspace_id = $1::uuid
+WHERE story.workspace_id = CAST($1 AS uuid)
   AND story.deleted_at IS NULL
   AND story.is_draft = FALSE
-  AND story.updated_at >= $2
-  AND story.updated_at <= $3
-  AND (cardinality($4::uuid[]) = 0 OR story.team_id = ANY($4::uuid[]))
-  AND (cardinality($5::uuid[]) = 0 OR story.sprint_id = ANY($5::uuid[]))
-  AND (cardinality($6::uuid[]) = 0 OR story.objective_id = ANY($6::uuid[]))
-GROUP BY CAST(story.updated_at AS date), story.team_id
+  AND story.completed_at >= $2
+  AND story.completed_at <= $3
+  AND (cardinality(CAST($4 AS uuid[])) = 0 OR story.team_id = ANY(CAST($4 AS uuid[])))
+  AND (cardinality(CAST($5 AS uuid[])) = 0 OR story.assignee_id = ANY(CAST($5 AS uuid[])))
+  AND (cardinality(CAST($6 AS uuid[])) = 0 OR story.sprint_id = ANY(CAST($6 AS uuid[])))
+  AND (cardinality(CAST($7 AS uuid[])) = 0 OR story.objective_id = ANY(CAST($7 AS uuid[])))
+GROUP BY CAST(story.completed_at AS date), story.team_id
 ORDER BY date, story.team_id
 `
 
 type ListTeamVelocityTimelineParams struct {
 	WorkspaceID  uuid.UUID
-	StartDate    time.Time
-	EndDate      time.Time
+	StartDate    *time.Time
+	EndDate      *time.Time
 	TeamIds      []uuid.UUID
+	AssigneeIds  []uuid.UUID
 	SprintIds    []uuid.UUID
 	ObjectiveIds []uuid.UUID
 }
@@ -241,6 +307,7 @@ func (q *Queries) ListTeamVelocityTimeline(ctx context.Context, arg ListTeamVelo
 		arg.StartDate,
 		arg.EndDate,
 		arg.TeamIds,
+		arg.AssigneeIds,
 		arg.SprintIds,
 		arg.ObjectiveIds,
 	)

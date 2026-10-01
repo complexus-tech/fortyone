@@ -10,6 +10,7 @@ import {
   EditIcon,
   MoreHorizontalIcon,
   SuccessIcon,
+  WipLimitIcon,
 } from "icons";
 import type { FormEvent } from "react";
 import { toast } from "sonner";
@@ -19,6 +20,7 @@ import { StoryStatusIcon } from "@/components/ui";
 import { useUpdateStateMutation } from "@/lib/hooks/states/update-mutation";
 import type { State } from "@/types/states";
 import { useTerminology } from "@/hooks";
+import { WipLimitDialog } from "./wip-limit-dialog";
 
 type StateRowProps = {
   state: State;
@@ -40,6 +42,7 @@ export const StateRow = ({
   const { getTermDisplay } = useTerminology();
   const updateMutation = useUpdateStateMutation();
   const [isManualEditing, setIsManualEditing] = useState(false);
+  const [limitOpen, setLimitOpen] = useState(false);
   const isEditing = Boolean(isNew) || isManualEditing;
   const [form, setForm] = useState({ name: state.name, color: state.color });
   const inputRef = useRef<HTMLInputElement>(null);
@@ -97,137 +100,167 @@ export const StateRow = ({
   };
 
   return (
-    <form
-      className={cn(
-        "border-border dark:bg-surface-elevated flex h-16 w-full items-center justify-between rounded-lg border bg-white px-3",
-        {
-          "opacity-80 backdrop-blur": isDragging,
-          "shadow-lg": isDragging,
-        },
-      )}
-      onSubmit={handleSubmit}
-      ref={setNodeRef}
-      style={style}
-    >
-      <Flex align="center" gap={2}>
-        <DragIcon
-          className={cn("cursor-grab", {
-            "cursor-grabbing": isDragging,
-            "opacity-80": isNew || isEditing,
-            "cursor-not-allowed": isNew || isEditing,
-          })}
-          strokeWidth={4}
-          {...attributes}
-          {...listeners}
-        />
-        {isEditing ? (
-          <ColorPicker
-            onChange={(value) => {
-              setForm({ ...form, color: value });
-            }}
-            value={form.color}
-          />
-        ) : (
-          <Box className="bg-surface-muted flex size-8 shrink-0 items-center justify-center rounded-md">
-            <StoryStatusIcon statusId={state.id} />
-          </Box>
+    <>
+      <form
+        className={cn(
+          "border-border dark:bg-surface-elevated flex h-16 w-full items-center justify-between rounded-lg border bg-white px-3",
+          {
+            "opacity-80 backdrop-blur": isDragging,
+            "shadow-lg": isDragging,
+          },
         )}
+        onSubmit={handleSubmit}
+        ref={setNodeRef}
+        style={style}
+      >
+        <Flex align="center" gap={2}>
+          <DragIcon
+            className={cn("cursor-grab", {
+              "cursor-grabbing": isDragging,
+              "opacity-80": isNew || isEditing,
+              "cursor-not-allowed": isNew || isEditing,
+            })}
+            strokeWidth={4}
+            {...attributes}
+            {...listeners}
+          />
+          {isEditing ? (
+            <ColorPicker
+              onChange={(value) => {
+                setForm({ ...form, color: value });
+              }}
+              value={form.color}
+            />
+          ) : (
+            <Box className="bg-surface-muted flex size-8 shrink-0 items-center justify-center rounded-md">
+              <StoryStatusIcon statusId={state.id} />
+            </Box>
+          )}
 
-        <Box>
-          <input
-            className={cn(
-              "placeholder:text-foreground bg-transparent font-medium focus:outline-none",
-              {
-                "border-border dark:bg-surface my-0.5 rounded-lg border bg-white px-3 py-1":
-                  isEditing,
-              },
-            )}
-            onChange={(e) => {
-              setForm({ ...form, name: e.target.value });
-            }}
-            placeholder="State name..."
-            readOnly={!isEditing}
-            ref={(element) => {
-              inputRef.current = element;
-            }}
-            value={form.name}
-          />
-          {storyCount && !isEditing ? (
-            <Text color="muted" fontSize="sm">
-              {storyCount}{" "}
-              {getTermDisplay("storyTerm", {
-                variant: storyCount === 1 ? "singular" : "plural",
-              })}
-            </Text>
-          ) : null}
-        </Box>
-      </Flex>
-      <Flex align="center" gap={2}>
-        {isEditing ? (
-          <>
-            <Button
-              color="tertiary"
-              onClick={handleCancelEditing}
-              size="sm"
-              type="button"
-              variant="naked"
-            >
-              <CloseIcon />
-            </Button>
-            <Button color="tertiary" size="sm" variant="naked">
-              <CheckIcon />
-            </Button>
-          </>
-        ) : (
-          <Flex align="center" gap={2}>
-            {state.isDefault ? <Text color="muted">Default</Text> : null}
-            <Menu>
-              <Menu.Button>
-                <Button color="tertiary" size="sm" variant="naked">
-                  <MoreHorizontalIcon />
-                </Button>
-              </Menu.Button>
-              <Menu.Items className="w-44">
-                <Menu.Group>
-                  {(state.category === "backlog" ||
-                    state.category === "unstarted") &&
-                    !state.isDefault && (
-                      <Menu.Item onSelect={handleMakeDefault}>
-                        <SuccessIcon className="h-[1.15rem]" />
-                        Make default
-                      </Menu.Item>
-                    )}
-                  <Menu.Item
-                    onSelect={() => {
-                      setIsManualEditing(true);
-                      requestAnimationFrame(() => {
-                        inputRef.current?.focus();
-                      });
-                    }}
+          <Box>
+            <input
+              className={cn(
+                "placeholder:text-foreground bg-transparent font-medium focus:outline-none",
+                {
+                  "border-border dark:bg-surface my-0.5 rounded-lg border bg-white px-3 py-1":
+                    isEditing,
+                },
+              )}
+              onChange={(e) => {
+                setForm({ ...form, name: e.target.value });
+              }}
+              placeholder="State name..."
+              readOnly={!isEditing}
+              ref={(element) => {
+                inputRef.current = element;
+              }}
+              value={form.name}
+            />
+            {storyCount && !isEditing ? (
+              <Text color="muted" fontSize="sm">
+                {storyCount}{" "}
+                {getTermDisplay("storyTerm", {
+                  variant: storyCount === 1 ? "singular" : "plural",
+                })}
+              </Text>
+            ) : null}
+          </Box>
+        </Flex>
+        <Flex align="center" gap={2}>
+          {isEditing ? (
+            <>
+              <Button
+                color="tertiary"
+                onClick={handleCancelEditing}
+                size="sm"
+                type="button"
+                variant="naked"
+              >
+                <CloseIcon />
+              </Button>
+              <Button color="tertiary" size="sm" variant="naked">
+                <CheckIcon />
+              </Button>
+            </>
+          ) : (
+            <Flex align="center" gap={2}>
+              {state.isDefault ? <Text color="muted">Default</Text> : null}
+              {state.wipLimit ? (
+                <Text color="muted">Limit {state.wipLimit}</Text>
+              ) : null}
+              <Menu>
+                <Menu.Button>
+                  <Button
+                    aria-label={`Actions for ${state.name}`}
+                    color="tertiary"
+                    size="sm"
+                    variant="naked"
                   >
-                    <EditIcon className="h-[1.15rem]" />
-                    Edit
-                  </Menu.Item>
-                  <Menu.Item
-                    onSelect={() => {
-                      if (storyCount) {
-                        toast.warning(`Cannot delete status "${form.name}"`, {
-                          description: `Move all ${getTermDisplay("storyTerm", { variant: "plural" })} to another status before deleting, or delete the ${getTermDisplay("storyTerm", { variant: "plural" })} first.`,
+                    <MoreHorizontalIcon />
+                  </Button>
+                </Menu.Button>
+                <Menu.Items className="w-72">
+                  <Menu.Group>
+                    {(state.category === "backlog" ||
+                      state.category === "unstarted") &&
+                      !state.isDefault && (
+                        <Menu.Item onSelect={handleMakeDefault}>
+                          <SuccessIcon className="h-[1.15rem]" />
+                          Make default
+                        </Menu.Item>
+                      )}
+                    <Menu.Item
+                      className="whitespace-nowrap"
+                      onSelect={() => {
+                        setLimitOpen(true);
+                      }}
+                    >
+                      <WipLimitIcon
+                        aria-hidden="true"
+                        className="h-[1.15rem] shrink-0"
+                      />
+                      Work in progress limit…
+                    </Menu.Item>
+                    <Menu.Item
+                      onSelect={() => {
+                        setIsManualEditing(true);
+                        requestAnimationFrame(() => {
+                          inputRef.current?.focus();
                         });
-                      } else {
-                        onDelete(state);
-                      }
-                    }}
-                  >
-                    <DeleteIcon className="h-[1.15rem]" />
-                    Delete...
-                  </Menu.Item>
-                </Menu.Group>
-              </Menu.Items>
-            </Menu>
-          </Flex>
-        )}
-      </Flex>
-    </form>
+                      }}
+                    >
+                      <EditIcon className="h-[1.15rem]" />
+                      Edit
+                    </Menu.Item>
+                    <Menu.Item
+                      onSelect={() => {
+                        if (storyCount) {
+                          toast.warning(`Cannot delete status "${form.name}"`, {
+                            description: `Move all ${getTermDisplay("storyTerm", { variant: "plural" })} to another status before deleting, or delete the ${getTermDisplay("storyTerm", { variant: "plural" })} first.`,
+                          });
+                        } else {
+                          onDelete(state);
+                        }
+                      }}
+                    >
+                      <DeleteIcon className="h-[1.15rem]" />
+                      Delete...
+                    </Menu.Item>
+                  </Menu.Group>
+                </Menu.Items>
+              </Menu>
+            </Flex>
+          )}
+        </Flex>
+      </form>
+      {limitOpen ? (
+        <WipLimitDialog
+          onClose={() => {
+            setLimitOpen(false);
+          }}
+          state={state}
+        />
+      ) : null}
+    </>
   );
 };

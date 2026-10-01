@@ -19,6 +19,7 @@ import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { useSprint } from "@/modules/sprints/hooks/sprint-details";
 import { useObjective } from "@/modules/objectives/hooks/use-objective";
 import { useKeyResults } from "@/modules/objectives/hooks";
+import { StoryCustomFieldProperties } from "@/modules/custom-fields/public/properties";
 import { useUpdateStoryMutation } from "../hooks/update-mutation";
 import type { DetailedStory } from "../types";
 import { AddLinks } from "./add-links";
@@ -54,7 +55,7 @@ export const Options = ({
     deletedAt,
     subStories,
   } = data!;
-  const { getTermDisplay } = useTerminology();
+  const { getTermDisplay } = useTerminology(teamId);
   const features = useFeatures();
   const sprintsEnabled = useSprintsEnabled(teamId);
   const isMobile = useMediaQuery("(max-width: 768px)");
@@ -249,6 +250,12 @@ export const Options = ({
             storyId={storyId}
             storyLabels={storyLabels}
             teamId={teamId}
+          />
+          <StoryCustomFieldProperties
+            disabled={isEditingDisabled || Boolean(data?.archivedAt)}
+            isCompact={isCompact}
+            isNotifications={isNotifications}
+            storyId={storyId}
           />
         </Box>
 

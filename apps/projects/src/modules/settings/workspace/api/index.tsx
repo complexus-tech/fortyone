@@ -6,6 +6,7 @@ import { useUserRole } from "@/hooks/role";
 import { PersonalAccessTokens } from "./components/personal-access-tokens";
 import { ServiceAccounts } from "./components/service-accounts";
 import { WebhookEndpoints } from "./components/webhook-endpoints";
+import { OAuthApplications } from "./components/oauth-applications";
 
 export const ApiSettings = () => {
   const { userRole } = useUserRole();
@@ -38,6 +39,7 @@ export const ApiSettings = () => {
               <Tabs.Tab leftIcon={<WebhookIcon />} value="webhooks">
                 Webhooks
               </Tabs.Tab>
+              <Tabs.Tab value="oauth-applications">OAuth applications</Tabs.Tab>
             </>
           ) : null}
         </Tabs.List>
@@ -51,6 +53,9 @@ export const ApiSettings = () => {
             </Tabs.Panel>
             <Tabs.Panel value="webhooks">
               <WebhookEndpoints />
+            </Tabs.Panel>
+            <Tabs.Panel value="oauth-applications">
+              <OAuthApplications />
             </Tabs.Panel>
           </>
         ) : null}

@@ -221,7 +221,7 @@ func (s *Service) updatePatchWithOptions(ctx context.Context, storyID, workspace
 			scope,
 			storyID,
 			storydomain.MutationEventStoryUpdated,
-			storyUpdatedIntegrationPayload{StoryID: storyID, WorkspaceID: workspaceID, Changes: updates},
+			storyUpdatedIntegrationPayload{StoryID: storyID, WorkspaceID: workspaceID, Changes: updates, Delivery: options.mutationEventDelivery},
 			mutationTime,
 		)
 		if eventErr != nil {

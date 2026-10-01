@@ -7,16 +7,18 @@ import (
 )
 
 type State struct {
-	ID         uuid.UUID
-	Name       string
-	Category   string
-	OrderIndex int
-	Team       uuid.UUID
-	Workspace  uuid.UUID
-	IsDefault  bool
-	Color      string
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
+	WIPLimit    *int
+	ActiveCount int
+	ID          uuid.UUID
+	Name        string
+	Category    string
+	OrderIndex  int
+	Team        uuid.UUID
+	Workspace   uuid.UUID
+	IsDefault   bool
+	Color       string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }
 
 type NewState struct {
@@ -28,6 +30,8 @@ type NewState struct {
 }
 
 type UpdateState struct {
+	// Zero removes the advisory limit; nil leaves it unchanged.
+	WIPLimit   *int
 	Name       *string
 	OrderIndex *int
 	IsDefault  *bool

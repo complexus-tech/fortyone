@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strings"
 
 	activitieshttp "github.com/complexus-tech/projects-api/internal/modules/activities/http"
 	adminhttp "github.com/complexus-tech/projects-api/internal/modules/admin/http"
@@ -12,10 +13,15 @@ import (
 	calendarhttp "github.com/complexus-tech/projects-api/internal/modules/calendar/http"
 	chatsessionshttp "github.com/complexus-tech/projects-api/internal/modules/chatsessions/http"
 	commentshttp "github.com/complexus-tech/projects-api/internal/modules/comments/http"
+	customfieldshttp "github.com/complexus-tech/projects-api/internal/modules/customfields/http"
+	dataexporthttp "github.com/complexus-tech/projects-api/internal/modules/dataexport/http"
 	developercredentialshttp "github.com/complexus-tech/projects-api/internal/modules/developercredentials/http"
 	developeroauthhttp "github.com/complexus-tech/projects-api/internal/modules/developeroauth/http"
 	documentshttp "github.com/complexus-tech/projects-api/internal/modules/documents/http"
 	emailreplyhttp "github.com/complexus-tech/projects-api/internal/modules/emailreply/http"
+	ssodomain "github.com/complexus-tech/projects-api/internal/modules/enterprisesso/domain"
+	ssohttp "github.com/complexus-tech/projects-api/internal/modules/enterprisesso/http"
+	sso "github.com/complexus-tech/projects-api/internal/modules/enterprisesso/service"
 	epicshttp "github.com/complexus-tech/projects-api/internal/modules/epics/http"
 	feedbackhttp "github.com/complexus-tech/projects-api/internal/modules/feedback/http"
 	figmahttp "github.com/complexus-tech/projects-api/internal/modules/figma/http"
@@ -33,6 +39,7 @@ import (
 	objectivestatushttp "github.com/complexus-tech/projects-api/internal/modules/objectivestatus/http"
 	outboundwebhookshttp "github.com/complexus-tech/projects-api/internal/modules/outboundwebhooks/http"
 	reportshttp "github.com/complexus-tech/projects-api/internal/modules/reports/http"
+	scimhttp "github.com/complexus-tech/projects-api/internal/modules/scim/http"
 	searchhttp "github.com/complexus-tech/projects-api/internal/modules/search/http"
 	slackhttp "github.com/complexus-tech/projects-api/internal/modules/slack/http"
 	sprintshttp "github.com/complexus-tech/projects-api/internal/modules/sprints/http"
@@ -43,8 +50,14 @@ import (
 	teamsettingshttp "github.com/complexus-tech/projects-api/internal/modules/teamsettings/http"
 	usershttp "github.com/complexus-tech/projects-api/internal/modules/users/http"
 	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
+	workautomationshttp "github.com/complexus-tech/projects-api/internal/modules/workautomations/http"
+	workpresetshttp "github.com/complexus-tech/projects-api/internal/modules/workpresets/http"
 	workspaceshttp "github.com/complexus-tech/projects-api/internal/modules/workspaces/http"
 	workspaces "github.com/complexus-tech/projects-api/internal/modules/workspaces/service"
+	securitydomain "github.com/complexus-tech/projects-api/internal/modules/workspacesecurity/domain"
+	securityhttp "github.com/complexus-tech/projects-api/internal/modules/workspacesecurity/http"
+	security "github.com/complexus-tech/projects-api/internal/modules/workspacesecurity/service"
+	platformauth "github.com/complexus-tech/projects-api/internal/platform/auth"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/internal/platform/http/mux"
 	ssehttp "github.com/complexus-tech/projects-api/internal/sse/http"
@@ -76,12 +89,14 @@ type routes struct {
 func NewWithServices(svcs services) routes {
 	return routes{
 		services:          svcs,
-		workspaceResolver: workspaceResolver{service: svcs.workspaces},
+		workspaceResolver: workspaceResolver{service: svcs.workspaces, security: svcs.workspaceSecurity, sso: svcs.enterpriseSSO},
 	}
 }
 
 type workspaceResolver struct {
-	service *workspaces.Service
+	service  *workspaces.Service
+	security *security.Service
+	sso      *sso.Service
 }
 
 func (resolver workspaceResolver) ResolveCurrentWorkspace(
@@ -95,6 +110,32 @@ func (resolver workspaceResolver) ResolveCurrentWorkspace(
 			return mid.WorkspaceInfo{}, mid.ErrWorkspaceAccessDenied
 		}
 		return mid.WorkspaceInfo{}, err
+	}
+	if resolver.security != nil {
+		session, _ := platformauth.GetBrowserSession(ctx)
+		err := resolver.security.CheckSession(ctx, securitydomain.Scope{ActorID: userID, WorkspaceID: membership.WorkspaceID}, securitydomain.SessionIdentity{ID: session.SessionID, AuthenticatedAt: session.AuthenticatedAt, ExpiresAt: session.ExpiresAt})
+		if errors.Is(err, securitydomain.ErrForbidden) || errors.Is(err, securitydomain.ErrNotFound) {
+			return mid.WorkspaceInfo{}, mid.ErrWorkspaceAccessDenied
+		}
+		if err != nil {
+			return mid.WorkspaceInfo{}, err
+		}
+	}
+	if resolver.sso != nil {
+		proof := ssodomain.SessionProof{}
+		if session, ok := platformauth.GetBrowserSession(ctx); ok && session.WorkspaceSSO != nil && session.WorkspaceSSO.WorkspaceID == membership.WorkspaceID {
+			assertion := session.WorkspaceSSO
+			proof = ssodomain.SessionProof{ConnectionID: assertion.ConnectionID, Generation: assertion.Generation, AuthenticatedAt: assertion.AuthenticatedAt}
+		}
+		if err := resolver.sso.CheckSession(ctx, ssodomain.Scope{ActorID: userID, WorkspaceID: membership.WorkspaceID}, proof); err != nil {
+			if errors.Is(err, ssodomain.ErrForbidden) {
+				return mid.WorkspaceInfo{}, mid.ErrWorkspaceSSORequired
+			}
+			if errors.Is(err, ssodomain.ErrNotFound) {
+				return mid.WorkspaceInfo{}, mid.ErrWorkspaceAccessDenied
+			}
+			return mid.WorkspaceInfo{}, err
+		}
 	}
 	return mid.WorkspaceInfo{
 		ID:       membership.WorkspaceID,
@@ -118,6 +159,24 @@ func (r routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		panic("bootstrap service validation failed: " + err.Error())
 	}
 	browserSessions := mid.NewBrowserSessionResolver(cfg.Cache, svcs.users)
+	scimhttp.Routes(scimhttp.Config{Service: svcs.scim, PublicURL: cfg.APIPublicURL, SecretKey: cfg.SecretKey, Log: cfg.Log, BrowserSessions: browserSessions, WorkspaceResolver: r.workspaceResolver}, app)
+	ssohttp.Routes(ssohttp.Config{Service: svcs.enterpriseSSO, States: cfg.Cache, Issuer: usershttp.NewWorkspaceSSOSessionWriter(svcs.users, cfg.Cache, cfg.CookieDomain, cfg.DeploymentMode), CallbackURL: strings.TrimRight(cfg.APIPublicURL, "/") + "/auth/sso/callback", WebsiteURL: cfg.WebsiteURL, CookieDomain: cfg.CookieDomain, Production: cfg.DeploymentMode.IsProduction(), SecretKey: cfg.SecretKey, Log: cfg.Log, BrowserSessions: browserSessions, WorkspaceResolver: r.workspaceResolver}, app)
+	dataexporthttp.Routes(dataexporthttp.Config{Log: cfg.Log, SecretKey: cfg.SecretKey, BrowserSessions: browserSessions, WorkspaceResolver: r.workspaceResolver, Service: svcs.dataExport}, app)
+	securityhttp.Routes(securityhttp.Config{Log: cfg.Log, SecretKey: cfg.SecretKey, BrowserSessions: browserSessions, WorkspaceResolver: r.workspaceResolver, Service: svcs.workspaceSecurity}, app)
+	workautomationshttp.Routes(workautomationshttp.Config{
+		Log:               cfg.Log,
+		SecretKey:         cfg.SecretKey,
+		BrowserSessions:   browserSessions,
+		WorkspaceResolver: r.workspaceResolver,
+		Service:           svcs.workAutomations,
+	}, app)
+	workpresetshttp.Routes(workpresetshttp.Config{
+		Log:               cfg.Log,
+		SecretKey:         cfg.SecretKey,
+		BrowserSessions:   browserSessions,
+		WorkspaceResolver: r.workspaceResolver,
+		Service:           svcs.workPresets,
+	}, app)
 
 	agentreadinesshttp.Routes(agentreadinesshttp.Config{
 		APIPublicURL:      cfg.APIPublicURL,
@@ -174,6 +233,8 @@ func (r routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Teams:                svcs.teams,
 		Stories:              svcs.stories,
 		StoryComments:        svcs.stories,
+		StoryPatches:         svcs.stories,
+		CommentWriter:        svcs.comments,
 		Labels:               svcs.labels,
 		States:               svcs.states,
 		Sprints:              svcs.sprints,
@@ -314,6 +375,14 @@ func (r routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Cache:             cfg.Cache,
 		BrowserSessions:   browserSessions,
 		Service:           svcs.objectiveStats,
+	}, app)
+
+	customfieldshttp.Routes(customfieldshttp.Config{
+		WorkspaceResolver: r.workspaceResolver,
+		Log:               cfg.Log,
+		SecretKey:         cfg.SecretKey,
+		BrowserSessions:   browserSessions,
+		Service:           svcs.customFields,
 	}, app)
 
 	labelshttp.Routes(labelshttp.Config{

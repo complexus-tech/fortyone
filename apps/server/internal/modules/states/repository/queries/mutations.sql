@@ -48,7 +48,7 @@ INSERT INTO public.statuses (
     sqlc.arg(team_id), sqlc.arg(workspace_id), sqlc.arg(is_default)
 )
 RETURNING status_id, name, category, order_index, team_id, workspace_id,
-          is_default, color, created_at, updated_at;
+          is_default, color, created_at, updated_at, wip_limit;
 
 -- name: GetStateTeamForMember :one
 SELECT status.team_id
@@ -80,6 +80,10 @@ SET name = CASE
         WHEN CAST(sqlc.arg(set_color) AS boolean) THEN CAST(sqlc.arg(color) AS text)
         ELSE status.color
     END,
+    wip_limit = CASE
+        WHEN CAST(sqlc.arg(set_wip_limit) AS boolean) THEN NULLIF(CAST(sqlc.arg(wip_limit) AS integer), 0)
+        ELSE status.wip_limit
+    END,
     updated_at = NOW()
 WHERE status.status_id = sqlc.arg(status_id)
   AND status.workspace_id = sqlc.arg(workspace_id)
@@ -91,9 +95,16 @@ WHERE status.status_id = sqlc.arg(status_id)
          AND actor.is_active = TRUE
       WHERE membership.workspace_id = status.workspace_id
         AND membership.user_id = sqlc.arg(actor_id)
+        AND (
+            NOT CAST(sqlc.arg(set_wip_limit) AS boolean)
+            OR (membership.role IN ('admin', 'member') AND EXISTS (
+                SELECT 1 FROM public.team_members AS team_member
+                WHERE team_member.team_id = status.team_id AND team_member.user_id = membership.user_id
+            ))
+        )
   )
 RETURNING status_id, name, category, order_index, team_id, workspace_id,
-          is_default, color, created_at, updated_at;
+          is_default, color, created_at, updated_at, wip_limit;
 
 -- name: GetStateForDelete :one
 SELECT status.team_id, status.category

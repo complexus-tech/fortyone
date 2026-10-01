@@ -83,6 +83,9 @@ export const StoriesKanbanHeader = ({
   const { showEmptyGroups } = viewOptions;
   const [isOpen, setIsOpen] = useState(false);
   const { userRole } = useUserRole();
+  const activeCount = status?.activeCount ?? group.totalCount;
+  const wipLimit = status?.wipLimit;
+  const isOverLimit = Boolean(wipLimit && activeCount > wipLimit);
 
   return (
     <Box
@@ -112,12 +115,27 @@ export const StoriesKanbanHeader = ({
               <StoryIcon className="ml-0 h-5 w-auto" strokeWidth={2} />
             </span>
           </Tooltip>
-          <Text color="muted">
+          <Text className={cn({ "text-warning": isOverLimit })} color="muted">
             {group.totalCount}{" "}
             {getTermDisplay("storyTerm", {
               variant: group.totalCount === 1 ? "singular" : "plural",
             })}
           </Text>
+          {wipLimit ? (
+            <Tooltip
+              title={`${activeCount} active items across this team, including items hidden by board filters. Advisory limit: ${wipLimit}.`}
+            >
+              <Text
+                aria-label={`${activeCount} active items, limit ${wipLimit}${isOverLimit ? ", over limit" : ""}`}
+                className={cn("whitespace-nowrap", {
+                  "text-warning": isOverLimit,
+                })}
+                color="muted"
+              >
+                {activeCount}/{wipLimit}
+              </Text>
+            </Tooltip>
+          ) : null}
         </Flex>
         <Flex align="center" gap={1}>
           {onHide ? (

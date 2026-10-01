@@ -3,6 +3,7 @@ import { BreadCrumbs, Flex } from "ui";
 import { StoryIcon } from "icons";
 import { useParams } from "next/navigation";
 import { useHotkeys } from "react-hotkeys-hook";
+import type { ReactNode } from "react";
 import { HeaderContainer, MobileMenuButton } from "@/components/shared";
 import type { StoriesLayout } from "@/components/ui";
 import {
@@ -13,14 +14,23 @@ import {
 } from "@/components/ui";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { useTerminology } from "@/hooks";
+import type { SavedViewConfiguration } from "@/shared/story/view-configuration";
 import { useTeamOptions } from "./provider";
+
+export type SavedViewsAction = (props: {
+  configuration: SavedViewConfiguration;
+  onApply: (configuration: SavedViewConfiguration) => void;
+  teamId: string;
+}) => ReactNode;
 
 export const Header = ({
   layout,
   setLayout,
+  renderSavedViews,
 }: {
   layout: StoriesLayout;
   setLayout: (value: StoriesLayout) => void;
+  renderSavedViews?: SavedViewsAction;
 }) => {
   const { teamId } = useParams<{
     teamId: string;
@@ -29,8 +39,14 @@ export const Header = ({
   const selectedTeam = teams.find((team) => team.id === teamId);
   const name = selectedTeam?.name ?? "Team";
   const color = selectedTeam?.color;
-  const { viewOptions, setViewOptions, filters, resetFilters, setFilters } =
-    useTeamOptions();
+  const {
+    viewOptions,
+    setViewOptions,
+    filters,
+    resetFilters,
+    setFilters,
+    applyView,
+  } = useTeamOptions();
   const { getTermDisplay } = useTerminology();
 
   useHotkeys("v+l", () => {
@@ -71,6 +87,14 @@ export const Header = ({
         />
       </Flex>
       <Flex align="center" gap={2}>
+        {renderSavedViews?.({
+          configuration: { version: 1, layout, filters, viewOptions },
+          onApply: (configuration) => {
+            applyView(configuration);
+            setLayout(configuration.layout);
+          },
+          teamId,
+        })}
         <LayoutSwitcher layout={layout} setLayout={setLayout} />
         <StoriesFilterButton
           filters={filters}

@@ -25,6 +25,8 @@ type Config struct {
 	Teams                TeamReader
 	Stories              StoryService
 	StoryComments        StoryCommentReader
+	StoryPatches         StoryPatchWriter
+	CommentWriter        CommentWriter
 	Labels               LabelReader
 	States               WorkflowStateReader
 	Sprints              SprintReader
@@ -41,6 +43,7 @@ func Routes(config Config, app *web.App) {
 	server, err := newServer(serverConfig{
 		Log: config.Log, SecretKey: config.SecretKey, Workspaces: config.Workspaces,
 		Teams: config.Teams, Stories: config.Stories, StoryComments: config.StoryComments,
+		StoryPatches: config.StoryPatches, CommentWriter: config.CommentWriter,
 		Labels: config.Labels, States: config.States,
 		Sprints: config.Sprints, Objectives: config.Objectives, KeyResults: config.KeyResults,
 		Idempotency: config.Idempotency, Webhooks: config.Webhooks,
@@ -93,6 +96,7 @@ func Routes(config Config, app *web.App) {
 	storiesRead := RequireScopes(platformauth.ScopeStoriesRead)
 	storiesWrite := RequireScopes(platformauth.ScopeStoriesWrite)
 	commentsRead := RequireScopes(platformauth.ScopeCommentsRead, platformauth.ScopeStoriesRead)
+	commentsWrite := RequireScopes(platformauth.ScopeCommentsWrite, platformauth.ScopeStoriesRead)
 	labelsRead := RequireScopes(platformauth.ScopeLabelsRead)
 	statesRead := RequireScopes(platformauth.ScopeStoriesRead)
 	sprintsRead := RequireScopes(platformauth.ScopeSprintsRead)
@@ -104,7 +108,9 @@ func Routes(config Config, app *web.App) {
 	app.Get("/api/v1/workspaces/{workspaceId}/stories", handler, auth, rateLimit, workspace, storiesRead)
 	app.Post("/api/v1/workspaces/{workspaceId}/stories", handler, auth, rateLimit, workspace, storiesWrite, boundedJSONBody, captureJSONBody)
 	app.Get("/api/v1/workspaces/{workspaceId}/stories/{storyId}", handler, auth, rateLimit, workspace, storiesRead)
+	app.Patch("/api/v1/workspaces/{workspaceId}/stories/{storyId}", handler, auth, rateLimit, workspace, storiesWrite, boundedJSONBody)
 	app.Get("/api/v1/workspaces/{workspaceId}/stories/{storyId}/comments", handler, auth, rateLimit, workspace, commentsRead)
+	app.Post("/api/v1/workspaces/{workspaceId}/stories/{storyId}/comments", handler, auth, rateLimit, workspace, commentsWrite, boundedJSONBody)
 	app.Get("/api/v1/workspaces/{workspaceId}/stories/{storyId}/comments/{commentId}", handler, auth, rateLimit, workspace, commentsRead)
 	app.Get("/api/v1/workspaces/{workspaceId}/labels", handler, auth, rateLimit, workspace, labelsRead)
 	app.Get("/api/v1/workspaces/{workspaceId}/states", handler, auth, rateLimit, workspace, statesRead)
@@ -121,8 +127,8 @@ func Routes(config Config, app *web.App) {
 	registerMethodFallback(app, "/api/v1/workspaces/{workspaceId}", "GET", auth, rateLimit, workspace)
 	registerMethodFallback(app, "/api/v1/workspaces/{workspaceId}/teams", "GET", auth, rateLimit, workspace)
 	registerMethodFallback(app, "/api/v1/workspaces/{workspaceId}/stories", "GET, POST", auth, rateLimit, workspace)
-	registerMethodFallback(app, "/api/v1/workspaces/{workspaceId}/stories/{storyId}", "GET", auth, rateLimit, workspace)
-	registerMethodFallback(app, "/api/v1/workspaces/{workspaceId}/stories/{storyId}/comments", "GET", auth, rateLimit, workspace)
+	registerMethodFallback(app, "/api/v1/workspaces/{workspaceId}/stories/{storyId}", "GET, PATCH", auth, rateLimit, workspace)
+	registerMethodFallback(app, "/api/v1/workspaces/{workspaceId}/stories/{storyId}/comments", "GET, POST", auth, rateLimit, workspace)
 	registerMethodFallback(app, "/api/v1/workspaces/{workspaceId}/stories/{storyId}/comments/{commentId}", "GET", auth, rateLimit, workspace)
 	registerMethodFallback(app, "/api/v1/workspaces/{workspaceId}/labels", "GET", auth, rateLimit, workspace)
 	registerMethodFallback(app, "/api/v1/workspaces/{workspaceId}/states", "GET", auth, rateLimit, workspace)
@@ -188,6 +194,7 @@ func requiresJSONBody(request *http.Request) bool {
 		return false
 	}
 	path := request.URL.Path
-	return (request.Method == http.MethodPost && (strings.HasSuffix(path, "/stories") || strings.HasSuffix(path, "/webhook-endpoints") || strings.HasSuffix(path, "/disable"))) ||
+	return (request.Method == http.MethodPatch && strings.Contains(path, "/stories/")) ||
+		(request.Method == http.MethodPost && (strings.HasSuffix(path, "/stories") || strings.HasSuffix(path, "/comments") || strings.HasSuffix(path, "/webhook-endpoints") || strings.HasSuffix(path, "/disable"))) ||
 		(request.Method == http.MethodPut && strings.HasSuffix(path, "/subscriptions"))
 }

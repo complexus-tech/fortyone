@@ -342,6 +342,7 @@ export const StoriesBoard = ({
                 <StoriesList
                   isInSearch={isInSearch}
                   rowClassName={rowClassName}
+                  selectedCustomFieldIds={viewOptions.selectedCustomFieldIds}
                   stories={allStories.groups[0].stories}
                 />
               </BodyContainer>

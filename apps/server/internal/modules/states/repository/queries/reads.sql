@@ -9,7 +9,11 @@ SELECT
     status.is_default,
     status.color,
     status.created_at,
-    status.updated_at
+    status.updated_at,
+    status.wip_limit,
+    (SELECT CAST(COUNT(*) AS integer) FROM public.stories AS story
+     WHERE story.workspace_id = status.workspace_id AND story.status_id = status.status_id
+       AND story.deleted_at IS NULL AND story.archived_at IS NULL AND story.is_draft = FALSE) AS active_count
 FROM public.statuses AS status
 WHERE status.status_id = sqlc.arg(status_id)
   AND status.workspace_id = sqlc.arg(workspace_id);
@@ -25,7 +29,11 @@ SELECT
     status.is_default,
     status.color,
     status.created_at,
-    status.updated_at
+    status.updated_at,
+    status.wip_limit,
+    (SELECT CAST(COUNT(*) AS integer) FROM public.stories AS story
+     WHERE story.workspace_id = status.workspace_id AND story.status_id = status.status_id
+       AND story.deleted_at IS NULL AND story.archived_at IS NULL AND story.is_draft = FALSE) AS active_count
 FROM public.statuses AS status
 INNER JOIN public.team_members AS team_membership
     ON team_membership.team_id = status.team_id
@@ -50,7 +58,11 @@ SELECT
     status.is_default,
     status.color,
     status.created_at,
-    status.updated_at
+    status.updated_at,
+    status.wip_limit,
+    (SELECT CAST(COUNT(*) AS integer) FROM public.stories AS story
+     WHERE story.workspace_id = status.workspace_id AND story.status_id = status.status_id
+       AND story.deleted_at IS NULL AND story.archived_at IS NULL AND story.is_draft = FALSE) AS active_count
 FROM public.statuses AS status
 WHERE status.workspace_id = sqlc.arg(workspace_id)
   AND status.team_id = sqlc.arg(team_id)
@@ -67,7 +79,11 @@ SELECT
     status.is_default,
     status.color,
     status.created_at,
-    status.updated_at
+    status.updated_at,
+    status.wip_limit,
+    (SELECT CAST(COUNT(*) AS integer) FROM public.stories AS story
+     WHERE story.workspace_id = status.workspace_id AND story.status_id = status.status_id
+       AND story.deleted_at IS NULL AND story.archived_at IS NULL AND story.is_draft = FALSE) AS active_count
 FROM public.statuses AS status
 INNER JOIN public.team_members AS team_membership
     ON team_membership.team_id = status.team_id

@@ -24,8 +24,10 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.18.45
 	github.com/aws/aws-sdk-go-v2/credentials v1.13.43
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.97.3
+	github.com/coreos/go-oidc/v3 v3.17.0
 	github.com/getbrevo/brevo-go v1.1.3
 	github.com/getkin/kin-openapi v0.144.0
+	github.com/go-jose/go-jose/v4 v4.1.4
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/go-github/v72 v72.0.0
 	github.com/hibiken/asynq v0.25.1

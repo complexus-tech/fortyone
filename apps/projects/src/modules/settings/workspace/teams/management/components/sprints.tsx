@@ -72,11 +72,8 @@ export const SprintSettings = () => {
       {/* Sprint Configuration Section */}
       <Box className="border-border bg-surface rounded-2xl border">
         <SectionHeader
-          description={`Configure ${getTermDisplay("sprintTerm", { variant: "plural" })} and automation settings for your team.`}
-          title={getTermDisplay("sprintTerm", {
-            capitalize: true,
-            variant: "plural",
-          })}
+          description={`Create upcoming ${getTermDisplay("sprintTerm", { variant: "plural" })} and move unfinished work automatically.`}
+          title={`${getTermDisplay("sprintTerm", { capitalize: true, variant: "plural" })} scheduling`}
         />
 
         <Box className="divide-border divide-y-[0.5px]">
@@ -90,7 +87,8 @@ export const SprintSettings = () => {
               </Text>
             </Box>
             <Switch
-              checked={sprintSettings?.autoCreateSprints}
+              aria-label={`Enable ${getTermDisplay("sprintTerm")} scheduling`}
+              checked={sprintSettings?.autoCreateSprints ?? false}
               onCheckedChange={(checked) => {
                 updateSprintSettings.mutate({ autoCreateSprints: checked });
               }}
@@ -129,7 +127,10 @@ export const SprintSettings = () => {
                 }}
                 value={sprintSettings.upcomingSprintsCount.toString()}
               >
-                <Select.Trigger className="w-32 text-[0.9rem] md:text-base">
+                <Select.Trigger
+                  aria-label={`Number of upcoming ${getTermDisplay("sprintTerm", { variant: "plural" })}`}
+                  className="w-32 text-base"
+                >
                   <Select.Input />
                 </Select.Trigger>
                 <Select.Content>
@@ -197,7 +198,10 @@ export const SprintSettings = () => {
                 }}
                 value={sprintSettings.sprintDurationWeeks.toString()}
               >
-                <Select.Trigger className="w-32 text-[0.9rem] md:text-base">
+                <Select.Trigger
+                  aria-label={`${getTermDisplay("sprintTerm", { capitalize: true })} duration`}
+                  className="w-32 text-base"
+                >
                   <Select.Input />
                 </Select.Trigger>
                 <Select.Content>
@@ -242,7 +246,10 @@ export const SprintSettings = () => {
                 }}
                 value={sprintSettings.sprintStartDay}
               >
-                <Select.Trigger className="w-32 text-[0.9rem] md:text-base">
+                <Select.Trigger
+                  aria-label={`${getTermDisplay("sprintTerm", { capitalize: true })} start day`}
+                  className="w-32 text-base"
+                >
                   <Select.Input />
                 </Select.Trigger>
                 <Select.Content>
@@ -281,6 +288,7 @@ export const SprintSettings = () => {
                 </Text>
               </Box>
               <Switch
+                aria-label={`Move incomplete ${getTermDisplay("storyTerm", { variant: "plural" })} to the next ${getTermDisplay("sprintTerm")}`}
                 checked={sprintSettings.moveIncompleteStoriesEnabled}
                 onCheckedChange={(checked) => {
                   updateSprintSettings.mutate({

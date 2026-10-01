@@ -107,6 +107,7 @@ export const StoriesGroup = ({
         <StoriesList
           isInSearch={isInSearch}
           rowClassName={rowClassName}
+          selectedCustomFieldIds={viewOptions.selectedCustomFieldIds}
           stories={allStories}
         />
       )}

@@ -7,6 +7,7 @@ import {
 import type { ImportStoryPayload } from "./api";
 import type { ImportPerson, ImportTask, ImportTeam } from "./schema";
 import { isValidImportTaskEffort } from "./schema";
+import { getCanonicalImportEffort } from "./canonical-effort";
 
 const STATUS_CATEGORY_ALIASES: {
   category: StateCategory;
@@ -629,13 +630,20 @@ export const toImportStoryPayload = ({
   const resolvedLabelIds = labelIds
     ? [...new Set(labelIds.filter(Boolean))]
     : undefined;
-  const description = task.description.trim();
-  const descriptionHTML = looksLikeMarkdown(description)
-    ? markdownToRichTextHTML(description)
-    : undefined;
+  const description = task.canonical?.description ?? task.description.trim();
+  const descriptionHTML =
+    task.canonical?.descriptionHTML ??
+    (looksLikeMarkdown(description)
+      ? markdownToRichTextHTML(description)
+      : undefined);
+  const {
+    estimateValue,
+    estimatedDurationMinutes: duration,
+    minimumFocusBlockMinutes: focus,
+  } = getCanonicalImportEffort(task);
 
   return {
-    title: task.title.trim(),
+    title: task.canonical?.title ?? task.title.trim(),
     description,
     ...(descriptionHTML ? { descriptionHTML } : {}),
     teamId,
@@ -647,15 +655,11 @@ export const toImportStoryPayload = ({
     ...(parentId ? { parentId } : {}),
     ...(resolvedLabelIds?.length ? { labelIds: resolvedLabelIds } : {}),
     priority: task.priority,
-    ...(typeof task.estimateValue === "number"
-      ? { estimateValue: task.estimateValue }
+    ...(typeof estimateValue === "number" ? { estimateValue } : {}),
+    ...(typeof duration === "number"
+      ? { estimatedDurationMinutes: duration }
       : {}),
-    ...(typeof task.estimatedDurationMinutes === "number"
-      ? { estimatedDurationMinutes: task.estimatedDurationMinutes }
-      : {}),
-    ...(typeof task.minimumFocusBlockMinutes === "number"
-      ? { minimumFocusBlockMinutes: task.minimumFocusBlockMinutes }
-      : {}),
+    ...(typeof focus === "number" ? { minimumFocusBlockMinutes: focus } : {}),
     ...(task.startDate ? { startDate: task.startDate } : {}),
     ...(task.endDate ? { endDate: task.endDate } : {}),
   };

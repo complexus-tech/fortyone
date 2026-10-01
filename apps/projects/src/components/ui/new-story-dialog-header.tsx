@@ -1,4 +1,5 @@
 import { ArrowRight2Icon, CheckIcon, MaximizeIcon, MinimizeIcon } from "icons";
+import type { ReactNode } from "react";
 import { Button, Dialog, Flex, Menu, Text, Tooltip } from "ui";
 import { TeamColor } from "./team-color";
 
@@ -17,6 +18,7 @@ export const NewStoryDialogHeader = ({
   onToggleExpanded,
   storyTerm,
   teams,
+  templatePicker,
 }: {
   activeTeamId?: string;
   currentTeam?: TeamOption | null;
@@ -25,49 +27,53 @@ export const NewStoryDialogHeader = ({
   onToggleExpanded: () => void;
   storyTerm: string;
   teams: TeamOption[];
+  templatePicker?: ReactNode;
 }) => (
-  <Dialog.Header className="flex items-center justify-between px-6 pt-6">
-    <Dialog.Title className="flex items-center gap-1 text-lg">
-      <Menu>
-        <Menu.Button>
-          <Button
-            className="dark:bg-surface-elevated/90 gap-1.5 text-[0.95rem] font-semibold tracking-wide"
-            color="tertiary"
-            leftIcon={<TeamColor color={currentTeam?.color} />}
-            size="sm"
-          >
-            {currentTeam?.code}
-          </Button>
-        </Menu.Button>
-        <Menu.Items align="start" className="w-52">
-          <Menu.Group>
-            {teams.map((team) => (
-              <Menu.Item
-                active={team.id === activeTeamId}
-                className="justify-between gap-3"
-                key={team.id}
-                onClick={() => {
-                  onTeamSelect(team.id);
-                }}
-              >
-                <span className="flex items-center gap-1.5">
-                  <TeamColor className="shrink-0" color={team.color} />
-                  <span className="block truncate">{team.name}</span>
-                </span>
-                {team.id === activeTeamId ? (
-                  <CheckIcon className="h-[1.1rem] w-auto" />
-                ) : null}
-              </Menu.Item>
-            ))}
-          </Menu.Group>
-        </Menu.Items>
-      </Menu>
-      <ArrowRight2Icon className="h-4.5 w-auto opacity-30" strokeWidth={3} />
-      <Text className="opacity-80" color="muted">
-        New {storyTerm}
-      </Text>
-    </Dialog.Title>
-    <Flex gap={2}>
+  <Dialog.Header className="flex items-start justify-between gap-3 px-6 pt-6">
+    <Flex align="center" className="min-w-0 flex-wrap gap-2">
+      <Dialog.Title className="flex items-center gap-1 text-lg">
+        <Menu>
+          <Menu.Button>
+            <Button
+              className="dark:bg-surface-elevated/90 gap-1.5 text-[0.95rem] font-semibold tracking-wide"
+              color="tertiary"
+              leftIcon={<TeamColor color={currentTeam?.color} />}
+              size="sm"
+            >
+              {currentTeam?.code}
+            </Button>
+          </Menu.Button>
+          <Menu.Items align="start" className="w-52">
+            <Menu.Group>
+              {teams.map((team) => (
+                <Menu.Item
+                  active={team.id === activeTeamId}
+                  className="justify-between gap-3"
+                  key={team.id}
+                  onClick={() => {
+                    onTeamSelect(team.id);
+                  }}
+                >
+                  <span className="flex items-center gap-1.5">
+                    <TeamColor className="shrink-0" color={team.color} />
+                    <span className="block truncate">{team.name}</span>
+                  </span>
+                  {team.id === activeTeamId ? (
+                    <CheckIcon className="h-[1.1rem] w-auto" />
+                  ) : null}
+                </Menu.Item>
+              ))}
+            </Menu.Group>
+          </Menu.Items>
+        </Menu>
+        <ArrowRight2Icon className="h-4.5 w-auto opacity-30" strokeWidth={3} />
+        <Text className="opacity-80" color="muted">
+          New {storyTerm}
+        </Text>
+      </Dialog.Title>
+      {templatePicker}
+    </Flex>
+    <Flex className="shrink-0" gap={2}>
       <Tooltip title={isExpanded ? "Minimize dialog" : "Expand dialog"}>
         <Button
           className="hover:bg-state-hover px-[0.35rem]"

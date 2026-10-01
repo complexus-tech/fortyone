@@ -23,7 +23,11 @@ SELECT
     status.is_default,
     status.color,
     status.created_at,
-    status.updated_at
+    status.updated_at,
+    status.wip_limit,
+    (SELECT CAST(COUNT(*) AS integer) FROM public.stories AS story
+     WHERE story.workspace_id = status.workspace_id AND story.status_id = status.status_id
+       AND story.deleted_at IS NULL AND story.archived_at IS NULL AND story.is_draft = FALSE) AS active_count
 FROM public.statuses AS status
 WHERE status.status_id = $1
   AND status.workspace_id = $2
@@ -45,6 +49,8 @@ type GetStateRow struct {
 	Color       *string
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
+	WipLimit    *int32
+	ActiveCount int32
 }
 
 func (q *Queries) GetState(ctx context.Context, arg GetStateParams) (GetStateRow, error) {
@@ -61,6 +67,8 @@ func (q *Queries) GetState(ctx context.Context, arg GetStateParams) (GetStateRow
 		&i.Color,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.WipLimit,
+		&i.ActiveCount,
 	)
 	return i, err
 }
@@ -76,7 +84,11 @@ SELECT
     status.is_default,
     status.color,
     status.created_at,
-    status.updated_at
+    status.updated_at,
+    status.wip_limit,
+    (SELECT CAST(COUNT(*) AS integer) FROM public.stories AS story
+     WHERE story.workspace_id = status.workspace_id AND story.status_id = status.status_id
+       AND story.deleted_at IS NULL AND story.archived_at IS NULL AND story.is_draft = FALSE) AS active_count
 FROM public.statuses AS status
 INNER JOIN public.team_members AS team_membership
     ON team_membership.team_id = status.team_id
@@ -107,6 +119,8 @@ type ListStatesForMemberRow struct {
 	Color       *string
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
+	WipLimit    *int32
+	ActiveCount int32
 }
 
 func (q *Queries) ListStatesForMember(ctx context.Context, arg ListStatesForMemberParams) ([]ListStatesForMemberRow, error) {
@@ -129,6 +143,8 @@ func (q *Queries) ListStatesForMember(ctx context.Context, arg ListStatesForMemb
 			&i.Color,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.WipLimit,
+			&i.ActiveCount,
 		); err != nil {
 			return nil, err
 		}
@@ -151,7 +167,11 @@ SELECT
     status.is_default,
     status.color,
     status.created_at,
-    status.updated_at
+    status.updated_at,
+    status.wip_limit,
+    (SELECT CAST(COUNT(*) AS integer) FROM public.stories AS story
+     WHERE story.workspace_id = status.workspace_id AND story.status_id = status.status_id
+       AND story.deleted_at IS NULL AND story.archived_at IS NULL AND story.is_draft = FALSE) AS active_count
 FROM public.statuses AS status
 WHERE status.workspace_id = $1
   AND status.team_id = $2
@@ -174,6 +194,8 @@ type ListTeamStatesRow struct {
 	Color       *string
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
+	WipLimit    *int32
+	ActiveCount int32
 }
 
 func (q *Queries) ListTeamStates(ctx context.Context, arg ListTeamStatesParams) ([]ListTeamStatesRow, error) {
@@ -196,6 +218,8 @@ func (q *Queries) ListTeamStates(ctx context.Context, arg ListTeamStatesParams) 
 			&i.Color,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.WipLimit,
+			&i.ActiveCount,
 		); err != nil {
 			return nil, err
 		}
@@ -218,7 +242,11 @@ SELECT
     status.is_default,
     status.color,
     status.created_at,
-    status.updated_at
+    status.updated_at,
+    status.wip_limit,
+    (SELECT CAST(COUNT(*) AS integer) FROM public.stories AS story
+     WHERE story.workspace_id = status.workspace_id AND story.status_id = status.status_id
+       AND story.deleted_at IS NULL AND story.archived_at IS NULL AND story.is_draft = FALSE) AS active_count
 FROM public.statuses AS status
 INNER JOIN public.team_members AS team_membership
     ON team_membership.team_id = status.team_id
@@ -251,6 +279,8 @@ type ListTeamStatesForMemberRow struct {
 	Color       *string
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
+	WipLimit    *int32
+	ActiveCount int32
 }
 
 func (q *Queries) ListTeamStatesForMember(ctx context.Context, arg ListTeamStatesForMemberParams) ([]ListTeamStatesForMemberRow, error) {
@@ -273,6 +303,8 @@ func (q *Queries) ListTeamStatesForMember(ctx context.Context, arg ListTeamState
 			&i.Color,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.WipLimit,
+			&i.ActiveCount,
 		); err != nil {
 			return nil, err
 		}

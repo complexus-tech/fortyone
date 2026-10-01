@@ -15,9 +15,15 @@ import {
   buildStatusBreakdownData,
   chartPalette,
   titleCase,
+  summarizeCycleTime,
+  formatNumber,
 } from "./model";
 import type { ChartBreakdownRow } from "./model";
-import { ReportCard, SectionTitle } from "./primitives";
+import { ReportCard, SectionTitle, MetricCard } from "./primitives";
+
+const cycleDaysFormatter = new Intl.NumberFormat(undefined, {
+  maximumFractionDigits: 1,
+});
 
 export const useFlowBreakdownData = (report: WorkspaceCommandCenterReport) => {
   const { data: statuses = [] } = useStatuses();
@@ -47,7 +53,7 @@ const StatusBreakdownCard = ({
 }) => {
   return (
     <ReportCard>
-      <SectionTitle description="Current work state across the selected filters.">
+      <SectionTitle description="Status of work created in the selected period.">
         Flow breakdown
       </SectionTitle>
       <Box className="mt-5">
@@ -70,7 +76,7 @@ export const PriorityDistributionCard = ({
 }) => {
   return (
     <ReportCard>
-      <SectionTitle description="Priority concentration across open and recently completed work.">
+      <SectionTitle description="Priority of work created in the selected period.">
         Priority distribution
       </SectionTitle>
       <Box className="mt-5">
@@ -106,8 +112,28 @@ export const FlowTab = ({
 }: {
   report: WorkspaceCommandCenterReport;
 }) => {
+  const cycleTime = summarizeCycleTime(report.trends.keyMetricsTrend);
+  const completed = report.overview.metrics.completedInPeriod;
   return (
     <Box className="space-y-5">
+      <Box className="grid gap-5 md:grid-cols-2">
+        <MetricCard
+          description={`${formatNumber(cycleTime.samples)} completions with recorded start history`}
+          label="Average cycle time"
+          value={
+            cycleTime.averageDays === null
+              ? "Unavailable"
+              : `${cycleDaysFormatter.format(cycleTime.averageDays)} days`
+          }
+        />
+        <MetricCard
+          description="Includes work created before this period"
+          label="Completed in period"
+          value={
+            completed === undefined ? "Unavailable" : formatNumber(completed)
+          }
+        />
+      </Box>
       <FlowBreakdownSection report={report} />
       <ReportCard>
         <SectionTitle description="Completion and creation movement for the current window.">
@@ -117,6 +143,7 @@ export const FlowTab = ({
           <DeliveryChart
             data={buildCompletionTrendChartData(
               report.overview.completionTrend,
+              report.overview.filters,
             )}
           />
         </Box>
@@ -138,7 +165,7 @@ export const PlanningTab = ({
     <Box className="grid gap-5 @6xl:grid-cols-2">
       <ReportCard>
         <SectionTitle
-          description={`Progress against active ${objectiveTermPlural} and their key results.`}
+          description={`Key result progress for ${objectiveTermPlural} created in the selected period. Uses the team and ${objectiveTermPlural} filters.`}
         >
           {titleCase(objectiveTermPlural)} progress
         </SectionTitle>
@@ -154,7 +181,7 @@ export const PlanningTab = ({
 
       <ReportCard>
         <SectionTitle
-          description={`Progress and health across active ${sprintTermPlural}.`}
+          description={`Completed and remaining work in ${sprintTermPlural} created in the selected period. Uses the team and ${sprintTermPlural} filters.`}
         >
           {titleCase(sprintTermPlural)} progress
         </SectionTitle>

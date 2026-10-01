@@ -1,0 +1,121 @@
+{
+  "id": "qa-roadmap-import-board-v1",
+  "name": "Import QA",
+  "prefs": {
+    "permissionLevel": "public"
+  },
+  "lists": [
+    {
+      "id": "qa-todo",
+      "name": "To do"
+    },
+    {
+      "id": "qa-done",
+      "name": "Done"
+    }
+  ],
+  "cards": [
+    {
+      "id": "qa-parent",
+      "name": "QA migration contract",
+      "desc": "Inspect the preserved source comment, checklist children, field values, and linked attachment.",
+      "idList": "qa-todo",
+      "idChecklists": [
+        "qa-checklist"
+      ],
+      "customFieldItems": [
+        {
+          "idCustomField": "qa-value",
+          "value": {
+            "number": "9007199254740993.29"
+          }
+        },
+        {
+          "idCustomField": "qa-stage",
+          "idValue": "qa-won"
+        }
+      ],
+      "attachments": [
+        {
+          "id": "qa-file",
+          "name": "Linked-only source attachment",
+          "url": "https://example.com/source-contract.pdf"
+        }
+      ]
+    },
+    {
+      "id": "qa-completed",
+      "name": "QA completed source item",
+      "idList": "qa-done",
+      "customFieldItems": [
+        {
+          "idCustomField": "qa-value",
+          "value": {
+            "number": "0"
+          }
+        }
+      ]
+    }
+  ],
+  "customFields": [
+    {
+      "id": "qa-value",
+      "name": "Import QA amount",
+      "type": "number"
+    },
+    {
+      "id": "qa-stage",
+      "name": "Import QA stage",
+      "type": "list",
+      "options": [
+        {
+          "id": "qa-open",
+          "value": {
+            "text": "Open"
+          }
+        },
+        {
+          "id": "qa-won",
+          "value": {
+            "text": "Won"
+          }
+        }
+      ]
+    }
+  ],
+  "checklists": [
+    {
+      "id": "qa-checklist",
+      "idCard": "qa-parent",
+      "name": "Source checklist",
+      "checkItems": [
+        {
+          "id": "qa-check-1",
+          "name": "Verify source history",
+          "state": "complete"
+        },
+        {
+          "id": "qa-check-2",
+          "name": "Confirm linked-only attachment",
+          "state": "incomplete"
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "id": "qa-comment",
+      "type": "commentCard",
+      "date": "2025-01-02T10:20:00Z",
+      "memberCreator": {
+        "fullName": "Import QA source author"
+      },
+      "data": {
+        "card": {
+          "id": "qa-parent"
+        },
+        "text": "Source decision: retain author, timestamp and exact number."
+      }
+    }
+  ]
+}

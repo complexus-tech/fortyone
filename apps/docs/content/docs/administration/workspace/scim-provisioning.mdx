@@ -1,0 +1,34 @@
+---
+title: Member provisioning with SCIM
+description: Connect an identity provider to workspace membership.
+---
+
+Workspace admins can connect a SCIM 2.0 client from **Workspace settings → Security → Provisioning**.
+
+1. Copy the displayed SCIM base URL.
+2. Create a named token and choose its expiry.
+3. Copy the token into your provider's bearer token field. FortyOne shows the complete token once.
+4. Enable user provisioning and map the supported attributes below. Disable group push, password synchronization, bulk requests, and sorting.
+5. Test a user creation, profile update, and deactivation before enabling the directory sync.
+
+The base URL includes the workspace slug: `/scim/v2/{workspaceSlug}`. Use the public HTTPS API address in production. Tokens are scoped to one workspace and remain valid only while their creator is an active workspace admin. Rotate tokens before expiry and revoke unused tokens in the Provisioning tab.
+
+## Supported attributes
+
+The User schema supports `userName`, `externalId`, `active`, `displayName`, `name`, and `emails`. New members need a valid email in `emails`, or an email address as `userName`. Only one email may be primary. The optional Enterprise User extension supports `employeeNumber`, `costCenter`, `organization`, `division`, `department`, and `manager` metadata. These attributes do not grant workspace roles or team access.
+
+The service supports User list/create/get/replace/PATCH/delete, discovery at `ServiceProviderConfig`, `ResourceTypes`, and `Schemas`, and equality filters on `userName`, `externalId`, `id`, and `active`. Pagination uses `startIndex` and `count`, with at most 100 results per request. A count of zero returns totals without users. Attribute and subattribute projections use `attributes` or `excludedAttributes`.
+
+PATCH supports atomic `add`, `replace`, and `remove` operations on the documented attributes. Email value paths can select by type or primary status, such as `emails[type eq "work"].value`. Passwords, Groups, Bulk, sorting, and HTTP ETags are not supported. A failed operation leaves the resource and membership unchanged; clients should retrieve a resource again after a concurrent update conflict.
+
+## Membership and deactivation
+
+Provisioning creates or reuses the global account for the primary email and adds it to this workspace as a member. Existing workspace roles stay unchanged. The provider's profile is stored for this workspace; it does not overwrite an existing person's global account profile or link their single sign-on identity.
+
+Setting `active` to false removes the person's workspace membership and memberships in teams belonging to that workspace. Their global account and access to other workspaces stay intact. Reactivation restores the prior workspace role but does not restore private team memberships. Deletion deactivates and archives the provisioning resource. SCIM cannot remove the token creator or the last active admin.
+
+Member changes use the existing subscription seat reconciliation path. If synchronization fails, the Provisioning tab shows **Seat sync pending** with a retry action. Membership changes remain committed; invoices and previously paid amounts are preserved.
+
+Security audit records cover token creation/revocation and provisioning changes. Complete tokens and profile attributes are not included in the audit metadata.
+
+The protocol follows the supported subset of [RFC 7643](https://www.rfc-editor.org/rfc/rfc7643) and [RFC 7644](https://www.rfc-editor.org/rfc/rfc7644). Provider-specific certification is separate from local protocol validation.

@@ -4,6 +4,10 @@ const SIGN_IN_ERROR_MESSAGES = {
   oauth_failed: "We couldn’t complete sign-in. Please try again.",
   oauth_cancelled: "Sign-in was cancelled. Please try again when you’re ready.",
   oauth_expired: "Your sign-in attempt expired. Please start again.",
+  sso_failed: "Workspace SSO sign-in failed. Please try again.",
+  sso_expired: "Your SSO sign-in attempt expired. Please start again.",
+  sso_link_required:
+    "Sign in to your existing account, then continue with workspace SSO.",
 } as const;
 
 export const getSignInErrorMessage = (error?: string) => {

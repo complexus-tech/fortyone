@@ -20,7 +20,6 @@ import {
 } from "@/modules/invitations/public/server";
 import { getAutomationPreferences } from "@/lib/queries/users/automation-preferences";
 import { getUnreadNotifications } from "@/modules/notifications/queries/get-unread";
-import { getWorkspaceSettings } from "@/lib/queries/workspaces/get-settings";
 import { getMembers } from "@/lib/queries/members/get-members";
 import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
 import { getNotificationPreferences } from "@/modules/notifications/queries/get-preferences";
@@ -67,11 +66,6 @@ export const fetchNonCriticalImportantQueries = (
   queryClient.prefetchQuery({
     queryKey: notificationKeys.unread(ctx.workspaceSlug),
     queryFn: () => getUnreadNotifications(ctx),
-    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
-  });
-  queryClient.prefetchQuery({
-    queryKey: workspaceKeys.settings(ctx.workspaceSlug),
-    queryFn: () => getWorkspaceSettings(ctx),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({

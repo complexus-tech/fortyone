@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	openapiv1 "github.com/complexus-tech/projects-api/internal/generated/openapi/v1"
+	comments "github.com/complexus-tech/projects-api/internal/modules/comments/service"
 	keyresults "github.com/complexus-tech/projects-api/internal/modules/keyresults/service"
 	labels "github.com/complexus-tech/projects-api/internal/modules/labels/service"
 	objectives "github.com/complexus-tech/projects-api/internal/modules/objectives/service"
@@ -34,7 +35,7 @@ func classifyFailure(err error) *failure {
 		errors.Is(err, stories.ErrNotFound), errors.Is(err, labels.ErrNotFound),
 		errors.Is(err, states.ErrNotFound), errors.Is(err, sprints.ErrNotFound),
 		errors.Is(err, objectives.ErrNotFound), errors.Is(err, keyresults.ErrNotFound),
-		errors.Is(err, outboundwebhooksdomain.ErrEndpointNotFound):
+		errors.Is(err, outboundwebhooksdomain.ErrEndpointNotFound), errors.Is(err, comments.ErrNotFound):
 		return &failure{http.StatusNotFound, "resource_not_found", "The requested resource was not found."}
 	case errors.Is(err, stories.ErrStoryReadForbidden),
 		errors.Is(err, stories.ErrStoryMutationForbidden),
@@ -42,7 +43,7 @@ func classifyFailure(err error) *failure {
 		errors.Is(err, authorization.ErrInsufficientWorkspaceRole),
 		errors.Is(err, sprints.ErrForbidden), errors.Is(err, objectives.ErrForbidden),
 		errors.Is(err, keyresults.ErrForbidden),
-		errors.Is(err, outboundwebhooksdomain.ErrEndpointOwnerInactive):
+		errors.Is(err, outboundwebhooksdomain.ErrEndpointOwnerInactive), errors.Is(err, comments.ErrForbidden):
 		return &failure{http.StatusForbidden, "access_denied", "The credential is not allowed to perform this operation."}
 	case errors.Is(err, stories.ErrInvalidStoryReadScope), errors.Is(err, stories.ErrInvalidStoryReadQuery),
 		errors.Is(err, labels.ErrInvalidPagination), errors.Is(err, sprints.ErrInvalid),
@@ -63,9 +64,9 @@ func classifyFailure(err error) *failure {
 		errors.Is(err, stories.ErrMayaAssignmentRequiresDeliveryDate),
 		errors.Is(err, outboundwebhooksdomain.ErrInvalidEndpoint),
 		errors.Is(err, outboundwebhooksdomain.ErrInvalidSubscription),
-		errors.Is(err, outboundwebhooksdomain.ErrInvalidEventType):
+		errors.Is(err, outboundwebhooksdomain.ErrInvalidEventType), errors.Is(err, comments.ErrInvalidComment), errors.Is(err, comments.ErrInvalidMention):
 		return &failure{http.StatusBadRequest, "invalid_request", "The request is invalid."}
-	case errors.Is(err, stories.ErrStoryChanged),
+	case errors.Is(err, stories.ErrStoryChanged), errors.Is(err, comments.ErrCreationConflict),
 		errors.Is(err, outboundwebhooksdomain.ErrEndpointConflict), errors.Is(err, outboundwebhooksdomain.ErrEndpointDisabled):
 		return &failure{http.StatusConflict, "resource_conflict", "The resource changed or is not in the required state."}
 	default:

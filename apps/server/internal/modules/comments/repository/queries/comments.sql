@@ -49,17 +49,20 @@ WITH scoped_story AS (
       )
 )
 INSERT INTO public.story_comments (
+    comment_id,
     content,
     story_id,
     commenter_id,
     parent_id
 )
 SELECT
+    COALESCE(CAST(sqlc.narg(creation_id) AS uuid), gen_random_uuid()),
     sqlc.arg(content),
     scoped_story.id,
     sqlc.arg(actor_id),
     sqlc.narg(parent_id)
 FROM scoped_story
+ON CONFLICT (comment_id) DO NOTHING
 RETURNING
     comment_id,
     story_id,
@@ -68,6 +71,30 @@ RETURNING
     content,
     created_at,
     updated_at;
+
+-- name: GetCommentCreationForActor :one
+SELECT comment.comment_id, comment.story_id, comment.parent_id, comment.commenter_id,
+       comment.content, comment.created_at, comment.updated_at
+FROM public.story_comments AS comment
+INNER JOIN public.stories AS story ON story.id = comment.story_id
+INNER JOIN public.workspaces AS workspace
+    ON workspace.workspace_id = story.workspace_id AND workspace.deleted_at IS NULL
+INNER JOIN public.users AS actor_user
+    ON actor_user.user_id = sqlc.arg(actor_id) AND actor_user.is_active = TRUE
+WHERE comment.comment_id = sqlc.arg(creation_id)
+  AND comment.story_id = sqlc.arg(story_id)
+  AND comment.commenter_id = sqlc.arg(actor_id)
+  AND story.workspace_id = sqlc.arg(workspace_id)
+  AND story.deleted_at IS NULL
+  AND (CAST(sqlc.arg(team_access_unrestricted) AS boolean)
+       OR story.team_id = ANY(CAST(sqlc.arg(allowed_team_ids) AS uuid[])))
+  AND ((CAST(sqlc.arg(system_actor) AS boolean) AND actor_user.is_system = TRUE)
+       OR (NOT CAST(sqlc.arg(system_actor) AS boolean) AND EXISTS (
+           SELECT 1 FROM public.workspace_members AS member
+           INNER JOIN public.team_members AS team_member
+               ON team_member.team_id = story.team_id AND team_member.user_id = member.user_id
+           WHERE member.workspace_id = story.workspace_id AND member.user_id = actor_user.user_id
+       )));
 
 -- name: UpdateCommentForAuthor :one
 UPDATE public.story_comments AS comment

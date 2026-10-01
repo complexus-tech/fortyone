@@ -15,6 +15,9 @@ type ActorScope struct {
 }
 
 type CreateCommand struct {
+	// CreationID makes an external creation safe to retry. Callers derive it
+	// from their scoped source identity; ordinary comments leave it unset.
+	CreationID       *uuid.UUID
 	WorkspaceID      uuid.UUID
 	StoryID          uuid.UUID
 	ParentID         *uuid.UUID

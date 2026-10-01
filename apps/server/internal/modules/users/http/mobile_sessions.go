@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/google/uuid"
 	"net/http"
 	"regexp"
 	"time"
@@ -171,6 +172,8 @@ func (h *Handlers) ExchangeMobile(ctx context.Context, w http.ResponseWriter, r 
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 	expiresAt := time.Now().Add(SessionDuration)
+	record.Session.SessionID = uuid.New()
+	record.Session.ExpiresAt = expiresAt.UTC()
 	// Preserve the authorization's epoch. A concurrent revocation must not be
 	// bypassed by minting a session at a newer epoch after this check.
 	if err := h.cache.Set(ctx, cache.AuthSessionCacheKey(token), record.Session, SessionDuration); err != nil {

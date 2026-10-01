@@ -159,6 +159,7 @@ export type DetailedStory = {
 };
 
 export type NewStory = Partial<DetailedStory> & {
+  customFieldValues?: { fieldId: string; value: string | null }[];
   /** Stable client operation key used to make retried creates idempotent. */
   idempotencyKey?: string;
   labelIds?: string[];

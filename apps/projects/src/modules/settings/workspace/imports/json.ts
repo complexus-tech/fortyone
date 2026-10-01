@@ -15,6 +15,14 @@ import {
   normalizeImportTaskLinks,
 } from "./schema";
 import { inferImportMapping, mapRowsToImportTasks } from "./csv";
+import { readWorkExport } from "./backup-format";
+import { enrichVendorExport } from "./vendor-exports";
+import {
+  readTrelloCustomFields,
+  readTrelloCardValues,
+  readTrelloComments,
+  createTrelloChecklistTasks,
+} from "./trello-details";
 
 const MAX_COLUMNS = 75;
 const MAX_CELL_CHARACTERS = 20_000;
@@ -400,6 +408,8 @@ const createTrelloImportDraft = ({
 
   const sourceIdCounts = new Map<string, number>();
   const archivedTaskSourceIds: string[] = [];
+  const customFieldSource = readTrelloCustomFields(board, boardSourceId);
+  const sourceComments = readTrelloComments(board);
   let nestedChecklistItemCount = 0;
   let truncatedDescriptionCount = 0;
   const tasks: ImportTask[] = table.sourceRecords.map((card, index) => {
@@ -479,6 +489,8 @@ const createTrelloImportDraft = ({
 
     return {
       sourceId,
+      comments: sourceComments.byCardId.get(sourceIdBase) ?? [],
+      customFieldValues: readTrelloCardValues(card, customFieldSource.fields),
       title:
         normalizeText(card.name, 255) || `Untitled Trello card ${index + 1}`,
       description: fullDescription.slice(0, MAX_CELL_CHARACTERS),
@@ -508,9 +520,18 @@ const createTrelloImportDraft = ({
     };
   });
 
-  const commentCount = getRecordArray(board.actions).filter(
-    (action) => action.type === "commentCard",
-  ).length;
+  const childTasks = tasks.flatMap((parent) =>
+    createTrelloChecklistTasks(
+      parent,
+      checklistsByCardSourceId.get(parent.sourceId) ?? [],
+    ),
+  );
+  const archivedParents = new Set(archivedTaskSourceIds);
+  for (const child of childTasks)
+    if (child.parentSourceId && archivedParents.has(child.parentSourceId))
+      archivedTaskSourceIds.push(child.sourceId);
+  const expandedTasks = [...tasks, ...childTasks];
+  const retainedTasks = expandedTasks.slice(0, IMPORT_MAX_TASKS);
   const warnings = [
     ...(cardRecords.length > IMPORT_MAX_TASKS
       ? [
@@ -532,16 +553,28 @@ const createTrelloImportDraft = ({
           `${truncatedDescriptionCount} Trello card descriptions were shortened to fit the import limit.`,
         ]
       : []),
-    ...(commentCount > 0
+    "Exported comments retain their source author and date as attribution. The importing member remains the FortyOne audit author.",
+    "Attachment URLs are linked only. Binary files are not copied; continued access depends on the source provider.",
+    ...(sourceComments.omitted
       ? [
-          `${formatEntityCount(commentCount, "Trello card comment")} cannot be imported because comment activity is not supported yet.`,
+          `${sourceComments.omitted} comments lacked an ID or content, or exceeded 5000 comments per card, and could not be preserved.`,
+        ]
+      : []),
+    ...(customFieldSource.unsupported
+      ? [
+          `${customFieldSource.unsupported} custom field definitions have unsupported or incomplete source types.`,
+        ]
+      : []),
+    ...(expandedTasks.length > IMPORT_MAX_TASKS
+      ? [
+          `The file contains more than ${IMPORT_MAX_TASKS} cards and checklist tasks. Split the export to preserve the remaining work.`,
         ]
       : []),
   ];
   const analysis: ImportAnalysis = {
     sourceType: "json",
     sourceNamespace,
-    summary: `Found ${formatEntityCount(tasks.length, "Trello card")}, ${formatEntityCount(people.length, "member")}, ${formatEntityCount(labels.length, "label")}, and ${formatEntityCount(nestedChecklistItemCount, "checklist item")}. Checklist items stay with their parent cards.`,
+    summary: `Found ${formatEntityCount(tasks.length, "Trello card")}, ${formatEntityCount(people.length, "member")}, ${formatEntityCount(labels.length, "label")}, and ${formatEntityCount(nestedChecklistItemCount, "checklist item")}. Checklist items become native child tasks under their parent cards.`,
     warnings,
     mapping: null,
     teams,
@@ -551,11 +584,12 @@ const createTrelloImportDraft = ({
     objectives: [],
     keyResults: [],
     sprints: [],
-    tasks,
+    tasks: retainedTasks,
   };
 
   return {
     ...analysis,
+    customFields: customFieldSource.fields,
     columns: table.columns,
     fileHash,
     fileName,
@@ -578,6 +612,8 @@ export const createJsonImportDraft = ({
   text: string;
 }): ImportDraft => {
   const value = parseJson(text);
+  const backup = readWorkExport(value, { fileHash, fileName });
+  if (backup) return backup;
   if (!Array.isArray(value) && !isRecord(value)) {
     throw new Error("The JSON file must contain an object or array.");
   }
@@ -625,5 +661,5 @@ export const createJsonImportDraft = ({
     tasks,
   };
 
-  return { ...analysis, columns, fileHash, fileName, rows };
+  return enrichVendorExport({ ...analysis, columns, fileHash, fileName, rows });
 };

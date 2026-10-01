@@ -19,7 +19,11 @@ export const useUpdateStateMutation = () => {
     }: {
       stateId: string;
       payload: UpdateState;
-    }) => updateStateAction(stateId, payload, workspaceSlug),
+    }) =>
+      updateStateAction(stateId, payload, workspaceSlug).then((response) => {
+        if (response.error?.message) throw new Error(response.error.message);
+        return response;
+      }),
 
     onMutate: (newState) => {
       const previousStates = queryClient.getQueryData<State[]>(
@@ -60,7 +64,7 @@ export const useUpdateStateMutation = () => {
           context.previousStates,
         );
       }
-      toast.error("Failed to update link", {
+      toast.error("Failed to update status", {
         description: error.message || "Your changes were not saved",
         action: {
           label: "Retry",
@@ -73,10 +77,7 @@ export const useUpdateStateMutation = () => {
         queryKey: statusKeys.lists(workspaceSlug),
       });
     },
-    onSuccess: (res) => {
-      if (res.error?.message) {
-        throw new Error(res.error.message);
-      }
+    onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: statusKeys.lists(workspaceSlug),
       });

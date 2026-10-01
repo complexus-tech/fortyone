@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { cn } from "lib";
 import { Box, Button, Flex, Popover, Text } from "ui";
 import type { FilterButtonProps } from "./types";
 
@@ -9,6 +10,7 @@ export const FilterButton = ({
   text,
   popover,
   showLabel = true,
+  compact = false,
 }: FilterButtonProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -22,19 +24,25 @@ export const FilterButton = ({
       <Popover onOpenChange={setIsOpen} open={isOpen}>
         <Popover.Trigger asChild>
           <Button
-            className="min-w-28 justify-between rounded-xl md:h-[2.3rem]"
+            aria-label={`${label}: ${text}`}
+            className={cn(
+              "justify-between rounded-xl md:h-[2.3rem]",
+              compact ? "min-w-0 px-2 xl:px-3" : "min-w-28",
+            )}
             color="tertiary"
             variant="outline"
           >
             <Flex align="center" gap={2}>
               {icon}
-              <span>{text}</span>
+              <span className={compact ? "hidden xl:inline" : undefined}>
+                {text}
+              </span>
             </Flex>
           </Button>
         </Popover.Trigger>
         <Popover.Content
           align="end"
-          className="bg-opacity-80 dark:bg-opacity-80 mr-0 w-92 pb-2.5"
+          className="mr-0 max-h-[var(--radix-popover-content-available-height)] w-92 max-w-[calc(100vw-2rem)] overflow-y-auto pb-2.5"
         >
           {popover}
         </Popover.Content>

@@ -3,3 +3,26 @@
 //   sqlc v1.31.1
 
 package storyreadsql
+
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
+
+type StoryImportReceipt struct {
+	WorkspaceID     uuid.UUID
+	TeamID          uuid.UUID
+	CreationKey     string
+	Provider        string
+	SourceDigest    string
+	SourceNamespace *string
+	SourceKey       string
+	StoryID         *uuid.UUID
+	Created         bool
+	ErrorCode       *string
+	ErrorMessage    *string
+	SourceMetadata  []byte
+	Attempts        int32
+	UpdatedAt       time.Time
+}

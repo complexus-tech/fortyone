@@ -8,6 +8,8 @@ import { importLabels } from "./import-labels";
 import { importSprints } from "./import-sprints";
 import { importStories } from "./import-stories";
 import { importRelationships } from "./import-relationships";
+import { importCustomFields } from "./import-custom-fields";
+import { importComments } from "./import-comments";
 
 export type {
   ImportRunResult,
@@ -47,6 +49,7 @@ export const runImport = async (
     context,
     objectives,
   );
+  const fields = await importCustomFields(input, selection, teams, people);
   const stories = await importStories(
     input,
     selection,
@@ -56,14 +59,25 @@ export const runImport = async (
     objectives,
     labels,
     sprints,
+    fields,
   );
+  const comments = await importComments(input, stories);
   const relationships = await importRelationships(input, stories);
 
   const created = stories.allResults.filter((item) => item.created).length;
   const failed = stories.allResults.filter(
     (item) => item.error !== null,
   ).length;
+  if (!stories.paused && failed === 0 && fields.getUnresolvedValues() === 0)
+    await fields.finalizeArchives();
   return {
+    ...comments,
+    createdCustomFields: fields.createdFields,
+    unresolvedCustomFieldValues: fields.getUnresolvedValues(),
+    customFieldIssues: fields.issues,
+    paused: stories.paused,
+    sourceWarnings: input.draft.warnings,
+    remainingTasks: stories.preparedTasks.length - stories.allResults.length,
     created,
     failed,
     items: stories.allResults,

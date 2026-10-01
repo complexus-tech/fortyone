@@ -17,13 +17,13 @@ import {
 
 export const TEAM_MENU_PAGE_SIZE = 15;
 
-export const useTeams = () => {
+export const useTeams = (enabled = true) => {
   const { data: session } = useSession();
   const { workspaceSlug } = useWorkspacePath();
   return useQuery<Team[]>({
     queryKey: teamKeys.lists(workspaceSlug),
     queryFn: () => getTeams({ session: session!, workspaceSlug }),
-    enabled: Boolean(session),
+    enabled: Boolean(session && enabled),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 10,
   });
 };

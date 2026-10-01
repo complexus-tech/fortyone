@@ -61,7 +61,11 @@ export const ImportWizardFooter = ({
     );
   } else if (
     step === WIZARD_STEP.import &&
-    (outcome?.failed ||
+    (outcome?.paused ||
+      outcome?.unresolvedComments ||
+      outcome?.unresolvedCustomFieldValues ||
+      outcome?.customFieldIssues?.length ||
+      outcome?.failed ||
       outcome?.destinationConflicts ||
       outcome?.unresolvedAssociations ||
       outcome?.unresolvedLinks ||
@@ -101,7 +105,11 @@ export const ImportWizardFooter = ({
     : 0;
   const outcomeHasIssues = Boolean(
     outcome &&
-      (outcome.failed ||
+      (outcome.paused ||
+        outcome.unresolvedComments ||
+        outcome.unresolvedCustomFieldValues ||
+        outcome.customFieldIssues?.length ||
+        outcome.failed ||
         outcome.destinationConflicts ||
         outcome.unresolvedAssociations ||
         outcome.unresolvedLinks ||
@@ -134,6 +142,12 @@ export const ImportWizardFooter = ({
       <Button color="invert" disabled={!canContinue} onClick={startImport}>
         Import {selectedEntityCount}{" "}
         {selectedEntityCount === 1 ? "item" : "items"}
+      </Button>
+    );
+  } else if (outcome?.paused) {
+    footerAction = (
+      <Button color="invert" onClick={startImport}>
+        Continue safely
       </Button>
     );
   } else if (outcome && canViewOutcome) {

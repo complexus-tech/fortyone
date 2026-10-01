@@ -139,6 +139,11 @@ func optionalReportDate(query url.Values, name string, emptyIsAbsent bool) (*tim
 	if err != nil {
 		return nil, false, ErrInvalidDate
 	}
+	// A calendar end date includes that entire day. Explicit timestamps retain
+	// their exact boundary for API clients that need a narrower interval.
+	if name == "endDate" && len(value) == len(time.DateOnly) {
+		parsed = parsed.AddDate(0, 0, 1).Add(-time.Nanosecond)
+	}
 	return &parsed, true, nil
 }
 

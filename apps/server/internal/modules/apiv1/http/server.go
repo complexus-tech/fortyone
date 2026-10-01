@@ -8,6 +8,7 @@ import (
 	"time"
 
 	openapiv1 "github.com/complexus-tech/projects-api/internal/generated/openapi/v1"
+	comments "github.com/complexus-tech/projects-api/internal/modules/comments/service"
 	keyresultsdomain "github.com/complexus-tech/projects-api/internal/modules/keyresults/domain"
 	keyresults "github.com/complexus-tech/projects-api/internal/modules/keyresults/service"
 	labels "github.com/complexus-tech/projects-api/internal/modules/labels/service"
@@ -50,6 +51,14 @@ type StoryReader interface {
 
 type StoryWriter interface {
 	Create(context.Context, stories.CoreNewStory, uuid.UUID) (stories.CoreSingleStory, error)
+}
+
+type StoryPatchWriter interface {
+	UpdatePatchIfUnchanged(context.Context, uuid.UUID, uuid.UUID, time.Time, stories.StoryPatch) error
+}
+
+type CommentWriter interface {
+	CreateComment(context.Context, comments.CreateCommentCommand) (comments.CoreComment, error)
 }
 
 type StoryService interface {
@@ -121,6 +130,8 @@ type server struct {
 	teams                TeamReader
 	stories              StoryService
 	storyComments        StoryCommentReader
+	storyPatches         StoryPatchWriter
+	commentWriter        CommentWriter
 	labels               LabelReader
 	workflowStates       WorkflowStateReader
 	sprints              SprintReader
@@ -147,6 +158,8 @@ type serverConfig struct {
 	Teams         TeamReader
 	Stories       StoryService
 	StoryComments StoryCommentReader
+	StoryPatches  StoryPatchWriter
+	CommentWriter CommentWriter
 	Labels        LabelReader
 	States        WorkflowStateReader
 	Sprints       SprintReader
@@ -208,6 +221,7 @@ func newServer(config serverConfig) (*server, error) {
 	return &server{
 		log: config.Log, workspaces: config.Workspaces, teams: config.Teams,
 		stories: config.Stories, storyComments: config.StoryComments, labels: config.Labels, workflowStates: config.States, sprints: config.Sprints,
+		storyPatches: config.StoryPatches, commentWriter: config.CommentWriter,
 		objectives: config.Objectives, keyResults: config.KeyResults, idempotency: config.Idempotency,
 		webhooks: config.Webhooks, teamCursors: teamCursors, storyCursors: storyCursors, labelCursors: labelCursors,
 		workflowStateCursors: workflowStateCursors, sprintCursors: sprintCursors, objectiveCursors: objectiveCursors,

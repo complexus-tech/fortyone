@@ -170,6 +170,9 @@ func (r *repo) CreateStoryMutation(
 					return fmt.Errorf("%w: one or more labels are outside the story scope", storydomain.ErrInvalidMutation)
 				}
 			}
+			if fieldErr := r.applyCreationFields(ctx, tx, command); fieldErr != nil {
+				return fieldErr
+			}
 			if command.Activity != nil {
 				if activityErr := upsertMutationActivity(ctx, queries, *command.Activity, false); activityErr != nil {
 					return activityErr

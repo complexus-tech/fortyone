@@ -6,6 +6,7 @@ import {
 } from "nuqs";
 import { formatISO } from "date-fns";
 import type { AnalyticsFilters } from "@/modules/analytics/types";
+import { getDefaultDateRange } from "../components/filters/types";
 
 export const useAppliedFilters = () => {
   const [filters] = useQueryStates({
@@ -16,17 +17,14 @@ export const useAppliedFilters = () => {
     objectiveIds: parseAsArrayOf(parseAsString),
   });
 
+  const defaultDates = getDefaultDateRange();
   const analyticsFilters: AnalyticsFilters = {
-    startDate: filters.startDate
-      ? formatISO(filters.startDate, {
-          representation: "date",
-        })
-      : undefined,
-    endDate: filters.endDate
-      ? formatISO(filters.endDate, {
-          representation: "date",
-        })
-      : undefined,
+    startDate: formatISO(filters.startDate ?? defaultDates.startDate, {
+      representation: "date",
+    }),
+    endDate: formatISO(filters.endDate ?? defaultDates.endDate, {
+      representation: "date",
+    }),
     teamIds: filters.teamIds?.length ? filters.teamIds : undefined,
     sprintIds: filters.sprintIds?.length ? filters.sprintIds : undefined,
     objectiveIds: filters.objectiveIds?.length

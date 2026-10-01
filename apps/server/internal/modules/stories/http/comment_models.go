@@ -58,6 +58,7 @@ func toCoreNewStory(a AppNewStory, userID uuid.UUID) stories.CoreNewStory {
 		Sprint:                   a.Sprint,
 		KeyResult:                a.KeyResult,
 		LabelIDs:                 a.LabelIDs,
+		CustomFieldValues:        a.CustomFieldValues,
 		StartDate:                a.StartDate.TimePtr(),
 		EndDate:                  a.EndDate.TimePtr(),
 		Team:                     a.Team,

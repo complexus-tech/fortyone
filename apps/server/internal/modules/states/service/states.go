@@ -17,6 +17,7 @@ var (
 	ErrStatusHasStories = statesdomain.ErrStatusHasStories
 	ErrLastInCategory   = statesdomain.ErrLastInCategory
 	ErrInvalidOrder     = statesdomain.ErrInvalidOrder
+	ErrInvalidWIPLimit  = statesdomain.ErrInvalidWIPLimit
 )
 
 type Repository interface {
@@ -42,6 +43,9 @@ func (service *Service) Create(ctx context.Context, actorID, workspaceID uuid.UU
 }
 
 func (service *Service) Update(ctx context.Context, actorID, workspaceID, stateID uuid.UUID, input CoreUpdateState) (CoreState, error) {
+	if input.WIPLimit != nil && (*input.WIPLimit < 0 || *input.WIPLimit > 10000) {
+		return CoreState{}, ErrInvalidWIPLimit
+	}
 	return service.repo.Update(ctx, actorID, workspaceID, stateID, input)
 }
 

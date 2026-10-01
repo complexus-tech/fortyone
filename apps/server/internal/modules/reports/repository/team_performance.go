@@ -20,40 +20,52 @@ func (r *repo) GetTeamPerformance(ctx context.Context, workspaceID uuid.UUID, fi
 	}
 
 	workloadRows, err := r.queries.ListTeamWorkload(ctx, reportssql.ListTeamWorkloadParams{
-		WorkspaceID: query.workspaceID,
-		StartDate:   startDate,
-		EndDate:     endDate,
-		TeamIds:     query.teamIDs,
+		WorkspaceID:  query.workspaceID,
+		StartDate:    startDate,
+		EndDate:      endDate,
+		TeamIds:      query.teamIDs,
+		AssigneeIds:  query.assigneeIDs,
+		ObjectiveIds: query.objectiveIDs,
+		SprintIds:    query.sprintIDs,
 	})
 	if err != nil {
 		return reportdomain.CoreTeamPerformance{}, fmt.Errorf("selecting team workload: %w", err)
 	}
 
 	contributionRows, err := r.queries.ListMemberContributions(ctx, reportssql.ListMemberContributionsParams{
-		WorkspaceID: query.workspaceID,
-		StartDate:   startDate,
-		EndDate:     endDate,
-		TeamIds:     query.teamIDs,
+		WorkspaceID:  query.workspaceID,
+		StartDate:    startDate,
+		EndDate:      endDate,
+		TeamIds:      query.teamIDs,
+		AssigneeIds:  query.assigneeIDs,
+		ObjectiveIds: query.objectiveIDs,
+		SprintIds:    query.sprintIDs,
 	})
 	if err != nil {
 		return reportdomain.CoreTeamPerformance{}, fmt.Errorf("selecting member contributions: %w", err)
 	}
 
 	velocityRows, err := r.queries.ListTeamVelocity(ctx, reportssql.ListTeamVelocityParams{
-		WorkspaceID: query.workspaceID,
-		StartDate:   startDate,
-		EndDate:     endDate,
-		TeamIds:     query.teamIDs,
+		WorkspaceID:  query.workspaceID,
+		StartDate:    startDate,
+		EndDate:      endDate,
+		TeamIds:      query.teamIDs,
+		AssigneeIds:  query.assigneeIDs,
+		ObjectiveIds: query.objectiveIDs,
+		SprintIds:    query.sprintIDs,
 	})
 	if err != nil {
 		return reportdomain.CoreTeamPerformance{}, fmt.Errorf("selecting team velocity: %w", err)
 	}
 
 	trendRows, err := r.queries.ListWorkloadTrend(ctx, reportssql.ListWorkloadTrendParams{
-		WorkspaceID: query.workspaceID,
-		StartDate:   startDate,
-		EndDate:     endDate,
-		TeamIds:     query.teamIDs,
+		WorkspaceID:  query.workspaceID,
+		StartDate:    startDate,
+		EndDate:      endDate,
+		TeamIds:      query.teamIDs,
+		AssigneeIds:  query.assigneeIDs,
+		ObjectiveIds: query.objectiveIDs,
+		SprintIds:    query.sprintIDs,
 	})
 	if err != nil {
 		return reportdomain.CoreTeamPerformance{}, fmt.Errorf("selecting workload trend: %w", err)

@@ -70,11 +70,11 @@ export const EngagementTab = ({
           <Box className="mt-5">
             <ProviderChart data={providerChartData} />
           </Box>
-          <ProviderLegend />
+          {providerChartData.length ? <ProviderLegend /> : null}
         </ReportCard>
 
         <ReportCard>
-          <SectionTitle description="First-party workspace events captured for analytics and later questions.">
+          <SectionTitle description="Recorded workspace activity during the selected period.">
             Workspace engagement
           </SectionTitle>
           <Box className="mt-5 grid grid-cols-2 gap-3">
@@ -118,7 +118,7 @@ export const EngagementTab = ({
         </ReportCard>
         <ReportCard>
           <SectionTitle description="Where tracked activity is happening in the product.">
-            Surface mix
+            Activity by area
           </SectionTitle>
           <Box className="mt-5">
             <HorizontalBreakdownChart

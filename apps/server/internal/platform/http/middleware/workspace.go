@@ -19,6 +19,15 @@ const (
 
 var ErrWorkspaceAccessDenied = errors.New("workspace access denied")
 
+type workspaceSSORequiredError struct{}
+
+func (workspaceSSORequiredError) Error() string     { return "workspace SSO sign-in required" }
+func (workspaceSSORequiredError) ErrorCode() string { return "workspace_sso_required" }
+
+// This recovery error is valid only after current membership and all other
+// workspace session policies have passed.
+var ErrWorkspaceSSORequired = workspaceSSORequiredError{}
+
 // WorkspaceInfo is the current authoritative workspace membership bound to a
 // request after authentication.
 type WorkspaceInfo struct {
@@ -66,6 +75,9 @@ func Workspace(log *logger.Logger, resolver WorkspaceResolver) web.Middleware {
 
 			workspace, err := resolver.ResolveCurrentWorkspace(ctx, workspaceSlug, userID)
 			if err != nil {
+				if errors.Is(err, ErrWorkspaceSSORequired) {
+					return web.RespondError(ctx, w, err, http.StatusForbidden)
+				}
 				if errors.Is(err, ErrWorkspaceAccessDenied) {
 					return web.RespondError(ctx, w, errors.New("access denied"), http.StatusNotFound)
 				}

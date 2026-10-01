@@ -81,6 +81,9 @@ func (s *Service) createWithOptions(ctx context.Context, ns CoreNewStory, worksp
 		}
 	}
 	mutationRepo, useTypedMutation := s.mutationRepository()
+	if len(ns.CustomFieldValues) > 0 && !useTypedMutation {
+		return CoreSingleStory{}, fmt.Errorf("%w: atomic custom field creation is unavailable", ErrInvalidStoryMutation)
+	}
 	var scope storydomain.MutationScope
 	var mutationPreconditions storydomain.MutationPreconditions
 	if useTypedMutation {
@@ -199,6 +202,7 @@ func (s *Service) createWithOptions(ctx context.Context, ns CoreNewStory, worksp
 		}
 		result, mutationErr := mutationRepo.CreateStoryMutation(ctx, storydomain.CreateStoryCommand{
 			Scope: scope, Story: story, LabelIDs: ns.LabelIDs, Event: event, Activity: activity,
+			CustomFieldValues: ns.CustomFieldValues,
 		})
 		if mutationErr != nil {
 			err = mapStoryMutationError(mutationErr)

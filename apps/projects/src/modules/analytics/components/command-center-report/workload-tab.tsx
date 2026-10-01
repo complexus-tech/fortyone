@@ -50,7 +50,7 @@ const WorkloadMemberRow = ({ member }: { member: MemberWorkload }) => {
               {formatNumber(member.estimateTotal)} complexity
             </Text>
             <Text color="muted">
-              {formatNumber(member.completedStories)} completed
+              {formatNumber(member.completedStories)} completed overall
             </Text>
           </Flex>
         </Box>
@@ -75,7 +75,7 @@ const TeamWorkloadRow = ({ team }: { team: TeamWorkloadSummary }) => {
   const { withWorkspace } = useWorkspacePath();
 
   return (
-    <Link href={withWorkspace(`/teams/${team.teamId}`)}>
+    <Link href={withWorkspace(`/teams/${team.teamId}/stories`)}>
       <Flex
         align="center"
         className="border-border hover:bg-surface-muted/60 gap-3 border-b-[0.5px] px-1 py-2.5 transition last:border-b-0"
@@ -126,7 +126,7 @@ export const WorkloadTab = ({
     <Box className="space-y-5">
       <Box className="grid gap-5 @6xl:grid-cols-2">
         <ReportCard>
-          <SectionTitle description="Open and overdue work by assignee.">
+          <SectionTitle description="Current unfinished and overdue work by assignee, including older work.">
             Workload by person
           </SectionTitle>
           <Box className="mt-5">

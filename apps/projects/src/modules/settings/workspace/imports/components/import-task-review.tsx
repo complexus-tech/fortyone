@@ -107,7 +107,7 @@ export const ImportTaskReview = ({
                       )}
                       disabled={isExcluded}
                       hasError={titleMissing}
-                      maxLength={255}
+                      maxLength={task.canonical ? 500 : 255}
                       onChange={(event) => {
                         updateTaskTitle(taskIndex, event.target.value);
                       }}

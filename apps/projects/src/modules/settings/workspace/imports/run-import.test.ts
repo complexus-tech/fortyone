@@ -259,6 +259,70 @@ beforeEach(() => {
 });
 
 describe("multi-entity import runner", () => {
+  it("retains a partial receipt and reuses source keys after an uncertain batch commit", async () => {
+    buildRequestsMock.mockImplementation((request) =>
+      request.items.map((item) => ({ ...request, items: [item] })),
+    );
+    const committed = new Map<string, string>();
+    let interrupted = false;
+    importStoriesBatchMock.mockImplementation(async (request) => {
+      const sourceKey = request.items[0].sourceKey;
+      const created = !committed.has(sourceKey);
+      if (created) committed.set(sourceKey, `confirmed-${committed.size + 1}`);
+      if (sourceKey === "second" && !interrupted) {
+        interrupted = true;
+        throw new Error("Connection lost after commit");
+      }
+      return {
+        data: {
+          counts: {
+            total: 1,
+            created: Number(created),
+            replayed: Number(!created),
+            failed: 0,
+          },
+          items: [
+            {
+              sourceKey,
+              storyId: committed.get(sourceKey)!,
+              created,
+              error: null,
+            },
+          ],
+        },
+      };
+    });
+    const input = {
+      draft: draft({
+        tasks: [
+          task("first", "First"),
+          task("second", "Second"),
+          task("third", "Third"),
+        ],
+      }),
+      selectedTaskIndexes: new Set([0, 1, 2]),
+    };
+    const partial = await run(input);
+    expect(partial).toMatchObject({
+      created: 1,
+      remainingTasks: 2,
+      paused: "Connection lost after commit",
+    });
+    const continued = await run(input);
+    expect(continued).toMatchObject({
+      created: 1,
+      replayed: 2,
+      remainingTasks: 0,
+      paused: null,
+    });
+    expect(committed.size).toBe(3);
+    expect(
+      importStoriesBatchMock.mock.calls.map(
+        ([request]) => request.items[0].sourceKey,
+      ),
+    ).toEqual(["first", "second", "first", "second", "third"]);
+  });
+
   it("finishes parent collaborator reconciliation before importing its child", async () => {
     let releaseCollaborators = () => {};
     const collaboratorsFinished = new Promise<void>((resolve) => {

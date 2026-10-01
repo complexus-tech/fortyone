@@ -5,6 +5,7 @@ import (
 	"errors"
 	"regexp"
 	"strings"
+	"time"
 	"unicode"
 	"unicode/utf8"
 
@@ -30,8 +31,19 @@ type AppStoryImportRequest struct {
 }
 
 type AppStoryImportItem struct {
-	SourceKey string      `json:"sourceKey" validate:"required"`
-	Story     AppNewStory `json:"story" validate:"required"`
+	SourceKey      string                        `json:"sourceKey" validate:"required"`
+	Story          AppNewStory                   `json:"story" validate:"required"`
+	SourceMetadata *AppStoryImportSourceMetadata `json:"sourceMetadata,omitempty"`
+}
+
+type AppStoryImportSourceMetadata struct {
+	CreatedAt                *time.Time `json:"createdAt,omitempty"`
+	UpdatedAt                *time.Time `json:"updatedAt,omitempty"`
+	CompletedAt              *time.Time `json:"completedAt,omitempty"`
+	ArchivedAt               *time.Time `json:"archivedAt,omitempty"`
+	EstimateValue            *int16     `json:"estimateValue,omitempty"`
+	EstimatedDurationMinutes *int32     `json:"estimatedDurationMinutes,omitempty"`
+	MinimumFocusBlockMinutes *int32     `json:"minimumFocusBlockMinutes,omitempty"`
 }
 
 func (request AppStoryImportRequest) Validate() error {

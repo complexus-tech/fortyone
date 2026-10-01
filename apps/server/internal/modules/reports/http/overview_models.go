@@ -18,11 +18,12 @@ type AppWorkspaceOverview struct {
 }
 
 type AppWorkspaceMetrics struct {
-	TotalStories     int `json:"totalStories"`
-	CompletedStories int `json:"completedStories"`
-	ActiveObjectives int `json:"activeObjectives"`
-	ActiveSprints    int `json:"activeSprints"`
-	TotalTeamMembers int `json:"totalTeamMembers"`
+	TotalStories      int `json:"totalStories"`
+	CompletedStories  int `json:"completedStories"`
+	CompletedInPeriod int `json:"completedInPeriod"`
+	ActiveObjectives  int `json:"activeObjectives"`
+	ActiveSprints     int `json:"activeSprints"`
+	TotalTeamMembers  int `json:"totalTeamMembers"`
 }
 
 type AppCompletionTrendPoint struct {
@@ -49,11 +50,12 @@ func toAppWorkspaceOverview(overview reports.CoreWorkspaceOverview) AppWorkspace
 
 func toAppWorkspaceMetrics(metrics reports.CoreWorkspaceMetrics) AppWorkspaceMetrics {
 	return AppWorkspaceMetrics{
-		TotalStories:     metrics.TotalStories,
-		CompletedStories: metrics.CompletedStories,
-		ActiveObjectives: metrics.ActiveObjectives,
-		ActiveSprints:    metrics.ActiveSprints,
-		TotalTeamMembers: metrics.TotalTeamMembers,
+		TotalStories:      metrics.TotalStories,
+		CompletedStories:  metrics.CompletedStories,
+		CompletedInPeriod: metrics.CompletedInPeriod,
+		ActiveObjectives:  metrics.ActiveObjectives,
+		ActiveSprints:     metrics.ActiveSprints,
+		TotalTeamMembers:  metrics.TotalTeamMembers,
 	}
 }
 

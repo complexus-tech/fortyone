@@ -29,6 +29,7 @@ export const SidebarProvider = ({ children }: { children: ReactNode }) => {
   const [isCollapsed, setIsCollapsed] = useLocalStorage(
     `sidebar:${workspaceSlug}:collapsed`,
     true,
+    { initializeWithValue: false },
   );
   const toggleSidebar = useCallback(() => {
     setIsCollapsed((currentValue) => !currentValue);

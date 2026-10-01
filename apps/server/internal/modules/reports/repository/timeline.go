@@ -22,6 +22,7 @@ func (r *repo) GetTimelineTrends(ctx context.Context, workspaceID uuid.UUID, fil
 	storyRows, err := r.queries.ListStoryCompletionTimeline(ctx, reportssql.ListStoryCompletionTimelineParams{
 		WorkspaceID: query.workspaceID, StartDate: startDate, EndDate: endDate,
 		TeamIds: query.teamIDs, SprintIds: query.sprintIDs, ObjectiveIds: query.objectiveIDs,
+		AssigneeIds: query.assigneeIDs,
 	})
 	if err != nil {
 		return reportdomain.CoreTimelineTrends{}, fmt.Errorf("selecting story completion timeline: %w", err)
@@ -34,8 +35,9 @@ func (r *repo) GetTimelineTrends(ctx context.Context, workspaceID uuid.UUID, fil
 		return reportdomain.CoreTimelineTrends{}, fmt.Errorf("selecting objective progress timeline: %w", err)
 	}
 	velocityRows, err := r.queries.ListTeamVelocityTimeline(ctx, reportssql.ListTeamVelocityTimelineParams{
-		WorkspaceID: query.workspaceID, StartDate: startDate, EndDate: endDate,
+		WorkspaceID: query.workspaceID, StartDate: &startDate, EndDate: &endDate,
 		TeamIds: query.teamIDs, SprintIds: query.sprintIDs, ObjectiveIds: query.objectiveIDs,
+		AssigneeIds: query.assigneeIDs,
 	})
 	if err != nil {
 		return reportdomain.CoreTimelineTrends{}, fmt.Errorf("selecting team velocity timeline: %w", err)
@@ -43,6 +45,7 @@ func (r *repo) GetTimelineTrends(ctx context.Context, workspaceID uuid.UUID, fil
 	metricRows, err := r.queries.ListKeyMetricsTimeline(ctx, reportssql.ListKeyMetricsTimelineParams{
 		WorkspaceID: query.workspaceID, StartDate: startDate, EndDate: endDate,
 		TeamIds: query.teamIDs, SprintIds: query.sprintIDs, ObjectiveIds: query.objectiveIDs,
+		AssigneeIds: query.assigneeIDs,
 	})
 	if err != nil {
 		return reportdomain.CoreTimelineTrends{}, fmt.Errorf("selecting key metrics timeline: %w", err)
@@ -67,7 +70,7 @@ func (r *repo) GetTimelineTrends(ctx context.Context, workspaceID uuid.UUID, fil
 		result.TeamVelocity[i] = reportdomain.CoreTeamVelocityPoint{Date: row.Date, TeamID: row.TeamID, Velocity: int(row.Velocity)}
 	}
 	for i, row := range metricRows {
-		result.KeyMetricsTrend[i] = reportdomain.CoreKeyMetricsTrendPoint{Date: row.Date, ActiveUsers: int(row.ActiveUsers), StoriesPerDay: row.StoriesPerDay, AvgCycleTime: row.AvgCycleTime}
+		result.KeyMetricsTrend[i] = reportdomain.CoreKeyMetricsTrendPoint{Date: row.Date, ActiveUsers: int(row.ActiveUsers), StoriesPerDay: row.StoriesPerDay, AvgCycleTime: row.AvgCycleTime, CycleTimeSamples: int(row.CycleTimeSamples)}
 	}
 
 	return result, nil

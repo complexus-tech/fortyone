@@ -26,7 +26,7 @@ import type {
   MemberWorkloadChartRow,
   ProgressChartRow,
 } from "./model";
-import { EmptyState } from "./primitives";
+import { ChartLegend, EmptyState } from "./primitives";
 
 type ProgressSegmentShapeProps = {
   fill?: string;
@@ -48,7 +48,7 @@ const ChartTooltip = ({
   }
 
   return (
-    <Box className="border-border/60 bg-surface-elevated z-50 min-w-36 rounded-lg border-[0.5px] px-3 py-3 text-[0.95rem] shadow-lg">
+    <Box className="border-border/60 bg-surface-elevated z-50 min-w-36 rounded-lg border-[0.5px] px-3 py-3 text-base shadow-lg">
       <Text className="mb-2 font-medium">{label}</Text>
       <Box className="space-y-1">
         {payload.map((entry) => (
@@ -80,40 +80,60 @@ export const DeliveryChart = ({
   }
 
   return (
-    <ResponsiveContainer height={300} width="100%">
-      <LineChart
-        data={data}
-        margin={{ top: 8, right: 12, left: -18, bottom: 4 }}
-      >
-        <CartesianGrid
-          stroke={gridStroke}
-          strokeDasharray="3 3"
-          vertical={false}
-        />
-        <XAxis dataKey="date" tick={{ fontSize: 12 }} tickLine={false} />
-        <YAxis axisLine={false} tick={{ fontSize: 12 }} tickLine={false} />
-        <Tooltip
-          content={<ChartTooltip />}
-          cursor={{ stroke: getCursorFill(resolvedTheme), strokeWidth: 1 }}
-        />
-        <Line
-          dataKey="total"
-          dot={false}
-          name="Total"
-          stroke={chartPalette.primary}
-          strokeWidth={2.5}
-          type="monotone"
-        />
-        <Line
-          dataKey="completed"
-          dot={false}
-          name="Completed"
-          stroke={chartPalette.success}
-          strokeWidth={2.5}
-          type="monotone"
-        />
-      </LineChart>
-    </ResponsiveContainer>
+    <Box>
+      <ResponsiveContainer height={280} width="100%">
+        <LineChart
+          accessibilityLayer
+          data={data}
+          margin={{ top: 8, right: 12, left: -18, bottom: 4 }}
+        >
+          <CartesianGrid
+            stroke={gridStroke}
+            strokeDasharray="3 3"
+            vertical={false}
+          />
+          <XAxis
+            dataKey="date"
+            tick={{ fontSize: 14, fill: "var(--color-text-muted)" }}
+            tickLine={false}
+          />
+          <YAxis
+            allowDecimals={false}
+            axisLine={false}
+            tick={{ fontSize: 14, fill: "var(--color-text-muted)" }}
+            tickLine={false}
+          />
+          <Tooltip
+            content={<ChartTooltip />}
+            cursor={{ stroke: getCursorFill(resolvedTheme), strokeWidth: 1 }}
+          />
+          <Line
+            dataKey="total"
+            dot={false}
+            isAnimationActive={false}
+            name="Created"
+            stroke={chartPalette.primary}
+            strokeWidth={2.5}
+            type="linear"
+          />
+          <Line
+            dataKey="completed"
+            dot={false}
+            isAnimationActive={false}
+            name="Completed"
+            stroke={chartPalette.success}
+            strokeWidth={2.5}
+            type="linear"
+          />
+        </LineChart>
+      </ResponsiveContainer>
+      <ChartLegend
+        items={[
+          { color: chartPalette.primary, label: "Created" },
+          { color: chartPalette.success, label: "Completed" },
+        ]}
+      />
+    </Box>
   );
 };
 
@@ -126,36 +146,56 @@ export const WorkloadChart = ({ data }: { data: MemberWorkloadChartRow[] }) => {
   }
 
   return (
-    <ResponsiveContainer height={300} width="100%">
-      <BarChart
-        data={data}
-        margin={{ top: 8, right: 12, left: -18, bottom: 4 }}
-      >
-        <CartesianGrid
-          stroke={gridStroke}
-          strokeDasharray="3 3"
-          vertical={false}
-        />
-        <XAxis dataKey="name" tick={{ fontSize: 12 }} tickLine={false} />
-        <YAxis axisLine={false} tick={{ fontSize: 12 }} tickLine={false} />
-        <Tooltip
-          content={<ChartTooltip />}
-          cursor={{ fill: getCursorFill(resolvedTheme) }}
-        />
-        <Bar
-          dataKey="open"
-          fill={chartPalette.primary}
-          name="Open"
-          radius={[4, 4, 0, 0]}
-        />
-        <Bar
-          dataKey="overdue"
-          fill={chartPalette.danger}
-          name="Overdue"
-          radius={[4, 4, 0, 0]}
-        />
-      </BarChart>
-    </ResponsiveContainer>
+    <Box>
+      <ResponsiveContainer height={280} width="100%">
+        <BarChart
+          accessibilityLayer
+          data={data}
+          margin={{ top: 8, right: 12, left: -18, bottom: 4 }}
+        >
+          <CartesianGrid
+            stroke={gridStroke}
+            strokeDasharray="3 3"
+            vertical={false}
+          />
+          <XAxis
+            dataKey="name"
+            tick={{ fontSize: 14, fill: "var(--color-text-muted)" }}
+            tickLine={false}
+          />
+          <YAxis
+            allowDecimals={false}
+            axisLine={false}
+            tick={{ fontSize: 14, fill: "var(--color-text-muted)" }}
+            tickLine={false}
+          />
+          <Tooltip
+            content={<ChartTooltip />}
+            cursor={{ fill: getCursorFill(resolvedTheme) }}
+          />
+          <Bar
+            dataKey="open"
+            fill={chartPalette.primary}
+            isAnimationActive={false}
+            name="Open"
+            radius={[4, 4, 0, 0]}
+          />
+          <Bar
+            dataKey="overdue"
+            fill={chartPalette.danger}
+            isAnimationActive={false}
+            name="Overdue"
+            radius={[4, 4, 0, 0]}
+          />
+        </BarChart>
+      </ResponsiveContainer>
+      <ChartLegend
+        items={[
+          { color: chartPalette.primary, label: "Open" },
+          { color: chartPalette.danger, label: "Overdue" },
+        ]}
+      />
+    </Box>
   );
 };
 
@@ -185,8 +225,12 @@ export const HorizontalBreakdownChart = ({
   }
 
   return (
-    <ResponsiveContainer height={height} width="100%">
+    <ResponsiveContainer
+      height={Math.min(height, Math.max(112, chartData.length * 44 + 48))}
+      width="100%"
+    >
       <BarChart
+        accessibilityLayer
         data={chartData}
         layout="vertical"
         margin={{ top: 4, right: 20, left: -18, bottom: 4 }}
@@ -197,16 +241,22 @@ export const HorizontalBreakdownChart = ({
           strokeDasharray="3 3"
         />
         <XAxis
+          allowDecimals={false}
           axisLine={false}
-          tick={{ fontSize: 12 }}
+          tick={{ fontSize: 14, fill: "var(--color-text-muted)" }}
           tickLine={false}
           type="number"
         />
         <YAxis
           axisLine={false}
           dataKey="name"
-          tick={{ fontSize: 12 }}
-          tickFormatter={(value: string) => truncateChartLabel(value, 20)}
+          tick={{ fontSize: 14, fill: "var(--color-text-muted)" }}
+          tickFormatter={(value: string) =>
+            truncateChartLabel(
+              value,
+              Math.max(10, Math.floor((labelWidth - 12) / 7)),
+            )
+          }
           tickLine={false}
           type="category"
           width={labelWidth}
@@ -215,7 +265,13 @@ export const HorizontalBreakdownChart = ({
           content={<ChartTooltip />}
           cursor={{ fill: getCursorFill(resolvedTheme) }}
         />
-        <Bar dataKey="value" name="Count" radius={[0, 4, 4, 0]}>
+        <Bar
+          dataKey="value"
+          isAnimationActive={false}
+          maxBarSize={28}
+          name="Count"
+          radius={[0, 4, 4, 0]}
+        >
           {chartData.map((entry) => (
             <Cell fill={entry.color} key={entry.name} />
           ))}
@@ -244,6 +300,7 @@ export const ProgressComparisonChart = ({
   return (
     <ResponsiveContainer height={height} width="100%">
       <BarChart
+        accessibilityLayer
         data={data}
         layout="vertical"
         margin={{ top: 4, right: 20, left: -18, bottom: 4 }}
@@ -254,15 +311,16 @@ export const ProgressComparisonChart = ({
           strokeDasharray="3 3"
         />
         <XAxis
+          allowDecimals={false}
           axisLine={false}
-          tick={{ fontSize: 12 }}
+          tick={{ fontSize: 14, fill: "var(--color-text-muted)" }}
           tickLine={false}
           type="number"
         />
         <YAxis
           axisLine={false}
           dataKey="label"
-          tick={{ fontSize: 12 }}
+          tick={{ fontSize: 14, fill: "var(--color-text-muted)" }}
           tickFormatter={(value: string) => truncateChartLabel(value, 20)}
           tickLine={false}
           type="category"
@@ -275,6 +333,8 @@ export const ProgressComparisonChart = ({
         <Bar
           dataKey="completed"
           fill={chartPalette.success}
+          isAnimationActive={false}
+          maxBarSize={28}
           name="Completed"
           shape={
             <ProgressSegmentShape
@@ -287,6 +347,8 @@ export const ProgressComparisonChart = ({
         <Bar
           dataKey="remaining"
           fill={chartPalette.primary}
+          isAnimationActive={false}
+          maxBarSize={28}
           name="Remaining"
           shape={
             <ProgressSegmentShape

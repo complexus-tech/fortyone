@@ -1,6 +1,9 @@
 import { z } from "zod";
+import type { CustomFieldIconKey } from "@/modules/custom-fields/public/types";
 
-export const IMPORT_MAX_TASKS = 500;
+// Requests remain bounded to 50 items. This limits the review graph, not a
+// single write, so larger exports can progress through resumable chunks.
+export const IMPORT_MAX_TASKS = 10_000;
 export const IMPORT_MAX_TEAMS = 100;
 export const IMPORT_MAX_PEOPLE = 500;
 export const IMPORT_MAX_LABELS = 500;
@@ -353,7 +356,40 @@ export type ImportTaskAssociationType = z.infer<
   typeof importTaskAssociationTypeSchema
 >;
 export type ImportTaskLink = z.infer<typeof importTaskLinkSchema>;
-export type ImportTask = z.infer<typeof importTaskSchema>;
+export type ImportSourceComment = {
+  sourceId: string;
+  content: string;
+  authorName: string;
+  createdAt: string | null;
+  parentSourceId?: string | null;
+  format?: "html" | "text";
+};
+export type ImportSourceCustomField = {
+  sourceId: string;
+  name: string;
+  type: "text" | "number" | "money" | "date" | "select" | "person";
+  icon?: CustomFieldIconKey | null;
+  currency: string | null;
+  teamSourceId: string | null;
+  options: { sourceId: string; name: string; archivedAt?: string | null }[];
+  archivedAt?: string | null;
+};
+export type ImportTask = z.infer<typeof importTaskSchema> & {
+  comments?: ImportSourceComment[];
+  customFieldValues?: { sourceFieldId: string; value: string | null }[];
+  canonical?: {
+    title?: string;
+    description?: string;
+    descriptionHTML?: string;
+    estimateValue?: number | null;
+    estimatedDurationMinutes?: number | null;
+    minimumFocusBlockMinutes?: number | null;
+    createdAt?: string | null;
+    updatedAt?: string | null;
+    completedAt?: string | null;
+    archivedAt?: string | null;
+  };
+};
 export type ImportTeam = z.infer<typeof importTeamSchema>;
 
 export const normalizeImportTaskLinks = (
@@ -391,15 +427,17 @@ export const createEmptyImportEntityCollections = (): Pick<
 export type ImportDraftSourceMetadata = {
   archivedTaskSourceIds: string[];
   nestedChecklistItemCount: number;
-  platform: "trello";
+  platform: "trello" | "shortcut" | "plane";
 };
 
-export type ImportDraft = ImportAnalysis & {
+export type ImportDraft = Omit<ImportAnalysis, "tasks"> & {
+  tasks: ImportTask[];
   columns: string[];
   fileHash: string;
   fileName: string;
   rows: Record<string, string>[];
   sourceMetadata?: ImportDraftSourceMetadata;
+  customFields?: ImportSourceCustomField[];
 };
 
 export type ImportAnalysisStartResponse = {

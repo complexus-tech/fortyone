@@ -1,0 +1,1 @@
+export { templateConfiguration } from "../schemas";

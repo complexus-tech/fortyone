@@ -21,30 +21,39 @@ func (r *repo) GetWorkspaceOverview(ctx context.Context, workspaceID uuid.UUID, 
 	}
 
 	metrics, err := r.queries.GetWorkspaceMetrics(ctx, reportssql.GetWorkspaceMetricsParams{
-		WorkspaceID: query.workspaceID,
-		StartDate:   startDate,
-		EndDate:     endDate,
-		TeamIds:     query.teamIDs,
+		WorkspaceID:  query.workspaceID,
+		StartDate:    startDate,
+		EndDate:      endDate,
+		TeamIds:      query.teamIDs,
+		AssigneeIds:  query.assigneeIDs,
+		ObjectiveIds: query.objectiveIDs,
+		SprintIds:    query.sprintIDs,
 	})
 	if err != nil {
 		return reports.CoreWorkspaceOverview{}, fmt.Errorf("selecting workspace metrics: %w", err)
 	}
 
 	completionRows, err := r.queries.ListWorkspaceCompletionTrend(ctx, reportssql.ListWorkspaceCompletionTrendParams{
-		WorkspaceID: query.workspaceID,
-		StartDate:   startDate,
-		EndDate:     endDate,
-		TeamIds:     query.teamIDs,
+		WorkspaceID:  query.workspaceID,
+		StartDate:    startDate,
+		EndDate:      endDate,
+		TeamIds:      query.teamIDs,
+		AssigneeIds:  query.assigneeIDs,
+		ObjectiveIds: query.objectiveIDs,
+		SprintIds:    query.sprintIDs,
 	})
 	if err != nil {
 		return reports.CoreWorkspaceOverview{}, fmt.Errorf("selecting workspace completion trend: %w", err)
 	}
 
 	velocityRows, err := r.queries.ListWorkspaceVelocityTrend(ctx, reportssql.ListWorkspaceVelocityTrendParams{
-		WorkspaceID: query.workspaceID,
-		StartDate:   startDate,
-		EndDate:     endDate,
-		TeamIds:     query.teamIDs,
+		WorkspaceID:  query.workspaceID,
+		StartDate:    &startDate,
+		EndDate:      &endDate,
+		TeamIds:      query.teamIDs,
+		AssigneeIds:  query.assigneeIDs,
+		ObjectiveIds: query.objectiveIDs,
+		SprintIds:    query.sprintIDs,
 	})
 	if err != nil {
 		return reports.CoreWorkspaceOverview{}, fmt.Errorf("selecting workspace velocity trend: %w", err)
@@ -72,11 +81,12 @@ func (r *repo) GetWorkspaceOverview(ctx context.Context, workspaceID uuid.UUID, 
 		ReportDate:  time.Now().UTC(),
 		Filters:     filters,
 		Metrics: reports.CoreWorkspaceMetrics{
-			TotalStories:     int(metrics.TotalStories),
-			CompletedStories: int(metrics.CompletedStories),
-			ActiveObjectives: int(metrics.ActiveObjectives),
-			ActiveSprints:    int(metrics.ActiveSprints),
-			TotalTeamMembers: int(metrics.TotalTeamMembers),
+			TotalStories:      int(metrics.TotalStories),
+			CompletedStories:  int(metrics.CompletedStories),
+			CompletedInPeriod: int(metrics.CompletedInPeriod),
+			ActiveObjectives:  int(metrics.ActiveObjectives),
+			ActiveSprints:     int(metrics.ActiveSprints),
+			TotalTeamMembers:  int(metrics.TotalTeamMembers),
 		},
 		CompletionTrend: completionTrend,
 		VelocityTrend:   velocityTrend,

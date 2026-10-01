@@ -8,10 +8,11 @@ import (
 )
 
 var (
-	ErrCodeExists     = errors.New("team code already exists")
-	ErrMemberExists   = errors.New("user is already a member of this team")
-	ErrNotFound       = errors.New("team not found")
-	ErrMemberNotFound = errors.New("team member not found")
+	ErrCodeExists       = errors.New("team code already exists")
+	ErrMemberExists     = errors.New("user is already a member of this team")
+	ErrNotFound         = errors.New("team not found")
+	ErrMemberNotFound   = errors.New("team member not found")
+	ErrInvalidStoryTerm = errors.New("work naming must be story, task, issue, ticket, work item, deal, or the workspace default")
 )
 
 type Team struct {
@@ -25,6 +26,22 @@ type Team struct {
 	UpdatedAt      time.Time
 	MemberCount    int
 	SprintsEnabled bool
+	StoryTerm      *string
+	// Patch flags distinguish omitted values from an explicit reset.
+	StoryTermSet bool
+	IsPrivateSet bool
+}
+
+func ValidStoryTerm(term *string) bool {
+	if term == nil {
+		return true
+	}
+	switch *term {
+	case "story", "task", "issue", "ticket", "work item", "deal":
+		return true
+	default:
+		return false
+	}
 }
 
 type ListFilter struct {

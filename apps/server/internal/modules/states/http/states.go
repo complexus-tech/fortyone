@@ -142,7 +142,7 @@ func stateErrorStatus(err error) int {
 	switch {
 	case errors.Is(err, states.ErrNotFound):
 		return http.StatusNotFound
-	case errors.Is(err, states.ErrNoFields), errors.Is(err, states.ErrInvalidOrder):
+	case errors.Is(err, states.ErrNoFields), errors.Is(err, states.ErrInvalidOrder), errors.Is(err, states.ErrInvalidWIPLimit):
 		return http.StatusBadRequest
 	case errors.Is(err, states.ErrStatusHasStories), errors.Is(err, states.ErrLastInCategory):
 		return http.StatusConflict

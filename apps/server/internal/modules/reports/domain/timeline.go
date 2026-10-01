@@ -33,8 +33,9 @@ type CoreTeamVelocityPoint struct {
 }
 
 type CoreKeyMetricsTrendPoint struct {
-	Date          time.Time `json:"date" db:"date"`
-	ActiveUsers   int       `json:"activeUsers" db:"active_users"`
-	StoriesPerDay float64   `json:"storiesPerDay" db:"stories_per_day"`
-	AvgCycleTime  float64   `json:"avgCycleTime" db:"avg_cycle_time"`
+	Date             time.Time `json:"date" db:"date"`
+	ActiveUsers      int       `json:"activeUsers" db:"active_users"`
+	StoriesPerDay    float64   `json:"storiesPerDay" db:"stories_per_day"`
+	AvgCycleTime     float64   `json:"avgCycleTime" db:"avg_cycle_time"`
+	CycleTimeSamples int       `json:"cycleTimeSamples" db:"cycle_time_samples"`
 }

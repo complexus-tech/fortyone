@@ -3,7 +3,7 @@
 import { createJsonImportDraft } from "./json";
 
 describe("work import JSON parsing", () => {
-  it("normalizes a Trello board into one task per card", () => {
+  it("preserves Trello cards and creates native checklist children", () => {
     const draft = createJsonImportDraft({
       fileHash: "trello-hash",
       fileName: "product-board.json",
@@ -98,10 +98,10 @@ describe("work import JSON parsing", () => {
     expect(draft.sourceType).toBe("json");
     expect(draft.sourceNamespace).toBe("trello:board:board%2F65");
     expect(draft.summary).toBe(
-      "Found 1 Trello card, 2 members, 1 label, and 2 checklist items. Checklist items stay with their parent cards.",
+      "Found 1 Trello card, 2 members, 1 label, and 2 checklist items. Checklist items become native child tasks under their parent cards.",
     );
     expect(draft.mapping).toBeNull();
-    expect(draft.tasks).toEqual([
+    expect(draft.tasks.slice(0, 1)).toMatchObject([
       {
         assigneeEmail: null,
         assigneeName: "Owner One",
@@ -138,7 +138,19 @@ describe("work import JSON parsing", () => {
         title: "Migrate the product board",
       },
     ]);
-    expect(draft.tasks).toHaveLength(1);
+    expect(draft.tasks).toHaveLength(3);
+    expect(draft.tasks.slice(1)).toMatchObject([
+      {
+        title: "Export cards",
+        parentSourceId: "65a1234567890abcdef12345",
+        statusCategory: "completed",
+      },
+      {
+        title: "Verify owners",
+        parentSourceId: "65a1234567890abcdef12345",
+        statusCategory: "unstarted",
+      },
+    ]);
     expect(draft.rows[0]?.idMembers).toBe('["member-1","member-2"]');
     expect(draft.rows[0]?.labels).toBe(
       '[{"color":"red","id":"label-high","name":"P1 High"}]',
@@ -179,14 +191,17 @@ describe("work import JSON parsing", () => {
       keyResults: [],
       sprints: [],
       sourceMetadata: {
-        archivedTaskSourceIds: ["65a1234567890abcdef12345"],
+        archivedTaskSourceIds: draft.tasks.map((task) => task.sourceId),
         nestedChecklistItemCount: 2,
         platform: "trello",
       },
     });
-    expect(draft.warnings).toEqual([
-      "1 Trello card comment cannot be imported because comment activity is not supported yet.",
-    ]);
+    expect(draft.warnings).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("Attachment URLs are linked only"),
+        expect.stringContaining("1 comments lacked an ID"),
+      ]),
+    );
   });
 
   it("maps a generic JSON task collection and keeps nested values reviewable", () => {

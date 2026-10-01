@@ -117,6 +117,69 @@ func (e ObjectiveScheduleStatus) Valid() bool {
 	}
 }
 
+// Defines values for UpdateStoryRequestClearFields.
+const (
+	UpdateStoryRequestClearFieldsAssigneeId  UpdateStoryRequestClearFields = "assigneeId"
+	UpdateStoryRequestClearFieldsDescription UpdateStoryRequestClearFields = "description"
+	UpdateStoryRequestClearFieldsEndDate     UpdateStoryRequestClearFields = "endDate"
+	UpdateStoryRequestClearFieldsKeyResultId UpdateStoryRequestClearFields = "keyResultId"
+	UpdateStoryRequestClearFieldsObjectiveId UpdateStoryRequestClearFields = "objectiveId"
+	UpdateStoryRequestClearFieldsParentId    UpdateStoryRequestClearFields = "parentId"
+	UpdateStoryRequestClearFieldsSprintId    UpdateStoryRequestClearFields = "sprintId"
+	UpdateStoryRequestClearFieldsStartDate   UpdateStoryRequestClearFields = "startDate"
+)
+
+// Valid indicates whether the value is a known member of the UpdateStoryRequestClearFields enum.
+func (e UpdateStoryRequestClearFields) Valid() bool {
+	switch e {
+	case UpdateStoryRequestClearFieldsAssigneeId:
+		return true
+	case UpdateStoryRequestClearFieldsDescription:
+		return true
+	case UpdateStoryRequestClearFieldsEndDate:
+		return true
+	case UpdateStoryRequestClearFieldsKeyResultId:
+		return true
+	case UpdateStoryRequestClearFieldsObjectiveId:
+		return true
+	case UpdateStoryRequestClearFieldsParentId:
+		return true
+	case UpdateStoryRequestClearFieldsSprintId:
+		return true
+	case UpdateStoryRequestClearFieldsStartDate:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UpdateStoryRequestPriority.
+const (
+	UpdateStoryRequestPriorityHigh       UpdateStoryRequestPriority = "High"
+	UpdateStoryRequestPriorityLow        UpdateStoryRequestPriority = "Low"
+	UpdateStoryRequestPriorityMedium     UpdateStoryRequestPriority = "Medium"
+	UpdateStoryRequestPriorityNoPriority UpdateStoryRequestPriority = "No Priority"
+	UpdateStoryRequestPriorityUrgent     UpdateStoryRequestPriority = "Urgent"
+)
+
+// Valid indicates whether the value is a known member of the UpdateStoryRequestPriority enum.
+func (e UpdateStoryRequestPriority) Valid() bool {
+	switch e {
+	case UpdateStoryRequestPriorityHigh:
+		return true
+	case UpdateStoryRequestPriorityLow:
+		return true
+	case UpdateStoryRequestPriorityMedium:
+		return true
+	case UpdateStoryRequestPriorityNoPriority:
+		return true
+	case UpdateStoryRequestPriorityUrgent:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for WebhookEndpointStatus.
 const (
 	WebhookEndpointStatusActive   WebhookEndpointStatus = "active"
@@ -309,6 +372,69 @@ func (e ComponentsResourcesObjectiveScheduleStatus) Valid() bool {
 	}
 }
 
+// Defines values for ComponentsResourcesUpdateStoryRequestClearFields.
+const (
+	ComponentsResourcesUpdateStoryRequestClearFieldsAssigneeId  ComponentsResourcesUpdateStoryRequestClearFields = "assigneeId"
+	ComponentsResourcesUpdateStoryRequestClearFieldsDescription ComponentsResourcesUpdateStoryRequestClearFields = "description"
+	ComponentsResourcesUpdateStoryRequestClearFieldsEndDate     ComponentsResourcesUpdateStoryRequestClearFields = "endDate"
+	ComponentsResourcesUpdateStoryRequestClearFieldsKeyResultId ComponentsResourcesUpdateStoryRequestClearFields = "keyResultId"
+	ComponentsResourcesUpdateStoryRequestClearFieldsObjectiveId ComponentsResourcesUpdateStoryRequestClearFields = "objectiveId"
+	ComponentsResourcesUpdateStoryRequestClearFieldsParentId    ComponentsResourcesUpdateStoryRequestClearFields = "parentId"
+	ComponentsResourcesUpdateStoryRequestClearFieldsSprintId    ComponentsResourcesUpdateStoryRequestClearFields = "sprintId"
+	ComponentsResourcesUpdateStoryRequestClearFieldsStartDate   ComponentsResourcesUpdateStoryRequestClearFields = "startDate"
+)
+
+// Valid indicates whether the value is a known member of the ComponentsResourcesUpdateStoryRequestClearFields enum.
+func (e ComponentsResourcesUpdateStoryRequestClearFields) Valid() bool {
+	switch e {
+	case ComponentsResourcesUpdateStoryRequestClearFieldsAssigneeId:
+		return true
+	case ComponentsResourcesUpdateStoryRequestClearFieldsDescription:
+		return true
+	case ComponentsResourcesUpdateStoryRequestClearFieldsEndDate:
+		return true
+	case ComponentsResourcesUpdateStoryRequestClearFieldsKeyResultId:
+		return true
+	case ComponentsResourcesUpdateStoryRequestClearFieldsObjectiveId:
+		return true
+	case ComponentsResourcesUpdateStoryRequestClearFieldsParentId:
+		return true
+	case ComponentsResourcesUpdateStoryRequestClearFieldsSprintId:
+		return true
+	case ComponentsResourcesUpdateStoryRequestClearFieldsStartDate:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ComponentsResourcesUpdateStoryRequestPriority.
+const (
+	ComponentsResourcesUpdateStoryRequestPriorityHigh       ComponentsResourcesUpdateStoryRequestPriority = "High"
+	ComponentsResourcesUpdateStoryRequestPriorityLow        ComponentsResourcesUpdateStoryRequestPriority = "Low"
+	ComponentsResourcesUpdateStoryRequestPriorityMedium     ComponentsResourcesUpdateStoryRequestPriority = "Medium"
+	ComponentsResourcesUpdateStoryRequestPriorityNoPriority ComponentsResourcesUpdateStoryRequestPriority = "No Priority"
+	ComponentsResourcesUpdateStoryRequestPriorityUrgent     ComponentsResourcesUpdateStoryRequestPriority = "Urgent"
+)
+
+// Valid indicates whether the value is a known member of the ComponentsResourcesUpdateStoryRequestPriority enum.
+func (e ComponentsResourcesUpdateStoryRequestPriority) Valid() bool {
+	switch e {
+	case ComponentsResourcesUpdateStoryRequestPriorityHigh:
+		return true
+	case ComponentsResourcesUpdateStoryRequestPriorityLow:
+		return true
+	case ComponentsResourcesUpdateStoryRequestPriorityMedium:
+		return true
+	case ComponentsResourcesUpdateStoryRequestPriorityNoPriority:
+		return true
+	case ComponentsResourcesUpdateStoryRequestPriorityUrgent:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ComponentsResourcesWorkflowStateCategory.
 const (
 	ComponentsResourcesWorkflowStateCategoryBacklog   ComponentsResourcesWorkflowStateCategory = "backlog"
@@ -429,6 +555,14 @@ type CommentPageResponse struct {
 // CommentResponse defines model for CommentResponse.
 type CommentResponse struct {
 	Data ComponentsResourcesComment `json:"data"`
+}
+
+// CreateCommentRequest defines model for CreateCommentRequest.
+type CreateCommentRequest struct {
+	// ClientRequestId Stable identifier generated by the client for this comment. Retry with the same content and parent; reuse with different content returns 409.
+	ClientRequestId openapi_types.UUID  `json:"clientRequestId"`
+	Content         string              `json:"content"`
+	ParentId        *openapi_types.UUID `json:"parentId,omitempty"`
 }
 
 // CreateStoryRequest defines model for CreateStoryRequest.
@@ -685,6 +819,32 @@ type TeamPageResponse struct {
 	Meta ComponentsCommonPageMeta  `json:"meta"`
 }
 
+// UpdateStoryRequest defines model for UpdateStoryRequest.
+type UpdateStoryRequest struct {
+	AssigneeId            *openapi_types.UUID `json:"assigneeId,omitempty"`
+	AutoSchedulingEnabled *bool               `json:"autoSchedulingEnabled,omitempty"`
+
+	// ClearFields Clear optional fields. A field cannot be both set and cleared.
+	ClearFields       *[]UpdateStoryRequestClearFields `json:"clearFields,omitempty"`
+	Description       *string                          `json:"description,omitempty"`
+	EndDate           *time.Time                       `json:"endDate,omitempty"`
+	ExpectedUpdatedAt time.Time                        `json:"expectedUpdatedAt"`
+	KeyResultId       *openapi_types.UUID              `json:"keyResultId,omitempty"`
+	ObjectiveId       *openapi_types.UUID              `json:"objectiveId,omitempty"`
+	ParentId          *openapi_types.UUID              `json:"parentId,omitempty"`
+	Priority          *UpdateStoryRequestPriority      `json:"priority,omitempty"`
+	SprintId          *openapi_types.UUID              `json:"sprintId,omitempty"`
+	StartDate         *time.Time                       `json:"startDate,omitempty"`
+	StatusId          *openapi_types.UUID              `json:"statusId,omitempty"`
+	Title             *string                          `json:"title,omitempty"`
+}
+
+// UpdateStoryRequestClearFields defines model for UpdateStoryRequest.ClearFields.
+type UpdateStoryRequestClearFields string
+
+// UpdateStoryRequestPriority defines model for UpdateStoryRequest.Priority.
+type UpdateStoryRequestPriority string
+
 // WebhookEndpoint defines model for WebhookEndpoint.
 type WebhookEndpoint struct {
 	ConsecutiveFailures    int                                  `json:"consecutiveFailures"`
@@ -814,6 +974,14 @@ type ComponentsResourcesCommentPageResponse struct {
 // ComponentsResourcesCommentResponse defines model for components_resources_CommentResponse.
 type ComponentsResourcesCommentResponse struct {
 	Data ComponentsResourcesComment `json:"data"`
+}
+
+// ComponentsResourcesCreateCommentRequest defines model for components_resources_CreateCommentRequest.
+type ComponentsResourcesCreateCommentRequest struct {
+	// ClientRequestId Stable identifier generated by the client for this comment. Retry with the same content and parent; reuse with different content returns 409.
+	ClientRequestId openapi_types.UUID  `json:"clientRequestId"`
+	Content         string              `json:"content"`
+	ParentId        *openapi_types.UUID `json:"parentId,omitempty"`
 }
 
 // ComponentsResourcesCreateStoryRequest defines model for components_resources_CreateStoryRequest.
@@ -1023,6 +1191,32 @@ type ComponentsResourcesTeamPageResponse struct {
 	Data []ComponentsResourcesTeam `json:"data"`
 	Meta ComponentsCommonPageMeta  `json:"meta"`
 }
+
+// ComponentsResourcesUpdateStoryRequest defines model for components_resources_UpdateStoryRequest.
+type ComponentsResourcesUpdateStoryRequest struct {
+	AssigneeId            *openapi_types.UUID `json:"assigneeId,omitempty"`
+	AutoSchedulingEnabled *bool               `json:"autoSchedulingEnabled,omitempty"`
+
+	// ClearFields Clear optional fields. A field cannot be both set and cleared.
+	ClearFields       *[]ComponentsResourcesUpdateStoryRequestClearFields `json:"clearFields,omitempty"`
+	Description       *string                                             `json:"description,omitempty"`
+	EndDate           *time.Time                                          `json:"endDate,omitempty"`
+	ExpectedUpdatedAt time.Time                                           `json:"expectedUpdatedAt"`
+	KeyResultId       *openapi_types.UUID                                 `json:"keyResultId,omitempty"`
+	ObjectiveId       *openapi_types.UUID                                 `json:"objectiveId,omitempty"`
+	ParentId          *openapi_types.UUID                                 `json:"parentId,omitempty"`
+	Priority          *ComponentsResourcesUpdateStoryRequestPriority      `json:"priority,omitempty"`
+	SprintId          *openapi_types.UUID                                 `json:"sprintId,omitempty"`
+	StartDate         *time.Time                                          `json:"startDate,omitempty"`
+	StatusId          *openapi_types.UUID                                 `json:"statusId,omitempty"`
+	Title             *string                                             `json:"title,omitempty"`
+}
+
+// ComponentsResourcesUpdateStoryRequestClearFields defines model for ComponentsResourcesUpdateStoryRequest.ClearFields.
+type ComponentsResourcesUpdateStoryRequestClearFields string
+
+// ComponentsResourcesUpdateStoryRequestPriority defines model for ComponentsResourcesUpdateStoryRequest.Priority.
+type ComponentsResourcesUpdateStoryRequestPriority string
 
 // ComponentsResourcesWorkflowState defines model for components_resources_WorkflowState.
 type ComponentsResourcesWorkflowState struct {
@@ -1323,6 +1517,12 @@ type ListWebhookEndpointsParams struct {
 // CreateStoryJSONRequestBody defines body for CreateStory for application/json ContentType.
 type CreateStoryJSONRequestBody = ComponentsResourcesCreateStoryRequest
 
+// UpdateStoryJSONRequestBody defines body for UpdateStory for application/json ContentType.
+type UpdateStoryJSONRequestBody = ComponentsResourcesUpdateStoryRequest
+
+// CreateStoryCommentJSONRequestBody defines body for CreateStoryComment for application/json ContentType.
+type CreateStoryCommentJSONRequestBody = ComponentsResourcesCreateCommentRequest
+
 // CreateWebhookEndpointJSONRequestBody defines body for CreateWebhookEndpoint for application/json ContentType.
 type CreateWebhookEndpointJSONRequestBody = ComponentsWebhooksCreateWebhookEndpointRequest
 
@@ -1361,9 +1561,15 @@ type ServerInterface interface {
 	// GetStory Get story
 	// (GET /api/v1/workspaces/{workspaceId}/stories/{storyId})
 	GetStory(w http.ResponseWriter, r *http.Request, workspaceId ComponentsCommonWorkspaceId, storyId ComponentsCommonStoryId)
+	// UpdateStory Update story
+	// (PATCH /api/v1/workspaces/{workspaceId}/stories/{storyId})
+	UpdateStory(w http.ResponseWriter, r *http.Request, workspaceId ComponentsCommonWorkspaceId, storyId ComponentsCommonStoryId)
 	// ListStoryComments List comments
 	// (GET /api/v1/workspaces/{workspaceId}/stories/{storyId}/comments)
 	ListStoryComments(w http.ResponseWriter, r *http.Request, workspaceId ComponentsCommonWorkspaceId, storyId ComponentsCommonStoryId, params ListStoryCommentsParams)
+	// CreateStoryComment Create comment
+	// (POST /api/v1/workspaces/{workspaceId}/stories/{storyId}/comments)
+	CreateStoryComment(w http.ResponseWriter, r *http.Request, workspaceId ComponentsCommonWorkspaceId, storyId ComponentsCommonStoryId)
 	// GetStoryComment Get comment
 	// (GET /api/v1/workspaces/{workspaceId}/stories/{storyId}/comments/{commentId})
 	GetStoryComment(w http.ResponseWriter, r *http.Request, workspaceId ComponentsCommonWorkspaceId, storyId ComponentsCommonStoryId, commentId ComponentsCommonCommentId)
@@ -1935,6 +2141,41 @@ func (siw *ServerInterfaceWrapper) GetStory(w http.ResponseWriter, r *http.Reque
 	handler.ServeHTTP(w, r)
 }
 
+// UpdateStory operation middleware
+func (siw *ServerInterfaceWrapper) UpdateStory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId ComponentsCommonWorkspaceId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", r.PathValue("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "storyId" -------------
+	var storyId ComponentsCommonStoryId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "storyId", r.PathValue("storyId"), &storyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "storyId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateStory(w, r, workspaceId, storyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListStoryComments operation middleware
 func (siw *ServerInterfaceWrapper) ListStoryComments(w http.ResponseWriter, r *http.Request) {
 
@@ -1990,6 +2231,41 @@ func (siw *ServerInterfaceWrapper) ListStoryComments(w http.ResponseWriter, r *h
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListStoryComments(w, r, workspaceId, storyId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateStoryComment operation middleware
+func (siw *ServerInterfaceWrapper) CreateStoryComment(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId ComponentsCommonWorkspaceId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", r.PathValue("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "storyId" -------------
+	var storyId ComponentsCommonStoryId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "storyId", r.PathValue("storyId"), &storyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "storyId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateStoryComment(w, r, workspaceId, storyId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2448,7 +2724,9 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/workspaces/{workspaceId}/stories", wrapper.ListStories)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/workspaces/{workspaceId}/stories", wrapper.CreateStory)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/workspaces/{workspaceId}/stories/{storyId}", wrapper.GetStory)
+	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/api/v1/workspaces/{workspaceId}/stories/{storyId}", wrapper.UpdateStory)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/workspaces/{workspaceId}/stories/{storyId}/comments", wrapper.ListStoryComments)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/workspaces/{workspaceId}/stories/{storyId}/comments", wrapper.CreateStoryComment)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/workspaces/{workspaceId}/stories/{storyId}/comments/{commentId}", wrapper.GetStoryComment)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/workspaces/{workspaceId}/teams", wrapper.ListTeams)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/workspaces/{workspaceId}/webhook-endpoints", wrapper.ListWebhookEndpoints)
@@ -4270,6 +4548,229 @@ func (response GetStory503JSONResponse) VisitGetStoryResponse(w http.ResponseWri
 	return err
 }
 
+type UpdateStoryRequestObject struct {
+	WorkspaceId ComponentsCommonWorkspaceId `json:"workspaceId"`
+	StoryId     ComponentsCommonStoryId     `json:"storyId"`
+	Body        *UpdateStoryJSONRequestBody
+}
+
+type UpdateStoryResponseObject interface {
+	VisitUpdateStoryResponse(w http.ResponseWriter) error
+}
+
+type UpdateStory204Response struct {
+}
+
+func (response UpdateStory204Response) VisitUpdateStoryResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type UpdateStory400JSONResponse struct {
+	ComponentsCommonBadRequestJSONResponse
+}
+
+func (response UpdateStory400JSONResponse) VisitUpdateStoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.XRequestID != nil {
+		w.Header().Set("X-Request-ID", fmt.Sprint(*response.Headers.XRequestID))
+	}
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateStory401JSONResponse struct {
+	ComponentsCommonUnauthorizedJSONResponse
+}
+
+func (response UpdateStory401JSONResponse) VisitUpdateStoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.XRequestID != nil {
+		w.Header().Set("X-Request-ID", fmt.Sprint(*response.Headers.XRequestID))
+	}
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateStory403JSONResponse struct {
+	ComponentsCommonForbiddenJSONResponse
+}
+
+func (response UpdateStory403JSONResponse) VisitUpdateStoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.XRequestID != nil {
+		w.Header().Set("X-Request-ID", fmt.Sprint(*response.Headers.XRequestID))
+	}
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateStory404JSONResponse struct {
+	ComponentsCommonNotFoundJSONResponse
+}
+
+func (response UpdateStory404JSONResponse) VisitUpdateStoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.XRequestID != nil {
+		w.Header().Set("X-Request-ID", fmt.Sprint(*response.Headers.XRequestID))
+	}
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateStory409JSONResponse struct {
+	ComponentsCommonConflictJSONResponse
+}
+
+func (response UpdateStory409JSONResponse) VisitUpdateStoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.XRequestID != nil {
+		w.Header().Set("X-Request-ID", fmt.Sprint(*response.Headers.XRequestID))
+	}
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateStory413JSONResponse struct {
+	ComponentsCommonRequestTooLargeJSONResponse
+}
+
+func (response UpdateStory413JSONResponse) VisitUpdateStoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.XRequestID != nil {
+		w.Header().Set("X-Request-ID", fmt.Sprint(*response.Headers.XRequestID))
+	}
+	w.WriteHeader(413)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateStory415JSONResponse struct {
+	ComponentsCommonUnsupportedMediaTypeJSONResponse
+}
+
+func (response UpdateStory415JSONResponse) VisitUpdateStoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.XRequestID != nil {
+		w.Header().Set("X-Request-ID", fmt.Sprint(*response.Headers.XRequestID))
+	}
+	w.WriteHeader(415)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateStory429JSONResponse struct {
+	ComponentsCommonRateLimitedJSONResponse
+}
+
+func (response UpdateStory429JSONResponse) VisitUpdateStoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.RateLimit != nil {
+		w.Header().Set("RateLimit", fmt.Sprint(*response.Headers.RateLimit))
+	}
+	if response.Headers.RateLimitPolicy != nil {
+		w.Header().Set("RateLimit-Policy", fmt.Sprint(*response.Headers.RateLimitPolicy))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.XRequestID != nil {
+		w.Header().Set("X-Request-ID", fmt.Sprint(*response.Headers.XRequestID))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateStory500JSONResponse struct {
+	ComponentsCommonInternalErrorJSONResponse
+}
+
+func (response UpdateStory500JSONResponse) VisitUpdateStoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.XRequestID != nil {
+		w.Header().Set("X-Request-ID", fmt.Sprint(*response.Headers.XRequestID))
+	}
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateStory503JSONResponse struct {
+	ComponentsCommonServiceUnavailableJSONResponse
+}
+
+func (response UpdateStory503JSONResponse) VisitUpdateStoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.XRequestID != nil {
+		w.Header().Set("X-Request-ID", fmt.Sprint(*response.Headers.XRequestID))
+	}
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListStoryCommentsRequestObject struct {
 	WorkspaceId ComponentsCommonWorkspaceId `json:"workspaceId"`
 	StoryId     ComponentsCommonStoryId     `json:"storyId"`
@@ -4440,6 +4941,235 @@ type ListStoryComments503JSONResponse struct {
 }
 
 func (response ListStoryComments503JSONResponse) VisitListStoryCommentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.XRequestID != nil {
+		w.Header().Set("X-Request-ID", fmt.Sprint(*response.Headers.XRequestID))
+	}
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateStoryCommentRequestObject struct {
+	WorkspaceId ComponentsCommonWorkspaceId `json:"workspaceId"`
+	StoryId     ComponentsCommonStoryId     `json:"storyId"`
+	Body        *CreateStoryCommentJSONRequestBody
+}
+
+type CreateStoryCommentResponseObject interface {
+	VisitCreateStoryCommentResponse(w http.ResponseWriter) error
+}
+
+type CreateStoryComment201JSONResponse ComponentsResourcesCommentResponse
+
+func (response CreateStoryComment201JSONResponse) VisitCreateStoryCommentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateStoryComment400JSONResponse struct {
+	ComponentsCommonBadRequestJSONResponse
+}
+
+func (response CreateStoryComment400JSONResponse) VisitCreateStoryCommentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.XRequestID != nil {
+		w.Header().Set("X-Request-ID", fmt.Sprint(*response.Headers.XRequestID))
+	}
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateStoryComment401JSONResponse struct {
+	ComponentsCommonUnauthorizedJSONResponse
+}
+
+func (response CreateStoryComment401JSONResponse) VisitCreateStoryCommentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.XRequestID != nil {
+		w.Header().Set("X-Request-ID", fmt.Sprint(*response.Headers.XRequestID))
+	}
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateStoryComment403JSONResponse struct {
+	ComponentsCommonForbiddenJSONResponse
+}
+
+func (response CreateStoryComment403JSONResponse) VisitCreateStoryCommentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.XRequestID != nil {
+		w.Header().Set("X-Request-ID", fmt.Sprint(*response.Headers.XRequestID))
+	}
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateStoryComment404JSONResponse struct {
+	ComponentsCommonNotFoundJSONResponse
+}
+
+func (response CreateStoryComment404JSONResponse) VisitCreateStoryCommentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.XRequestID != nil {
+		w.Header().Set("X-Request-ID", fmt.Sprint(*response.Headers.XRequestID))
+	}
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateStoryComment409JSONResponse struct {
+	ComponentsCommonConflictJSONResponse
+}
+
+func (response CreateStoryComment409JSONResponse) VisitCreateStoryCommentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.XRequestID != nil {
+		w.Header().Set("X-Request-ID", fmt.Sprint(*response.Headers.XRequestID))
+	}
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateStoryComment413JSONResponse struct {
+	ComponentsCommonRequestTooLargeJSONResponse
+}
+
+func (response CreateStoryComment413JSONResponse) VisitCreateStoryCommentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.XRequestID != nil {
+		w.Header().Set("X-Request-ID", fmt.Sprint(*response.Headers.XRequestID))
+	}
+	w.WriteHeader(413)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateStoryComment415JSONResponse struct {
+	ComponentsCommonUnsupportedMediaTypeJSONResponse
+}
+
+func (response CreateStoryComment415JSONResponse) VisitCreateStoryCommentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.XRequestID != nil {
+		w.Header().Set("X-Request-ID", fmt.Sprint(*response.Headers.XRequestID))
+	}
+	w.WriteHeader(415)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateStoryComment429JSONResponse struct {
+	ComponentsCommonRateLimitedJSONResponse
+}
+
+func (response CreateStoryComment429JSONResponse) VisitCreateStoryCommentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.RateLimit != nil {
+		w.Header().Set("RateLimit", fmt.Sprint(*response.Headers.RateLimit))
+	}
+	if response.Headers.RateLimitPolicy != nil {
+		w.Header().Set("RateLimit-Policy", fmt.Sprint(*response.Headers.RateLimitPolicy))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.XRequestID != nil {
+		w.Header().Set("X-Request-ID", fmt.Sprint(*response.Headers.XRequestID))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateStoryComment500JSONResponse struct {
+	ComponentsCommonInternalErrorJSONResponse
+}
+
+func (response CreateStoryComment500JSONResponse) VisitCreateStoryCommentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.XRequestID != nil {
+		w.Header().Set("X-Request-ID", fmt.Sprint(*response.Headers.XRequestID))
+	}
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateStoryComment503JSONResponse struct {
+	ComponentsCommonServiceUnavailableJSONResponse
+}
+
+func (response CreateStoryComment503JSONResponse) VisitCreateStoryCommentResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -6106,9 +6836,15 @@ type StrictServerInterface interface {
 	// GetStory Get story
 	// (GET /api/v1/workspaces/{workspaceId}/stories/{storyId})
 	GetStory(ctx context.Context, request GetStoryRequestObject) (GetStoryResponseObject, error)
+	// UpdateStory Update story
+	// (PATCH /api/v1/workspaces/{workspaceId}/stories/{storyId})
+	UpdateStory(ctx context.Context, request UpdateStoryRequestObject) (UpdateStoryResponseObject, error)
 	// ListStoryComments List comments
 	// (GET /api/v1/workspaces/{workspaceId}/stories/{storyId}/comments)
 	ListStoryComments(ctx context.Context, request ListStoryCommentsRequestObject) (ListStoryCommentsResponseObject, error)
+	// CreateStoryComment Create comment
+	// (POST /api/v1/workspaces/{workspaceId}/stories/{storyId}/comments)
+	CreateStoryComment(ctx context.Context, request CreateStoryCommentRequestObject) (CreateStoryCommentResponseObject, error)
 	// GetStoryComment Get comment
 	// (GET /api/v1/workspaces/{workspaceId}/stories/{storyId}/comments/{commentId})
 	GetStoryComment(ctx context.Context, request GetStoryCommentRequestObject) (GetStoryCommentResponseObject, error)
@@ -6423,6 +7159,40 @@ func (sh *strictHandler) GetStory(w http.ResponseWriter, r *http.Request, worksp
 	}
 }
 
+// UpdateStory operation middleware
+func (sh *strictHandler) UpdateStory(w http.ResponseWriter, r *http.Request, workspaceId ComponentsCommonWorkspaceId, storyId ComponentsCommonStoryId) {
+	var request UpdateStoryRequestObject
+
+	request.WorkspaceId = workspaceId
+	request.StoryId = storyId
+
+	var body UpdateStoryJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateStory(ctx, request.(UpdateStoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateStory")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateStoryResponseObject); ok {
+		if err := validResponse.VisitUpdateStoryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListStoryComments operation middleware
 func (sh *strictHandler) ListStoryComments(w http.ResponseWriter, r *http.Request, workspaceId ComponentsCommonWorkspaceId, storyId ComponentsCommonStoryId, params ListStoryCommentsParams) {
 	var request ListStoryCommentsRequestObject
@@ -6444,6 +7214,40 @@ func (sh *strictHandler) ListStoryComments(w http.ResponseWriter, r *http.Reques
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ListStoryCommentsResponseObject); ok {
 		if err := validResponse.VisitListStoryCommentsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateStoryComment operation middleware
+func (sh *strictHandler) CreateStoryComment(w http.ResponseWriter, r *http.Request, workspaceId ComponentsCommonWorkspaceId, storyId ComponentsCommonStoryId) {
+	var request CreateStoryCommentRequestObject
+
+	request.WorkspaceId = workspaceId
+	request.StoryId = storyId
+
+	var body CreateStoryCommentJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateStoryComment(ctx, request.(CreateStoryCommentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateStoryComment")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateStoryCommentResponseObject); ok {
+		if err := validResponse.VisitCreateStoryCommentResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -6693,111 +7497,119 @@ func (sh *strictHandler) ReplaceWebhookSubscriptions(w http.ResponseWriter, r *h
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
+	"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",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

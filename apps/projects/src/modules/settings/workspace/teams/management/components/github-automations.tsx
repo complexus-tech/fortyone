@@ -153,7 +153,7 @@ export const GitHubAutomations = () => {
   };
 
   return (
-    <Box className="border-border bg-surface mt-6 rounded-2xl border">
+    <Box className="border-border bg-surface rounded-2xl border">
       <SectionHeader
         description={`Configure how GitHub pull requests and issues move ${storyTermPlural} through this team's workflow.`}
         title="GitHub automations"

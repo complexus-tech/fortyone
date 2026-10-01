@@ -6,6 +6,7 @@ import { useLocalStorage } from "@/hooks";
 import { useStoriesFilters } from "@/components/ui/stories-filter-state";
 import type { StoriesFilter } from "@/components/ui/stories-filter-types";
 import type { StoriesLayout } from "@/components/ui";
+import type { SavedViewConfiguration } from "@/shared/story/view-configuration";
 
 type TeamOptions = {
   viewOptions: StoriesViewOptions;
@@ -13,6 +14,7 @@ type TeamOptions = {
   filters: StoriesFilter;
   setFilters: (value: StoriesFilter) => void;
   resetFilters: () => void;
+  applyView: (configuration: SavedViewConfiguration) => void;
 };
 
 const TeamOptionsContext = createContext<TeamOptions | undefined>(undefined);
@@ -47,6 +49,7 @@ export const TeamOptionsProvider = ({
   const [viewOptions, setViewOptions] = useLocalStorage<StoriesViewOptions>(
     `teams:stories:view-options:${layout}`,
     initialOptions,
+    { initializeWithValue: false },
   );
   const { filters, resetFilters, setFilters } = useStoriesFilters();
 
@@ -58,6 +61,19 @@ export const TeamOptionsProvider = ({
         filters,
         setFilters,
         resetFilters,
+        applyView: (configuration) => {
+          setFilters(configuration.filters);
+          if (configuration.layout === layout) {
+            setViewOptions(configuration.viewOptions);
+          } else {
+            // Restore the destination layout before its local preference hook
+            // reads it. The current layout keeps its own last-used options.
+            localStorage.setItem(
+              `teams:stories:view-options:${configuration.layout}`,
+              JSON.stringify(configuration.viewOptions),
+            );
+          }
+        },
       }}
     >
       {children}

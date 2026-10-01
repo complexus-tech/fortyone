@@ -15,6 +15,7 @@ type Querier interface {
 	CreateCommentForActor(ctx context.Context, arg CreateCommentForActorParams) (CreateCommentForActorRow, error)
 	DeleteCommentForAuthor(ctx context.Context, arg DeleteCommentForAuthorParams) (DeleteCommentForAuthorRow, error)
 	DeleteCommentMentionsForAuthor(ctx context.Context, arg DeleteCommentMentionsForAuthorParams) (DeleteCommentMentionsForAuthorRow, error)
+	GetCommentCreationForActor(ctx context.Context, arg GetCommentCreationForActorParams) (GetCommentCreationForActorRow, error)
 	GetCommentForWorkspace(ctx context.Context, arg GetCommentForWorkspaceParams) (GetCommentForWorkspaceRow, error)
 	InsertCommentMentionsForAuthor(ctx context.Context, arg InsertCommentMentionsForAuthorParams) (int64, error)
 	UpdateCommentForAuthor(ctx context.Context, arg UpdateCommentForAuthorParams) (UpdateCommentForAuthorRow, error)

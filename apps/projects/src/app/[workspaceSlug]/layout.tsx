@@ -15,6 +15,7 @@ import { objectiveKeys } from "@/modules/objectives/constants";
 import { getObjectiveStatuses } from "@/modules/objectives/queries/statuses";
 import { getStatuses } from "@/lib/queries/states/get-states";
 import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
+import { getWorkspaceSettings } from "@/lib/queries/workspaces/get-settings";
 import { getRunningSprints } from "@/modules/sprints/queries/get-running-sprints";
 import { Chat } from "@/components/ui/chat";
 import { WalkthroughProvider } from "@/components/walkthrough/walkthrough-provider";
@@ -27,6 +28,7 @@ import { getProfile } from "@/lib/queries/users/profile";
 import { getOnboardingTourProgress } from "@/shared/walkthrough/progress/get-progress";
 import { getCookieHeader } from "@/lib/http/header";
 import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
+import { getWorkspaceAccess } from "@/modules/auth/workspace-access";
 import { ServerSentEvents } from "../server-sent-events";
 import { fetchNonCriticalImportantQueries } from "./non-critical-important-queries";
 import { IdentifyUser } from "./identify";
@@ -57,11 +59,24 @@ export default async function RootLayout({
     redirect("/unauthorized");
   }
 
+  const access = await getWorkspaceAccess(ctx);
+  if (access === "sso-required") {
+    redirect(`/auth/sso/${encodeURIComponent(workspace.slug)}`);
+  }
+  if (access === "denied") redirect("/unauthorized");
+
   // kick off non-critical important queries without waiting for them
   const queryClient = fetchNonCriticalImportantQueries(getQueryClient(), ctx);
 
   // await critical queries
   await Promise.all([
+    // Terminology affects the shell's server-rendered text and must hydrate
+    // from the same settled snapshot on the client.
+    queryClient.prefetchQuery({
+      queryKey: workspaceKeys.settings(workspaceSlug),
+      queryFn: () => getWorkspaceSettings(ctx),
+      staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
+    }),
     queryClient.prefetchQuery({
       queryKey: teamKeys.lists(workspaceSlug),
       queryFn: () => getTeams(ctx),

@@ -34,6 +34,23 @@ func (s *Service) UpdatePatch(ctx context.Context, storyID, workspaceID uuid.UUI
 	})
 }
 
+// UpdatePatchIfUnchanged preserves the version inspected by an external client.
+// The repository checks the version again inside the mutation transaction.
+func (s *Service) UpdatePatchIfUnchanged(ctx context.Context, storyID, workspaceID uuid.UUID, expectedUpdatedAt time.Time, patch StoryPatch) error {
+	if expectedUpdatedAt.IsZero() {
+		return ErrInvalidStoryMutation
+	}
+	actor, err := auth.GetActor(ctx)
+	if err != nil {
+		return ErrStoryMutationForbidden
+	}
+	expectedUpdatedAt = expectedUpdatedAt.UTC()
+	return s.updatePatchWithOptions(ctx, storyID, workspaceID, actor.PrincipalID, patch, updateOptions{
+		publishEvents: true, enqueueGitHubSync: true, recordDescriptionUpdates: true,
+		expectedUpdatedAt: &expectedUpdatedAt, actorKind: actor.Kind,
+	})
+}
+
 // UpdateWithMediaReconciliation applies an authoritative description snapshot.
 // The caller must only use this after all editor uploads have settled. Ordinary
 // updates intentionally do not reconcile media so an older autosave that omits

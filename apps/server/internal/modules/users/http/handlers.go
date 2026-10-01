@@ -132,6 +132,16 @@ func (h *Handlers) persistSession(
 	if err != nil {
 		return err
 	}
+	if previous, ok := platformauth.GetBrowserSession(ctx); ok {
+		if previous.UserID != userID || previous.Version != version {
+			return platformauth.ErrInvalidBrowserSession
+		}
+		// Exchanging an existing cookie is not a fresh identity-provider login.
+		session.AuthenticatedAt = previous.AuthenticatedAt
+		session.SessionID = previous.SessionID
+		session.WorkspaceSSO = previous.WorkspaceSSO
+	}
+	session.ExpiresAt = expires.UTC()
 
 	return h.cache.Set(ctx, cache.AuthSessionCacheKey(token), session, ttl)
 }

@@ -1,4 +1,4 @@
-import type { ComponentProps, RefObject } from "react";
+import type { ComponentProps, RefObject, ReactNode } from "react";
 import type { Editor } from "@tiptap/core";
 import { PlusIcon } from "icons";
 import { cn } from "lib";
@@ -25,6 +25,7 @@ export const NewStoryDialogContent = <TTeam extends HeaderTeam>({
   createMore,
   currentTeam,
   currentTeamId,
+  customFields,
   deadlineSourceRef,
   descriptionEditor,
   dispatch,
@@ -62,12 +63,14 @@ export const NewStoryDialogContent = <TTeam extends HeaderTeam>({
   teamStatuses,
   teams,
   titleEditor,
+  templatePicker,
 }: {
   activeTeamId?: string;
   canUseBackgroundMaya: DialogFieldsProps["canUseBackgroundMaya"];
   createMore: boolean;
   currentTeam: TTeam | null;
   currentTeamId: DialogFieldsProps["currentTeamId"];
+  customFields?: ReactNode;
   deadlineSourceRef: DialogFieldsProps["deadlineSourceRef"];
   descriptionEditor: Editor | null;
   dispatch: DialogFieldsProps["dispatch"];
@@ -105,10 +108,11 @@ export const NewStoryDialogContent = <TTeam extends HeaderTeam>({
   teamStatuses: DialogFieldsProps["teamStatuses"];
   teams: TTeam[];
   titleEditor: Editor | null;
+  templatePicker?: ReactNode;
 }) => (
   <Dialog onOpenChange={onOpenChange} open={isOpen}>
     <Dialog.Content
-      className="overflow-visible"
+      className="mt-4 flex max-h-[calc(100dvh-2rem)] flex-col overflow-visible md:mt-[10%] md:max-h-[calc(90dvh-1rem)]"
       hideClose
       size={isExpanded ? "xl" : "lg"}
     >
@@ -123,8 +127,9 @@ export const NewStoryDialogContent = <TTeam extends HeaderTeam>({
         onToggleExpanded={onToggleExpanded}
         storyTerm={storyTerm}
         teams={teams}
+        templatePicker={templatePicker}
       />
-      <Dialog.Body className="max-h-[60dvh] !overflow-visible pt-0">
+      <Dialog.Body className="max-h-[60dvh] min-h-0 flex-1 overflow-y-auto pt-0 pb-6">
         <TextEditor
           asTitle
           className="text-2xl font-medium"
@@ -169,6 +174,7 @@ export const NewStoryDialogContent = <TTeam extends HeaderTeam>({
           strategyLinkLabel={strategyLinkLabel}
           teamStatuses={teamStatuses}
         >
+          {customFields}
           <NewStoryFigmaSource
             artifacts={figmaArtifacts}
             enabled={isOpen}
@@ -184,7 +190,7 @@ export const NewStoryDialogContent = <TTeam extends HeaderTeam>({
           />
         </NewStoryDialogFields>
       </Dialog.Body>
-      <Dialog.Footer className="flex items-center justify-between gap-2">
+      <Dialog.Footer className="flex shrink-0 items-center justify-between gap-2">
         <Text color="muted">
           <label className="flex items-center gap-2" htmlFor="more">
             Create more

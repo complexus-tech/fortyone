@@ -1,6 +1,6 @@
 import { subDays, startOfDay, endOfDay } from "date-fns";
 
-// Default date range (last 30 days) matching backend default
+// Keep the displayed range and applied report dates consistent.
 export const getDefaultDateRange = () => {
   const endDate = endOfDay(new Date());
   const startDate = startOfDay(subDays(new Date(), 30));
@@ -59,4 +59,5 @@ export type FilterButtonProps = {
   popover: React.ReactNode;
   isActive?: boolean;
   showLabel?: boolean;
+  compact?: boolean;
 };

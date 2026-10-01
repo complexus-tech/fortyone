@@ -3,6 +3,7 @@ import { Box, Button, Divider, Flex, Popover, Switch, Text, Select } from "ui";
 import { ArrowDownIcon, ArrowUpDownIcon, PreferencesIcon } from "icons";
 import { useCallback, useEffect } from "react";
 import { useFeatures, useMediaQuery, useTerminology } from "@/hooks";
+import { useBoardPropertySlots } from "@/shared/story/board-property-slots";
 import type { StoriesLayout } from "./stories-board";
 import {
   DISPLAY_COLUMNS_VERSION,
@@ -28,6 +29,7 @@ export type StoriesViewOptions = {
   showEmptyGroups: boolean;
   showSubStories: boolean;
   displayColumns: DisplayColumn[];
+  selectedCustomFieldIds?: string[];
   hiddenKanbanGroups?: Partial<
     Record<Exclude<ViewOptionsGroupBy, "none">, string[]>
   >;
@@ -76,6 +78,7 @@ export const StoriesViewOptionsButton = ({
   disabled?: boolean;
   iconOnly?: boolean;
 }) => {
+  const { DisplayPicker: PropertyDisplayPicker } = useBoardPropertySlots();
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const isMobile = useMediaQuery("(max-width: 768px)");
   const features = useFeatures();
@@ -194,7 +197,10 @@ export const StoriesViewOptionsButton = ({
           )}
         </Button>
       </Popover.Trigger>
-      <Popover.Content align="end" className="min-w-[20rem] md:max-w-[24rem]">
+      <Popover.Content
+        align="end"
+        className="max-h-[min(80dvh,var(--radix-popover-content-available-height))] min-w-[20rem] overflow-y-auto overscroll-contain md:max-w-[24rem]"
+      >
         <Flex align="center" className="my-2 px-4" gap={2} justify="between">
           <Text color="muted">Group by</Text>
           <Select
@@ -358,6 +364,12 @@ export const StoriesViewOptionsButton = ({
               );
             })}
           </Flex>
+          <PropertyDisplayPicker
+            onChange={(selectedCustomFieldIds) => {
+              setViewOptions({ ...viewOptions, selectedCustomFieldIds });
+            }}
+            selectedIds={viewOptions.selectedCustomFieldIds ?? []}
+          />
         </Box>
         <Divider className="dark:border-border-strong/80 my-2" />
         <Flex className="px-4 pb-[0.1rem]" justify="end">

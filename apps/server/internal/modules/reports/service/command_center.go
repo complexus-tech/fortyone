@@ -22,6 +22,11 @@ func (s *Service) GetWorkspaceCommandCenterReport(ctx context.Context, workspace
 		span.RecordError(err)
 		return CoreWorkspaceCommandCenterReport{}, err
 	}
+	// Operational risk describes work still open now, including backlog created
+	// before the selected reporting period. Keep the same access and item scope.
+	operationalFilters := filters
+	operationalFilters.StartDate = nil
+	operationalFilters.EndDate = nil
 
 	reportDate := time.Now().UTC()
 	overview := emptyWorkspaceOverview(workspaceID, reportDate, filters)
@@ -98,7 +103,7 @@ func (s *Service) GetWorkspaceCommandCenterReport(ctx context.Context, workspace
 		return err
 	})
 	run("workload", func() error {
-		result, err := s.GetWorkloadAnalysis(ctx, workspaceID, filters)
+		result, err := s.GetWorkloadAnalysis(ctx, workspaceID, operationalFilters)
 		if err == nil {
 			workload = result
 		}
@@ -133,28 +138,28 @@ func (s *Service) GetWorkspaceCommandCenterReport(ctx context.Context, workspace
 		return err
 	})
 	run("pulse_stories", func() error {
-		result, err := s.repo.GetPulseStoryHealth(ctx, workspaceID, filters)
+		result, err := s.repo.GetPulseStoryHealth(ctx, workspaceID, operationalFilters)
 		if err == nil {
 			pulseStories = result
 		}
 		return err
 	})
 	run("pulse_sprints", func() error {
-		result, err := s.repo.GetPulseSprintHealth(ctx, workspaceID, filters)
+		result, err := s.repo.GetPulseSprintHealth(ctx, workspaceID, operationalFilters)
 		if err == nil {
 			pulseSprints = result
 		}
 		return err
 	})
 	run("pulse_objectives", func() error {
-		result, err := s.repo.GetPulseObjectiveHealth(ctx, workspaceID, filters)
+		result, err := s.repo.GetPulseObjectiveHealth(ctx, workspaceID, operationalFilters)
 		if err == nil {
 			pulseObjectives = result
 		}
 		return err
 	})
 	run("pulse_requests", func() error {
-		result, err := s.repo.GetPulseRequestHealth(ctx, workspaceID, filters)
+		result, err := s.repo.GetPulseRequestHealth(ctx, workspaceID, operationalFilters)
 		if err == nil {
 			pulseRequests = result
 		}
@@ -174,7 +179,7 @@ func (s *Service) GetWorkspaceCommandCenterReport(ctx context.Context, workspace
 	pulse := CorePulseReport{
 		WorkspaceID: workspaceID,
 		ReportDate:  reportDate,
-		Filters:     filters,
+		Filters:     operationalFilters,
 		Summary: CorePulseSummary{
 			OpenStories:       workload.Summary.TotalOpenStories,
 			OverdueStories:    pulseStories.OverdueStories,

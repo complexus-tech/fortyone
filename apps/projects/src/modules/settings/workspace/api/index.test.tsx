@@ -31,8 +31,8 @@ describe("Developer settings", () => {
     expect(screen.getByRole("tab", { name: "Access tokens" })).toBeVisible();
     expect(screen.getByRole("tab", { name: "Service accounts" })).toBeVisible();
     expect(
-      screen.queryByRole("tab", { name: "OAuth applications" }),
-    ).not.toBeInTheDocument();
+      screen.getByRole("tab", { name: "OAuth applications" }),
+    ).toBeVisible();
     expect(screen.getByRole("tab", { name: "Webhooks" })).toBeVisible();
     expect(screen.getByText("Personal tokens content")).toBeVisible();
     expect(screen.getByText("Security defaults")).toBeVisible();

@@ -41,6 +41,7 @@ type NewStory struct {
 	Sprint                   *uuid.UUID            `json:"sprintId"`
 	KeyResult                *uuid.UUID            `json:"keyResultId"`
 	LabelIDs                 []uuid.UUID           `json:"labelIds"`
+	CustomFieldValues        []CustomFieldValue    `json:"customFieldValues"`
 	StartDate                *time.Time            `json:"startDate"`
 	EndDate                  *time.Time            `json:"endDate"`
 	Team                     uuid.UUID             `json:"teamId"`
@@ -48,13 +49,22 @@ type NewStory struct {
 	ExternalDelivery         ExternalStoryDelivery `json:"-"`
 }
 
+// CustomFieldValue is an exact, transport-neutral value supplied at creation.
+// Its definition, type and live team scope are checked by the transaction
+// participant before the story and its outbox event can commit.
+type CustomFieldValue struct {
+	FieldID uuid.UUID `json:"fieldId"`
+	Value   *string   `json:"value" validate:"omitempty,max=4000"`
+}
+
 // NewComment is the transport-neutral input used by the story service's
 // compatibility comment port. The comments module remains responsible for the
 // authoritative mutation and authorization policy.
 type NewComment struct {
-	StoryID  uuid.UUID
-	Parent   *uuid.UUID
-	UserID   uuid.UUID
-	Comment  string
-	Mentions []uuid.UUID
+	CreationID *uuid.UUID
+	StoryID    uuid.UUID
+	Parent     *uuid.UUID
+	UserID     uuid.UUID
+	Comment    string
+	Mentions   []uuid.UUID
 }

@@ -24,6 +24,13 @@ type Response struct {
 	Error *ErrorDetail `json:"error,omitempty"`
 }
 
+// CodedError gives trusted platform errors a stable recovery code while keeping
+// the standard error envelope and HTTP status semantics.
+type CodedError interface {
+	error
+	ErrorCode() string
+}
+
 func RespondError(ctx context.Context, w http.ResponseWriter, err error, statusCode int) error {
 	statusCode = canonicalErrorStatus(err, statusCode)
 	var validationError *ValidationError
@@ -35,6 +42,10 @@ func RespondError(ctx context.Context, w http.ResponseWriter, err error, statusC
 			Hint:      resolutionHint(statusCode),
 			RequestID: GetRequestID(ctx),
 		},
+	}
+	var codedError CodedError
+	if statusCode < http.StatusInternalServerError && errors.As(err, &codedError) {
+		errResponse.Error.Code = codedError.ErrorCode()
 	}
 	if validationError != nil {
 		errResponse.Error.Fields = append([]FieldViolation(nil), validationError.Violations...)

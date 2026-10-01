@@ -438,6 +438,9 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 		IdempotencyReceipts:    idempotencyReceipts,
 		SubscriberCleanup:      subscriberCleanup,
 	})
+	if err := registerTeamAutomationTask(taskMux, log, connections.Pool, eventPublisher); err != nil {
+		return App{}, fmt.Errorf("register team automation worker: %w", err)
+	}
 	if err := registerOutboundWebhookTask(taskMux, log, storyMutationEventDispatcher, outboundWebhookDispatcher); err != nil {
 		return App{}, fmt.Errorf("register outbound webhook worker: %w", err)
 	}

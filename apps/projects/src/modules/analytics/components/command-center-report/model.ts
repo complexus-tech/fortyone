@@ -6,6 +6,7 @@ import type {
   TeamWorkloadSummary,
   WorkspaceCommandCenterReport,
   WorkspaceEngagementCount,
+  KeyMetricsTrendPoint,
 } from "../../types";
 
 export type ChartBreakdownRow = {
@@ -66,7 +67,7 @@ export const chartPalette = {
   info: "#06B6D4",
   muted: "#94A3B8",
   navy: "#002F61",
-  primary: "#6366F1",
+  primary: "var(--color-primary)",
   rose: "#F43F5E",
   success: "#22C55E",
   violet: "#A855F7",
@@ -74,6 +75,16 @@ export const chartPalette = {
 };
 
 const numberFormatter = new Intl.NumberFormat();
+const ENGAGEMENT_LABELS: Record<string, string> = {
+  analytics_command_center_viewed: "Reports viewed",
+  analytics_command_center: "Analytics",
+};
+const shortDateFormatter = new Intl.DateTimeFormat(undefined, {
+  day: "numeric",
+  month: "short",
+  timeZone: "UTC",
+});
+const WEEK_IN_MS = 7 * 24 * 60 * 60 * 1000;
 const percentFormatter = new Intl.NumberFormat(undefined, {
   maximumFractionDigits: 0,
   style: "percent",
@@ -87,6 +98,24 @@ export const formatPercent = (value: number) => percentFormatter.format(value);
 export const completionRate = (completed: number, total: number) =>
   total > 0 ? completed / total : 0;
 
+export const summarizeCycleTime = (points: KeyMetricsTrendPoint[]) => {
+  let samples = 0;
+  let totalDays = 0;
+  for (const point of points) {
+    const count = point.cycleTimeSamples ?? 0;
+    if (
+      count <= 0 ||
+      !Number.isFinite(count) ||
+      !Number.isFinite(point.avgCycleTime) ||
+      point.avgCycleTime < 0
+    )
+      continue;
+    samples += count;
+    totalDays += point.avgCycleTime * count;
+  }
+  return { samples, averageDays: samples ? totalDays / samples : null };
+};
+
 export const titleCase = (value: string) =>
   value
     .split(/[\s_-]+/)
@@ -98,10 +127,7 @@ export const formatShortDate = (value: string) => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
 
-  return new Intl.DateTimeFormat(undefined, {
-    day: "numeric",
-    month: "short",
-  }).format(date);
+  return shortDateFormatter.format(date);
 };
 
 export const getDisplayName = (member: {
@@ -132,12 +158,44 @@ export const buildFilterSignature = (filters: AnalyticsFilters) =>
 
 export const buildCompletionTrendChartData = (
   completionTrend: WorkspaceCommandCenterReport["overview"]["completionTrend"],
-): CompletionTrendChartRow[] =>
-  completionTrend.map((point) => ({
+  filters?: Pick<AnalyticsFilters, "startDate" | "endDate">,
+): CompletionTrendChartRow[] => {
+  const rows = completionTrend.map((point) => ({
     completed: point.completed,
     date: formatShortDate(point.date),
     total: point.total,
   }));
+  if (!filters?.startDate || !filters.endDate) return rows;
+
+  const start = new Date(filters.startDate);
+  const end = new Date(filters.endDate);
+  if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()))
+    return rows;
+
+  const weekStart = (date: Date) => {
+    const monday = new Date(date);
+    monday.setUTCHours(0, 0, 0, 0);
+    monday.setUTCDate(monday.getUTCDate() - ((monday.getUTCDay() + 6) % 7));
+    return monday.getTime();
+  };
+  const firstWeek = weekStart(start);
+  const lastWeek = weekStart(end);
+  const weekCount = (lastWeek - firstWeek) / WEEK_IN_MS + 1;
+  if (weekCount < 1 || weekCount > 520) return rows;
+
+  const pointsByWeek = new Map(
+    completionTrend.map((point) => [weekStart(new Date(point.date)), point]),
+  );
+  return Array.from({ length: weekCount }, (_, index) => {
+    const timestamp = firstWeek + index * WEEK_IN_MS;
+    const point = pointsByWeek.get(timestamp);
+    return {
+      completed: point?.completed ?? 0,
+      date: formatShortDate(new Date(timestamp).toISOString()),
+      total: point?.total ?? 0,
+    };
+  });
+};
 
 export const buildMemberWorkloadChartData = (
   members: MemberWorkload[],
@@ -238,6 +296,6 @@ export const buildEngagementCountChartData = (
   items: WorkspaceEngagementCount[],
 ): ChartBreakdownRow[] =>
   items.slice(0, 8).map((item) => ({
-    label: titleCase(item.name),
+    label: ENGAGEMENT_LABELS[item.name] ?? titleCase(item.name),
     value: item.count,
   }));

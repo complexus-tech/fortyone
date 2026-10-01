@@ -25,17 +25,21 @@ WHERE story.workspace_id = $1::uuid
   AND story.updated_at >= $2
   AND story.updated_at <= $3
   AND (cardinality($4::uuid[]) = 0 OR story.team_id = ANY($4::uuid[]))
-  AND (cardinality($5::uuid[]) = 0 OR story.sprint_id = ANY($5::uuid[]))
+  AND (cardinality(CAST($5 AS uuid[])) = 0 OR story.assignee_id = ANY(CAST($5 AS uuid[])))
+  AND (cardinality(CAST($6 AS uuid[])) = 0 OR story.objective_id = ANY(CAST($6 AS uuid[])))
+  AND (cardinality($7::uuid[]) = 0 OR story.sprint_id = ANY($7::uuid[]))
 GROUP BY CAST(story.updated_at AS date)
 ORDER BY completion_date
 `
 
 type ListStoryBurndownParams struct {
-	WorkspaceID uuid.UUID
-	StartDate   time.Time
-	EndDate     time.Time
-	TeamIds     []uuid.UUID
-	SprintIds   []uuid.UUID
+	WorkspaceID  uuid.UUID
+	StartDate    time.Time
+	EndDate      time.Time
+	TeamIds      []uuid.UUID
+	AssigneeIds  []uuid.UUID
+	ObjectiveIds []uuid.UUID
+	SprintIds    []uuid.UUID
 }
 
 type ListStoryBurndownRow struct {
@@ -49,6 +53,8 @@ func (q *Queries) ListStoryBurndown(ctx context.Context, arg ListStoryBurndownPa
 		arg.StartDate,
 		arg.EndDate,
 		arg.TeamIds,
+		arg.AssigneeIds,
+		arg.ObjectiveIds,
 		arg.SprintIds,
 	)
 	if err != nil {
@@ -84,7 +90,9 @@ LEFT JOIN stories AS story
    AND story.created_at >= $2
    AND story.created_at <= $3
    AND (cardinality($4::uuid[]) = 0 OR story.team_id = ANY($4::uuid[]))
-   AND (cardinality($5::uuid[]) = 0 OR story.sprint_id = ANY($5::uuid[]))
+   AND (cardinality(CAST($5 AS uuid[])) = 0 OR story.assignee_id = ANY(CAST($5 AS uuid[])))
+   AND (cardinality(CAST($6 AS uuid[])) = 0 OR story.objective_id = ANY(CAST($6 AS uuid[])))
+   AND (cardinality($7::uuid[]) = 0 OR story.sprint_id = ANY($7::uuid[]))
 LEFT JOIN statuses AS status ON status.status_id = story.status_id
 WHERE team.workspace_id = $1::uuid
   AND (cardinality($4::uuid[]) = 0 OR team.team_id = ANY($4::uuid[]))
@@ -93,11 +101,13 @@ ORDER BY team.name, team.team_id
 `
 
 type ListStoryCompletionByTeamParams struct {
-	WorkspaceID uuid.UUID
-	StartDate   time.Time
-	EndDate     time.Time
-	TeamIds     []uuid.UUID
-	SprintIds   []uuid.UUID
+	WorkspaceID  uuid.UUID
+	StartDate    time.Time
+	EndDate      time.Time
+	TeamIds      []uuid.UUID
+	AssigneeIds  []uuid.UUID
+	ObjectiveIds []uuid.UUID
+	SprintIds    []uuid.UUID
 }
 
 type ListStoryCompletionByTeamRow struct {
@@ -113,6 +123,8 @@ func (q *Queries) ListStoryCompletionByTeam(ctx context.Context, arg ListStoryCo
 		arg.StartDate,
 		arg.EndDate,
 		arg.TeamIds,
+		arg.AssigneeIds,
+		arg.ObjectiveIds,
 		arg.SprintIds,
 	)
 	if err != nil {
@@ -149,7 +161,9 @@ WHERE story.workspace_id = $1::uuid
   AND story.created_at >= $2
   AND story.created_at <= $3
   AND (cardinality($4::uuid[]) = 0 OR story.team_id = ANY($4::uuid[]))
-  AND (cardinality($5::uuid[]) = 0 OR story.sprint_id = ANY($5::uuid[]))
+  AND (cardinality(CAST($5 AS uuid[])) = 0 OR story.assignee_id = ANY(CAST($5 AS uuid[])))
+  AND (cardinality(CAST($6 AS uuid[])) = 0 OR story.objective_id = ANY(CAST($6 AS uuid[])))
+  AND (cardinality($7::uuid[]) = 0 OR story.sprint_id = ANY($7::uuid[]))
 GROUP BY story.priority
 ORDER BY CASE CAST(COALESCE(CAST(story.priority AS text), 'No Priority') AS text)
     WHEN 'Urgent' THEN 1
@@ -162,11 +176,13 @@ END
 `
 
 type ListStoryPriorityDistributionParams struct {
-	WorkspaceID uuid.UUID
-	StartDate   time.Time
-	EndDate     time.Time
-	TeamIds     []uuid.UUID
-	SprintIds   []uuid.UUID
+	WorkspaceID  uuid.UUID
+	StartDate    time.Time
+	EndDate      time.Time
+	TeamIds      []uuid.UUID
+	AssigneeIds  []uuid.UUID
+	ObjectiveIds []uuid.UUID
+	SprintIds    []uuid.UUID
 }
 
 type ListStoryPriorityDistributionRow struct {
@@ -180,6 +196,8 @@ func (q *Queries) ListStoryPriorityDistribution(ctx context.Context, arg ListSto
 		arg.StartDate,
 		arg.EndDate,
 		arg.TeamIds,
+		arg.AssigneeIds,
+		arg.ObjectiveIds,
 		arg.SprintIds,
 	)
 	if err != nil {
@@ -213,17 +231,21 @@ WHERE story.workspace_id = $1::uuid
   AND story.created_at >= $2
   AND story.created_at <= $3
   AND (cardinality($4::uuid[]) = 0 OR story.team_id = ANY($4::uuid[]))
-  AND (cardinality($5::uuid[]) = 0 OR story.sprint_id = ANY($5::uuid[]))
+  AND (cardinality(CAST($5 AS uuid[])) = 0 OR story.assignee_id = ANY(CAST($5 AS uuid[])))
+  AND (cardinality(CAST($6 AS uuid[])) = 0 OR story.objective_id = ANY(CAST($6 AS uuid[])))
+  AND (cardinality($7::uuid[]) = 0 OR story.sprint_id = ANY($7::uuid[]))
 GROUP BY status.status_id, status.name, status.order_index, story.team_id
 ORDER BY status.order_index, story.team_id
 `
 
 type ListStoryStatusBreakdownParams struct {
-	WorkspaceID uuid.UUID
-	StartDate   time.Time
-	EndDate     time.Time
-	TeamIds     []uuid.UUID
-	SprintIds   []uuid.UUID
+	WorkspaceID  uuid.UUID
+	StartDate    time.Time
+	EndDate      time.Time
+	TeamIds      []uuid.UUID
+	AssigneeIds  []uuid.UUID
+	ObjectiveIds []uuid.UUID
+	SprintIds    []uuid.UUID
 }
 
 type ListStoryStatusBreakdownRow struct {
@@ -238,6 +260,8 @@ func (q *Queries) ListStoryStatusBreakdown(ctx context.Context, arg ListStorySta
 		arg.StartDate,
 		arg.EndDate,
 		arg.TeamIds,
+		arg.AssigneeIds,
+		arg.ObjectiveIds,
 		arg.SprintIds,
 	)
 	if err != nil {

@@ -34,10 +34,11 @@ type AppTeamVelocityPoint struct {
 }
 
 type AppKeyMetricsTrendPoint struct {
-	Date          time.Time `json:"date"`
-	ActiveUsers   int       `json:"activeUsers"`
-	StoriesPerDay float64   `json:"storiesPerDay"`
-	AvgCycleTime  float64   `json:"avgCycleTime"`
+	Date             time.Time `json:"date"`
+	ActiveUsers      int       `json:"activeUsers"`
+	StoriesPerDay    float64   `json:"storiesPerDay"`
+	AvgCycleTime     float64   `json:"avgCycleTime"`
+	CycleTimeSamples int       `json:"cycleTimeSamples"`
 }
 
 func toAppTimelineTrends(trends reports.CoreTimelineTrends) AppTimelineTrends {
@@ -89,10 +90,11 @@ func toAppKeyMetricsTrendPoints(points []reports.CoreKeyMetricsTrendPoint) []App
 	result := make([]AppKeyMetricsTrendPoint, len(points))
 	for i, point := range points {
 		result[i] = AppKeyMetricsTrendPoint{
-			Date:          point.Date,
-			ActiveUsers:   point.ActiveUsers,
-			StoriesPerDay: point.StoriesPerDay,
-			AvgCycleTime:  point.AvgCycleTime,
+			Date:             point.Date,
+			ActiveUsers:      point.ActiveUsers,
+			StoriesPerDay:    point.StoriesPerDay,
+			AvgCycleTime:     point.AvgCycleTime,
+			CycleTimeSamples: point.CycleTimeSamples,
 		}
 	}
 	return result

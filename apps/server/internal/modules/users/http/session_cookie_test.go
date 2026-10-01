@@ -39,7 +39,10 @@ func TestPersistSessionStoresStructuredAccountEpoch(t *testing.T) {
 	require.NoError(t, handler.persistSession(t.Context(), userID, "opaque-token", expiresAt))
 	var stored platformauth.BrowserSession
 	require.NoError(t, cacheService.Get(t.Context(), cache.AuthSessionCacheKey("opaque-token"), &stored))
-	require.Equal(t, platformauth.BrowserSession{UserID: userID, Version: 12}, stored)
+	require.Equal(t, userID, stored.UserID)
+	require.Equal(t, int64(12), stored.Version)
+	require.NotEqual(t, uuid.Nil, stored.SessionID)
+	require.False(t, stored.AuthenticatedAt.IsZero())
 }
 
 type sessionVersionRepository struct {

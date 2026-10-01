@@ -9,6 +9,7 @@ import type { ImportPeople } from "./import-people";
 import type { ImportedObjectives } from "./import-objectives";
 import type { ImportedLabels } from "./import-labels";
 import type { ImportedSprints } from "./import-sprints";
+import type { importCustomFields } from "./import-custom-fields";
 import { JIRA_ISSUE_KEY_PATTERN } from "./schema";
 import {
   getImportStoryCollaboratorIds,
@@ -76,6 +77,7 @@ export const importStories = async (
     "labelMappings" | "labelsBySourceId" | "getLabelMappingKey"
   >,
   { sprintMappings }: Pick<ImportedSprints, "sprintMappings">,
+  fields: Awaited<ReturnType<typeof importCustomFields>>,
 ) => {
   let appliedCollaborators = 0;
   let destinationConflicts = 0;
@@ -168,6 +170,7 @@ export const importStories = async (
     });
     failedStorySourceIds.add(item.sourceId);
   }
+  let paused: string | null = null;
   let processedStories = unresolvedTeamTasks.length;
   let pendingTasks = [...resolvedPreparedTasks];
 
@@ -285,19 +288,37 @@ export const importStories = async (
           sourceKey,
           requestItem: {
             sourceKey,
-            story: toImportStoryPayload({
-              allowAutomaticAssigneeResolution: false,
-              ...(assignee ? { assigneeId: assignee.id } : {}),
-              ...(linkedObjective ? { objectiveId: linkedObjective.id } : {}),
-              ...(keyResult ? { keyResultId: keyResult.id } : {}),
-              ...(sprint?.teamId === teamId ? { sprintId: sprint.id } : {}),
-              ...(parentId ? { parentId } : {}),
-              labelIds,
-              members: context.members,
-              statuses: context.statuses,
-              task: taskWithSafeDates,
-              teamId,
-            }),
+            ...(task.canonical
+              ? {
+                  sourceMetadata: {
+                    createdAt: task.canonical.createdAt,
+                    updatedAt: task.canonical.updatedAt,
+                    completedAt: task.canonical.completedAt,
+                    archivedAt: task.canonical.archivedAt,
+                    estimateValue: task.canonical.estimateValue,
+                    estimatedDurationMinutes:
+                      task.canonical.estimatedDurationMinutes,
+                    minimumFocusBlockMinutes:
+                      task.canonical.minimumFocusBlockMinutes,
+                  },
+                }
+              : {}),
+            story: {
+              ...toImportStoryPayload({
+                allowAutomaticAssigneeResolution: false,
+                ...(assignee ? { assigneeId: assignee.id } : {}),
+                ...(linkedObjective ? { objectiveId: linkedObjective.id } : {}),
+                ...(keyResult ? { keyResultId: keyResult.id } : {}),
+                ...(sprint?.teamId === teamId ? { sprintId: sprint.id } : {}),
+                ...(parentId ? { parentId } : {}),
+                labelIds,
+                members: context.members,
+                statuses: context.statuses,
+                task: taskWithSafeDates,
+                teamId,
+              }),
+              customFieldValues: fields.getValues(task, teamId),
+            },
           },
         };
       },
@@ -323,12 +344,20 @@ export const importStories = async (
       preparedRequestItems.map((item) => [item.sourceKey, item]),
     );
     for (const request of importRequests) {
-      // eslint-disable-next-line no-await-in-loop -- Sequential batches cap load and make progress truthful.
-      const response = await importStoriesBatch(request, ctx);
+      let response;
+      try {
+        // eslint-disable-next-line no-await-in-loop -- Each durable bounded chunk must commit before progress advances.
+        response = await importStoriesBatch(request, ctx);
+      } catch (error) {
+        paused =
+          error instanceof Error
+            ? error.message
+            : "The connection interrupted a batch.";
+        break;
+      }
       if (response.error?.message || !response.data) {
-        throw new Error(
-          response.error?.message || "A batch could not be imported",
-        );
+        paused = response.error?.message || "A batch could not be imported";
+        break;
       }
       allResults.push(...response.data.items);
       const collaboratorUpdates: Promise<number>[] = [];
@@ -354,18 +383,22 @@ export const importStories = async (
         }
       }
       // eslint-disable-next-line no-await-in-loop -- Each story batch must finish collaborator reconciliation before advancing parent-dependent work.
-      const appliedCounts = await Promise.all(collaboratorUpdates);
-      appliedCollaborators += appliedCounts.reduce(
-        (total, count) => total + count,
-        0,
-      );
+      const reconciled = await Promise.allSettled(collaboratorUpdates);
+      for (const result of reconciled) {
+        if (result.status === "fulfilled") appliedCollaborators += result.value;
+        else
+          paused =
+            "Collaborator reconciliation was interrupted. Continue safely to finish those assignments.";
+      }
       processedStories += request.items.length;
       onProgress(
         preparedTasks.length
           ? 70 + Math.round((processedStories / preparedTasks.length) * 25)
           : 95,
       );
+      if (paused) break;
     }
+    if (paused) break;
     pendingTasks = pendingTasks.filter(
       ({ sourceKey }) => !readyKeys.has(sourceKey),
     );
@@ -373,6 +406,7 @@ export const importStories = async (
   onProgress(95);
 
   return {
+    paused,
     allResults,
     preparedTasks,
     normalizeSourceId,

@@ -13,6 +13,7 @@ import { signInWithGoogle, signInWithMicrosoft } from "@/lib/actions/sign-in";
 import { getSafeCallbackUrl, withCallbackUrl } from "@/utils/callback-url";
 import { isMobileAuthFlow } from "@/lib/mobile-auth";
 import { getSignInErrorMessage } from "./errors";
+import { WorkspaceSSOSignIn } from "./workspace-sso";
 
 const COPYRIGHT_NOTICE =
   "\u00a9 2026 \u2022 Product of Complexus LLC \u2022 All Rights Reserved.";
@@ -292,6 +293,7 @@ export const AuthLayout = ({
               </>
             ) : null}
           </form>
+          {!isMobileApp && page === "login" ? <WorkspaceSSOSignIn /> : null}
           <Text className="mt-3 pl-px text-[90%]" color="muted">
             {COPYRIGHT_NOTICE}
           </Text>

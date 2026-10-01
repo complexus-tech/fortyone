@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { ListStories } from "@/modules/teams/stories/list-stories";
 import { getTeam } from "@/modules/teams/queries/get-team";
 import { auth } from "@/auth";
+import { TeamStoriesClient } from "./team-stories-client";
 
 export async function generateMetadata({
   params,
@@ -19,5 +19,5 @@ export async function generateMetadata({
 }
 
 export default function Page() {
-  return <ListStories />;
+  return <TeamStoriesClient />;
 }

@@ -14,7 +14,8 @@ import (
 )
 
 type commentOptions struct {
-	actorID uuid.UUID
+	actorID  uuid.UUID
+	imported bool
 }
 
 func (s *Service) ConfigureCommentCreator(creator CommentCreator) {
@@ -40,6 +41,36 @@ func (s *Service) CreateCommentExternal(
 	comment CoreNewComment,
 ) (CoreComment, error) {
 	return s.createCommentWithOptions(ctx, workspaceID, comment, commentOptions{actorID: actorID})
+}
+
+// CreateCommentImport retains historical source attribution without notifying
+// today's collaborators. Source IDs are stable across re-exports and importers;
+// an authorized reader may recognize a matching record written by another admin.
+func (s *Service) CreateCommentImport(ctx context.Context, actorID, workspaceID uuid.UUID, input CoreNewComment) (CoreComment, error) {
+	if input.CreationID == nil || *input.CreationID == uuid.Nil || len(input.Mentions) > 0 {
+		return CoreComment{}, ErrInvalidStoryMutation
+	}
+	existing, err := s.getVisibleComment(ctx, *input.CreationID, input.StoryID, workspaceID)
+	if err == nil {
+		if existing.Comment != input.Comment {
+			return CoreComment{}, ErrStoryChanged
+		}
+		return existing, nil
+	}
+	if !errors.Is(err, ErrNotFound) {
+		return CoreComment{}, err
+	}
+	created, createErr := s.createCommentWithOptions(ctx, workspaceID, input, commentOptions{actorID: actorID, imported: true})
+	if createErr == nil {
+		return created, nil
+	}
+	// A simultaneous import may have won the same deterministic ID. Recheck
+	// through the ordinary visibility gate before recognizing its result.
+	existing, lookupErr := s.getVisibleComment(ctx, *input.CreationID, input.StoryID, workspaceID)
+	if lookupErr == nil && existing.Comment == input.Comment {
+		return existing, nil
+	}
+	return CoreComment{}, createErr
 }
 
 func (s *Service) createCommentWithOptions(
@@ -95,6 +126,7 @@ func (s *Service) createCommentWithOptions(
 		return CoreComment{}, ErrCommentWriterUnavailable
 	}
 	created, err := s.commentCreator.CreateComment(ctx, CreateCommentCommand{
+		CreationID:  commentInput.CreationID,
 		WorkspaceID: workspaceID, StoryID: commentInput.StoryID, ParentID: commentInput.Parent,
 		Actor: actor, Content: commentInput.Comment, MentionedUserIDs: commentInput.Mentions,
 	})
@@ -103,6 +135,9 @@ func (s *Service) createCommentWithOptions(
 		return CoreComment{}, err
 	}
 
+	if options.imported {
+		return created, nil
+	}
 	audienceIDs, audienceErr := s.GetNotificationAudience(ctx, commentInput.StoryID, workspaceID)
 	audienceResolved := audienceErr == nil
 	if audienceErr != nil {

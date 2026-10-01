@@ -11,6 +11,7 @@ import {
   StrategicPillarImportReview,
 } from "./import-graph-review";
 import { ImportFieldMapping } from "./import-field-mapping";
+import { ImportResumePanel } from "./import-resume-panel";
 import {
   ImportTaskReview,
   type ImportTaskReviewProps,
@@ -62,6 +63,24 @@ export const ImportReviewStep = ({
     </Text>
 
     <ImportPlanSummary draft={draft} />
+    <ImportResumePanel draft={draft} />
+    {draft.customFields?.length ? (
+      <Box className="border-border mt-5 rounded-xl border p-4">
+        <Text className="font-medium">Custom fields to preserve</Text>
+        <Text className="mt-1 leading-6" color="muted">
+          Reuse matching definitions; incompatible fields are reported.
+        </Text>
+        <Box as="ul" className="mt-3 max-h-60 space-y-2 overflow-auto">
+          {draft.customFields.map((field) => (
+            <li key={`${field.teamSourceId}:${field.sourceId}`}>
+              {field.name} · {field.type}
+              {field.currency ? ` (${field.currency})` : ""}
+              {field.archivedAt ? " · archived after import" : ""}
+            </li>
+          ))}
+        </Box>
+      </Box>
+    ) : null}
 
     {reviewWarnings.length ? (
       <Box className="bg-warning/8 mt-5 rounded-xl p-4">

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/complexus-tech/projects-api/internal/bootstrap/customfieldsadapter"
 	"github.com/complexus-tech/projects-api/internal/bootstrap/githubadapter"
 	"github.com/complexus-tech/projects-api/internal/bootstrap/integrationrequestsadapter"
 	"github.com/complexus-tech/projects-api/internal/bootstrap/mayaadapter"
@@ -23,12 +24,18 @@ import (
 	chatsessions "github.com/complexus-tech/projects-api/internal/modules/chatsessions/service"
 	commentsrepository "github.com/complexus-tech/projects-api/internal/modules/comments/repository"
 	comments "github.com/complexus-tech/projects-api/internal/modules/comments/service"
+	customfieldsrepository "github.com/complexus-tech/projects-api/internal/modules/customfields/repository"
+	customfields "github.com/complexus-tech/projects-api/internal/modules/customfields/service"
+	dataexportrepository "github.com/complexus-tech/projects-api/internal/modules/dataexport/repository"
+	dataexport "github.com/complexus-tech/projects-api/internal/modules/dataexport/service"
 	"github.com/complexus-tech/projects-api/internal/modules/developeraccess"
 	developercredentials "github.com/complexus-tech/projects-api/internal/modules/developercredentials/service"
 	developeroauth "github.com/complexus-tech/projects-api/internal/modules/developeroauth/service"
 	documentsrepository "github.com/complexus-tech/projects-api/internal/modules/documents/repository"
 	documents "github.com/complexus-tech/projects-api/internal/modules/documents/service"
 	emailreply "github.com/complexus-tech/projects-api/internal/modules/emailreply/service"
+	ssorepository "github.com/complexus-tech/projects-api/internal/modules/enterprisesso/repository"
+	sso "github.com/complexus-tech/projects-api/internal/modules/enterprisesso/service"
 	epics "github.com/complexus-tech/projects-api/internal/modules/epics/service"
 	feedbackrepository "github.com/complexus-tech/projects-api/internal/modules/feedback/repository"
 	feedback "github.com/complexus-tech/projects-api/internal/modules/feedback/service"
@@ -64,6 +71,8 @@ import (
 	outboundwebhooksservice "github.com/complexus-tech/projects-api/internal/modules/outboundwebhooks/service"
 	reportsrepository "github.com/complexus-tech/projects-api/internal/modules/reports/repository"
 	reports "github.com/complexus-tech/projects-api/internal/modules/reports/service"
+	scimrepository "github.com/complexus-tech/projects-api/internal/modules/scim/repository"
+	scim "github.com/complexus-tech/projects-api/internal/modules/scim/service"
 	searchrepository "github.com/complexus-tech/projects-api/internal/modules/search/repository"
 	search "github.com/complexus-tech/projects-api/internal/modules/search/service"
 	slackrepository "github.com/complexus-tech/projects-api/internal/modules/slack/repository"
@@ -84,13 +93,20 @@ import (
 	usersrepository "github.com/complexus-tech/projects-api/internal/modules/users/repository"
 	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
 	useruow "github.com/complexus-tech/projects-api/internal/modules/users/uow"
+	workautomationsrepository "github.com/complexus-tech/projects-api/internal/modules/workautomations/repository"
+	workautomations "github.com/complexus-tech/projects-api/internal/modules/workautomations/service"
+	workpresetsrepository "github.com/complexus-tech/projects-api/internal/modules/workpresets/repository"
+	workpresets "github.com/complexus-tech/projects-api/internal/modules/workpresets/service"
 	workspacesrepository "github.com/complexus-tech/projects-api/internal/modules/workspaces/repository"
 	workspaces "github.com/complexus-tech/projects-api/internal/modules/workspaces/service"
 	workspaceuow "github.com/complexus-tech/projects-api/internal/modules/workspaces/uow"
+	securityrepository "github.com/complexus-tech/projects-api/internal/modules/workspacesecurity/repository"
+	security "github.com/complexus-tech/projects-api/internal/modules/workspacesecurity/service"
 	"github.com/complexus-tech/projects-api/internal/platform/actors"
 	actorsrepository "github.com/complexus-tech/projects-api/internal/platform/actors/repository"
 	"github.com/complexus-tech/projects-api/internal/platform/http/mux"
 	platformidempotency "github.com/complexus-tech/projects-api/internal/platform/idempotency"
+	"github.com/complexus-tech/projects-api/internal/platform/oidcclient"
 )
 
 var _ messaging.StoryMutationService = (*stories.Service)(nil)
@@ -120,6 +136,11 @@ type services struct {
 	invitations          *invitations.Service
 	keyResults           *keyresults.Service
 	labels               *labels.Service
+	customFields         *customfields.Service
+	workspaceSecurity    *security.Service
+	enterpriseSSO        *sso.Service
+	scim                 *scim.Service
+	dataExport           *dataexport.Service
 	links                *links.Service
 	maya                 *maya.Service
 	notifications        *notifications.Service
@@ -136,6 +157,8 @@ type services struct {
 	teamSettings         *teamsettings.Service
 	users                *users.Service
 	workspaces           *workspaces.Service
+	workAutomations      *workautomations.Service
+	workPresets          *workpresets.Service
 }
 
 func buildServices(cfg mux.Config, dependencies Dependencies) services {
@@ -201,6 +224,7 @@ func buildServices(cfg mux.Config, dependencies Dependencies) services {
 	commentsService := comments.New(commentsrepository.New(cfg.Log, dependencies.DatabasePool))
 	mayaRepository := mayarepository.New(dependencies.DatabasePool)
 	storiesRepo := storiesrepository.New(cfg.Log, dependencies.DatabasePool,
+		storiesrepository.WithCustomFieldCreation(customfieldsadapter.CreationBinder),
 		storiesrepository.WithAttachmentObjectStorage(
 			cfg.StorageConfig.Provider,
 			cfg.StorageConfig.AttachmentsBucket,
@@ -467,6 +491,12 @@ func buildServices(cfg mux.Config, dependencies Dependencies) services {
 		},
 	)
 
+	workspaceSecurityService := security.New(securityrepository.New(dependencies.DatabasePool))
+
+	scimService, err := scim.New(scimrepository.New(dependencies.DatabasePool), subscriptionsService, cfg.SecretKey)
+	if err != nil {
+		panic("failed to initialize SCIM provisioning: " + err.Error())
+	}
 	return services{
 		activities: activities.New(activitiesrepository.New(dependencies.DatabasePool)),
 		admin: admin.New(
@@ -496,6 +526,11 @@ func buildServices(cfg mux.Config, dependencies Dependencies) services {
 		invitations:          invitationsService,
 		keyResults:           keyResultsService,
 		labels:               labels.New(labelsrepository.New(dependencies.DatabasePool)),
+		customFields:         customfields.New(customfieldsrepository.New(dependencies.DatabasePool)),
+		workspaceSecurity:    workspaceSecurityService,
+		scim:                 scimService,
+		enterpriseSSO:        sso.New(ssorepository.New(dependencies.DatabasePool), dependencies.CredentialVault, oidcclient.New(), strings.TrimRight(cfg.APIPublicURL, "/")+"/auth/sso/callback"),
+		dataExport:           dataexport.New(dataexportrepository.New(dependencies.DatabasePool), workspaceSecurityService),
 		links:                linksService,
 		maya:                 mayaService,
 		notifications:        notifications.New(cfg.Log, notificationsrepository.New(dependencies.DatabasePool), cfg.Redis, cfg.TasksService),
@@ -512,10 +547,18 @@ func buildServices(cfg mux.Config, dependencies Dependencies) services {
 		teamSettings:         teamSettingsService,
 		users:                usersService,
 		workspaces:           workspacesService,
+		workAutomations:      workautomations.New(workautomationsrepository.New(dependencies.DatabasePool)),
+		workPresets:          workpresets.New(workpresetsrepository.New(dependencies.DatabasePool)),
 	}
 }
 
 func (s services) validate() error {
+	if s.workAutomations == nil {
+		return fmt.Errorf("work automation service is required")
+	}
+	if s.workPresets == nil {
+		return fmt.Errorf("missing service: work presets")
+	}
 	if s.activities == nil {
 		return fmt.Errorf("missing service: activities")
 	}
@@ -587,6 +630,21 @@ func (s services) validate() error {
 	}
 	if s.labels == nil {
 		return fmt.Errorf("missing service: labels")
+	}
+	if s.customFields == nil {
+		return fmt.Errorf("missing service: customFields")
+	}
+	if s.dataExport == nil {
+		return fmt.Errorf("missing service: dataExport")
+	}
+	if s.workspaceSecurity == nil {
+		return fmt.Errorf("missing service: workspaceSecurity")
+	}
+	if s.scim == nil {
+		return fmt.Errorf("missing service: scim")
+	}
+	if s.enterpriseSSO == nil {
+		return fmt.Errorf("missing service: enterpriseSSO")
 	}
 	if s.links == nil {
 		return fmt.Errorf("missing service: links")

@@ -16,7 +16,8 @@ type repo struct {
 	transactor platformdatabase.Transactor
 	log        *logger.Logger
 
-	attachmentObjectStorage *attachmentObjectStorageRoute
+	attachmentObjectStorage   *attachmentObjectStorageRoute
+	customFieldCreationBinder CustomFieldCreationBinder
 
 	retention               storyRetentionQueries
 	runRetentionTransaction func(context.Context, func(storyRetentionQueries) error) error

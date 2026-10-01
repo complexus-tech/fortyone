@@ -19,6 +19,7 @@ import { useAutomationPreferences } from "@/lib/hooks/users/preferences";
 import { useFigmaHandoffStatuses } from "@/lib/hooks/figma";
 import { FigmaIcon } from "@/modules/settings/workspace/integrations/figma/icon";
 import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
+import { useBoardPropertySlots } from "@/shared/story/board-property-slots";
 import { useBoard } from "../board-context";
 import { MemberTooltip } from "../member-tooltip";
 import { PriorityIcon } from "../priority-icon";
@@ -58,6 +59,7 @@ const StoryCardContent = memo(function StoryCardContent({
   setActivatorNodeRef,
   setNodeRef,
 }: StoryCardContentProps) {
+  const { Badges: PropertyBadges } = useBoardPropertySlots();
   const { data: session } = useSession();
   const { data: preferences } = useAutomationPreferences();
   const openStoryInDialog = preferences?.openStoryInDialog;
@@ -111,7 +113,7 @@ const StoryCardContent = memo(function StoryCardContent({
         <div ref={setNodeRef}>
           <Box
             className={cn(
-              "border-border shadow-shadow hover:bg-surface-elevated dark:bg-surface w-[340px] select-none rounded-xl border-[0.5px] bg-white px-4 pb-4 shadow-lg transition-colors duration-200 ease-linear [contain-intrinsic-size:auto_9rem] [content-visibility:auto]",
+              "border-border shadow-shadow hover:bg-surface-elevated dark:bg-surface w-[340px] rounded-xl border-[0.5px] bg-white px-4 pb-4 shadow-lg transition-colors duration-200 ease-linear select-none [contain-intrinsic-size:auto_9rem] [content-visibility:auto]",
               {
                 "bg-surface-muted opacity-70": isDragging,
                 "pointer-events-none opacity-40": story.id.startsWith("123"),
@@ -120,7 +122,7 @@ const StoryCardContent = memo(function StoryCardContent({
             )}
           >
             <div
-              className={cn("cursor-pointer pb-1.5 pt-3", {
+              className={cn("cursor-pointer pt-3 pb-1.5", {
                 "cursor-grabbing": isDragging,
               })}
               ref={setActivatorNodeRef}
@@ -150,7 +152,7 @@ const StoryCardContent = memo(function StoryCardContent({
                 </Text>
                 {isColumnVisible("ID") && (
                   <Text
-                    className="shrink-0 text-[0.95rem] uppercase leading-[1.4rem]"
+                    className="shrink-0 text-[0.95rem] leading-[1.4rem] uppercase"
                     color="muted"
                   >
                     {storyReference}
@@ -224,6 +226,11 @@ const StoryCardContent = memo(function StoryCardContent({
                 teamCode={teamCode}
               />
             </Flex>
+            <PropertyBadges
+              disabled={Boolean(story.archivedAt || story.deletedAt)}
+              storyId={story.id}
+              teamId={story.teamId}
+            />
           </Box>
         </div>
       </StoryContextMenu>
@@ -244,7 +251,7 @@ export const StoryCardPreview = ({
   return (
     <Box
       className={cn(
-        "border-border shadow-shadow dark:bg-surface h-full min-h-28 w-[340px] select-none rounded-xl border bg-white px-4 py-3 shadow-lg",
+        "border-border shadow-shadow dark:bg-surface h-full min-h-28 w-[340px] rounded-xl border bg-white px-4 py-3 shadow-lg select-none",
         className,
       )}
     >
@@ -253,7 +260,7 @@ export const StoryCardPreview = ({
           {story.title}
         </Text>
         <Text
-          className="shrink-0 text-[0.95rem] uppercase leading-[1.4rem]"
+          className="shrink-0 text-[0.95rem] leading-[1.4rem] uppercase"
           color="muted"
         >
           {storyReference}

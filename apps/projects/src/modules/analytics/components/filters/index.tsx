@@ -43,7 +43,7 @@ const FilterSection = ({
             onClick={() => {
               onChange(null);
             }}
-            size="xs"
+            size="sm"
             variant="naked"
           >
             Clear
@@ -58,6 +58,7 @@ const FilterSection = ({
 
             return (
               <Button
+                aria-pressed={isSelected}
                 className="max-w-full rounded-lg px-2"
                 color={isSelected ? "primary" : "tertiary"}
                 key={option.id}
@@ -65,7 +66,7 @@ const FilterSection = ({
                   const next = toggleValue(selected, option.id);
                   onChange(next.length ? next : null);
                 }}
-                size="xs"
+                size="sm"
                 variant={isSelected ? "solid" : "outline"}
               >
                 <Flex align="center" className="min-w-0 gap-1.5">
@@ -89,7 +90,7 @@ const FilterSection = ({
   );
 };
 
-const AnalyticsFilterMenu = () => {
+const AnalyticsFilterMenu = ({ compact = false }: { compact?: boolean }) => {
   const { getTermDisplay } = useTerminology();
   const { data: teams = [] } = useTeams();
   const { data: objectives = [] } = useObjectives();
@@ -110,6 +111,7 @@ const AnalyticsFilterMenu = () => {
     <Popover>
       <Popover.Trigger asChild>
         <Button
+          aria-label="Report filters"
           className="gap-2"
           color="tertiary"
           leftIcon={<PreferencesIcon className="text-text-muted h-4 w-auto" />}
@@ -117,7 +119,9 @@ const AnalyticsFilterMenu = () => {
           size="sm"
           variant="outline"
         >
-          Filters
+          <span className={compact ? "hidden xl:inline" : undefined}>
+            Filters
+          </span>
           {activeFilterCount ? (
             <Badge color="primary" rounded="full" size="sm">
               {activeFilterCount}
@@ -125,7 +129,10 @@ const AnalyticsFilterMenu = () => {
           ) : null}
         </Button>
       </Popover.Trigger>
-      <Popover.Content align="end" className="w-96 pb-2">
+      <Popover.Content
+        align="end"
+        className="max-h-[var(--radix-popover-content-available-height)] w-96 max-w-[calc(100vw-2rem)] overflow-y-auto pb-2"
+      >
         <Flex align="center" className="px-4 pt-3 pb-2" justify="between">
           <Box>
             <Text fontWeight="semibold">Report filters</Text>
@@ -201,11 +208,11 @@ const AnalyticsFilterMenu = () => {
   );
 };
 
-export const Filters = () => {
+export const Filters = ({ compact = false }: { compact?: boolean }) => {
   return (
-    <Flex align="center" className="gap-2">
-      <DateRangeFilter showLabel={false} />
-      <AnalyticsFilterMenu />
+    <Flex align="center" className="gap-2" wrap>
+      <DateRangeFilter compact={compact} showLabel={false} />
+      <AnalyticsFilterMenu compact={compact} />
     </Flex>
   );
 };

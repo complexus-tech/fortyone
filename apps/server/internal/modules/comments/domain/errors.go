@@ -3,8 +3,9 @@ package commentsdomain
 import "errors"
 
 var (
-	ErrNotFound       = errors.New("comment not found")
-	ErrForbidden      = errors.New("comment operation is not permitted")
-	ErrInvalidComment = errors.New("comment input is invalid")
-	ErrInvalidMention = errors.New("one or more mentioned users are unavailable")
+	ErrNotFound         = errors.New("comment not found")
+	ErrForbidden        = errors.New("comment operation is not permitted")
+	ErrInvalidComment   = errors.New("comment input is invalid")
+	ErrInvalidMention   = errors.New("one or more mentioned users are unavailable")
+	ErrCreationConflict = errors.New("comment creation identity was already used")
 )

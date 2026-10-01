@@ -3,30 +3,32 @@ package storieshttp
 import (
 	"time"
 
+	storydomain "github.com/complexus-tech/projects-api/internal/modules/stories/domain"
 	"github.com/complexus-tech/projects-api/pkg/date"
 	"github.com/google/uuid"
 )
 
 type AppNewStory struct {
-	Title                    string      `json:"title" validate:"required"`
-	EstimateValue            *int16      `json:"estimateValue"`
-	EstimatedDurationMinutes *int        `json:"estimatedDurationMinutes"`
-	MinimumFocusBlockMinutes *int        `json:"minimumFocusBlockMinutes"`
-	AutoSchedulingEnabled    bool        `json:"autoSchedulingEnabled"`
-	Description              *string     `json:"description"`
-	DescriptionHTML          *string     `json:"descriptionHTML"`
-	Parent                   *uuid.UUID  `json:"parentId"`
-	Objective                *uuid.UUID  `json:"objectiveId"`
-	Status                   *uuid.UUID  `json:"statusId"`
-	Assignee                 *uuid.UUID  `json:"assigneeId"`
-	Priority                 string      `json:"priority" validate:"oneof='No Priority' Low Medium High Urgent"`
-	Sprint                   *uuid.UUID  `json:"sprintId"`
-	KeyResult                *uuid.UUID  `json:"keyResultId"`
-	LabelIDs                 []uuid.UUID `json:"labelIds"`
-	Team                     uuid.UUID   `json:"teamId" validate:"required"`
-	StartDate                *date.Date  `json:"startDate"`
-	EndDate                  *date.Date  `json:"endDate"`
-	IdempotencyKey           *string     `json:"idempotencyKey" validate:"omitempty,max=128"`
+	Title                    string                         `json:"title" validate:"required"`
+	EstimateValue            *int16                         `json:"estimateValue"`
+	EstimatedDurationMinutes *int                           `json:"estimatedDurationMinutes"`
+	MinimumFocusBlockMinutes *int                           `json:"minimumFocusBlockMinutes"`
+	AutoSchedulingEnabled    bool                           `json:"autoSchedulingEnabled"`
+	Description              *string                        `json:"description"`
+	DescriptionHTML          *string                        `json:"descriptionHTML"`
+	Parent                   *uuid.UUID                     `json:"parentId"`
+	Objective                *uuid.UUID                     `json:"objectiveId"`
+	Status                   *uuid.UUID                     `json:"statusId"`
+	Assignee                 *uuid.UUID                     `json:"assigneeId"`
+	Priority                 string                         `json:"priority" validate:"oneof='No Priority' Low Medium High Urgent"`
+	Sprint                   *uuid.UUID                     `json:"sprintId"`
+	KeyResult                *uuid.UUID                     `json:"keyResultId"`
+	LabelIDs                 []uuid.UUID                    `json:"labelIds"`
+	CustomFieldValues        []storydomain.CustomFieldValue `json:"customFieldValues" validate:"max=50,dive"`
+	Team                     uuid.UUID                      `json:"teamId" validate:"required"`
+	StartDate                *date.Date                     `json:"startDate"`
+	EndDate                  *date.Date                     `json:"endDate"`
+	IdempotencyKey           *string                        `json:"idempotencyKey" validate:"omitempty,max=128"`
 }
 
 type AppNewComment struct {

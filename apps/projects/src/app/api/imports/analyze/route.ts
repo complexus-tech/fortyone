@@ -155,6 +155,13 @@ export async function POST(request: Request): Promise<Response> {
     }
   }
   const authoritativeSourceType = draft?.sourceType ?? sourceType;
+  if (draft?.sourceNamespace?.startsWith("fortyone:workspace:"))
+    return jsonResponse({
+      analysis: draft,
+      fileHash,
+      responseId: null,
+      status: "completed",
+    });
 
   if (!process.env.OPENAI_API_KEY) {
     if (!draft) {

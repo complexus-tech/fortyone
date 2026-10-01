@@ -24,3 +24,30 @@ get:
     '429': {$ref: ../openapi.yaml#/components/responses/RateLimited}
     '500': {$ref: ../openapi.yaml#/components/responses/InternalError}
     '503': {$ref: ../openapi.yaml#/components/responses/ServiceUnavailable}
+patch:
+  operationId: updateStory
+  tags: [Stories]
+  summary: Update story
+  description: Applies a typed patch with a personal access token or supported service-account or OAuth credential only when expectedUpdatedAt matches the current task version. Omitted fields are preserved; clearFields clears optional values. A concurrent edit returns 409.
+  x-fortyone-scope: stories:write
+  parameters:
+    - $ref: ../openapi.yaml#/components/parameters/WorkspaceId
+    - $ref: ../openapi.yaml#/components/parameters/StoryId
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: {$ref: ../openapi.yaml#/components/schemas/UpdateStoryRequest}
+  responses:
+    '204':
+      description: The change was applied.
+    '400': {$ref: ../openapi.yaml#/components/responses/BadRequest}
+    '401': {$ref: ../openapi.yaml#/components/responses/Unauthorized}
+    '403': {$ref: ../openapi.yaml#/components/responses/Forbidden}
+    '404': {$ref: ../openapi.yaml#/components/responses/NotFound}
+    '409': {$ref: ../openapi.yaml#/components/responses/Conflict}
+    '413': {$ref: ../openapi.yaml#/components/responses/RequestTooLarge}
+    '415': {$ref: ../openapi.yaml#/components/responses/UnsupportedMediaType}
+    '429': {$ref: ../openapi.yaml#/components/responses/RateLimited}
+    '500': {$ref: ../openapi.yaml#/components/responses/InternalError}
+    '503': {$ref: ../openapi.yaml#/components/responses/ServiceUnavailable}

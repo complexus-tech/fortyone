@@ -28,6 +28,7 @@ func (adapter *StoryCommentCreator) CreateComment(
 	command stories.CreateCommentCommand,
 ) (stories.CoreComment, error) {
 	created, err := adapter.comments.CreateComment(ctx, comments.CreateCommentCommand{
+		CreationID:  copyCommentParentID(command.CreationID),
 		WorkspaceID: command.WorkspaceID,
 		StoryID:     command.StoryID,
 		ParentID:    copyCommentParentID(command.ParentID),

@@ -281,7 +281,15 @@ export const useImportAnalysis = ({
       return {
         ...current,
         tasks: current.tasks.map((task, taskIndex) =>
-          taskIndex === index ? { ...task, title } : task,
+          taskIndex === index
+            ? {
+                ...task,
+                title,
+                ...(task.canonical
+                  ? { canonical: { ...task.canonical, title } }
+                  : {}),
+              }
+            : task,
         ),
       };
     });

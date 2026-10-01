@@ -374,7 +374,7 @@ const StoryBannerStack = ({ items }: { items: BannerItem[] }) => {
 };
 
 export const StoryBanners = ({ story }: { story: DetailedStory }) => {
-  const { getTermDisplay } = useTerminology();
+  const { getTermDisplay } = useTerminology(story.teamId);
   const { data: githubLinks = [] } = useStoryGitHubLinks(story.id);
   const { data: feedbackLinks = [] } = useStoryFeedbackLinks(story.id);
   const { data: requestLinks = [] } = useStoryIntegrationRequestLinks(story.id);

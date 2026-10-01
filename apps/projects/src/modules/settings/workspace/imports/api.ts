@@ -29,8 +29,8 @@ import {
 import type {
   ImportAnalysisPollResponse,
   ImportAnalysisStartResponse,
-  ImportEstimateValue,
   ImportPriority,
+  ImportTask,
 } from "./schema";
 
 export type ImportStoryPayload = {
@@ -46,11 +46,12 @@ export type ImportStoryPayload = {
   parentId?: string;
   labelIds?: string[];
   priority: ImportPriority;
-  estimateValue?: ImportEstimateValue;
+  estimateValue?: number;
   estimatedDurationMinutes?: number;
   minimumFocusBlockMinutes?: number;
   startDate?: string;
   endDate?: string;
+  customFieldValues?: { fieldId: string; value: string | null }[];
 };
 
 export type ImportObjectiveCreateResult = {
@@ -84,6 +85,7 @@ export type ImportStoriesRequest = {
   items: {
     sourceKey: string;
     story: ImportStoryPayload;
+    sourceMetadata?: ImportTask["canonical"];
   }[];
 };
 

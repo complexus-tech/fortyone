@@ -15,23 +15,23 @@ import (
 const getPulseObjectiveHealth = `-- name: GetPulseObjectiveHealth :one
 SELECT
     CAST(COUNT(*) FILTER (WHERE status.category IS NULL OR status.category NOT IN ('completed', 'cancelled')) AS int) AS active_objectives,
-    CAST(COUNT(*) FILTER (WHERE objective.health = 'At Risk') AS int) AS at_risk_objectives,
-    CAST(COUNT(*) FILTER (WHERE objective.health = 'Off Track') AS int) AS off_track_objectives,
+    CAST(COUNT(*) FILTER (WHERE (status.category IS NULL OR status.category NOT IN ('completed', 'cancelled')) AND objective.health = 'At Risk') AS int) AS at_risk_objectives,
+    CAST(COUNT(*) FILTER (WHERE (status.category IS NULL OR status.category NOT IN ('completed', 'cancelled')) AND objective.health = 'Off Track') AS int) AS off_track_objectives,
     CAST(COUNT(*) FILTER (
-        WHERE (status.category IS NULL OR status.category NOT IN ('completed', 'cancelled'))
+    WHERE (status.category IS NULL OR status.category NOT IN ('completed', 'cancelled'))
           AND objective.end_date < CURRENT_DATE
     ) AS int) AS overdue_objectives,
     CAST(COUNT(*) FILTER (
-        WHERE (status.category IS NULL OR status.category NOT IN ('completed', 'cancelled'))
+    WHERE (status.category IS NULL OR status.category NOT IN ('completed', 'cancelled'))
           AND objective.end_date >= CURRENT_DATE
           AND objective.end_date <= CURRENT_DATE + INTERVAL '7 days'
     ) AS int) AS objectives_due_soon
 FROM objectives AS objective
 LEFT JOIN objective_statuses AS status ON status.status_id = objective.status_id
-WHERE objective.workspace_id = $1::uuid
-  AND (cardinality($2::uuid[]) = 0 OR objective.team_id = ANY($2::uuid[]))
-  AND (cardinality($3::uuid[]) = 0 OR objective.lead_user_id = ANY($3::uuid[]))
-  AND (cardinality($4::uuid[]) = 0 OR objective.objective_id = ANY($4::uuid[]))
+WHERE objective.workspace_id = CAST($1 AS uuid)
+  AND (cardinality(CAST($2 AS uuid[])) = 0 OR objective.team_id = ANY(CAST($2 AS uuid[])))
+  AND (cardinality(CAST($3 AS uuid[])) = 0 OR objective.lead_user_id = ANY(CAST($3 AS uuid[])))
+  AND (cardinality(CAST($4 AS uuid[])) = 0 OR objective.objective_id = ANY(CAST($4 AS uuid[])))
   AND ($5::timestamptz IS NULL OR objective.created_at >= $5)
   AND ($6::timestamptz IS NULL OR objective.created_at <= $6)
 `
@@ -83,11 +83,11 @@ SELECT
     CAST(COUNT(*) FILTER (WHERE request.status = 'pending' AND request.provider = 'intercom') AS int) AS intercom_requests,
     CAST(COUNT(*) FILTER (WHERE request.status = 'pending' AND request.created_at < NOW() - INTERVAL '7 days') AS int) AS stale_requests
 FROM integration_requests AS request
-WHERE request.workspace_id = $1::uuid
-  AND (cardinality($2::uuid[]) = 0 OR request.team_id = ANY($2::uuid[]))
-  AND (cardinality($3::uuid[]) = 0 OR request.assignee_id = ANY($3::uuid[]))
-  AND (cardinality($4::uuid[]) = 0 OR request.sprint_id = ANY($4::uuid[]))
-  AND (cardinality($5::uuid[]) = 0 OR request.objective_id = ANY($5::uuid[]))
+WHERE request.workspace_id = CAST($1 AS uuid)
+  AND (cardinality(CAST($2 AS uuid[])) = 0 OR request.team_id = ANY(CAST($2 AS uuid[])))
+  AND (cardinality(CAST($3 AS uuid[])) = 0 OR request.assignee_id = ANY(CAST($3 AS uuid[])))
+  AND (cardinality(CAST($4 AS uuid[])) = 0 OR request.sprint_id = ANY(CAST($4 AS uuid[])))
+  AND (cardinality(CAST($5 AS uuid[])) = 0 OR request.objective_id = ANY(CAST($5 AS uuid[])))
   AND ($6::timestamptz IS NULL OR request.created_at >= $6)
   AND ($7::timestamptz IS NULL OR request.created_at <= $7)
 `
@@ -142,28 +142,28 @@ WITH sprint_scope AS (
         sprint.start_date,
         sprint.end_date,
         CAST(COUNT(story.id) FILTER (
-            WHERE story_status.category IS NULL OR story_status.category NOT IN ('completed', 'cancelled')
+        WHERE story_status.category IS NULL OR story_status.category NOT IN ('completed', 'cancelled')
         ) AS int) AS open_stories,
         CAST(COUNT(story.id) FILTER (
-            WHERE (story_status.category IS NULL OR story_status.category NOT IN ('completed', 'cancelled'))
+        WHERE (story_status.category IS NULL OR story_status.category NOT IN ('completed', 'cancelled'))
               AND story.end_date < CURRENT_DATE
         ) AS int) AS overdue_stories,
         CAST(COUNT(story.id) FILTER (
-            WHERE (story_status.category IS NULL OR story_status.category NOT IN ('completed', 'cancelled'))
+        WHERE (story_status.category IS NULL OR story_status.category NOT IN ('completed', 'cancelled'))
               AND story.estimate_unit IS NULL
         ) AS int) AS unestimated_stories
     FROM sprints AS sprint
     LEFT JOIN stories AS story
         ON story.sprint_id = sprint.sprint_id
-       AND story.workspace_id = $1::uuid
+       AND story.workspace_id = CAST($1 AS uuid)
        AND story.deleted_at IS NULL
        AND story.archived_at IS NULL
        AND story.is_draft = FALSE
     LEFT JOIN statuses AS story_status ON story_status.status_id = story.status_id
-    WHERE sprint.workspace_id = $1::uuid
-      AND (cardinality($2::uuid[]) = 0 OR sprint.team_id = ANY($2::uuid[]))
-      AND (cardinality($3::uuid[]) = 0 OR sprint.sprint_id = ANY($3::uuid[]))
-      AND (cardinality($4::uuid[]) = 0 OR sprint.objective_id = ANY($4::uuid[]))
+    WHERE sprint.workspace_id = CAST($1 AS uuid)
+      AND (cardinality(CAST($2 AS uuid[])) = 0 OR sprint.team_id = ANY(CAST($2 AS uuid[])))
+      AND (cardinality(CAST($3 AS uuid[])) = 0 OR sprint.sprint_id = ANY(CAST($3 AS uuid[])))
+      AND (cardinality(CAST($4 AS uuid[])) = 0 OR sprint.objective_id = ANY(CAST($4 AS uuid[])))
       AND ($5::timestamptz IS NULL OR sprint.created_at >= $5)
       AND ($6::timestamptz IS NULL OR sprint.created_at <= $6)
     GROUP BY sprint.sprint_id, sprint.start_date, sprint.end_date
@@ -173,7 +173,7 @@ SELECT
     CAST(COUNT(*) FILTER (WHERE start_date > CURRENT_DATE) AS int) AS upcoming_sprints,
     CAST(COUNT(*) FILTER (WHERE end_date < CURRENT_DATE AND open_stories = 0) AS int) AS completed_sprints,
     CAST(COUNT(*) FILTER (
-        WHERE start_date <= CURRENT_DATE
+    WHERE start_date <= CURRENT_DATE
           AND end_date >= CURRENT_DATE
           AND open_stories > 0
           AND (overdue_stories > 0 OR end_date <= CURRENT_DATE + INTERVAL '3 days')
@@ -229,7 +229,30 @@ SELECT
     CAST(COUNT(*) FILTER (WHERE status.category = 'paused') AS int) AS paused_stories,
     CAST(COUNT(*) FILTER (WHERE status.category = 'completed') AS int) AS completed_stories,
     CAST(COUNT(*) FILTER (WHERE status.category = 'cancelled') AS int) AS cancelled_stories,
-    CAST(COUNT(*) FILTER (WHERE (status.category IS NULL OR status.category NOT IN ('completed', 'cancelled')) AND story.blocked_by_id IS NOT NULL) AS int) AS blocked_stories,
+    CAST(COUNT(*) FILTER (
+    WHERE (status.category IS NULL OR status.category NOT IN ('completed', 'cancelled'))
+          AND EXISTS (
+              SELECT 1
+              FROM stories AS blocker
+              LEFT JOIN statuses AS blocker_status ON blocker_status.status_id = blocker.status_id
+          WHERE blocker.workspace_id = story.workspace_id
+                AND blocker.deleted_at IS NULL
+                AND blocker.archived_at IS NULL
+                AND blocker.is_draft = FALSE
+                AND (blocker_status.category IS NULL OR blocker_status.category NOT IN ('completed', 'cancelled'))
+                AND (
+                    blocker.id = story.blocked_by_id
+                    OR EXISTS (
+                        SELECT 1
+                        FROM story_associations AS association
+                    WHERE association.workspace_id = story.workspace_id
+                          AND association.from_story_id = blocker.id
+                          AND association.to_story_id = story.id
+                          AND association.association_type = 'blocking'
+                    )
+                )
+          )
+    ) AS int) AS blocked_stories,
     CAST(COUNT(*) FILTER (WHERE (status.category IS NULL OR status.category NOT IN ('completed', 'cancelled')) AND story.end_date < CURRENT_DATE) AS int) AS overdue_stories,
     CAST(COUNT(*) FILTER (WHERE (status.category IS NULL OR status.category NOT IN ('completed', 'cancelled')) AND story.priority = 'Urgent') AS int) AS urgent_stories,
     CAST(COUNT(*) FILTER (WHERE (status.category IS NULL OR status.category NOT IN ('completed', 'cancelled')) AND story.priority = 'High') AS int) AS high_priority_stories,
@@ -237,14 +260,14 @@ SELECT
     CAST(COUNT(*) FILTER (WHERE (status.category IS NULL OR status.category NOT IN ('completed', 'cancelled')) AND story.estimate_unit IS NULL) AS int) AS unestimated_stories
 FROM stories AS story
 LEFT JOIN statuses AS status ON status.status_id = story.status_id
-WHERE story.workspace_id = $1::uuid
+WHERE story.workspace_id = CAST($1 AS uuid)
   AND story.deleted_at IS NULL
   AND story.archived_at IS NULL
   AND story.is_draft = FALSE
-  AND (cardinality($2::uuid[]) = 0 OR story.team_id = ANY($2::uuid[]))
-  AND (cardinality($3::uuid[]) = 0 OR story.assignee_id = ANY($3::uuid[]))
-  AND (cardinality($4::uuid[]) = 0 OR story.sprint_id = ANY($4::uuid[]))
-  AND (cardinality($5::uuid[]) = 0 OR story.objective_id = ANY($5::uuid[]))
+  AND (cardinality(CAST($2 AS uuid[])) = 0 OR story.team_id = ANY(CAST($2 AS uuid[])))
+  AND (cardinality(CAST($3 AS uuid[])) = 0 OR story.assignee_id = ANY(CAST($3 AS uuid[])))
+  AND (cardinality(CAST($4 AS uuid[])) = 0 OR story.sprint_id = ANY(CAST($4 AS uuid[])))
+  AND (cardinality(CAST($5 AS uuid[])) = 0 OR story.objective_id = ANY(CAST($5 AS uuid[])))
   AND ($6::timestamptz IS NULL OR story.created_at >= $6)
   AND ($7::timestamptz IS NULL OR story.created_at <= $7)
 `

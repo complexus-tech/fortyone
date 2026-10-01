@@ -1,6 +1,9 @@
 import { cn } from "lib";
 import type { Icon } from "./types";
 
+// Hugeicons LockKeyholeIcon, Stroke Rounded (MIT).
+// Source: https://github.com/hugeicons/hugeicons/blob/9c48f3723dfb243909fa83501aa7c6423ab972c0/icons/lock-keyhole.svg
+// Copyright (c) 2025 Hugeicons. See ../LICENSE.hugeicons.
 export const LockIcon = (props: Icon) => {
   const { className, strokeWidth = 2, ...rest } = props;
   return (
@@ -8,8 +11,9 @@ export const LockIcon = (props: Icon) => {
       {...rest}
       className={cn("h-5 w-auto text-icon", className)}
       fill="none"
-      strokeWidth={strokeWidth}
       height="24"
+      stroke="currentColor"
+      strokeWidth={strokeWidth}
       viewBox="0 0 24 24"
       width="24"
       xmlns="http://www.w3.org/2000/svg"
@@ -24,12 +28,7 @@ export const LockIcon = (props: Icon) => {
         stroke="currentColor"
         strokeLinecap="round"
       />
-      <circle
-        cx="11.9964"
-        cy="15.5"
-        r="2"
-        stroke="currentColor"
-      />
+      <circle cx="11.9964" cy="15.5" r="2" stroke="currentColor" />
     </svg>
   );
 };

@@ -142,13 +142,13 @@ WITH scoped_story AS (
     INNER JOIN public.workspaces AS workspace
         ON workspace.workspace_id = story.workspace_id AND workspace.deleted_at IS NULL
     INNER JOIN public.users AS actor_user
-        ON actor_user.user_id = $2 AND actor_user.is_active = TRUE
-    WHERE story.id = $4
-      AND story.workspace_id = $5
+        ON actor_user.user_id = $3 AND actor_user.is_active = TRUE
+    WHERE story.id = $5
+      AND story.workspace_id = $6
       AND story.deleted_at IS NULL
       AND (
-          (CAST($6 AS boolean) AND actor_user.is_system = TRUE)
-          OR (NOT CAST($6 AS boolean) AND EXISTS (
+          (CAST($7 AS boolean) AND actor_user.is_system = TRUE)
+          OR (NOT CAST($7 AS boolean) AND EXISTS (
               SELECT 1 FROM public.workspace_members AS actor_member
               INNER JOIN public.team_members AS actor_team_member
                   ON actor_team_member.team_id = story.team_id
@@ -158,31 +158,34 @@ WITH scoped_story AS (
           ))
       )
       AND (
-          CAST($7 AS boolean)
-          OR story.team_id = ANY(CAST($8 AS uuid[]))
+          CAST($8 AS boolean)
+          OR story.team_id = ANY(CAST($9 AS uuid[]))
       )
       AND (
-          CAST($3 AS uuid) IS NULL
+          CAST($4 AS uuid) IS NULL
           OR EXISTS (
               SELECT 1
               FROM public.story_comments AS parent_comment
-              WHERE parent_comment.comment_id = $3
+              WHERE parent_comment.comment_id = $4
                 AND parent_comment.story_id = story.id
           )
       )
 )
 INSERT INTO public.story_comments (
+    comment_id,
     content,
     story_id,
     commenter_id,
     parent_id
 )
 SELECT
-    $1,
-    scoped_story.id,
+    COALESCE(CAST($1 AS uuid), gen_random_uuid()),
     $2,
-    $3
+    scoped_story.id,
+    $3,
+    $4
 FROM scoped_story
+ON CONFLICT (comment_id) DO NOTHING
 RETURNING
     comment_id,
     story_id,
@@ -194,6 +197,7 @@ RETURNING
 `
 
 type CreateCommentForActorParams struct {
+	CreationID             *uuid.UUID
 	Content                string
 	ActorID                uuid.UUID
 	ParentID               *uuid.UUID
@@ -216,6 +220,7 @@ type CreateCommentForActorRow struct {
 
 func (q *Queries) CreateCommentForActor(ctx context.Context, arg CreateCommentForActorParams) (CreateCommentForActorRow, error) {
 	row := q.db.QueryRow(ctx, createCommentForActor,
+		arg.CreationID,
 		arg.Content,
 		arg.ActorID,
 		arg.ParentID,
@@ -371,6 +376,74 @@ func (q *Queries) DeleteCommentMentionsForAuthor(ctx context.Context, arg Delete
 	)
 	var i DeleteCommentMentionsForAuthorRow
 	err := row.Scan(&i.CommentFound, &i.DeletedCount)
+	return i, err
+}
+
+const getCommentCreationForActor = `-- name: GetCommentCreationForActor :one
+SELECT comment.comment_id, comment.story_id, comment.parent_id, comment.commenter_id,
+       comment.content, comment.created_at, comment.updated_at
+FROM public.story_comments AS comment
+INNER JOIN public.stories AS story ON story.id = comment.story_id
+INNER JOIN public.workspaces AS workspace
+    ON workspace.workspace_id = story.workspace_id AND workspace.deleted_at IS NULL
+INNER JOIN public.users AS actor_user
+    ON actor_user.user_id = $1 AND actor_user.is_active = TRUE
+WHERE comment.comment_id = $2
+  AND comment.story_id = $3
+  AND comment.commenter_id = $1
+  AND story.workspace_id = $4
+  AND story.deleted_at IS NULL
+  AND (CAST($5 AS boolean)
+       OR story.team_id = ANY(CAST($6 AS uuid[])))
+  AND ((CAST($7 AS boolean) AND actor_user.is_system = TRUE)
+       OR (NOT CAST($7 AS boolean) AND EXISTS (
+           SELECT 1 FROM public.workspace_members AS member
+           INNER JOIN public.team_members AS team_member
+               ON team_member.team_id = story.team_id AND team_member.user_id = member.user_id
+           WHERE member.workspace_id = story.workspace_id AND member.user_id = actor_user.user_id
+       )))
+`
+
+type GetCommentCreationForActorParams struct {
+	ActorID                uuid.UUID
+	CreationID             uuid.UUID
+	StoryID                uuid.UUID
+	WorkspaceID            uuid.UUID
+	TeamAccessUnrestricted bool
+	AllowedTeamIds         []uuid.UUID
+	SystemActor            bool
+}
+
+type GetCommentCreationForActorRow struct {
+	CommentID   uuid.UUID
+	StoryID     uuid.UUID
+	ParentID    *uuid.UUID
+	CommenterID uuid.UUID
+	Content     string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
+func (q *Queries) GetCommentCreationForActor(ctx context.Context, arg GetCommentCreationForActorParams) (GetCommentCreationForActorRow, error) {
+	row := q.db.QueryRow(ctx, getCommentCreationForActor,
+		arg.ActorID,
+		arg.CreationID,
+		arg.StoryID,
+		arg.WorkspaceID,
+		arg.TeamAccessUnrestricted,
+		arg.AllowedTeamIds,
+		arg.SystemActor,
+	)
+	var i GetCommentCreationForActorRow
+	err := row.Scan(
+		&i.CommentID,
+		&i.StoryID,
+		&i.ParentID,
+		&i.CommenterID,
+		&i.Content,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
 	return i, err
 }
 

@@ -6,6 +6,15 @@ import type { ImportStoryResult } from "./api";
 export type ImportStructureMode = "preserve" | "single";
 
 export type ImportRunResult = {
+  paused?: string | null;
+  comments?: number;
+  unresolvedComments?: number;
+  commentIssues?: string[];
+  createdCustomFields?: number;
+  unresolvedCustomFieldValues?: number;
+  customFieldIssues?: string[];
+  sourceWarnings?: string[];
+  remainingTasks?: number;
   created: number;
   replayed: number;
   failed: number;

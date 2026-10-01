@@ -33,18 +33,25 @@ LEFT JOIN stories AS story
    AND story.is_draft = FALSE
    AND story.created_at >= $2
    AND story.created_at <= $3
+   AND (cardinality(CAST($4 AS uuid[])) = 0 OR story.assignee_id = ANY(CAST($4 AS uuid[])))
+   AND (cardinality(CAST($5 AS uuid[])) = 0 OR story.objective_id = ANY(CAST($5 AS uuid[])))
+   AND (cardinality(CAST($6 AS uuid[])) = 0 OR story.sprint_id = ANY(CAST($6 AS uuid[])))
 LEFT JOIN statuses AS status ON status.status_id = story.status_id
 WHERE account.is_active = TRUE
-  AND (cardinality($4::uuid[]) = 0 OR team.team_id = ANY($4::uuid[]))
+  AND (cardinality(CAST($4 AS uuid[])) = 0 OR account.user_id = ANY(CAST($4 AS uuid[])))
+  AND (cardinality($7::uuid[]) = 0 OR team.team_id = ANY($7::uuid[]))
 GROUP BY account.user_id, account.username, account.avatar_url, membership.team_id
 ORDER BY account.username, account.user_id, membership.team_id
 `
 
 type ListMemberContributionsParams struct {
-	WorkspaceID uuid.UUID
-	StartDate   time.Time
-	EndDate     time.Time
-	TeamIds     []uuid.UUID
+	WorkspaceID  uuid.UUID
+	StartDate    time.Time
+	EndDate      time.Time
+	AssigneeIds  []uuid.UUID
+	ObjectiveIds []uuid.UUID
+	SprintIds    []uuid.UUID
+	TeamIds      []uuid.UUID
 }
 
 type ListMemberContributionsRow struct {
@@ -61,6 +68,9 @@ func (q *Queries) ListMemberContributions(ctx context.Context, arg ListMemberCon
 		arg.WorkspaceID,
 		arg.StartDate,
 		arg.EndDate,
+		arg.AssigneeIds,
+		arg.ObjectiveIds,
+		arg.SprintIds,
 		arg.TeamIds,
 	)
 	if err != nil {
@@ -104,20 +114,26 @@ LEFT JOIN stories AS story
    AND story.is_draft = FALSE
    AND CAST(story.updated_at AS date) >= CAST($2 AS date) - INTERVAL '3 weeks'
    AND story.updated_at <= $3
+   AND (cardinality(CAST($4 AS uuid[])) = 0 OR story.assignee_id = ANY(CAST($4 AS uuid[])))
+   AND (cardinality(CAST($5 AS uuid[])) = 0 OR story.objective_id = ANY(CAST($5 AS uuid[])))
+   AND (cardinality(CAST($6 AS uuid[])) = 0 OR story.sprint_id = ANY(CAST($6 AS uuid[])))
 LEFT JOIN statuses AS status
     ON status.status_id = story.status_id
    AND status.category = 'completed'
 WHERE team.workspace_id = $1::uuid
-  AND (cardinality($4::uuid[]) = 0 OR team.team_id = ANY($4::uuid[]))
+  AND (cardinality($7::uuid[]) = 0 OR team.team_id = ANY($7::uuid[]))
 GROUP BY team.team_id, team.name
 ORDER BY team.name, team.team_id
 `
 
 type ListTeamVelocityParams struct {
-	WorkspaceID uuid.UUID
-	StartDate   time.Time
-	EndDate     time.Time
-	TeamIds     []uuid.UUID
+	WorkspaceID  uuid.UUID
+	StartDate    time.Time
+	EndDate      time.Time
+	AssigneeIds  []uuid.UUID
+	ObjectiveIds []uuid.UUID
+	SprintIds    []uuid.UUID
+	TeamIds      []uuid.UUID
 }
 
 type ListTeamVelocityRow struct {
@@ -134,6 +150,9 @@ func (q *Queries) ListTeamVelocity(ctx context.Context, arg ListTeamVelocityPara
 		arg.WorkspaceID,
 		arg.StartDate,
 		arg.EndDate,
+		arg.AssigneeIds,
+		arg.ObjectiveIds,
+		arg.SprintIds,
 		arg.TeamIds,
 	)
 	if err != nil {
@@ -176,19 +195,25 @@ LEFT JOIN stories AS story
    AND story.is_draft = FALSE
    AND story.created_at >= $2
    AND story.created_at <= $3
+   AND (cardinality(CAST($4 AS uuid[])) = 0 OR story.assignee_id = ANY(CAST($4 AS uuid[])))
+   AND (cardinality(CAST($5 AS uuid[])) = 0 OR story.objective_id = ANY(CAST($5 AS uuid[])))
+   AND (cardinality(CAST($6 AS uuid[])) = 0 OR story.sprint_id = ANY(CAST($6 AS uuid[])))
 LEFT JOIN statuses AS status ON status.status_id = story.status_id
 LEFT JOIN team_members AS member ON member.team_id = team.team_id
 WHERE team.workspace_id = $1::uuid
-  AND (cardinality($4::uuid[]) = 0 OR team.team_id = ANY($4::uuid[]))
+  AND (cardinality($7::uuid[]) = 0 OR team.team_id = ANY($7::uuid[]))
 GROUP BY team.team_id, team.name
 ORDER BY team.name, team.team_id
 `
 
 type ListTeamWorkloadParams struct {
-	WorkspaceID uuid.UUID
-	StartDate   time.Time
-	EndDate     time.Time
-	TeamIds     []uuid.UUID
+	WorkspaceID  uuid.UUID
+	StartDate    time.Time
+	EndDate      time.Time
+	AssigneeIds  []uuid.UUID
+	ObjectiveIds []uuid.UUID
+	SprintIds    []uuid.UUID
+	TeamIds      []uuid.UUID
 }
 
 type ListTeamWorkloadRow struct {
@@ -204,6 +229,9 @@ func (q *Queries) ListTeamWorkload(ctx context.Context, arg ListTeamWorkloadPara
 		arg.WorkspaceID,
 		arg.StartDate,
 		arg.EndDate,
+		arg.AssigneeIds,
+		arg.ObjectiveIds,
+		arg.SprintIds,
 		arg.TeamIds,
 	)
 	if err != nil {
@@ -242,16 +270,22 @@ WHERE story.workspace_id = $1::uuid
   AND story.is_draft = FALSE
   AND story.created_at >= $2
   AND story.created_at <= $3
-  AND (cardinality($4::uuid[]) = 0 OR story.team_id = ANY($4::uuid[]))
+  AND (cardinality(CAST($4 AS uuid[])) = 0 OR story.assignee_id = ANY(CAST($4 AS uuid[])))
+  AND (cardinality(CAST($5 AS uuid[])) = 0 OR story.objective_id = ANY(CAST($5 AS uuid[])))
+  AND (cardinality(CAST($6 AS uuid[])) = 0 OR story.sprint_id = ANY(CAST($6 AS uuid[])))
+  AND (cardinality($7::uuid[]) = 0 OR story.team_id = ANY($7::uuid[]))
 GROUP BY CAST(story.created_at AS date)
 ORDER BY date
 `
 
 type ListWorkloadTrendParams struct {
-	WorkspaceID uuid.UUID
-	StartDate   time.Time
-	EndDate     time.Time
-	TeamIds     []uuid.UUID
+	WorkspaceID  uuid.UUID
+	StartDate    time.Time
+	EndDate      time.Time
+	AssigneeIds  []uuid.UUID
+	ObjectiveIds []uuid.UUID
+	SprintIds    []uuid.UUID
+	TeamIds      []uuid.UUID
 }
 
 type ListWorkloadTrendRow struct {
@@ -265,6 +299,9 @@ func (q *Queries) ListWorkloadTrend(ctx context.Context, arg ListWorkloadTrendPa
 		arg.WorkspaceID,
 		arg.StartDate,
 		arg.EndDate,
+		arg.AssigneeIds,
+		arg.ObjectiveIds,
+		arg.SprintIds,
 		arg.TeamIds,
 	)
 	if err != nil {

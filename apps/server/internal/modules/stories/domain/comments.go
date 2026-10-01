@@ -25,6 +25,7 @@ type Comment struct {
 // story workflows. It prevents the stories service from importing a sibling
 // module's concrete service or command types.
 type CreateCommentCommand struct {
+	CreationID       *uuid.UUID
 	WorkspaceID      uuid.UUID
 	StoryID          uuid.UUID
 	ParentID         *uuid.UUID

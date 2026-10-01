@@ -135,11 +135,12 @@ func (activity MutationActivity) Validate(scope MutationScope, storyID uuid.UUID
 }
 
 type CreateStoryCommand struct {
-	Scope    MutationScope
-	Story    Story
-	LabelIDs []uuid.UUID
-	Event    MutationEvent
-	Activity *MutationActivity
+	Scope             MutationScope
+	Story             Story
+	LabelIDs          []uuid.UUID
+	CustomFieldValues []CustomFieldValue
+	Event             MutationEvent
+	Activity          *MutationActivity
 }
 
 func (command CreateStoryCommand) Validate() error {
@@ -151,6 +152,16 @@ func (command CreateStoryCommand) Validate() error {
 	}
 	if strings.TrimSpace(command.Story.Title) == "" {
 		return fmt.Errorf("%w: title cannot be blank", ErrInvalidMutation)
+	}
+	if len(command.CustomFieldValues) > 50 {
+		return fmt.Errorf("%w: at most 50 custom fields may be supplied", ErrInvalidMutation)
+	}
+	seenFields := make(map[uuid.UUID]bool, len(command.CustomFieldValues))
+	for _, value := range command.CustomFieldValues {
+		if value.FieldID == uuid.Nil || seenFields[value.FieldID] || (value.Value != nil && len(*value.Value) > 4000) {
+			return fmt.Errorf("%w: invalid custom field values", ErrInvalidMutation)
+		}
+		seenFields[value.FieldID] = true
 	}
 	if command.Event.StoryID != command.Story.ID || command.Event.WorkspaceID != command.Scope.WorkspaceID || command.Event.Type != MutationEventStoryCreated {
 		return fmt.Errorf("%w: create event scope does not match story", ErrInvalidMutation)

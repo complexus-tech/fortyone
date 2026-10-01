@@ -2,6 +2,7 @@
 
 import type { State } from "@/types/states";
 import {
+  buildCompletionTrendChartData,
   buildFilterSignature,
   buildObjectiveProgressChartData,
   buildProviderChartData,
@@ -10,6 +11,41 @@ import {
 } from "./model";
 
 describe("command center report model", () => {
+  it("retains quiet weeks instead of compressing the delivery timeline", () => {
+    const data = buildCompletionTrendChartData(
+      [
+        { date: "2026-09-07T00:00:00Z", completed: 3, total: 5 },
+        { date: "2026-09-21T00:00:00Z", completed: 2, total: 1 },
+      ],
+      { startDate: "2026-09-09", endDate: "2026-09-30" },
+    );
+    expect(data.map(({ completed, total }) => ({ completed, total }))).toEqual([
+      { completed: 3, total: 5 },
+      { completed: 0, total: 0 },
+      { completed: 2, total: 1 },
+      { completed: 0, total: 0 },
+    ]);
+    expect(new Set(data.map((point) => point.date)).size).toBe(4);
+  });
+
+  it("shows a zero-activity timeline for a valid empty reporting period", () => {
+    expect(
+      buildCompletionTrendChartData([], {
+        startDate: "2026-12-30",
+        endDate: "2027-01-04",
+      }).map((point) => [point.total, point.completed]),
+    ).toEqual([
+      [0, 0],
+      [0, 0],
+    ]);
+    expect(
+      buildCompletionTrendChartData([], {
+        startDate: "invalid",
+        endDate: "2027-01-04",
+      }),
+    ).toEqual([]);
+  });
+
   it("creates a stable signature for every supported filter", () => {
     expect(
       buildFilterSignature({

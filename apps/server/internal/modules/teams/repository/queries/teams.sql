@@ -4,6 +4,7 @@ SELECT
     team.name,
     team.code,
     team.color,
+    team.story_term,
     team.is_private,
     team.workspace_id,
     team.created_at,
@@ -76,6 +77,7 @@ SELECT
     team.name,
     team.code,
     team.color,
+    team.story_term,
     team.is_private,
     team.workspace_id,
     team.created_at,
@@ -122,6 +124,7 @@ SELECT
     team.name,
     team.code,
     team.color,
+    team.story_term,
     team.is_private,
     team.workspace_id,
     team.created_at,
@@ -189,6 +192,7 @@ RETURNING
     name,
     code,
     color,
+    story_term,
     is_private,
     workspace_id,
     created_at,
@@ -249,7 +253,10 @@ SET
         WHEN CAST(sqlc.arg(color) AS text) = '' THEN team.color
         ELSE CAST(sqlc.arg(color) AS text)
     END,
-    is_private = sqlc.arg(is_private),
+    is_private = CASE WHEN CAST(sqlc.arg(is_private_set) AS boolean)
+        THEN sqlc.arg(is_private) ELSE team.is_private END,
+    story_term = CASE WHEN CAST(sqlc.arg(story_term_set) AS boolean)
+        THEN CAST(sqlc.narg(story_term) AS text) ELSE team.story_term END,
     updated_at = CURRENT_TIMESTAMP
 WHERE team.team_id = sqlc.arg(team_id)
   AND team.workspace_id = sqlc.arg(workspace_id)
@@ -258,6 +265,7 @@ RETURNING
     name,
     code,
     color,
+    story_term,
     is_private,
     workspace_id,
     created_at,

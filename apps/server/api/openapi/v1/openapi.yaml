@@ -135,6 +135,10 @@ components:
       $ref: ./components/resources.yaml#/components/schemas/Story
     StoryResponse:
       $ref: ./components/resources.yaml#/components/schemas/StoryResponse
+    UpdateStoryRequest:
+      $ref: ./components/resources.yaml#/components/schemas/UpdateStoryRequest
+    CreateCommentRequest:
+      $ref: ./components/resources.yaml#/components/schemas/CreateCommentRequest
     CreateStoryRequest:
       $ref: ./components/resources.yaml#/components/schemas/CreateStoryRequest
     StoryPageResponse:

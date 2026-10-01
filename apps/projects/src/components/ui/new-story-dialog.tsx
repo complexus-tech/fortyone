@@ -41,6 +41,15 @@ import { storyKeys } from "@/modules/stories/constants";
 import { useSimilarStories } from "@/modules/search/hooks/use-similar-stories";
 import { getStoryPath } from "@/shared/routing/story";
 import { MINIMUM_SIMILARITY_TITLE_CHARACTERS } from "@/constants/similarity";
+import {
+  EMPTY_CREATION_PROPERTIES,
+  useCreationPropertySlots,
+} from "@/shared/story/creation-property-slots";
+import type { CreationPropertiesController } from "@/shared/story/creation-property-slots";
+import {
+  getTemplateDraft,
+  templateDescriptionHTML,
+} from "@/shared/story/task-template";
 import { NewStoryDialogContent } from "./new-story-dialog-content";
 import {
   createInitialNewStoryDialogForm,
@@ -97,7 +106,6 @@ export const NewStoryDialog = ({
   const { data: statuses = [] } = useStatuses();
   const { data: members = [] } = useMembers();
   const { data: allLabels = [] } = useLabels();
-  const { getTermDisplay } = useTerminology();
   const [isExpanded, setIsExpanded] = useState(false);
   const firstTeam = teams.length > 0 ? teams[0] : null;
   const [activeTeam, setActiveTeam] = useLocalStorage<Team | null>(
@@ -109,6 +117,11 @@ export const NewStoryDialog = ({
     teams.find((team) => team.id === activeTeam?.id) || firstTeam;
 
   const currentTeamId = teamId || validActiveTeam?.id;
+  const { getTermDisplay } = useTerminology(currentTeamId ?? null);
+  const { Properties, TemplatePicker } = useCreationPropertySlots();
+  const customFieldController = useRef<CreationPropertiesController>(null);
+  const getCustomFields = () =>
+    customFieldController.current ?? EMPTY_CREATION_PROPERTIES;
   const sprintsEnabled = useSprintsEnabled(currentTeamId ?? "");
   const currentTeam =
     teams.find((team) => team.id === currentTeamId) || firstTeam;
@@ -227,17 +240,31 @@ export const NewStoryDialog = ({
     isMayaAssigneeLoading,
     linkFigmaStory: linkFigmaStory.mutateAsync,
     mayaAssigneeId: mayaAssignee?.id,
-    mutateStory: mutation.mutateAsync,
+    mutateStory: (payload) => {
+      const customFields = getCustomFields();
+      if (customFields.isError)
+        throw new Error(
+          "Custom fields could not be loaded. Try again before creating this task.",
+        );
+      if (customFields.isPending)
+        throw new Error("Custom fields are still loading. Try again shortly.");
+      return mutation.mutateAsync({
+        ...payload,
+        customFieldValues: customFields.prepareValues(),
+      });
+    },
     onCreated,
     onDialogClose: () => {
       setIsOpen(false);
       setIsExpanded(false);
+      getCustomFields().reset();
     },
     onFigmaArtifactsReset: () => {
       setFigmaArtifacts([]);
     },
     onFormReset: () => {
       dispatch({ type: "RESET_FORM", payload: getInitialForm() });
+      getCustomFields().reset();
     },
     onFreeStoryCreated:
       tier === "free"
@@ -314,6 +341,13 @@ export const NewStoryDialog = ({
         createMore={createMore}
         currentTeam={currentTeam}
         currentTeamId={currentTeamId}
+        customFields={
+          <Properties
+            controllerRef={customFieldController}
+            disabled={isCreating}
+            teamId={currentTeamId}
+          />
+        }
         deadlineSourceRef={deadlineSourceRef}
         descriptionEditor={editor}
         dispatch={dispatch}
@@ -337,7 +371,10 @@ export const NewStoryDialog = ({
           if (editor) handleMediaFiles(editor, files);
         }}
         onOpenChange={(open) => {
-          if (!open) setFigmaArtifacts([]);
+          if (!open) {
+            setFigmaArtifacts([]);
+            getCustomFields().reset();
+          }
           setIsOpen(open);
         }}
         onSimilarStorySelect={({ id, sequenceId, teamCode }) => {
@@ -370,6 +407,39 @@ export const NewStoryDialog = ({
         strategyLinkLabel={strategyLinkLabel}
         teamStatuses={teamStatuses}
         teams={teams}
+        templatePicker={
+          currentTeamId ? (
+            <TemplatePicker
+              disabled={isCreating}
+              onSelect={(template) => {
+                dispatch({
+                  type: "PATCH_FORM",
+                  payload: getTemplateDraft(template, {
+                    statusIds: teamStatuses.map((status) => status.id),
+                    memberIds: members.map((candidate) => candidate.id),
+                    labelIds: allLabels
+                      .filter(
+                        (label) =>
+                          !label.teamId || label.teamId === currentTeamId,
+                      )
+                      .map((label) => label.id),
+                  }),
+                });
+                titleEditor?.commands.setContent(template.title);
+                editor?.commands.setContent(templateDescriptionHTML(template));
+                getCustomFields().setValues(
+                  Object.fromEntries(
+                    (template.customFieldValues ?? []).map((value) => [
+                      value.fieldId,
+                      value.value,
+                    ]),
+                  ),
+                );
+              }}
+              teamId={currentTeamId}
+            />
+          ) : null
+        }
         titleEditor={titleEditor}
       />
     </NewStoryDialogLimitGuard>

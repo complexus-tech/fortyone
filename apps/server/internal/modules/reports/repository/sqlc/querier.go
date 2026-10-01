@@ -27,6 +27,9 @@ type Querier interface {
 	GetWorkspaceEngagementTotals(ctx context.Context, arg GetWorkspaceEngagementTotalsParams) (GetWorkspaceEngagementTotalsRow, error)
 	GetWorkspaceMetrics(ctx context.Context, arg GetWorkspaceMetricsParams) (GetWorkspaceMetricsRow, error)
 	ListCombinedSprintBurndown(ctx context.Context, arg ListCombinedSprintBurndownParams) ([]ListCombinedSprintBurndownRow, error)
+	// Cycle time is elapsed time from the first recorded entry into a started
+	// state to completion. Missing start history is excluded, never replaced by
+	// creation or last-edit time. Samples are grouped by the actual completion day.
 	ListKeyMetricsTimeline(ctx context.Context, arg ListKeyMetricsTimelineParams) ([]ListKeyMetricsTimelineRow, error)
 	ListKeyResultProgress(ctx context.Context, arg ListKeyResultProgressParams) ([]ListKeyResultProgressRow, error)
 	ListMemberContributions(ctx context.Context, arg ListMemberContributionsParams) ([]ListMemberContributionsRow, error)

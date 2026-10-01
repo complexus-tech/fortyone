@@ -17,11 +17,12 @@ type CoreWorkspaceOverview struct {
 }
 
 type CoreWorkspaceMetrics struct {
-	TotalStories     int `json:"totalStories" db:"total_stories"`
-	CompletedStories int `json:"completedStories" db:"completed_stories"`
-	ActiveObjectives int `json:"activeObjectives" db:"active_objectives"`
-	ActiveSprints    int `json:"activeSprints" db:"active_sprints"`
-	TotalTeamMembers int `json:"totalTeamMembers" db:"total_team_members"`
+	TotalStories      int `json:"totalStories" db:"total_stories"`
+	CompletedStories  int `json:"completedStories" db:"completed_stories"`
+	CompletedInPeriod int `json:"completedInPeriod" db:"completed_in_period"`
+	ActiveObjectives  int `json:"activeObjectives" db:"active_objectives"`
+	ActiveSprints     int `json:"activeSprints" db:"active_sprints"`
+	TotalTeamMembers  int `json:"totalTeamMembers" db:"total_team_members"`
 }
 
 type CoreCompletionTrendPoint struct {

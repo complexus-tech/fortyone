@@ -7,6 +7,9 @@ export type StateCategory =
   | "cancelled";
 
 export type State = {
+  /** Advisory limit; a missing value preserves compatibility with older APIs. */
+  wipLimit?: number | null;
+  activeCount?: number;
   id: string;
   name: string;
   color: string;

@@ -27,12 +27,16 @@ func (r *Repository) CreateComment(
 	var created commentsdomain.Comment
 	err := r.withinTransaction(ctx, func(queries commentsql.Querier) error {
 		row, err := queries.CreateCommentForActor(ctx, commentsql.CreateCommentForActorParams{
-			Content: command.Content, ActorID: command.Actor.PrincipalID,
+			CreationID: command.CreationID,
+			Content:    command.Content, ActorID: command.Actor.PrincipalID,
 			SystemActor: command.Actor.Kind == platformauth.PrincipalSystem,
 			ParentID:    command.ParentID, StoryID: command.StoryID, WorkspaceID: command.WorkspaceID,
 			TeamAccessUnrestricted: command.Actor.TeamAccess.IsUnrestricted(),
 			AllowedTeamIds:         command.Actor.TeamAccess.RestrictedTeamIDs(),
 		})
+		if errors.Is(err, pgx.ErrNoRows) && command.CreationID != nil {
+			return replayCommentCreation(ctx, queries, command, &created)
+		}
 		if err != nil {
 			return mapCommentWriteError("create comment", err)
 		}
@@ -62,6 +66,31 @@ func (r *Repository) CreateComment(
 		attribute.String("workspace.id", command.WorkspaceID.String()),
 	)
 	return created, nil
+}
+
+func replayCommentCreation(ctx context.Context, queries commentsql.Querier, command commentsdomain.CreateCommand, created *commentsdomain.Comment) error {
+	row, err := queries.GetCommentCreationForActor(ctx, commentsql.GetCommentCreationForActorParams{
+		CreationID: *command.CreationID, StoryID: command.StoryID,
+		ActorID: command.Actor.PrincipalID, WorkspaceID: command.WorkspaceID,
+		SystemActor:            command.Actor.Kind == platformauth.PrincipalSystem,
+		TeamAccessUnrestricted: command.Actor.TeamAccess.IsUnrestricted(),
+		AllowedTeamIds:         command.Actor.TeamAccess.RestrictedTeamIDs(),
+	})
+	if err != nil {
+		return mapCommentWriteError("replay comment creation", err)
+	}
+	if row.Content != command.Content || !sameOptionalUUID(row.ParentID, command.ParentID) || len(command.MentionedUserIDs) > 0 {
+		return commentsdomain.ErrCreationConflict
+	}
+	*created = commentFromValues(row.CommentID, row.StoryID, row.ParentID, row.CommenterID, row.Content, row.CreatedAt, row.UpdatedAt)
+	return nil
+}
+
+func sameOptionalUUID(left, right *uuid.UUID) bool {
+	if left == nil || right == nil {
+		return left == nil && right == nil
+	}
+	return *left == *right
 }
 
 func (r *Repository) UpdateComment(

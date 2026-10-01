@@ -139,7 +139,7 @@ INSERT INTO public.statuses (
     $5, $6, $7
 )
 RETURNING status_id, name, category, order_index, team_id, workspace_id,
-          is_default, color, created_at, updated_at
+          is_default, color, created_at, updated_at, wip_limit
 `
 
 type InsertStateParams struct {
@@ -163,6 +163,7 @@ type InsertStateRow struct {
 	Color       *string
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
+	WipLimit    *int32
 }
 
 func (q *Queries) InsertState(ctx context.Context, arg InsertStateParams) (InsertStateRow, error) {
@@ -187,6 +188,7 @@ func (q *Queries) InsertState(ctx context.Context, arg InsertStateParams) (Inser
 		&i.Color,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.WipLimit,
 	)
 	return i, err
 }
@@ -328,9 +330,13 @@ SET name = CASE
         WHEN CAST($7 AS boolean) THEN CAST($8 AS text)
         ELSE status.color
     END,
+    wip_limit = CASE
+        WHEN CAST($9 AS boolean) THEN NULLIF(CAST($10 AS integer), 0)
+        ELSE status.wip_limit
+    END,
     updated_at = NOW()
-WHERE status.status_id = $9
-  AND status.workspace_id = $10
+WHERE status.status_id = $11
+  AND status.workspace_id = $12
   AND EXISTS (
       SELECT 1
       FROM public.workspace_members AS membership
@@ -338,10 +344,17 @@ WHERE status.status_id = $9
           ON actor.user_id = membership.user_id
          AND actor.is_active = TRUE
       WHERE membership.workspace_id = status.workspace_id
-        AND membership.user_id = $11
+        AND membership.user_id = $13
+        AND (
+            NOT CAST($9 AS boolean)
+            OR (membership.role IN ('admin', 'member') AND EXISTS (
+                SELECT 1 FROM public.team_members AS team_member
+                WHERE team_member.team_id = status.team_id AND team_member.user_id = membership.user_id
+            ))
+        )
   )
 RETURNING status_id, name, category, order_index, team_id, workspace_id,
-          is_default, color, created_at, updated_at
+          is_default, color, created_at, updated_at, wip_limit
 `
 
 type UpdateStateForMemberParams struct {
@@ -353,6 +366,8 @@ type UpdateStateForMemberParams struct {
 	IsDefault     bool
 	SetColor      bool
 	Color         string
+	SetWipLimit   bool
+	WipLimit      int32
 	StatusID      uuid.UUID
 	WorkspaceID   uuid.UUID
 	ActorID       uuid.UUID
@@ -369,6 +384,7 @@ type UpdateStateForMemberRow struct {
 	Color       *string
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
+	WipLimit    *int32
 }
 
 func (q *Queries) UpdateStateForMember(ctx context.Context, arg UpdateStateForMemberParams) (UpdateStateForMemberRow, error) {
@@ -381,6 +397,8 @@ func (q *Queries) UpdateStateForMember(ctx context.Context, arg UpdateStateForMe
 		arg.IsDefault,
 		arg.SetColor,
 		arg.Color,
+		arg.SetWipLimit,
+		arg.WipLimit,
 		arg.StatusID,
 		arg.WorkspaceID,
 		arg.ActorID,
@@ -397,6 +415,7 @@ func (q *Queries) UpdateStateForMember(ctx context.Context, arg UpdateStateForMe
 		&i.Color,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.WipLimit,
 	)
 	return i, err
 }

@@ -531,11 +531,10 @@ describe("ImportWizard presentation", () => {
 });
 
 describe("Select presentation", () => {
-  it("reserves space and anchors the chevron away from the edge", () => {
-    expect(selectSource).toContain("pr-8 pl-3");
-    expect(selectSource).toContain("min-w-0 flex-1 truncate pr-6 text-left");
-    expect(selectSource).toContain(
-      "absolute top-1/2 right-3.5 h-3.5 w-auto shrink-0",
-    );
+  it("keeps the shared flex trigger with a separate non-shrinking chevron", () => {
+    expect(selectSource).toContain("items-center gap-2");
+    expect(selectSource).toContain("bg-white px-3 py-1");
+    expect(selectSource).toContain("min-w-0 flex-1 truncate text-left");
+    expect(selectSource).toContain("pointer-events-none h-3.5 w-auto shrink-0");
   });
 });

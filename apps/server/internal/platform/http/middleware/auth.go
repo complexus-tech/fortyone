@@ -39,6 +39,22 @@ type SessionResolver interface {
 	Resolve(ctx context.Context, r *http.Request) (uuid.UUID, bool, error)
 }
 
+type SessionMetadataResolver interface {
+	ResolveSession(context.Context, *http.Request) (auth.BrowserSession, bool, error)
+}
+
+func resolveSessionContext(ctx context.Context, r *http.Request, resolver SessionResolver) (context.Context, uuid.UUID, bool, error) {
+	if detailed, ok := resolver.(SessionMetadataResolver); ok {
+		session, valid, err := detailed.ResolveSession(ctx, r)
+		if err != nil || !valid {
+			return ctx, uuid.Nil, valid, err
+		}
+		return auth.SetBrowserSession(ctx, session), session.UserID, true, nil
+	}
+	userID, valid, err := ResolveSessionUserID(ctx, r, resolver)
+	return ctx, userID, valid, err
+}
+
 // BrowserSessionResolver combines the opaque Redis record with authoritative
 // account state. Redis is an index, never the source of truth for activation or
 // revocation.
@@ -102,10 +118,11 @@ func ResolveSessionUserID(ctx context.Context, r *http.Request, resolver Session
 func Auth(_ *logger.Logger, _ string, resolver SessionResolver) web.Middleware {
 	m := func(next web.Handler) web.Handler {
 		h := func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-			if userID, ok, err := ResolveSessionUserID(ctx, r, resolver); err != nil {
+			sessionCtx, userID, ok, err := resolveSessionContext(ctx, r, resolver)
+			if err != nil {
 				return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 			} else if ok {
-				ctx = auth.SetUserID(ctx, userID)
+				ctx = auth.SetUserID(sessionCtx, userID)
 				return next(ctx, w, r)
 			}
 
@@ -127,10 +144,11 @@ func OptionalAuth(_ *logger.Logger, _ string, resolver SessionResolver) web.Midd
 		return func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 			cookie, cookieErr := r.Cookie(authCookieName)
 			cookieSupplied := cookieErr == nil && strings.TrimSpace(cookie.Value) != ""
-			if userID, ok, err := ResolveSessionUserID(ctx, r, resolver); err != nil {
+			sessionCtx, userID, ok, err := resolveSessionContext(ctx, r, resolver)
+			if err != nil {
 				return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 			} else if ok {
-				return next(auth.SetUserID(ctx, userID), w, r)
+				return next(auth.SetUserID(sessionCtx, userID), w, r)
 			} else if cookieSupplied {
 				return web.RespondError(ctx, w, errors.New("session is invalid or expired"), http.StatusUnauthorized)
 			}
@@ -147,40 +165,45 @@ func (resolver *BrowserSessionResolver) Resolve(
 	ctx context.Context,
 	r *http.Request,
 ) (uuid.UUID, bool, error) {
+	session, valid, err := resolver.ResolveSession(ctx, r)
+	return session.UserID, valid, err
+}
+
+func (resolver *BrowserSessionResolver) ResolveSession(ctx context.Context, r *http.Request) (auth.BrowserSession, bool, error) {
 	cookie, err := r.Cookie(authCookieName)
 	if err != nil || strings.TrimSpace(cookie.Value) == "" {
-		return uuid.Nil, false, nil
+		return auth.BrowserSession{}, false, nil
 	}
 
 	if resolver == nil || resolver.sessions == nil || resolver.accounts == nil {
-		return uuid.Nil, false, errors.New("browser session resolver is not configured")
+		return auth.BrowserSession{}, false, errors.New("browser session resolver is not configured")
 	}
 
 	var session auth.BrowserSession
 	err = resolver.sessions.Get(ctx, cache.AuthSessionCacheKey(cookie.Value), &session)
 	if err != nil {
 		if errors.Is(err, cache.ErrNotFound) {
-			return uuid.Nil, false, nil
+			return auth.BrowserSession{}, false, nil
 		}
-		return uuid.Nil, false, err
+		return auth.BrowserSession{}, false, err
 	}
 
 	// Legacy string-valued records and legacy raw-token cache keys are rejected.
 	// Their user-only shape cannot prove a revocation epoch and accepting them
 	// would resurrect sessions after account reactivation.
 	if err := session.Validate(); err != nil {
-		return uuid.Nil, false, err
+		return auth.BrowserSession{}, false, err
 	}
 
 	version, active, err := resolver.accounts.ResolveActiveBrowserSessionVersion(ctx, session.UserID)
 	if err != nil {
-		return uuid.Nil, false, err
+		return auth.BrowserSession{}, false, err
 	}
 	if !active || version <= 0 || version != session.Version {
-		return uuid.Nil, false, auth.ErrInvalidBrowserSession
+		return auth.BrowserSession{}, false, auth.ErrInvalidBrowserSession
 	}
 
-	return session.UserID, true, nil
+	return session, true, nil
 }
 
 func resolveTokenFromRequest(r *http.Request) string {

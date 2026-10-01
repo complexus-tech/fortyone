@@ -154,9 +154,13 @@ export const useNewStoryDialogCreation = <
           description: followUpError.message,
         });
       }
-    } finally {
-      setIsCreating(false);
+    } catch (error) {
+      toast.error(`Could not create ${storyTerm}`, {
+        description:
+          error instanceof Error ? error.message : "Please try again.",
+      });
     }
+    setIsCreating(false);
   };
 
   return { handleCreateStory, isCreating };

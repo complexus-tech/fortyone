@@ -13,6 +13,7 @@ type teamRow struct {
 	name           string
 	code           string
 	color          string
+	storyTerm      *string
 	isPrivate      bool
 	workspaceID    uuid.UUID
 	createdAt      time.Time
@@ -28,6 +29,7 @@ func toCoreTeam(row teamRow) teamsdomain.Team {
 		Code:           row.code,
 		Color:          row.color,
 		IsPrivate:      row.isPrivate,
+		StoryTerm:      row.storyTerm,
 		Workspace:      row.workspaceID,
 		CreatedAt:      row.createdAt,
 		UpdatedAt:      row.updatedAt,
@@ -43,6 +45,7 @@ func toCoreListTeam(row teamsql.ListTeamsForActorRow) teamsdomain.Team {
 		code:           row.Code,
 		color:          row.Color,
 		isPrivate:      row.IsPrivate,
+		storyTerm:      row.StoryTerm,
 		workspaceID:    row.WorkspaceID,
 		createdAt:      row.CreatedAt,
 		updatedAt:      row.UpdatedAt,
@@ -66,6 +69,7 @@ func toCorePublicTeam(row teamsql.ListPublicTeamsForActorRow) teamsdomain.Team {
 		code:           row.Code,
 		color:          row.Color,
 		isPrivate:      row.IsPrivate,
+		storyTerm:      row.StoryTerm,
 		workspaceID:    row.WorkspaceID,
 		createdAt:      row.CreatedAt,
 		updatedAt:      row.UpdatedAt,
@@ -89,6 +93,7 @@ func toCoreGetTeam(row teamsql.GetTeamForActorRow) teamsdomain.Team {
 		code:           row.Code,
 		color:          row.Color,
 		isPrivate:      row.IsPrivate,
+		storyTerm:      row.StoryTerm,
 		workspaceID:    row.WorkspaceID,
 		createdAt:      row.CreatedAt,
 		updatedAt:      row.UpdatedAt,
@@ -104,6 +109,7 @@ func toCoreCreatedTeam(row teamsql.CreateTeamRow) teamsdomain.Team {
 		code:        row.Code,
 		color:       row.Color,
 		isPrivate:   row.IsPrivate,
+		storyTerm:   row.StoryTerm,
 		workspaceID: row.WorkspaceID,
 		createdAt:   row.CreatedAt,
 		updatedAt:   row.UpdatedAt,
@@ -118,6 +124,7 @@ func toCoreUpdatedTeam(row teamsql.UpdateTeamForWorkspaceRow) teamsdomain.Team {
 		code:        row.Code,
 		color:       row.Color,
 		isPrivate:   row.IsPrivate,
+		storyTerm:   row.StoryTerm,
 		workspaceID: row.WorkspaceID,
 		createdAt:   row.CreatedAt,
 		updatedAt:   row.UpdatedAt,

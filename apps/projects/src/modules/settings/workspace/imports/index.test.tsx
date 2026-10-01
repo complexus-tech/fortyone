@@ -13,9 +13,18 @@ jest.mock("./components/import-wizard", () => ({
     open ? <div role="dialog">Import wizard</div> : null,
 }));
 
+jest.mock("./components/work-export-section", () => ({
+  WorkExportSection: () => (
+    <section aria-label="Export work">Export work</section>
+  ),
+}));
+
 describe("WorkspaceImportSettings", () => {
   it("presents one universal export importer and opens its shared wizard", () => {
     render(<WorkspaceImportSettings />);
+    expect(
+      screen.getByRole("region", { name: "Export work" }),
+    ).toBeInTheDocument();
 
     const importCard = screen.getByRole("region", {
       name: "Import issues from Jira, Trello, or anywhere",

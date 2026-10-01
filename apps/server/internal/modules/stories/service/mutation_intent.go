@@ -152,9 +152,10 @@ type storyCreatedIntegrationPayload struct {
 }
 
 type storyUpdatedIntegrationPayload struct {
-	StoryID     uuid.UUID      `json:"storyId"`
-	WorkspaceID uuid.UUID      `json:"workspaceId"`
-	Changes     map[string]any `json:"changes"`
+	Delivery    mutationEventDelivery `json:"_delivery,omitempty"`
+	StoryID     uuid.UUID             `json:"storyId"`
+	WorkspaceID uuid.UUID             `json:"workspaceId"`
+	Changes     map[string]any        `json:"changes"`
 }
 
 type storyDeletedIntegrationPayload struct {

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { Box, Button, Flex, Text } from "ui";
+import { WorkExportSection } from "./components/work-export-section";
 import { ImportWizard } from "./components/import-wizard";
 
 const IMPORT_SOURCES = [
@@ -60,12 +61,10 @@ export const WorkspaceImportSettings = ({
   return (
     <Box>
       <Text as="h1" className="mb-2 text-2xl font-medium">
-        Import work
+        Imports &amp; exports
       </Text>
       <Text className="max-w-3xl leading-6" color="muted">
-        Bring an existing backlog into FortyOne without rebuilding it by hand.
-        Every import is mapped automatically and shown as a preview before
-        anything is created.
+        Import existing work or download a backup.
       </Text>
 
       <Box
@@ -99,9 +98,8 @@ export const WorkspaceImportSettings = ({
           Import issues from Jira, Trello, or anywhere
         </Text>
         <Text className="mt-2 max-w-2xl leading-6" color="muted">
-          Upload an export from Jira, Trello, ClickUp, monday.com, Asana, or any
-          tool that gives you a CSV or JSON file. Excel files, PDFs, and images
-          work too.
+          Upload CSV, JSON, Excel, PDF, or images. Review the mapping before
+          import.
         </Text>
 
         <Button
@@ -115,6 +113,8 @@ export const WorkspaceImportSettings = ({
           Import
         </Button>
       </Box>
+
+      <WorkExportSection />
 
       <ImportWizard onOpenChange={setOpen} open={open} />
     </Box>

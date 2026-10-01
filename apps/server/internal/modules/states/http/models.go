@@ -9,17 +9,19 @@ import (
 
 // AppStatesList represents a state in the application layer.
 type AppStatesList struct {
-	ID         uuid.UUID  `json:"id"`
-	Name       string     `json:"name"`
-	Category   string     `json:"category" validate:"oneof=backlog unstarted started paused completed cancelled"`
-	OrderIndex int        `json:"orderIndex"`
-	Team       uuid.UUID  `json:"teamId"`
-	Workspace  uuid.UUID  `json:"workspaceId"`
-	IsDefault  bool       `json:"isDefault"`
-	Color      string     `json:"color"`
-	CreatedAt  time.Time  `json:"createdAt"`
-	UpdatedAt  time.Time  `json:"updatedAt"`
-	DeletedAt  *time.Time `json:"deletedAt,omitempty"`
+	WIPLimit    *int       `json:"wipLimit"`
+	ActiveCount int        `json:"activeCount"`
+	ID          uuid.UUID  `json:"id"`
+	Name        string     `json:"name"`
+	Category    string     `json:"category" validate:"oneof=backlog unstarted started paused completed cancelled"`
+	OrderIndex  int        `json:"orderIndex"`
+	Team        uuid.UUID  `json:"teamId"`
+	Workspace   uuid.UUID  `json:"workspaceId"`
+	IsDefault   bool       `json:"isDefault"`
+	Color       string     `json:"color"`
+	CreatedAt   time.Time  `json:"createdAt"`
+	UpdatedAt   time.Time  `json:"updatedAt"`
+	DeletedAt   *time.Time `json:"deletedAt,omitempty"`
 }
 
 type NewState struct {
@@ -31,6 +33,7 @@ type NewState struct {
 }
 
 type UpdateState struct {
+	WIPLimit   *int    `json:"wipLimit,omitempty" validate:"omitempty,min=0,max=10000"`
 	Name       *string `json:"name,omitempty" validate:"omitempty,max=255"`
 	OrderIndex *int    `json:"orderIndex,omitempty"`
 	IsDefault  *bool   `json:"isDefault,omitempty"`
@@ -39,6 +42,7 @@ type UpdateState struct {
 
 func toAppState(s states.CoreState) AppStatesList {
 	return AppStatesList{
+		WIPLimit: s.WIPLimit, ActiveCount: s.ActiveCount,
 		ID:         s.ID,
 		Name:       s.Name,
 		Category:   s.Category,
@@ -72,6 +76,7 @@ func toCoreNewState(ns NewState) states.CoreNewState {
 
 func toCoreUpdateState(us UpdateState) states.CoreUpdateState {
 	return states.CoreUpdateState{
+		WIPLimit:   us.WIPLimit,
 		Name:       us.Name,
 		OrderIndex: us.OrderIndex,
 		IsDefault:  us.IsDefault,

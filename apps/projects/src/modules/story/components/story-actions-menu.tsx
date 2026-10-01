@@ -36,6 +36,7 @@ import { useBulkDeleteStoryMutation } from "@/modules/stories/hooks/delete-mutat
 import { useBulkRestoreStoryMutation } from "@/modules/stories/hooks/restore-mutation";
 import { useBulkUnarchiveStoryMutation } from "@/modules/stories/hooks/unarchive-mutation";
 import { getStoryPath } from "@/shared/routing/story";
+import { SaveTaskTemplate } from "@/modules/work-presets/public/template-actions";
 import { useSetStoryWatchingMutation } from "../hooks/collaboration-mutations";
 import { useDuplicateStoryMutation } from "../hooks/duplicate-mutation";
 import { useStoryById } from "../hooks/story";
@@ -216,7 +217,7 @@ export const StoryActionsMenu = ({
 }: StoryActionsMenuProps) => {
   const { data } = useStoryById(storyId);
   const [_, copyText] = useCopyToClipboard();
-  const { getTermDisplay } = useTerminology();
+  const { getTermDisplay } = useTerminology(data?.teamId ?? null);
   const { userRole } = useUserRole();
   const { withWorkspace } = useWorkspacePath();
   const { isAdminOrOwner: derivedIsAdminOrOwner } = useIsAdminOrOwner(
@@ -233,6 +234,7 @@ export const StoryActionsMenu = ({
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isRestoreOpen, setIsRestoreOpen] = useState(false);
   const [isUnarchiveOpen, setIsUnarchiveOpen] = useState(false);
+  const [isTemplateOpen, setIsTemplateOpen] = useState(false);
   const canDelete = isAdminOrOwner ?? derivedIsAdminOrOwner;
 
   useHotkeys(
@@ -380,6 +382,13 @@ export const StoryActionsMenu = ({
               Duplicate
             </Menu.Item>
             <Menu.Item
+              disabled={!canEdit || isDeleted}
+              onSelect={() => { openDialogAfterMenuClose(setIsTemplateOpen); }}
+            >
+              <DuplicateIcon />
+              Save as template
+            </Menu.Item>
+            <Menu.Item
               onSelect={() => {
                 window.open(storyUrl, "_blank", "noopener,noreferrer");
               }}
@@ -434,6 +443,9 @@ export const StoryActionsMenu = ({
         open={isArchiveOpen}
         title={`Archive this ${storyTerm}?`}
       />
+      {isTemplateOpen ? (
+        <SaveTaskTemplate onOpenChange={setIsTemplateOpen} story={data} />
+      ) : null}
       <ConfirmationDialog
         confirmIcon={<ArchiveIcon className="text-white dark:text-gray-200" />}
         confirmLabel="Unarchive"

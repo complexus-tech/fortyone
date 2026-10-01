@@ -30,7 +30,7 @@ export const SubStories = ({
   setIsSubStoriesOpen: (value: boolean) => void;
   isSubStoriesOpen: boolean;
 }) => {
-  const { getTermDisplay } = useTerminology();
+  const { getTermDisplay } = useTerminology(parent.teamId);
   const [isCreateSubStoryOpen, setIsCreateSubStoryOpen] = useState(false);
   const { data: statuses = [] } = useTeamStatuses(parent.teamId);
   const { data: teams = [] } = useTeams();

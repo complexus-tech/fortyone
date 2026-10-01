@@ -29,3 +29,34 @@ get:
     "429": { $ref: ../openapi.yaml#/components/responses/RateLimited }
     "500": { $ref: ../openapi.yaml#/components/responses/InternalError }
     "503": { $ref: ../openapi.yaml#/components/responses/ServiceUnavailable }
+post:
+  operationId: createStoryComment
+  tags: [Comments]
+  summary: Create comment
+  description: Creates a comment using a personal access token or user-authorized OAuth token. clientRequestId makes retries durable without duplicate comments. The actor must still have access to the task and team on each request.
+  x-fortyone-scope: comments:write
+  x-fortyone-scopes: [comments:write, stories:read]
+  parameters:
+    - $ref: ../openapi.yaml#/components/parameters/WorkspaceId
+    - $ref: ../openapi.yaml#/components/parameters/StoryId
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: {$ref: ../openapi.yaml#/components/schemas/CreateCommentRequest}
+  responses:
+    '201':
+      description: The change was applied.
+      content:
+        application/json:
+          schema: {$ref: ../openapi.yaml#/components/schemas/CommentResponse}
+    '400': {$ref: ../openapi.yaml#/components/responses/BadRequest}
+    '401': {$ref: ../openapi.yaml#/components/responses/Unauthorized}
+    '403': {$ref: ../openapi.yaml#/components/responses/Forbidden}
+    '404': {$ref: ../openapi.yaml#/components/responses/NotFound}
+    '409': {$ref: ../openapi.yaml#/components/responses/Conflict}
+    '413': {$ref: ../openapi.yaml#/components/responses/RequestTooLarge}
+    '415': {$ref: ../openapi.yaml#/components/responses/UnsupportedMediaType}
+    '429': {$ref: ../openapi.yaml#/components/responses/RateLimited}
+    '500': {$ref: ../openapi.yaml#/components/responses/InternalError}
+    '503': {$ref: ../openapi.yaml#/components/responses/ServiceUnavailable}

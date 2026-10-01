@@ -23,6 +23,7 @@ import type { State } from "@/types/states";
 import type { Member } from "@/types";
 import { useTerminology } from "@/hooks";
 import { useGroupStoriesInfinite } from "@/modules/stories/hooks/use-group-stories-infinite";
+import { useBoardPropertySlots } from "@/shared/story/board-property-slots";
 import { StoryCard } from "./story/card";
 import type { ViewOptionsGroupBy } from "./stories-view-options-button";
 import { NewStoryDialog } from "./new-story-dialog";
@@ -87,8 +88,9 @@ export const KanbanGroup = ({
   member?: Member;
   groupBy: ViewOptionsGroupBy;
 }) => {
+  const { Provider: BoardPropertyProvider } = useBoardPropertySlots();
   const { getTermDisplay } = useTerminology();
-  const { newStoryDefaults } = useBoard();
+  const { newStoryDefaults, viewOptions } = useBoard();
   const [isOpen, setIsOpen] = useState(false);
 
   const [storyId, setStoryId] = useState<string | null>(null);
@@ -160,13 +162,18 @@ export const KanbanGroup = ({
       scrollRootRef={rootRef}
       totalStories={allStories.length}
     >
-      {allStories.map((story) => (
-        <StoryCard
-          handleStoryClick={handleStoryClick}
-          key={story.id}
-          story={story}
-        />
-      ))}
+      <BoardPropertyProvider
+        selectedIds={viewOptions.selectedCustomFieldIds}
+        stories={allStories}
+      >
+        {allStories.map((story) => (
+          <StoryCard
+            handleStoryClick={handleStoryClick}
+            key={story.id}
+            story={story}
+          />
+        ))}
+      </BoardPropertyProvider>
 
       {hasNextPage ? <div className="h-6 w-full" ref={triggerRef} /> : null}
 

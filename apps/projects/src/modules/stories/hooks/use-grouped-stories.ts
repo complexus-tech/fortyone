@@ -5,7 +5,10 @@ import type { GroupedStoryParams } from "../types";
 import { storyKeys } from "../constants";
 import { getGroupedStories } from "../queries/get-grouped-stories";
 
-export const useGroupedStories = (params: GroupedStoryParams) => {
+export const useGroupedStories = (
+  params: GroupedStoryParams,
+  options: { enabled?: boolean } = {},
+) => {
   const { data: session } = useSession();
   const { workspaceSlug } = useWorkspacePath();
 
@@ -16,5 +19,6 @@ export const useGroupedStories = (params: GroupedStoryParams) => {
     queryFn: () =>
       getGroupedStories({ session: session!, workspaceSlug }, params),
     staleTime: 1000 * 60 * 2,
+    enabled: options.enabled ?? true,
   });
 };

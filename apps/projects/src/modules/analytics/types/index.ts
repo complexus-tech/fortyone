@@ -160,6 +160,7 @@ export type PulseReport = {
 export type WorkspaceOverviewMetrics = {
   totalStories: number;
   completedStories: number;
+  completedInPeriod?: number;
   activeObjectives: number;
   activeSprints: number;
   totalTeamMembers: number;
@@ -349,6 +350,7 @@ export type KeyMetricsTrendPoint = {
   activeUsers: number;
   storiesPerDay: number;
   avgCycleTime: number;
+  cycleTimeSamples?: number;
 };
 
 export type TimelineTrends = {

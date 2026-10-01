@@ -1,5 +1,5 @@
 {
   "title": "Workspace",
   "icon": "Building2",
-  "pages": ["general", "members", "terminology"]
+  "pages": ["general", "members", "terminology", "scim-provisioning"]
 }

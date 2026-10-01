@@ -8,4 +8,5 @@ var (
 	ErrStatusHasStories = errors.New("cannot delete status with attached stories")
 	ErrLastInCategory   = errors.New("cannot delete the last status in a category")
 	ErrInvalidOrder     = errors.New("status order index is outside the supported range")
+	ErrInvalidWIPLimit  = errors.New("work in progress limit must be between 0 and 10000")
 )

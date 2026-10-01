@@ -30,13 +30,13 @@ describe("settings navigation", () => {
     ]);
     expect(navigation[2]?.items.map(({ title }) => title)).toEqual([
       "Members",
+      "Teams",
       "Billing & plans",
-      "Imports",
+      "Imports & exports",
     ]);
     expect(navigation[3]?.items.map(({ title }) => title)).toEqual([
       "Labels",
       "Goals",
-      "Teams",
       "Feedback",
     ]);
     expect(navigation[0]?.items.at(-1)?.title).toBe("Invitations");
@@ -71,14 +71,14 @@ describe("settings navigation", () => {
       ]);
       expect(
         navigation.flatMap(({ items }) => items).map(({ title }) => title),
-      ).not.toContain("Imports");
+      ).not.toContain("Imports & exports");
       expect(
         navigation.flatMap(({ items }) => items).map(({ title }) => title),
       ).toContain("Google Drive");
     },
   );
 
-  it("matches nested integration and import settings routes", () => {
+  it("matches nested integration, import, and team settings routes", () => {
     const navigation = buildSettingsNavigation({
       userRole: "admin",
       hasCustomTerminology: false,
@@ -90,10 +90,11 @@ describe("settings navigation", () => {
       ({ items: categoryItems }) => categoryItems,
     );
     const integrations = items.find(({ title }) => title === "Integrations");
-    const imports = items.find(({ title }) => title === "Imports");
+    const imports = items.find(({ title }) => title === "Imports & exports");
+    const teams = items.find(({ title }) => title === "Teams");
 
-    if (!integrations || !imports) {
-      throw new Error("Expected integration and import settings items");
+    if (!integrations || !imports || !teams) {
+      throw new Error("Expected integration, import, and team settings items");
     }
 
     expect(
@@ -108,5 +109,14 @@ describe("settings navigation", () => {
     expect(
       isSettingsItemActive("/acme/settings/workspace/imports/run-1", imports),
     ).toBe(true);
+    expect(
+      isSettingsItemActive("/acme/settings/workspace/teams/team-1", teams),
+    ).toBe(true);
+    expect(
+      isSettingsItemActive("/acme/settings/workspace/teams/new", teams),
+    ).toBe(true);
+    expect(
+      isSettingsItemActive("/acme/settings/workspace/teams-other", teams),
+    ).toBe(false);
   });
 });

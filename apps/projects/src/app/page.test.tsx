@@ -60,6 +60,9 @@ it.each([
   "oauth_expired",
   "oauth_failed",
   "oauth_cancelled",
+  "sso_failed",
+  "sso_expired",
+  "sso_link_required",
 ])(
   "shows %s without bouncing through an existing browser session",
   async (error) => {

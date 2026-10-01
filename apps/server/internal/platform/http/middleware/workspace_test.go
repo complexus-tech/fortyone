@@ -2,6 +2,7 @@ package mid
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"log/slog"
@@ -138,6 +139,7 @@ func TestWorkspaceMiddlewareFailureMatrix(t *testing.T) {
 		wantDownstream bool
 	}{
 		{name: "membership denied", resolveErr: ErrWorkspaceAccessDenied, wantStatus: http.StatusNotFound},
+		{name: "verified member requires SSO", resolveErr: ErrWorkspaceSSORequired, wantStatus: http.StatusForbidden},
 		{name: "repository unavailable", resolveErr: errors.New("database unavailable"), wantStatus: http.StatusInternalServerError},
 		{name: "last access failure is best effort", recordErr: errors.New("write unavailable"), wantStatus: http.StatusNoContent, wantDownstream: true},
 	}
@@ -162,6 +164,12 @@ func TestWorkspaceMiddlewareFailureMatrix(t *testing.T) {
 			}
 			if downstream != test.wantDownstream {
 				t.Fatalf("downstream called = %t, want %t", downstream, test.wantDownstream)
+			}
+			if errors.Is(test.resolveErr, ErrWorkspaceSSORequired) {
+				var response web.Response
+				if err := json.Unmarshal(recorder.Body.Bytes(), &response); err != nil || response.Data != nil || response.Error == nil || response.Error.Code != "workspace_sso_required" {
+					t.Fatal("SSO denial must expose a recovery code without tenant data", err)
+				}
 			}
 		})
 	}

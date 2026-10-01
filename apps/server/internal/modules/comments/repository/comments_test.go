@@ -18,6 +18,7 @@ import (
 )
 
 type fakeCommentQueries struct {
+	replay         func(context.Context, commentsql.GetCommentCreationForActorParams) (commentsql.GetCommentCreationForActorRow, error)
 	appendEvent    func(context.Context, commentsql.AppendCommentMutationEventParams) ([]uuid.UUID, error)
 	create         func(context.Context, commentsql.CreateCommentForActorParams) (commentsql.CreateCommentForActorRow, error)
 	deleteComment  func(context.Context, commentsql.DeleteCommentForAuthorParams) (commentsql.DeleteCommentForAuthorRow, error)
@@ -25,6 +26,13 @@ type fakeCommentQueries struct {
 	get            func(context.Context, commentsql.GetCommentForWorkspaceParams) (commentsql.GetCommentForWorkspaceRow, error)
 	insertMentions func(context.Context, commentsql.InsertCommentMentionsForAuthorParams) (int64, error)
 	update         func(context.Context, commentsql.UpdateCommentForAuthorParams) (commentsql.UpdateCommentForAuthorRow, error)
+}
+
+func (fake fakeCommentQueries) GetCommentCreationForActor(ctx context.Context, params commentsql.GetCommentCreationForActorParams) (commentsql.GetCommentCreationForActorRow, error) {
+	if fake.replay == nil {
+		panic("unexpected GetCommentCreationForActor call")
+	}
+	return fake.replay(ctx, params)
 }
 
 func (fake fakeCommentQueries) AppendCommentMutationEvent(ctx context.Context, params commentsql.AppendCommentMutationEventParams) ([]uuid.UUID, error) {

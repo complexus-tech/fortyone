@@ -1,13 +1,11 @@
 import { put } from "@/lib/http";
 import type { ApiResponse } from "@/types";
-import type { Team } from "@/modules/teams/types";
+import type { Team , UpdateTeamInput as TeamUpdate } from "@/modules/teams/types";
 import { getApiError } from "@/utils";
 import { auth } from "@/auth";
 
-export type UpdateTeamInput = {
-  name?: string;
+export type UpdateTeamInput = TeamUpdate & {
   description?: string;
-  code?: string;
 };
 
 export const updateTeamAction = async (

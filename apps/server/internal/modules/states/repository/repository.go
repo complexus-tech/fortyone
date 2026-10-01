@@ -106,14 +106,14 @@ func (repository *Repository) Create(ctx context.Context, actorID, workspaceID u
 			return fmt.Errorf("insert state: %w", err)
 		}
 		created = stateFromValues(row.StatusID, row.Name, row.Category, row.OrderIndex, row.TeamID,
-			row.WorkspaceID, row.IsDefault, row.Color, row.CreatedAt, row.UpdatedAt)
+			row.WorkspaceID, row.IsDefault, row.Color, row.CreatedAt, row.UpdatedAt, row.WipLimit)
 		return nil
 	})
 	return created, err
 }
 
 func (repository *Repository) Update(ctx context.Context, actorID, workspaceID, stateID uuid.UUID, input statesdomain.UpdateState) (statesdomain.State, error) {
-	if input.Name == nil && input.OrderIndex == nil && input.IsDefault == nil && input.Color == nil {
+	if input.Name == nil && input.OrderIndex == nil && input.IsDefault == nil && input.Color == nil && input.WIPLimit == nil {
 		return statesdomain.State{}, statesdomain.ErrNoFields
 	}
 	if err := repository.configured(); err != nil {
@@ -124,7 +124,8 @@ func (repository *Repository) Update(ctx context.Context, actorID, workspaceID, 
 		params := statessql.UpdateStateForMemberParams{
 			SetName: input.Name != nil, SetOrderIndex: input.OrderIndex != nil,
 			SetIsDefault: input.IsDefault != nil, SetColor: input.Color != nil,
-			StatusID: stateID, WorkspaceID: workspaceID, ActorID: actorID,
+			SetWipLimit: input.WIPLimit != nil,
+			StatusID:    stateID, WorkspaceID: workspaceID, ActorID: actorID,
 		}
 		if input.Name != nil {
 			params.Name = *input.Name
@@ -142,12 +143,19 @@ func (repository *Repository) Update(ctx context.Context, actorID, workspaceID, 
 		if input.Color != nil {
 			params.Color = *input.Color
 		}
+		if input.WIPLimit != nil {
+			limit, err := safecast.Int32(*input.WIPLimit)
+			if err != nil || limit < 0 || limit > 10000 {
+				return statesdomain.State{}, statesdomain.ErrInvalidWIPLimit
+			}
+			params.WipLimit = limit
+		}
 		row, err := queries.UpdateStateForMember(ctx, params)
 		if err != nil {
 			return statesdomain.State{}, mapError("update state", err)
 		}
 		return stateFromValues(row.StatusID, row.Name, row.Category, row.OrderIndex, row.TeamID,
-			row.WorkspaceID, row.IsDefault, row.Color, row.CreatedAt, row.UpdatedAt), nil
+			row.WorkspaceID, row.IsDefault, row.Color, row.CreatedAt, row.UpdatedAt, row.WipLimit), nil
 	}
 
 	if input.IsDefault == nil || !*input.IsDefault {
@@ -235,8 +243,10 @@ func (repository *Repository) Get(ctx context.Context, workspaceID, stateID uuid
 	if err != nil {
 		return statesdomain.State{}, mapError("get state", err)
 	}
-	return stateFromValues(row.StatusID, row.Name, row.Category, row.OrderIndex, row.TeamID,
-		row.WorkspaceID, row.IsDefault, row.Color, row.CreatedAt, row.UpdatedAt), nil
+	state := stateFromValues(row.StatusID, row.Name, row.Category, row.OrderIndex, row.TeamID,
+		row.WorkspaceID, row.IsDefault, row.Color, row.CreatedAt, row.UpdatedAt, row.WipLimit)
+	state.ActiveCount = int(row.ActiveCount)
+	return state, nil
 }
 
 func (repository *Repository) List(ctx context.Context, workspaceID, actorID uuid.UUID) ([]statesdomain.State, error) {
@@ -252,7 +262,8 @@ func (repository *Repository) List(ctx context.Context, workspaceID, actorID uui
 	states := make([]statesdomain.State, len(rows))
 	for index, row := range rows {
 		states[index] = stateFromValues(row.StatusID, row.Name, row.Category, row.OrderIndex, row.TeamID,
-			row.WorkspaceID, row.IsDefault, row.Color, row.CreatedAt, row.UpdatedAt)
+			row.WorkspaceID, row.IsDefault, row.Color, row.CreatedAt, row.UpdatedAt, row.WipLimit)
+		states[index].ActiveCount = int(row.ActiveCount)
 	}
 	return states, nil
 }
@@ -268,7 +279,8 @@ func (repository *Repository) TeamList(ctx context.Context, workspaceID, teamID 
 	states := make([]statesdomain.State, len(rows))
 	for index, row := range rows {
 		states[index] = stateFromValues(row.StatusID, row.Name, row.Category, row.OrderIndex, row.TeamID,
-			row.WorkspaceID, row.IsDefault, row.Color, row.CreatedAt, row.UpdatedAt)
+			row.WorkspaceID, row.IsDefault, row.Color, row.CreatedAt, row.UpdatedAt, row.WipLimit)
+		states[index].ActiveCount = int(row.ActiveCount)
 	}
 	return states, nil
 }
@@ -286,7 +298,8 @@ func (repository *Repository) TeamListForMember(ctx context.Context, workspaceID
 	states := make([]statesdomain.State, len(rows))
 	for index, row := range rows {
 		states[index] = stateFromValues(row.StatusID, row.Name, row.Category, row.OrderIndex, row.TeamID,
-			row.WorkspaceID, row.IsDefault, row.Color, row.CreatedAt, row.UpdatedAt)
+			row.WorkspaceID, row.IsDefault, row.Color, row.CreatedAt, row.UpdatedAt, row.WipLimit)
+		states[index].ActiveCount = int(row.ActiveCount)
 	}
 	return states, nil
 }
@@ -302,11 +315,12 @@ func stateFromValues(
 	color *string,
 	createdAt time.Time,
 	updatedAt time.Time,
+	wipLimit *int32,
 ) statesdomain.State {
 	return statesdomain.State{
 		ID: id, Name: name, Category: stringValue(category), OrderIndex: intValue(orderIndex),
 		Team: teamID, Workspace: workspaceID, IsDefault: isDefault, Color: stringValue(color),
-		CreatedAt: createdAt, UpdatedAt: updatedAt,
+		CreatedAt: createdAt, UpdatedAt: updatedAt, WIPLimit: optionalInt(wipLimit),
 	}
 }
 
@@ -329,4 +343,12 @@ func mapError(operation string, err error) error {
 		return statesdomain.ErrNotFound
 	}
 	return fmt.Errorf("%s: %w", operation, err)
+}
+
+func optionalInt(value *int32) *int {
+	if value == nil {
+		return nil
+	}
+	converted := int(*value)
+	return &converted
 }

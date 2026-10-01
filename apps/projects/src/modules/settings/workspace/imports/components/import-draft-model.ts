@@ -90,8 +90,13 @@ export const mergeCompletedImportAnalysis = (
   },
 ): ImportDraft => {
   const usesDeterministicRowMapping =
-    current?.sourceType === "csv" || current?.sourceType === "jira_csv";
-  const preservesDeterministicTrelloGraph = isDeterministicTrelloDraft(current);
+    !current?.sourceMetadata &&
+    (current?.sourceType === "csv" || current?.sourceType === "jira_csv");
+  const preservesDeterministicTrelloGraph =
+    isDeterministicTrelloDraft(current) ||
+    current?.sourceMetadata?.platform === "shortcut" ||
+    current?.sourceMetadata?.platform === "plane" ||
+    Boolean(current?.sourceNamespace?.startsWith("fortyone:workspace:"));
   const preservesDeterministicTaskSet =
     usesDeterministicRowMapping || preservesDeterministicTrelloGraph;
   const canMergeDeterministicAnalysis = Boolean(

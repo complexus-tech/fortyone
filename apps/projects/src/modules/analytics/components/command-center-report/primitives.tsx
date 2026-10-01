@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Box, Flex, Skeleton, Text, Wrapper } from "ui";
+import { cn } from "lib";
 
 type MetricCardProps = {
   accent?: string | null;
@@ -16,7 +17,12 @@ export const ReportCard = ({
   className?: string;
 }) => {
   return (
-    <Wrapper className={["h-full", className].filter(Boolean).join(" ")}>
+    <Wrapper
+      className={cn(
+        "h-full min-w-0 rounded-2xl p-5 shadow-none md:p-6",
+        className,
+      )}
+    >
       {children}
     </Wrapper>
   );
@@ -31,9 +37,9 @@ export const SectionTitle = ({
 }) => {
   return (
     <Box>
-      <Text className="text-lg font-semibold">{children}</Text>
+      <Text className="text-lg font-medium">{children}</Text>
       {description ? (
-        <Text className="text-foreground/70 mt-1 text-[0.92rem] leading-5">
+        <Text className="mt-1 leading-6" color="muted">
           {description}
         </Text>
       ) : null}
@@ -48,24 +54,24 @@ export const MetricCard = ({
   value,
 }: MetricCardProps) => {
   return (
-    <Wrapper className="px-3 py-3 md:px-5 md:py-4">
-      <Flex align="center" className="gap-4" justify="between">
-        <Text className="text-2xl antialiased" fontWeight="semibold">
+    <Wrapper className="h-full min-w-0 rounded-2xl p-5 shadow-none md:p-5">
+      <Text color="muted" fontWeight="medium">
+        {label}
+      </Text>
+      <Flex align="end" className="mt-3 gap-3" justify="between">
+        <Text
+          className="text-3xl tracking-tight tabular-nums"
+          fontWeight="medium"
+        >
           {value}
         </Text>
         {accent ? (
-          <Text className="text-success shrink-0 text-base font-medium">
+          <Text className="shrink-0 tabular-nums" color="muted">
             {accent}
           </Text>
         ) : null}
       </Flex>
-      <Text className="mt-2 opacity-80" color="muted">
-        {label}
-      </Text>
-      <Text
-        className="text-foreground/70 mt-1 truncate text-[0.9rem] leading-5"
-        title={description}
-      >
+      <Text className="mt-3 leading-6" color="muted">
         {description}
       </Text>
     </Wrapper>
@@ -82,10 +88,12 @@ export const MiniMetric = ({
   value: string;
 }) => {
   return (
-    <Wrapper className="py-3">
-      <Text className="text-[1.45rem] leading-none font-semibold">{value}</Text>
+    <Wrapper className="min-w-0 py-4 shadow-none">
+      <Text className="text-2xl leading-none font-medium tabular-nums">
+        {value}
+      </Text>
       <Text className="mt-2 font-medium">{label}</Text>
-      <Text className="text-foreground/70 mt-1 text-[0.9rem] leading-5">
+      <Text className="mt-2 leading-6" color="muted">
         {description}
       </Text>
     </Wrapper>
@@ -104,6 +112,25 @@ export const EmptyState = ({ children }: { children: ReactNode }) => {
   );
 };
 
+export const ChartLegend = ({
+  items,
+}: {
+  items: { label: string; color: string }[];
+}) => (
+  <Flex className="mt-4 gap-x-5 gap-y-2" wrap>
+    {items.map((item) => (
+      <Flex align="center" gap={2} key={item.label}>
+        <Box
+          aria-hidden
+          className="h-0.5 w-4 rounded-full"
+          style={{ backgroundColor: item.color }}
+        />
+        <Text color="muted">{item.label}</Text>
+      </Flex>
+    ))}
+  </Flex>
+);
+
 export const CommandCenterSkeleton = () => {
   return (
     <Box className="pt-3 pb-5">
@@ -115,7 +142,7 @@ export const CommandCenterSkeleton = () => {
         <Skeleton className="h-10 w-80" />
       </Flex>
       <Box className="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {Array.from({ length: 8 }).map((_, index) => (
+        {Array.from({ length: 4 }).map((_, index) => (
           <Skeleton className="h-32" key={index} />
         ))}
       </Box>

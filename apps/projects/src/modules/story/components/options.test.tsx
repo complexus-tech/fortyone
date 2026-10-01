@@ -20,6 +20,10 @@ import { useStoryById } from "@/modules/story/hooks/story";
 import { useUpdateStoryMutation } from "../hooks/update-mutation";
 import { Options } from "./options";
 
+jest.mock("@/modules/custom-fields/public/properties", () => ({
+  StoryCustomFieldProperties: () => null,
+}));
+
 jest.mock("ui", () => ({
   Badge: function MockBadge({ children }: PropsWithChildren) {
     return <span>{children}</span>;

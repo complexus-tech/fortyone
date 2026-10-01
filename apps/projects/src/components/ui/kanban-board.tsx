@@ -13,6 +13,7 @@ import type {
 import { useStatuses, useTeamStatuses } from "@/lib/hooks/statuses";
 import { useMembers } from "@/lib/hooks/members";
 import { useTeamMembers } from "@/lib/hooks/team-members";
+import { useBoardPropertySlots } from "@/shared/story/board-property-slots";
 import type { StoriesViewOptions } from "@/components/ui/stories-view-options-button";
 import type { Member } from "@/types";
 import type { State } from "@/types/states";
@@ -247,7 +248,8 @@ export const KanbanBoard = ({
   const { data: allMembers = [] } = useMembers();
   const { data: teamMembers = [] } = useTeamMembers(teamId);
   const members = teamId ? teamMembers : allMembers;
-  const statuses = teamId ? teamStatuses : allStatuses;
+  const scopedStatuses = teamId ? teamStatuses : allStatuses;
+  const { WorkflowCounts } = useBoardPropertySlots();
   const hiddenGroupKeys = new Set(getHiddenKanbanGroupKeys(viewOptions));
   const visibleGroups = groupedStories.groups.filter(
     (group) => !hiddenGroupKeys.has(group.key),
@@ -263,66 +265,81 @@ export const KanbanBoard = ({
   };
 
   return (
-    <BodyContainer
-      aria-label="Kanban board"
-      className={cn(
-        "h-full min-h-0 w-full max-w-full min-w-0 overflow-x-auto overflow-y-hidden overscroll-x-contain",
-        className,
-      )}
-      data-kanban-board-scroll
-      ref={scrollContainerRef}
-      role="region"
-      tabIndex={0}
+    <WorkflowCounts
+      enabled={
+        groupBy === "status" && scopedStatuses.some((status) => status.wipLimit)
+      }
+      teamId={teamId}
     >
-      <Box className="flex h-full min-h-0 w-max flex-col">
-        <Box className="z-1 h-14 shrink-0 px-6 backdrop-blur">
-          <Flex
-            align="center"
-            className="h-full w-max shrink-0"
-            gap={6}
-            justify="start"
+      {(activeCounts) => {
+        const statuses = scopedStatuses.map((status) => ({
+          ...status,
+          activeCount: activeCounts.get(status.id) ?? status.activeCount,
+        }));
+        return (
+          <BodyContainer
+            aria-label="Kanban board"
+            className={cn(
+              "h-full min-h-0 w-full max-w-full min-w-0 overflow-x-auto overflow-y-hidden overscroll-x-contain",
+              className,
+            )}
+            data-kanban-board-scroll
+            ref={scrollContainerRef}
+            role="region"
+            tabIndex={0}
           >
-            {visibleGroups.map((group) => (
-              <GroupedKanbanHeader
-                group={group}
-                groupBy={groupBy}
-                key={group.key}
-                members={members}
-                onHide={
-                  setViewOptions
-                    ? () => {
-                        handleHide(group.key);
+            <Box className="flex h-full min-h-0 w-max flex-col">
+              <Box className="z-1 h-14 shrink-0 px-6 backdrop-blur">
+                <Flex
+                  align="center"
+                  className="h-full w-max shrink-0"
+                  gap={6}
+                  justify="start"
+                >
+                  {visibleGroups.map((group) => (
+                    <GroupedKanbanHeader
+                      group={group}
+                      groupBy={groupBy}
+                      key={group.key}
+                      members={members}
+                      onHide={
+                        setViewOptions
+                          ? () => {
+                              handleHide(group.key);
+                            }
+                          : undefined
                       }
-                    : undefined
-                }
-                statuses={statuses}
-                viewOptions={viewOptions}
-              />
-            ))}
-            <HiddenKanbanHeader count={hiddenGroups.length} />
-          </Flex>
-        </Box>
-        <Box className="flex min-h-0 w-max flex-1 justify-start gap-x-6 px-7">
-          {visibleGroups.map((group) => (
-            <GroupedKanbanStories
-              group={group}
-              groupBy={groupBy}
-              key={group.key}
-              members={members}
-              meta={groupedStories.meta}
-              statuses={statuses}
-              viewOptions={viewOptions}
-            />
-          ))}
-          <HiddenKanbanGroups
-            groupBy={groupBy}
-            groups={hiddenGroups}
-            members={members}
-            onShow={handleShow}
-            statuses={statuses}
-          />
-        </Box>
-      </Box>
-    </BodyContainer>
+                      statuses={statuses}
+                      viewOptions={viewOptions}
+                    />
+                  ))}
+                  <HiddenKanbanHeader count={hiddenGroups.length} />
+                </Flex>
+              </Box>
+              <Box className="flex min-h-0 w-max flex-1 justify-start gap-x-6 px-7">
+                {visibleGroups.map((group) => (
+                  <GroupedKanbanStories
+                    group={group}
+                    groupBy={groupBy}
+                    key={group.key}
+                    members={members}
+                    meta={groupedStories.meta}
+                    statuses={statuses}
+                    viewOptions={viewOptions}
+                  />
+                ))}
+                <HiddenKanbanGroups
+                  groupBy={groupBy}
+                  groups={hiddenGroups}
+                  members={members}
+                  onShow={handleShow}
+                  statuses={statuses}
+                />
+              </Box>
+            </Box>
+          </BodyContainer>
+        );
+      }}
+    </WorkflowCounts>
   );
 };

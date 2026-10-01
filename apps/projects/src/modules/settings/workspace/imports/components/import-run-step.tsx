@@ -1,7 +1,7 @@
 "use client";
 import { CheckIcon, WarningIcon } from "icons";
 import { cn } from "lib";
-import { Box, ProgressBar, Text } from "ui";
+import { Box, Button, ProgressBar, Text } from "ui";
 import { useTerminology } from "@/hooks/use-terminology-display";
 import type { ImportRunResult } from "../import-run-model";
 
@@ -80,6 +80,10 @@ export const ImportRunStep = ({
       outcome.alignedObjectives;
     const successful = outcome.created + outcome.replayed + createdStructure;
     const hasIssues =
+      Boolean(outcome.paused) ||
+      Boolean(outcome.unresolvedComments) ||
+      Boolean(outcome.unresolvedCustomFieldValues) ||
+      Boolean(outcome.customFieldIssues?.length) ||
       outcome.failed > 0 ||
       outcome.destinationConflicts > 0 ||
       outcome.unresolvedAssociations > 0 ||
@@ -90,6 +94,7 @@ export const ImportRunStep = ({
     let outcomeTitle = "Your import is ready";
     if (allFailed) outcomeTitle = "Nothing was imported";
     else if (partial) outcomeTitle = "Import finished with issues";
+    if (outcome.paused) outcomeTitle = "Import paused with a saved receipt";
     let outcomeLead = "Applied the reviewed import";
     if (allFailed) outcomeLead = "Created no work";
     else if (outcome.created) {
@@ -158,6 +163,93 @@ export const ImportRunStep = ({
             : ""}
           .
         </Text>
+        {outcome.paused ? (
+          <Text className="text-warning mt-3 leading-6">
+            {outcome.paused} Saved work is retained.
+            {outcome.remainingTasks
+              ? ` ${outcome.remainingTasks} tasks remain.`
+              : ""}
+          </Text>
+        ) : null}
+        {outcome.sourceWarnings?.length ? (
+          <details className="mt-4 text-left">
+            <summary className="focus-visible:ring-ring cursor-pointer rounded-md px-1 py-2 font-medium outline-none focus-visible:ring-2">
+              Source data notes
+            </summary>
+            <Box
+              as="ul"
+              className="text-text-muted mt-2 max-h-52 list-disc space-y-2 overflow-auto pl-5"
+            >
+              {[...new Set(outcome.sourceWarnings)].map((note) => (
+                <li key={note}>{note}</li>
+              ))}
+            </Box>
+          </details>
+        ) : null}
+        {outcome.comments ? (
+          <Text className="mt-2 leading-6" color="muted">
+            Preserved or recognized {outcome.comments} native comments with
+            source attribution.
+          </Text>
+        ) : null}
+        {outcome.createdCustomFields ? (
+          <Text className="mt-2 leading-6" color="muted">
+            Created {outcome.createdCustomFields} typed custom fields.
+          </Text>
+        ) : null}
+        {outcome.unresolvedComments ||
+        outcome.unresolvedCustomFieldValues ||
+        outcome.customFieldIssues?.length ? (
+          <Box className="bg-warning/8 mt-4 rounded-xl p-4 text-left">
+            <Text className="font-medium">
+              Additional data needing attention
+            </Text>
+            <Text className="mt-1">
+              {outcome.unresolvedComments ?? 0} comments and{" "}
+              {outcome.unresolvedCustomFieldValues ?? 0} field values could not
+              be applied.
+            </Text>
+            <Box as="ul" className="mt-2 max-h-40 space-y-1 overflow-auto">
+              {[
+                ...new Set([
+                  ...(outcome.commentIssues ?? []),
+                  ...(outcome.customFieldIssues ?? []),
+                ]),
+              ].map((issue) => (
+                <li key={issue}>{issue}</li>
+              ))}
+            </Box>
+          </Box>
+        ) : null}
+        <Button
+          className="mt-5"
+          color="tertiary"
+          onClick={() => {
+            const blob = new Blob(
+              [
+                JSON.stringify(
+                  {
+                    format: "fortyone-import-receipt",
+                    version: 1,
+                    generatedAt: new Date().toISOString(),
+                    ...outcome,
+                  },
+                  null,
+                  2,
+                ),
+              ],
+              { type: "application/json" },
+            );
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = "fortyone-import-receipt.json";
+            link.click();
+            URL.revokeObjectURL(url);
+          }}
+        >
+          Download import receipt
+        </Button>
         {outcome.unresolvedPeople ? (
           <Text className="mt-2 leading-6" color="muted">
             {outcome.unresolvedPeople} people could not be matched safely and

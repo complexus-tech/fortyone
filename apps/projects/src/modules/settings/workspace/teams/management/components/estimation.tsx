@@ -14,16 +14,22 @@ export const EstimationSettings = ({ teamId }: { teamId: string }) => {
   const estimationSettings = teamSettings?.estimationSettings;
 
   return (
-    <Box className="border-border bg-surface mt-6 rounded-2xl border">
+    <Box className="border-border bg-surface rounded-2xl border">
       <SectionHeader
         description={`Choose one relative complexity scale for your team's ${getTermDisplay("storyTerm", { variant: "plural" })}. Time needed is set separately on each item.`}
         title="Complexity"
       />
 
       <Box className="divide-border divide-y-[0.5px]">
-        <Flex align="center" className="gap-4 px-6 py-4" justify="between">
+        <Flex
+          align="center"
+          className="flex-col items-start gap-4 px-6 py-4 md:flex-row md:items-center"
+          justify="between"
+        >
           <Box>
-            <Text className="font-medium">Complexity scale</Text>
+            <Text className="font-medium" id={`team-complexity-${teamId}`}>
+              Complexity scale
+            </Text>
             <Text className="line-clamp-2 max-w-md" color="muted">
               Keep comparisons consistent with one scale across the team.
             </Text>
@@ -36,7 +42,10 @@ export const EstimationSettings = ({ teamId }: { teamId: string }) => {
             }}
             value={estimationSettings?.scheme ?? DEFAULT_ESTIMATE_SCHEME}
           >
-            <Select.Trigger className="w-max text-[0.9rem] md:text-base">
+            <Select.Trigger
+              aria-labelledby={`team-complexity-${teamId}`}
+              className="w-max max-w-full text-base"
+            >
               <Select.Input />
             </Select.Trigger>
             <Select.Content>

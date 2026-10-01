@@ -86,6 +86,7 @@ type Querier interface {
 	InsertStoryScheduleTransition(ctx context.Context, arg InsertStoryScheduleTransitionParams) error
 	InsertStoryWatcher(ctx context.Context, arg InsertStoryWatcherParams) error
 	ListDeletedStoryRetentionCandidates(ctx context.Context, arg ListDeletedStoryRetentionCandidatesParams) ([]ListDeletedStoryRetentionCandidatesRow, error)
+	ListImportReceipts(ctx context.Context, arg ListImportReceiptsParams) ([]StoryImportReceipt, error)
 	// Interactive hard deletion captures every attachment related to the locked
 	// target stories before cascading relation deletion. The application passes a
 	// bounded look-ahead limit (maximum supported attachments plus one) so an
@@ -134,6 +135,7 @@ type Querier interface {
 	MigrateEligibleSprintStoriesBatch(ctx context.Context, arg MigrateEligibleSprintStoriesBatchParams) ([]MigrateEligibleSprintStoriesBatchRow, error)
 	NextStorySequence(ctx context.Context, arg NextStorySequenceParams) (int32, error)
 	PurgeCompletedAttachmentObjectDeletions(ctx context.Context, arg PurgeCompletedAttachmentObjectDeletionsParams) (int64, error)
+	RecordImportReceipt(ctx context.Context, arg RecordImportReceiptParams) error
 	ResolveVisibleStoryKeyResult(ctx context.Context, arg ResolveVisibleStoryKeyResultParams) (ResolveVisibleStoryKeyResultRow, error)
 	RestoreSecondaryStories(ctx context.Context, arg RestoreSecondaryStoriesParams) ([]uuid.UUID, error)
 	RetryStoryMutationEvent(ctx context.Context, arg RetryStoryMutationEventParams) (int64, error)

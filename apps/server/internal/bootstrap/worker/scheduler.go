@@ -13,6 +13,10 @@ type scheduleRegistrar interface {
 }
 
 func registerSchedules(scheduler scheduleRegistrar) error {
+	if _, err := scheduler.Register("*/1 * * * *", asynq.NewTask(tasks.TypeTeamAutomationDispatch, nil), asynq.Queue("automation"), asynq.MaxRetry(2), asynq.Timeout(45*time.Second), asynq.Unique(55*time.Second)); err != nil {
+		return fmt.Errorf("failed to register team automation task: %w", err)
+	}
+
 	_, err := scheduler.Register(
 		"@every 5s",
 		asynq.NewTask(tasks.TypeOutboundWebhookDispatch, nil),

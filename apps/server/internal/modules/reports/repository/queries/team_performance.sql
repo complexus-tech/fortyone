@@ -13,6 +13,9 @@ LEFT JOIN stories AS story
    AND story.is_draft = FALSE
    AND story.created_at >= sqlc.arg(start_date)
    AND story.created_at <= sqlc.arg(end_date)
+   AND (cardinality(CAST(sqlc.arg(assignee_ids) AS uuid[])) = 0 OR story.assignee_id = ANY(CAST(sqlc.arg(assignee_ids) AS uuid[])))
+   AND (cardinality(CAST(sqlc.arg(objective_ids) AS uuid[])) = 0 OR story.objective_id = ANY(CAST(sqlc.arg(objective_ids) AS uuid[])))
+   AND (cardinality(CAST(sqlc.arg(sprint_ids) AS uuid[])) = 0 OR story.sprint_id = ANY(CAST(sqlc.arg(sprint_ids) AS uuid[])))
 LEFT JOIN statuses AS status ON status.status_id = story.status_id
 LEFT JOIN team_members AS member ON member.team_id = team.team_id
 WHERE team.workspace_id = sqlc.arg(workspace_id)::uuid
@@ -41,8 +44,12 @@ LEFT JOIN stories AS story
    AND story.is_draft = FALSE
    AND story.created_at >= sqlc.arg(start_date)
    AND story.created_at <= sqlc.arg(end_date)
+   AND (cardinality(CAST(sqlc.arg(assignee_ids) AS uuid[])) = 0 OR story.assignee_id = ANY(CAST(sqlc.arg(assignee_ids) AS uuid[])))
+   AND (cardinality(CAST(sqlc.arg(objective_ids) AS uuid[])) = 0 OR story.objective_id = ANY(CAST(sqlc.arg(objective_ids) AS uuid[])))
+   AND (cardinality(CAST(sqlc.arg(sprint_ids) AS uuid[])) = 0 OR story.sprint_id = ANY(CAST(sqlc.arg(sprint_ids) AS uuid[])))
 LEFT JOIN statuses AS status ON status.status_id = story.status_id
 WHERE account.is_active = TRUE
+  AND (cardinality(CAST(sqlc.arg(assignee_ids) AS uuid[])) = 0 OR account.user_id = ANY(CAST(sqlc.arg(assignee_ids) AS uuid[])))
   AND (cardinality(sqlc.arg(team_ids)::uuid[]) = 0 OR team.team_id = ANY(sqlc.arg(team_ids)::uuid[]))
 GROUP BY account.user_id, account.username, account.avatar_url, membership.team_id
 ORDER BY account.username, account.user_id, membership.team_id;
@@ -63,6 +70,9 @@ LEFT JOIN stories AS story
    AND story.is_draft = FALSE
    AND CAST(story.updated_at AS date) >= CAST(sqlc.arg(start_date) AS date) - INTERVAL '3 weeks'
    AND story.updated_at <= sqlc.arg(end_date)
+   AND (cardinality(CAST(sqlc.arg(assignee_ids) AS uuid[])) = 0 OR story.assignee_id = ANY(CAST(sqlc.arg(assignee_ids) AS uuid[])))
+   AND (cardinality(CAST(sqlc.arg(objective_ids) AS uuid[])) = 0 OR story.objective_id = ANY(CAST(sqlc.arg(objective_ids) AS uuid[])))
+   AND (cardinality(CAST(sqlc.arg(sprint_ids) AS uuid[])) = 0 OR story.sprint_id = ANY(CAST(sqlc.arg(sprint_ids) AS uuid[])))
 LEFT JOIN statuses AS status
     ON status.status_id = story.status_id
    AND status.category = 'completed'
@@ -83,6 +93,9 @@ WHERE story.workspace_id = sqlc.arg(workspace_id)::uuid
   AND story.is_draft = FALSE
   AND story.created_at >= sqlc.arg(start_date)
   AND story.created_at <= sqlc.arg(end_date)
+  AND (cardinality(CAST(sqlc.arg(assignee_ids) AS uuid[])) = 0 OR story.assignee_id = ANY(CAST(sqlc.arg(assignee_ids) AS uuid[])))
+  AND (cardinality(CAST(sqlc.arg(objective_ids) AS uuid[])) = 0 OR story.objective_id = ANY(CAST(sqlc.arg(objective_ids) AS uuid[])))
+  AND (cardinality(CAST(sqlc.arg(sprint_ids) AS uuid[])) = 0 OR story.sprint_id = ANY(CAST(sqlc.arg(sprint_ids) AS uuid[])))
   AND (cardinality(sqlc.arg(team_ids)::uuid[]) = 0 OR story.team_id = ANY(sqlc.arg(team_ids)::uuid[]))
 GROUP BY CAST(story.created_at AS date)
 ORDER BY date;

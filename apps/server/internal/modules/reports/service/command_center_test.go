@@ -5,6 +5,8 @@ import (
 	"errors"
 	"io"
 	"log/slog"
+	"reflect"
+	"sync"
 	"testing"
 	"time"
 
@@ -25,13 +27,26 @@ type commandCenterRepoStub struct {
 	requestResult    CoreRequestSourceAnalytics
 	engagementResult CoreWorkspaceEngagementAnalytics
 	storyErr         error
+	filtersMu        sync.Mutex
+	sectionFilters   map[string]ReportFilters
+}
+
+func (s *commandCenterRepoStub) recordFilters(section string, filters ReportFilters) {
+	s.filtersMu.Lock()
+	defer s.filtersMu.Unlock()
+	if s.sectionFilters == nil {
+		s.sectionFilters = make(map[string]ReportFilters)
+	}
+	s.sectionFilters[section] = filters
 }
 
 func (s *commandCenterRepoStub) GetWorkspaceOverview(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CoreWorkspaceOverview, error) {
+	s.recordFilters("overview", filters)
 	return s.overviewResult, nil
 }
 
 func (s *commandCenterRepoStub) GetStoryAnalytics(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CoreStoryAnalytics, error) {
+	s.recordFilters("stories", filters)
 	if s.storyErr != nil {
 		return CoreStoryAnalytics{}, s.storyErr
 	}
@@ -39,18 +54,22 @@ func (s *commandCenterRepoStub) GetStoryAnalytics(ctx context.Context, workspace
 }
 
 func (s *commandCenterRepoStub) GetObjectiveProgress(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CoreObjectiveProgress, error) {
+	s.recordFilters("objectives", filters)
 	return s.objectiveResult, nil
 }
 
 func (s *commandCenterRepoStub) GetTeamPerformance(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CoreTeamPerformance, error) {
+	s.recordFilters("teams", filters)
 	return s.teamResult, nil
 }
 
 func (s *commandCenterRepoStub) GetWorkloadAnalysis(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CoreWorkloadAnalysis, error) {
+	s.recordFilters("workload", filters)
 	return s.workloadResult, nil
 }
 
 func (s *commandCenterRepoStub) GetPulseStoryHealth(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CorePulseStoryHealth, error) {
+	s.recordFilters("pulse_stories", filters)
 	return CorePulseStoryHealth{
 		OpenStories:    s.workloadResult.Summary.TotalOpenStories,
 		OverdueStories: s.workloadResult.Summary.OverdueStories,
@@ -58,30 +77,37 @@ func (s *commandCenterRepoStub) GetPulseStoryHealth(ctx context.Context, workspa
 }
 
 func (s *commandCenterRepoStub) GetPulseSprintHealth(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CorePulseSprintHealth, error) {
+	s.recordFilters("pulse_sprints", filters)
 	return CorePulseSprintHealth{}, nil
 }
 
 func (s *commandCenterRepoStub) GetPulseObjectiveHealth(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CorePulseObjectiveHealth, error) {
+	s.recordFilters("pulse_objectives", filters)
 	return CorePulseObjectiveHealth{}, nil
 }
 
 func (s *commandCenterRepoStub) GetPulseRequestHealth(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CorePulseRequestHealth, error) {
+	s.recordFilters("pulse_requests", filters)
 	return CorePulseRequestHealth{}, nil
 }
 
 func (s *commandCenterRepoStub) GetSprintAnalytics(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CoreSprintAnalyticsWorkspace, error) {
+	s.recordFilters("sprints", filters)
 	return s.sprintResult, nil
 }
 
 func (s *commandCenterRepoStub) GetTimelineTrends(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CoreTimelineTrends, error) {
+	s.recordFilters("trends", filters)
 	return s.trendResult, nil
 }
 
 func (s *commandCenterRepoStub) GetRequestSourceAnalytics(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CoreRequestSourceAnalytics, error) {
+	s.recordFilters("requests", filters)
 	return s.requestResult, nil
 }
 
 func (s *commandCenterRepoStub) GetWorkspaceEngagementAnalytics(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CoreWorkspaceEngagementAnalytics, error) {
+	s.recordFilters("engagement", filters)
 	return s.engagementResult, nil
 }
 
@@ -143,6 +169,47 @@ func TestGetWorkspaceCommandCenterReportComposesDetailedSections(t *testing.T) {
 	}
 	if got.Engagement.TotalEvents != 27 || got.Engagement.UniqueUsers != 4 {
 		t.Fatalf("expected engagement analytics, got %#v", got.Engagement)
+	}
+}
+
+func TestGetWorkspaceCommandCenterSeparatesCurrentRiskFromReportingPeriod(t *testing.T) {
+	t.Parallel()
+
+	workspaceID := uuid.New()
+	actorID := uuid.New()
+	startDate := time.Date(2026, 9, 1, 0, 0, 0, 0, time.UTC)
+	endDate := startDate.AddDate(0, 0, 7)
+	periodFilters := ReportFilters{
+		ActorID:      actorID,
+		TeamIDs:      []uuid.UUID{uuid.New()},
+		AssigneeIDs:  []uuid.UUID{uuid.New()},
+		ObjectiveIDs: []uuid.UUID{uuid.New()},
+		SprintIDs:    []uuid.UUID{uuid.New()},
+		StartDate:    &startDate,
+		EndDate:      &endDate,
+	}
+	repo := &commandCenterRepoStub{}
+	service := New(logger.NewWithText(io.Discard, slog.LevelError, "reports-test"), repo)
+	report, err := service.GetWorkspaceCommandCenterReport(reportTestContext(actorID), workspaceID, periodFilters)
+	if err != nil {
+		t.Fatalf("get command center: %v", err)
+	}
+
+	currentFilters := periodFilters
+	currentFilters.StartDate = nil
+	currentFilters.EndDate = nil
+	for _, section := range []string{"workload", "pulse_stories", "pulse_sprints", "pulse_objectives", "pulse_requests"} {
+		if !reflect.DeepEqual(repo.sectionFilters[section], currentFilters) {
+			t.Errorf("%s scope = %#v, want current work with unchanged item/access filters", section, repo.sectionFilters[section])
+		}
+	}
+	for _, section := range []string{"overview", "stories", "objectives", "teams", "sprints", "trends", "requests", "engagement"} {
+		if !reflect.DeepEqual(repo.sectionFilters[section], periodFilters) {
+			t.Errorf("%s scope = %#v, want selected reporting period", section, repo.sectionFilters[section])
+		}
+	}
+	if !reflect.DeepEqual(report.Filters, periodFilters) || !reflect.DeepEqual(report.Pulse.Filters, currentFilters) {
+		t.Fatalf("response filter metadata does not describe each report's actual scope: period=%#v pulse=%#v", report.Filters, report.Pulse.Filters)
 	}
 }
 

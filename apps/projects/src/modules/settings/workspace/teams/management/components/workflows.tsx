@@ -263,7 +263,7 @@ export const WorkflowSettings = () => {
   return (
     <FeatureGuard
       fallback={
-        <Wrapper className="border-warning bg-warning/10 dark:border-warning/20 dark:bg-warning/10 mb-6 flex items-center justify-between gap-2 border p-4">
+        <Wrapper className="border-warning bg-warning/10 dark:border-warning/20 dark:bg-warning/10 flex items-center justify-between gap-2 border p-4">
           <Flex align="center" gap={2}>
             <WarningIcon className="text-warning dark:text-warning" />
             <Text>
@@ -283,11 +283,11 @@ export const WorkflowSettings = () => {
       }
       feature="customWorkflows"
     >
-      <Box className="border-border bg-surface mb-6 rounded-2xl border pb-6">
+      <Box className="border-border bg-surface rounded-2xl border pb-6">
         <SectionHeader
           className="mb-4"
-          description="Configure custom workflow states to track the progress of your team's work. Each category represents a different phase in your workflow process."
-          title="Team Workflow"
+          description="Set statuses and work-in-progress limits for your team."
+          title="Statuses and limits"
         />
         <DndContext onDragEnd={handleDragEnd}>
           <Flex direction="column" gap={4}>

@@ -257,10 +257,13 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 	}
 
 	team := teams.CoreTeam{
-		Name:      input.Name,
-		Code:      input.Code,
-		Color:     input.Color,
-		Workspace: workspace.ID,
+		Name:         input.Name,
+		Code:         input.Code,
+		Color:        input.Color,
+		Workspace:    workspace.ID,
+		StoryTerm:    input.StoryTerm.Value,
+		StoryTermSet: input.StoryTerm.Present,
+		IsPrivateSet: input.IsPrivate != nil,
 	}
 
 	if input.IsPrivate != nil {
@@ -269,6 +272,9 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 
 	result, err := h.teams.Update(ctx, teamID, team)
 	if err != nil {
+		if errors.Is(err, teams.ErrInvalidStoryTerm) {
+			return web.RespondError(ctx, w, err, http.StatusBadRequest)
+		}
 		if err == teams.ErrTeamCodeExists {
 			return web.RespondError(ctx, w, err, http.StatusConflict)
 		}

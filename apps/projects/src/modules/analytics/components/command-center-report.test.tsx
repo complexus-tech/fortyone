@@ -4,6 +4,10 @@ import type { ReactNode } from "react";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { CommandCenterReport } from "./command-center-report";
 
+jest.mock("@/modules/custom-fields/public/report", () => ({
+  CustomFieldReportPanel: () => <div data-testid="custom-fields-report" />,
+}));
+
 const mockUseCommandCenterReport = jest.fn();
 const mockTrackEvent = jest.fn();
 
@@ -109,7 +113,7 @@ describe("CommandCenterReport", () => {
 
     render(<CommandCenterReport />);
 
-    expect(screen.getAllByTestId("analytics-skeleton")).toHaveLength(13);
+    expect(screen.getAllByTestId("analytics-skeleton")).toHaveLength(9);
   });
 
   it("renders an actionable error state and retries the report", () => {
@@ -141,9 +145,9 @@ describe("CommandCenterReport", () => {
 
     expect(screen.getByText("Some analytics sections are delayed"));
     expect(screen.getByText("Requests"));
-    expect(screen.getByText("Refreshing"));
+    expect(screen.getByText("Refreshing reports…"));
     expect(screen.getByText("9"));
-    expect(screen.getByText("60%"));
+    expect(screen.getByText("67%"));
     expect(screen.getByTestId("overview-tab")).toBeInTheDocument();
     expect(screen.getByTestId("workload-tab")).toBeInTheDocument();
     expect(screen.getByTestId("flow-tab")).toBeInTheDocument();

@@ -1,3 +1,7 @@
+import type { TeamStoryTerm } from "@/shared/story/terminology";
+
+export type { TeamStoryTerm } from "@/shared/story/terminology";
+
 export type Team = {
   id: string;
   name: string;
@@ -9,6 +13,7 @@ export type Team = {
   updatedAt: string;
   memberCount: number;
   sprintsEnabled: boolean;
+  storyTerm?: TeamStoryTerm | null;
 };
 
 export type TeamsPage = {
@@ -28,7 +33,9 @@ export type CreateTeamInput = {
   isPrivate: boolean;
 };
 
-export type UpdateTeamInput = Partial<CreateTeamInput>;
+export type UpdateTeamInput = Partial<CreateTeamInput> & {
+  storyTerm?: TeamStoryTerm | null;
+};
 
 export type TeamSprintSettings = {
   autoCreateSprints: boolean;

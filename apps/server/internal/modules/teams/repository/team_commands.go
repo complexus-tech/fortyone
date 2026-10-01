@@ -116,12 +116,15 @@ func (r *repo) Update(
 	updates teamsdomain.Team,
 ) (teamsdomain.Team, error) {
 	row, err := r.queries.UpdateTeamForWorkspace(ctx, teamsql.UpdateTeamForWorkspaceParams{
-		Name:        updates.Name,
-		Code:        updates.Code,
-		Color:       updates.Color,
-		IsPrivate:   updates.IsPrivate,
-		TeamID:      teamID,
-		WorkspaceID: updates.Workspace,
+		Name:         updates.Name,
+		Code:         updates.Code,
+		Color:        updates.Color,
+		IsPrivate:    updates.IsPrivate,
+		IsPrivateSet: updates.IsPrivateSet,
+		StoryTerm:    updates.StoryTerm,
+		StoryTermSet: updates.StoryTermSet,
+		TeamID:       teamID,
+		WorkspaceID:  updates.Workspace,
 	})
 	if err != nil {
 		switch {

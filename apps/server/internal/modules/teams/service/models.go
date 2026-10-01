@@ -7,6 +7,7 @@ var (
 	ErrTeamMemberExists   = teamsdomain.ErrMemberExists
 	ErrTeamNotFound       = teamsdomain.ErrNotFound
 	ErrTeamMemberNotFound = teamsdomain.ErrMemberNotFound
+	ErrInvalidStoryTerm   = teamsdomain.ErrInvalidStoryTerm
 )
 
 type CoreTeam = teamsdomain.Team

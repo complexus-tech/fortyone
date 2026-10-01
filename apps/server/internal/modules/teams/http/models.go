@@ -1,6 +1,8 @@
 package teamshttp
 
 import (
+	"encoding/json"
+	"fmt"
 	"time"
 
 	teams "github.com/complexus-tech/projects-api/internal/modules/teams/service"
@@ -19,6 +21,7 @@ type AppTeamsList struct {
 	UpdatedAt      time.Time `json:"updatedAt"`
 	MemberCount    int       `json:"memberCount"`
 	SprintsEnabled bool      `json:"sprintsEnabled"`
+	StoryTerm      *string   `json:"storyTerm"`
 }
 
 type AppPagination struct {
@@ -48,6 +51,7 @@ func toAppTeams(teams []teams.CoreTeam) []AppTeamsList {
 			UpdatedAt:      team.UpdatedAt,
 			MemberCount:    team.MemberCount,
 			SprintsEnabled: team.SprintsEnabled,
+			StoryTerm:      team.StoryTerm,
 		}
 	}
 	return appTeams
@@ -78,10 +82,27 @@ type AppNewTeam struct {
 }
 
 type AppUpdateTeam struct {
-	Name      string `json:"name,omitempty"`
-	Code      string `json:"code,omitempty"`
-	Color     string `json:"color,omitempty"`
-	IsPrivate *bool  `json:"isPrivate,omitempty"`
+	Name      string            `json:"name,omitempty"`
+	Code      string            `json:"code,omitempty"`
+	Color     string            `json:"color,omitempty"`
+	IsPrivate *bool             `json:"isPrivate,omitempty"`
+	StoryTerm OptionalStoryTerm `json:"storyTerm,omitempty"`
+}
+
+// A value object receives JSON null, whereas a pointer cannot distinguish
+// null from an omitted property. Both are meaningful in a partial update.
+type OptionalStoryTerm struct {
+	Present bool
+	Value   *string
+}
+
+func (term *OptionalStoryTerm) UnmarshalJSON(data []byte) error {
+	var value *string
+	if err := json.Unmarshal(data, &value); err != nil {
+		return fmt.Errorf("work naming must be a string or null: %w", err)
+	}
+	term.Present, term.Value = true, value
+	return nil
 }
 
 type AppNewTeamMember struct {

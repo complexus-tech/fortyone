@@ -2,6 +2,7 @@ package teams
 
 import (
 	"context"
+	teamsdomain "github.com/complexus-tech/projects-api/internal/modules/teams/domain"
 
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	apptracing "github.com/complexus-tech/projects-api/pkg/tracing"
@@ -123,6 +124,9 @@ func (s *Service) Create(ctx context.Context, team CoreTeam) (CoreTeam, error) {
 }
 
 func (s *Service) Update(ctx context.Context, teamID uuid.UUID, updates CoreTeam) (CoreTeam, error) {
+	if updates.StoryTermSet && !teamsdomain.ValidStoryTerm(updates.StoryTerm) {
+		return CoreTeam{}, ErrInvalidStoryTerm
+	}
 	s.log.Info(ctx, "business.core.teams.update")
 	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.teams.Update")
 	defer span.End()

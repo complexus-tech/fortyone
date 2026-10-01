@@ -151,7 +151,8 @@ type createOptions struct {
 }
 
 type updateOptions struct {
-	publishEvents bool
+	mutationEventDelivery mutationEventDelivery
+	publishEvents         bool
 	// publishStatusEvents lets provider-originated status transitions reach
 	// downstream consumers without enabling outbound provider synchronization.
 	publishStatusEvents      bool

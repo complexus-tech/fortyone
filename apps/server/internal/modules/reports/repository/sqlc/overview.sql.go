@@ -14,8 +14,9 @@ import (
 
 const getWorkspaceMetrics = `-- name: GetWorkspaceMetrics :one
 SELECT
-    CAST(COUNT(DISTINCT story.id) AS int) AS total_stories,
-    CAST(COUNT(DISTINCT story.id) FILTER (WHERE status.category = 'completed') AS int) AS completed_stories,
+    CAST(COUNT(DISTINCT story.id) FILTER (WHERE story.created_at >= $1 AND story.created_at <= $2) AS int) AS total_stories,
+    CAST(COUNT(DISTINCT story.id) FILTER (WHERE status.category = 'completed' AND story.created_at >= $1 AND story.created_at <= $2) AS int) AS completed_stories,
+    CAST(COUNT(DISTINCT story.id) FILTER (WHERE status.category = 'completed' AND story.completed_at >= $1 AND story.completed_at <= $2) AS int) AS completed_in_period,
     CAST(COUNT(DISTINCT objective.objective_id) AS int) AS active_objectives,
     CAST(COUNT(DISTINCT sprint.sprint_id) AS int) AS active_sprints,
     CAST(COUNT(DISTINCT member.user_id) AS int) AS total_team_members
@@ -24,40 +25,53 @@ LEFT JOIN statuses AS status ON status.status_id = story.status_id
 LEFT JOIN objectives AS objective ON objective.objective_id = story.objective_id
 LEFT JOIN sprints AS sprint ON sprint.sprint_id = story.sprint_id
 LEFT JOIN team_members AS member ON member.team_id = story.team_id
-WHERE story.workspace_id = $1::uuid
+WHERE story.workspace_id = CAST($3 AS uuid)
   AND story.deleted_at IS NULL
   AND story.is_draft = FALSE
-  AND story.created_at >= $2
-  AND story.created_at <= $3
-  AND (cardinality($4::uuid[]) = 0 OR story.team_id = ANY($4::uuid[]))
+  AND (
+      (story.created_at >= $1 AND story.created_at <= $2)
+      OR (story.completed_at >= $1 AND story.completed_at <= $2)
+  )
+  AND (cardinality(CAST($4 AS uuid[])) = 0 OR story.team_id = ANY(CAST($4 AS uuid[])))
+  AND (cardinality(CAST($5 AS uuid[])) = 0 OR story.assignee_id = ANY(CAST($5 AS uuid[])))
+  AND (cardinality(CAST($6 AS uuid[])) = 0 OR story.objective_id = ANY(CAST($6 AS uuid[])))
+  AND (cardinality(CAST($7 AS uuid[])) = 0 OR story.sprint_id = ANY(CAST($7 AS uuid[])))
 `
 
 type GetWorkspaceMetricsParams struct {
-	WorkspaceID uuid.UUID
-	StartDate   time.Time
-	EndDate     time.Time
-	TeamIds     []uuid.UUID
+	StartDate    time.Time
+	EndDate      time.Time
+	WorkspaceID  uuid.UUID
+	TeamIds      []uuid.UUID
+	AssigneeIds  []uuid.UUID
+	ObjectiveIds []uuid.UUID
+	SprintIds    []uuid.UUID
 }
 
 type GetWorkspaceMetricsRow struct {
-	TotalStories     int32
-	CompletedStories int32
-	ActiveObjectives int32
-	ActiveSprints    int32
-	TotalTeamMembers int32
+	TotalStories      int32
+	CompletedStories  int32
+	CompletedInPeriod int32
+	ActiveObjectives  int32
+	ActiveSprints     int32
+	TotalTeamMembers  int32
 }
 
 func (q *Queries) GetWorkspaceMetrics(ctx context.Context, arg GetWorkspaceMetricsParams) (GetWorkspaceMetricsRow, error) {
 	row := q.db.QueryRow(ctx, getWorkspaceMetrics,
-		arg.WorkspaceID,
 		arg.StartDate,
 		arg.EndDate,
+		arg.WorkspaceID,
 		arg.TeamIds,
+		arg.AssigneeIds,
+		arg.ObjectiveIds,
+		arg.SprintIds,
 	)
 	var i GetWorkspaceMetricsRow
 	err := row.Scan(
 		&i.TotalStories,
 		&i.CompletedStories,
+		&i.CompletedInPeriod,
 		&i.ActiveObjectives,
 		&i.ActiveSprints,
 		&i.TotalTeamMembers,
@@ -66,27 +80,53 @@ func (q *Queries) GetWorkspaceMetrics(ctx context.Context, arg GetWorkspaceMetri
 }
 
 const listWorkspaceCompletionTrend = `-- name: ListWorkspaceCompletionTrend :many
+WITH created_events AS (
+    SELECT DATE_TRUNC('week', scoped.created_at) AS event_week, 1 AS created, 0 AS completed
+    FROM stories AS scoped
+    LEFT JOIN statuses AS status ON status.status_id = scoped.status_id
+    WHERE scoped.workspace_id = CAST($1 AS uuid)
+      AND scoped.deleted_at IS NULL
+      AND scoped.is_draft = FALSE
+      AND (cardinality(CAST($2 AS uuid[])) = 0 OR scoped.team_id = ANY(CAST($2 AS uuid[])))
+      AND (cardinality(CAST($3 AS uuid[])) = 0 OR scoped.assignee_id = ANY(CAST($3 AS uuid[])))
+      AND (cardinality(CAST($4 AS uuid[])) = 0 OR scoped.objective_id = ANY(CAST($4 AS uuid[])))
+      AND (cardinality(CAST($5 AS uuid[])) = 0 OR scoped.sprint_id = ANY(CAST($5 AS uuid[])))
+      AND scoped.created_at >= $6 AND scoped.created_at <= $7
+), completed_events AS (
+    SELECT DATE_TRUNC('week', scoped.completed_at) AS event_week, 0 AS created, 1 AS completed
+    FROM stories AS scoped
+    LEFT JOIN statuses AS status ON status.status_id = scoped.status_id
+    WHERE scoped.workspace_id = CAST($1 AS uuid)
+      AND scoped.deleted_at IS NULL
+      AND scoped.is_draft = FALSE
+      AND (cardinality(CAST($2 AS uuid[])) = 0 OR scoped.team_id = ANY(CAST($2 AS uuid[])))
+      AND (cardinality(CAST($3 AS uuid[])) = 0 OR scoped.assignee_id = ANY(CAST($3 AS uuid[])))
+      AND (cardinality(CAST($4 AS uuid[])) = 0 OR scoped.objective_id = ANY(CAST($4 AS uuid[])))
+      AND (cardinality(CAST($5 AS uuid[])) = 0 OR scoped.sprint_id = ANY(CAST($5 AS uuid[])))
+      AND status.category = 'completed'
+      AND scoped.completed_at >= $6 AND scoped.completed_at <= $7
+), events AS (
+    SELECT event_week, created, completed FROM created_events
+    UNION ALL
+    SELECT event_week, created, completed FROM completed_events
+)
 SELECT
-    CAST(DATE_TRUNC('week', story.created_at) AS timestamptz) AS week_start,
-    CAST(COUNT(DISTINCT story.id) FILTER (WHERE status.category = 'completed') AS int) AS completed,
-    CAST(COUNT(DISTINCT story.id) AS int) AS total
-FROM stories AS story
-LEFT JOIN statuses AS status ON status.status_id = story.status_id
-WHERE story.workspace_id = $1::uuid
-  AND story.deleted_at IS NULL
-  AND story.is_draft = FALSE
-  AND story.created_at >= $2
-  AND story.created_at <= $3
-  AND (cardinality($4::uuid[]) = 0 OR story.team_id = ANY($4::uuid[]))
-GROUP BY DATE_TRUNC('week', story.created_at)
+    CAST(events.event_week AS timestamptz) AS week_start,
+    CAST(SUM(events.completed) AS int) AS completed,
+    CAST(SUM(events.created) AS int) AS total
+FROM events
+GROUP BY events.event_week
 ORDER BY week_start
 `
 
 type ListWorkspaceCompletionTrendParams struct {
-	WorkspaceID uuid.UUID
-	StartDate   time.Time
-	EndDate     time.Time
-	TeamIds     []uuid.UUID
+	WorkspaceID  uuid.UUID
+	TeamIds      []uuid.UUID
+	AssigneeIds  []uuid.UUID
+	ObjectiveIds []uuid.UUID
+	SprintIds    []uuid.UUID
+	StartDate    time.Time
+	EndDate      time.Time
 }
 
 type ListWorkspaceCompletionTrendRow struct {
@@ -98,9 +138,12 @@ type ListWorkspaceCompletionTrendRow struct {
 func (q *Queries) ListWorkspaceCompletionTrend(ctx context.Context, arg ListWorkspaceCompletionTrendParams) ([]ListWorkspaceCompletionTrendRow, error) {
 	rows, err := q.db.Query(ctx, listWorkspaceCompletionTrend,
 		arg.WorkspaceID,
+		arg.TeamIds,
+		arg.AssigneeIds,
+		arg.ObjectiveIds,
+		arg.SprintIds,
 		arg.StartDate,
 		arg.EndDate,
-		arg.TeamIds,
 	)
 	if err != nil {
 		return nil, err
@@ -122,26 +165,32 @@ func (q *Queries) ListWorkspaceCompletionTrend(ctx context.Context, arg ListWork
 
 const listWorkspaceVelocityTrend = `-- name: ListWorkspaceVelocityTrend :many
 SELECT
-    TO_CHAR(DATE_TRUNC('week', story.updated_at), 'Mon DD') AS period,
+    TO_CHAR(DATE_TRUNC('week', story.completed_at), 'Mon DD') AS period,
     CAST(COUNT(DISTINCT story.id) AS int) AS velocity
 FROM stories AS story
 LEFT JOIN statuses AS status ON status.status_id = story.status_id
-WHERE story.workspace_id = $1::uuid
+WHERE story.workspace_id = CAST($1 AS uuid)
   AND story.deleted_at IS NULL
   AND story.is_draft = FALSE
   AND status.category = 'completed'
-  AND story.updated_at >= $2
-  AND story.updated_at <= $3
-  AND (cardinality($4::uuid[]) = 0 OR story.team_id = ANY($4::uuid[]))
-GROUP BY DATE_TRUNC('week', story.updated_at)
-ORDER BY DATE_TRUNC('week', story.updated_at)
+  AND story.completed_at >= $2
+  AND story.completed_at <= $3
+  AND (cardinality(CAST($4 AS uuid[])) = 0 OR story.team_id = ANY(CAST($4 AS uuid[])))
+  AND (cardinality(CAST($5 AS uuid[])) = 0 OR story.assignee_id = ANY(CAST($5 AS uuid[])))
+  AND (cardinality(CAST($6 AS uuid[])) = 0 OR story.objective_id = ANY(CAST($6 AS uuid[])))
+  AND (cardinality(CAST($7 AS uuid[])) = 0 OR story.sprint_id = ANY(CAST($7 AS uuid[])))
+GROUP BY DATE_TRUNC('week', story.completed_at)
+ORDER BY DATE_TRUNC('week', story.completed_at)
 `
 
 type ListWorkspaceVelocityTrendParams struct {
-	WorkspaceID uuid.UUID
-	StartDate   time.Time
-	EndDate     time.Time
-	TeamIds     []uuid.UUID
+	WorkspaceID  uuid.UUID
+	StartDate    *time.Time
+	EndDate      *time.Time
+	TeamIds      []uuid.UUID
+	AssigneeIds  []uuid.UUID
+	ObjectiveIds []uuid.UUID
+	SprintIds    []uuid.UUID
 }
 
 type ListWorkspaceVelocityTrendRow struct {
@@ -155,6 +204,9 @@ func (q *Queries) ListWorkspaceVelocityTrend(ctx context.Context, arg ListWorksp
 		arg.StartDate,
 		arg.EndDate,
 		arg.TeamIds,
+		arg.AssigneeIds,
+		arg.ObjectiveIds,
+		arg.SprintIds,
 	)
 	if err != nil {
 		return nil, err

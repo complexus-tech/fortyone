@@ -114,8 +114,10 @@ const DateRangeSelector = () => {
 
 export const DateRangeFilter = ({
   showLabel = true,
+  compact = false,
 }: {
   showLabel?: boolean;
+  compact?: boolean;
 }) => {
   const defaultDates = getDefaultDateRange();
   const [filters] = useQueryStates({
@@ -125,6 +127,7 @@ export const DateRangeFilter = ({
 
   return (
     <FilterButton
+      compact={compact}
       icon={<CalendarIcon className="h-4 w-auto" />}
       isActive
       label="Date Range"

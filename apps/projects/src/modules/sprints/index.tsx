@@ -51,7 +51,7 @@ export const SprintsList = () => {
                   <Button
                     color="tertiary"
                     href={withWorkspace(
-                      `/settings/workspace/teams/${teamId}?tab=automations`,
+                      `/settings/workspace/teams/${teamId}?tab=planning&section=sprints`,
                     )}
                     leftIcon={<GitIcon />}
                     size="sm"

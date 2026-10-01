@@ -1805,6 +1805,407 @@
       "operational_notes": [
         "The migration changes only the column default and never rewrites existing users' preferences."
       ]
+    },
+    {
+      "version": 200,
+      "slug": "typed_custom_fields",
+      "classification": "forward-only",
+      "files": {
+        "up": "000200_typed_custom_fields.up.sql",
+        "down": "000200_typed_custom_fields.down.sql"
+      },
+      "compatibility": {
+        "schema": "Adds team field definitions, stable options, typed exact values, compare-and-set versions and value history.",
+        "api": "Custom field creation, editing, reporting, task creation and export require migration 200.",
+        "worker": "Recurring task templates with custom values require migration 200.",
+        "mixed_versions": "Apply the additive schema before deploying replacement binaries. Older binaries ignore the new schema but do not enforce the new feature or controls."
+      },
+      "rollout": {
+        "sequence": 49,
+        "mode": "schema-first",
+        "steps": [
+          "Apply migration 000200 before deploying replacement API, worker or Projects code.",
+          "Verify one money field, atomic task creation, edit conflict, archive retention and exact aggregate."
+        ]
+      },
+      "recovery": {
+        "strategy": "forward-fix",
+        "procedure": [
+          "Retain values, definitions and audit history; disable field editing if necessary and repair forward.",
+          "Do not apply the down migration after feature data is created unless its loss has been explicitly approved."
+        ]
+      },
+      "operational_notes": [
+        "Money and number values use PostgreSQL NUMERIC and decimal strings; reports never combine currencies."
+      ]
+    },
+    {
+      "version": 201,
+      "slug": "work_presets",
+      "classification": "forward-only",
+      "files": {
+        "up": "000201_work_presets.up.sql",
+        "down": "000201_work_presets.down.sql"
+      },
+      "compatibility": {
+        "schema": "Adds versioned team-scoped saved views and task templates.",
+        "api": "Saved views and task template endpoints require migration 201.",
+        "worker": "No worker change is required.",
+        "mixed_versions": "Apply the additive schema before deploying replacement binaries. Older binaries ignore the new schema but do not enforce the new feature or controls."
+      },
+      "rollout": {
+        "sequence": 50,
+        "mode": "schema-first",
+        "steps": [
+          "Apply migration 000201 before deploying replacement API, worker or Projects code.",
+          "Verify private and shared preset access, stale version rejection and template application."
+        ]
+      },
+      "recovery": {
+        "strategy": "forward-fix",
+        "procedure": [
+          "Retain saved views and templates; disable preset controls and repair forward.",
+          "Do not apply the down migration after feature data is created unless its loss has been explicitly approved."
+        ]
+      },
+      "operational_notes": [
+        "Preset queries recheck current workspace membership and team access."
+      ]
+    },
+    {
+      "version": 202,
+      "slug": "team_automations",
+      "classification": "forward-only",
+      "files": {
+        "up": "000202_team_automations.up.sql",
+        "down": "000202_team_automations.down.sql"
+      },
+      "compatibility": {
+        "schema": "Adds team rules, recurring templates and durable run claims with recovery leases.",
+        "api": "Team automation management and run history require migration 202.",
+        "worker": "Deploy the automation-capable worker before enabling team rules or recurrence.",
+        "mixed_versions": "Apply the additive schema before deploying replacement binaries. Older binaries ignore the new schema but do not enforce the new feature or controls."
+      },
+      "rollout": {
+        "sequence": 51,
+        "mode": "schema-first",
+        "steps": [
+          "Apply migration 000202 before deploying replacement API, worker or Projects code.",
+          "Deploy the worker, then API and Projects app; verify canonical mutations, one recurring task per due run, retry recovery and paused owner access."
+        ]
+      },
+      "recovery": {
+        "strategy": "forward-fix",
+        "procedure": [
+          "Pause automations without deleting definitions or run history; repair the worker or API forward and retry durable claims.",
+          "Do not apply the down migration after feature data is created unless its loss has been explicitly approved."
+        ]
+      },
+      "operational_notes": [
+        "Rule side effects use canonical task mutation ports. Recurrence preserves wall-clock scheduling across daylight-saving transitions."
+      ]
+    },
+    {
+      "version": 203,
+      "slug": "workspace_security",
+      "classification": "forward-only",
+      "files": {
+        "up": "000203_workspace_security.up.sql",
+        "down": "000203_workspace_security.down.sql"
+      },
+      "compatibility": {
+        "schema": "Adds tenant security policies, browser-session metadata, member session epochs and immutable audit events.",
+        "api": "Live policy enforcement, workspace session revocation and security audit endpoints require migration 203.",
+        "worker": "No worker change is required.",
+        "mixed_versions": "Apply the additive schema before deploying replacement binaries. Older binaries ignore the new schema but do not enforce the new feature or controls."
+      },
+      "rollout": {
+        "sequence": 52,
+        "mode": "schema-first",
+        "steps": [
+          "Apply migration 000203 before deploying replacement API, worker or Projects code.",
+          "Deploy the policy-aware API and Projects app; verify domain and guest controls, workspace-only revocation and administrator lockout protection."
+        ]
+      },
+      "recovery": {
+        "strategy": "forward-fix",
+        "procedure": [
+          "Restore access with a reviewed forward policy correction while retaining the audit ledger and session epochs.",
+          "Do not apply the down migration after feature data is created unless its loss has been explicitly approved."
+        ]
+      },
+      "operational_notes": [
+        "Session age uses actual authentication time; renewed tokens do not reset the workspace session age."
+      ]
+    },
+    {
+      "version": 204,
+      "slug": "import_receipts",
+      "classification": "forward-only",
+      "files": {
+        "up": "000204_import_receipts.up.sql",
+        "down": "000204_import_receipts.down.sql"
+      },
+      "compatibility": {
+        "schema": "Adds metadata-only resumable import receipts and deterministic source creation keys.",
+        "api": "Chunked imports, resume and enrichment retries require migration 204.",
+        "worker": "No new worker task is required.",
+        "mixed_versions": "Apply the additive schema before deploying replacement binaries. Older binaries ignore the new schema but do not enforce the new feature or controls."
+      },
+      "rollout": {
+        "sequence": 53,
+        "mode": "schema-first",
+        "steps": [
+          "Apply migration 000204 before deploying replacement API, worker or Projects code.",
+          "Verify a partial import resumes without duplicate tasks, fields or comments and retains source provenance."
+        ]
+      },
+      "recovery": {
+        "strategy": "forward-fix",
+        "procedure": [
+          "Retain import receipts and source keys; pause affected imports and repair forward.",
+          "Do not apply the down migration after feature data is created unless its loss has been explicitly approved."
+        ]
+      },
+      "operational_notes": [
+        "Imported timestamps and author names remain source attribution rather than impersonating current audit actors."
+      ]
+    },
+    {
+      "version": 205,
+      "slug": "workflow_wip_limits",
+      "classification": "forward-only",
+      "files": {
+        "up": "000205_workflow_wip_limits.up.sql",
+        "down": "000205_workflow_wip_limits.down.sql"
+      },
+      "compatibility": {
+        "schema": "Adds optional advisory status limits and an index for active status counts.",
+        "api": "WIP limit editing and board totals require migration 205.",
+        "worker": "No worker change is required.",
+        "mixed_versions": "Apply the additive schema before deploying replacement binaries. Older binaries ignore the new schema but do not enforce the new feature or controls."
+      },
+      "rollout": {
+        "sequence": 54,
+        "mode": "schema-first",
+        "steps": [
+          "Apply migration 000205 before deploying replacement API, worker or Projects code.",
+          "Verify authorized limit changes, full unfiltered active counts and zero clearing a limit."
+        ]
+      },
+      "recovery": {
+        "strategy": "forward-fix",
+        "procedure": [
+          "Clear affected limits through the API if necessary, then repair forward without dropping stored status preferences.",
+          "Do not apply the down migration after feature data is created unless its loss has been explicitly approved."
+        ]
+      },
+      "operational_notes": [
+        "Draft, deleted and archived tasks do not count. The warning does not block moving work."
+      ]
+    },
+    {
+      "version": 206,
+      "slug": "enterprise_oidc_sso",
+      "classification": "forward-only",
+      "files": {
+        "up": "000206_enterprise_oidc_sso.up.sql",
+        "down": "000206_enterprise_oidc_sso.down.sql"
+      },
+      "compatibility": {
+        "schema": "Adds encrypted tenant OIDC connections, subject identities and immutable SSO audit records.",
+        "api": "OIDC administration, login and required-SSO authorization require migration 206.",
+        "worker": "No worker change is required.",
+        "mixed_versions": "Apply the additive schema before deploying replacement binaries. Older binaries ignore the new schema but do not enforce the new feature or controls."
+      },
+      "rollout": {
+        "sequence": 55,
+        "mode": "schema-first",
+        "steps": [
+          "Apply migration 000206 before deploying replacement API, worker or Projects code.",
+          "Deploy the API and Projects app, configure the identity provider callback URI, link an existing account and test the exact connection generation before requiring SSO."
+        ]
+      },
+      "recovery": {
+        "strategy": "forward-fix",
+        "procedure": [
+          "Use a reviewed forward configuration correction; preserve subject bindings, encrypted credentials and audit events.",
+          "Do not apply the down migration after feature data is created unless its loss has been explicitly approved."
+        ]
+      },
+      "operational_notes": [
+        "Public HTTPS discovery and token endpoints are DNS-pinned. Initial identity binding requires an authenticated existing account, and secret rotation invalidates prior connection generations."
+      ]
+    },
+    {
+      "version": 207,
+      "slug": "team_work_terminology",
+      "classification": "forward-only",
+      "files": {
+        "up": "000207_team_work_terminology.up.sql",
+        "down": "000207_team_work_terminology.down.sql"
+      },
+      "compatibility": {
+        "schema": "Adds an optional singular work term on teams without replacing workspace terminology.",
+        "api": "Team General settings and context-specific work labels require migration 207.",
+        "worker": "No worker change is required.",
+        "mixed_versions": "Apply the additive schema before deploying replacement binaries. Older binaries ignore the new schema but do not enforce the new feature or controls."
+      },
+      "rollout": {
+        "sequence": 56,
+        "mode": "schema-first",
+        "steps": [
+          "Apply migration 000207 before deploying replacement API, worker or Projects code.",
+          "Verify one team uses Deal, another retains its workspace fallback, and a naming-only edit preserves visibility."
+        ]
+      },
+      "recovery": {
+        "strategy": "forward-fix",
+        "procedure": [
+          "Reset a team override through the API or repair forward; retain saved terminology preferences.",
+          "Do not apply the down migration after feature data is created unless its loss has been explicitly approved."
+        ]
+      },
+      "operational_notes": [
+        "Permitted terms are story, task, issue, ticket, work item and deal. Omitted updates preserve the existing term."
+      ]
+    },
+    {
+      "version": 208,
+      "slug": "scim_provisioning",
+      "classification": "forward-only",
+      "files": {
+        "up": "000208_scim_provisioning.up.sql",
+        "down": "000208_scim_provisioning.down.sql"
+      },
+      "compatibility": {
+        "schema": "Adds dedicated expiring SCIM credentials, tenant provisioning records, immutable audit events and pending seat reconciliation.",
+        "api": "SCIM Users and provisioning administration require migration 208.",
+        "worker": "No dedicated worker is required; failed seat reconciliation remains pending for administrator retry.",
+        "mixed_versions": "Apply the additive schema before deploying replacement binaries. Older binaries ignore the new schema but do not enforce the new feature or controls."
+      },
+      "rollout": {
+        "sequence": 57,
+        "mode": "schema-first",
+        "steps": [
+          "Apply migration 000208 before deploying replacement API, worker or Projects code.",
+          "Deploy the API and Projects app, mint a scoped credential and verify Users create, update, deactivate, restore, delete, tenant isolation and seat retry before connecting a provider."
+        ]
+      },
+      "recovery": {
+        "strategy": "forward-fix",
+        "procedure": [
+          "Revoke affected SCIM credentials and pause provider provisioning; preserve records, audit history and pending reconciliation while repairing forward.",
+          "Do not apply the down migration after feature data is created unless its loss has been explicitly approved."
+        ]
+      },
+      "operational_notes": [
+        "Deactivation removes membership only in the provisioned workspace. Global accounts and other workspaces remain intact; the final administrator cannot be removed."
+      ]
+    },
+    {
+      "version": 209,
+      "slug": "custom_field_icons",
+      "classification": "forward-only",
+      "files": {
+        "up": "000209_custom_field_icons.up.sql",
+        "down": "000209_custom_field_icons.down.sql"
+      },
+      "compatibility": {
+        "schema": "Adds a nullable catalog icon to existing custom field definitions and immutable scoped definition audit events; existing definitions use the automatic type icon.",
+        "api": "Definition reads, story snapshots, reports and work backups expose nullable icon. Create omission or null uses automatic; update omission preserves the current icon and explicit null resets it.",
+        "worker": "No worker changes are required. Existing custom field value and story creation transactions retain their behavior.",
+        "mixed_versions": "Apply the additive schema first. Older API writes preserve icon but do not append definition audit events; route definition writes to replacement APIs before relying on complete definition audit coverage. Older backups may omit icon."
+      },
+      "rollout": {
+        "sequence": 58,
+        "mode": "schema-first",
+        "steps": [
+          "Apply migration 000209 before deploying replacement API, worker or Projects code.",
+          "Deploy compatible API and Projects code, then verify legacy automatic icons, catalog selection, omitted update preservation, explicit null reset, backup restore and scoped audit events."
+        ]
+      },
+      "recovery": {
+        "strategy": "forward-fix",
+        "procedure": [
+          "Reset an affected icon to null through the API or repair forward while preserving definition identities, selected icons, value history and immutable audit records.",
+          "Do not apply the down migration after icon choices or audit facts are created unless their loss has been explicitly approved."
+        ]
+      },
+      "operational_notes": [
+        "Only the agreed lowercase catalog keys are accepted; arbitrary SVG, markup, URLs and unknown names are rejected.",
+        "Definition mutation and oldIcon/newIcon audit facts commit together. Archived fields retain their icon and audit history; repeated archive requests do not append duplicate events."
+      ]
+    },
+    {
+      "version": 210,
+      "slug": "expand_custom_field_icons",
+      "classification": "forward-only",
+      "files": {
+        "up": "000210_expand_custom_field_icons.up.sql",
+        "down": "000210_expand_custom_field_icons.down.sql"
+      },
+      "compatibility": {
+        "schema": "Widens the existing nullable definition icon check to 44 stable catalog keys without changing saved definitions or audit history.",
+        "api": "Replacement APIs accept the wider catalog. Existing field snapshots, current-value reports and work backups retain the selected key.",
+        "worker": "No worker changes are required; custom-field values and automation semantics are unchanged.",
+        "mixed_versions": "Apply the schema first, then deploy compatible APIs and Projects clients before selecting expanded icons. Older APIs reject new keys on writes; older Projects clients reject definitions with keys outside their 16-icon schema. Existing keys remain unchanged."
+      },
+      "rollout": {
+        "sequence": 59,
+        "mode": "schema-first",
+        "steps": [
+          "Apply migration 000210 before deploying the expanded icon catalog.",
+          "Deploy compatible APIs and Projects clients together, then verify an expanded choice is retained in definitions, story snapshots, reports and backup import/export.",
+          "Confirm legacy icons and Automatic remain unchanged and an explicit null still resets the selection."
+        ]
+      },
+      "recovery": {
+        "strategy": "forward-fix",
+        "procedure": [
+          "Keep the wider database check and repair forward. Do not roll back to a client that rejects expanded keys while those choices are present.",
+          "If a client rollback is required, explicitly review and reset affected definitions through the current API first; retain field identities, values and immutable audit history."
+        ]
+      },
+      "operational_notes": [
+        "Only curated lowercase catalog keys are accepted. Arbitrary SVG, markup, URLs and unknown icon names remain invalid.",
+        "The down migration deliberately refuses to narrow the catalog because existing definitions and immutable audit records may contain expanded keys."
+      ]
+    },
+    {
+      "version": 211,
+      "slug": "business_custom_field_icons",
+      "classification": "forward-only",
+      "files": {
+        "up": "000211_business_custom_field_icons.up.sql",
+        "down": "000211_business_custom_field_icons.down.sql"
+      },
+      "compatibility": {
+        "schema": "Widens the existing nullable icon check to 61 stable keys, adding 17 business and finance choices without changing saved field identities or values.",
+        "api": "Replacement APIs accept financial and business icon keys. Reports, snapshots and work backups retain the chosen key and exact values.",
+        "worker": "No worker changes are required; value processing and automation semantics are unchanged.",
+        "mixed_versions": "Apply the schema first and deploy compatible APIs and Projects clients before selecting new keys. Earlier APIs reject new keys on writes; earlier Projects schemas reject definitions with keys outside their catalog. Saved null still means an automatic icon; money fields now show a money icon."
+      },
+      "rollout": {
+        "sequence": 60,
+        "mode": "schema-first",
+        "steps": [
+          "Apply migration 000211 before deploying the expanded business icon catalog.",
+          "Deploy compatible APIs and Projects clients, then verify money selection and automatic money icons, lock rendering, exact reports and backup restoration.",
+          "Confirm all existing 44 keys and explicit null reset remain valid."
+        ]
+      },
+      "recovery": {
+        "strategy": "forward-fix",
+        "procedure": [
+          "Keep the wider database check and repair forward. Do not deploy clients that reject new keys while affected definitions still use them.",
+          "If a client rollback is required, review and reset affected choices through the current API first while preserving field identities, values and immutable audit records."
+        ]
+      },
+      "operational_notes": [
+        "New icons use upstream Hugeicons Stroke Rounded geometry under MIT; selected icon names remain curated stable keys, not markup or URLs.",
+        "The down migration refuses to narrow the catalog because saved definitions and immutable audit records may contain the added keys."
+      ]
     }
   ]
 }

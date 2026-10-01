@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"hash"
@@ -65,6 +66,9 @@ func (h *Handlers) Import(ctx context.Context, w http.ResponseWriter, r *http.Re
 		if createErr != nil {
 			result.Error = storyImportItemError(createErr)
 			response.Counts.Failed++
+			if err := h.recordImportReceipt(ctx, workspace.ID, newStory.Team, creationKey, request, item, result); err != nil {
+				return web.RespondError(ctx, w, errors.New("The import paused while saving its receipt. Retry the same source safely."), http.StatusServiceUnavailable)
+			}
 			response.Items = append(response.Items, result)
 			continue
 		}
@@ -72,6 +76,9 @@ func (h *Handlers) Import(ctx context.Context, w http.ResponseWriter, r *http.Re
 		storyID := createdStory.ID
 		result.StoryID = &storyID
 		result.Created = createdStory.CreatedNow
+		if err := h.recordImportReceipt(ctx, workspace.ID, newStory.Team, creationKey, request, item, result); err != nil {
+			return web.RespondError(ctx, w, errors.New("The task was created but its receipt could not be saved. Retry the same source safely."), http.StatusServiceUnavailable)
+		}
 		if createdStory.CreatedNow {
 			response.Counts.Created++
 		} else {
@@ -86,6 +93,31 @@ func (h *Handlers) Import(ctx context.Context, w http.ResponseWriter, r *http.Re
 	}
 
 	return web.Respond(ctx, w, response, http.StatusOK)
+}
+
+type storyImportReceiptService interface {
+	RecordImportReceipt(context.Context, storydomain.ImportReceipt) error
+	ListImportReceipts(context.Context, uuid.UUID, uuid.UUID, string, string, *string, int) ([]storydomain.ImportReceipt, error)
+}
+
+func (h *Handlers) recordImportReceipt(ctx context.Context, workspaceID, teamID uuid.UUID, key string, request AppStoryImportRequest, item AppStoryImportItem, result AppStoryImportItemResult) error {
+	store, ok := h.storyImporter.(storyImportReceiptService)
+	if !ok {
+		return nil
+	}
+	metadata, err := json.Marshal(item.SourceMetadata)
+	if err != nil {
+		return err
+	}
+	if item.SourceMetadata == nil {
+		metadata = []byte("{}")
+	}
+	receipt := storydomain.ImportReceipt{WorkspaceID: workspaceID, TeamID: teamID, CreationKey: key, Provider: request.Provider, SourceDigest: request.SourceDigest, SourceNamespace: request.SourceNamespace, SourceKey: item.SourceKey, StoryID: result.StoryID, Created: result.Created, SourceMetadata: metadata}
+	if result.Error != nil {
+		receipt.ErrorCode = &result.Error.Code
+		receipt.ErrorMessage = &result.Error.Message
+	}
+	return store.RecordImportReceipt(ctx, receipt)
 }
 
 func storyImportCreationKey(

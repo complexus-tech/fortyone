@@ -28,10 +28,10 @@ export const DeleteTeam = ({ team }: { team: Team }) => {
   };
   return (
     <div>
-      <Box className="border-border bg-surface mt-6 rounded-2xl border">
+      <Box className="border-border bg-surface rounded-2xl border">
         <SectionHeader
           description="Permanently delete your team and all of its data."
-          title="Delete Team"
+          title="Danger zone"
         />
         <Box className="px-6 py-5">
           <Text color="muted">
@@ -39,6 +39,7 @@ export const DeleteTeam = ({ team }: { team: Team }) => {
           </Text>
           <Button
             className="mt-4"
+            color="danger"
             onClick={() => {
               reset();
               setIsDeleteOpen(true);

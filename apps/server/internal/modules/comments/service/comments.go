@@ -108,6 +108,12 @@ func (s *Service) GetComment(ctx context.Context, query GetCommentQuery) (CoreCo
 }
 
 func validateCreateCommand(command commentsdomain.CreateCommand) error {
+	if command.CreationID != nil && *command.CreationID == uuid.Nil {
+		return fmt.Errorf("%w: creation id is invalid", ErrInvalidComment)
+	}
+	if command.CreationID != nil && len(command.MentionedUserIDs) > 0 {
+		return fmt.Errorf("%w: external creation does not synthesize mentions", ErrInvalidMention)
+	}
 	if command.StoryID == uuid.Nil || command.WorkspaceID == uuid.Nil {
 		return fmt.Errorf("%w: story and workspace are required", ErrInvalidComment)
 	}

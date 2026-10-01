@@ -20,44 +20,52 @@ func (r *repo) GetStoryAnalytics(ctx context.Context, workspaceID uuid.UUID, fil
 	}
 
 	statusRows, err := r.queries.ListStoryStatusBreakdown(ctx, reportssql.ListStoryStatusBreakdownParams{
-		WorkspaceID: query.workspaceID,
-		StartDate:   startDate,
-		EndDate:     endDate,
-		TeamIds:     query.teamIDs,
-		SprintIds:   query.sprintIDs,
+		WorkspaceID:  query.workspaceID,
+		StartDate:    startDate,
+		EndDate:      endDate,
+		TeamIds:      query.teamIDs,
+		SprintIds:    query.sprintIDs,
+		AssigneeIds:  query.assigneeIDs,
+		ObjectiveIds: query.objectiveIDs,
 	})
 	if err != nil {
 		return reports.CoreStoryAnalytics{}, fmt.Errorf("selecting story status breakdown: %w", err)
 	}
 
 	priorityRows, err := r.queries.ListStoryPriorityDistribution(ctx, reportssql.ListStoryPriorityDistributionParams{
-		WorkspaceID: query.workspaceID,
-		StartDate:   startDate,
-		EndDate:     endDate,
-		TeamIds:     query.teamIDs,
-		SprintIds:   query.sprintIDs,
+		WorkspaceID:  query.workspaceID,
+		StartDate:    startDate,
+		EndDate:      endDate,
+		TeamIds:      query.teamIDs,
+		SprintIds:    query.sprintIDs,
+		AssigneeIds:  query.assigneeIDs,
+		ObjectiveIds: query.objectiveIDs,
 	})
 	if err != nil {
 		return reports.CoreStoryAnalytics{}, fmt.Errorf("selecting story priority distribution: %w", err)
 	}
 
 	teamRows, err := r.queries.ListStoryCompletionByTeam(ctx, reportssql.ListStoryCompletionByTeamParams{
-		WorkspaceID: query.workspaceID,
-		StartDate:   startDate,
-		EndDate:     endDate,
-		TeamIds:     query.teamIDs,
-		SprintIds:   query.sprintIDs,
+		WorkspaceID:  query.workspaceID,
+		StartDate:    startDate,
+		EndDate:      endDate,
+		TeamIds:      query.teamIDs,
+		SprintIds:    query.sprintIDs,
+		AssigneeIds:  query.assigneeIDs,
+		ObjectiveIds: query.objectiveIDs,
 	})
 	if err != nil {
 		return reports.CoreStoryAnalytics{}, fmt.Errorf("selecting story completion by team: %w", err)
 	}
 
 	burndownRows, err := r.queries.ListStoryBurndown(ctx, reportssql.ListStoryBurndownParams{
-		WorkspaceID: query.workspaceID,
-		StartDate:   startDate,
-		EndDate:     endDate,
-		TeamIds:     query.teamIDs,
-		SprintIds:   query.sprintIDs,
+		WorkspaceID:  query.workspaceID,
+		StartDate:    startDate,
+		EndDate:      endDate,
+		TeamIds:      query.teamIDs,
+		SprintIds:    query.sprintIDs,
+		AssigneeIds:  query.assigneeIDs,
+		ObjectiveIds: query.objectiveIDs,
 	})
 	if err != nil {
 		return reports.CoreStoryAnalytics{}, fmt.Errorf("selecting story burndown: %w", err)

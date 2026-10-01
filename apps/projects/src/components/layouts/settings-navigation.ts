@@ -31,6 +31,7 @@ export const buildSettingsNavigation = ({
     isAdmin || userRole === "member" || userRole === "guest";
   const integrationsHref = withWorkspace("/settings/integrations");
   const importsHref = withWorkspace("/settings/workspace/imports");
+  const teamsHref = withWorkspace("/settings/workspace/teams");
 
   const accountItems: SettingsNavigationItem[] = [
     { title: "Profile", href: withWorkspace("/settings/account") },
@@ -47,7 +48,6 @@ export const buildSettingsNavigation = ({
       title: "Notifications",
       href: withWorkspace("/settings/account/notifications"),
     },
-    { title: "Security", href: withWorkspace("/settings/account/security") },
     ...(hasInvitations
       ? [
           {
@@ -101,16 +101,26 @@ export const buildSettingsNavigation = ({
     {
       category: "Administration",
       items: [
+        // Enable Workspace security in Administration when it is ready.
+        // {
+        //   title: "Workspace security",
+        //   href: withWorkspace("/settings/workspace/security"),
+        // },
         {
           title: "Members",
           href: withWorkspace("/settings/workspace/members"),
+        },
+        {
+          title: "Teams",
+          href: teamsHref,
+          activePathPrefixes: [teamsHref],
         },
         {
           title: "Billing & plans",
           href: withWorkspace("/settings/workspace/billing"),
         },
         {
-          title: "Imports",
+          title: "Imports & exports",
           href: importsHref,
           activePathPrefixes: [importsHref],
         },
@@ -126,10 +136,6 @@ export const buildSettingsNavigation = ({
         {
           title: objectiveTitle,
           href: withWorkspace("/settings/workspace/objectives"),
-        },
-        {
-          title: "Teams",
-          href: withWorkspace("/settings/workspace/teams"),
         },
         {
           title: "Feedback",

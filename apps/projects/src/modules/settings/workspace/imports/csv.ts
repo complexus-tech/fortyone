@@ -8,6 +8,7 @@ import type {
   ImportTask,
 } from "./schema";
 import { createEmptyImportEntityCollections, IMPORT_MAX_TASKS } from "./schema";
+import { enrichVendorExport } from "./vendor-exports";
 
 const MAX_COLUMNS = 75;
 const MAX_CELL_CHARACTERS = 20_000;
@@ -399,11 +400,11 @@ export const createDelimitedImportDraft = ({
     tasks,
   };
 
-  return {
+  return enrichVendorExport({
     ...analysis,
     columns: parsed.columns,
     fileHash,
     fileName,
     rows: parsed.rows,
-  };
+  });
 };

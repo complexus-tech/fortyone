@@ -29,6 +29,7 @@ import { getStoryAttachments } from "@/modules/story/queries/get-attachments";
 import { linkKeys } from "@/constants/keys";
 import { getLinks } from "@/lib/queries/links/get-links";
 import { useAutomationPreferences } from "@/lib/hooks/users/preferences";
+import { useBoardPropertySlots } from "@/shared/story/board-property-slots";
 import { useBoard } from "../board-context";
 import { MemberTooltip } from "../member-tooltip";
 import { RowWrapper } from "../row-wrapper";
@@ -135,12 +136,13 @@ export const StoryRow = ({
   handleStoryClick: (storyId: string) => void;
   teamCode?: string;
 }) => {
+  const { Badges: PropertyBadges } = useBoardPropertySlots();
   const router = useRouter();
   const { data: session } = useSession();
   const [isExpanded, setIsExpanded] = useState(false);
   const queryClient = useQueryClient();
   const { userRole } = useUserRole();
-  const { getTermDisplay } = useTerminology();
+  const { getTermDisplay } = useTerminology(story.teamId);
   const { workspaceSlug, withWorkspace } = useWorkspacePath();
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const { embedded, selectedStories, setSelectedStories, isColumnVisible } =
@@ -211,7 +213,7 @@ export const StoryRow = ({
               {
                 "bg-surface-muted opacity-70": isDragging,
                 "pointer-events-none opacity-40": story.id.startsWith("123"),
-                "bg-surface-muted md:pl-18 pl-10": isSubStory,
+                "bg-surface-muted pl-10 md:pl-18": isSubStory,
               },
               className,
             )}
@@ -273,32 +275,52 @@ export const StoryRow = ({
                 </Tooltip>
               )}
 
-              <Link
-                className="flex min-w-0 flex-1 items-center gap-1.5"
-                href={withWorkspace(
-                  getStoryPath({
-                    id: story.id,
-                    sequenceId: story.sequenceId,
-                    teamCode: resolvedTeamCode,
-                  }),
-                )}
-                onClick={(e) => {
-                  if (isDesktop && openStoryInDialog) {
-                    e.preventDefault();
-                    handleStoryClick(story.id);
-                  }
-                }}
-              >
-                {isSubStory ? <SubStoryIcon className="shrink-0" /> : null}
-                <Text
-                  className="line-clamp-1 min-w-0 hover:opacity-90"
-                  fontWeight="medium"
+              <Box className="min-w-0 flex-1">
+                <Link
+                  className="flex min-w-0 flex-1 items-center gap-1.5"
+                  href={withWorkspace(
+                    getStoryPath({
+                      id: story.id,
+                      sequenceId: story.sequenceId,
+                      teamCode: resolvedTeamCode,
+                    }),
+                  )}
+                  onClick={(e) => {
+                    if (isDesktop && openStoryInDialog) {
+                      e.preventDefault();
+                      handleStoryClick(story.id);
+                    }
+                  }}
                 >
-                  {story.title}
-                </Text>
-              </Link>
+                  {isSubStory ? <SubStoryIcon className="shrink-0" /> : null}
+                  <Box className="min-w-0 flex-1">
+                    <Text
+                      className="line-clamp-1 min-w-0 hover:opacity-90"
+                      fontWeight="medium"
+                    >
+                      {story.title}
+                    </Text>
+                  </Box>
+                </Link>
+                <Box className="md:hidden">
+                  <PropertyBadges
+                    asList
+                    disabled={Boolean(story.archivedAt || story.deletedAt)}
+                    storyId={story.id}
+                    teamId={story.teamId}
+                  />
+                </Box>
+              </Box>
             </Flex>
             <Flex align="center" className="shrink-0" gap={3}>
+              <Box className="hidden md:block">
+                <PropertyBadges
+                  asList
+                  disabled={Boolean(story.archivedAt || story.deletedAt)}
+                  storyId={story.id}
+                  teamId={story.teamId}
+                />
+              </Box>
               <StoryProperties
                 {...story}
                 handleUpdate={handleUpdate}

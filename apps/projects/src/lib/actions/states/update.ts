@@ -5,6 +5,7 @@ import { getApiError } from "@/utils";
 import { auth } from "@/auth";
 
 export type UpdateState = {
+  wipLimit?: number;
   name?: string;
   orderIndex?: number;
   isDefault?: boolean;
