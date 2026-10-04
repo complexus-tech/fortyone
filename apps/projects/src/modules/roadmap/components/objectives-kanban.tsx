@@ -38,7 +38,6 @@ type ObjectivesKanbanProps = {
   viewOptions: ObjectiveViewOptions;
   setViewOptions: (viewOptions: ObjectiveViewOptions) => void;
   teamCodeById: ReadonlyMap<string, string>;
-  onObjectiveSelect: (objective: Objective) => void;
   onCreateObjective: () => void;
   renderCardControls: (objective: Objective) => ReactNode;
 };
@@ -48,7 +47,6 @@ type ObjectiveKanbanColumnProps = Pick<
   | "activeObjectiveId"
   | "canDrag"
   | "selectedObjectiveId"
-  | "onObjectiveSelect"
   | "teamCodeById"
   | "renderCardControls"
 > & {
@@ -60,7 +58,6 @@ const ObjectiveKanbanColumn = ({
   canDrag,
   selectedObjectiveId,
   group,
-  onObjectiveSelect,
   teamCodeById,
   renderCardControls,
 }: ObjectiveKanbanColumnProps) => {
@@ -103,7 +100,6 @@ const ObjectiveKanbanColumn = ({
           <ObjectiveBoardCard
             canDrag={canDrag}
             objective={objective}
-            onSelect={onObjectiveSelect}
             teamCode={teamCodeById.get(objective.teamId)}
           >
             {renderCardControls(objective)}
@@ -135,7 +131,6 @@ export const ObjectivesKanban = ({
   viewOptions,
   setViewOptions,
   teamCodeById,
-  onObjectiveSelect,
   onCreateObjective,
   renderCardControls,
 }: ObjectivesKanbanProps) => {
@@ -253,7 +248,6 @@ export const ObjectivesKanban = ({
                 activeObjectiveId={activeObjectiveId}
                 canDrag={canDrag}
                 group={column.group}
-                onObjectiveSelect={onObjectiveSelect}
                 renderCardControls={renderCardControls}
                 selectedObjectiveId={selectedObjectiveId}
                 teamCodeById={teamCodeById}

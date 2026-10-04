@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  useInfiniteQuery,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useUserRole } from "@/hooks/role";
 import { useWorkspacePath } from "@/hooks/use-workspace-path";
 import { useSession } from "@/lib/auth/client";
@@ -59,6 +54,7 @@ export const useSecuritySessions = (
     queryKey: [...key, "sessions", userId, includeRevoked],
     queryFn: () => listSessions(ctx, userId, includeRevoked),
     enabled,
+    refetchInterval: 60_000,
   });
 };
 export const useRevokeSessions = () => {
@@ -80,13 +76,11 @@ export const useRevokeSessions = () => {
     onSuccess: () => client.invalidateQueries({ queryKey: key }),
   });
 };
-export const useSecurityAudit = (filters: AuditFilters) => {
+export const useSecurityAudit = (filters: AuditFilters, cursor = "") => {
   const { ctx, enabled, key } = useSecurityContext();
-  return useInfiniteQuery({
-    queryKey: [...key, "audit", filters],
-    queryFn: ({ pageParam }) => listAudit(ctx, filters, pageParam),
-    initialPageParam: "",
-    getNextPageParam: (page) => page.nextCursor || undefined,
+  return useQuery({
+    queryKey: [...key, "audit", filters, cursor],
+    queryFn: () => listAudit(ctx, filters, cursor),
     enabled,
   });
 };

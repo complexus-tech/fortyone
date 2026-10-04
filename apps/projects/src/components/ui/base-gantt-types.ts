@@ -31,6 +31,8 @@ export type BaseGanttProps<T extends GanttItem> = {
   barClassName?: string;
   virtualizeRows?: boolean;
   pinnedItemIds?: readonly string[];
+  selectedItemId?: string | null;
+  detailsPanelId?: string;
   onDateUpdate: (itemId: string, startDate: string, endDate: string) => void;
   onBarClick?: (item: T) => void;
   renderSidebar: (

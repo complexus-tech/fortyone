@@ -26,14 +26,14 @@ func parseNotificationMessage(msg NotificationMessage) ParsedMessage {
 		if !ok {
 			return placeholder
 		}
-		return notificationPlainText(variable.Value, maxNotificationMessageRunes)
+		return notificationVariableText(variable, maxNotificationMessageRunes)
 	})
 	rich := notificationPlaceholderPattern.ReplaceAllStringFunc(stdhtml.EscapeString(text), func(placeholder string) string {
 		variable, ok := msg.Variables[placeholder[1:len(placeholder)-1]]
 		if !ok {
 			return placeholder
 		}
-		value := stdhtml.EscapeString(notificationPlainText(variable.Value, maxNotificationMessageRunes))
+		value := stdhtml.EscapeString(notificationVariableText(variable, maxNotificationMessageRunes))
 		switch variable.Type {
 		case "actor", "assignee", "value", "date":
 			return fmt.Sprintf("<strong style=\"%s\">%s</strong>", mailer.EmailStyleString("detailValue"), value)
@@ -43,7 +43,23 @@ func parseNotificationMessage(msg NotificationMessage) ParsedMessage {
 			return value
 		}
 	})
-	return ParsedMessage{Text: notificationPlainText(plain, maxNotificationMessageRunes), HTML: rich}
+	return ParsedMessage{Text: notificationLiteralText(plain, maxNotificationMessageRunes), HTML: rich}
+}
+
+func notificationVariableText(variable Variable, maxRunes int) string {
+	if variable.Type == "plain_text" {
+		return notificationLiteralText(variable.Value, maxRunes)
+	}
+	return notificationPlainText(variable.Value, maxRunes)
+}
+
+func notificationLiteralText(value string, maxRunes int) string {
+	plain := strings.Join(strings.Fields(value), " ")
+	runes := []rune(plain)
+	if maxRunes > 0 && len(runes) > maxRunes {
+		return strings.TrimSpace(string(runes[:maxRunes-1])) + "…"
+	}
+	return plain
 }
 
 func notificationPlainText(value string, maxRunes int) string {
@@ -78,6 +94,7 @@ func (h *handlers) getNotificationEmailData(ctx context.Context, query notificat
 	}
 	return &NotificationEmailData{
 		NotificationID: delivery.NotificationID, RecipientID: delivery.RecipientID,
+		ContentHash: delivery.ContentHash,
 		WorkspaceID: delivery.WorkspaceID, NotificationType: string(delivery.NotificationType),
 		EntityType: string(delivery.EntityType), EntityID: delivery.EntityID,
 		Title: delivery.Title, Message: delivery.Message, UserEmail: delivery.UserEmail,
@@ -103,6 +120,7 @@ func (h *handlers) getNotificationEmailDigestData(ctx context.Context, recipient
 	for i, row := range delivery.Items {
 		items[i] = NotificationEmailDigestItem{
 			NotificationID:   row.NotificationID,
+			ContentHash:      row.ContentHash,
 			NotificationType: string(row.NotificationType),
 			EntityType:       string(row.EntityType),
 			EntityID:         row.EntityID,

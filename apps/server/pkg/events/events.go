@@ -110,6 +110,8 @@ type StoryScheduleTransition struct {
 	PreviousLocalDate string                      `json:"previous_local_date,omitempty"`
 	LocalDate         string                      `json:"local_date,omitempty"`
 	ShiftMinutes      int                         `json:"shift_minutes,omitempty"`
+	IssueID           uuid.UUID                   `json:"issue_id,omitempty"`
+	IssueCode         string                      `json:"issue_code,omitempty"`
 }
 
 // ObjectiveUpdatedPayload contains data for objective update events

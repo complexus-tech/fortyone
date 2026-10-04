@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	storydomain "github.com/complexus-tech/projects-api/internal/modules/stories/domain"
 	"github.com/complexus-tech/projects-api/internal/platform/auth"
 	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/google/uuid"
@@ -349,7 +350,9 @@ func (s *Service) UpdateAutomationStateIfUnchanged(
 		return ErrLockedAutoSchedulingOff
 	}
 	lockChanged := locked != nil && story.AutoSchedulingLocked != *locked
-	if story.AutoSchedulingStatus == status && equalOptionalString(story.AutoSchedulingReason, reason) && !lockChanged && schedule == nil {
+	outboxRepo, hasOutbox := s.repo.(scheduleTransitionOutboxWriter)
+	maintainIssue := hasOutbox && storydomain.ResolvesScheduleIssue(status)
+	if story.AutoSchedulingStatus == status && equalOptionalString(story.AutoSchedulingReason, reason) && !lockChanged && schedule == nil && !maintainIssue {
 		return nil
 	}
 
@@ -388,9 +391,8 @@ func (s *Service) UpdateAutomationStateIfUnchanged(
 		ActorID:   actorID,
 	}
 
-	if schedule != nil {
-		outboxRepo, ok := s.repo.(scheduleTransitionOutboxWriter)
-		if !ok {
+	if schedule != nil || maintainIssue {
+		if !hasOutbox {
 			return errors.New("story repository does not support durable schedule transitions")
 		}
 		outbox, err := buildScheduleTransitionOutboxInput(
@@ -423,6 +425,11 @@ func (s *Service) UpdateAutomationStateIfUnchanged(
 		}
 		if claim != nil && s.publisher != nil {
 			s.dispatchImmediateScheduleTransition(ctx, outboxRepo, *claim)
+		}
+		if schedule == nil && s.publisher != nil {
+			if err := s.publisher.Publish(context.WithoutCancel(ctx), event); err != nil {
+				s.log.Error(ctx, "failed to publish Maya auto-scheduling state", "error", err, "story_id", storyID)
+			}
 		}
 		return nil
 	}

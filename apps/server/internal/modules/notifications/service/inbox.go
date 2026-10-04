@@ -2,6 +2,7 @@ package notifications
 
 import (
 	"context"
+	"time"
 
 	notificationsdomain "github.com/complexus-tech/projects-api/internal/modules/notifications/domain"
 	"github.com/google/uuid"
@@ -29,6 +30,14 @@ func (service *Service) GetUnreadCount(ctx context.Context, actorID, workspaceID
 
 func (service *Service) MarkAsRead(ctx context.Context, notificationID, actorID, workspaceID uuid.UUID) error {
 	return service.mutate(ctx, notificationID, actorID, workspaceID, notificationsdomain.NotificationMutationRead)
+}
+
+func (service *Service) MarkAsReadObserved(ctx context.Context, notificationID, actorID, workspaceID uuid.UUID, observedCreatedAt *time.Time) error {
+	return service.repo.Mutate(ctx, notificationsdomain.NotificationMutation{
+		Access:         notificationsdomain.WorkspaceAccess{ActorID: actorID, WorkspaceID: workspaceID},
+		NotificationID: notificationID, Kind: notificationsdomain.NotificationMutationRead,
+		At: service.clock.Now().UTC(), ExpectedCreatedAt: observedCreatedAt,
+	})
 }
 
 func (service *Service) MarkAsUnread(ctx context.Context, notificationID, actorID, workspaceID uuid.UUID) error {

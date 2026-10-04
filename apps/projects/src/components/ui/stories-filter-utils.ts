@@ -19,6 +19,8 @@ const STRING_FILTER_KEYS = [
   "contentContains",
   "startDate",
   "endDate",
+  "completedAfter",
+  "completedBefore",
 ] as const;
 
 export const getActiveStoriesFilterCount = (filters: StoriesFilter) => {
@@ -35,6 +37,10 @@ export const getActiveStoriesFilterCount = (filters: StoriesFilter) => {
   const booleanFilterCount = [
     filters.hasNoAssignee,
     filters.hasBlockedBy,
+    filters.assignedToMe,
+    filters.createdByMe,
+    filters.isCompleted,
+    filters.isNotCompleted,
   ].filter(Boolean).length;
 
   return arrayFilterCount + stringFilterCount + booleanFilterCount;

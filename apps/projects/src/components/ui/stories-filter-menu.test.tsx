@@ -93,6 +93,43 @@ const openMenu = (name: string) => {
   });
 };
 
+const mousePointer = (
+  target: Element,
+  type: "pointermove" | "pointerout",
+  properties: MouseEventInit,
+) => {
+  const event = new MouseEvent(type, { bubbles: true, ...properties });
+  Object.defineProperty(event, "pointerType", { value: "mouse" });
+  fireEvent(target, event);
+};
+
+const openLeftStatusSubmenu = () => {
+  render(<Harness entry="header" />);
+  openMenu("Filters");
+  const trigger = screen.getByRole("menuitem", { name: "Status" });
+  fireEvent.click(trigger);
+  const option = screen.getByRole("option", { name: "To Do 0" });
+  const submenu = option.closest<HTMLElement>('[role="menu"]');
+  const parentMenu = trigger.closest<HTMLElement>('[role="menu"]');
+  if (!submenu || !parentMenu) throw new Error("Expected both filter menus");
+  expect(parentMenu).not.toContainElement(submenu);
+  // Model collision placement to the left while the last parent move was right.
+  submenu.dataset.side = "left";
+  jest.spyOn(submenu, "getBoundingClientRect").mockReturnValue({
+    x: 100,
+    y: 100,
+    left: 100,
+    right: 300,
+    top: 100,
+    bottom: 250,
+    width: 200,
+    height: 150,
+    toJSON: () => ({}),
+  });
+  mousePointer(trigger, "pointermove", { clientX: 400, clientY: 130 });
+  return { trigger, option, submenu, parentMenu };
+};
+
 describe("shared filter menu", () => {
   it.each(["header", "toolbar"] as const)(
     "opens the complete menu directly from the %s",
@@ -159,5 +196,38 @@ describe("shared filter menu", () => {
     expect(
       screen.getByRole("button", { name: "1 filter applied" }),
     ).toBeInTheDocument();
+  });
+
+  it("preserves a left-side portalled submenu during a one-hop pointer entry and applies its option", () => {
+    const { trigger, option, submenu, parentMenu } = openLeftStatusSubmenu();
+    const parentFocus = jest.spyOn(parentMenu, "focus");
+    mousePointer(trigger, "pointerout", {
+      clientX: 290,
+      clientY: 160,
+      relatedTarget: option,
+    });
+    expect(parentFocus).not.toHaveBeenCalled();
+    expect(submenu).toBeInTheDocument();
+    fireEvent.pointerDown(option, { button: 0 });
+    fireEvent.click(option);
+    expect(
+      screen.getByRole("button", { name: "1 filter applied" }),
+    ).toBeInTheDocument();
+    expect(submenu).toBeInTheDocument();
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+    expect(parentFocus).not.toHaveBeenCalled();
+  });
+
+  it("retains Radix's normal leave behavior when the pointer moves back to the parent menu", () => {
+    const { trigger, submenu, parentMenu } = openLeftStatusSubmenu();
+    const parentFocus = jest.spyOn(parentMenu, "focus");
+    mousePointer(trigger, "pointerout", {
+      clientX: 410,
+      clientY: 180,
+      relatedTarget: screen.getByRole("menuitem", { name: "Priority" }),
+    });
+    expect(parentFocus).toHaveBeenCalled();
+    expect(submenu).not.toBeInTheDocument();
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
   });
 });

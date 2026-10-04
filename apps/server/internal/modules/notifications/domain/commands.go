@@ -51,10 +51,11 @@ func (query ListQuery) Normalized() ListQuery {
 }
 
 type NotificationMutation struct {
-	Access         WorkspaceAccess
-	NotificationID uuid.UUID
-	Kind           NotificationMutationKind
-	At             time.Time
+	Access            WorkspaceAccess
+	NotificationID    uuid.UUID
+	Kind              NotificationMutationKind
+	At                time.Time
+	ExpectedCreatedAt *time.Time
 }
 
 type NotificationMutationKind string

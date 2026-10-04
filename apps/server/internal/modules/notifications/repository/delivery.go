@@ -2,6 +2,7 @@ package notificationsrepository
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -61,6 +62,7 @@ func (repository *Repository) GetEmailDelivery(ctx context.Context, query notifi
 	}
 	return &notificationsdomain.EmailNotification{
 		NotificationID:   row.NotificationID,
+		ContentHash:      row.ContentHash,
 		RecipientID:      row.RecipientID,
 		WorkspaceID:      row.WorkspaceID,
 		NotificationType: notificationType,
@@ -109,6 +111,7 @@ func (repository *Repository) ListEmailDigest(ctx context.Context, scope notific
 		}
 		items = append(items, notificationsdomain.EmailDigestItem{
 			NotificationID:   row.NotificationID,
+			ContentHash:      row.ContentHash,
 			NotificationType: notificationType,
 			EntityType:       entityType,
 			EntityID:         row.EntityID,
@@ -151,6 +154,9 @@ func (repository *Repository) MarkEmailSent(ctx context.Context, command notific
 	if err := command.Validate(); err != nil {
 		return err
 	}
+	if len(command.NotificationSnapshots) > 0 {
+		return markEmailSnapshots(ctx, repository.queries, command)
+	}
 	_, err := repository.queries.MarkNotificationEmailsSent(ctx, notificationssql.MarkNotificationEmailsSentParams{
 		SentAt:          command.At,
 		RecipientID:     command.Scope.RecipientID,
@@ -158,6 +164,26 @@ func (repository *Repository) MarkEmailSent(ctx context.Context, command notific
 		NotificationIds: command.NotificationIDs,
 	})
 	return mapWriteError("mark notification emails sent", err)
+}
+
+func markEmailSnapshots(ctx context.Context, queries notificationssql.Querier, command notificationsdomain.MarkEmailSent) error {
+	if err := command.Validate(); err != nil {
+		return err
+	}
+	type snapshotJSON struct {
+		NotificationID uuid.UUID `json:"notification_id"`
+		ContentHash    string    `json:"content_hash"`
+	}
+	snapshots := make([]snapshotJSON, len(command.NotificationSnapshots))
+	for index, snapshot := range command.NotificationSnapshots {
+		snapshots[index] = snapshotJSON{NotificationID: snapshot.NotificationID, ContentHash: hex.EncodeToString(snapshot.ContentHash)}
+	}
+	encoded, err := json.Marshal(snapshots)
+	if err != nil {
+		return fmt.Errorf("marshal notification email snapshots: %w", err)
+	}
+	_, err = queries.MarkNotificationEmailSnapshotsSent(ctx, notificationssql.MarkNotificationEmailSnapshotsSentParams{RecipientID: command.Scope.RecipientID, WorkspaceID: command.Scope.WorkspaceID, SentAt: command.At, Snapshots: encoded})
+	return mapWriteError("mark notification email snapshots sent", err)
 }
 
 func deliveryTypes(

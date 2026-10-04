@@ -53,7 +53,8 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
     setPrevPage("");
   };
 
-  useHotkeys("esc", () => {
+  useHotkeys("esc", (event) => {
+    if (event.defaultPrevented) return;
     goBack();
   });
 
@@ -72,51 +73,48 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
 
   return (
     <>
-      <Box className="md:hidden">
-        <Container>
-          <Flex align="center" className="h-16" gap={2}>
-            <MobileMenuButton />
-            <button
-              className="group flex items-center gap-1 font-medium"
-              onClick={goBack}
-              type="button"
-            >
-              <ArrowLeft2Icon strokeWidth={3} />
-              Settings
-            </button>
-          </Flex>
-        </Container>
-        <Box className="border-border overflow-x-auto border-y-[0.5px] pl-3">
-          <Flex align="center" gap={2}>
-            {mobileMenu.map((item) => {
-              const { href, title } = item;
-              const isActive = isSettingsItemActive(pathname, item);
+      <Box className="flex h-dvh flex-col md:flex-row" data-settings-shell>
+        <Box className="shrink-0 md:hidden">
+          <Container>
+            <Flex align="center" className="h-16" gap={2}>
+              <MobileMenuButton />
+              <button
+                className="group flex items-center gap-1 font-medium"
+                onClick={goBack}
+                type="button"
+              >
+                <ArrowLeft2Icon strokeWidth={3} />
+                Settings
+              </button>
+            </Flex>
+          </Container>
+          <Box className="border-border overflow-x-auto border-y-[0.5px] pl-3">
+            <Flex align="center" gap={2}>
+              {mobileMenu.map((item) => {
+                const { href, title } = item;
+                const isActive = isSettingsItemActive(pathname, item);
 
-              return (
-                <Link
-                  className={cn(
-                    "leading-16 h-16 shrink-0 border-b border-transparent px-3",
-                    {
-                      "border-primary text-primary": isActive,
-                    },
-                  )}
-                  href={href}
-                  key={href}
-                  prefetch
-                >
-                  {title}
-                </Link>
-              );
-            })}
-          </Flex>
+                return (
+                  <Link
+                    className={cn(
+                      "h-16 shrink-0 border-b border-transparent px-3 leading-16",
+                      {
+                        "border-primary text-primary": isActive,
+                      },
+                    )}
+                    href={href}
+                    key={href}
+                    prefetch
+                  >
+                    {title}
+                  </Link>
+                );
+              })}
+            </Flex>
+          </Box>
         </Box>
-        <Box className="settings-card-borders h-[calc(100dvh-8rem)] overflow-y-auto pb-8 pt-6">
-          <Container>{children}</Container>
-        </Box>
-      </Box>
-      <Box className="hidden h-dvh md:flex" data-settings-shell>
-        <Box className="w-(--sidebar-width) flex shrink-0 flex-col">
-          <Box className="h-(--app-shell-header-height) flex shrink-0 items-center px-4">
+        <Box className="hidden w-(--sidebar-width) shrink-0 flex-col md:flex">
+          <Box className="flex h-(--app-shell-header-height) shrink-0 items-center px-4">
             <Tooltip
               title={
                 <span className="flex items-center gap-1">
@@ -186,14 +184,16 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
             </Flex>
           </Box>
         </Box>
-        <Box className="pt-(--app-content-inset) h-dvh min-w-0 flex-1 pl-2">
+        <Box className="min-h-0 min-w-0 flex-1 md:pt-(--app-content-inset) md:pl-2">
           <Box
-            className="app-content-canvas-gradient border-border/80 bg-surface-muted/60 dark:bg-surface-muted/40 settings-card-borders h-full min-w-0 overflow-y-auto rounded-tl-2xl border-l-[0.5px] border-t-[0.5px]"
+            className="app-content-canvas-gradient settings-card-borders md:border-border/80 md:bg-surface-muted/60 dark:md:bg-surface-muted/40 h-full min-w-0 overflow-y-auto max-md:bg-none md:rounded-tl-2xl md:border-t-[0.5px] md:border-l-[0.5px]"
             data-settings-content-canvas
           >
             <Container
-              className={cn("max-w-216 pb-12 pt-16", {
-                "max-w-[80rem]": pathname.includes("billing"),
+              className={cn("pt-6 pb-8 md:max-w-216 md:pt-16 md:pb-12", {
+                "md:max-w-[80rem]":
+                  pathname.includes("billing") ||
+                  pathname.endsWith("/settings/workspace/security"),
               })}
             >
               {children}

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"sort"
 	"strings"
 
 	"github.com/complexus-tech/projects-api/pkg/emailcopy"
@@ -243,83 +242,6 @@ func buildNotificationDigestCopyInput(data NotificationEmailDigestData, workspac
 		HasStrategySnapshot: hasStrategySnapshot,
 		NotificationsURL:    notificationsURL,
 	}, nil
-}
-
-// latestTaskDigestItems selects by event time, with the repository's notification
-// ID ordering as a deterministic tie-breaker. Distinct tasks with the same title
-// remain separate; non-task notifications retain their existing behavior.
-func latestTaskDigestItems(items []NotificationEmailDigestItem) []NotificationEmailDigestItem {
-	latest := make(map[uuid.UUID]int)
-	for index, item := range items {
-		if item.EntityType != "story" || item.EntityID == uuid.Nil {
-			continue
-		}
-		previous, exists := latest[item.EntityID]
-		if !exists || item.CreatedAt.After(items[previous].CreatedAt) ||
-			(item.CreatedAt.Equal(items[previous].CreatedAt) && item.NotificationID.String() > items[previous].NotificationID.String()) {
-			latest[item.EntityID] = index
-		}
-	}
-	result := make([]NotificationEmailDigestItem, 0, len(items))
-	for index, item := range items {
-		if item.EntityType == "story" && item.EntityID != uuid.Nil && latest[item.EntityID] != index {
-			continue
-		}
-		result = append(result, item)
-	}
-	return result
-}
-
-func taskOnlyDigest(items []NotificationEmailDigestItem) bool {
-	if len(items) == 0 {
-		return false
-	}
-	for _, item := range items {
-		if item.EntityType != "story" {
-			return false
-		}
-	}
-	return true
-}
-
-func notificationVariableValues(variables map[string]Variable) []string {
-	keys := make([]string, 0, len(variables))
-	for key := range variables {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-	values := make([]string, 0, len(keys))
-	for _, key := range keys {
-		variable := variables[key]
-		values = append(values, notificationPlainText(variable.Value, maxNotificationMessageRunes))
-	}
-	return nonEmptyStrings(values...)
-}
-
-// notificationSemanticProtectedTokens keeps the factual roles in activity
-// messages bound together. Requiring only the individual variable values
-// would allow generated copy to swap an actor, field, assignee, or status while
-// still passing literal-token validation. For long comment-style messages, the
-// author/action prefix stays exact while the user-authored body remains free to
-// be summarized.
-func notificationSemanticProtectedTokens(message NotificationMessage, parsedText string) []string {
-	values := notificationVariableValues(message.Variables)
-	if len(values) == 0 {
-		return values
-	}
-
-	const maxProtectedActivityRunes = 300
-	activity := notificationPlainText(parsedText, 0)
-	if len([]rune(activity)) <= maxProtectedActivityRunes {
-		return nonEmptyStrings(activity)
-	}
-	if separator := strings.Index(activity, ":"); separator > 0 {
-		semanticPrefix := strings.TrimSpace(activity[:separator])
-		if len([]rune(semanticPrefix)) <= maxProtectedActivityRunes {
-			return nonEmptyStrings(semanticPrefix)
-		}
-	}
-	return values
 }
 
 func buildStrategyPlanningDigestFact(

@@ -4,6 +4,8 @@ import { useDeferredValue, useState } from "react";
 import { useParams } from "next/navigation";
 import { Button, Flex } from "ui";
 import { PlusIcon } from "icons";
+import { hasMyWorkScopeFilters } from "@/shared/story/my-work-scope";
+import { SaveViewSlot } from "@/shared/views/save-slot";
 import type { EstimateScheme } from "@/lib/estimate";
 import {
   OBJECTIVE_MENU_PAGE_SIZE,
@@ -377,6 +379,7 @@ export const StoriesFilterBar = ({
   resetFilters,
   hiddenFields = EMPTY_FILTER_FIELDS,
   showWhenEmpty = false,
+  saveView,
 }: StoriesFilterBarProps) => {
   const { getTermDisplay } = useTerminology();
   const { teamId } = useParams<{ teamId?: string }>();
@@ -465,12 +468,17 @@ export const StoriesFilterBar = ({
     />
   );
 
-  if (!showWhenEmpty && chips.length === 0) return null;
+  const scopeFiltersActive = hasMyWorkScopeFilters(
+    saveView?.configuration.scope,
+  );
+  const filtersActive = hasActiveStoriesFilters(filters) || scopeFiltersActive;
+  if (!showWhenEmpty && chips.length === 0 && !(saveView && filtersActive))
+    return null;
 
   return (
     <Flex
       align="center"
-      className="border-border bg-background h-(--app-filter-bar-height) shrink-0 border-b-[0.5px] px-4"
+      className="border-border h-(--app-filter-bar-height) shrink-0 border-b-[0.5px] px-4"
       gap={3}
       justify="between"
     >
@@ -518,8 +526,9 @@ export const StoriesFilterBar = ({
           />
         ) : null}
       </Flex>
-      {hasActiveStoriesFilters(filters) ? (
+      {filtersActive ? (
         <Flex align="center" className="shrink-0" gap={2}>
+          {saveView ? <SaveViewSlot {...saveView} /> : null}
           <Button
             color="tertiary"
             onClick={resetFilters}

@@ -12,6 +12,7 @@ import { NewStoryDialog } from "./new-story-dialog";
 import type { ViewOptionsGroupBy } from "./stories-view-options-button";
 import { PriorityIcon } from "./priority-icon";
 import { useBoard } from "./board-context";
+import { isWipLimitExceeded, WipLimitIndicator } from "./wip-limit-indicator";
 
 export const KanbanGroupTitle = ({
   status,
@@ -84,8 +85,8 @@ export const StoriesKanbanHeader = ({
   const [isOpen, setIsOpen] = useState(false);
   const { userRole } = useUserRole();
   const activeCount = status?.activeCount ?? group.totalCount;
-  const wipLimit = status?.wipLimit;
-  const isOverLimit = Boolean(wipLimit && activeCount > wipLimit);
+  const wipLimit = groupBy === "status" ? status?.wipLimit : undefined;
+  const isOverLimit = isWipLimitExceeded(activeCount, wipLimit);
 
   return (
     <Box
@@ -121,21 +122,14 @@ export const StoriesKanbanHeader = ({
               variant: group.totalCount === 1 ? "singular" : "plural",
             })}
           </Text>
-          {wipLimit ? (
-            <Tooltip
-              title={`${activeCount} active items across this team, including items hidden by board filters. Advisory limit: ${wipLimit}.`}
-            >
-              <Text
-                aria-label={`${activeCount} active items, limit ${wipLimit}${isOverLimit ? ", over limit" : ""}`}
-                className={cn("whitespace-nowrap", {
-                  "text-warning": isOverLimit,
-                })}
-                color="muted"
-              >
-                {activeCount}/{wipLimit}
-              </Text>
-            </Tooltip>
-          ) : null}
+          <WipLimitIndicator
+            activeCount={activeCount}
+            limit={wipLimit}
+            pluralTaskTerm={getTermDisplay("storyTerm", { variant: "plural" })}
+            taskTerm={getTermDisplay("storyTerm", {
+              variant: activeCount === 1 ? "singular" : "plural",
+            })}
+          />
         </Flex>
         <Flex align="center" gap={1}>
           {onHide ? (

@@ -1,78 +1,43 @@
 "use client";
 
-import { useState } from "react";
-import {
-  Badge,
-  Box,
-  Button,
-  Checkbox,
-  Dialog,
-  Flex,
-  Input,
-  Select,
-  Text,
-} from "ui";
+import { useRef, useState } from "react";
+import { Box, Button, Dialog, Flex, Select, Text } from "ui";
 import { useMembers } from "@/lib/hooks/members";
 import { SectionHeader } from "@/modules/settings/components/section-header";
-import type { BrowserSession } from "./types";
 import { useRevokeSessions, useSecuritySessions } from "./hooks";
+import { SecurityInput } from "./security-input";
+import { SessionList } from "./session-list";
+import { SessionBrowser } from "./session-browser";
+import { SecurityTimestamp } from "./security-timestamp";
 import { sessionStatus } from "./types";
 
-type Target = { id: string; name: string; member: boolean; current: boolean };
-const SessionRow = ({
-  session,
-  onRevoke,
-}: {
-  session: BrowserSession;
-  onRevoke: () => void;
-}) => {
-  const status = sessionStatus(session);
-  return (
-    <Flex align="start" className="gap-5 p-5" justify="between" wrap>
-      <Box className="min-w-0 flex-1">
-        <Flex align="center" className="gap-2" wrap>
-          <Text fontWeight="medium">{session.name}</Text>
-          <Badge color="tertiary" variant="outline">
-            {status}
-          </Badge>
-          {session.current ? (
-            <Badge color="tertiary" variant="outline">
-              Current session
-            </Badge>
-          ) : null}
-        </Flex>
-        <Text className="mt-1 break-all" color="muted">
-          {session.email} · {session.role}
-        </Text>
-        <Box className="mt-3 grid gap-2 xl:grid-cols-3">
-          <Text color="muted">
-            Logged in {new Date(session.authenticatedAt).toLocaleString()}
-          </Text>
-          <Text color="muted">
-            Last seen {new Date(session.lastSeenAt).toLocaleString()}
-          </Text>
-          <Text color="muted">
-            Expires {new Date(session.expiresAt).toLocaleString()}
-          </Text>
-        </Box>
-      </Box>
-      {status === "Active" ? (
-        <Button color="danger" onClick={onRevoke} variant="outline">
-          Revoke session
-        </Button>
-      ) : null}
-    </Flex>
-  );
+type Target = {
+  id: string;
+  name: string;
+  member: boolean;
+  current: boolean;
+  browserName?: string | null;
+  lastSeenAt?: string;
 };
 export const SecuritySessions = () => {
   const [userId, setUserId] = useState("");
-  const [includeRevoked, setIncludeRevoked] = useState(false);
   const [target, setTarget] = useState<Target | null>(null);
   const [reason, setReason] = useState("");
+  const returnFocusRef = useRef<HTMLButtonElement | null>(null);
+  const memberFilterRef = useRef<HTMLButtonElement>(null);
   const { data: members = [] } = useMembers();
-  const query = useSecuritySessions(userId, includeRevoked);
+  const query = useSecuritySessions(userId, false);
+  const sessions =
+    query.data?.items.filter(
+      (session) => sessionStatus(session) === "Active",
+    ) ?? [];
+  const usernames = new Map(
+    members.map((member) => [member.id, member.username]),
+  );
   const revoke = useRevokeSessions();
-  const choose = (next: Target) => {
+  const choose = (next: Target, trigger: HTMLButtonElement | null) => {
+    if (revoke.isPending) return;
+    returnFocusRef.current = trigger;
     revoke.reset();
     setReason("");
     setTarget(next);
@@ -92,12 +57,27 @@ export const SecuritySessions = () => {
     <>
       <Box className="border-border bg-surface overflow-hidden rounded-2xl border">
         <SectionHeader
-          description="Review and revoke access to this workspace."
+          action={
+            <Button
+              color="tertiary"
+              disabled={query.isFetching}
+              loading={Boolean(query.isFetching && !query.isPending)}
+              loadingText="Refreshing…"
+              onClick={() => void query.refetch()}
+              variant="outline"
+            >
+              Refresh sessions
+            </Button>
+          }
+          description="Active browser sessions for workspace members. All times are shown in UTC."
           title="Member sessions"
         />
-        <Flex align="end" className="gap-4 px-6 pt-5 pb-5" wrap>
-          <Box className="w-full max-w-sm">
-            <label className="mb-2 block" htmlFor="security-session-member">
+        <Flex align="end" className="gap-4 px-6 py-4" wrap>
+          <Box className="w-full min-w-0 md:w-auto md:max-w-64">
+            <label
+              className="mb-[0.35rem] block"
+              htmlFor="security-session-member"
+            >
               Member
             </label>
             <Select
@@ -107,8 +87,9 @@ export const SecuritySessions = () => {
               value={userId || "all"}
             >
               <Select.Trigger
-                className="h-11 text-base"
+                className="text-base"
                 id="security-session-member"
+                ref={memberFilterRef}
               >
                 <Select.Input />
               </Select.Trigger>
@@ -124,31 +105,25 @@ export const SecuritySessions = () => {
                       key={member.id}
                       value={member.id}
                     >
-                      {member.fullName || member.email}
+                      {member.username}
                     </Select.Option>
                   ))}
               </Select.Content>
             </Select>
           </Box>
-          <label className="flex h-11 cursor-pointer items-center gap-3">
-            <Checkbox
-              checked={includeRevoked}
-              onCheckedChange={(checked) => {
-                setIncludeRevoked(checked === true);
-              }}
-            />{" "}
-            <Text>Include revoked and expired sessions</Text>
-          </label>
           {selectedMember ? (
             <Button
               color="danger"
-              onClick={() => {
-                choose({
-                  id: selectedMember.id,
-                  name: selectedMember.fullName || selectedMember.email,
-                  member: true,
-                  current: false,
-                });
+              onClick={(event) => {
+                choose(
+                  {
+                    id: selectedMember.id,
+                    name: selectedMember.username,
+                    member: true,
+                    current: false,
+                  },
+                  event.currentTarget,
+                );
               }}
               variant="outline"
             >
@@ -157,12 +132,12 @@ export const SecuritySessions = () => {
           ) : null}
         </Flex>
         {query.isPending ? (
-          <Text aria-live="polite" className="px-6 pt-5 pb-6" color="muted">
+          <Text aria-live="polite" className="px-6 py-4" color="muted">
             Loading member sessions…
           </Text>
         ) : null}
         {query.isError ? (
-          <Box className="px-6 pt-5 pb-6">
+          <Box className="px-6 py-4">
             <Text color="danger" role="alert">
               Member sessions could not be loaded.
             </Text>
@@ -176,28 +151,34 @@ export const SecuritySessions = () => {
             </Button>
           </Box>
         ) : null}
-        {query.data?.items.length === 0 ? (
-          <Text className="px-6 pt-5 pb-6" color="muted">
-            No recorded sessions match these filters.
+        {!query.isPending && !query.isError && sessions.length === 0 ? (
+          <Text className="px-6 py-4" color="muted">
+            No active sessions match this member filter.
           </Text>
         ) : null}
-        <Box className="divide-border border-border divide-y border-t">
-          {query.data?.items.map((session) => (
-            <SessionRow
-              key={session.id}
-              onRevoke={() => {
-                choose({
+        {!query.isError && sessions.length ? (
+          <SessionList
+            onRevoke={(session, trigger) => {
+              choose(
+                {
                   id: session.id,
-                  name: session.name,
+                  name:
+                    session.username ||
+                    usernames.get(session.userId) ||
+                    session.name,
                   member: false,
                   current: session.current,
-                });
-              }}
-              session={session}
-            />
-          ))}
-        </Box>
-        {query.data?.hasMore ? (
+                  browserName: session.browserName,
+                  lastSeenAt: session.lastSeenAt,
+                },
+                trigger,
+              );
+            }}
+            sessions={sessions}
+            usernames={usernames}
+          />
+        ) : null}
+        {!query.isError && query.data?.hasMore ? (
           <Text className="px-6 py-4" color="muted">
             Showing the 500 most recently used sessions. Select a member to
             narrow the results.
@@ -211,8 +192,19 @@ export const SecuritySessions = () => {
         open={Boolean(target)}
       >
         <Dialog.Content
+          aria-busy={revoke.isPending}
           className="flex max-h-[calc(100dvh-15vw-1rem)] flex-col md:max-h-[calc(100dvh-10vw-1rem)]"
           hideClose={revoke.isPending}
+          onCloseAutoFocus={(event) => {
+            const trigger = returnFocusRef.current?.isConnected
+              ? returnFocusRef.current
+              : memberFilterRef.current;
+            if (trigger?.isConnected) {
+              event.preventDefault();
+              trigger.focus();
+            }
+            returnFocusRef.current = null;
+          }}
           onEscapeKeyDown={(event) => {
             if (revoke.isPending) event.preventDefault();
           }}
@@ -226,10 +218,23 @@ export const SecuritySessions = () => {
             </Dialog.Title>
           </Dialog.Header>
           <Dialog.Body className="max-h-none min-h-0 flex-1 space-y-4">
-            <Dialog.Description asChild className="px-0 text-base leading-6">
+            <Dialog.Description asChild className="px-0 text-base">
               <Text color="muted">{description}</Text>
             </Dialog.Description>
-            <Input
+            {target && !target.member ? (
+              <Flex align="center" className="gap-x-4 gap-y-2" wrap>
+                <SessionBrowser
+                  current={target.current}
+                  name={target.browserName}
+                />
+                {target.lastSeenAt ? (
+                  <Text color="muted">
+                    Last active <SecurityTimestamp value={target.lastSeenAt} />
+                  </Text>
+                ) : null}
+              </Flex>
+            ) : null}
+            <SecurityInput
               autoFocus
               disabled={revoke.isPending}
               label="Reason for revocation"
@@ -262,23 +267,24 @@ export const SecuritySessions = () => {
               color="danger"
               disabled={!reason.trim() || revoke.isPending}
               loading={revoke.isPending}
+              loadingText="Revoking…"
               onClick={() => {
-                if (target)
-                  revoke.mutate(
-                    {
-                      id: target.id,
-                      member: target.member,
-                      reason: reason.trim(),
+                if (!target || revoke.isPending || !reason.trim()) return;
+                revoke.mutate(
+                  {
+                    id: target.id,
+                    member: target.member,
+                    reason: reason.trim(),
+                  },
+                  {
+                    onSuccess: () => {
+                      setTarget(null);
                     },
-                    {
-                      onSuccess: () => {
-                        setTarget(null);
-                      },
-                    },
-                  );
+                  },
+                );
               }}
             >
-              {revoke.isPending ? "Revoking…" : "Revoke access"}
+              Revoke access
             </Button>
           </Dialog.Footer>
         </Dialog.Content>

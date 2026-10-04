@@ -49,6 +49,7 @@ type PushDevice struct {
 
 type PushDelivery struct {
 	NotificationID uuid.UUID
+	CreatedAt      time.Time
 	RecipientID    uuid.UUID
 	WorkspaceID    uuid.UUID
 	WorkspaceSlug  string

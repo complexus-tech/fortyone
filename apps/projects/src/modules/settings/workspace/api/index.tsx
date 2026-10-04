@@ -24,7 +24,7 @@ export const ApiSettings = () => {
       </Text>
 
       <Tabs className="mt-6" defaultValue="tokens">
-        <Tabs.List className="mx-0 mb-5 flex-nowrap overflow-x-auto md:mx-0">
+        <Tabs.List className="mx-0 mb-5 max-w-full flex-nowrap overflow-x-auto md:mx-0 [&>button]:shrink-0">
           <Tabs.Tab leftIcon={<ApiKeyIcon />} value="tokens">
             Access tokens
           </Tabs.Tab>

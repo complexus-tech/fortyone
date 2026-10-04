@@ -764,6 +764,24 @@ func (q *Queries) DeleteAccountNotificationEmails(ctx context.Context, arg Delet
 	return err
 }
 
+const deleteAccountNotificationEventReceipts = `-- name: DeleteAccountNotificationEventReceipts :exec
+DELETE FROM public.notification_event_receipts AS receipt
+WHERE receipt.recipient_id = $1
+   OR receipt.actor_id = $1
+   OR receipt.payload #> '{5,identityReferences,assignee}' = to_jsonb(CAST($1 AS uuid))
+`
+
+type DeleteAccountNotificationEventReceiptsParams struct {
+	UserID uuid.UUID
+}
+
+// Original event snapshots are immutable. Remove personally identified
+// receipts before inbox snapshots are reattributed, including deferred erasure.
+func (q *Queries) DeleteAccountNotificationEventReceipts(ctx context.Context, arg DeleteAccountNotificationEventReceiptsParams) error {
+	_, err := q.db.Exec(ctx, deleteAccountNotificationEventReceipts, arg.UserID)
+	return err
+}
+
 const deleteAccountNotificationPreferences = `-- name: DeleteAccountNotificationPreferences :exec
 DELETE FROM public.notification_preferences WHERE user_id = $1
 `

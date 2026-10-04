@@ -91,7 +91,7 @@ export const CredentialDialog = ({
         size="lg"
       >
         <Dialog.Header className="px-6 pt-6 pb-2">
-          <Dialog.Title className="text-xl">{title}</Dialog.Title>
+          <Dialog.Title className="text-lg">{title}</Dialog.Title>
         </Dialog.Header>
         <Dialog.Body className="space-y-5 px-6 pt-2 pb-4">
           <Text color="muted">{description}</Text>

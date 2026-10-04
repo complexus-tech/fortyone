@@ -330,7 +330,7 @@ export const OAuthApplications = () => {
       <Dialog onOpenChange={setCreateOpen} open={createOpen}>
         <Dialog.Content className="max-w-3xl" size="lg">
           <Dialog.Header className="px-6 pt-6 pb-2">
-            <Dialog.Title className="text-xl">
+            <Dialog.Title className="text-lg">
               Create OAuth application
             </Dialog.Title>
           </Dialog.Header>

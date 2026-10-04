@@ -40,12 +40,8 @@ export const ListNotifications = () => {
         search={search}
       />
       <Box className="min-h-0 flex-1 overflow-y-auto">
-        {notifications.map((notification, idx) => (
-          <NotificationCard
-            key={notification.id}
-            {...notification}
-            index={idx}
-          />
+        {notifications.map((notification) => (
+          <NotificationCard key={notification.id} {...notification} />
         ))}
         {hasNextPage ? <div className="h-4 w-full" ref={triggerRef} /> : null}
         {isFetchingNextPage ? (

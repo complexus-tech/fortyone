@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	feedback "github.com/complexus-tech/projects-api/internal/modules/feedback/domain"
 	notifications "github.com/complexus-tech/projects-api/internal/modules/notifications/domain"
 	notificationssql "github.com/complexus-tech/projects-api/internal/modules/notifications/repository/sqlc"
 	"github.com/google/uuid"
@@ -76,6 +77,15 @@ func (r *Repository) ClaimRoutine(ctx context.Context, claim notifications.Routi
 	if err := q.LockRoutineEmailRecipient(ctx, notificationssql.LockRoutineEmailRecipientParams{RecipientID: claim.RecipientID.String()}); err != nil {
 		return uuid.Nil, err
 	}
+	sent, err := q.HasSentRoutineEmailWeek(ctx, notificationssql.HasSentRoutineEmailWeekParams{
+		RecipientID: claim.RecipientID, WorkspaceID: claim.WorkspaceID, LocalDate: claim.LocalDate, Now: claim.Now,
+	})
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("check routine email weekly limit: %w", err)
+	}
+	if sent {
+		return uuid.Nil, nil
+	}
 	staleBefore := claim.Now.Add(-10 * time.Minute)
 	active, err := q.HasActiveRoutineEmailClaim(ctx, notificationssql.HasActiveRoutineEmailClaimParams{RecipientID: claim.RecipientID, StaleBefore: staleBefore})
 	if err != nil {
@@ -106,6 +116,16 @@ func (r *Repository) CompleteRoutine(ctx context.Context, completion notificatio
 	if completion.ID == uuid.Nil || completion.Now.IsZero() || (completion.GuidanceDate != nil && completion.GuidanceDate.IsZero()) {
 		return fmt.Errorf("%w: routine completion ID and time required", notifications.ErrInvalid)
 	}
+	if digest := completion.FeedbackDigest; digest != nil {
+		if r.feedbackCompleter == nil {
+			return fmt.Errorf("routine feedback completion store is unavailable")
+		}
+		if !completion.Sent || digest.Status != feedback.DigestDeliverySent ||
+			digest.RecipientID != completion.Scope.RecipientID || digest.WorkspaceID != completion.Scope.WorkspaceID ||
+			digest.DeliveryID == uuid.Nil || digest.WindowEnd.IsZero() || !digest.DeliveredAt.Equal(completion.Now) {
+			return fmt.Errorf("%w: feedback completion must belong to the sent routine summary", notifications.ErrInvalid)
+		}
+	}
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		return err
@@ -123,7 +143,11 @@ func (r *Repository) CompleteRoutine(ctx context.Context, completion notificatio
 	if count != 1 {
 		return fmt.Errorf("routine email claim is no longer owned")
 	}
-	if len(completion.NotificationIDs) > 0 {
+	if len(completion.NotificationSnapshots) > 0 {
+		if err := markEmailSnapshots(ctx, q, notifications.MarkEmailSent{Scope: completion.Scope, NotificationSnapshots: completion.NotificationSnapshots, At: completion.Now}); err != nil {
+			return err
+		}
+	} else if len(completion.NotificationIDs) > 0 {
 		_, err = q.MarkNotificationEmailsSent(ctx, notificationssql.MarkNotificationEmailsSentParams{RecipientID: completion.Scope.RecipientID, WorkspaceID: completion.Scope.WorkspaceID, SentAt: completion.Now, NotificationIds: completion.NotificationIDs})
 		if err != nil {
 			return err
@@ -133,6 +157,11 @@ func (r *Repository) CompleteRoutine(ctx context.Context, completion notificatio
 		date := *completion.GuidanceDate
 		if err := q.RecordRoutineEmailGuidance(ctx, notificationssql.RecordRoutineEmailGuidanceParams{RecipientID: completion.Scope.RecipientID, WorkspaceID: completion.Scope.WorkspaceID, DeliveryKey: "briefing:" + date.Format("2006-01-02"), LocalDate: date, Now: completion.Now}); err != nil {
 			return err
+		}
+	}
+	if completion.FeedbackDigest != nil {
+		if err := r.feedbackCompleter.CompleteDigestDeliveryTx(ctx, tx, *completion.FeedbackDigest); err != nil {
+			return fmt.Errorf("complete summary feedback: %w", err)
 		}
 	}
 	return tx.Commit(ctx)

@@ -147,7 +147,7 @@ func (h *Handlers) CreateSession(ctx context.Context, w http.ResponseWriter, r *
 	}
 
 	expires := time.Now().Add(SessionDuration)
-	if err := h.persistSession(ctx, userID, tokenString, expires); err != nil {
+	if err := h.persistSession(ctx, r, userID, tokenString, expires); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 	h.setSessionCookie(w, r, tokenString, expires)

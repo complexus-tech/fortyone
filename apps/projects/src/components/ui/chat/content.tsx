@@ -110,6 +110,7 @@ export const ChatContent = ({ isPopup = false }: { isPopup?: boolean }) => {
             onGoogleDriveFileRemove={chat.removeGoogleDriveFile}
             onSend={chat.handleSend}
             onStop={chat.handleStop}
+            onValueChange={chat.setInput}
             realtimeVoice={chat.realtimeVoice}
             status={chat.status}
             value={chat.input}

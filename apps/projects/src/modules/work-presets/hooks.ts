@@ -10,8 +10,12 @@ import { useWorkspacePath } from "@/hooks/use-workspace-path";
 import { archivePreset, createPreset, listPresets, renamePreset } from "./api";
 import type { PresetInput, PresetKind } from "./types";
 
-const presetKey = (workspace: string, teamId: string, kind: PresetKind) =>
-  ["work-presets", workspace, teamId, kind] as const;
+export const presetKey = (
+  workspace: string,
+  userId: string,
+  teamId: string,
+  kind: PresetKind,
+) => ["work-presets", workspace, userId, teamId, kind] as const;
 
 export const useWorkPresets = (
   teamId: string,
@@ -21,11 +25,14 @@ export const useWorkPresets = (
   const { data: session } = useSession();
   const { workspaceSlug } = useWorkspacePath();
   return useInfiniteQuery({
-    queryKey: presetKey(workspaceSlug, teamId, kind),
-    queryFn: ({ pageParam }) =>
-      listPresets(teamId, kind, pageParam, { session, workspaceSlug }),
+    queryKey: presetKey(workspaceSlug, session?.user.id ?? "", teamId, kind),
+    queryFn: ({ pageParam, signal }) =>
+      listPresets(teamId, kind, pageParam, { session, workspaceSlug }, signal),
     initialPageParam: "",
-    getNextPageParam: (page) => page.nextCursor || undefined,
+    getNextPageParam: (page, _pages, _parameter, parameters) =>
+      page.nextCursor && !parameters.includes(page.nextCursor)
+        ? page.nextCursor
+        : undefined,
     enabled: Boolean(session && teamId && enabled),
     staleTime: 60_000,
   });
@@ -38,7 +45,7 @@ export const usePresetMutations = (teamId: string, kind: PresetKind) => {
   const ctx = { session, workspaceSlug };
   const invalidate = () =>
     queryClient.invalidateQueries({
-      queryKey: presetKey(workspaceSlug, teamId, kind),
+      queryKey: presetKey(workspaceSlug, session?.user.id ?? "", teamId, kind),
     });
   return {
     create: useMutation({

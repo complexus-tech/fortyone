@@ -77,15 +77,19 @@ func (repository *Repository) Mutate(ctx context.Context, command notificationsd
 	if err := command.Validate(); err != nil {
 		return err
 	}
-	_, err := repository.queries.MutateWorkspaceNotification(ctx, notificationssql.MutateWorkspaceNotificationParams{
+	row, err := repository.queries.MutateWorkspaceNotification(ctx, notificationssql.MutateWorkspaceNotificationParams{
 		WorkspaceID:        command.Access.WorkspaceID,
 		ActorID:            command.Access.ActorID,
 		NotificationID:     command.NotificationID,
 		DeleteNotification: command.Kind == notificationsdomain.NotificationMutationDelete,
 		MarkRead:           command.Kind == notificationsdomain.NotificationMutationRead,
 		MutatedAt:          command.At,
+		ExpectedCreatedAt:  command.ExpectedCreatedAt,
 	})
 	if err == nil {
+		if !row.Mutated {
+			return fmt.Errorf("notification changed since it was displayed: %w", notificationsdomain.ErrConflict)
+		}
 		return nil
 	}
 	if !errors.Is(err, pgx.ErrNoRows) {

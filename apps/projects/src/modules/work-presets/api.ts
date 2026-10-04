@@ -19,6 +19,7 @@ export const listPresets = (
   kind: PresetKind,
   cursor: string,
   ctx: WorkspaceCtx,
+  signal?: AbortSignal,
 ) => {
   const query = new URLSearchParams({
     teamId,
@@ -26,7 +27,12 @@ export const listPresets = (
     limit: "50",
     ...(cursor ? { cursor } : {}),
   });
-  return get(`work-presets?${query.toString()}`, ctx, undefined, decodePage);
+  return get(
+    `work-presets?${query.toString()}`,
+    ctx,
+    signal ? { signal } : undefined,
+    decodePage,
+  );
 };
 export const createPreset = (input: PresetInput, ctx: WorkspaceCtx) =>
   post("work-presets", input, ctx, undefined, decodeData);

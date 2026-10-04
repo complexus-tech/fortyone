@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import type { RefObject } from "react";
+import { useRef, useState } from "react";
 import {
   ArchiveIcon,
   ArrowDownIcon,
@@ -20,19 +21,27 @@ export const PresetPicker = ({
   label,
   onSelect,
   onSaveCurrent,
+  onCreate,
   disabled = false,
   hideWhenEmpty = false,
+  browseHref,
+  triggerRef,
 }: {
   teamId: string;
   kind: PresetKind;
   label: string;
   onSelect: (preset: Preset) => void;
   onSaveCurrent?: () => void;
+  onCreate?: () => void;
   disabled?: boolean;
   hideWhenEmpty?: boolean;
+  browseHref?: string;
+  triggerRef?: RefObject<HTMLButtonElement | null>;
 }) => {
   const [open, setOpen] = useState(false);
   const [renaming, setRenaming] = useState<Preset | null>(null);
+  const pickerTrigger = useRef<HTMLButtonElement | null>(null);
+  const openingDialog = useRef(false);
   const query = useWorkPresets(teamId, kind, open || hideWhenEmpty);
   const { rename, archive } = usePresetMutations(teamId, kind);
   const presets = query.data?.pages.flatMap((page) => page.items) ?? [];
@@ -51,19 +60,34 @@ export const PresetPicker = ({
     return null;
   return (
     <>
-      <Popover onOpenChange={setOpen} open={open}>
+      <Popover
+        onOpenChange={(nextOpen) => {
+          if (nextOpen) openingDialog.current = false;
+          setOpen(nextOpen);
+        }}
+        open={open}
+      >
         <Popover.Trigger asChild>
           <Button
+            className="max-w-48 min-w-0"
             color="tertiary"
+            data-view-menu-trigger={kind === "view" ? "" : undefined}
             disabled={disabled || !teamId}
+            ref={triggerRef ?? pickerTrigger}
             rightIcon={<ArrowDownIcon className="h-3.5 w-auto" />}
             size="sm"
             variant="outline"
           >
-            {label}
+            <span className="min-w-0 truncate">{label}</span>
           </Button>
         </Popover.Trigger>
-        <Popover.Content align="end" className="w-80 p-3">
+        <Popover.Content
+          align="end"
+          className="w-80 p-3"
+          onCloseAutoFocus={(event) => {
+            if (openingDialog.current) event.preventDefault();
+          }}
+        >
           <Text className="mb-2 px-2" fontWeight="medium">
             {kind === "view" ? "Saved views" : "Task templates"}
           </Text>
@@ -117,6 +141,7 @@ export const PresetPicker = ({
                       <Menu.Items align="end">
                         <Menu.Item
                           onSelect={() => {
+                            openingDialog.current = true;
                             setOpen(false);
                             openDialogAfterMenuClose(() => {
                               setRenaming(preset);
@@ -163,12 +188,40 @@ export const PresetPicker = ({
               className="border-border mt-3 w-full border-t pt-3"
               color="tertiary"
               onClick={() => {
+                openingDialog.current = true;
                 setOpen(false);
-                onSaveCurrent();
+                openDialogAfterMenuClose(onSaveCurrent);
               }}
               variant="naked"
             >
               Save current view
+            </Button>
+          ) : null}
+          {onCreate ? (
+            <Button
+              className="mt-2 w-full justify-start"
+              color="tertiary"
+              onClick={() => {
+                openingDialog.current = true;
+                setOpen(false);
+                openDialogAfterMenuClose(onCreate);
+              }}
+              variant="naked"
+            >
+              Create view
+            </Button>
+          ) : null}
+          {browseHref ? (
+            <Button
+              className="mt-2 w-full justify-start"
+              color="tertiary"
+              href={browseHref}
+              onClick={() => {
+                setOpen(false);
+              }}
+              variant="naked"
+            >
+              Browse all views
             </Button>
           ) : null}
         </Popover.Content>
@@ -179,6 +232,7 @@ export const PresetPicker = ({
           onOpenChange={(value) => {
             if (!value) setRenaming(null);
           }}
+          onReturnFocus={() => (triggerRef ?? pickerTrigger).current?.focus()}
           onSave={(name) => rename.mutateAsync({ id: renaming.id, name })}
           open
           title={`Rename ${kind}`}

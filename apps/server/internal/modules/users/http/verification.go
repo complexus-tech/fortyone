@@ -136,7 +136,7 @@ func (h *Handlers) VerifyEmail(ctx context.Context, w http.ResponseWriter, r *ht
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 	expiresAt := time.Now().Add(SessionDuration)
-	if err := h.persistSession(ctx, user.ID, tokenString, expiresAt); err != nil {
+	if err := h.persistSession(ctx, r, user.ID, tokenString, expiresAt); err != nil {
 		status, publicError := publicSignInError(err)
 		return web.RespondError(ctx, w, publicError, status)
 	}

@@ -24,9 +24,10 @@ import (
 
 type briefingStoreStub struct {
 	guidanceStoreStub
-	stories    []stories.OverdueGuidanceStory
-	objectives []objectives.OverdueGuidanceObjective
-	stats      notifications.WeeklyDigestStats
+	stories     []stories.OverdueGuidanceStory
+	objectives  []objectives.OverdueGuidanceObjective
+	stats       notifications.WeeklyDigestStats
+	weeklyQuery notifications.WeeklyDigestStatsQuery
 }
 
 func (s *briefingStoreStub) ListOverdueStoryGuidanceItems(context.Context, time.Time, uuid.UUID, uuid.UUID) ([]stories.OverdueGuidanceStory, error) {
@@ -35,31 +36,63 @@ func (s *briefingStoreStub) ListOverdueStoryGuidanceItems(context.Context, time.
 func (s *briefingStoreStub) ListOverdueObjectiveGuidanceItems(context.Context, time.Time, uuid.UUID, uuid.UUID) ([]objectives.OverdueGuidanceObjective, error) {
 	return s.objectives, nil
 }
-func (s *briefingStoreStub) GetWeeklyDigestStats(context.Context, notifications.WeeklyDigestStatsQuery) (notifications.WeeklyDigestStats, error) {
+func (s *briefingStoreStub) GetWeeklyDigestStats(_ context.Context, query notifications.WeeklyDigestStatsQuery) (notifications.WeeklyDigestStats, error) {
+	s.weeklyQuery = query
 	return s.stats, nil
 }
 
 type routineStoreStub struct {
 	RoutineDeliveryStore
-	done        bool
-	completions []notifications.RoutineCompletion
-	failures    int
-	completeErr error
-	recipient   *notifications.RoutineRecipient
+	claims         map[uuid.UUID]notifications.RoutineClaim
+	sentWeeks      map[string]time.Time
+	completions    []notifications.RoutineCompletion
+	failures       int
+	completeErr    error
+	beginErr       error
+	attemptedWeeks map[string]time.Time
+	recipient      *notifications.RoutineRecipient
 }
 
-func (s *routineStoreStub) ClaimRoutine(context.Context, notifications.RoutineClaim) (uuid.UUID, error) {
-	if s.done {
-		return uuid.Nil, nil
+func (s *routineStoreStub) ClaimRoutine(_ context.Context, claim notifications.RoutineClaim) (uuid.UUID, error) {
+	for _, history := range []map[string]time.Time{s.sentWeeks, s.attemptedWeeks} {
+		for key, at := range history {
+			if key == claim.Key || at.After(claim.Now.Add(-7*24*time.Hour)) {
+				return uuid.Nil, nil
+			}
+		}
 	}
-	return uuid.New(), nil
+	if s.claims == nil {
+		s.claims = make(map[uuid.UUID]notifications.RoutineClaim)
+	}
+	id := uuid.New()
+	s.claims[id] = claim
+	return id, nil
+}
+func (s *routineStoreStub) BeginRoutineSend(_ context.Context, id uuid.UUID, _ notifications.DeliveryScope, now time.Time) error {
+	if s.beginErr != nil {
+		return s.beginErr
+	}
+	if s.attemptedWeeks == nil {
+		s.attemptedWeeks = make(map[string]time.Time)
+	}
+	s.attemptedWeeks[s.claims[id].Key] = now
+	return nil
 }
 func (s *routineStoreStub) CompleteRoutine(_ context.Context, c notifications.RoutineCompletion) error {
-	s.done = true
+	if c.Sent && s.completeErr == nil {
+		if s.sentWeeks == nil {
+			s.sentWeeks = make(map[string]time.Time)
+		}
+		s.sentWeeks[s.claims[c.ID].Key] = c.Now
+	}
 	s.completions = append(s.completions, c)
 	return s.completeErr
 }
-func (s *routineStoreStub) FailRoutine(context.Context, uuid.UUID) error { s.failures++; return nil }
+func (s *routineStoreStub) FailRoutine(_ context.Context, id uuid.UUID) error {
+	s.failures++
+	delete(s.attemptedWeeks, s.claims[id].Key)
+	return nil
+}
 
 func (s *routineStoreStub) GetRoutineRecipient(context.Context, notifications.DeliveryScope) (*notifications.RoutineRecipient, error) {
 	return s.recipient, nil
@@ -85,26 +118,27 @@ func (s *briefingMailerStub) SendTemplated(_ context.Context, email mailer.Templ
 }
 
 func TestLegacyNotificationTaskSendsOneBatchAndCoversAllTenItems(t *testing.T) {
+	now := time.Date(2026, 9, 7, 10, 0, 0, 0, time.UTC)
 	recipient, workspace := uuid.New(), uuid.New()
 	store := &notificationDeliveryStoreStub{digest: &notifications.EmailDigest{RecipientID: recipient, WorkspaceID: workspace, UserEmail: "person@example.com", WorkspaceSlug: "product", WorkspaceName: "Product", WorkspaceRole: "admin"}}
 	for i := range 10 {
-		store.digest.Items = append(store.digest.Items, notifications.EmailDigestItem{NotificationID: uuid.New(), EntityID: uuid.New(), EntityType: notifications.EntityTypeStory, NotificationType: notifications.NotificationTypeStoryUpdate, Title: fmt.Sprintf("Story %d", i+1), Message: json.RawMessage(`{"template":"Sam Taylor updated this story."}`), ActorName: "Sam Taylor", CreatedAt: time.Now().Add(-time.Hour)})
+		store.digest.Items = append(store.digest.Items, notifications.EmailDigestItem{NotificationID: uuid.New(), EntityID: uuid.New(), EntityType: notifications.EntityTypeStory, NotificationType: notifications.NotificationTypeStoryUpdate, Title: fmt.Sprintf("Story %d", i+1), Message: json.RawMessage(`{"template":"Sam Taylor updated this story."}`), ActorName: "Sam Taylor", CreatedAt: now.Add(-time.Hour)})
 	}
 	routine, sender := &routineStoreStub{}, &briefingMailerStub{}
 	h := &handlers{log: logger.NewWithText(io.Discard, slog.LevelError, "test"), notificationDeliveries: store, routineDeliveries: routine, mailerService: sender}
 	payload, err := json.Marshal(tasks.NotificationEmailPayload{RecipientID: recipient, WorkspaceID: workspace, NotificationID: store.digest.Items[0].NotificationID})
 	require.NoError(t, err)
-	require.NoError(t, h.HandleNotificationEmail(t.Context(), asynq.NewTask(tasks.TypeNotificationEmail, payload)))
+	require.NoError(t, h.handleNotificationEmailDigestAt(t.Context(), asynq.NewTask(tasks.TypeNotificationEmail, payload), now))
 	require.Len(t, sender.emails, 1)
 	digest := sender.emails[0].Data.(map[string]any)["NotificationDigest"].(mailer.Digest)
 	require.Len(t, digest.Rows, 6)
 	require.True(t, digest.Rows[5].More)
 	require.Len(t, routine.completions[0].NotificationIDs, 10)
-	require.NoError(t, h.HandleNotificationEmail(t.Context(), asynq.NewTask(tasks.TypeNotificationEmail, payload)))
+	require.NoError(t, h.handleNotificationEmailDigestAt(t.Context(), asynq.NewTask(tasks.TypeNotificationEmail, payload), now))
 	require.Len(t, sender.emails, 1)
 }
 
-func TestActivityCombinesGuidanceOncePerLocalDay(t *testing.T) {
+func TestActivityCombinesGuidanceOncePerLocalWeek(t *testing.T) {
 	now := time.Date(2026, 9, 7, 10, 0, 0, 0, time.UTC)
 	recipient := notifications.RoutineRecipient{UserID: uuid.New(), WorkspaceID: uuid.New(), WorkspaceSlug: "product", WorkspaceName: "Product", Email: "person@example.com", Timezone: "Africa/Harare"}
 	sources := &briefingStoreStub{}
@@ -133,48 +167,33 @@ func TestActivityCombinesGuidanceOncePerLocalDay(t *testing.T) {
 	require.Contains(t, sender.emails[0].PlainTextBody, "Priority 0")
 	require.Len(t, routine.completions[0].NotificationIDs, 10)
 	require.NotNil(t, routine.completions[0].GuidanceDate)
-	// A later batch still sends new activity, without repeating today's priorities.
-	routine.done = false
+	// A later batch stays pending after this week's summary.
 	delivery.digest.Items = delivery.digest.Items[:1]
 	delivery.digest.Items[0].NotificationID = uuid.New()
 	require.NoError(t, h.handleNotificationEmailDigestAt(t.Context(), task, now.Add(2*time.Hour)))
+	require.Len(t, sender.emails, 1)
+	// Later days stay pending; the next week can send new activity and guidance.
+	require.NoError(t, h.handleNotificationEmailDigestAt(t.Context(), task, now.Add(24*time.Hour)))
+	require.Len(t, sender.emails, 1)
+	require.NoError(t, h.handleNotificationEmailDigestAt(t.Context(), task, now.AddDate(0, 0, 7)))
 	require.Len(t, sender.emails, 2)
-	require.NotContains(t, sender.emails[1].Data.(map[string]any), "NotificationSections")
-	require.Nil(t, routine.completions[1].GuidanceDate)
+	require.NotNil(t, routine.completions[1].GuidanceDate)
 	// Retired scheduled jobs cannot produce an additional briefing or weekly note.
 	require.NoError(t, h.HandleMorningBriefing(t.Context(), asynq.NewTask(tasks.TypeMorningBriefing, nil)))
 	require.Len(t, sender.emails, 2)
 }
 
 func TestActivitySendFailureDoesNotCoverNotificationsOrGuidance(t *testing.T) {
+	now := time.Date(2026, 9, 7, 10, 0, 0, 0, time.UTC)
 	recipient, workspace := uuid.New(), uuid.New()
 	store := &notificationDeliveryStoreStub{digest: &notifications.EmailDigest{RecipientID: recipient, WorkspaceID: workspace, UserEmail: "person@example.com", WorkspaceSlug: "product", Items: []notifications.EmailDigestItem{{NotificationID: uuid.New(), EntityID: uuid.New(), EntityType: notifications.EntityTypeStory, NotificationType: notifications.NotificationTypeStoryUpdate, Title: "Launch", Message: json.RawMessage(`{"template":"Story updated."}`)}}}}
 	routine, sender := &routineStoreStub{}, &briefingMailerStub{err: errors.New("SMTP unavailable")}
 	h := &handlers{log: logger.NewWithText(io.Discard, slog.LevelError, "test"), routineDeliveries: routine, notificationDeliveries: store, mailerService: sender}
 	payload, err := json.Marshal(tasks.NotificationEmailDigestPayload{RecipientID: recipient, WorkspaceID: workspace})
 	require.NoError(t, err)
-	require.Error(t, h.HandleNotificationEmailDigest(t.Context(), asynq.NewTask(tasks.TypeNotificationEmailDigest, payload)))
+	require.Error(t, h.handleNotificationEmailDigestAt(t.Context(), asynq.NewTask(tasks.TypeNotificationEmailDigest, payload), now))
 	require.Empty(t, routine.completions)
 	require.Equal(t, 1, routine.failures)
-}
-
-func TestGuidanceUsesRecipientDate(t *testing.T) {
-	for _, tc := range []struct {
-		now, zone, date string
-		eligible        bool
-	}{
-		{"2026-09-06T23:00:00Z", "Africa/Harare", "2026-09-07", true},
-		{"2026-09-06T23:00:00Z", "America/New_York", "2026-09-06", false},
-		{"2026-03-09T13:00:00Z", "America/New_York", "2026-03-09", true},
-		{"2026-09-07T03:30:00Z", "Asia/Kolkata", "2026-09-07", true},
-		{"2026-09-07T09:00:00Z", "invalid", "2026-09-07", true},
-	} {
-		now, err := time.Parse(time.RFC3339, tc.now)
-		require.NoError(t, err)
-		date, eligible := guidanceDate(now, tc.zone)
-		require.Equal(t, tc.date, date.Format("2006-01-02"))
-		require.Equal(t, tc.eligible, eligible)
-	}
 }
 
 func TestTaskDigestSendsLatestUpdateAndCoversEveryEvent(t *testing.T) {

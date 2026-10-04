@@ -52,7 +52,9 @@ func mobileSessionTestHandler(t *testing.T) (*Handlers, *miniredis.Miniredis, *m
 	handler := &Handlers{
 		users: users.New(log, repository, nil), cache: cache.New(client, log), log: log,
 	}
-	require.NoError(t, handler.persistSession(t.Context(), repository.userID, "browser-cookie", time.Now().Add(time.Hour)))
+	request := httptest.NewRequest(http.MethodPost, "/users/verify", nil)
+	request.Header.Set("User-Agent", "Version/18.6 Safari/605.1.15")
+	require.NoError(t, handler.persistSession(t.Context(), request, repository.userID, "browser-cookie", time.Now().Add(time.Hour)))
 	return handler, server, repository
 }
 
@@ -110,6 +112,7 @@ func TestMobileHandoffIssuesIndependentRevocableSession(t *testing.T) {
 	require.NoError(t, handler.cache.Get(t.Context(), cache.AuthSessionCacheKey(cookies[0].Value), &session))
 	require.Equal(t, repository.version, session.Version)
 	require.Equal(t, repository.userID, session.UserID)
+	require.Nil(t, session.BrowserName, "native transport must not inherit its authorizing browser label")
 	require.Equal(t, http.StatusBadRequest, exchangeMobileForTest(t, handler, input).Code)
 }
 

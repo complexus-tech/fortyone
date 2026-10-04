@@ -170,7 +170,9 @@ func processFeedbackDigestRecipient(
 	}
 
 	if err := completeFeedbackDigestDelivery(ctx, store, deliveryID, recipient, boardIDs, now, windowEnd, feedback.DigestDeliverySent, itemCount); err != nil {
-		return failFeedbackDigestDelivery(ctx, store, deliveryID, fmt.Errorf("complete sent digest: %w", err))
+		// SMTP accepted the email. Keep the delivery claim so a completion
+		// failure cannot immediately cause the same feedback to be emailed again.
+		return fmt.Errorf("complete sent digest: %w", err)
 	}
 
 	log.Info(ctx, "Successfully sent feedback digest",

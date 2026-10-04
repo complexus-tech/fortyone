@@ -152,6 +152,7 @@ const ObjectiveRow = ({
   isSelected,
   isSidebarCollapsed,
   onObjectiveSelect,
+  objectiveDetailsPanelId,
 }: {
   objective: Objective;
   duration: number | null;
@@ -161,6 +162,7 @@ const ObjectiveRow = ({
   isSelected: boolean;
   isSidebarCollapsed: boolean;
   onObjectiveSelect: (objective: Objective) => void;
+  objectiveDetailsPanelId?: string;
 }) => {
   const canUpdate = useCanUpdateObjective();
   const { data: session } = useSession();
@@ -177,19 +179,19 @@ const ObjectiveRow = ({
   const rowStyle = {
     "--objective-row-background": hexToRgba(
       objective.color,
-      isSelected ? 0.09 : 0.045,
+      isSelected ? 0.16 : 0.045,
     ),
     "--objective-row-background-dark": hexToRgba(
       objective.color,
-      isSelected ? 0.11 : 0.06,
+      isSelected ? 0.22 : 0.06,
     ),
     "--objective-row-hover-background": hexToRgba(
       objective.color,
-      isSelected ? 0.13 : 0.085,
+      isSelected ? 0.2 : 0.085,
     ),
     "--objective-row-hover-background-dark": hexToRgba(
       objective.color,
-      isSelected ? 0.15 : 0.11,
+      isSelected ? 0.26 : 0.11,
     ),
   } as CSSProperties;
   let scheduleCell: ReactNode;
@@ -266,13 +268,20 @@ const ObjectiveRow = ({
     >
       <Box
         className={cn(
-          "group border-border dark:border-border/70 grid h-14 items-center gap-4 border-b-[0.5px] bg-[var(--objective-row-background)] px-4 transition-colors duration-150 hover:bg-[var(--objective-row-hover-background)] dark:bg-[var(--objective-row-background-dark)] dark:hover:bg-[var(--objective-row-hover-background-dark)]",
+          "group border-border dark:border-border/70 relative grid h-14 items-center gap-4 border-b-[0.5px] bg-[var(--objective-row-background)] px-4 transition-colors duration-150 hover:bg-[var(--objective-row-hover-background)] dark:bg-[var(--objective-row-background-dark)] dark:hover:bg-[var(--objective-row-hover-background-dark)]",
           isSidebarCollapsed
             ? "grid-cols-[2rem_2rem_2rem_2rem_minmax(0,1fr)] gap-3 px-3"
             : ROADMAP_COLUMNS,
         )}
         style={rowStyle}
       >
+        {isSelected ? (
+          <span
+            aria-hidden
+            className="absolute inset-y-0 left-0 w-0.5"
+            style={{ backgroundColor: objective.color }}
+          />
+        ) : null}
         <Flex align="center" justify="center">
           <AssigneesMenu>
             <Tooltip
@@ -431,6 +440,10 @@ const ObjectiveRow = ({
         {isSidebarCollapsed ? null : (
           <Flex align="center" className="min-w-0 pr-3">
             <button
+              aria-controls={isSelected ? objectiveDetailsPanelId : undefined}
+              aria-expanded={
+                isSelected ? Boolean(objectiveDetailsPanelId) : false
+              }
               className="focus-visible:ring-primary min-w-0 flex-1 rounded-sm text-left outline-none focus-visible:ring-1"
               onClick={() => {
                 onObjectiveSelect(objective);
@@ -466,6 +479,7 @@ type RoadmapGanttBoardProps = {
   onZoomLevelChange: (zoomLevel: ZoomLevel) => void;
   onObjectiveSelect: (objective: Objective) => void;
   selectedObjectiveId?: string | null;
+  objectiveDetailsPanelId?: string;
 };
 
 export const RoadmapGanttBoard = ({
@@ -475,6 +489,7 @@ export const RoadmapGanttBoard = ({
   onZoomLevelChange,
   onObjectiveSelect,
   selectedObjectiveId,
+  objectiveDetailsPanelId,
 }: RoadmapGanttBoardProps) => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useLocalStorage(
     "roadmapTimelineSidebarCollapsed",
@@ -603,6 +618,9 @@ export const RoadmapGanttBoard = ({
                       : undefined
                   }
                   data-gantt-item-id={objective.id}
+                  data-selected={
+                    selectedObjectiveId === objective.id || undefined
+                  }
                   key={objective.id}
                   role="listitem"
                   style={
@@ -620,6 +638,7 @@ export const RoadmapGanttBoard = ({
                     isSelected={selectedObjectiveId === objective.id}
                     isSidebarCollapsed={isSidebarCollapsed}
                     objective={objective}
+                    objectiveDetailsPanelId={objectiveDetailsPanelId}
                     onObjectiveSelect={onObjectiveSelect}
                     statusColor={status?.color}
                     statusName={status?.name ?? "No status"}
@@ -635,6 +654,7 @@ export const RoadmapGanttBoard = ({
       handleUpdate,
       isSidebarCollapsed,
       onObjectiveSelect,
+      objectiveDetailsPanelId,
       selectedObjectiveId,
       setIsSidebarCollapsed,
       statuses,
@@ -646,6 +666,7 @@ export const RoadmapGanttBoard = ({
       barClassName="hover:border-border-strong dark:hover:border-border-strong"
       className={className}
       controlledZoomLevel={zoomLevel}
+      detailsPanelId={objectiveDetailsPanelId}
       items={ganttItems}
       onBarClick={(item) => {
         onObjectiveSelect(item.objective);
@@ -656,6 +677,7 @@ export const RoadmapGanttBoard = ({
       renderBarContent={renderRoadmapBarContent}
       renderSidebar={renderSidebar}
       rowHeight={ROADMAP_ROW_HEIGHT}
+      selectedItemId={selectedObjectiveId ?? null}
       stickyColumnsWidth={
         isSidebarCollapsed
           ? ROADMAP_COLLAPSED_COLUMNS_WIDTH

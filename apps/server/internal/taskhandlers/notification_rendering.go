@@ -175,7 +175,7 @@ func renderNotificationDigestPlainText(copy notificationDigestCopy) string {
 func notificationDigestMessageID(data NotificationEmailDigestData) string {
 	ids := make([]string, 0, len(data.Items))
 	for _, item := range data.Items {
-		ids = append(ids, item.NotificationID.String())
+		ids = append(ids, item.NotificationID.String()+":"+hex.EncodeToString(item.ContentHash))
 	}
 	sort.Strings(ids)
 	digest := sha256.Sum256([]byte(data.WorkspaceID.String() + ":" + data.RecipientID.String() + ":" + strings.Join(ids, ",")))
@@ -279,6 +279,27 @@ func (h *handlers) markNotificationsEmailSent(ctx context.Context, scope notific
 		return fmt.Errorf("mark notifications as emailed: %w", err)
 	}
 	return nil
+}
+
+func (h *handlers) markNotificationEmailSnapshotsSent(ctx context.Context, scope notificationsdomain.DeliveryScope, snapshots []notificationsdomain.EmailSnapshot) error {
+	if len(snapshots) == 0 {
+		return nil
+	}
+	store, ok := h.notificationDeliveries.(interface {
+		MarkEmailSnapshotsSent(context.Context, notificationsdomain.DeliveryScope, []notificationsdomain.EmailSnapshot) error
+	})
+	if !ok {
+		return errors.New("notification snapshot delivery store is unavailable")
+	}
+	return store.MarkEmailSnapshotsSent(ctx, scope, snapshots)
+}
+
+func notificationEmailSnapshots(items []NotificationEmailDigestItem) []notificationsdomain.EmailSnapshot {
+	snapshots := make([]notificationsdomain.EmailSnapshot, len(items))
+	for index, item := range items {
+		snapshots[index] = notificationsdomain.EmailSnapshot{NotificationID: item.NotificationID, ContentHash: item.ContentHash}
+	}
+	return snapshots
 }
 
 func templateDigest(copy notificationDigestCopy) mailer.Digest {

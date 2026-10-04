@@ -46,4 +46,24 @@ describe("rich-text editor extensions", () => {
     expect(editor.getHTML()).toContain("background-color: #FDE68A");
     editor.destroy();
   });
+
+  it("keeps existing media content without offering uploads when no adapter is provided", () => {
+    const extensions = createRichTextExtensions({
+      placeholder: "Type / for commands",
+    });
+    expect(extensions.map(({ name }) => name)).not.toContain(
+      "richTextMediaDrop",
+    );
+    expect(
+      extensions.find(({ name }) => name === "slashCommand")?.options
+        .onMediaRequest,
+    ).toBeNull();
+    const editor = new Editor({
+      content:
+        '<p>Existing attachment</p><img src="https://example.com/image.png" alt="Release image">',
+      extensions,
+    });
+    expect(editor.getHTML()).toContain('src="https://example.com/image.png"');
+    editor.destroy();
+  });
 });

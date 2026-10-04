@@ -13,10 +13,9 @@ import {
 
 const frequencies: {
   label: string;
-  value: FeedbackReviewerEmailFrequency;
+  value: Exclude<FeedbackReviewerEmailFrequency, "daily">;
 }[] = [
   { label: "Off", value: "off" },
-  { label: "Daily", value: "daily" },
   { label: "Weekly", value: "weekly" },
 ];
 
@@ -31,9 +30,13 @@ const ReviewerRow = ({
   reviewer: FeedbackReviewer;
 }) => {
   const updateReviewer = useUpdateFeedbackBoardReviewerMutation(boardId);
+  const selectedFrequency =
+    reviewer.emailFrequency === "off" ? "off" : "weekly";
 
-  const updateFrequency = (emailFrequency: FeedbackReviewerEmailFrequency) => {
-    if (reviewer.emailFrequency === emailFrequency) return;
+  const updateFrequency = (
+    emailFrequency: Exclude<FeedbackReviewerEmailFrequency, "daily">,
+  ) => {
+    if (selectedFrequency === emailFrequency) return;
     updateReviewer.mutate({
       input: { emailFrequency },
       userId: reviewer.userId,
@@ -68,9 +71,9 @@ const ReviewerRow = ({
       <Select
         disabled={updateReviewer.isPending}
         onValueChange={(value) => {
-          updateFrequency(value as FeedbackReviewerEmailFrequency);
+          if (value === "off" || value === "weekly") updateFrequency(value);
         }}
-        value={reviewer.emailFrequency}
+        value={selectedFrequency}
       >
         <Select.Trigger
           aria-label={`Email summary for ${reviewer.name}`}
@@ -132,7 +135,7 @@ export const FeedbackReviewersDialog = ({
         <Dialog.Header className="space-y-2 px-6 pt-5 pb-3">
           <Dialog.Title className="pr-10 text-lg">Reviewers</Dialog.Title>
           <Dialog.Description className="px-0">
-            Choose who receives grouped email summaries for {board.name}.
+            Choose who receives grouped weekly email summaries for {board.name}.
           </Dialog.Description>
         </Dialog.Header>
         <Dialog.Body className="pt-0 pb-6">
@@ -140,8 +143,8 @@ export const FeedbackReviewersDialog = ({
             <Text className="font-medium">Feedback stays immediate</Text>
             <Text className="mt-1 leading-relaxed" color="muted">
               New submissions appear in the {teamName} Feedback queue as they
-              arrive. Reviewers can also receive one grouped summary on their
-              chosen schedule.
+              arrive. Reviewers can also receive at most one grouped weekly
+              email summary.
             </Text>
           </Box>
 

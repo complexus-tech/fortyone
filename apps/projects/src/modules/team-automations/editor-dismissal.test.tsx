@@ -1,3 +1,5 @@
+import type { Editor } from "@tiptap/core";
+import type { ReactNode } from "react";
 import {
   act,
   fireEvent,
@@ -6,9 +8,31 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { toast } from "sonner";
+import type { useNewStoryDialogEditors } from "@/components/ui/use-new-story-dialog-editors";
 import { RecurrenceEditor } from "./recurrence-editor";
 import { RuleEditor } from "./rule-editor";
 
+let mockTitleEditor: Editor | null = null;
+
+jest.mock("./recurrence-properties", () => ({
+  RecurrenceProperties: ({ children }: { children?: ReactNode }) => (
+    <>{children}</>
+  ),
+}));
+jest.mock("@/components/ui/use-new-story-dialog-editors", () => {
+  const actual = jest.requireActual<{
+    useNewStoryDialogEditors: typeof useNewStoryDialogEditors;
+  }>("@/components/ui/use-new-story-dialog-editors");
+  return {
+    useNewStoryDialogEditors: (
+      options: Parameters<typeof actual.useNewStoryDialogEditors>[0],
+    ) => {
+      const editors = actual.useNewStoryDialogEditors(options);
+      mockTitleEditor = editors.titleEditor;
+      return editors;
+    },
+  };
+});
 jest.mock("sonner", () => ({
   toast: { error: jest.fn(), success: jest.fn() },
 }));
@@ -29,7 +53,7 @@ jest.mock("@/modules/custom-fields/public/creation", () => ({
   CreateCustomFields: () => null,
 }));
 jest.mock("@/modules/work-presets/public/template-picker", () => ({
-  PresetPicker: jest.fn(() => null),
+  CreationTemplatePicker: jest.fn(() => null),
 }));
 jest.mock("./select-field", () => ({
   AutomationSelect: ({
@@ -65,9 +89,9 @@ const editors = [
   {
     name: "rule",
     Component: RuleEditor,
-    createLabel: "Create rule",
-    prepare: () => {
-      fireEvent.change(screen.getByLabelText("Name"), {
+    createLabel: "Create workflow rule",
+    prepare: async () => {
+      fireEvent.change(screen.getByLabelText("Rule name"), {
         target: { value: "Route urgent work" },
       });
       fireEvent.change(screen.getByLabelText("Set priority"), {
@@ -79,9 +103,15 @@ const editors = [
     name: "recurrence",
     Component: RecurrenceEditor,
     createLabel: "Create recurring task",
-    prepare: () => {
-      fireEvent.change(screen.getByLabelText("Task title"), {
-        target: { value: "Weekly review" },
+    prepare: async () => {
+      await waitFor(() => {
+        expect(mockTitleEditor).not.toBeNull();
+        expect(
+          screen.getByRole("textbox", { name: "Task title" }),
+        ).toHaveFocus();
+      });
+      act(() => {
+        mockTitleEditor!.commands.setContent("Weekly review");
       });
     },
   },
@@ -100,7 +130,7 @@ describe.each(editors)(
       );
       const close = jest.fn();
       render(<Component onClose={close} onSave={save} teamId="team-id" />);
-      prepare();
+      await prepare();
       fireEvent.click(screen.getByRole("button", { name: createLabel }));
 
       const dialog = screen.getByRole("dialog");
@@ -111,6 +141,15 @@ describe.each(editors)(
       expect(screen.getByRole("button", { name: "Cancel" })).toBeDisabled();
       const creating = screen.getByRole("button", { name: "Creating..." });
       expect(creating).toBeDisabled();
+      if (createLabel === "Create recurring task") {
+        expect(
+          screen.getByRole("textbox", { name: "Task title" }),
+        ).toHaveAttribute("contenteditable", "false");
+        expect(
+          screen.getByRole("textbox", { name: "Description" }),
+        ).toHaveAttribute("contenteditable", "false");
+        expect(screen.getByLabelText("Time")).toBeDisabled();
+      }
       fireEvent.click(creating);
       fireEvent.keyDown(dialog, { key: "Escape" });
       fireEvent.pointerDown(document.body, { button: 0, pointerType: "mouse" });
@@ -127,7 +166,7 @@ describe.each(editors)(
       const save = jest.fn().mockRejectedValue(new Error("Connection lost"));
       const close = jest.fn();
       render(<Component onClose={close} onSave={save} teamId="team-id" />);
-      prepare();
+      await prepare();
       fireEvent.click(screen.getByRole("button", { name: createLabel }));
 
       await waitFor(() => {

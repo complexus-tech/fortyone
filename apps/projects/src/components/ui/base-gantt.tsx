@@ -45,6 +45,8 @@ export const BaseGantt = <T extends GanttItem>({
   barClassName,
   virtualizeRows = false,
   pinnedItemIds = [],
+  selectedItemId,
+  detailsPanelId,
 }: BaseGanttProps<T>) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const hasScrolledRef = useRef(false);
@@ -252,6 +254,7 @@ export const BaseGantt = <T extends GanttItem>({
         <BaseGanttTimelineChart
           barClassName={barClassName}
           dateRange={dateRange}
+          detailsPanelId={detailsPanelId}
           itemCount={items.length}
           onBarClick={onBarClick}
           onDateUpdate={onDateUpdate}
@@ -260,6 +263,7 @@ export const BaseGantt = <T extends GanttItem>({
           renderBarContent={renderBarContent}
           rowHeight={rowHeight}
           rows={renderedRows}
+          selectedItemId={selectedItemId}
           totalRowsHeight={rowWindow.totalSize}
           viewport={viewport}
           virtualized={rowWindow.virtualized}

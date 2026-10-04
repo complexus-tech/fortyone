@@ -58,6 +58,7 @@ func (query EmailNotificationQuery) Validate() error {
 
 type EmailNotification struct {
 	NotificationID   uuid.UUID
+	ContentHash      []byte
 	RecipientID      uuid.UUID
 	WorkspaceID      uuid.UUID
 	NotificationType NotificationType
@@ -79,6 +80,7 @@ type EmailNotification struct {
 
 type EmailDigestItem struct {
 	NotificationID   uuid.UUID
+	ContentHash      []byte
 	NotificationType NotificationType
 	EntityType       EntityType
 	EntityID         uuid.UUID
@@ -103,17 +105,29 @@ type EmailDigest struct {
 }
 
 type MarkEmailSent struct {
-	Scope           DeliveryScope
-	NotificationIDs []uuid.UUID
-	At              time.Time
+	Scope                 DeliveryScope
+	NotificationIDs       []uuid.UUID
+	NotificationSnapshots []EmailSnapshot
+	At                    time.Time
+}
+
+// EmailSnapshot describes the immutable content the worker actually sent.
+type EmailSnapshot struct {
+	NotificationID uuid.UUID
+	ContentHash    []byte
 }
 
 func (command MarkEmailSent) Validate() error {
 	if err := command.Scope.Validate(); err != nil {
 		return err
 	}
-	if len(command.NotificationIDs) == 0 || command.At.IsZero() {
+	if (len(command.NotificationIDs) == 0 && len(command.NotificationSnapshots) == 0) || command.At.IsZero() {
 		return fmt.Errorf("%w: notification IDs and delivery time are required", ErrInvalid)
+	}
+	for _, snapshot := range command.NotificationSnapshots {
+		if snapshot.NotificationID == uuid.Nil || len(snapshot.ContentHash) != 32 {
+			return fmt.Errorf("%w: notification snapshots require an ID and SHA-256 content hash", ErrInvalid)
+		}
 	}
 	for _, notificationID := range command.NotificationIDs {
 		if notificationID == uuid.Nil {

@@ -340,6 +340,9 @@ func eraseAccountPersonalRecords(ctx context.Context, q *usersql.Queries, userID
 	if err := q.DeleteAccountNotificationPreferences(ctx, usersql.DeleteAccountNotificationPreferencesParams{UserID: userID}); err != nil {
 		return fmt.Errorf("DeleteAccountNotificationPreferences: %w", err)
 	}
+	if err := q.DeleteAccountNotificationEventReceipts(ctx, usersql.DeleteAccountNotificationEventReceiptsParams{UserID: userID}); err != nil {
+		return fmt.Errorf("delete account notification event receipts: %w", err)
+	}
 	if err := q.AnonymizeAccountNotificationReferences(ctx, usersql.AnonymizeAccountNotificationReferencesParams{UserID: userID, DeletedUserID: deletedUserID}); err != nil {
 		return fmt.Errorf("anonymize account notification references: %w", err)
 	}

@@ -27,6 +27,7 @@ type scheduleTransitionOutboxRepoStub struct {
 	failedCalls        int
 	retentionCalls     int
 	standardStateCalls int
+	stateOnlyCalls     int
 }
 
 func (r *scheduleTransitionOutboxRepoStub) Get(_ context.Context, _, _ uuid.UUID) (CoreSingleStory, error) {
@@ -64,6 +65,10 @@ func (r *scheduleTransitionOutboxRepoStub) UpdateAutoSchedulingStateAndClaimTran
 	r.story.AutoSchedulingReason = reason
 	if locked != nil {
 		r.story.AutoSchedulingLocked = *locked
+	}
+	if outbox.StateOnly {
+		r.stateOnlyCalls++
+		return true, nil, nil
 	}
 	r.stored = CoreScheduleTransitionOutboxEvent{
 		EventID:             outbox.EventID,
@@ -341,4 +346,45 @@ func TestScheduleTransitionFingerprintTracksOutcomeInsteadOfReconciliationInputs
 	next, err := buildScheduleTransitionOutboxInput(event, AutoSchedulingStatusScheduled, &newReason, nil, f.transition, true)
 	require.NoError(t, err)
 	require.NotEqual(t, first.SemanticFingerprint, next.SemanticFingerprint)
+}
+
+func TestSchedulingFailureSnapshotCarriesDurableIssueIdentity(t *testing.T) {
+	f := newScheduleTransitionOutboxFixture()
+	transition := *f.transition
+	transition.State = events.StoryScheduleStateCannotFit
+	transition.IssueCode = "no_available_slot"
+	event := events.Event{
+		Type: events.StoryUpdated, ActorID: f.actorID, Timestamp: f.expectedUpdatedAt,
+		Payload: events.StoryUpdatedPayload{StoryID: f.storyID, WorkspaceID: f.workspaceID, Schedule: &transition},
+	}
+	first, err := buildScheduleTransitionOutboxInput(event, AutoSchedulingStatusCannotFit, nil, nil, &transition, true)
+	require.NoError(t, err)
+	require.NotNil(t, first.Issue)
+	require.NotEqual(t, uuid.Nil, first.Issue.ID)
+	require.Equal(t, transition.UserID, first.Issue.OwnerID)
+	require.Equal(t, "no_available_slot", first.Issue.Code)
+	var envelope struct {
+		Payload events.StoryUpdatedPayload `json:"payload"`
+	}
+	require.NoError(t, json.Unmarshal(first.EventPayload, &envelope))
+	require.Equal(t, first.Issue.ID, envelope.Payload.Schedule.IssueID)
+	require.Equal(t, first.Issue.Code, envelope.Payload.Schedule.IssueCode)
+	require.Equal(t, uuid.Nil, transition.IssueID, "snapshot creation must not mutate the planner's facts")
+
+	next, err := buildScheduleTransitionOutboxInput(event, AutoSchedulingStatusCannotFit, nil, nil, &transition, true)
+	require.NoError(t, err)
+	require.NotEqual(t, first.Issue.ID, next.Issue.ID)
+	require.Equal(t, first.SemanticFingerprint, next.SemanticFingerprint, "generated episode candidates must not break exact outcome dedupe")
+}
+
+func TestSettledStateWithoutCalendarMovementStillResolvesSchedulingIssue(t *testing.T) {
+	f := newScheduleTransitionOutboxFixture()
+	f.repository.story.AutoSchedulingStatus = AutoSchedulingStatusOff
+	f.repository.story.AutoSchedulingEnabled = false
+	err := f.service.UpdateAutomationStateIfUnchanged(context.Background(), f.actorID, f.storyID, f.workspaceID,
+		f.expectedUpdatedAt, AutoSchedulingStatusOff, nil, nil, nil)
+	require.NoError(t, err)
+	require.Equal(t, 1, f.repository.stateOnlyCalls, "a settled state must close any unresolved issue under the story lock")
+	require.Zero(t, f.repository.standardStateCalls)
+	require.Equal(t, "", f.repository.status, "state-only maintenance must not create an outbox announcement")
 }

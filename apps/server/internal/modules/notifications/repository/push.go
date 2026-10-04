@@ -71,6 +71,9 @@ func (repository *Repository) GetPushDelivery(ctx context.Context, notificationI
 	if len(rows) == 0 {
 		return nil, nil
 	}
+	if rows[0].CreatedAt == nil {
+		return nil, fmt.Errorf("notification %s has no push activity timestamp", rows[0].NotificationID)
+	}
 	entityType, err := notificationsdomain.ParseEntityType(string(rows[0].EntityType))
 	if err != nil {
 		return nil, fmt.Errorf("map push delivery: %w", err)
@@ -91,6 +94,7 @@ func (repository *Repository) GetPushDelivery(ctx context.Context, notificationI
 	}
 	return &notificationsdomain.PushDelivery{
 		NotificationID: rows[0].NotificationID, RecipientID: rows[0].RecipientID,
+		CreatedAt:   *rows[0].CreatedAt,
 		WorkspaceID: rows[0].WorkspaceID, EntityType: entityType, EntityID: rows[0].EntityID,
 		WorkspaceSlug: rows[0].WorkspaceSlug, Title: rows[0].Title,
 		Message: publicMessage, Tokens: tokens,

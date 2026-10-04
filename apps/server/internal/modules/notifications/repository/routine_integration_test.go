@@ -3,15 +3,52 @@
 package notificationsrepository
 
 import (
+	"context"
+	"errors"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/complexus-tech/projects-api/internal/migrations"
+	feedback "github.com/complexus-tech/projects-api/internal/modules/feedback/domain"
 	notifications "github.com/complexus-tech/projects-api/internal/modules/notifications/domain"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/require"
 )
+
+type rejectedFeedbackCompletion struct{}
+
+func (rejectedFeedbackCompletion) CompleteDigestDeliveryTx(context.Context, pgx.Tx, feedback.CoreDigestDeliveryCompletion) error {
+	return errors.New("feedback digest claim is no longer owned")
+}
+
+func TestCombinedRoutineCompletionRollsBackWhenFeedbackClaimIsNotOwned(t *testing.T) {
+	ctx := t.Context()
+	f := newNotificationIntegrationFixture(t, ctx)
+	scope := notifications.DeliveryScope{RecipientID: f.recipientA, WorkspaceID: f.workspaceA}
+	f.repo.feedbackCompleter = rejectedFeedbackCompletion{}
+	row, _, err := f.repo.Create(ctx, f.storyNotification(f.recipientA, notificationDedupeKey("atomic-completion")))
+	require.NoError(t, err)
+	now := time.Now().UTC()
+	claim, err := f.repo.ClaimRoutine(ctx, notifications.RoutineClaim{RecipientID: scope.RecipientID, WorkspaceID: scope.WorkspaceID, Key: "routine:" + now.Format("2006-01-02"), Kind: "activity", LocalDate: now, Now: now})
+	require.NoError(t, err)
+	err = f.repo.CompleteRoutine(ctx, notifications.RoutineCompletion{
+		ID: claim, Scope: scope, Sent: true, Now: now,
+		NotificationSnapshots: []notifications.EmailSnapshot{notificationSnapshot(t, ctx, f, row.ID)},
+		FeedbackDigest:        &feedback.CoreDigestDeliveryCompletion{DeliveryID: uuid.New(), RecipientID: scope.RecipientID, WorkspaceID: scope.WorkspaceID, Status: feedback.DigestDeliverySent, WindowEnd: now, DeliveredAt: now},
+	})
+	require.Error(t, err, "a nonexistent feedback claim prevents the combined completion")
+	var status string
+	require.NoError(t, f.postgres.Pool.QueryRow(ctx, "SELECT status FROM routine_email_deliveries WHERE id=$1", claim).Scan(&status))
+	require.Equal(t, "processing", status, "weekly send coverage rolled back")
+	var receipts int
+	require.NoError(t, f.postgres.Pool.QueryRow(ctx, "SELECT count(*) FROM notification_email_receipts WHERE recipient_id=$1", f.recipientA).Scan(&receipts))
+	require.Zero(t, receipts)
+	pending, err := f.repo.ListEmailDigest(ctx, scope)
+	require.NoError(t, err)
+	require.NotNil(t, pending, "notification snapshot coverage rolled back with feedback")
+}
 
 func TestRoutineEmailClaimsSerializeAndFenceDeliveryAttempts(t *testing.T) {
 	ctx := t.Context()
@@ -39,7 +76,7 @@ func TestRoutineEmailClaimsSerializeAndFenceDeliveryAttempts(t *testing.T) {
 	require.Len(t, winners, 1, "only one worker can own a person's send window")
 	id := winners[0]
 	scope := notifications.DeliveryScope{RecipientID: f.recipientA, WorkspaceID: f.workspaceA}
-	completion := notifications.RoutineCompletion{ID: id, Scope: scope, NotificationIDs: []uuid.UUID{notification.ID}, GuidanceDate: &now, Sent: true, Now: now}
+	completion := notifications.RoutineCompletion{ID: id, Scope: scope, NotificationSnapshots: []notifications.EmailSnapshot{notificationSnapshot(t, ctx, f, notification.ID)}, GuidanceDate: &now, Sent: true, Now: now}
 	wrongScope := completion
 	wrongScope.Scope.WorkspaceID = f.workspaceB
 	require.Error(t, f.repo.CompleteRoutine(ctx, wrongScope))
@@ -54,6 +91,8 @@ func TestRoutineEmailClaimsSerializeAndFenceDeliveryAttempts(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, uuid.Nil, replay)
 	claim.Key, claim.Kind = "activity:new", "activity"
+	claim.Now = now.Add(24 * time.Hour)
+	claim.LocalDate = claim.Now
 	old, err := f.repo.ClaimRoutine(ctx, claim)
 	require.NoError(t, err)
 	require.NoError(t, f.repo.FailRoutine(ctx, old))
@@ -62,7 +101,7 @@ func TestRoutineEmailClaimsSerializeAndFenceDeliveryAttempts(t *testing.T) {
 	require.NotEqual(t, old, current, "a retry must fence the old owner")
 	completion.ID = old
 	require.Error(t, f.repo.CompleteRoutine(ctx, completion))
-	claim.Now = now.Add(11 * time.Minute)
+	claim.Now = now.Add(24*time.Hour + 11*time.Minute)
 	reclaimed, err := f.repo.ClaimRoutine(ctx, claim)
 	require.NoError(t, err)
 	require.NotEqual(t, current, reclaimed)
@@ -93,7 +132,7 @@ func TestSentNotificationsStayOutOfLaterDigests(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.NoError(t, f.repo.CompleteRoutine(ctx, notifications.RoutineCompletion{
-		ID: claim, Scope: scope, NotificationIDs: ids, Sent: true, Now: now,
+		ID: claim, Scope: scope, NotificationSnapshots: notificationSnapshots(t, ctx, f, ids), Sent: true, Now: now,
 	}))
 	for hour := 1; hour <= 3; hour++ {
 		for _, input := range inputs {
@@ -123,7 +162,7 @@ func TestIdenticalContentWithFreshEventIDsIsCoveredAfterTwoHours(t *testing.T) {
 	original, _, err := f.repo.Create(ctx, f.storyNotification(f.recipientA, notificationDedupeKey("original")))
 	require.NoError(t, err)
 	sentAt := time.Now().UTC().Add(-2 * time.Hour).Truncate(time.Microsecond)
-	require.NoError(t, f.repo.MarkEmailSent(ctx, notifications.MarkEmailSent{Scope: scope, NotificationIDs: []uuid.UUID{original.ID}, At: sentAt}))
+	require.NoError(t, f.repo.MarkEmailSent(ctx, notifications.MarkEmailSent{Scope: scope, NotificationSnapshots: []notifications.EmailSnapshot{notificationSnapshot(t, ctx, f, original.ID)}, At: sentAt}))
 	// Removing an inbox item must not remove its delivery receipt.
 	_, err = f.postgres.Pool.Exec(ctx, "DELETE FROM public.notifications WHERE notification_id = $1", original.ID)
 	require.NoError(t, err)

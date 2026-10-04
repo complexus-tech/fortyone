@@ -28,7 +28,8 @@ export const TeamsList = () => {
         </Text>
         {teams.length > 1 && (
           <Input
-            className="w-72 rounded-lg"
+            aria-label="Search teams"
+            className="bg-surface-muted dark:bg-surface-elevated w-72 rounded-lg"
             leftIcon={<SearchIcon className="h-4" />}
             onChange={(e) => {
               setSearch(e.target.value);

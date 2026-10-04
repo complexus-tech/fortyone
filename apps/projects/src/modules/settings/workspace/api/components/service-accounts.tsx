@@ -309,7 +309,7 @@ export const ServiceAccounts = () => {
       <Dialog onOpenChange={setCreateOpen} open={createOpen}>
         <Dialog.Content className="max-w-2xl" size="md">
           <Dialog.Header className="px-6 pt-6 pb-2">
-            <Dialog.Title className="text-xl">
+            <Dialog.Title className="text-lg">
               Create service account
             </Dialog.Title>
           </Dialog.Header>

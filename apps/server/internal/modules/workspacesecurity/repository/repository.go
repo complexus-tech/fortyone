@@ -72,7 +72,7 @@ func (r *Repository) CheckSession(ctx context.Context, scope domain.Scope, sessi
 		if session.ID == uuid.Nil || session.AuthenticatedAt.IsZero() || session.ExpiresAt.IsZero() {
 			return nil
 		}
-		count, err := q.TrackBrowserSession(ctx, sql.TrackBrowserSessionParams{WorkspaceID: scope.WorkspaceID, ActorID: scope.ActorID, SessionID: session.ID, AuthenticatedAt: session.AuthenticatedAt, ExpiresAt: session.ExpiresAt})
+		count, err := q.TrackBrowserSession(ctx, sql.TrackBrowserSessionParams{WorkspaceID: scope.WorkspaceID, ActorID: scope.ActorID, SessionID: session.ID, AuthenticatedAt: session.AuthenticatedAt, ExpiresAt: session.ExpiresAt, BrowserName: session.BrowserName})
 		if err == nil && count != 1 {
 			return domain.ErrForbidden
 		}
@@ -144,7 +144,7 @@ func (r *Repository) Sessions(ctx context.Context, scope domain.Scope, userID *u
 			if row.FullName != nil && *row.FullName != "" {
 				name = *row.FullName
 			}
-			result.Items = append(result.Items, domain.Session{ID: row.SessionID, UserID: row.UserID, Name: name, Email: row.Email, Role: row.Role, AuthenticatedAt: row.AuthenticatedAt, LastSeenAt: row.LastSeenAt, ExpiresAt: row.ExpiresAt, RevokedAt: row.RevokedAt, RevokedBefore: row.RevokedBefore})
+			result.Items = append(result.Items, domain.Session{ID: row.SessionID, UserID: row.UserID, Name: name, Username: row.Username, BrowserName: row.BrowserName, Email: row.Email, Role: row.Role, AuthenticatedAt: row.AuthenticatedAt, LastSeenAt: row.LastSeenAt, ExpiresAt: row.ExpiresAt, RevokedAt: row.RevokedAt, RevokedBefore: row.RevokedBefore})
 		}
 		return nil
 	})

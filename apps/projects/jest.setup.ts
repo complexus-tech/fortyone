@@ -27,6 +27,28 @@ Object.defineProperties(globalThis, {
 });
 
 if (typeof window !== "undefined") {
+  // ProseMirror measures text selections; jsdom has no layout implementation.
+  const emptyRect = {
+    x: 0,
+    y: 0,
+    width: 0,
+    height: 0,
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+  };
+  Object.defineProperties(Range.prototype, {
+    getBoundingClientRect: {
+      configurable: true,
+      value: () => ({ ...emptyRect, toJSON: () => emptyRect }),
+    },
+    getClientRects: {
+      configurable: true,
+      value: () => [],
+    },
+  });
+
   if (
     typeof globalThis.PointerEvent === "undefined" &&
     typeof globalThis.MouseEvent !== "undefined"

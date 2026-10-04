@@ -8,6 +8,7 @@ import { InviteMembersDialog } from "@/components/ui";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { useUserRole, useWorkspacePath } from "@/hooks";
 import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
+import { ViewFavoritesSlot } from "@/shared/views/favorites-slot";
 import { Navigation } from "./navigation";
 import { Teams } from "./teams";
 import { SidebarAssistantCards } from "./upcoming-meeting-card";
@@ -136,6 +137,7 @@ export const Sidebar = () => {
         data-sidebar-content
       >
         <Navigation isCollapsed={isCollapsed} />
+        <ViewFavoritesSlot isCollapsed={isCollapsed} />
         <Teams isCollapsed={isCollapsed} />
       </Box>
       <Box

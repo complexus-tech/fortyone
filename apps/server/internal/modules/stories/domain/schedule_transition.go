@@ -16,6 +16,24 @@ type ScheduleTransitionOutboxInput struct {
 	SemanticFingerprint string
 	EventPayload        json.RawMessage
 	ClaimImmediately    bool
+	StateOnly           bool
+	Issue               *ScheduleIssue
+}
+
+// ScheduleIssue identifies an actionable condition independently of planning
+// timestamps, prose, or changing partial reservations.
+type ScheduleIssue struct {
+	ID      uuid.UUID
+	OwnerID uuid.UUID
+	Code    string
+}
+
+func IsUnresolvedScheduleStatus(status string) bool {
+	return status == AutoSchedulingStatusNeedsTime || status == AutoSchedulingStatusCannotFit || status == AutoSchedulingStatusAtRisk
+}
+
+func ResolvesScheduleIssue(status string) bool {
+	return status == AutoSchedulingStatusScheduled || status == AutoSchedulingStatusLocked || status == AutoSchedulingStatusOff || status == AutoSchedulingStatusNeedsOwner
 }
 
 // ScheduleTransitionOutboxEvent is a claimed immutable scheduler event. The

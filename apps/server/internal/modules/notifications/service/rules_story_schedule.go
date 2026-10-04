@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	notificationsdomain "github.com/complexus-tech/projects-api/internal/modules/notifications/domain"
 	storydomain "github.com/complexus-tech/projects-api/internal/modules/stories/domain"
 	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/google/uuid"
@@ -182,7 +183,11 @@ func scheduleTransitionMessage(payload events.StoryUpdatedPayload, timezone, rea
 		variables["actor"] = Variable{Value: "Maya", Type: "actor"}
 		template = "{actor} " + template
 	}
-	return NotificationMessage{Template: template, Variables: variables}
+	message := NotificationMessage{Template: template, Variables: variables}
+	if transition != nil && transition.IssueID != uuid.Nil && transition.IssueCode != "" {
+		message.ScheduleIssue = &notificationsdomain.StoryScheduleIssueSnapshot{ID: transition.IssueID, Code: transition.IssueCode, OwnerID: transition.UserID}
+	}
+	return message
 }
 
 func scheduleTransitionActivityValues(transition *events.StoryScheduleTransition, timezone string) (string, string, any, any) {

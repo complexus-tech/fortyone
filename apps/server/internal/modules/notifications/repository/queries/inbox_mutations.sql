@@ -120,11 +120,23 @@ WITH actor_scope AS (
     FROM authorized_notification AS authorized
     WHERE NOT CAST(sqlc.arg(delete_notification) AS boolean)
       AND notification.notification_id = authorized.notification_id
+      AND (
+          NOT CAST(sqlc.arg(mark_read) AS boolean)
+          OR (
+              notification.created_at <= CAST(sqlc.arg(mutated_at) AS timestamptz)
+              AND (CAST(sqlc.narg(expected_created_at) AS timestamptz) IS NULL
+                   OR notification.created_at = CAST(sqlc.narg(expected_created_at) AS timestamptz))
+          )
+      )
     RETURNING notification.notification_id
 )
-SELECT notification_id FROM deleted_notification
+SELECT notification_id, TRUE AS mutated FROM deleted_notification
 UNION ALL
-SELECT notification_id FROM updated_notification
+SELECT notification_id, TRUE AS mutated FROM updated_notification
+UNION ALL
+SELECT notification_id, FALSE AS mutated FROM authorized_notification
+WHERE NOT EXISTS (SELECT 1 FROM deleted_notification)
+  AND NOT EXISTS (SELECT 1 FROM updated_notification)
 LIMIT 1;
 
 -- MutateWorkspaceNotifications performs bulk read/delete operations against

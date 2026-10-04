@@ -130,6 +130,8 @@ type handlers struct {
 	pushDeliveries         PushDeliveryStore
 	pushSender             expopush.Sender
 	routineDeliveries      RoutineDeliveryStore
+	routineTasks           RoutineEmailTasks
+	feedbackDigest         feedback.DigestStore
 	briefingSources        jobs.BriefingSources
 	slackEvents            SlackEventProcessor
 	slackFileImports       SlackFileImportProcessor
@@ -168,6 +170,8 @@ type WorkerHandlerDependencies struct {
 	PushDeliveries         PushDeliveryStore
 	PushSender             expopush.Sender
 	RoutineDeliveries      RoutineDeliveryStore
+	RoutineTasks           RoutineEmailTasks
+	FeedbackDigest         feedback.DigestStore
 	BriefingSources        jobs.BriefingSources
 	SlackEvents            SlackEventProcessor
 	SlackFileImports       SlackFileImportProcessor
@@ -205,6 +209,8 @@ func NewWorkerHandlers(dependencies WorkerHandlerDependencies) *handlers {
 		pushDeliveries:         dependencies.PushDeliveries,
 		pushSender:             dependencies.PushSender,
 		routineDeliveries:      dependencies.RoutineDeliveries,
+		routineTasks:           dependencies.RoutineTasks,
+		feedbackDigest:         dependencies.FeedbackDigest,
 		briefingSources:        dependencies.BriefingSources,
 		slackEvents:            dependencies.SlackEvents,
 		slackFileImports:       dependencies.SlackFileImports,

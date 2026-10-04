@@ -110,6 +110,7 @@ export const MayaChat = () => {
       onGoogleDriveFileRemove={removeGoogleDriveFile}
       onSend={handleSend}
       onStop={handleStop}
+      onValueChange={setInput}
       realtimeVoice={realtimeVoice}
       status={status}
       value={input}

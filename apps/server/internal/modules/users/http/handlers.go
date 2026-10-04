@@ -105,6 +105,7 @@ func (h *Handlers) createSessionToken() (string, error) {
 
 func (h *Handlers) persistSession(
 	ctx context.Context,
+	request *http.Request,
 	userID uuid.UUID,
 	token string,
 	expires time.Time,
@@ -140,6 +141,9 @@ func (h *Handlers) persistSession(
 		session.AuthenticatedAt = previous.AuthenticatedAt
 		session.SessionID = previous.SessionID
 		session.WorkspaceSSO = previous.WorkspaceSSO
+		session.BrowserName = previous.BrowserName
+	} else {
+		session.BrowserName = platformauth.BrowserName(request.UserAgent(), request.Header.Get("Sec-CH-UA"))
 	}
 	session.ExpiresAt = expires.UTC()
 

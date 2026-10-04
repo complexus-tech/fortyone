@@ -776,6 +776,12 @@ describe("FeedbackSettings", () => {
     expect(screen.getByText("Admin")).toBeInTheDocument();
     expect(screen.getByText("1 subscribed")).toBeInTheDocument();
     expect(
+      screen.getByRole("combobox", { name: "Email summary for Amina Moyo" }),
+    ).toHaveValue("weekly");
+    expect(
+      screen.getByText(/at most one grouped weekly email summary/),
+    ).toBeInTheDocument();
+    expect(
       screen.queryByRole("button", { name: "Save" }),
     ).not.toBeInTheDocument();
 
@@ -789,6 +795,18 @@ describe("FeedbackSettings", () => {
     expect(updateReviewer).toHaveBeenCalledWith({
       input: { emailFrequency: "weekly" },
       userId: "user-2",
+    });
+
+    const legacyReviewerSelect = screen.getByRole("combobox", {
+      name: "Email summary for Amina Moyo",
+    });
+    // Legacy clients may still supply daily, but the current control only writes off/weekly.
+    fireEvent.change(legacyReviewerSelect, { target: { value: "daily" } });
+    expect(updateReviewer).toHaveBeenCalledTimes(1);
+    fireEvent.change(legacyReviewerSelect, { target: { value: "off" } });
+    expect(updateReviewer).toHaveBeenLastCalledWith({
+      input: { emailFrequency: "off" },
+      userId: "user-1",
     });
   });
 });

@@ -60,6 +60,11 @@ export const ObjectiveViews = ({
     content = (
       <RoadmapGanttBoard
         className="h-full"
+        objectiveDetailsPanelId={
+          selectedObjective
+            ? `objective-details-${selectedObjective.id}`
+            : undefined
+        }
         objectives={objectives}
         onObjectiveSelect={selectObjective}
         onZoomLevelChange={onZoomLevelChange}
@@ -76,10 +81,7 @@ export const ObjectiveViews = ({
         objectives={objectives}
         onCreateObjective={onCreateObjective}
         onKeyResultSelect={selectKeyResult}
-        onObjectiveSelect={selectObjective}
-        selectedObjectiveId={
-          selectedObjective?.id ?? selectedKeyResult?.objective.id
-        }
+        selectedObjectiveId={selectedKeyResult?.objective.id}
         setViewOptions={setViewOptions}
         viewOptions={viewOptions}
       />
@@ -89,7 +91,7 @@ export const ObjectiveViews = ({
   return (
     <Box className="relative h-full min-w-0">
       {content}
-      {selectedObjective ? (
+      {layout === "gantt" && selectedObjective ? (
         <RoadmapObjectiveDetails
           objective={selectedObjective}
           onClose={() => {

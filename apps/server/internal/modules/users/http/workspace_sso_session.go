@@ -42,6 +42,7 @@ func (w *WorkspaceSSOSessionWriter) Issue(ctx context.Context, response http.Res
 	session.AuthenticatedAt = proof.AuthenticatedAt
 	session.ExpiresAt = expires
 	session.WorkspaceSSO = &proof
+	session.BrowserName = auth.BrowserName(request.UserAgent(), request.Header.Get("Sec-CH-UA"))
 	if err := w.handlers.cache.Set(ctx, cache.AuthSessionCacheKey(token), session, time.Until(expires)); err != nil {
 		return err
 	}

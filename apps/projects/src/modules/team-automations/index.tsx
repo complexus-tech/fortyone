@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { ArrowDownIcon, RefreshIcon, WorkflowIcon } from "icons";
+import { ArrowDownIcon, CalendarIcon, WorkflowIcon } from "icons";
 import { Box, Button, Flex, Menu, Switch, Text } from "ui";
 import { toast } from "sonner";
 import { useUserRole } from "@/hooks/role";
@@ -17,11 +17,19 @@ import type { Automation } from "./types";
 export const TeamAutomations = ({ teamId }: { teamId: string }) => {
   const [editor, setEditor] = useState<"rule" | "recurrence" | null>(null);
   const createTrigger = useRef<HTMLButtonElement>(null);
+  const openingEditor = useRef(false);
   const [history, setHistory] = useState<Automation | null>(null);
   const query = useAutomations(teamId);
   const { userRole } = useUserRole();
   const canCreate = userRole === "admin" || userRole === "member";
   const creationDisabled = !canCreate || query.create.isPending;
+  const openEditor = (nextEditor: "rule" | "recurrence") => {
+    if (creationDisabled) return;
+    openingEditor.current = true;
+    openDialogAfterMenuClose(() => {
+      setEditor(nextEditor);
+    });
+  };
   const closeEditor = () => {
     setEditor(null);
     // These standalone editors have no Dialog.Trigger to restore focus to.
@@ -70,37 +78,40 @@ export const TeamAutomations = ({ teamId }: { teamId: string }) => {
                   Create automation
                 </Button>
               </Menu.Button>
-              <Menu.Items align="end" className="min-w-56">
+              <Menu.Items
+                align="end"
+                className="min-w-56"
+                onCloseAutoFocus={(event) => {
+                  if (!openingEditor.current) return;
+                  // The editor owns focus even if menu exit cleanup runs later.
+                  event.preventDefault();
+                  openingEditor.current = false;
+                }}
+              >
                 <Menu.Group>
                   <Menu.Item
                     disabled={creationDisabled}
                     onSelect={() => {
-                      if (!creationDisabled)
-                        openDialogAfterMenuClose(() => {
-                          setEditor("rule");
-                        });
+                      openEditor("rule");
                     }}
                   >
                     <WorkflowIcon aria-hidden className="h-5 w-auto" />
-                    Create rule
+                    Workflow rule
                   </Menu.Item>
                   <Menu.Item
                     disabled={creationDisabled}
                     onSelect={() => {
-                      if (!creationDisabled)
-                        openDialogAfterMenuClose(() => {
-                          setEditor("recurrence");
-                        });
+                      openEditor("recurrence");
                     }}
                   >
-                    <RefreshIcon aria-hidden className="h-5 w-auto" />
-                    Create recurring task
+                    <CalendarIcon aria-hidden className="h-5 w-auto" />
+                    Recurring task
                   </Menu.Item>
                 </Menu.Group>
               </Menu.Items>
             </Menu>
           }
-          description="Save team rules and recurring work, then monitor their runs."
+          description="Update tasks automatically and create work on a schedule."
           title="Rules and recurring tasks"
         />
         {query.isPending ? (
@@ -124,19 +135,32 @@ export const TeamAutomations = ({ teamId }: { teamId: string }) => {
         ) : null}
         {!query.isPending && !query.isError && !query.data.length ? (
           <Text className="px-6 py-5" color="muted">
-            Create a rule to route matching tasks, or a recurring task for work
+            Create a workflow rule to update tasks, or a recurring task for work
             that repeats.
           </Text>
         ) : null}
-        <div className="divide-border divide-y">
+        <div className="divide-border divide-y-[0.5px]">
           {query.data?.map((automation) => (
-            <Box className="px-6 py-5" key={automation.id}>
+            <Box className="px-6 py-4" key={automation.id}>
               <Flex align="start" className="gap-4" justify="between">
                 <Box className="min-w-0">
-                  <Text fontWeight="medium">{automation.name}</Text>
+                  <Flex align="center" gap={2}>
+                    {automation.kind === "rule" ? (
+                      <WorkflowIcon
+                        aria-hidden
+                        className="h-4 w-auto shrink-0"
+                      />
+                    ) : (
+                      <CalendarIcon
+                        aria-hidden
+                        className="h-4 w-auto shrink-0"
+                      />
+                    )}
+                    <Text fontWeight="medium">{automation.name}</Text>
+                  </Flex>
                   <Text className="mt-1" color="muted">
                     {automation.kind === "rule"
-                      ? "Team rule"
+                      ? "Workflow rule"
                       : "Recurring task"}{" "}
                     · {automation.paused ? "Paused" : "Active"}
                   </Text>

@@ -51,6 +51,30 @@ handlers. There is no mutable package-global cache pointer, so constructing two
 apps or running parallel handler tests cannot redirect one app's session lookup
 to another Redis client.
 
+## Session display metadata
+
+The workspace Security session list exposes the account's `username` and a
+nullable `browserName`, in addition to its existing internal session identifier
+and revocation fields. New email, Google, Microsoft and workspace SSO sign-ins
+record a recognized browser name from `Sec-CH-UA` or the `User-Agent` header.
+Only the name is retained; raw headers, browser versions and device details are
+not stored. This is reported display metadata and never authentication evidence.
+
+Cookie renewal preserves the original name, including an unknown value. Sessions
+issued before metadata capture remain unknown; their browser cannot be inferred
+from later requests. A known issuance value may fill a null workspace registry
+row created by an older API, but it never replaces an already recorded name.
+An independent native mobile session does not inherit the browser label from
+its authorizing session. Embedded web views and unrecognized agents remain
+unknown. Arc and Dia are identified only when their request metadata explicitly
+reports their brand; compatibility identities cannot establish the underlying
+browser.
+
+Apply migration 000216 before the replacement API. The nullable column permits
+older APIs to coexist, and updated web clients tolerate missing fields while
+the old API remains deployed. Review preceding unapplied migrations individually
+before rollout. No browser metadata or session history needs a guessed backfill.
+
 First-party routes authenticate only this opaque session cookie. They no longer
 accept the legacy HS256 user bearer token signed with `APP_AUTH_SECRET_KEY`.
 Public API PATs, service-account keys, and developer OAuth access tokens are

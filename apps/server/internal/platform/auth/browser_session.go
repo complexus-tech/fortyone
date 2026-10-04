@@ -20,6 +20,7 @@ type BrowserSession struct {
 	SessionID       uuid.UUID                   `json:"session_id,omitempty"`
 	AuthenticatedAt time.Time                   `json:"authenticated_at,omitempty"`
 	ExpiresAt       time.Time                   `json:"expires_at,omitempty"`
+	BrowserName     *string                     `json:"browser_name,omitempty"`
 	WorkspaceSSO    *WorkspaceSSOAuthentication `json:"workspace_sso,omitempty"`
 }
 

@@ -37,7 +37,6 @@ export const CustomFieldIconPicker = ({
   const [activeIcon, setActiveIcon] = useState<IconChoice["value"]>(
     value ?? "automatic",
   );
-  const labelId = useId();
   const listId = useId();
   const activeOptionRef = useRef<HTMLButtonElement>(null);
   const selected = customFieldIconOptions.find(
@@ -127,10 +126,7 @@ export const CustomFieldIconPicker = ({
     "h-auto w-full min-w-0 rounded-md p-0 ring-ring aria-selected:bg-state-hover focus-visible:ring-2 data-[chosen=true]:bg-state-selected data-[chosen=true]:ring-1";
 
   return (
-    <Box className="w-10 shrink-0">
-      <Text className="mb-2" fontWeight="medium" id={labelId}>
-        Icon
-      </Text>
+    <Box className="w-[2.8rem] shrink-0">
       <Popover
         onOpenChange={(nextOpen) => {
           if (nextOpen && disabled) return;
@@ -146,10 +142,9 @@ export const CustomFieldIconPicker = ({
           <Button
             aria-label={`Field icon: ${selected?.label ?? "Automatic"}`}
             asIcon
-            className="h-10 w-10"
+            className="h-[2.8rem] w-[2.8rem]"
             color="tertiary"
             disabled={disabled}
-            size="sm"
             type="button"
             variant="outline"
           >
@@ -161,7 +156,7 @@ export const CustomFieldIconPicker = ({
         </Popover.Trigger>
         <Popover.Content
           align="start"
-          aria-labelledby={labelId}
+          aria-label="Choose field icon"
           className="flex max-h-[var(--radix-popover-content-available-height)] w-80 max-w-[calc(100vw-2rem)] flex-col overflow-hidden p-0"
         >
           <Box className="min-h-0 flex-1">

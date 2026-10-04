@@ -29,7 +29,6 @@ type ObjectivesGroupedListProps = {
   groups: ObjectiveGroup[];
   teamCodeById: ReadonlyMap<string, string>;
   viewOptions: ObjectiveViewOptions;
-  onObjectiveSelect: (objective: Objective) => void;
   onKeyResultSelect: (objective: Objective, keyResult: KeyResult) => void;
   onCreateObjective: () => void;
   selectedObjectiveId?: string;
@@ -80,7 +79,6 @@ export const ObjectivesGroupedList = ({
   groups,
   teamCodeById,
   onKeyResultSelect,
-  onObjectiveSelect,
   onCreateObjective,
   selectedObjectiveId,
   viewOptions,
@@ -201,9 +199,6 @@ export const ObjectivesGroupedList = ({
               }}
               onKeyResultSelect={(keyResult) => {
                 onKeyResultSelect(objective, keyResult);
-              }}
-              onObjectiveSelect={() => {
-                onObjectiveSelect(objective);
               }}
               onSelectionChange={(checked) => {
                 setObjectiveSelected(objective.id, checked);

@@ -113,7 +113,7 @@ func (resolver workspaceResolver) ResolveCurrentWorkspace(
 	}
 	if resolver.security != nil {
 		session, _ := platformauth.GetBrowserSession(ctx)
-		err := resolver.security.CheckSession(ctx, securitydomain.Scope{ActorID: userID, WorkspaceID: membership.WorkspaceID}, securitydomain.SessionIdentity{ID: session.SessionID, AuthenticatedAt: session.AuthenticatedAt, ExpiresAt: session.ExpiresAt})
+		err := resolver.security.CheckSession(ctx, securitydomain.Scope{ActorID: userID, WorkspaceID: membership.WorkspaceID}, securitydomain.SessionIdentity{ID: session.SessionID, AuthenticatedAt: session.AuthenticatedAt, ExpiresAt: session.ExpiresAt, BrowserName: session.BrowserName})
 		if errors.Is(err, securitydomain.ErrForbidden) || errors.Is(err, securitydomain.ErrNotFound) {
 			return mid.WorkspaceInfo{}, mid.ErrWorkspaceAccessDenied
 		}

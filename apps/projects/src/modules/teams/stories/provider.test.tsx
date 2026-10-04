@@ -18,6 +18,9 @@ jest.mock("@/components/ui/stories-filter-state", () => ({
 const saved: SavedViewConfiguration = {
   version: 1,
   layout: "kanban",
+  description: "My workspace delivery",
+  icon: "star",
+  scope: { kind: "my-work", tab: "created" },
   filters: { ...DEFAULT_STORIES_FILTER, assignedToMe: true },
   viewOptions: {
     groupBy: "priority",
@@ -29,7 +32,7 @@ const saved: SavedViewConfiguration = {
   },
 };
 const Probe = () => {
-  const { applyView, viewOptions } = useTeamOptions();
+  const { applyView, viewOptions, viewMetadata } = useTeamOptions();
   return (
     <>
       <button
@@ -41,6 +44,7 @@ const Probe = () => {
         Load view
       </button>
       <output>{viewOptions.groupBy}</output>
+      <output aria-label="View metadata">{JSON.stringify(viewMetadata)}</output>
     </>
   );
 };
@@ -71,5 +75,45 @@ describe("saved team views", () => {
       </TeamOptionsProvider>,
     );
     expect(screen.getByText("priority")).toBeInTheDocument();
+  });
+  it("preserves saved scope/icon/description across layout changes and drops them for another or unselected view", () => {
+    const { rerender } = render(
+      <TeamOptionsProvider layout="list" viewId="selected">
+        <Probe />
+      </TeamOptionsProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Load view" }));
+    const metadata = {
+      scope: saved.scope,
+      icon: saved.icon,
+      description: saved.description,
+    };
+    expect(
+      screen.getByRole("status", { name: "View metadata" }),
+    ).toHaveTextContent(JSON.stringify(metadata));
+    rerender(
+      <TeamOptionsProvider layout="kanban" viewId="selected">
+        <Probe />
+      </TeamOptionsProvider>,
+    );
+    expect(
+      screen.getByRole("status", { name: "View metadata" }),
+    ).toHaveTextContent(JSON.stringify(metadata));
+    rerender(
+      <TeamOptionsProvider layout="kanban" viewId="different">
+        <Probe />
+      </TeamOptionsProvider>,
+    );
+    expect(
+      screen.getByRole("status", { name: "View metadata" }),
+    ).toHaveTextContent("{}");
+    rerender(
+      <TeamOptionsProvider layout="kanban" viewId={null}>
+        <Probe />
+      </TeamOptionsProvider>,
+    );
+    expect(
+      screen.getByRole("status", { name: "View metadata" }),
+    ).toHaveTextContent("{}");
   });
 });

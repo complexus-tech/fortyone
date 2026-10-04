@@ -47,11 +47,17 @@ export const AutomationDetails = ({
     actions.clearAssignee ? "remove assignee" : null,
   ].filter(Boolean);
   return (
-    <Text className="mt-2" color="muted">
-      When a task is {trigger === "story.created" ? "created" : "updated"}
-      {conditionLabels.length
-        ? ` and ${conditionLabels.join(" and ")}`
-        : ""}, {actionLabels.join(" and ")}.
-    </Text>
+    <dl className="text-text-muted mt-3 grid grid-cols-[3rem_minmax(0,1fr)] gap-x-3 gap-y-1">
+      <dt>When</dt>
+      <dd>A task is {trigger === "story.created" ? "created" : "updated"}</dd>
+      {conditionLabels.length ? (
+        <>
+          <dt>If</dt>
+          <dd>{conditionLabels.join(" and ")}</dd>
+        </>
+      ) : null}
+      <dt>Then</dt>
+      <dd>{actionLabels.join(" and ")}</dd>
+    </dl>
   );
 };

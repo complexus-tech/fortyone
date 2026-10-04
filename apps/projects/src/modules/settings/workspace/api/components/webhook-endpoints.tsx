@@ -91,7 +91,7 @@ const WebhookDialog = ({
     <Dialog onOpenChange={handleOpenChange} open={open}>
       <Dialog.Content className="max-w-3xl" size="lg">
         <Dialog.Header className="px-6 pt-6 pb-2">
-          <Dialog.Title className="text-xl">
+          <Dialog.Title className="text-lg">
             {endpoint ? "Edit webhook subscriptions" : "Create webhook"}
           </Dialog.Title>
         </Dialog.Header>

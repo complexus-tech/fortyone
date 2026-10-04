@@ -27,7 +27,7 @@ describe("NotificationMessageContent", () => {
     );
 
     expect(view.getByTestId("message")).toHaveTextContent(
-      `${actor} commented on the work item: ${content}`,
+      `${actor} commented on the work item: <entity>`,
     );
     expect(view.container.querySelector("script")).not.toBeInTheDocument();
     expect(view.container.querySelector("img")).not.toBeInTheDocument();

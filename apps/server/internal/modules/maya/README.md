@@ -10,8 +10,8 @@ the entire agent stack.
 The Maya production path is fully cut over from SQLx and handwritten Go query
 strings to pgx and SQLC:
 
-- six files in `repository/queries` define 30 named SQLC operations;
-- the generated `repository/sqlc.Querier` exposes the same 30 methods;
+- seven files in `repository/queries` define Maya's named SQLC operations;
+- the generated `repository/sqlc.Querier` exposes the corresponding typed methods;
 - `repository.Repo` is the only Maya PostgreSQL adapter and maps generated rows
   to types from `domain`;
 - handwritten production Go under this module has no SQLx import, SQL literal,
@@ -37,10 +37,32 @@ The query files are organized by capability rather than by CRUD verb:
 | `realtime.sql`     | Voice quota reservations, session lifecycle, and idempotent tool-call claims.          |
 | `work_focus.sql`   | Work-focus candidates, evidence, and guarded inferred-role writes.                     |
 | `worker_reads.sql` | Bounded assignment and workspace scheduling candidates.                                |
+| `skills.sql`       | Personal skill lists, owner-scoped writes, and optimistic edit versions.               |
 
 Generated SQLC files are repository implementation details. HTTP, service,
 task-handler, and job code must use handwritten Maya types and caller-owned
 ports; they must not import `repository/sqlc` or execute SQL directly.
+
+## Reusable skills
+
+The private `maya/skills` endpoints let a signed-in member of a Maya-enabled
+workspace create, list, edit, and delete their saved instructions. HTTP derives
+the workspace and user from the authenticated context. Every SQL operation
+includes both scope identifiers; the membership foreign key removes personal
+skills when the member leaves that workspace.
+
+Names are unique without case sensitivity for that owner and workspace. Edits
+require the previous `updatedAt` timestamp, returning a conflict instead of
+overwriting a newer edit. The web picker inserts instructions into an editable
+draft; selecting a skill does not send a message or change mutation approval
+behavior. Triage, planning, and weekly-update examples are saved only when the
+user chooses to create them.
+
+Apply migration `000215` before deploying the skill endpoints. The down file
+refuses to discard saved instructions from a populated table. Unit checks cover
+validation, scoping, error mapping, and stale versions; the tagged PostgreSQL
+test exercises CRUD, cross-owner isolation, duplicates, and membership cleanup
+against the real migration chain.
 
 ## Where behavior lives
 

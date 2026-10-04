@@ -1,10 +1,17 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { SecurityProvisioning } from "./scim-panel";
 
 const mint = jest.fn();
 const mintReset = jest.fn();
 const revoke = jest.fn();
 const retry = jest.fn();
+let mockRevokeError: Error | null = null;
 const credential = {
   id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
   name: "Directory",
@@ -32,12 +39,18 @@ jest.mock("./scim-api", () => ({
   }),
   useSCIMMutations: () => ({
     mint: { mutate: mint, reset: mintReset, isPending: false, error: null },
-    revoke: { mutate: revoke, reset: jest.fn(), isPending: false, error: null },
+    revoke: {
+      mutate: revoke,
+      reset: jest.fn(),
+      isPending: false,
+      error: mockRevokeError,
+    },
     retry: { mutate: retry, isPending: false, error: null },
   }),
 }));
 beforeEach(() => {
   jest.clearAllMocks();
+  mockRevokeError = null;
 });
 it("shows a newly minted token once and clears it when the dialog closes", async () => {
   mint.mockImplementation((input, callbacks) => {
@@ -73,4 +86,16 @@ it("revokes the selected credential and exposes a seat sync retry", () => {
   fireEvent.click(screen.getByRole("button", { name: "Revoke" }));
   fireEvent.click(screen.getByRole("button", { name: "Revoke token" }));
   expect(revoke.mock.calls[0][0]).toBe(credential.id);
+});
+
+it("surfaces a failed revocation inside the confirmation dialog", () => {
+  const { rerender } = render(<SecurityProvisioning />);
+  fireEvent.click(screen.getByRole("button", { name: "Revoke" }));
+  fireEvent.click(screen.getByRole("button", { name: "Revoke token" }));
+  mockRevokeError = new Error("Provisioning access could not be revoked.");
+  rerender(<SecurityProvisioning />);
+
+  expect(
+    within(screen.getByRole("dialog")).getByRole("alert"),
+  ).toHaveTextContent("Provisioning access could not be revoked.");
 });

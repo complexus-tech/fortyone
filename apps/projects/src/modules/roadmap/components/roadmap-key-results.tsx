@@ -224,7 +224,6 @@ const RoadmapKeyResultRow = ({
 export const RoadmapObjectiveListItem = ({
   objective,
   onKeyResultSelect,
-  onObjectiveSelect,
   onSelectionChange,
   expanded,
   onExpandedChange,
@@ -233,7 +232,6 @@ export const RoadmapObjectiveListItem = ({
 }: {
   objective: Objective;
   onKeyResultSelect: (keyResult: KeyResult) => void;
-  onObjectiveSelect: () => void;
   onSelectionChange: (checked: boolean) => void;
   expanded?: boolean;
   onExpandedChange?: (expanded: boolean) => void;
@@ -262,7 +260,6 @@ export const RoadmapObjectiveListItem = ({
         {...objective}
         childCount={objective.keyResultCount}
         isExpanded={isExpanded}
-        onSelect={onObjectiveSelect}
         onSelectionChange={onSelectionChange}
         onToggleExpanded={() => {
           const nextExpanded = !isExpanded;

@@ -4,6 +4,12 @@ import { toast } from "sonner";
 import type { InfiniteData } from "@tanstack/react-query";
 import { useAnalytics, useTerminology, useWorkspacePath } from "@/hooks";
 import { getStoryPath } from "@/shared/routing/story";
+import { loadWipCapacity } from "@/modules/stories/public/wip-capacity";
+import {
+  isWipCapacityQuery,
+  refreshWipCapacity,
+  wipCapacityToastId,
+} from "@/shared/story/wip-capacity";
 import type {
   GroupedStoriesResponse,
   Story,
@@ -375,22 +381,39 @@ export const useDuplicateStoryMutation = () => {
         if (
           queryKey.toLowerCase().includes("stories") &&
           !queryKey.toLowerCase().includes("detail") &&
-          query.isActive()
+          query.isActive() &&
+          !isWipCapacityQuery(query, workspaceSlug)
         ) {
           queryClient.invalidateQueries({ queryKey: query.queryKey });
         }
       });
 
+      const viewAction = {
+        label: `View ${storyTerm}`,
+        onClick: () => {
+          router.push(withWorkspace(getStoryPath(duplicatedStory)));
+        },
+      };
       toast.success("Success", {
+        id: wipCapacityToastId(workspaceSlug, duplicatedStory.statusId),
         description: `${getTermDisplay("storyTerm", {
           capitalize: true,
         })} duplicated successfully`,
-        action: {
-          label: `View ${storyTerm}`,
-          onClick: () => {
-            router.push(withWorkspace(getStoryPath(duplicatedStory)));
-          },
+        action: viewAction,
+      });
+      void refreshWipCapacity({
+        queryClient,
+        workspaceSlug,
+        loadCapacity: loadWipCapacity,
+        createdStory: {
+          id: duplicatedStory.id,
+          statusId: duplicatedStory.statusId,
+          teamId: duplicatedStory.teamId,
+          parentId: duplicatedStory.parentId || null,
+          archivedAt: duplicatedStory.archivedAt,
+          deletedAt: duplicatedStory.deletedAt,
         },
+        toastOptions: { action: viewAction },
       });
     },
   });

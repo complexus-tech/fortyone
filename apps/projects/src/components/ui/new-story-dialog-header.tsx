@@ -2,6 +2,7 @@ import { ArrowRight2Icon, CheckIcon, MaximizeIcon, MinimizeIcon } from "icons";
 import type { ReactNode } from "react";
 import { Button, Dialog, Flex, Menu, Text, Tooltip } from "ui";
 import { TeamColor } from "./team-color";
+import { StoryComposerHeader } from "./story-composer-header";
 
 type TeamOption = {
   code: string;
@@ -29,9 +30,33 @@ export const NewStoryDialogHeader = ({
   teams: TeamOption[];
   templatePicker?: ReactNode;
 }) => (
-  <Dialog.Header className="flex items-start justify-between gap-3 px-6 pt-6">
-    <Flex align="center" className="min-w-0 flex-wrap gap-2">
-      <Dialog.Title className="flex items-center gap-1 text-lg">
+  <StoryComposerHeader
+    actions={
+      <Flex className="shrink-0" gap={2}>
+        <Tooltip title={isExpanded ? "Minimize dialog" : "Expand dialog"}>
+          <Button
+            className="hover:bg-state-hover px-[0.35rem]"
+            color="tertiary"
+            onClick={onToggleExpanded}
+            size="xs"
+            variant="naked"
+          >
+            {isExpanded ? (
+              <MinimizeIcon className="h-[1.2rem] w-auto" />
+            ) : (
+              <MaximizeIcon className="h-[1.2rem] w-auto" />
+            )}
+            <span className="sr-only">
+              {isExpanded ? "Minimize" : "Expand"} dialog
+            </span>
+          </Button>
+        </Tooltip>
+        <Dialog.Close />
+      </Flex>
+    }
+    templatePicker={templatePicker}
+    title={
+      <>
         <Menu>
           <Menu.Button>
             <Button
@@ -70,29 +95,7 @@ export const NewStoryDialogHeader = ({
         <Text className="opacity-80" color="muted">
           New {storyTerm}
         </Text>
-      </Dialog.Title>
-      {templatePicker}
-    </Flex>
-    <Flex className="shrink-0" gap={2}>
-      <Tooltip title={isExpanded ? "Minimize dialog" : "Expand dialog"}>
-        <Button
-          className="hover:bg-state-hover px-[0.35rem]"
-          color="tertiary"
-          onClick={onToggleExpanded}
-          size="xs"
-          variant="naked"
-        >
-          {isExpanded ? (
-            <MinimizeIcon className="h-[1.2rem] w-auto" />
-          ) : (
-            <MaximizeIcon className="h-[1.2rem] w-auto" />
-          )}
-          <span className="sr-only">
-            {isExpanded ? "Minimize" : "Expand"} dialog
-          </span>
-        </Button>
-      </Tooltip>
-      <Dialog.Close />
-    </Flex>
-  </Dialog.Header>
+      </>
+    }
+  />
 );

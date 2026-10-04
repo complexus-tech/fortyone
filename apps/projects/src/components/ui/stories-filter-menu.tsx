@@ -104,6 +104,19 @@ export const StoriesFilterMenu = ({
                     <Menu.SubTrigger
                       active={isActive}
                       className="justify-between gap-4"
+                      onPointerLeave={(event) => {
+                        const submenuId =
+                          event.currentTarget.getAttribute("aria-controls");
+                        const target = event.relatedTarget;
+                        if (
+                          submenuId &&
+                          target instanceof Element &&
+                          target.closest('[role="menu"]')?.id === submenuId
+                        ) {
+                          // A direct portal entry can precede Radix's pointer-direction update.
+                          event.preventDefault();
+                        }
+                      }}
                     >
                       <Box className="grid min-w-0 flex-1 grid-cols-[24px_minmax(0,1fr)] items-center">
                         <span className="text-text-secondary flex h-6 w-6 shrink-0 items-center">

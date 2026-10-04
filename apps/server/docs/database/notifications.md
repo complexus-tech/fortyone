@@ -119,6 +119,28 @@ and acknowledgement; otherwise a successfully sent email could retry forever.
 The task payload never grants access. It contains IDs that are revalidated by
 the repository.
 
+## Weekly routine email
+
+Routine activity, weekly planning guidance, and due reviewer feedback share one
+summary per recipient and workspace. A summary can send at most once in the
+recipient's Monday-to-Sunday calendar week, with at least 168 hours between
+sends. The delivery window opens after 09:00 local time; missed runs can catch
+up later in the week. Hourly queue sweeps discover pending work without changing
+the email cadence.
+
+Weekly delivery keys use the recipient's local Monday date. Existing daily
+delivery records also count toward the weekly and 168-hour limits. Claiming and
+starting a send recheck those limits under the recipient lock, including begun
+attempts whose provider outcome is uncertain.
+
+Unsent activity and feedback remain pending for the next eligible summary.
+Feedback board frequency settings control which feedback is due, while the
+shared weekly limit controls email delivery. The summary includes at most ten
+details across its sections and sends nothing when there is no useful content.
+Current access and subscription state are rechecked before preparing feedback.
+Successful completion records notification snapshots and feedback cursors in
+one transaction, preserving later updates for the next summary.
+
 ## Push delivery boundary
 
 The authenticated device endpoint registers only Expo tokens for the current

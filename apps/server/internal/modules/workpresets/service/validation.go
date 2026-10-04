@@ -7,6 +7,7 @@ import (
 	"io"
 	"math"
 	"time"
+	"unicode/utf8"
 
 	domain "github.com/complexus-tech/projects-api/internal/modules/workpresets/domain"
 	"github.com/google/uuid"
@@ -50,6 +51,27 @@ func strictDecode(raw []byte, target any) error {
 }
 
 func validateView(value domain.ViewConfiguration) error {
+	if scope := value.Scope; scope != nil {
+		if scope.Kind != "my-work" || !oneOf(scope.Tab, "all", "today", "upcoming", "blocked", "assigned", "collaborating", "created") {
+			return domain.ErrInvalidInput
+		}
+		if scope.Category != nil && !oneOf(*scope.Category, "backlog", "unstarted", "started", "paused", "completed", "cancelled") {
+			return domain.ErrInvalidInput
+		}
+		for _, date := range []*string{scope.CreatedAfter, scope.CreatedBefore} {
+			if date != nil {
+				if _, err := time.Parse("2006-01-02", *date); err != nil {
+					return domain.ErrInvalidInput
+				}
+			}
+		}
+	}
+	if value.Description != nil && utf8.RuneCountInString(*value.Description) > 2000 {
+		return domain.ErrInvalidInput
+	}
+	if value.Icon != nil && !oneOf(*value.Icon, "list", "kanban", "calendar", "clock", "star", "analytics", "goal", "tags", "code", "team", "book", "workflow", "roadmap", "docs") {
+		return domain.ErrInvalidInput
+	}
 	options := value.ViewOptions
 	if len(options.SelectedCustomFieldIDs) > 3 || !validIDs(options.SelectedCustomFieldIDs) {
 		return domain.ErrInvalidInput

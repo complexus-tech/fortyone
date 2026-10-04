@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { WorkspaceSecuritySettings } from "@/modules/settings/workspace/security";
 
-export const metadata: Metadata = { title: "Settings › Workspace security" };
+export const metadata: Metadata = { title: "Settings › Security" };
 export default async function Page({
   searchParams,
 }: {

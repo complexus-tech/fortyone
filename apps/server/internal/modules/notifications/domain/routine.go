@@ -1,8 +1,10 @@
 package notifications
 
 import (
-	"github.com/google/uuid"
 	"time"
+
+	feedback "github.com/complexus-tech/projects-api/internal/modules/feedback/domain"
+	"github.com/google/uuid"
 )
 
 // Routine delivery claims serialize activity batches and briefings for a person,
@@ -26,10 +28,12 @@ type RoutineClaim struct {
 	Now         time.Time
 }
 type RoutineCompletion struct {
-	ID              uuid.UUID
-	Scope           DeliveryScope
-	NotificationIDs []uuid.UUID
-	GuidanceDate    *time.Time
-	Sent            bool
-	Now             time.Time
+	ID                    uuid.UUID
+	Scope                 DeliveryScope
+	NotificationIDs       []uuid.UUID
+	NotificationSnapshots []EmailSnapshot
+	FeedbackDigest        *feedback.CoreDigestDeliveryCompletion
+	GuidanceDate          *time.Time
+	Sent                  bool
+	Now                   time.Time
 }

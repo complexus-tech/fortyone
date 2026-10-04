@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/complexus-tech/projects-api/pkg/expopush"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
@@ -38,12 +39,13 @@ func (h *handlers) HandleNotificationPush(ctx context.Context, task *asynq.Task)
 		messages = append(messages, expopush.Message{
 			To: token, Title: delivery.Title, Body: body, Sound: "default", Priority: "high",
 			Data: map[string]any{
-				"notificationId": delivery.NotificationID.String(),
-				"recipientId":    delivery.RecipientID.String(),
-				"workspaceId":    delivery.WorkspaceID.String(),
-				"workspaceSlug":  delivery.WorkspaceSlug,
-				"entityType":     string(delivery.EntityType),
-				"entityId":       delivery.EntityID.String(),
+				"notificationId":    delivery.NotificationID.String(),
+				"observedCreatedAt": delivery.CreatedAt.UTC().Format(time.RFC3339Nano),
+				"recipientId":       delivery.RecipientID.String(),
+				"workspaceId":       delivery.WorkspaceID.String(),
+				"workspaceSlug":     delivery.WorkspaceSlug,
+				"entityType":        string(delivery.EntityType),
+				"entityId":          delivery.EntityID.String(),
 			},
 		})
 	}

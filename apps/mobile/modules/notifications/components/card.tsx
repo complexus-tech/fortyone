@@ -139,7 +139,7 @@ export const NotificationCard = memo(function NotificationCard({
           isUnread &&
           useAuthStore.getState().sessionEpoch === sessionEpoch
         )
-          readNotification(id);
+          readNotification({ id, observedCreatedAt: createdAt });
       })
       .catch((error: unknown) => {
         if (useAuthStore.getState().sessionEpoch === sessionEpoch) {
@@ -163,17 +163,18 @@ export const NotificationCard = memo(function NotificationCard({
     )
       return;
     actionInFlight.current = true;
-    const mutation =
-      action === "read"
-        ? readMutation
-        : action === "unread"
-          ? unreadMutation
-          : deleteMutation;
-    mutation.mutate(id, {
+    const options = {
       onSettled: () => {
         actionInFlight.current = false;
       },
-    });
+    };
+    if (action === "read") {
+      readMutation.mutate({ id, observedCreatedAt: createdAt }, options);
+    } else if (action === "unread") {
+      unreadMutation.mutate(id, options);
+    } else {
+      deleteMutation.mutate(id, options);
+    }
   };
 
   return (
@@ -224,10 +225,10 @@ export const NotificationCard = memo(function NotificationCard({
           size="md"
           style={{ width: 40, height: 40 }}
         />
-        <Col flex={1} className="gap-1">
+        <Col flex={1} className="min-w-0 gap-1">
           <Row justify="between" align="start" gap={2}>
             <Text
-              className="flex-1"
+              className="min-w-0 flex-1"
               fontWeight="semibold"
               color={isUnread ? undefined : "muted"}
               numberOfLines={1}
@@ -238,6 +239,7 @@ export const NotificationCard = memo(function NotificationCard({
             {isUnread ? <Dot color={colors.primary} size={7} /> : null}
           </Row>
           <Text
+            className="min-w-0"
             fontSize="sm"
             color="muted"
             numberOfLines={1}

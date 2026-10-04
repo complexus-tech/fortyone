@@ -254,6 +254,24 @@ func autoSchedulingOutcome(result PlanResult, segments []ScheduleSegmentInput) (
 	return AutoSchedulingStatusCannotFit, "Maya could not place this work safely in the current planning window."
 }
 
+func schedulingIssueCode(status string, result PlanResult) string {
+	switch status {
+	case AutoSchedulingStatusNeedsTime:
+		return "missing_duration"
+	case AutoSchedulingStatusCannotFit:
+		return "no_available_slot"
+	case AutoSchedulingStatusAtRisk:
+		for _, action := range result.Actions {
+			if action.Payload.Risk != nil && action.Payload.Risk.Code != "" {
+				return action.Payload.Risk.Code
+			}
+		}
+		return "schedule_at_risk"
+	default:
+		return ""
+	}
+}
+
 func refineScheduleOutcomeReason(previousBlocks []ScheduleBlock, segments []ScheduleSegmentInput, status, fallback string) string {
 	if status != AutoSchedulingStatusScheduled || len(previousBlocks) == 0 {
 		return fallback

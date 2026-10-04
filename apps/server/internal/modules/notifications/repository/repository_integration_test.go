@@ -148,6 +148,7 @@ func testNotificationInboxScopePaginationAndConcurrency(
 	for index := range 5 {
 		input := fixture.storyNotification(fixture.recipientA, notificationDedupeKey("pagination"))
 		input.Title = "Stable notification " + strconv.Itoa(index)
+		input.Type = notificationsdomain.NotificationTypeStoryComment
 		if _, inserted, err := fixture.repo.Create(ctx, input); err != nil || !inserted {
 			t.Fatalf("create pagination notification %d = %t, %v", index, inserted, err)
 		}
@@ -165,8 +166,8 @@ func testNotificationInboxScopePaginationAndConcurrency(
 		WHERE recipient_id = $1 AND workspace_id = $2 AND entity_type = 'story'
 		ORDER BY created_at DESC NULLS LAST, notification_id DESC
 	`, fixture.recipientA, fixture.workspaceA)
-	if len(expected) < 7 {
-		t.Fatalf("pagination fixture rows = %d, want at least 7", len(expected))
+	if len(expected) < 6 {
+		t.Fatalf("pagination fixture rows = %d, want at least 6", len(expected))
 	}
 	first, err := fixture.repo.List(ctx, notificationsdomain.ListQuery{
 		Access: fixture.accessA(fixture.recipientA), Limit: 3, Offset: 0,
@@ -404,8 +405,8 @@ func testNotificationDeliveryScopeAndAudience(
 	insertNotificationTeamMember(t, ctx, fixture.postgres.Pool, fixture.teamA, fixture.guestA)
 
 	if err := fixture.repo.MarkEmailSent(ctx, notificationsdomain.MarkEmailSent{
-		Scope:           notificationsdomain.DeliveryScope{RecipientID: fixture.recipientA, WorkspaceID: fixture.workspaceA},
-		NotificationIDs: []uuid.UUID{created.ID}, At: time.Now().UTC(),
+		Scope:                 notificationsdomain.DeliveryScope{RecipientID: fixture.recipientA, WorkspaceID: fixture.workspaceA},
+		NotificationSnapshots: []notificationsdomain.EmailSnapshot{notificationSnapshot(t, ctx, fixture, created.ID)}, At: time.Now().UTC(),
 	}); err != nil {
 		t.Fatalf("mark email sent: %v", err)
 	}

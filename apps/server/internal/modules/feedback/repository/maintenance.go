@@ -105,25 +105,36 @@ func (r *Repo) ListDigestItems(ctx context.Context, query feedback.CoreDigestIte
 
 func (r *Repo) CompleteDigestDelivery(ctx context.Context, completion feedback.CoreDigestDeliveryCompletion) error {
 	return r.withinTransaction(ctx, pgx.TxOptions{}, func(q feedbacksql.Querier) error {
-		advanced, err := q.AdvanceFeedbackDigestSubscriptionCursors(ctx, feedbacksql.AdvanceFeedbackDigestSubscriptionCursorsParams{
-			DeliveryAt: &completion.DeliveredAt, WindowEnd: &completion.WindowEnd, RecipientID: completion.RecipientID,
-			WorkspaceID: completion.WorkspaceID, BoardIds: completion.BoardIDs,
-		})
-		if err != nil {
-			return err
-		}
-		if len(completion.BoardIDs) > 0 && advanced == 0 {
-			return feedback.ErrNotFound
-		}
-		completed, err := q.CompleteFeedbackDigestDelivery(ctx, feedbacksql.CompleteFeedbackDigestDeliveryParams{
-			Status: string(completion.Status), ItemCount: completion.ItemCount, SentAt: &completion.DeliveredAt,
-			DeliveryID: completion.DeliveryID, WorkspaceID: completion.WorkspaceID, RecipientID: completion.RecipientID,
-		})
-		if err != nil {
-			return err
-		}
-		return requireRowsAffected(completed)
+		return completeDigestDelivery(ctx, q, completion)
 	})
+}
+
+// CompleteDigestDeliveryTx lets the routine-email adapter commit feedback
+// cursors and notification receipts in the same transaction. Generated query
+// types stay private to this persistence adapter.
+func (r *Repo) CompleteDigestDeliveryTx(ctx context.Context, tx pgx.Tx, completion feedback.CoreDigestDeliveryCompletion) error {
+	return completeDigestDelivery(ctx, feedbacksql.New(tx), completion)
+}
+
+func completeDigestDelivery(ctx context.Context, q feedbacksql.Querier, completion feedback.CoreDigestDeliveryCompletion) error {
+	advanced, err := q.AdvanceFeedbackDigestSubscriptionCursors(ctx, feedbacksql.AdvanceFeedbackDigestSubscriptionCursorsParams{
+		DeliveryAt: &completion.DeliveredAt, WindowEnd: &completion.WindowEnd, RecipientID: completion.RecipientID,
+		WorkspaceID: completion.WorkspaceID, BoardIds: completion.BoardIDs,
+	})
+	if err != nil {
+		return err
+	}
+	if len(completion.BoardIDs) > 0 && advanced == 0 {
+		return feedback.ErrNotFound
+	}
+	completed, err := q.CompleteFeedbackDigestDelivery(ctx, feedbacksql.CompleteFeedbackDigestDeliveryParams{
+		Status: string(completion.Status), ItemCount: completion.ItemCount, SentAt: &completion.DeliveredAt,
+		DeliveryID: completion.DeliveryID, WorkspaceID: completion.WorkspaceID, RecipientID: completion.RecipientID,
+	})
+	if err != nil {
+		return err
+	}
+	return requireRowsAffected(completed)
 }
 
 func (r *Repo) FailDigestDelivery(ctx context.Context, deliveryID uuid.UUID, failure string) error {

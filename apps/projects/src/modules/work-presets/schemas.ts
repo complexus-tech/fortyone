@@ -1,10 +1,18 @@
 import { z } from "zod";
 import { customFieldValueSchema } from "@/modules/custom-fields/public/schemas";
+import { MY_WORK_CATEGORIES, MY_WORK_TABS } from "@/shared/story/my-work-scope";
+import { VIEW_ICON_KEYS } from "@/shared/views/metadata";
 
 const ids = z.array(z.uuid()).max(100).nullable();
 const optionalDate = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/)
+  .refine((value) => {
+    const date = new Date(`${value}T00:00:00Z`);
+    return (
+      !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value
+    );
+  })
   .nullable()
   .optional();
 const priority = z.enum(["No Priority", "Urgent", "High", "Medium", "Low"]);
@@ -35,8 +43,23 @@ const operators = z.enum([
   "isEmpty",
   "isNotEmpty",
 ]);
-const viewConfiguration = z.strictObject({
+export const viewConfiguration = z.strictObject({
   version: z.literal(1),
+  scope: z
+    .strictObject({
+      kind: z.literal("my-work"),
+      tab: z.enum(MY_WORK_TABS),
+      category: z.enum(MY_WORK_CATEGORIES).nullable().optional(),
+      overdue: z.boolean().optional(),
+      createdAfter: optionalDate,
+      createdBefore: optionalDate,
+    })
+    .optional(),
+  description: z
+    .string()
+    .refine((value) => Array.from(value).length <= 2000)
+    .optional(),
+  icon: z.enum(VIEW_ICON_KEYS).nullable().optional(),
   layout: z.enum(["list", "kanban"]),
   filters: z.strictObject({
     statusIds: ids,

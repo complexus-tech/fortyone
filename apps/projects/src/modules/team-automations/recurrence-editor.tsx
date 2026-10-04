@@ -1,34 +1,46 @@
 "use client";
 
-import { useState } from "react";
-import { Button, Dialog, Input, Text, TextArea } from "ui";
+import { useMemo, useState } from "react";
+import { ArrowRight2Icon, CalendarIcon } from "icons";
+import { Badge, Button, Dialog, Flex, Text, TextEditor } from "ui";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { useNewStoryDialogEditors } from "@/components/ui/use-new-story-dialog-editors";
+import { StoryComposerHeader } from "@/components/ui/story-composer-header";
+import { getPersistableRichTextContent } from "@/lib/tiptap/rich-text-media";
+import { RichTextTableMenu } from "@/lib/tiptap/rich-text-table-menu";
 import {
   CreateCustomFields,
   useCreateCustomFields,
 } from "@/modules/custom-fields/public/creation";
-import { PresetPicker } from "@/modules/work-presets/public/template-picker";
+import { CreationTemplatePicker } from "@/modules/work-presets/public/template-picker";
 import type { TaskTemplateConfiguration } from "@/modules/work-presets/public/types";
-import { AutomationSelect } from "./select-field";
+import { templateDescriptionHTML } from "@/shared/story/task-template";
 import { draftFromTemplate } from "./configuration";
+import { RecurrenceProperties } from "./recurrence-properties";
+import {
+  RecurrenceSchedule,
+  validateRecurrenceSchedule,
+} from "./recurrence-schedule";
 import type {
   AutomationDraft,
   AutomationInput,
   RecurrenceConfiguration,
 } from "./types";
 
-const WEEKDAYS = [
-  "Sunday",
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-].map((label, value) => ({ value: String(value), label }));
-const descriptionHTML = (value: string) =>
-  `<p>${value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll("\n", "</p><p>")}</p>`;
+const validateDraft = (draft: AutomationDraft) => {
+  if (draft.title.trim().length > 255) {
+    return "Keep the task title to 255 characters or fewer.";
+  }
+  if (
+    draft.description.length > 20000 ||
+    draft.descriptionHTML.length > 40000
+  ) {
+    return "Shorten the task description before saving.";
+  }
+  return null;
+};
+
 export const RecurrenceEditor = ({
   teamId,
   onClose,
@@ -58,19 +70,85 @@ export const RecurrenceEditor = ({
     }),
   );
   const fields = useCreateCustomFields(teamId);
+  const { titleEditor, descriptionEditor } = useNewStoryDialogEditors({
+    editable: !pending,
+    onStoryTitleChange: (title) => {
+      setDraft((current) => ({ ...current, title }));
+    },
+    onDescriptionChange: (description) => {
+      setDraft((current) => ({ ...current, ...description }));
+    },
+    storyTerm: "Task",
+  });
+  const scheduleValidation = useMemo(
+    () => validateRecurrenceSchedule(schedule),
+    [schedule],
+  );
+  const { canonicalTimezone } = scheduleValidation;
+  const validationError = validateDraft(draft) ?? scheduleValidation.error;
+  const canSave = Boolean(
+    !pending &&
+      titleEditor &&
+      descriptionEditor &&
+      draft.title.trim() &&
+      schedule.timezone.trim() &&
+      schedule.startsOn &&
+      schedule.localTime &&
+      !fields.isPending &&
+      !fields.isError &&
+      !validationError,
+  );
+
+  const applyTemplate = (template: TaskTemplateConfiguration) => {
+    if (pending || !titleEditor || !descriptionEditor) return;
+    const descriptionHTML = templateDescriptionHTML(template);
+    setDraft({
+      ...draftFromTemplate(template),
+      descriptionHTML,
+      // The composer contains the template checklist, so creation must not append it again.
+      checklist: [],
+    });
+    titleEditor.commands.setContent({
+      type: "doc",
+      content: [
+        {
+          type: "paragraph",
+          content: template.title
+            ? [{ type: "text", text: template.title }]
+            : [],
+        },
+      ],
+    });
+    descriptionEditor.commands.setContent(descriptionHTML);
+    fields.setValues(
+      Object.fromEntries(
+        (template.customFieldValues ?? []).map((field) => [
+          field.fieldId,
+          field.value,
+        ]),
+      ),
+    );
+  };
+
   const save = async () => {
+    if (!canSave || !titleEditor || !descriptionEditor || !canonicalTimezone)
+      return;
     setPending(true);
+    const title = titleEditor.getText().trim();
+    const description = getPersistableRichTextContent(descriptionEditor);
     try {
       await onSave({
         teamId,
         kind: "recurrence",
-        name: name.trim() || draft.title.slice(0, 100),
+        name: name.trim() || title.slice(0, 100),
         configuration: {
           version: 1,
-          schedule,
+          schedule: { ...schedule, timezone: canonicalTimezone },
           draft: {
             ...draft,
-            title: draft.title.trim(),
+            title,
+            description: description.contentText,
+            descriptionHTML: description.contentHtml,
             customFieldValues: fields.prepareValues(),
           },
         },
@@ -85,6 +163,7 @@ export const RecurrenceEditor = ({
     }
     setPending(false);
   };
+
   return (
     <Dialog
       onOpenChange={(open) => {
@@ -94,208 +173,95 @@ export const RecurrenceEditor = ({
     >
       <Dialog.Content
         aria-busy={pending}
-        className="mt-0 flex max-h-[calc(100dvh-2rem)] max-w-4xl flex-col md:mt-0"
-        hideClose={pending}
+        aria-label="Create recurring task"
+        aria-labelledby={undefined}
+        className="mt-4 flex max-h-[calc(100dvh-2rem)] flex-col overflow-visible md:mt-[10%] md:max-h-[calc(90dvh-1rem)]"
+        hideClose
         onEscapeKeyDown={(event) => {
           if (pending) event.preventDefault();
         }}
         onInteractOutside={(event) => {
           if (pending) event.preventDefault();
         }}
-        overlayClassName="items-center py-4"
         size="lg"
       >
-        <Dialog.Header className="shrink-0 px-6 py-5">
-          <Dialog.Title className="text-lg">Create recurring task</Dialog.Title>
-          <Dialog.Description className="mt-2 px-0 text-base leading-6">
-            Create new tasks on a schedule.
-          </Dialog.Description>
-        </Dialog.Header>
-        <Dialog.Body className="grid max-h-none min-h-0 flex-1 gap-6 md:grid-cols-2">
-          <section
-            aria-labelledby="recurrence-task-details"
-            className="min-w-0 space-y-4"
-          >
-            <div className="flex min-h-10 flex-wrap items-center justify-between gap-3">
-              <Text as="h3" fontWeight="medium" id="recurrence-task-details">
-                Task details
-              </Text>
-              <PresetPicker
-                disabled={pending}
-                hideWhenEmpty
-                kind="template"
-                label="Use task template"
-                onSelect={(preset) => {
-                  if (preset.kind !== "template") return;
-                  const template =
-                    preset.configuration as TaskTemplateConfiguration;
-                  setDraft(draftFromTemplate(template));
-                  fields.setValues(
-                    Object.fromEntries(
-                      (template.customFieldValues ?? []).map((field) => [
-                        field.fieldId,
-                        field.value,
-                      ]),
-                    ),
-                  );
-                }}
-                teamId={teamId}
-              />
-            </div>
-            <Input
-              autoFocus
-              className="h-10 px-3 text-base leading-6"
-              id="automation-task-title"
-              label="Task title"
-              labelClassName="mb-2"
-              maxLength={255}
-              onChange={(event) => {
-                setDraft({ ...draft, title: event.target.value });
-              }}
-              placeholder="For example, weekly release review"
-              value={draft.title}
-            />
-            <div className="space-y-2">
-              <label className="block" htmlFor="automation-description">
-                Description
-              </label>
-              <TextArea
-                className="rounded-lg px-3 py-2 text-base leading-6"
-                id="automation-description"
-                maxLength={20000}
-                onChange={(event) => {
-                  setDraft({
-                    ...draft,
-                    description: event.target.value,
-                    descriptionHTML: descriptionHTML(event.target.value),
-                  });
-                }}
-                rows={3}
-                value={draft.description}
-              />
-            </div>
-            <CreateCustomFields
-              disabled={pending}
-              onChange={fields.setValues}
+        <StoryComposerHeader
+          actions={
+            <Flex className="shrink-0" gap={2}>
+              {pending ? null : <Dialog.Close />}
+            </Flex>
+          }
+          templatePicker={
+            <CreationTemplatePicker
+              disabled={pending || !titleEditor || !descriptionEditor}
+              onSelect={applyTemplate}
               teamId={teamId}
-              values={fields.values}
             />
-          </section>
-          <section
-            aria-labelledby="recurrence-schedule"
-            className="min-w-0 space-y-4"
-          >
-            <div className="flex min-h-10 items-center">
-              <Text as="h3" fontWeight="medium" id="recurrence-schedule">
-                Schedule
+          }
+          title={
+            <>
+              <Badge className="dark:bg-surface-elevated/90" color="tertiary">
+                <CalendarIcon className="h-4 w-auto" />
+              </Badge>
+              <ArrowRight2Icon
+                className="h-4.5 w-auto opacity-30"
+                strokeWidth={3}
+              />
+              <Text className="opacity-80" color="muted">
+                New recurring task
               </Text>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <AutomationSelect
-                label="Repeat"
-                onChange={(value) => {
-                  setSchedule({
-                    ...schedule,
-                    frequency:
-                      value as RecurrenceConfiguration["schedule"]["frequency"],
-                  });
-                }}
-                options={[
-                  { value: "daily", label: "Daily" },
-                  { value: "weekly", label: "Weekly" },
-                  { value: "monthly", label: "Monthly" },
-                ]}
-                value={schedule.frequency}
-              />
-              <Input
-                className="h-10 px-3 text-base leading-6"
-                id="automation-local-time"
-                label="Time"
-                labelClassName="mb-2"
-                onChange={(event) => {
-                  setSchedule({ ...schedule, localTime: event.target.value });
-                }}
-                type="time"
-                value={schedule.localTime}
-              />
-              {schedule.frequency === "weekly" ? (
-                <AutomationSelect
-                  label="Day of week"
-                  onChange={(value) => {
-                    setSchedule({ ...schedule, weekday: Number(value) });
-                  }}
-                  options={WEEKDAYS}
-                  value={String(schedule.weekday)}
-                />
-              ) : null}
-              {schedule.frequency === "monthly" ? (
-                <Input
-                  className="h-10 px-3 text-base leading-6"
-                  id="automation-month-day"
-                  label="Day of month"
-                  labelClassName="mb-2"
-                  max={31}
-                  min={1}
-                  onChange={(event) => {
-                    setSchedule({
-                      ...schedule,
-                      monthDay: Number(event.target.value),
-                    });
-                  }}
-                  type="number"
-                  value={schedule.monthDay}
-                />
-              ) : null}
-              <div
-                className={
-                  schedule.frequency === "daily" ? "sm:col-span-2" : undefined
-                }
-              >
-                <Input
-                  className="h-10 px-3 text-base leading-6"
-                  id="automation-start-date"
-                  label="Start date"
-                  labelClassName="mb-2"
-                  onChange={(event) => {
-                    setSchedule({ ...schedule, startsOn: event.target.value });
-                  }}
-                  type="date"
-                  value={schedule.startsOn}
-                />
-              </div>
-            </div>
-            <Input
-              className="h-10 px-3 text-base leading-6"
-              id="automation-timezone"
-              label="Timezone"
-              labelClassName="mb-2"
-              maxLength={100}
-              onChange={(event) => {
-                setSchedule({ ...schedule, timezone: event.target.value });
-              }}
-              placeholder="Africa/Harare"
-              value={schedule.timezone}
+            </>
+          }
+        />
+        <Dialog.Description className="sr-only">
+          Compose the task and choose when to create each occurrence.
+        </Dialog.Description>
+        <Dialog.Body className="max-h-[75dvh] min-h-0 flex-1 space-y-5 overflow-y-auto pt-0 pb-6 md:max-h-[60dvh]">
+          <section aria-label="Task details" className="min-w-0">
+            <TextEditor
+              asTitle
+              className="text-2xl font-medium"
+              editor={titleEditor}
             />
-            <Input
-              className="h-10 px-3 text-base leading-6"
-              id="automation-schedule-name"
-              label="Schedule name (optional)"
-              labelClassName="mb-2"
-              maxLength={100}
-              onChange={(event) => {
-                setName(event.target.value);
-              }}
-              placeholder={draft.title || "Name this recurring task"}
-              value={name}
+            <TextEditor
+              className="rich-document-editor min-h-20"
+              editor={descriptionEditor}
+              hideBubbleMenu={pending}
             />
+            <RichTextTableMenu editor={descriptionEditor} scrollTarget={null} />
+            <RecurrenceProperties
+              disabled={pending}
+              draft={draft}
+              onChange={(partial) => {
+                setDraft((current) => ({ ...current, ...partial }));
+              }}
+              teamId={teamId}
+            >
+              <CreateCustomFields
+                disabled={pending}
+                onChange={fields.setValues}
+                teamId={teamId}
+                values={fields.values}
+              />
+            </RecurrenceProperties>
           </section>
-          <Text className="md:col-span-2" color="muted">
-            Each occurrence creates a new task. Short months use their final
-            day. Resuming skips missed dates; daylight saving changes keep the
-            selected local time.
-          </Text>
+          <RecurrenceSchedule
+            disabled={pending}
+            name={name}
+            onChange={(partial) => {
+              setSchedule((current) => ({ ...current, ...partial }));
+            }}
+            onNameChange={setName}
+            schedule={schedule}
+            validation={scheduleValidation}
+          />
+          {validationError ? (
+            <Text color="danger" role="alert">
+              {validationError}
+            </Text>
+          ) : null}
         </Dialog.Body>
-        <Dialog.Footer className="shrink-0 flex-wrap justify-end gap-3 py-4">
+        <Dialog.Footer className="flex shrink-0 items-center justify-between gap-2">
           <Button
             color="tertiary"
             disabled={pending}
@@ -305,15 +271,8 @@ export const RecurrenceEditor = ({
             Cancel
           </Button>
           <Button
-            disabled={
-              pending ||
-              !draft.title.trim() ||
-              !schedule.timezone.trim() ||
-              !schedule.startsOn ||
-              !schedule.localTime ||
-              fields.isPending ||
-              fields.isError
-            }
+            disabled={!canSave}
+            leftIcon={<CalendarIcon className="h-4 w-auto" />}
             loading={pending}
             loadingText="Creating..."
             onClick={() => {

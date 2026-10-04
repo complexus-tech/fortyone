@@ -276,6 +276,14 @@ DELETE FROM public.slack_user_links WHERE user_id = sqlc.arg(user_id);
 -- name: DeleteAccountNotifications :exec
 DELETE FROM public.notifications WHERE recipient_id = sqlc.arg(user_id);
 
+-- Original event snapshots are immutable. Remove personally identified
+-- receipts before inbox snapshots are reattributed, including deferred erasure.
+-- name: DeleteAccountNotificationEventReceipts :exec
+DELETE FROM public.notification_event_receipts AS receipt
+WHERE receipt.recipient_id = sqlc.arg(user_id)
+   OR receipt.actor_id = sqlc.arg(user_id)
+   OR receipt.payload #> '{5,identityReferences,assignee}' = to_jsonb(CAST(sqlc.arg(user_id) AS uuid));
+
 -- Other recipients retain their inbox history. Replace the actor snapshot at
 -- its typed location; do not rewrite task titles or shared comment prose.
 -- name: ReattributeAccountNotifications :exec

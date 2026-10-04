@@ -1,6 +1,5 @@
 "use client";
 import { Box, Button, Tabs, Text } from "ui";
-import { formatISO } from "date-fns";
 import {
   parseAsBoolean,
   parseAsIsoDate,
@@ -12,12 +11,45 @@ import { StoriesBoard } from "@/components/ui";
 import { BoardSkeleton } from "@/components/ui/board-skeleton";
 import { StoriesFilterBar } from "@/components/ui/stories-filter-bar";
 import { StoriesEmptyIllustration } from "@/components/ui/illustrations/stories-empty-illustration";
-import { getGroupedStoryFilterParams } from "@/components/ui/stories-filter-query";
-import type { StateCategory } from "@/types/states";
 import { useMyStoriesGrouped } from "@/modules/stories/hooks/use-my-stories-grouped";
 import { walkthroughTargets } from "@/shared/walkthrough/targets";
+import {
+  getMyWorkDateValue,
+  getMyWorkScopeFilterParams,
+  MY_WORK_CATEGORIES,
+} from "@/shared/story/my-work-scope";
+import { getScopedStoriesFilterTeamId } from "@/components/ui/stories-filter-query";
+import { getStoriesFilterOperator } from "@/components/ui/stories-filter-types";
+import type { MyWorkViewScope } from "@/shared/story/my-work-scope";
+import type { MyWorkTab } from "./tabs";
 import { useMyWork } from "./provider";
-import { getMyWorkTabFilterParams, type MyWorkTab } from "./tabs";
+
+const useMyWorkViewScope = (tab: MyWorkTab) => {
+  const [category, setCategory] = useQueryState(
+    "category",
+    parseAsStringLiteral(MY_WORK_CATEGORIES),
+  );
+  const [overdue, setOverdue] = useQueryState("overdue", parseAsBoolean);
+  const [startDate, setStartDate] = useQueryState("startDate", parseAsIsoDate);
+  const [endDate, setEndDate] = useQueryState("endDate", parseAsIsoDate);
+  const scope: MyWorkViewScope = {
+    kind: "my-work",
+    tab,
+    category,
+    overdue: overdue ?? false,
+    createdAfter: startDate ? getMyWorkDateValue(startDate) : null,
+    createdBefore: endDate ? getMyWorkDateValue(endDate) : null,
+  };
+  return {
+    scope,
+    clearScopeFilters: () => {
+      void setCategory(null);
+      void setOverdue(null);
+      void setStartDate(null);
+      void setEndDate(null);
+    },
+  };
+};
 
 const StoriesPanelContent = ({
   layout,
@@ -26,59 +58,12 @@ const StoriesPanelContent = ({
   layout: StoriesLayout;
   tab: MyWorkTab;
 }) => {
-  const validCategories = [
-    "backlog",
-    "unstarted",
-    "started",
-    "paused",
-    "completed",
-    "cancelled",
-  ] as const satisfies readonly StateCategory[];
-  const [category] = useQueryState(
-    "category",
-    parseAsStringLiteral(validCategories),
-  );
-  const [overdue] = useQueryState("overdue", parseAsBoolean);
-  const [startDate] = useQueryState("startDate", parseAsIsoDate);
-  const [endDate] = useQueryState("endDate", parseAsIsoDate);
+  const { scope } = useMyWorkViewScope(tab);
   const { viewOptions, setViewOptions, filters } = useMyWork();
-  const tabFilters = getMyWorkTabFilterParams(tab, filters);
-  const groupedFilters = getGroupedStoryFilterParams(filters);
-  const hasEndDateFilter = Boolean(filters.endDate);
-
-  let categories: StateCategory[] | undefined;
-  if (overdue) {
-    categories = ["started"];
-  } else if (category) {
-    categories = [category];
-  }
-  const overdueDeadline = overdue
-    ? formatISO(new Date(), { representation: "date" })
-    : undefined;
-  const createdAfter = startDate
-    ? formatISO(startDate, { representation: "date" })
-    : undefined;
-  const createdBefore = endDate
-    ? formatISO(endDate, { representation: "date" })
-    : undefined;
-
   const { data: groupedStories, isPending } = useMyStoriesGrouped(
     viewOptions.groupBy,
     {
-      ...groupedFilters,
-      ...tabFilters,
-      categories: categories ?? tabFilters.categories,
-      createdAfter: createdAfter ?? tabFilters.createdAfter,
-      createdBefore: createdBefore ?? tabFilters.createdBefore,
-      deadlineAfter: hasEndDateFilter
-        ? groupedFilters.deadlineAfter
-        : tabFilters.deadlineAfter,
-      deadlineBefore: hasEndDateFilter
-        ? groupedFilters.deadlineBefore
-        : overdueDeadline ?? tabFilters.deadlineBefore,
-      deadlineNot: hasEndDateFilter
-        ? groupedFilters.deadlineNot
-        : tabFilters.deadlineNot,
+      ...getMyWorkScopeFilterParams(filters, scope),
       orderBy: viewOptions.orderBy,
       orderDirection: viewOptions.orderDirection,
       showSubStories: viewOptions.showSubStories ? true : undefined,
@@ -106,8 +91,10 @@ export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
     tab,
     attentionStatus,
     retryAttention,
+    viewOptions,
   } = useMyWork();
 
+  const { scope, clearScopeFilters } = useMyWorkViewScope(tab);
   if (attentionStatus === "error") {
     return (
       <Box className="p-8 text-center">
@@ -132,7 +119,18 @@ export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
       <Tabs className="flex h-full min-h-0 flex-col" value={tab}>
         <StoriesFilterBar
           filters={filters}
-          resetFilters={resetFilters}
+          resetFilters={() => {
+            resetFilters();
+            clearScopeFilters();
+          }}
+          saveView={{
+            teamId: getScopedStoriesFilterTeamId(
+              undefined,
+              filters.teamIds,
+              getStoriesFilterOperator(filters, "teamIds"),
+            ),
+            configuration: { version: 1, layout, filters, viewOptions, scope },
+          }}
           setFilters={setFilters}
         />
         <Tabs.Panel className="min-h-0 flex-1" value="all">

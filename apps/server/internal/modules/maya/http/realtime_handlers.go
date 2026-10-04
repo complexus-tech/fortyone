@@ -262,15 +262,17 @@ func (h *Handlers) statusCode(err error) int {
 		return http.StatusPaymentRequired
 	case errors.Is(err, stories.ErrAutoSchedulingAccessCheckFailed):
 		return http.StatusServiceUnavailable
-	case errors.Is(err, maya.ErrPlanNotFound):
+	case errors.Is(err, maya.ErrPlanNotFound), errors.Is(err, maya.ErrSkillNotFound):
 		return http.StatusNotFound
 	case errors.Is(err, stories.ErrAutoSchedulingOwnerLocked),
 		errors.Is(err, stories.ErrAutoSchedulingLockEmpty),
 		errors.Is(err, stories.ErrStoryChanged),
+		errors.Is(err, maya.ErrSkillNameTaken),
+		errors.Is(err, maya.ErrSkillChanged),
 		errors.Is(err, calendar.ErrCalendarScheduleStalePlan),
 		errors.Is(err, calendar.ErrCalendarScheduleConflict):
 		return http.StatusConflict
-	case errors.Is(err, maya.ErrInvalidPlanInput):
+	case errors.Is(err, maya.ErrInvalidPlanInput), errors.Is(err, maya.ErrInvalidSkill):
 		return http.StatusBadRequest
 	case errors.Is(err, stories.ErrMayaAssignmentRequiresScheduling),
 		errors.Is(err, stories.ErrMayaAssignmentRequiresDuration),

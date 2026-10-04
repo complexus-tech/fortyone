@@ -158,6 +158,7 @@ func (r *Rules) ProcessCommentCreated(ctx context.Context, payload events.Commen
 		}
 	}
 
+	content := commentPreview(payload.Content)
 	excluded := uuidSet(payload.Mentions)
 	for _, recipientID := range storyAudience(payload.AudienceIDs, payload.AudienceResolved, payload.AssigneeID) {
 		if !shouldNotify(recipientID, actorID) {
@@ -170,7 +171,7 @@ func (r *Rules) ProcessCommentCreated(ctx context.Context, payload events.Commen
 			Template: "{actor} left a comment: {content}",
 			Variables: map[string]Variable{
 				"actor":   {Value: actorUsername, Type: "actor"},
-				"content": {Value: payload.Content, Type: "text"},
+				"content": {Value: content, Type: "plain_text"},
 			},
 		}
 
@@ -204,6 +205,7 @@ func (r *Rules) ProcessCommentReplied(ctx context.Context, payload events.Commen
 
 	audienceIDs := storyAudience(payload.AudienceIDs, payload.AudienceResolved, nil)
 	recipients := append([]uuid.UUID{payload.ParentAuthorID}, audienceIDs...)
+	content := commentPreview(payload.Content)
 	excluded := uuidSet(payload.Mentions)
 	seen := make(map[uuid.UUID]struct{}, len(recipients))
 	for _, recipientID := range recipients {
@@ -221,7 +223,7 @@ func (r *Rules) ProcessCommentReplied(ctx context.Context, payload events.Commen
 			Template: "{actor} replied: {content}",
 			Variables: map[string]Variable{
 				"actor":   {Value: actorUsername, Type: "actor"},
-				"content": {Value: payload.Content, Type: "text"},
+				"content": {Value: content, Type: "plain_text"},
 			},
 		}
 
@@ -389,7 +391,7 @@ func (r *Rules) ProcessUserMentioned(ctx context.Context, payload events.UserMen
 			Template: "{actor} mentioned you: {content}",
 			Variables: map[string]Variable{
 				"actor":   {Value: actorUsername, Type: "actor"},
-				"content": {Value: payload.Content, Type: "text"},
+				"content": {Value: commentPreview(payload.Content), Type: "plain_text"},
 			},
 		}
 

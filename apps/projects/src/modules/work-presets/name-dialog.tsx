@@ -11,6 +11,7 @@ export const PresetNameDialog = ({
   onOpenChange,
   onSave,
   shared = false,
+  onReturnFocus,
 }: {
   title: string;
   initialName?: string;
@@ -18,6 +19,7 @@ export const PresetNameDialog = ({
   onOpenChange: (open: boolean) => void;
   onSave: (name: string, visibility: "personal" | "team") => Promise<unknown>;
   shared?: boolean;
+  onReturnFocus?: () => void;
 }) => {
   const visibilityId = useId();
   const [name, setName] = useState(initialName);
@@ -35,9 +37,8 @@ export const PresetNameDialog = ({
         description:
           error instanceof Error ? error.message : "Please try again.",
       });
-    } finally {
-      setPending(false);
     }
+    setPending(false);
   };
   return (
     <Dialog
@@ -50,6 +51,11 @@ export const PresetNameDialog = ({
         aria-busy={pending}
         className="flex max-h-[calc(100dvh-15vw-1rem)] flex-col md:max-h-[calc(100dvh-10vw-1rem)]"
         hideClose={pending}
+        onCloseAutoFocus={(event) => {
+          if (!onReturnFocus) return;
+          event.preventDefault();
+          onReturnFocus();
+        }}
         onEscapeKeyDown={(event) => {
           if (pending) event.preventDefault();
         }}
@@ -89,7 +95,7 @@ export const PresetNameDialog = ({
                 value={visibility}
               >
                 <Select.Trigger
-                  className="h-11 w-full px-4 text-base"
+                  className="h-[2.1rem] w-full px-3 text-base"
                   id={visibilityId}
                 >
                   <Select.Input />

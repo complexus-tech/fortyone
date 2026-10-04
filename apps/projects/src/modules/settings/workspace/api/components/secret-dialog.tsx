@@ -34,7 +34,7 @@ export const SecretDialog = ({
     >
       <Dialog.Content className="max-w-2xl" size="md">
         <Dialog.Header className="px-6 pt-6 pb-2">
-          <Dialog.Title className="text-xl">{title}</Dialog.Title>
+          <Dialog.Title className="text-lg">{title}</Dialog.Title>
         </Dialog.Header>
         <Dialog.Body className="space-y-4 px-6 pt-2 pb-4">
           <Box className="border-warning/30 bg-warning/5 rounded-xl border p-4">

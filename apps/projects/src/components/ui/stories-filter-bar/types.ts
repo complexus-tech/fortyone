@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { SaveViewProps } from "@/shared/views/save-slot";
 import type {
   StoriesFilter,
   StoriesFilterOperator,
@@ -55,6 +56,7 @@ export type StoriesFilterBarProps = {
   resetFilters: () => void;
   setFilters: SetStoriesFilters;
   showWhenEmpty?: boolean;
+  saveView?: SaveViewProps;
 };
 
 export type UserChipSummary = {

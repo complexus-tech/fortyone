@@ -114,3 +114,30 @@ test("deleting a duplicate notification removes every copy but decrements unread
     7,
   );
 });
+
+test("a stale displayed version cannot mark a refreshed row read or decrement its badge", () => {
+  const result = updateNotificationsCache(
+    data,
+    1,
+    {
+      type: "read",
+      id: "one",
+      observedCreatedAt: "2026-09-11",
+    },
+    "now",
+  );
+  assert.equal(result.data?.pages[0].notifications[0].readAt, null);
+  assert.equal(result.unreadCount, 1);
+  const matched = updateNotificationsCache(
+    data,
+    1,
+    {
+      type: "read",
+      id: "one",
+      observedCreatedAt: "2026-09-12",
+    },
+    "now",
+  );
+  assert.equal(matched.data?.pages[0].notifications[0].readAt, "now");
+  assert.equal(matched.unreadCount, 0);
+});

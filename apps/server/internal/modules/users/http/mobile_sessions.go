@@ -174,6 +174,8 @@ func (h *Handlers) ExchangeMobile(ctx context.Context, w http.ResponseWriter, r 
 	expiresAt := time.Now().Add(SessionDuration)
 	record.Session.SessionID = uuid.New()
 	record.Session.ExpiresAt = expiresAt.UTC()
+	// The independent native session was not opened in the authorizing browser.
+	record.Session.BrowserName = nil
 	// Preserve the authorization's epoch. A concurrent revocation must not be
 	// bypassed by minting a session at a newer epoch after this check.
 	if err := h.cache.Set(ctx, cache.AuthSessionCacheKey(token), record.Session, SessionDuration); err != nil {

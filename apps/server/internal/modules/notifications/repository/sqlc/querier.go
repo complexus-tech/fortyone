@@ -11,6 +11,7 @@ import (
 )
 
 type Querier interface {
+	BeginRoutineEmailSend(ctx context.Context, arg BeginRoutineEmailSendParams) (int64, error)
 	ClaimRoutineEmail(ctx context.Context, arg ClaimRoutineEmailParams) (uuid.UUID, error)
 	CompleteRoutineEmail(ctx context.Context, arg CompleteRoutineEmailParams) (int64, error)
 	CountUnreadPortalFeedbackNotifications(ctx context.Context, arg CountUnreadPortalFeedbackNotificationsParams) (int64, error)
@@ -18,10 +19,9 @@ type Querier interface {
 	// A fresh event ID must not resend previously covered content, even after the
 	// original inbox row is deleted. JSONB normalizes object key ordering.
 	CoverPreviouslyEmailedNotifications(ctx context.Context, arg CoverPreviouslyEmailedNotificationsParams) error
-	// CreateNotification persists a notification only while its recipient can
-	// still access the owning workspace resource. The notification row is the
-	// durable email-delivery intent; dedupe replays return the original row without
-	// changing read/email timestamps or publishing a second realtime mutation.
+	// CreateNotification checks current access, then inserts or refreshes the unread
+	// story-update row. Event receipts are recorded by the adapter in this transaction.
+	// A deleted latest row does not let an older queued event recreate stale inbox content.
 	CreateNotification(ctx context.Context, arg CreateNotificationParams) (CreateNotificationRow, error)
 	DisableNotificationPushDevices(ctx context.Context, arg DisableNotificationPushDevicesParams) (int64, error)
 	FailRoutineEmail(ctx context.Context, arg FailRoutineEmailParams) (int64, error)
@@ -29,12 +29,14 @@ type Querier interface {
 	// payload's recipient/workspace scope still owns the notification and retains
 	// current resource or public-portal access.
 	GetNotificationEmailDelivery(ctx context.Context, arg GetNotificationEmailDeliveryParams) (GetNotificationEmailDeliveryRow, error)
+	GetNotificationEventReceipt(ctx context.Context, arg GetNotificationEventReceiptParams) (GetNotificationEventReceiptRow, error)
 	// GetNotificationPreferences creates the typed default document on first read,
 	// but only for an active workspace member in a live workspace.
 	GetNotificationPreferences(ctx context.Context, arg GetNotificationPreferencesParams) (GetNotificationPreferencesRow, error)
 	// GetNotificationPushDelivery repeats the inbox visibility boundary so a
 	// queued delivery cannot reveal content after workspace or team access changes.
 	GetNotificationPushDelivery(ctx context.Context, arg GetNotificationPushDeliveryParams) ([]GetNotificationPushDeliveryRow, error)
+	GetNotificationReceiptInboxRow(ctx context.Context, arg GetNotificationReceiptInboxRowParams) (GetNotificationReceiptInboxRowRow, error)
 	GetRoutineEmailRecipient(ctx context.Context, arg GetRoutineEmailRecipientParams) (GetRoutineEmailRecipientRow, error)
 	// GetWeeklyDigestStats revalidates delivery eligibility and computes every
 	// signal against one caller-supplied UTC as-of time. Current entity access is
@@ -42,6 +44,7 @@ type Querier interface {
 	GetWeeklyDigestStats(ctx context.Context, arg GetWeeklyDigestStatsParams) (GetWeeklyDigestStatsRow, error)
 	HasActiveRoutineEmailClaim(ctx context.Context, arg HasActiveRoutineEmailClaimParams) (bool, error)
 	HasRoutineEmailGuidance(ctx context.Context, arg HasRoutineEmailGuidanceParams) (bool, error)
+	HasSentRoutineEmailWeek(ctx context.Context, arg HasSentRoutineEmailWeekParams) (bool, error)
 	// ListKeyResultNotificationAudience owns the key-result/objective lookup and
 	// recipient selection used by the event consumer. Both the event actor and
 	// every recipient must still have live access to the exact workspace team.
@@ -65,8 +68,13 @@ type Querier interface {
 	// membership, and current team/resource access so stale notifications cannot
 	// preserve access after revocation.
 	ListWorkspaceNotifications(ctx context.Context, arg ListWorkspaceNotificationsParams) ([]ListWorkspaceNotificationsRow, error)
+	LockNotificationEvent(ctx context.Context, arg LockNotificationEventParams) error
 	LockRoutineEmailRecipient(ctx context.Context, arg LockRoutineEmailRecipientParams) error
+	LockStoryNotification(ctx context.Context, arg LockStoryNotificationParams) error
 	MarkAllPortalFeedbackNotificationsRead(ctx context.Context, arg MarkAllPortalFeedbackNotificationsReadParams) (int64, error)
+	// Record the sent snapshot even when an inbox refresh raced the send. Only the
+	// matching current content is marked covered; newer content remains pending.
+	MarkNotificationEmailSnapshotsSent(ctx context.Context, arg MarkNotificationEmailSnapshotsSentParams) (int64, error)
 	// Sent timestamps and content receipts are committed in the same statement.
 	MarkNotificationEmailsSent(ctx context.Context, arg MarkNotificationEmailsSentParams) (int64, error)
 	MarkNotificationPushSent(ctx context.Context, arg MarkNotificationPushSentParams) (int64, error)
@@ -74,12 +82,12 @@ type Querier interface {
 	// MutateWorkspaceNotification performs one finite notification mutation. The
 	// adapter maps the typed domain intent to delete/read flags; SQL never accepts
 	// identifiers, predicates, or ordering fragments from callers.
-	MutateWorkspaceNotification(ctx context.Context, arg MutateWorkspaceNotificationParams) (uuid.UUID, error)
+	MutateWorkspaceNotification(ctx context.Context, arg MutateWorkspaceNotificationParams) (MutateWorkspaceNotificationRow, error)
 	// MutateWorkspaceNotifications performs bulk read/delete operations against
 	// the same currently visible set used by inbox reads.
 	MutateWorkspaceNotifications(ctx context.Context, arg MutateWorkspaceNotificationsParams) (int32, error)
-	NotificationDedupeKeyExists(ctx context.Context, arg NotificationDedupeKeyExistsParams) (bool, error)
 	PortalNotificationActorAuthorized(ctx context.Context, arg PortalNotificationActorAuthorizedParams) (bool, error)
+	RecordNotificationEventReceipt(ctx context.Context, arg RecordNotificationEventReceiptParams) error
 	RecordRoutineEmailGuidance(ctx context.Context, arg RecordRoutineEmailGuidanceParams) error
 	RegisterNotificationPushDevice(ctx context.Context, arg RegisterNotificationPushDeviceParams) (NotificationPushDevice, error)
 	UnregisterNotificationPushDevice(ctx context.Context, arg UnregisterNotificationPushDeviceParams) (int64, error)

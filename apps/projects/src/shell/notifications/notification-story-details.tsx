@@ -7,6 +7,7 @@ import { StoryPage } from "@/modules/story/public/client";
 type NotificationStoryDetailsProps = {
   entityId: string;
   notificationId: string;
+  observedCreatedAt?: string;
 };
 
 /**
@@ -18,16 +19,18 @@ type NotificationStoryDetailsProps = {
 export const NotificationStoryDetails = ({
   entityId,
   notificationId,
+  observedCreatedAt,
 }: NotificationStoryDetailsProps) => {
-  const hasMounted = useRef(false);
+  const readVersion = useRef<string | null>(null);
   const { mutate: readNotification } = useReadNotificationMutation(false);
 
   useEffect(() => {
-    if (hasMounted.current) return;
+    const version = `${notificationId}:${observedCreatedAt ?? ""}`;
+    if (readVersion.current === version) return;
 
-    readNotification(notificationId);
-    hasMounted.current = true;
-  }, [notificationId, readNotification]);
+    readNotification({ id: notificationId, observedCreatedAt });
+    readVersion.current = version;
+  }, [notificationId, observedCreatedAt, readNotification]);
 
   return <StoryPage isNotifications storyId={entityId} />;
 };

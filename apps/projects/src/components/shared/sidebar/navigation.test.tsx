@@ -6,9 +6,16 @@ import { walkthroughTargets } from "@/shared/walkthrough/targets";
 import { Navigation } from "./navigation";
 
 let mockPathname = "/acme/calendar";
+let mockTeamScope: string | null = null;
+let mockView: string | null = null;
 
 jest.mock("next/navigation", () => ({
   usePathname: () => mockPathname,
+  useSearchParams: () =>
+    new URLSearchParams({
+      ...(mockTeamScope ? { team: mockTeamScope } : {}),
+      ...(mockView ? { view: mockView } : {}),
+    }),
 }));
 
 jest.mock("icons", () => ({
@@ -18,6 +25,7 @@ jest.mock("icons", () => ({
   ChevronRightIcon: () => null,
   DashboardIcon: () => null,
   DocsIcon: () => null,
+  ViewsIcon: () => null,
   RoadmapIcon: () => null,
   StrategyIcon: () => null,
   UserIcon: () => null,
@@ -122,6 +130,8 @@ describe("Navigation", () => {
   beforeEach(() => {
     localStorage.clear();
     mockPathname = "/acme/calendar";
+    mockTeamScope = null;
+    mockView = null;
   });
 
   it("groups shared destinations under an expanded Workspace section", () => {
@@ -142,6 +152,7 @@ describe("Navigation", () => {
       "Active Sprint",
       "Summary",
       "Roadmap",
+      "Views",
       "Strategy Map",
       "Documents",
     ]);
@@ -259,4 +270,33 @@ describe("Navigation", () => {
     expect(calendarLabel).toBeVisible();
     expect(calendarLabel).not.toHaveClass("hidden");
   });
+
+  it("marks Views active and opens Workspace for a selected story view", () => {
+    localStorage.setItem("sidebar:acme:workspace-expanded", "false");
+    mockPathname = "/acme/teams/team-1/stories";
+    mockView = "23a20d25-331e-44d6-929c-0309eae1735c";
+    render(<Navigation />);
+    expect(screen.getByRole("link", { name: "Views" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(
+      screen.getByRole("button", { name: "Workspace navigation" }),
+    ).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it.each([
+    "/acme/teams/team-1/objectives",
+    "/acme/teams/team-1/sprints/sprint-1/stories",
+  ])(
+    "does not treat a layout parameter on %s as a saved story view",
+    (path) => {
+      mockPathname = path;
+      mockView = "gantt";
+      render(<Navigation />);
+      expect(screen.getByRole("link", { name: "Views" })).not.toHaveAttribute(
+        "aria-current",
+      );
+    },
+  );
 });

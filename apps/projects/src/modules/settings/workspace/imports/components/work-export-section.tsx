@@ -7,6 +7,7 @@ import { Box, Button, Flex, Select, Text } from "ui";
 import { useSession } from "@/lib/auth/client";
 import { useWorkspacePath } from "@/hooks/use-workspace-path";
 import { useUserRole } from "@/hooks/role";
+import { SectionHeader } from "@/components/ui/section-header";
 import { useJoinedTeams } from "@/modules/teams/public/client";
 import { downloadWorkExport, getWorkExport } from "../work-export";
 
@@ -33,21 +34,28 @@ export const WorkExportSection = () => {
   if (userRole !== "admin") return null;
   return (
     <Box
-      aria-labelledby="work-export-heading"
+      aria-label="Export your work"
       as="section"
-      className="border-border bg-surface mt-6 rounded-2xl border-[0.5px] p-6"
+      className="border-border bg-surface mt-6 overflow-hidden rounded-2xl border-[0.5px]"
     >
-      <Text as="h2" className="text-xl font-medium" id="work-export-heading">
-        Export your work
-      </Text>
-      <Text className="mt-2 max-w-3xl leading-6" color="muted">
-        Back up your work as JSON or export a CSV for analysis.
-      </Text>
-      <Flex className="mt-5 gap-4" wrap>
-        <Box className="min-w-0 flex-1 basis-60">
-          <Text className="mb-2" id="export-team-label">
-            Teams
-          </Text>
+      <SectionHeader
+        description="Back up your work as JSON or export a CSV for analysis."
+        title="Export your work"
+      />
+      <Box className="divide-border divide-y-[0.5px]">
+        <Flex
+          align="center"
+          className="flex-col items-start gap-4 px-6 py-4 md:flex-row md:items-center"
+          justify="between"
+        >
+          <Box>
+            <Text className="font-medium" id="export-team-label">
+              Teams
+            </Text>
+            <Text color="muted">
+              Choose a joined team or include all joined teams.
+            </Text>
+          </Box>
           <Select
             disabled={teamsPending || teamsError || exportWork.isPending}
             onValueChange={(value) => {
@@ -57,7 +65,7 @@ export const WorkExportSection = () => {
           >
             <Select.Trigger
               aria-labelledby="export-team-label"
-              className="h-11 w-full text-base"
+              className="max-w-64 shrink-0 text-base"
             >
               <Select.Input />
             </Select.Trigger>
@@ -76,11 +84,22 @@ export const WorkExportSection = () => {
               ))}
             </Select.Content>
           </Select>
-        </Box>
-        <Box className="min-w-0 flex-1 basis-60">
-          <Text className="mb-2" id="export-format-label">
-            Format
-          </Text>
+        </Flex>
+        <Flex
+          align="center"
+          className="flex-col items-start gap-4 px-6 py-4 md:flex-row md:items-center"
+          justify="between"
+        >
+          <Box>
+            <Text className="font-medium" id="export-format-label">
+              Format
+            </Text>
+            <Text className="max-w-md" color="muted" id="export-format-help">
+              {format === "json"
+                ? "Includes tasks, comments, relationships, and custom fields. Uploaded files are excluded."
+                : "Includes task properties and custom fields for spreadsheet analysis."}
+            </Text>
+          </Box>
           <Select
             disabled={exportWork.isPending}
             onValueChange={(value) => {
@@ -91,7 +110,7 @@ export const WorkExportSection = () => {
             <Select.Trigger
               aria-describedby="export-format-help"
               aria-labelledby="export-format-label"
-              className="h-11 w-full text-base"
+              className="shrink-0 text-base"
             >
               <Select.Input />
             </Select.Trigger>
@@ -104,40 +123,35 @@ export const WorkExportSection = () => {
               </Select.Option>
             </Select.Content>
           </Select>
+        </Flex>
+        <Box className="px-6 py-4">
+          <Text color="muted">
+            Up to 10,000 items · 20 MB · Joined teams only
+          </Text>
+          {teamsError ? (
+            <Text className="mt-4" color="danger" role="alert">
+              Teams could not be loaded. Refresh this page to try again.
+            </Text>
+          ) : null}
+          {exportWork.error ? (
+            <Text className="mt-4" color="danger" role="alert">
+              {exportWork.error.message}
+            </Text>
+          ) : null}
+          <Button
+            className="mt-4"
+            disabled={
+              !session || teamsPending || teamsError || exportWork.isPending
+            }
+            loading={exportWork.isPending}
+            onClick={() => {
+              exportWork.mutate();
+            }}
+          >
+            {exportWork.isPending ? "Preparing export…" : "Download export"}
+          </Button>
         </Box>
-      </Flex>
-      <Text className="mt-4 leading-6" color="muted" id="export-format-help">
-        {format === "json"
-          ? "Includes tasks, comments, relationships, and custom fields. Uploaded files are excluded."
-          : "Includes task properties and custom fields for spreadsheet analysis."}
-      </Text>
-      <Text className="mt-2 leading-6" color="muted">
-        Up to 10,000 items · 20 MB · Joined teams only
-      </Text>
-      {teamsError ? (
-        <Text className="mt-4" color="danger" role="alert">
-          Teams could not be loaded. Refresh this page to try again.
-        </Text>
-      ) : null}
-      {exportWork.error ? (
-        <Text className="mt-4" color="danger" role="alert">
-          {exportWork.error.message}
-        </Text>
-      ) : null}
-      <Button
-        className="mt-5"
-        color="invert"
-        disabled={
-          !session || teamsPending || teamsError || exportWork.isPending
-        }
-        loading={exportWork.isPending}
-        onClick={() => {
-          exportWork.mutate();
-        }}
-        size="lg"
-      >
-        {exportWork.isPending ? "Preparing export…" : "Download export"}
-      </Button>
+      </Box>
     </Box>
   );
 };

@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { TeamAutomations } from "./index";
 
@@ -7,6 +8,11 @@ let mockLoadError = false;
 const mockCreate = jest.fn();
 const mockRefetch = jest.fn();
 
+jest.mock("./recurrence-properties", () => ({
+  RecurrenceProperties: ({ children }: { children?: ReactNode }) => (
+    <>{children}</>
+  ),
+}));
 jest.mock("@/hooks/role", () => ({
   useUserRole: () => ({ userRole: mockRole }),
 }));
@@ -41,7 +47,7 @@ jest.mock("@/modules/custom-fields/public/creation", () => ({
   CreateCustomFields: () => null,
 }));
 jest.mock("@/modules/work-presets/public/template-picker", () => ({
-  PresetPicker: () => null,
+  CreationTemplatePicker: () => null,
 }));
 jest.mock("./select-field", () => ({
   AutomationSelect: ({
@@ -90,30 +96,34 @@ describe("automation header creation menu", () => {
 
   it("opens both real editors by keyboard and creates the chosen rule for its team", async () => {
     render(<TeamAutomations teamId="team-id" />);
-    expect(screen.queryByRole("button", { name: "Create rule" })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Create workflow rule" }),
+    ).toBeNull();
     expect(
       screen.queryByRole("button", { name: "Create recurring task" }),
     ).toBeNull();
 
     await openCreateMenu();
-    fireEvent.keyDown(screen.getByRole("menuitem", { name: "Create rule" }), {
+    fireEvent.keyDown(screen.getByRole("menuitem", { name: "Workflow rule" }), {
       key: "Enter",
     });
     const rule = await screen.findByRole("dialog", {
-      name: "Create team rule",
+      name: "Create workflow rule",
     });
     expect(screen.queryByRole("menu")).toBeNull();
     expect(rule).toBeInTheDocument();
     await waitFor(() => {
-      expect(screen.getByRole("textbox", { name: "Name" })).toHaveFocus();
+      expect(screen.getByRole("textbox", { name: "Rule name" })).toHaveFocus();
     });
-    fireEvent.change(screen.getByRole("textbox", { name: "Name" }), {
+    fireEvent.change(screen.getByRole("textbox", { name: "Rule name" }), {
       target: { value: "Route urgent work" },
     });
     fireEvent.change(screen.getByLabelText("Set priority"), {
       target: { value: "High" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Create rule" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Create workflow rule" }),
+    );
     await waitFor(() => {
       expect(mockCreate).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -134,7 +144,7 @@ describe("automation header creation menu", () => {
 
     await openCreateMenu();
     fireEvent.keyDown(
-      screen.getByRole("menuitem", { name: "Create recurring task" }),
+      screen.getByRole("menuitem", { name: "Recurring task" }),
       { key: "Enter" },
     );
     expect(
@@ -177,6 +187,45 @@ describe("automation header creation menu", () => {
     expect(
       screen.getByRole("button", { name: "Create automation" }),
     ).toBeDisabled();
+  });
+
+  it("moves mouse focus into the editor and restores it after dismissal", async () => {
+    render(<TeamAutomations teamId="team-id" />);
+    const trigger = screen.getByRole("button", { name: "Create automation" });
+    trigger.focus();
+    fireEvent.pointerDown(trigger, {
+      button: 0,
+      ctrlKey: false,
+      pointerType: "mouse",
+    });
+    fireEvent.click(
+      await screen.findByRole("menuitem", { name: "Workflow rule" }),
+    );
+
+    await screen.findByRole("dialog", { name: "Create workflow rule" });
+    await waitFor(() => {
+      expect(screen.getByRole("textbox", { name: "Rule name" })).toHaveFocus();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).toBeNull();
+      expect(trigger).toHaveFocus();
+      expect(document.body.style.pointerEvents).not.toBe("none");
+    });
+  });
+
+  it("restores trigger focus when the menu closes without opening an editor", async () => {
+    render(<TeamAutomations teamId="team-id" />);
+    const trigger = screen.getByRole("button", { name: "Create automation" });
+    trigger.focus();
+    const menu = await openCreateMenu();
+    fireEvent.keyDown(menu, { key: "Escape" });
+
+    await waitFor(() => {
+      expect(screen.queryByRole("menu")).toBeNull();
+      expect(trigger).toHaveFocus();
+      expect(screen.queryByRole("dialog")).toBeNull();
+    });
   });
 
   it("preserves the list error and retry action beside the header menu", () => {

@@ -41,6 +41,7 @@ import {
   groupObjectives,
   type ObjectiveViewOptions,
 } from "../objective-board-utils";
+import { useObjectiveDragNavigation } from "../use-objective-drag-navigation";
 import { ObjectiveBoardCard } from "./objective-board-card";
 import {
   OBJECTIVE_GROUP_DND_ID_PREFIX,
@@ -54,7 +55,6 @@ type ObjectivesBoardProps = {
   layout: Extract<RoadmapLayoutType, "kanban" | "list">;
   viewOptions: ObjectiveViewOptions;
   setViewOptions: (viewOptions: ObjectiveViewOptions) => void;
-  onObjectiveSelect: (objective: Objective) => void;
   onKeyResultSelect: (objective: Objective, keyResult: KeyResult) => void;
   onCreateObjective: () => void;
   selectedObjectiveId?: string;
@@ -65,7 +65,6 @@ export const ObjectivesBoard = ({
   layout,
   viewOptions,
   setViewOptions,
-  onObjectiveSelect,
   onKeyResultSelect,
   onCreateObjective,
   selectedObjectiveId,
@@ -75,6 +74,7 @@ export const ObjectivesBoard = ({
   const { data: teams = [] } = useTeams();
   const updateMutation = useUpdateObjectiveMutation();
   const canUpdate = useCanUpdateObjective();
+  const dragNavigation = useObjectiveDragNavigation(layout === "kanban");
   const [activeObjective, setActiveObjective] = useState<Objective | null>(
     null,
   );
@@ -254,10 +254,12 @@ export const ObjectivesBoard = ({
   };
 
   const handleDragStart = ({ active }: DragStartEvent) => {
+    dragNavigation.start(String(active.id));
     setActiveObjective(objectivesById.get(String(active.id)) ?? null);
   };
 
   const handleDragEnd = ({ active, over }: DragEndEvent) => {
+    dragNavigation.release();
     setActiveObjective(null);
     if (!over) return;
 
@@ -280,7 +282,6 @@ export const ObjectivesBoard = ({
         groups={groups}
         onCreateObjective={onCreateObjective}
         onKeyResultSelect={onKeyResultSelect}
-        onObjectiveSelect={onObjectiveSelect}
         selectedObjectiveId={selectedObjectiveId}
         teamCodeById={teamCodeById}
         viewOptions={viewOptions}
@@ -291,6 +292,7 @@ export const ObjectivesBoard = ({
   return (
     <DndContext
       onDragCancel={() => {
+        dragNavigation.release();
         setActiveObjective(null);
       }}
       onDragEnd={handleDragEnd}
@@ -302,7 +304,6 @@ export const ObjectivesBoard = ({
         canDrag={canUpdate}
         groups={groups}
         onCreateObjective={onCreateObjective}
-        onObjectiveSelect={onObjectiveSelect}
         renderCardControls={renderCardControls}
         selectedObjectiveId={selectedObjectiveId}
         setViewOptions={setViewOptions}
@@ -315,7 +316,6 @@ export const ObjectivesBoard = ({
             canDrag={false}
             isOverlay
             objective={activeObjective}
-            onSelect={() => {}}
             teamCode={teamCodeById.get(activeObjective.teamId)}
           />
         ) : null}

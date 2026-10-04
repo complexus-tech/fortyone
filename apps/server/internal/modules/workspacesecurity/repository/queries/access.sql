@@ -32,11 +32,12 @@ WHERE member.workspace_id = sqlc.arg(workspace_id) AND member.user_id = sqlc.arg
 FOR SHARE OF workspace, member, account;
 
 -- name: TrackBrowserSession :execrows
-INSERT INTO public.workspace_browser_sessions (workspace_id, session_id, user_id, authenticated_at, last_seen_at, expires_at)
-VALUES (sqlc.arg(workspace_id), sqlc.arg(session_id), sqlc.arg(actor_id), sqlc.arg(authenticated_at), GREATEST(CURRENT_TIMESTAMP, CAST(sqlc.arg(authenticated_at) AS timestamptz)), sqlc.arg(expires_at))
+INSERT INTO public.workspace_browser_sessions (workspace_id, session_id, user_id, authenticated_at, last_seen_at, expires_at, browser_name)
+VALUES (sqlc.arg(workspace_id), sqlc.arg(session_id), sqlc.arg(actor_id), sqlc.arg(authenticated_at), GREATEST(CURRENT_TIMESTAMP, CAST(sqlc.arg(authenticated_at) AS timestamptz)), sqlc.arg(expires_at), sqlc.narg(browser_name))
 ON CONFLICT (workspace_id, session_id) DO UPDATE SET
     last_seen_at = CASE WHEN workspace_browser_sessions.last_seen_at < CURRENT_TIMESTAMP - INTERVAL '1 minute' THEN CURRENT_TIMESTAMP ELSE workspace_browser_sessions.last_seen_at END,
-    expires_at = EXCLUDED.expires_at
+    expires_at = EXCLUDED.expires_at,
+    browser_name = COALESCE(workspace_browser_sessions.browser_name, EXCLUDED.browser_name)
 WHERE workspace_browser_sessions.user_id = EXCLUDED.user_id
   AND workspace_browser_sessions.authenticated_at = EXCLUDED.authenticated_at
   AND workspace_browser_sessions.revoked_at IS NULL;
@@ -80,7 +81,7 @@ UPDATE public.workspace_browser_sessions SET revoked_at = CURRENT_TIMESTAMP
 WHERE workspace_id = sqlc.arg(workspace_id) AND session_id = sqlc.arg(session_id) AND revoked_at IS NULL;
 
 -- name: ListBrowserSessions :many
-SELECT session.session_id, session.user_id, account.full_name, account.email, CAST(member.role AS text) AS role,
+SELECT session.session_id, session.user_id, account.full_name, account.username, account.email, CAST(member.role AS text) AS role, session.browser_name,
     session.authenticated_at, session.last_seen_at, session.expires_at, session.revoked_at, epoch.revoked_before
 FROM public.workspace_browser_sessions AS session
 JOIN public.workspace_members AS member ON member.workspace_id = session.workspace_id AND member.user_id = session.user_id

@@ -145,7 +145,7 @@ func (r *Repo) DeleteBoard(ctx context.Context, workspaceID, boardID uuid.UUID) 
 
 func (r *Repo) ListBoardReviewers(ctx context.Context, workspaceID, boardID uuid.UUID) ([]feedback.CoreBoardReviewer, error) {
 	rows, err := r.queries.ListFeedbackBoardReviewers(ctx, feedbacksql.ListFeedbackBoardReviewersParams{
-		DefaultFrequency: feedback.EmailFrequencyWeekly, WorkspaceID: workspaceID, BoardID: boardID,
+		DefaultFrequency: feedback.EmailFrequencyOff, WorkspaceID: workspaceID, BoardID: boardID,
 	})
 	if err != nil {
 		return nil, err

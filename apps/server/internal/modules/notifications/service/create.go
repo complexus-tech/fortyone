@@ -7,13 +7,14 @@ import (
 
 	notificationsdomain "github.com/complexus-tech/projects-api/internal/modules/notifications/domain"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
+	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
 
-// Create persists the notification and its durable email intent in one SQL
-// statement. Queue delivery is retryable: an exact dedupe replay skips realtime
+// Create persists the notification and event receipt atomically. Queue
+// delivery is retryable: an exact dedupe replay skips realtime
 // fanout but re-enqueues the unique digest wake-up.
 func (service *Service) Create(ctx context.Context, input CoreNewNotification) (CoreNotification, error) {
 	ctx, span := otel.Tracer("fortyone.notifications").Start(ctx, "notifications.Create")
@@ -22,13 +23,16 @@ func (service *Service) Create(ctx context.Context, input CoreNewNotification) (
 	if err := input.Validate(); err != nil {
 		return CoreNotification{}, err
 	}
-	notification, inserted, err := service.repo.Create(ctx, input)
+	notification, mutated, err := service.repo.Create(ctx, input)
 	if err != nil {
 		span.RecordError(err)
 		return CoreNotification{}, err
 	}
 
-	if inserted && notification.InAppEnabled && notification.EntityType != notificationsdomain.EntityTypeFeedback {
+	if notification.ID == uuid.Nil {
+		return notification, nil
+	}
+	if mutated && notification.InAppEnabled && notification.EntityType != notificationsdomain.EntityTypeFeedback {
 		if err := service.publishRealtime(ctx, notification.Public()); err != nil {
 			span.RecordError(err)
 			return notification, fmt.Errorf("publish notification realtime event: %w", err)
@@ -46,7 +50,7 @@ func (service *Service) Create(ctx context.Context, input CoreNewNotification) (
 	}
 	span.SetAttributes(
 		attribute.String("notification.id", notification.ID.String()),
-		attribute.Bool("notification.inserted", inserted),
+		attribute.Bool("notification.mutated", mutated),
 	)
 	return notification, nil
 }

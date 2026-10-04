@@ -76,6 +76,11 @@ The machine-readable source of truth is [`internal/migrations/manifest.json`](..
 | `000209` | `custom_field_icons` | `forward-only` | `schema-first` | Definition reads, story snapshots, reports and work backups expose nullable icon. Create omission or null uses automatic; update omission preserves the current icon and explicit null resets it. | No worker changes are required. Existing custom field value and story creation transactions retain their behavior. |
 | `000210` | `expand_custom_field_icons` | `forward-only` | `schema-first` | Replacement APIs accept the wider catalog. Existing field snapshots, current-value reports and work backups retain the selected key. | No worker changes are required; custom-field values and automation semantics are unchanged. |
 | `000211` | `business_custom_field_icons` | `forward-only` | `schema-first` | Replacement APIs accept financial and business icon keys. Reports, snapshots and work backups retain the chosen key and exact values. | No worker changes are required; value processing and automation semantics are unchanged. |
+| `000212` | `unread_story_notification_coalescing` | `forward-only` | `schema-first` | Replacement APIs display the latest unread story event and use immutable receipts for replay safety. Read history and discussion notifications retain their existing behavior. | Replacement notification workers create or refresh the scoped unread row atomically and retain each original event identity and payload. Email and push use the current inbox snapshot. |
+| `000213` | `story_schedule_issues` | `forward-only` | `schema-first` | Replacement scheduling writes update story state and episode lifecycle atomically. Notification reads use the active issue identity to hide alerts whose issue was resolved, replaced or no longer belongs to the recipient. | Replacement Maya workers suppress repeated unresolved owner-and-cause alerts across planning resets and changing reason text or reservations. Changed cause or owner and recurrence after resolution open a new episode; healthy material schedule changes retain their notification behavior. |
+| `000214` | `routine_email_send_fence` | `forward-only` | `schema-first` | No client API contract changes are required. Routine delivery adapters record the owned scoped send-start attempt under the recipient lock before handing a summary to the mail service. | Replacement workers count sent and uncertain begun activity attempts against the local weekly limit and a minimum 168-hour interval. Existing daily delivery history participates in both checks. Unstarted stale claims can be reclaimed; begun processing claims cannot. An explicit mail rejection may fail the attempt and allow a newly fenced retry. |
+| `000215` | `maya_skills` | `forward-only` | `schema-first` | The new skill CRUD endpoints require schema 215. Existing Maya and user-memory APIs remain compatible. | Unaffected; skills are selected and edited by users in the web composer. |
+| `000216` | `browser_session_metadata` | `forward-only` | `schema-first` | The session list adds username and nullable browserName fields. New session issuance captures recognized browser request metadata; cookie renewal retains the original value. The replacement API requires schema 216. | Unaffected; browser metadata is captured and tracked by the first-party API only. |
 
 ## `000152_harden_verification_tokens`
 
@@ -1733,6 +1738,134 @@ Operational notes:
 
 - New icons use upstream Hugeicons Stroke Rounded geometry under MIT; selected icon names remain curated stable keys, not markup or URLs.
 - The down migration refuses to narrow the catalog because saved definitions and immutable audit records may contain the added keys.
+
+## `000212_unread_story_notification_coalescing`
+
+- **Classification:** `forward-only`
+- **Files:** `000212_unread_story_notification_coalescing.up.sql`, `000212_unread_story_notification_coalescing.down.sql`
+- **Schema:** Adds producer event time, unread coalescing families and immutable notification event receipts. Consolidates existing duplicate unread story-update rows after copying their original payloads into receipts, then enforces one unread row per recipient, workspace, story and family.
+- **API:** Replacement APIs display the latest unread story event and use immutable receipts for replay safety. Read history and discussion notifications retain their existing behavior.
+- **Worker:** Replacement notification workers create or refresh the scoped unread row atomically and retain each original event identity and payload. Email and push use the current inbox snapshot.
+- **Mixed versions:** Apply the schema before replacement binaries. Older readers can use the remaining notification columns and omitted event time defaults to insertion time, but older producers do not honor unread uniqueness and duplicate story-update inserts can fail. Drain and pause legacy notification-producing processes for migration and replace them before resuming production; do not run legacy and replacement producers together.
+- **Rollout mode:** `schema-first`
+
+Rollout:
+
+1. Drain and pause legacy notification-producing processes, then apply migration 000212 before deploying replacement API and worker binaries.
+2. Deploy compatible API and worker binaries and resume notification production only after every legacy producer has been replaced.
+3. Verify unread status, priority and date events refresh one scoped story row; read history creates a new row; delayed or replayed events preserve newer content and discussion notifications remain separate.
+
+Recovery (`forward-fix`):
+
+1. Keep notification receipts, producer event times and coalescing keys intact and repair forward. Preserve original receipt payloads when correcting an affected inbox row.
+2. The down migration deliberately refuses rollback because discarded duplicate inbox rows cannot be reconstructed and dropping receipts loses original event payloads and replay protection. Do not resume legacy notification producers against this schema.
+
+Operational notes:
+
+- Migration consolidation retains the newest existing unread story-update row and saves every pre-migration event payload before deleting redundant rows. Existing read rows are retained.
+- Unread uniqueness includes the coalescing key so routine story updates and scheduling issue episodes remain separate. A new scheduling episode gets a new key; notification receipt identity survives inbox refresh or deletion.
+
+## `000213_story_schedule_issues`
+
+- **Classification:** `forward-only`
+- **Files:** `000213_story_schedule_issues.up.sql`, `000213_story_schedule_issues.down.sql`
+- **Schema:** Adds durable scheduling issue identity, owner, cause and lifecycle timestamps for each workspace-scoped story. Existing story scheduling state and event history are preserved; episodes are opened by subsequent reconciliation.
+- **API:** Replacement scheduling writes update story state and episode lifecycle atomically. Notification reads use the active issue identity to hide alerts whose issue was resolved, replaced or no longer belongs to the recipient.
+- **Worker:** Replacement Maya workers suppress repeated unresolved owner-and-cause alerts across planning resets and changing reason text or reservations. Changed cause or owner and recurrence after resolution open a new episode; healthy material schedule changes retain their notification behavior.
+- **Mixed versions:** Apply this additive schema after 000212 and before replacement binaries. Older scheduling workers do not maintain issue lifecycle and can still emit repeated alerts, so replace all scheduling and notification-producing workers before relying on episode suppression or active-issue filtering.
+- **Rollout mode:** `schema-first`
+
+Rollout:
+
+1. Apply migration 000213 after 000212 and before deploying replacement scheduling, notification API and worker binaries.
+2. Replace legacy scheduling and notification producers, then verify unchanged failures survive planning resets without a new event while current story scheduling facts continue to update.
+3. Verify changed cause or owner opens a new episode, successful scheduling or pause resolves the episode, same-cause recurrence receives a new identity, and stale alerts are excluded from inbox, email and push delivery.
+
+Recovery (`forward-fix`):
+
+1. Preserve issue identities, owners, causes and lifecycle timestamps while repairing forward. Correct an affected episode only with its current scoped story state and notification history in view.
+2. The down migration deliberately refuses rollback because dropping the table loses suppression and stale-alert validation facts, and replacement API and worker queries require the table.
+
+Operational notes:
+
+- Planning is transient and does not resolve an issue. Scheduled, locked, disabled and ownerless outcomes resolve the active episode; a later unresolved occurrence opens a fresh identity.
+- An episode is keyed by structured cause and affected owner, independently of inbox read state. Reason wording, timestamps and partial reservation changes refresh facts without sending the same unresolved alert again.
+
+## `000214_routine_email_send_fence`
+
+- **Classification:** `forward-only`
+- **Files:** `000214_routine_email_send_fence.up.sql`, `000214_routine_email_send_fence.down.sql`
+- **Schema:** Adds a nullable send-start timestamp to durable routine email delivery attempts without changing existing delivery identities or completed history.
+- **API:** No client API contract changes are required. Routine delivery adapters record the owned scoped send-start attempt under the recipient lock before handing a summary to the mail service.
+- **Worker:** Replacement workers count sent and uncertain begun activity attempts against the local weekly limit and a minimum 168-hour interval. Existing daily delivery history participates in both checks. Unstarted stale claims can be reclaimed; begun processing claims cannot. An explicit mail rejection may fail the attempt and allow a newly fenced retry.
+- **Mixed versions:** Apply the additive schema before replacement workers. Legacy workers ignore weekly limits and send-start fences and can reclaim uncertain sends, so drain and replace every routine email sender before relying on the weekly cap. Review any preexisting processing delivery attempts before resuming sends because their nullable marker cannot prove whether a legacy sender reached SMTP.
+- **Rollout mode:** `schema-first`
+
+Rollout:
+
+1. Drain legacy routine email senders and apply migration 000214 after 000213 before deploying replacement worker binaries.
+2. Replace routine email workers, review preexisting processing attempts against available provider and delivery evidence, and resume the shared weekly summary path.
+3. Verify sent and begun attempts block same-week retries and sends less than 168 hours apart, including competing legacy batch keys. Obsolete claim IDs cannot begin sending, explicit rejection permits a new attempt, and a later local week becomes eligible only after the minimum interval.
+
+Recovery (`forward-fix`):
+
+1. Keep send-start markers and delivery history intact and repair forward. For a begun processing attempt, inspect provider acceptance and delivery evidence before deciding whether to complete the attempt or explicitly classify it as failed.
+2. The down migration deliberately refuses rollback because removing send-start facts can resend an uncertain accepted email. Never clear a begun processing marker merely because its claim has expired.
+
+Operational notes:
+
+- SMTP acceptance and database completion cannot commit in one transaction. A send-start fence closes the local week and the following 168 hours when completion is uncertain; it does not claim that SMTP delivery succeeded.
+- Only a confirmed explicit send failure permits an automatic replacement attempt. A later week's summary can proceed after 168 hours without reclaiming the prior begun attempt. Weekly keys use the recipient's local Monday date; missed runs can catch up after 09:00 local time.
+
+## `000215_maya_skills`
+
+- **Classification:** `forward-only`
+- **Files:** `000215_maya_skills.up.sql`, `000215_maya_skills.down.sql`
+- **Schema:** Adds personal workspace-scoped Maya skills with membership-owned lifetime, unique names and update timestamps.
+- **API:** The new skill CRUD endpoints require schema 215. Existing Maya and user-memory APIs remain compatible.
+- **Worker:** Unaffected; skills are selected and edited by users in the web composer.
+- **Mixed versions:** Apply the additive table before the replacement API and web app. Previous APIs ignore skills and can coexist.
+- **Rollout mode:** `schema-first`
+
+Rollout:
+
+1. Apply migration 000215 after 000214 before deploying the skill CRUD API.
+2. Deploy the API, then the web app; verify owner-scoped create, edit, select and delete in a test workspace.
+
+Recovery (`forward-fix`):
+
+1. Preserve saved instructions and repair the API or web app forward.
+2. The down migration only removes an empty table and refuses to discard existing skills.
+
+Operational notes:
+
+- Skills belong to one user in one workspace. Removing that workspace membership cascades its personal skills.
+- Selection inserts editable instructions into a draft and does not execute a Maya request.
+
+## `000216_browser_session_metadata`
+
+- **Classification:** `forward-only`
+- **Files:** `000216_browser_session_metadata.up.sql`, `000216_browser_session_metadata.down.sql`
+- **Schema:** Adds an optional reported browser name to workspace session registry rows; existing history remains null and is not inferred or backfilled from current requests.
+- **API:** The session list adds username and nullable browserName fields. New session issuance captures recognized browser request metadata; cookie renewal retains the original value. The replacement API requires schema 216.
+- **Worker:** Unaffected; browser metadata is captured and tracked by the first-party API only.
+- **Mixed versions:** Apply the additive column before replacement APIs. Older APIs and web clients ignore the added fields; updated web clients accept missing metadata and show Unknown browser. Sessions issued without metadata retain an unknown browser.
+- **Rollout mode:** `schema-first`
+
+Rollout:
+
+1. Apply migration 000216 after 000215 before deploying the replacement API; review the rollout requirements for every unapplied preceding migration.
+2. Deploy the API and web app, then verify a new browser sign-in exposes its reported browser and username while existing sessions remain unknown and revocation continues to work.
+
+Recovery (`forward-fix`):
+
+1. Preserve captured browser metadata and session history and repair the API or web app forward.
+2. The down migration refuses to remove the column after any browser metadata has been recorded.
+
+Operational notes:
+
+- Only a recognized reported browser name is stored; raw user agents, device identifiers and browser versions are not retained. Browser metadata does not affect authentication or authorization.
+- Browsers using another browser's compatibility identity cannot always be distinguished. Arc and Dia labels require an explicitly reported brand. An independent native mobile session does not inherit the authorizing browser label.
 
 ## Adding the next migration
 

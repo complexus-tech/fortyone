@@ -102,6 +102,24 @@ func (fixture notificationIntegrationFixture) accessA(actorID uuid.UUID) notific
 	return notificationsdomain.WorkspaceAccess{ActorID: actorID, WorkspaceID: fixture.workspaceA}
 }
 
+func notificationSnapshot(t *testing.T, ctx context.Context, fixture notificationIntegrationFixture, id uuid.UUID) notificationsdomain.EmailSnapshot {
+	t.Helper()
+	var hash []byte
+	if err := fixture.postgres.Pool.QueryRow(ctx, `SELECT sha256(convert_to(CAST(jsonb_build_array(type, entity_type, entity_id, actor_id, title, message) AS text), 'UTF8')) FROM public.notifications WHERE notification_id = $1`, id).Scan(&hash); err != nil {
+		t.Fatalf("read notification snapshot: %v", err)
+	}
+	return notificationsdomain.EmailSnapshot{NotificationID: id, ContentHash: hash}
+}
+
+func notificationSnapshots(t *testing.T, ctx context.Context, fixture notificationIntegrationFixture, ids []uuid.UUID) []notificationsdomain.EmailSnapshot {
+	t.Helper()
+	snapshots := make([]notificationsdomain.EmailSnapshot, len(ids))
+	for index, id := range ids {
+		snapshots[index] = notificationSnapshot(t, ctx, fixture, id)
+	}
+	return snapshots
+}
+
 func (fixture notificationIntegrationFixture) storyNotification(recipientID uuid.UUID, dedupeKey string) notificationsdomain.NewNotification {
 	return notificationsdomain.NewNotification{
 		DedupeKey: dedupeKey, RecipientID: recipientID, WorkspaceID: fixture.workspaceA,

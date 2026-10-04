@@ -194,7 +194,7 @@ func (h *Handlers) CompleteMicrosoftAuth(ctx context.Context, w http.ResponseWri
 		return h.redirectOAuthFailure(ctx, w, r, authState.CallbackURL, oauthFailureGeneric)
 	}
 	expiresAt := time.Now().Add(SessionDuration)
-	if err := h.persistSession(ctx, user.ID, tokenString, expiresAt); err != nil {
+	if err := h.persistSession(ctx, r, user.ID, tokenString, expiresAt); err != nil {
 		return h.redirectOAuthFailure(ctx, w, r, authState.CallbackURL, oauthSignInFailureCode(err))
 	}
 	h.setSessionCookie(w, r, tokenString, expiresAt)
@@ -330,7 +330,7 @@ func (h *Handlers) authenticateWithGoogleIdentity(
 	}
 
 	expiresAt := time.Now().Add(SessionDuration)
-	if err := h.persistSession(ctx, user.ID, tokenString, expiresAt); err != nil {
+	if err := h.persistSession(ctx, r, user.ID, tokenString, expiresAt); err != nil {
 		return users.CoreUser{}, err
 	}
 

@@ -4,7 +4,7 @@
 
 This deterministic inventory shows where routes and persistence live in the API codebase. Run `make inventory-generate` after moving a route, test, or query, or changing a persistence dependency; `make inventory-check` rejects drift. Counts describe code shape, not test quality or security approval.
 
-Current snapshot: **519 routes across 52 modules**. Registered middleware classifies 413 routes with required user authentication, 11 with optional authentication, 95 without user-auth middleware, 366 with current workspace-membership resolution, 178 with an explicit role/scope guard, and 53 with a route-level rate limit. The no-user-auth set includes 6 webhook routes whose provider signature/replay policy must be verified in their handler contract. These are registration facts, not proof of complete service/resource authorization.
+Current snapshot: **523 routes across 52 modules**. Registered middleware classifies 417 routes with required user authentication, 11 with optional authentication, 95 without user-auth middleware, 370 with current workspace-membership resolution, 178 with an explicit role/scope guard, and 53 with a route-level rate limit. The no-user-auth set includes 6 webhook routes whose provider signature/replay policy must be verified in their handler contract. These are registration facts, not proof of complete service/resource authorization.
 
 Credential configuration is indexed in [`docs/configuration.md`](../configuration.md), migration compatibility in [`docs/database/migration-operations.md`](../database/migration-operations.md), and architectural exceptions in the enforced debt baseline.
 
@@ -20,7 +20,7 @@ Credential configuration is indexed in [`docs/configuration.md`](../configuratio
 | `calendar` | 15 | 18 / 105 | 90 | yes | 0 | [microsoft.go](../../internal/modules/calendar/service/microsoft.go#L1) (583) |
 | `chatsessions` | 16 | 15 / 61 | 35 | yes | 0 | [chatsessions.go](../../internal/modules/chatsessions/http/chatsessions.go#L1) (661) |
 | `comments` | 2 | 6 / 18 | 8 | yes | 0 | [commands.go](../../internal/modules/comments/repository/commands.go#L1) (250) |
-| `customfields` | 8 | 6 / 12 | 26 | yes | 0 | [handlers.go](../../internal/modules/customfields/http/handlers.go#L1) (170) |
+| `customfields` | 8 | 7 / 14 | 26 | yes | 0 | [validation.go](../../internal/modules/customfields/domain/validation.go#L1) (170) |
 | `dataexport` | 0 | 2 / 2 | 4 | yes | 0 | [export.go](../../internal/modules/dataexport/http/export.go#L1) (68) |
 | `developeraccess` | 0 | 1 / 5 | 0 | no | 0 | [resolver.go](../../internal/modules/developeraccess/resolver.go#L1) (137) |
 | `developercredentials` | 11 | 7 / 24 | 29 | yes | 0 | [service_accounts.go](../../internal/modules/developercredentials/service/service_accounts.go#L1) (284) |
@@ -30,7 +30,7 @@ Credential configuration is indexed in [`docs/configuration.md`](../configuratio
 | `emailreply` | 1 | 11 / 49 | 22 | yes | 0 | [context_loader.go](../../internal/modules/emailreply/service/context_loader.go#L1) (495) |
 | `enterprisesso` | 7 | 3 / 7 | 15 | yes | 0 | [repository.go](../../internal/modules/enterprisesso/repository/repository.go#L1) (205) |
 | `epics` | 1 | 2 / 2 | 0 | no | 0 | [epics.go](../../internal/modules/epics/http/epics.go#L1) (41) |
-| `feedback` | 63 | 19 / 140 | 163 | yes | 0 | [models.go](../../internal/modules/feedback/http/models.go#L1) (609) |
+| `feedback` | 63 | 20 / 142 | 163 | yes | 0 | [models.go](../../internal/modules/feedback/http/models.go#L1) (609) |
 | `figma` | 12 | 10 / 29 | 26 | yes | 0 | [figma.go](../../internal/modules/figma/service/figma.go#L1) (453) |
 | `github` | 21 | 19 / 54 | 62 | yes | 0 | [lookups.go](../../internal/modules/github/repository/lookups.go#L1) (306) |
 | `gitlab` | 0 | 4 / 12 | 0 | no | 0 | [webhook_runtime.go](../../internal/modules/gitlab/webhook_runtime.go#L1) (229) |
@@ -41,9 +41,9 @@ Credential configuration is indexed in [`docs/configuration.md`](../configuratio
 | `keyresults` | 5 | 8 / 27 | 15 | yes | 0 | [keyresults.go](../../internal/modules/keyresults/http/keyresults.go#L1) (339) |
 | `labels` | 5 | 4 / 6 | 6 | yes | 0 | [repository.go](../../internal/modules/labels/repository/repository.go#L1) (203) |
 | `links` | 3 | 5 / 10 | 3 | yes | 0 | [links.go](../../internal/modules/links/http/links.go#L1) (115) |
-| `maya` | 7 | 22 / 119 | 30 | yes | 0 | [realtime_capabilities.go](../../internal/modules/maya/http/realtime_capabilities.go#L1) (624) |
+| `maya` | 11 | 26 / 130 | 35 | yes | 0 | [reconciliation_flow.go](../../internal/modules/maya/service/reconciliation_flow.go#L1) (645) |
 | `messaging` | 0 | 25 / 130 | 72 | yes | 0 | [team_work.go](../../internal/modules/messaging/service/team_work.go#L1) (654) |
-| `notifications` | 17 | 22 / 81 | 37 | yes | 0 | [rules_story_updates.go](../../internal/modules/notifications/service/rules_story_updates.go#L1) (420) |
+| `notifications` | 17 | 29 / 97 | 44 | yes | 0 | [rules_story_updates.go](../../internal/modules/notifications/service/rules_story_updates.go#L1) (420) |
 | `objectives` | 15 | 18 / 58 | 36 | yes | 0 | [strategy_communications.go](../../internal/modules/objectives/repository/strategy_communications.go#L1) (442) |
 | `objectivestatus` | 4 | 3 / 3 | 15 | yes | 0 | [repository.go](../../internal/modules/objectivestatus/repository/repository.go#L1) (318) |
 | `okractivities` | 0 | 4 / 12 | 3 | yes | 0 | [repository.go](../../internal/modules/okractivities/repository/repository.go#L1) (201) |
@@ -55,11 +55,11 @@ Credential configuration is indexed in [`docs/configuration.md`](../configuratio
 | `sprints` | 7 | 7 / 13 | 14 | yes | 0 | [models.go](../../internal/modules/sprints/http/models.go#L1) (270) |
 | `sse` | 1 | 0 / 0 | 0 | no | 0 | — |
 | `states` | 4 | 5 / 6 | 17 | yes | 0 | [repository.go](../../internal/modules/states/repository/repository.go#L1) (354) |
-| `stories` | 37 | 73 / 219 | 98 | yes | 0 | [secondary_mutations.go](../../internal/modules/stories/repository/secondary_mutations.go#L1) (470) |
+| `stories` | 37 | 74 / 222 | 102 | yes | 0 | [auto_scheduling.go](../../internal/modules/stories/service/auto_scheduling.go#L1) (473) |
 | `subscriptions` | 7 | 11 / 33 | 18 | yes | 0 | [subscriptions.go](../../internal/modules/subscriptions/http/subscriptions.go#L1) (294) |
 | `teams` | 12 | 8 / 22 | 22 | yes | 0 | [teams.go](../../internal/modules/teams/http/teams.go#L1) (600) |
 | `teamsettings` | 4 | 14 / 33 | 27 | yes | 0 | [sprint_automation.go](../../internal/modules/teamsettings/repository/sprint_automation.go#L1) (394) |
-| `users` | 31 | 29 / 94 | 156 | yes | 0 | [users.go](../../internal/modules/users/service/users.go#L1) (680) |
+| `users` | 31 | 30 / 96 | 157 | yes | 0 | [users.go](../../internal/modules/users/service/users.go#L1) (680) |
 | `workautomations` | 5 | 3 / 8 | 14 | yes | 0 | [worker.go](../../internal/modules/workautomations/service/worker.go#L1) (177) |
 | `workpresets` | 4 | 4 / 7 | 4 | yes | 0 | [validation.go](../../internal/modules/workpresets/service/validation.go#L1) (168) |
 | `workspaces` | 16 | 12 / 32 | 33 | yes | 0 | [lifecycle_maintenance.go](../../internal/modules/workspaces/repository/lifecycle_maintenance.go#L1) (482) |
@@ -455,13 +455,17 @@ Credential configuration is indexed in [`docs/configuration.md`](../configuratio
 
 | Method | Path | Registered guards | Handler | Registered middleware | Source |
 | --- | --- | --- | --- | --- | --- |
-| `POST` | `/workspaces/{workspaceSlug}/maya/realtime-session` | `auth=required; workspace=current` | `h.CreateRealtimeSession` | `auth → workspace` | [routes.go](../../internal/modules/maya/http/routes.go#L57) |
-| `POST` | `/workspaces/{workspaceSlug}/maya/realtime-session/end` | `auth=required; workspace=current` | `h.EndRealtimeSession` | `auth → workspace` | [routes.go](../../internal/modules/maya/http/routes.go#L58) |
-| `POST` | `/workspaces/{workspaceSlug}/maya/realtime-tool` | `auth=required; workspace=current` | `h.ExecuteRealtimeTool` | `auth → workspace` | [routes.go](../../internal/modules/maya/http/routes.go#L59) |
-| `POST` | `/workspaces/{workspaceSlug}/maya/schedule-issues/{storyId}/override` | `auth=required; workspace=current` | `h.OverrideScheduleIssue` | `auth → workspace` | [routes.go](../../internal/modules/maya/http/routes.go#L56) |
-| `POST` | `/workspaces/{workspaceSlug}/maya/schedule-issues/{storyId}/retry` | `auth=required; workspace=current` | `h.RetryScheduleIssue` | `auth → workspace` | [routes.go](../../internal/modules/maya/http/routes.go#L55) |
-| `POST` | `/workspaces/{workspaceSlug}/maya/work-plans` | `auth=required; workspace=current; role>=member` | `h.CreateWorkPlan` | `auth → workspace → memberAndAdmin` | [routes.go](../../internal/modules/maya/http/routes.go#L53) |
-| `POST` | `/workspaces/{workspaceSlug}/maya/work-plans/{runId}/apply` | `auth=required; workspace=current; role>=member` | `h.ApplyWorkPlan` | `auth → workspace → memberAndAdmin` | [routes.go](../../internal/modules/maya/http/routes.go#L54) |
+| `POST` | `/workspaces/{workspaceSlug}/maya/realtime-session` | `auth=required; workspace=current` | `h.CreateRealtimeSession` | `auth → workspace` | [routes.go](../../internal/modules/maya/http/routes.go#L62) |
+| `POST` | `/workspaces/{workspaceSlug}/maya/realtime-session/end` | `auth=required; workspace=current` | `h.EndRealtimeSession` | `auth → workspace` | [routes.go](../../internal/modules/maya/http/routes.go#L63) |
+| `POST` | `/workspaces/{workspaceSlug}/maya/realtime-tool` | `auth=required; workspace=current` | `h.ExecuteRealtimeTool` | `auth → workspace` | [routes.go](../../internal/modules/maya/http/routes.go#L64) |
+| `POST` | `/workspaces/{workspaceSlug}/maya/schedule-issues/{storyId}/override` | `auth=required; workspace=current` | `h.OverrideScheduleIssue` | `auth → workspace` | [routes.go](../../internal/modules/maya/http/routes.go#L61) |
+| `POST` | `/workspaces/{workspaceSlug}/maya/schedule-issues/{storyId}/retry` | `auth=required; workspace=current` | `h.RetryScheduleIssue` | `auth → workspace` | [routes.go](../../internal/modules/maya/http/routes.go#L60) |
+| `GET` | `/workspaces/{workspaceSlug}/maya/skills` | `auth=required; workspace=current` | `h.ListSkills` | `auth → workspace` | [routes.go](../../internal/modules/maya/http/routes.go#L53) |
+| `POST` | `/workspaces/{workspaceSlug}/maya/skills` | `auth=required; workspace=current` | `h.CreateSkill` | `auth → workspace` | [routes.go](../../internal/modules/maya/http/routes.go#L54) |
+| `DELETE` | `/workspaces/{workspaceSlug}/maya/skills/{skillId}` | `auth=required; workspace=current` | `h.DeleteSkill` | `auth → workspace` | [routes.go](../../internal/modules/maya/http/routes.go#L56) |
+| `PUT` | `/workspaces/{workspaceSlug}/maya/skills/{skillId}` | `auth=required; workspace=current` | `h.UpdateSkill` | `auth → workspace` | [routes.go](../../internal/modules/maya/http/routes.go#L55) |
+| `POST` | `/workspaces/{workspaceSlug}/maya/work-plans` | `auth=required; workspace=current; role>=member` | `h.CreateWorkPlan` | `auth → workspace → memberAndAdmin` | [routes.go](../../internal/modules/maya/http/routes.go#L58) |
+| `POST` | `/workspaces/{workspaceSlug}/maya/work-plans/{runId}/apply` | `auth=required; workspace=current; role>=member` | `h.ApplyWorkPlan` | `auth → workspace → memberAndAdmin` | [routes.go](../../internal/modules/maya/http/routes.go#L59) |
 ### notifications
 
 | Method | Path | Registered guards | Handler | Registered middleware | Source |

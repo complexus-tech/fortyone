@@ -19,6 +19,41 @@ WHERE outbox.story_id = sqlc.arg(story_id)
 ORDER BY outbox.transition_sequence DESC, outbox.schedule_transition_event_id DESC
 LIMIT 1;
 
+-- name: GetStoryScheduleIssue :one
+SELECT issue_id, owner_id, cause_code, resolved_at
+FROM public.story_schedule_issues
+WHERE workspace_id = sqlc.arg(workspace_id)
+  AND story_id = sqlc.arg(story_id);
+
+-- name: OpenStoryScheduleIssue :exec
+INSERT INTO public.story_schedule_issues (
+    workspace_id, story_id, issue_id, owner_id, cause_code, opened_at, updated_at
+) VALUES (
+    sqlc.arg(workspace_id), sqlc.arg(story_id), sqlc.arg(issue_id),
+    sqlc.arg(owner_id), sqlc.arg(cause_code), sqlc.arg(observed_at), sqlc.arg(observed_at)
+)
+ON CONFLICT (workspace_id, story_id) DO UPDATE
+SET issue_id = EXCLUDED.issue_id,
+    owner_id = EXCLUDED.owner_id,
+    cause_code = EXCLUDED.cause_code,
+    opened_at = EXCLUDED.opened_at,
+    updated_at = EXCLUDED.updated_at,
+    resolved_at = NULL;
+
+-- name: RefreshStoryScheduleIssue :exec
+UPDATE public.story_schedule_issues
+SET updated_at = sqlc.arg(observed_at)
+WHERE workspace_id = sqlc.arg(workspace_id)
+  AND story_id = sqlc.arg(story_id)
+  AND resolved_at IS NULL;
+
+-- name: ResolveStoryScheduleIssue :exec
+UPDATE public.story_schedule_issues
+SET resolved_at = sqlc.arg(observed_at), updated_at = sqlc.arg(observed_at)
+WHERE workspace_id = sqlc.arg(workspace_id)
+  AND story_id = sqlc.arg(story_id)
+  AND resolved_at IS NULL;
+
 -- name: UpdateStoryScheduleTransitionState :execrows
 UPDATE public.stories AS story
 SET

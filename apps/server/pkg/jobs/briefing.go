@@ -27,7 +27,8 @@ type BriefingContent struct {
 	Targets  []emailthread.TargetContext
 }
 
-// BuildBriefing consolidates daily deadlines and Monday's planning guidance.
+// BuildBriefing consolidates current deadlines and the weekly planning overview.
+// A missed Monday summary can catch up with current facts later in the week.
 // asOf is the recipient's calendar date, represented at UTC midnight for SQL date comparisons.
 func (s BriefingSources) BuildBriefing(ctx context.Context, recipient notifications.RoutineRecipient, asOf time.Time) (BriefingContent, error) {
 	var content BriefingContent
@@ -47,9 +48,6 @@ func (s BriefingSources) BuildBriefing(ctx context.Context, recipient notificati
 		}
 		section.Rows = appendBriefingMore(section.Rows, len(stories), base+"/my-work?tab=assigned", "stories")
 		content.Sections = append(content.Sections, section)
-	}
-	if asOf.Weekday() != time.Monday {
-		return content, nil
 	}
 	objectiveItems, err := s.Objectives.ListOverdueObjectiveGuidanceItems(ctx, asOf, recipient.UserID, recipient.WorkspaceID)
 	if err != nil {

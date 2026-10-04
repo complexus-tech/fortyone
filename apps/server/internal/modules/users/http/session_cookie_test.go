@@ -23,6 +23,26 @@ import (
 
 func TestPersistSessionStoresStructuredAccountEpoch(t *testing.T) {
 	t.Parallel()
+	handler, userID := sessionPersistenceTestHandler(t)
+	expiresAt := time.Now().Add(time.Hour)
+	request := httptest.NewRequest(http.MethodPost, "/users/verify", nil)
+	request.Header.Set("User-Agent", "Mozilla/5.0 Chrome/140.0.0.0 Safari/537.36")
+	request.Header.Set("Sec-CH-UA", `"Opera";v="123", "Chromium";v="140"`)
+
+	require.NoError(t, handler.persistSession(t.Context(), request, userID, "opaque-token", expiresAt))
+	var stored platformauth.BrowserSession
+	require.NoError(t, handler.cache.Get(t.Context(), cache.AuthSessionCacheKey("opaque-token"), &stored))
+	require.Equal(t, userID, stored.UserID)
+	require.Equal(t, int64(12), stored.Version)
+	require.NotEqual(t, uuid.Nil, stored.SessionID)
+	require.False(t, stored.AuthenticatedAt.IsZero())
+	require.Equal(t, expiresAt.UTC(), stored.ExpiresAt)
+	require.NotNil(t, stored.BrowserName)
+	require.Equal(t, "Opera", *stored.BrowserName)
+}
+
+func sessionPersistenceTestHandler(t *testing.T) (*Handlers, uuid.UUID) {
+	t.Helper()
 
 	redisServer := miniredis.RunT(t)
 	client := redis.NewClient(&redis.Options{Addr: redisServer.Addr()})
@@ -34,15 +54,51 @@ func TestPersistSessionStoresStructuredAccountEpoch(t *testing.T) {
 		userID: userID, version: 12,
 	}, nil)
 	handler := &Handlers{users: userService, cache: cacheService}
-	expiresAt := time.Now().Add(time.Hour)
+	return handler, userID
+}
 
-	require.NoError(t, handler.persistSession(t.Context(), userID, "opaque-token", expiresAt))
+func TestSessionRenewalPreservesBrowserAndHistoricalUnknown(t *testing.T) {
+	t.Parallel()
+	safari := "Safari"
+	for _, test := range []struct {
+		name    string
+		browser *string
+	}{{"historical unknown", nil}, {"recorded browser", &safari}} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			handler, userID := sessionPersistenceTestHandler(t)
+			previous, err := platformauth.NewBrowserSession(userID, 12)
+			require.NoError(t, err)
+			previous.BrowserName = test.browser
+			ctx := platformauth.SetBrowserSession(t.Context(), previous)
+			request := httptest.NewRequest(http.MethodPost, "/users/session", nil)
+			request.Header.Set("User-Agent", "Mozilla/5.0 Chrome/140.0.0.0 Safari/537.36")
+			require.NoError(t, handler.persistSession(ctx, request, userID, "renewed-token", time.Now().Add(time.Hour)))
+			var stored platformauth.BrowserSession
+			require.NoError(t, handler.cache.Get(ctx, cache.AuthSessionCacheKey("renewed-token"), &stored))
+			require.Equal(t, previous.SessionID, stored.SessionID)
+			require.Equal(t, previous.AuthenticatedAt, stored.AuthenticatedAt)
+			require.Equal(t, test.browser, stored.BrowserName)
+		})
+	}
+}
+
+func TestWorkspaceSSOSessionCapturesReportedBrowser(t *testing.T) {
+	t.Parallel()
+	handler, userID := sessionPersistenceTestHandler(t)
+	writer := &WorkspaceSSOSessionWriter{handlers: handler}
+	request := httptest.NewRequest(http.MethodGet, "/workspaces/security/sso/callback", nil)
+	request.Header.Set("Sec-CH-UA", `"Dia";v="1", "Chromium";v="140"`)
+	proof := platformauth.WorkspaceSSOAuthentication{WorkspaceID: uuid.New(), ConnectionID: uuid.New(), Generation: 1, AuthenticatedAt: time.Now().UTC()}
+	response := httptest.NewRecorder()
+	require.NoError(t, writer.Issue(t.Context(), response, request, userID, proof))
+	cookie := requireSingleSessionCookie(t, response)
 	var stored platformauth.BrowserSession
-	require.NoError(t, cacheService.Get(t.Context(), cache.AuthSessionCacheKey("opaque-token"), &stored))
-	require.Equal(t, userID, stored.UserID)
-	require.Equal(t, int64(12), stored.Version)
-	require.NotEqual(t, uuid.Nil, stored.SessionID)
-	require.False(t, stored.AuthenticatedAt.IsZero())
+	require.NoError(t, handler.cache.Get(t.Context(), cache.AuthSessionCacheKey(cookie.Value), &stored))
+	require.Equal(t, &proof, stored.WorkspaceSSO)
+	require.Equal(t, proof.AuthenticatedAt, stored.AuthenticatedAt)
+	require.NotNil(t, stored.BrowserName)
+	require.Equal(t, "Dia", *stored.BrowserName)
 }
 
 type sessionVersionRepository struct {

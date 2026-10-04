@@ -23,6 +23,8 @@ export const BaseGanttBar = <T extends GanttItem>({
   renderContent,
   className,
   onInteractionChange,
+  expanded,
+  detailsPanelId,
 }: {
   item: T;
   dateRange: GanttDateRange;
@@ -32,6 +34,8 @@ export const BaseGanttBar = <T extends GanttItem>({
   renderContent: (item: T) => ReactNode;
   className?: string;
   onInteractionChange?: (itemId: string | null) => void;
+  expanded?: boolean;
+  detailsPanelId?: string;
 }) => {
   const interactionActiveRef = useRef(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -222,6 +226,8 @@ export const BaseGanttBar = <T extends GanttItem>({
 
   return (
     <Box
+      aria-controls={expanded ? detailsPanelId : undefined}
+      aria-expanded={onBarClick ? expanded : undefined}
       className={cn(
         "group border-border focus-visible:ring-primary dark:border-border/70 dark:bg-surface/80 bg-surface-muted/80 absolute z-0 h-10 rounded-xl border-[0.5px] backdrop-blur-2xl transition-colors focus-visible:ring-1 focus-visible:outline-none",
         {
@@ -230,7 +236,9 @@ export const BaseGanttBar = <T extends GanttItem>({
             onBarClick,
         },
         className,
+        expanded && "border-primary ring-primary/60 z-10 ring-1",
       )}
+      data-selected={expanded || undefined}
       onKeyDown={(event) => {
         if (!onBarClick || (event.key !== "Enter" && event.key !== " ")) {
           return;

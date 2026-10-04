@@ -1,4 +1,5 @@
 import type { Editor } from "@tiptap/core";
+import { useEffect } from "react";
 import Document from "@tiptap/extension-document";
 import Paragraph from "@tiptap/extension-paragraph";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -9,14 +10,21 @@ import { createRichTextExtensions } from "@/lib/tiptap/rich-text-extensions";
 
 export const useNewStoryDialogEditors = ({
   description,
+  editable = true,
+  onDescriptionChange,
   onMediaFiles,
   onMediaRequest,
   onStoryTitleChange,
   storyTerm,
 }: {
   description?: string;
-  onMediaFiles: (editor: Editor, files: File[]) => void;
-  onMediaRequest: () => void;
+  editable?: boolean;
+  onDescriptionChange?: (value: {
+    description: string;
+    descriptionHTML: string;
+  }) => void;
+  onMediaFiles?: (editor: Editor, files: File[]) => void;
+  onMediaRequest?: () => void;
   onStoryTitleChange: (title: string) => void;
   storyTerm: string;
 }) => {
@@ -28,9 +36,12 @@ export const useNewStoryDialogEditors = ({
       Placeholder.configure({ placeholder: "Enter title..." }),
     ],
     content: "",
-    editable: true,
+    editable,
     autofocus: true,
     immediatelyRender: false,
+    editorProps: {
+      attributes: { "aria-label": `${storyTerm} title`, role: "textbox" },
+    },
     onUpdate: ({ editor }) => {
       onStoryTitleChange(editor.getText());
     },
@@ -43,9 +54,27 @@ export const useNewStoryDialogEditors = ({
       placeholder: `${storyTerm} description — type / for commands`,
     }),
     content: marked.parse(description || "", { gfm: true }),
-    editable: true,
+    editable,
     immediatelyRender: false,
+    editorProps: {
+      attributes: {
+        "aria-label": "Description",
+        "aria-multiline": "true",
+        role: "textbox",
+      },
+    },
+    onUpdate: ({ editor }) => {
+      onDescriptionChange?.({
+        description: editor.getText(),
+        descriptionHTML: editor.getHTML(),
+      });
+    },
   });
+
+  useEffect(() => {
+    titleEditor?.setEditable(editable, false);
+    descriptionEditor?.setEditable(editable, false);
+  }, [descriptionEditor, editable, titleEditor]);
 
   return { descriptionEditor, titleEditor };
 };

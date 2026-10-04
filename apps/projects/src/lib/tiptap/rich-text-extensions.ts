@@ -10,8 +10,8 @@ import {
 } from "./rich-text-media";
 
 type CreateRichTextExtensionsOptions = {
-  onMediaFiles: (editor: Editor, files: File[], position?: number) => void;
-  onMediaRequest: (editor: Editor) => void;
+  onMediaFiles?: (editor: Editor, files: File[], position?: number) => void;
+  onMediaRequest?: (editor: Editor) => void;
   placeholder: string;
   collaborative?: boolean;
 };
@@ -29,7 +29,9 @@ export const createRichTextExtensions = ({
   }),
   RichTextMarkdown,
   RichTextMarkdownPaste,
-  RichTextMediaDrop.configure({ onFiles: onMediaFiles }),
+  ...(onMediaFiles
+    ? [RichTextMediaDrop.configure({ onFiles: onMediaFiles })]
+    : []),
   Placeholder.configure({ placeholder }),
-  SlashCommand.configure({ onMediaRequest }),
+  SlashCommand.configure({ onMediaRequest: onMediaRequest ?? null }),
 ];

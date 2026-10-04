@@ -16,6 +16,8 @@ export const browserSessionSchema = z.object({
   id: z.string().uuid(),
   userId: z.string().uuid(),
   name: z.string(),
+  username: z.string().optional(),
+  browserName: z.string().nullable().optional(),
   email: z.string(),
   role: z.string(),
   authenticatedAt: date,
@@ -41,6 +43,7 @@ export const auditEventSchema = z.object({
   metadata: z.record(z.string(), z.unknown()),
   createdAt: date,
 });
+export type AuditEvent = z.infer<typeof auditEventSchema>;
 export const auditPageSchema = z.object({
   items: auditEventSchema.array(),
   nextCursor: z.string(),

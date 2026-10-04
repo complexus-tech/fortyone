@@ -50,7 +50,6 @@ export const ObjectiveCard = ({
   priority,
   scheduleStatus,
   color,
-  onSelect,
   onSelectionChange,
   selected = false,
   progress: progressOverride,
@@ -63,7 +62,6 @@ export const ObjectiveCard = ({
   isExpanded?: boolean;
   isInTeam?: boolean;
   isInSearch?: boolean;
-  onSelect?: () => void;
   onSelectionChange?: (checked: boolean) => void;
   onToggleExpanded?: () => void;
   progress?: number;
@@ -168,25 +166,14 @@ export const ObjectiveCard = ({
               {objectiveReference}
             </Text>
           ) : null}
-          {onSelect ? (
-            <button
-              className="focus-visible:ring-primary flex min-w-0 flex-1 items-center rounded-sm text-left outline-none hover:opacity-90 focus-visible:ring-1"
-              onClick={onSelect}
-              type="button"
-            >
-              <Text className="min-w-0 truncate pr-2">{name}</Text>
-              <ObjectiveForecastRiskBadge objective={forecastRisk} size="row" />
-            </button>
-          ) : (
-            <Link
-              className="flex min-w-0 flex-1 items-center hover:opacity-90"
-              href={withWorkspace(`/teams/${teamId}/objectives/${id}`)}
-              prefetch
-            >
-              <Text className="min-w-0 truncate pr-2">{name}</Text>
-              <ObjectiveForecastRiskBadge objective={forecastRisk} size="row" />
-            </Link>
-          )}
+          <Link
+            className="focus-visible:ring-primary flex min-w-0 flex-1 items-center rounded-sm outline-none hover:opacity-90 focus-visible:ring-1"
+            href={withWorkspace(`/teams/${teamId}/objectives/${id}`)}
+            prefetch
+          >
+            <Text className="min-w-0 truncate pr-2">{name}</Text>
+            <ObjectiveForecastRiskBadge objective={forecastRisk} size="row" />
+          </Link>
         </Box>
       </Box>
       <Flex align="center" className="shrink-0 gap-2">

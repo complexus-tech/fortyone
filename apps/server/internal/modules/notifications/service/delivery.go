@@ -37,3 +37,10 @@ func (service *Service) MarkEmailSent(ctx context.Context, scope notificationsdo
 		At:              service.clock.Now().UTC(),
 	})
 }
+
+func (service *Service) MarkEmailSnapshotsSent(ctx context.Context, scope notificationsdomain.DeliveryScope, snapshots []notificationsdomain.EmailSnapshot) error {
+	if len(snapshots) == 0 {
+		return nil
+	}
+	return service.repo.MarkEmailSent(ctx, notificationsdomain.MarkEmailSent{Scope: scope, NotificationSnapshots: snapshots, At: service.clock.Now().UTC()})
+}

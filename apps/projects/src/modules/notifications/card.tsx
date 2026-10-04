@@ -33,8 +33,7 @@ export const NotificationCard = ({
   readAt,
   createdAt,
   actor,
-  index,
-}: AppNotification & { index: number }) => {
+}: AppNotification) => {
   const pathname = usePathname();
   const { withWorkspace } = useWorkspacePath();
   const mayaActor = actor?.isSystem ? actor : null;
@@ -46,7 +45,7 @@ export const NotificationCard = ({
   const { getTermDisplay } = useTerminology();
 
   const handleReadNotification = () => {
-    readNotification(id);
+    readNotification({ id, observedCreatedAt: createdAt });
   };
 
   const handleDelete = () => {
@@ -84,21 +83,22 @@ export const NotificationCard = ({
   return (
     <ContextMenu>
       <ContextMenu.Trigger>
-        <Box>
+        <Box className="min-w-0">
           <Link
-            className="block"
+            className="block min-w-0"
             href={withWorkspace(
               getNotificationDetailsPath({
                 entityId,
                 entityType,
                 notificationId: id,
+                observedCreatedAt: createdAt,
               }),
             )}
-            prefetch={index <= 10 ? true : null}
+            prefetch={false}
           >
             <Box
               className={cn(
-                "border-border block cursor-pointer border-b-[0.5px] px-5 py-[0.655rem] transition md:px-4",
+                "border-border block min-w-0 cursor-pointer overflow-hidden border-b-[0.5px] px-5 py-[0.655rem] transition md:px-4",
                 {
                   "bg-primary/5 hover:bg-primary/5": isActive,
                   "hover:bg-surface-muted": !isActive,
@@ -109,7 +109,7 @@ export const NotificationCard = ({
                 <Flex align="center" className="min-w-0 flex-1" gap={2}>
                   {isUnread ? <ListItemAttentionDot /> : null}
                   <Text
-                    className="line-clamp-1 flex-1 font-medium"
+                    className="min-w-0 flex-1 truncate font-medium"
                     color={isUnread ? undefined : "muted"}
                   >
                     {title}
@@ -120,7 +120,7 @@ export const NotificationCard = ({
                 </Text>
               </Flex>
               <Flex align="center" gap={3} justify="between">
-                <Flex align="center" className="flex-1" gap={2}>
+                <Flex align="center" className="min-w-0 flex-1" gap={2}>
                   {mayaActor ? (
                     <MayaAvatar
                       className="shrink-0"
@@ -138,10 +138,14 @@ export const NotificationCard = ({
                   )}
 
                   <Tooltip
-                    className="max-w-[200px]"
-                    title={<span>{messageContent}</span>}
+                    className="max-h-[min(24rem,80vh)] max-w-[min(24rem,calc(100vw-2rem))] overflow-y-auto [overflow-wrap:anywhere]"
+                    title={
+                      <span className="whitespace-pre-wrap">
+                        {messageContent}
+                      </span>
+                    }
                   >
-                    <Text className="line-clamp-1" color="muted">
+                    <Text className="min-w-0 flex-1 truncate" color="muted">
                       <span>{messageContent}</span>
                     </Text>
                   </Tooltip>

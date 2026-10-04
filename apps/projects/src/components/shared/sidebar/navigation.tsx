@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { cn } from "lib";
 import { Box, Collapsible, Flex } from "ui";
 import {
@@ -9,6 +9,7 @@ import {
   ChevronRightIcon,
   DashboardIcon,
   DocsIcon,
+  ViewsIcon,
   RoadmapIcon,
   StrategyIcon,
   UserIcon,
@@ -41,6 +42,8 @@ export const Navigation = ({
   isCollapsed?: boolean;
 }) => {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const teamScope = searchParams.get("team");
   const { withWorkspace, workspaceSlug } = useWorkspacePath();
   const { data: runningSprints = [] } = useRunningSprints();
   const { getTermDisplay } = useTerminology();
@@ -104,6 +107,11 @@ export const Navigation = ({
       disabled: !features.objectiveEnabled,
     },
     {
+      name: "Views",
+      icon: <ViewsIcon className={isCollapsed ? "h-5.5" : undefined} />,
+      href: withWorkspace("/views"),
+    },
+    {
       name: "Strategy Map",
       icon: <StrategyIcon className={isCollapsed ? "h-5.5" : undefined} />,
       href: withWorkspace("/strategy"),
@@ -116,8 +124,16 @@ export const Navigation = ({
     },
   ];
 
-  const isLinkActive = (href: string) =>
-    pathname === href || pathname.startsWith(`${href}/`);
+  const isSelectedStoryView =
+    pathname.startsWith(withWorkspace("/teams/")) &&
+    /^[^/]+\/stories$/.test(pathname.slice(withWorkspace("/teams/").length)) &&
+    Boolean(searchParams.get("view"));
+  const isLinkActive = (href: string) => {
+    if (href === withWorkspace("/views")) {
+      return isSelectedStoryView || (pathname === href && !teamScope);
+    }
+    return pathname === href || pathname.startsWith(`${href}/`);
+  };
 
   const renderLinks = (links: MenuItem[]) =>
     links.map(({ name, icon, href, disabled }) => {

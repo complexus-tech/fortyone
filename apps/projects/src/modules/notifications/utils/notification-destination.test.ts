@@ -32,6 +32,21 @@ describe("notification destinations", () => {
     );
   });
 
+  it("preserves the displayed timestamp precision in a detail link", () => {
+    const observedCreatedAt = "2026-10-03T20:00:00.123456789+02:00";
+    const path = getNotificationDetailsPath({
+      entityId: "story-1",
+      entityType: "story",
+      notificationId: "notification-1",
+      observedCreatedAt,
+    });
+    expect(
+      new URL(path, "https://fortyone.app").searchParams.get(
+        "observedCreatedAt",
+      ),
+    ).toBe(observedCreatedAt);
+  });
+
   it("rejects ambiguous and unsupported search parameters", () => {
     expect(
       getSingleSearchParam(["objective-1", "objective-2"]),

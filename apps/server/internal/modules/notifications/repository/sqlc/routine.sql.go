@@ -12,6 +12,51 @@ import (
 	"github.com/google/uuid"
 )
 
+const beginRoutineEmailSend = `-- name: BeginRoutineEmailSend :execrows
+UPDATE routine_email_deliveries AS delivery
+SET send_started_at = CAST($1 AS timestamptz)
+WHERE delivery.id = $2
+    AND delivery.recipient_id = $3
+    AND delivery.workspace_id = $4
+    AND delivery.status = 'processing'
+    AND delivery.send_started_at IS NULL
+    AND NOT EXISTS (
+        SELECT 1 FROM routine_email_deliveries AS other
+        WHERE other.recipient_id = delivery.recipient_id
+            AND other.workspace_id = delivery.workspace_id
+            AND other.kind = 'activity'
+            AND other.id <> delivery.id
+            AND (other.status = 'sent'
+                OR (other.status = 'processing' AND other.send_started_at IS NOT NULL))
+            AND (
+                date_trunc('week', CAST(other.local_date AS timestamp))
+                    = date_trunc('week', CAST(delivery.local_date AS timestamp))
+                OR COALESCE(other.send_started_at, other.completed_at, other.claimed_at)
+                    > CAST($1 AS timestamptz) - INTERVAL '168 hours'
+            )
+    )
+`
+
+type BeginRoutineEmailSendParams struct {
+	Now         time.Time
+	ID          uuid.UUID
+	RecipientID uuid.UUID
+	WorkspaceID uuid.UUID
+}
+
+func (q *Queries) BeginRoutineEmailSend(ctx context.Context, arg BeginRoutineEmailSendParams) (int64, error) {
+	result, err := q.db.Exec(ctx, beginRoutineEmailSend,
+		arg.Now,
+		arg.ID,
+		arg.RecipientID,
+		arg.WorkspaceID,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const claimRoutineEmail = `-- name: ClaimRoutineEmail :one
 INSERT INTO routine_email_deliveries (
     recipient_id, workspace_id, delivery_key, kind, local_date, status, claimed_at
@@ -22,10 +67,12 @@ VALUES (
 )
 ON CONFLICT (recipient_id, workspace_id, delivery_key) DO UPDATE
 SET id = gen_random_uuid(), status = 'processing',
-    claimed_at = EXCLUDED.claimed_at, local_date = EXCLUDED.local_date
-WHERE routine_email_deliveries.status = 'failed'
+    claimed_at = EXCLUDED.claimed_at, local_date = EXCLUDED.local_date,
+    send_started_at = NULL
+WHERE routine_email_deliveries.status IN ('failed', 'skipped')
     OR (routine_email_deliveries.status = 'processing'
-        AND routine_email_deliveries.claimed_at <= $7)
+        AND routine_email_deliveries.claimed_at <= $7
+        AND routine_email_deliveries.send_started_at IS NULL)
 RETURNING id
 `
 
@@ -202,6 +249,41 @@ func (q *Queries) HasRoutineEmailGuidance(ctx context.Context, arg HasRoutineEma
 	return exists, err
 }
 
+const hasSentRoutineEmailWeek = `-- name: HasSentRoutineEmailWeek :one
+SELECT EXISTS (
+    SELECT 1 FROM routine_email_deliveries
+    WHERE recipient_id = $1
+        AND workspace_id = $2
+        AND kind = 'activity'
+        AND (status = 'sent' OR (status = 'processing' AND send_started_at IS NOT NULL))
+        AND (
+            date_trunc('week', CAST(local_date AS timestamp))
+                = date_trunc('week', CAST($3 AS timestamp))
+            OR COALESCE(send_started_at, completed_at, claimed_at)
+                > CAST($4 AS timestamptz) - INTERVAL '168 hours'
+        )
+)
+`
+
+type HasSentRoutineEmailWeekParams struct {
+	RecipientID uuid.UUID
+	WorkspaceID uuid.UUID
+	LocalDate   time.Time
+	Now         time.Time
+}
+
+func (q *Queries) HasSentRoutineEmailWeek(ctx context.Context, arg HasSentRoutineEmailWeekParams) (bool, error) {
+	row := q.db.QueryRow(ctx, hasSentRoutineEmailWeek,
+		arg.RecipientID,
+		arg.WorkspaceID,
+		arg.LocalDate,
+		arg.Now,
+	)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const listRoutineEmailRecipients = `-- name: ListRoutineEmailRecipients :many
 SELECT
     account.user_id,
@@ -222,6 +304,22 @@ LEFT JOIN notification_preferences AS preference
 WHERE account.is_active
     AND NOT account.is_system
     AND NULLIF(TRIM(account.email), '') IS NOT NULL
+    AND (
+        EXISTS (
+            SELECT 1 FROM notifications AS pending
+            WHERE pending.recipient_id = account.user_id
+                AND pending.workspace_id = workspace.workspace_id
+                AND pending.read_at IS NULL
+                AND pending.email_sent_at IS NULL
+        )
+        OR EXISTS (
+            SELECT 1 FROM feedback_board_subscriptions AS subscription
+            JOIN feedback_boards AS board ON board.id = subscription.board_id
+            WHERE subscription.user_id = account.user_id
+                AND board.workspace_id = workspace.workspace_id
+                AND subscription.email_frequency IN ('daily', 'weekly')
+        )
+    )
     AND (
         NOT CAST($1 AS boolean)
         OR (workspace.workspace_id, account.user_id) > ($2, $3)

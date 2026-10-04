@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { InfiniteData } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { loadWipCapacity } from "@/modules/stories/public/wip-capacity";
 import { memberKeys } from "@/constants/keys";
 import { objectiveKeys } from "@/modules/objectives/constants";
 import { deriveAutoSchedulingStatus } from "@/lib/auto-scheduling";
@@ -20,6 +21,13 @@ import {
   parseGroupQueryKey,
   updateStoryInGroups,
 } from "@/modules/stories/utils/optimistic";
+import type { WipStorySnapshot } from "@/shared/story/wip-capacity";
+import {
+  affectsWipCapacity,
+  captureWipStorySnapshots,
+  isWipCapacityQuery,
+  refreshWipCapacity,
+} from "@/shared/story/wip-capacity";
 import type { DetailedStory, StoryUpdate } from "../types";
 import { updateStoryAction } from "../actions/update-story";
 
@@ -31,6 +39,7 @@ type UpdateStoryVariables = {
 type UpdateStoryContext = {
   previousStory?: DetailedStory;
   previousQueryStates: Map<readonly unknown[], unknown>;
+  wipSnapshots: WipStorySnapshot[];
 };
 
 export const useUpdateStoryMutation = () => {
@@ -54,6 +63,12 @@ export const useUpdateStoryMutation = () => {
     },
 
     onMutate: async ({ storyId, payload }) => {
+      const wipSnapshots = await captureWipStorySnapshots(
+        queryClient,
+        workspaceSlug,
+        [storyId],
+        payload,
+      );
       const storyPayload = { ...payload };
       delete storyPayload.reconcileDescriptionMedia;
 
@@ -111,7 +126,7 @@ export const useUpdateStoryMutation = () => {
           },
         );
       }
-      return { previousStory, previousQueryStates };
+      return { previousStory, previousQueryStates, wipSnapshots };
     },
 
     onError: (error, variables, context) => {
@@ -137,7 +152,7 @@ export const useUpdateStoryMutation = () => {
       });
     },
 
-    onSuccess: (_res, { storyId, payload }) => {
+    onSuccess: (_res, { storyId, payload }, context) => {
       const storyPayload = { ...payload };
       delete storyPayload.reconcileDescriptionMedia;
       analytics.track("story_updated", {
@@ -148,7 +163,19 @@ export const useUpdateStoryMutation = () => {
       queryClient.invalidateQueries({
         queryKey: storyKeys.all(workspaceSlug),
         refetchType: "inactive",
+        predicate: (query) =>
+          !affectsWipCapacity(payload) ||
+          !isWipCapacityQuery(query, workspaceSlug),
       });
+      if (affectsWipCapacity(payload)) {
+        void refreshWipCapacity({
+          queryClient,
+          workspaceSlug,
+          loadCapacity: loadWipCapacity,
+          snapshots: context.wipSnapshots,
+          payload,
+        });
+      }
       queryClient.invalidateQueries({
         queryKey: storyKeys.all(workspaceSlug),
         predicate: (query) =>

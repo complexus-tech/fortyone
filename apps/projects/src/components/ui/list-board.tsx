@@ -12,6 +12,7 @@ import { useMembers } from "@/lib/hooks/members";
 import type { Member } from "@/types";
 import { useTeamMembers } from "@/lib/hooks/team-members";
 import type { State } from "@/types/states";
+import { useBoardPropertySlots } from "@/shared/story/board-property-slots";
 import { BodyContainer } from "../shared/body";
 
 const GroupedStories = ({
@@ -78,30 +79,48 @@ export const ListBoard = ({
   const members = teamId ? teamMembers : allMembers;
   const { data: teamStatuses = [] } = useTeamStatuses(teamId);
   const { data: allStatuses = [] } = useStatuses();
-  const statuses = teamId ? teamStatuses : allStatuses;
+  const scopedStatuses = teamId ? teamStatuses : allStatuses;
+  const { WorkflowCounts } = useBoardPropertySlots();
 
   return (
-    <BodyContainer
-      className={cn(
-        "overflow-x-auto pb-6",
-        {
-          "h-auto pb-0": isInSearch,
-        },
-        className,
-      )}
+    <WorkflowCounts
+      enabled={
+        viewOptions.groupBy === "status" &&
+        scopedStatuses.some((status) => status.wipLimit)
+      }
+      teamId={teamId}
     >
-      {groupedStories.groups.map((group) => (
-        <GroupedStories
-          group={group}
-          isInSearch={isInSearch}
-          key={group.key}
-          members={members}
-          meta={groupedStories.meta}
-          rowClassName={rowClassName}
-          statuses={statuses}
-          viewOptions={viewOptions}
-        />
-      ))}
-    </BodyContainer>
+      {(activeCounts) => {
+        const statuses = scopedStatuses.map((status) => ({
+          ...status,
+          activeCount: activeCounts.get(status.id) ?? status.activeCount,
+        }));
+
+        return (
+          <BodyContainer
+            className={cn(
+              "overflow-x-auto pb-6",
+              {
+                "h-auto pb-0": isInSearch,
+              },
+              className,
+            )}
+          >
+            {groupedStories.groups.map((group) => (
+              <GroupedStories
+                group={group}
+                isInSearch={isInSearch}
+                key={group.key}
+                members={members}
+                meta={groupedStories.meta}
+                rowClassName={rowClassName}
+                statuses={statuses}
+                viewOptions={viewOptions}
+              />
+            ))}
+          </BodyContainer>
+        );
+      }}
+    </WorkflowCounts>
   );
 };

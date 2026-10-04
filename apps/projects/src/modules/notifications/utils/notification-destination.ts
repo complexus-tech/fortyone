@@ -23,10 +23,14 @@ export const getNotificationDetailsPath = ({
   entityId,
   entityType,
   notificationId,
+  observedCreatedAt,
 }: Pick<AppNotification, "entityId" | "entityType"> & {
   notificationId: string;
+  observedCreatedAt?: string;
 }) => {
   const searchParams = new URLSearchParams({ entityId, entityType });
+  if (observedCreatedAt)
+    searchParams.set("observedCreatedAt", observedCreatedAt);
 
   return `/notifications/${encodeURIComponent(notificationId)}?${searchParams.toString()}`;
 };

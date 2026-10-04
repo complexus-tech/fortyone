@@ -35,6 +35,7 @@ const getFailureDescription = (
 export class BulkStoryUpdateFailure extends Error {
   readonly failedCount: number;
   readonly failedStoryIds: string[];
+  readonly successfulStoryIds: string[];
   readonly totalCount: number;
 
   constructor(result: BulkStoryUpdateResult) {
@@ -51,7 +52,16 @@ export class BulkStoryUpdateFailure extends Error {
     super(getFailureDescription(failedItems, inferredFailedCount));
     this.name = "BulkStoryUpdateFailure";
     this.failedCount = inferredFailedCount;
-    this.failedStoryIds = failedItems.map(({ storyId }) => storyId);
+    this.failedStoryIds = Array.from(
+      new Set(failedItems.map(({ storyId }) => storyId)),
+    );
+    this.successfulStoryIds = Array.from(
+      new Set(
+        result.items
+          .filter(({ success }) => success)
+          .map(({ storyId }) => storyId),
+      ),
+    );
     this.totalCount = result.totalCount;
   }
 }

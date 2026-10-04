@@ -36,7 +36,7 @@ func buildStoryScheduleTransitionAt(
 		return nil
 	}
 	for _, block := range previousBlocks {
-		if block.UserID != userID {
+		if block.UserID != userID && schedulingIssueCode(status, PlanResult{}) == "" {
 			// Assignment/reassignment has its own reason-aware StoryUpdated event.
 			// Suppress a second schedule-move notification for the same decision.
 			return nil
@@ -89,6 +89,12 @@ func buildStoryScheduleTransitionAt(
 		(status == AutoSchedulingStatusNeedsTime || status == AutoSchedulingStatusCannotFit || status == AutoSchedulingStatusAtRisk) {
 		kind = events.StoryScheduleTransitionStateChanged
 	}
+	issueCode := schedulingIssueCode(status, PlanResult{})
+	if kind == "" && issueCode != "" {
+		// Persistent issue identity is decided under the story lock, rather than
+		// inferred from the planner's transient state or explanation text.
+		kind = events.StoryScheduleTransitionStateChanged
+	}
 	if kind == "" {
 		return nil
 	}
@@ -105,6 +111,7 @@ func buildStoryScheduleTransitionAt(
 		PreviousLocalDate: previousLocalDate,
 		LocalDate:         localDateValue,
 		ShiftMinutes:      shiftMinutes,
+		IssueCode:         issueCode,
 	}
 }
 

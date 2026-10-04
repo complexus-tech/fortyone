@@ -474,6 +474,9 @@ func (s *Service) finalizeAppliedWorkPlan(ctx context.Context, plannedStory Stor
 	}
 	reason = refineScheduleOutcomeReason(previousBlocks, segments, status, reason)
 	transition := buildStoryScheduleTransition(story, ownerID, previousBlocks, segments, result.Timezone, status, reason)
+	if transition != nil {
+		transition.IssueCode = schedulingIssueCode(status, result)
+	}
 	return s.stories.UpdateAutomationStateIfUnchanged(
 		ctx, s.mayaActorID, story.ID, story.Workspace, story.UpdatedAt,
 		status, &reason, nil, transition,

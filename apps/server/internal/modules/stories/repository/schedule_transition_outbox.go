@@ -81,9 +81,41 @@ func (r *repo) UpdateAutoSchedulingStateAndClaimTransitionIfUnchanged(
 		if locked != nil {
 			targetLocked = *locked
 		}
-		if isImmediateScheduleTransitionRetry(
+		sameIssue := false
+		if outbox.Issue != nil {
+			previous, issueErr := queries.GetStoryScheduleIssue(ctx, storyreadsql.GetStoryScheduleIssueParams{
+				WorkspaceID: workspaceID, StoryID: storyID,
+			})
+			if issueErr != nil && !errors.Is(issueErr, pgx.ErrNoRows) {
+				return fmt.Errorf("read story scheduling issue: %w", issueErr)
+			}
+			sameIssue = issueErr == nil && sameUnresolvedScheduleIssue(previous.OwnerID, previous.CauseCode, previous.ResolvedAt, *outbox.Issue)
+			if sameIssue {
+				if err := queries.RefreshStoryScheduleIssue(ctx, storyreadsql.RefreshStoryScheduleIssueParams{
+					WorkspaceID: workspaceID, StoryID: storyID, ObservedAt: stateUpdatedAt.UTC(),
+				}); err != nil {
+					return fmt.Errorf("refresh story scheduling issue: %w", err)
+				}
+			} else if err := queries.OpenStoryScheduleIssue(ctx, storyreadsql.OpenStoryScheduleIssueParams{
+				WorkspaceID: workspaceID, StoryID: storyID, IssueID: outbox.Issue.ID,
+				OwnerID: outbox.Issue.OwnerID, CauseCode: outbox.Issue.Code, ObservedAt: stateUpdatedAt.UTC(),
+			}); err != nil {
+				return fmt.Errorf("open story scheduling issue: %w", err)
+			}
+		} else if storydomain.ResolvesScheduleIssue(status) {
+			if err := queries.ResolveStoryScheduleIssue(ctx, storyreadsql.ResolveStoryScheduleIssueParams{
+				WorkspaceID: workspaceID, StoryID: storyID, ObservedAt: timePointer(stateUpdatedAt.UTC()),
+			}); err != nil {
+				return fmt.Errorf("resolve story scheduling issue: %w", err)
+			}
+		}
+		if outbox.Issue == nil && isImmediateScheduleTransitionRetry(
 			current, latest, hasLatest, status, reason, targetLocked, outbox.SemanticFingerprint,
 		) {
+			applied = true
+			return nil
+		}
+		if outbox.StateOnly && current.Status == status && equalScheduleTransitionReason(current.Reason, reason) && current.Locked == targetLocked {
 			applied = true
 			return nil
 		}
@@ -98,6 +130,12 @@ func (r *repo) UpdateAutoSchedulingStateAndClaimTransitionIfUnchanged(
 			return fmt.Errorf("update story state for schedule transition: %w", err)
 		}
 		if updated != 1 {
+			return nil
+		}
+		if sameIssue || outbox.StateOnly {
+			// Persist updated facts without re-announcing the same unresolved
+			// problem, even when an edit temporarily reset the story to planning.
+			applied = true
 			return nil
 		}
 
@@ -246,7 +284,14 @@ func validateScheduleTransitionOutboxInput(
 		strings.TrimSpace(input.SemanticFingerprint) == "" || len(input.EventPayload) == 0 || !json.Valid(input.EventPayload) {
 		return errors.New("story schedule transition outbox input is incomplete")
 	}
+	if input.Issue != nil && (input.StateOnly || input.Issue.ID == uuid.Nil || input.Issue.OwnerID == uuid.Nil || strings.TrimSpace(input.Issue.Code) == "") {
+		return errors.New("story scheduling issue identity is incomplete")
+	}
 	return nil
+}
+
+func sameUnresolvedScheduleIssue(ownerID uuid.UUID, code string, resolvedAt *time.Time, next storydomain.ScheduleIssue) bool {
+	return resolvedAt == nil && ownerID == next.OwnerID && code == next.Code
 }
 
 func claimGuardedScheduleTransitionResult(rows int64, err error) error {

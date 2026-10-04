@@ -18,6 +18,7 @@ type NotificationSearchParams = {
   entityId?: string | string[];
   entityType?: string | string[];
   objectiveId?: string | string[];
+  observedCreatedAt?: string | string[];
 };
 
 export async function generateMetadata({
@@ -79,16 +80,19 @@ export default async function Page({
   const entityId = getSingleSearchParam(rawSearchParams.entityId);
   const entityTypeValue = getSingleSearchParam(rawSearchParams.entityType);
   const objectiveId = getSingleSearchParam(rawSearchParams.objectiveId);
+  const observedCreatedAt = getSingleSearchParam(
+    rawSearchParams.observedCreatedAt,
+  );
   const notificationsPath = withWorkspacePath("/notifications", workspaceSlug);
 
   if (!entityId || !isNotificationEntityType(entityTypeValue)) {
-    await readNotification(notificationId, workspaceSlug);
+    await readNotification(notificationId, workspaceSlug, observedCreatedAt);
     return redirect(notificationsPath);
   }
 
   const entityType = entityTypeValue;
   if (entityType === "strategy") {
-    await readNotification(notificationId, workspaceSlug);
+    await readNotification(notificationId, workspaceSlug, observedCreatedAt);
     return redirect(withWorkspacePath("/strategy", workspaceSlug));
   }
 
@@ -96,7 +100,7 @@ export default async function Page({
     const parentObjectiveId =
       entityType === "key_result" ? objectiveId : entityId;
     if (!parentObjectiveId) {
-      await readNotification(notificationId, workspaceSlug);
+      await readNotification(notificationId, workspaceSlug, observedCreatedAt);
       return redirect(notificationsPath);
     }
 
@@ -125,11 +129,11 @@ export default async function Page({
       keyResultResolution?.status === "terminal" ||
       objectiveResolution.value.id !== parentObjectiveId
     ) {
-      await readNotification(notificationId, workspaceSlug);
+      await readNotification(notificationId, workspaceSlug, observedCreatedAt);
       return redirect(notificationsPath);
     }
 
-    await readNotification(notificationId, workspaceSlug);
+    await readNotification(notificationId, workspaceSlug, observedCreatedAt);
     return redirect(
       withWorkspacePath(
         getObjectiveDetailsPath({
@@ -146,6 +150,7 @@ export default async function Page({
     <NotificationStoryDetails
       entityId={entityId}
       notificationId={notificationId}
+      observedCreatedAt={observedCreatedAt}
     />
   );
 }

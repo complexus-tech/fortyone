@@ -40,6 +40,7 @@ const getNotificationEmailDelivery = `-- name: GetNotificationEmailDelivery :one
 WITH eligible_notification AS (
     SELECT
         notification.notification_id,
+        sha256(convert_to(CAST(jsonb_build_array(notification.type, notification.entity_type, notification.entity_id, notification.actor_id, notification.title, notification.message) AS text), 'UTF8')) AS content_hash,
         notification.recipient_id,
         notification.workspace_id,
         notification.type,
@@ -98,6 +99,33 @@ WITH eligible_notification AS (
       AND notification.workspace_id = CAST($3 AS uuid)
       AND notification.read_at IS NULL
       AND notification.email_sent_at IS NULL
+  AND (
+      notification.message -> 'scheduleIssue' IS NULL
+      OR EXISTS (
+          SELECT 1 FROM public.story_schedule_issues AS issue
+          WHERE issue.workspace_id = notification.workspace_id
+            AND issue.story_id = notification.entity_id
+            AND CAST(issue.issue_id AS text) = notification.message -> 'scheduleIssue' ->> 'id'
+            AND CAST(issue.owner_id AS text) = notification.message -> 'scheduleIssue' ->> 'ownerId'
+            AND issue.owner_id = notification.recipient_id
+            AND issue.resolved_at IS NULL
+            AND EXISTS (
+                SELECT 1 FROM public.stories AS current_story
+                WHERE current_story.id = issue.story_id
+                  AND current_story.workspace_id = issue.workspace_id
+                  AND current_story.assignee_id = issue.owner_id
+                  AND current_story.auto_scheduling_enabled = TRUE
+                  AND current_story.completed_at IS NULL
+                  AND current_story.archived_at IS NULL
+                  AND current_story.deleted_at IS NULL
+                  AND NOT EXISTS (
+                      SELECT 1 FROM public.statuses AS current_status
+                      WHERE current_status.status_id = current_story.status_id
+                        AND current_status.category IN ('completed', 'cancelled')
+                  )
+            )
+      )
+  )
       AND (
           (
               CAST(notification.entity_type AS text) = 'feedback'
@@ -204,6 +232,7 @@ WITH eligible_notification AS (
 )
 SELECT
     eligible.notification_id,
+    eligible.content_hash,
     eligible.recipient_id,
     eligible.workspace_id,
     eligible.type,
@@ -232,6 +261,7 @@ type GetNotificationEmailDeliveryParams struct {
 
 type GetNotificationEmailDeliveryRow struct {
 	NotificationID uuid.UUID
+	ContentHash    []byte
 	RecipientID    uuid.UUID
 	WorkspaceID    uuid.UUID
 	Type           NotificationType
@@ -259,6 +289,7 @@ func (q *Queries) GetNotificationEmailDelivery(ctx context.Context, arg GetNotif
 	var i GetNotificationEmailDeliveryRow
 	err := row.Scan(
 		&i.NotificationID,
+		&i.ContentHash,
 		&i.RecipientID,
 		&i.WorkspaceID,
 		&i.Type,
@@ -328,6 +359,7 @@ func (q *Queries) ListNotificationDeliveryTeamIDs(ctx context.Context, arg ListN
 const listNotificationEmailDigestDeliveries = `-- name: ListNotificationEmailDigestDeliveries :many
 SELECT
     notification.notification_id,
+    sha256(convert_to(CAST(jsonb_build_array(notification.type, notification.entity_type, notification.entity_id, notification.actor_id, notification.title, notification.message) AS text), 'UTF8')) AS content_hash,
     notification.recipient_id,
     notification.workspace_id,
     notification.type,
@@ -372,6 +404,33 @@ WHERE notification.recipient_id = CAST($1 AS uuid)
   AND notification.workspace_id = CAST($2 AS uuid)
   AND notification.read_at IS NULL
   AND notification.email_sent_at IS NULL
+  AND (
+      notification.message -> 'scheduleIssue' IS NULL
+      OR EXISTS (
+          SELECT 1 FROM public.story_schedule_issues AS issue
+          WHERE issue.workspace_id = notification.workspace_id
+            AND issue.story_id = notification.entity_id
+            AND CAST(issue.issue_id AS text) = notification.message -> 'scheduleIssue' ->> 'id'
+            AND CAST(issue.owner_id AS text) = notification.message -> 'scheduleIssue' ->> 'ownerId'
+            AND issue.owner_id = notification.recipient_id
+            AND issue.resolved_at IS NULL
+            AND EXISTS (
+                SELECT 1 FROM public.stories AS current_story
+                WHERE current_story.id = issue.story_id
+                  AND current_story.workspace_id = issue.workspace_id
+                  AND current_story.assignee_id = issue.owner_id
+                  AND current_story.auto_scheduling_enabled = TRUE
+                  AND current_story.completed_at IS NULL
+                  AND current_story.archived_at IS NULL
+                  AND current_story.deleted_at IS NULL
+                  AND NOT EXISTS (
+                      SELECT 1 FROM public.statuses AS current_status
+                      WHERE current_status.status_id = current_story.status_id
+                        AND current_status.category IN ('completed', 'cancelled')
+                  )
+            )
+      )
+  )
   AND CASE
       WHEN jsonb_typeof(
           preference.preferences
@@ -499,6 +558,7 @@ type ListNotificationEmailDigestDeliveriesParams struct {
 
 type ListNotificationEmailDigestDeliveriesRow struct {
 	NotificationID uuid.UUID
+	ContentHash    []byte
 	RecipientID    uuid.UUID
 	WorkspaceID    uuid.UUID
 	Type           NotificationType
@@ -531,6 +591,7 @@ func (q *Queries) ListNotificationEmailDigestDeliveries(ctx context.Context, arg
 		var i ListNotificationEmailDigestDeliveriesRow
 		if err := rows.Scan(
 			&i.NotificationID,
+			&i.ContentHash,
 			&i.RecipientID,
 			&i.WorkspaceID,
 			&i.Type,
@@ -559,6 +620,48 @@ func (q *Queries) ListNotificationEmailDigestDeliveries(ctx context.Context, arg
 	return items, nil
 }
 
+const markNotificationEmailSnapshotsSent = `-- name: MarkNotificationEmailSnapshotsSent :execrows
+WITH snapshots AS (
+    SELECT CAST(snapshot.notification_id AS uuid) AS notification_id,
+           decode(snapshot.content_hash, 'hex') AS content_hash
+    FROM jsonb_to_recordset(CAST($4 AS jsonb)) AS snapshot(notification_id text, content_hash text)
+), receipts AS (
+    INSERT INTO public.notification_email_receipts (recipient_id, workspace_id, content_hash, sent_at)
+    SELECT CAST($2 AS uuid), CAST($3 AS uuid), snapshots.content_hash, CAST($1 AS timestamptz)
+    FROM snapshots
+    ON CONFLICT (recipient_id, workspace_id, content_hash) DO NOTHING
+)
+UPDATE public.notifications AS notification
+SET email_sent_at = COALESCE(notification.email_sent_at, CAST($1 AS timestamptz))
+FROM snapshots
+WHERE notification.recipient_id = CAST($2 AS uuid)
+  AND notification.workspace_id = CAST($3 AS uuid)
+  AND notification.notification_id = snapshots.notification_id
+  AND snapshots.content_hash = sha256(convert_to(CAST(jsonb_build_array(notification.type, notification.entity_type, notification.entity_id, notification.actor_id, notification.title, notification.message) AS text), 'UTF8'))
+`
+
+type MarkNotificationEmailSnapshotsSentParams struct {
+	SentAt      time.Time
+	RecipientID uuid.UUID
+	WorkspaceID uuid.UUID
+	Snapshots   []byte
+}
+
+// Record the sent snapshot even when an inbox refresh raced the send. Only the
+// matching current content is marked covered; newer content remains pending.
+func (q *Queries) MarkNotificationEmailSnapshotsSent(ctx context.Context, arg MarkNotificationEmailSnapshotsSentParams) (int64, error) {
+	result, err := q.db.Exec(ctx, markNotificationEmailSnapshotsSent,
+		arg.SentAt,
+		arg.RecipientID,
+		arg.WorkspaceID,
+		arg.Snapshots,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const markNotificationEmailsSent = `-- name: MarkNotificationEmailsSent :execrows
 WITH covered AS (
     UPDATE public.notifications AS notification
@@ -566,7 +669,8 @@ WITH covered AS (
     WHERE notification.recipient_id = CAST($2 AS uuid)
       AND notification.workspace_id = CAST($3 AS uuid)
       AND notification.notification_id = ANY(CAST($4 AS uuid[]))
-    RETURNING notification.notification_id, notification.recipient_id, notification.workspace_id, notification.type, notification.entity_type, notification.entity_id, notification.actor_id, notification.title, notification.created_at, notification.read_at, notification.message, notification.email_sent_at, notification.dedupe_key, notification.in_app_enabled, notification.push_sent_at
+      AND (notification.type <> 'story_update' OR notification.entity_type <> 'story')
+    RETURNING notification.notification_id, notification.recipient_id, notification.workspace_id, notification.type, notification.entity_type, notification.entity_id, notification.actor_id, notification.title, notification.created_at, notification.read_at, notification.message, notification.email_sent_at, notification.dedupe_key, notification.in_app_enabled, notification.push_sent_at, notification.event_at, notification.coalescing_key
 )
 INSERT INTO public.notification_email_receipts (recipient_id, workspace_id, content_hash, sent_at)
 SELECT covered.recipient_id, covered.workspace_id, sha256(convert_to(CAST(jsonb_build_array(covered.type, covered.entity_type, covered.entity_id, covered.actor_id, covered.title, covered.message) AS text), 'UTF8')), MIN(covered.email_sent_at)

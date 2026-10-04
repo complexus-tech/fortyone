@@ -50,6 +50,11 @@ func Routes(cfg Config, app *web.App) {
 	workspace := mid.Workspace(cfg.Log, cfg.WorkspaceResolver)
 	memberAndAdmin := mid.RequireMinimumRole(cfg.Log, mid.RoleMember)
 
+	app.Get("/workspaces/{workspaceSlug}/maya/skills", h.ListSkills, auth, workspace)
+	app.Post("/workspaces/{workspaceSlug}/maya/skills", h.CreateSkill, auth, workspace)
+	app.Put("/workspaces/{workspaceSlug}/maya/skills/{skillId}", h.UpdateSkill, auth, workspace)
+	app.Delete("/workspaces/{workspaceSlug}/maya/skills/{skillId}", h.DeleteSkill, auth, workspace)
+
 	app.Post("/workspaces/{workspaceSlug}/maya/work-plans", h.CreateWorkPlan, auth, workspace, memberAndAdmin)
 	app.Post("/workspaces/{workspaceSlug}/maya/work-plans/{runId}/apply", h.ApplyWorkPlan, auth, workspace, memberAndAdmin)
 	app.Post("/workspaces/{workspaceSlug}/maya/schedule-issues/{storyId}/retry", h.RetryScheduleIssue, auth, workspace)

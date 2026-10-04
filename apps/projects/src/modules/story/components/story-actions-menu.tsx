@@ -36,6 +36,7 @@ import { useBulkDeleteStoryMutation } from "@/modules/stories/hooks/delete-mutat
 import { useBulkRestoreStoryMutation } from "@/modules/stories/hooks/restore-mutation";
 import { useBulkUnarchiveStoryMutation } from "@/modules/stories/hooks/unarchive-mutation";
 import { getStoryPath } from "@/shared/routing/story";
+import { FavoriteMenuItem } from "@/shared/favorites";
 import { SaveTaskTemplate } from "@/modules/work-presets/public/template-actions";
 import { useSetStoryWatchingMutation } from "../hooks/collaboration-mutations";
 import { useDuplicateStoryMutation } from "../hooks/duplicate-mutation";
@@ -354,6 +355,10 @@ export const StoryActionsMenu = ({
         </Menu.Button>
         <Menu.Items align={align} className="min-w-52">
           <Menu.Group>
+            <FavoriteMenuItem
+              item={{ kind: "story", id: data.id }}
+              name={data.title}
+            />
             <StoryStatusSubMenu
               disabled={!canUpdateProperties}
               statusId={data.statusId}
@@ -383,7 +388,9 @@ export const StoryActionsMenu = ({
             </Menu.Item>
             <Menu.Item
               disabled={!canEdit || isDeleted}
-              onSelect={() => { openDialogAfterMenuClose(setIsTemplateOpen); }}
+              onSelect={() => {
+                openDialogAfterMenuClose(setIsTemplateOpen);
+              }}
             >
               <DuplicateIcon />
               Save as template

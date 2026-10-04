@@ -2,8 +2,12 @@ package notificationshttp
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"net/url"
+	"time"
 
+	notifications "github.com/complexus-tech/projects-api/internal/modules/notifications/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
@@ -63,7 +67,28 @@ func (handlers *Handlers) GetUnreadCount(ctx context.Context, response http.Resp
 }
 
 func (handlers *Handlers) MarkAsRead(ctx context.Context, response http.ResponseWriter, request *http.Request) error {
-	return handlers.mutateNotification(ctx, response, request, handlers.notifications.MarkAsRead)
+	return handlers.mutateNotification(ctx, response, request, func(ctx context.Context, notificationID, actorID, workspaceID uuid.UUID) error {
+		observedCreatedAt, err := parseObservedCreatedAt(request.URL.Query())
+		if err != nil {
+			return err
+		}
+		return handlers.notifications.MarkAsReadObserved(ctx, notificationID, actorID, workspaceID, observedCreatedAt)
+	})
+}
+
+func parseObservedCreatedAt(values url.Values) (*time.Time, error) {
+	value, present, err := web.OptionalTextQueryParameter(values, "observedCreatedAt", 64, 64)
+	if err != nil {
+		return nil, fmt.Errorf("%w: invalid observedCreatedAt", notifications.ErrInvalid)
+	}
+	if !present {
+		return nil, nil
+	}
+	observed, err := time.Parse(time.RFC3339Nano, value)
+	if err != nil || observed.IsZero() {
+		return nil, fmt.Errorf("%w: observedCreatedAt must be a valid timestamp", notifications.ErrInvalid)
+	}
+	return &observed, nil
 }
 
 func (handlers *Handlers) MarkAsUnread(ctx context.Context, response http.ResponseWriter, request *http.Request) error {

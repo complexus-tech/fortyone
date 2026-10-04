@@ -79,7 +79,7 @@ func TestCommentNotificationContentRemainsStructuredData(t *testing.T) {
 			message := notifications[0].Message
 			assert.Equal(t, test.wantTemplate, message.Template)
 			assert.NotContains(t, message.Template, content)
-			assert.Equal(t, Variable{Value: content, Type: "text"}, message.Variables["content"])
+			assert.Equal(t, Variable{Value: "<entity>", Type: "plain_text"}, message.Variables["content"])
 		})
 	}
 }

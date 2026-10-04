@@ -11,6 +11,16 @@ import { ListStories } from "./list-stories";
 jest.mock("@/hooks", () => ({
   useLocalStorage: jest.requireActual("@/hooks/local-storage").useLocalStorage,
 }));
+jest.mock("next/navigation", () => ({
+  useParams: () => ({ teamId: "team" }),
+  useSearchParams: () => new URLSearchParams(),
+}));
+jest.mock("@/lib/auth/client", () => ({
+  useSession: () => ({ data: { user: { id: "user" } } }),
+}));
+jest.mock("@/hooks/use-workspace-path", () => ({
+  useWorkspacePath: () => ({ workspaceSlug: "acme" }),
+}));
 jest.mock("ui", () => ({
   Box: ({ children, ...props }: HTMLAttributes<HTMLDivElement>) => (
     <div {...props}>{children}</div>

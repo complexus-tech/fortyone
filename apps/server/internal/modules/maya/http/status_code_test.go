@@ -28,6 +28,10 @@ func TestStatusCodeMapsAutoSchedulingContractErrors(t *testing.T) {
 		{name: "incomplete Maya scheduling intent", err: stories.ErrMayaAssignmentRequiresDeliveryDate, status: http.StatusBadRequest},
 		{name: "missing scoped plan", err: maya.ErrPlanNotFound, status: http.StatusNotFound},
 		{name: "invalid plan", err: maya.ErrInvalidPlanInput, status: http.StatusBadRequest},
+		{name: "missing scoped skill", err: maya.ErrSkillNotFound, status: http.StatusNotFound},
+		{name: "invalid skill", err: maya.ErrInvalidSkill, status: http.StatusBadRequest},
+		{name: "duplicate skill name", err: maya.ErrSkillNameTaken, status: http.StatusConflict},
+		{name: "stale skill", err: maya.ErrSkillChanged, status: http.StatusConflict},
 	}
 
 	for _, test := range tests {

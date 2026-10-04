@@ -79,6 +79,11 @@ export const buttonVariants = cva(
         className: "bg-transparent border-foreground text-foreground",
       },
       {
+        variant: "outline",
+        color: "danger",
+        className: "bg-transparent dark:text-danger-foreground",
+      },
+      {
         variant: "solid",
         color: "secondary",
         className: "text-secondary-foreground",

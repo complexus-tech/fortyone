@@ -4,6 +4,13 @@ import { useParams } from "next/navigation";
 import type { InfiniteData } from "@tanstack/react-query";
 import { useAnalytics, useTerminology, useWorkspacePath } from "@/hooks";
 import { objectiveKeys } from "@/shared/objectives/keys";
+import type { WipStorySnapshot } from "@/shared/story/wip-capacity";
+import {
+  affectsWipCapacity,
+  captureWipStorySnapshots,
+  isWipCapacityQuery,
+  refreshWipCapacity,
+} from "@/shared/story/wip-capacity";
 import { storyKeys } from "../constants";
 import type {
   DetailedStory,
@@ -12,6 +19,7 @@ import type {
   Story,
 } from "../types";
 import { bulkUpdateAction } from "../actions/bulk-update-stories";
+import { loadWipCapacity } from "../public/wip-capacity";
 import {
   assertBulkStoryUpdateSucceeded,
   BulkStoryUpdateFailure,
@@ -24,6 +32,7 @@ type BulkUpdateVariables = {
 
 type BulkUpdateContext = {
   previousQueryStates: Map<string, unknown>;
+  wipSnapshots: WipStorySnapshot[];
 };
 
 const restorePreviousQueryStates = (
@@ -155,7 +164,7 @@ export const useBulkUpdateStoriesMutation = () => {
   const mutation = useMutation({
     mutationFn: async ({ storyIds, payload }: BulkUpdateVariables) => {
       const response = await bulkUpdateAction(
-        { storyIds, updates: payload },
+        { storyIds: Array.from(new Set(storyIds)), updates: payload },
         workspaceSlug,
       );
 
@@ -169,7 +178,13 @@ export const useBulkUpdateStoriesMutation = () => {
       return assertBulkStoryUpdateSucceeded(response.data);
     },
 
-    onMutate: ({ storyIds, payload }) => {
+    onMutate: async ({ storyIds, payload }) => {
+      const wipSnapshots = await captureWipStorySnapshots(
+        queryClient,
+        workspaceSlug,
+        storyIds,
+        payload,
+      );
       const previousQueryStates = new Map<string, unknown>();
       const queryCache = queryClient.getQueryCache();
       const queries = queryCache.getAll();
@@ -205,19 +220,36 @@ export const useBulkUpdateStoriesMutation = () => {
         }
       }
 
-      return { previousQueryStates };
+      return { previousQueryStates, wipSnapshots };
     },
 
     onError: (error, variables, context) => {
       restorePreviousQueryStates(queryClient, context);
 
-      queryClient.invalidateQueries({ queryKey: storyKeys.all(workspaceSlug) });
+      const itemFailure =
+        error instanceof BulkStoryUpdateFailure ? error : null;
+      const hasPersistedChanges = Boolean(
+        itemFailure?.successfulStoryIds.length,
+      );
+      queryClient.invalidateQueries({
+        queryKey: storyKeys.all(workspaceSlug),
+        predicate: (query) =>
+          !hasPersistedChanges || !isWipCapacityQuery(query, workspaceSlug),
+      });
       queryClient.invalidateQueries({
         queryKey: objectiveKeys.list(workspaceSlug),
       });
 
-      const itemFailure =
-        error instanceof BulkStoryUpdateFailure ? error : null;
+      if (hasPersistedChanges && affectsWipCapacity(variables.payload)) {
+        void refreshWipCapacity({
+          queryClient,
+          workspaceSlug,
+          loadCapacity: loadWipCapacity,
+          snapshots: context?.wipSnapshots,
+          payload: variables.payload,
+          successfulStoryIds: itemFailure?.successfulStoryIds,
+        });
+      }
       const retryStoryIds =
         itemFailure &&
         itemFailure.failedStoryIds.length === itemFailure.failedCount
@@ -246,14 +278,30 @@ export const useBulkUpdateStoriesMutation = () => {
       });
     },
 
-    onSuccess: (_result, { storyIds, payload }) => {
+    onSuccess: (_result, { storyIds, payload }, context) => {
+      const uniqueStoryIds = Array.from(new Set(storyIds));
       analytics.track("stories_bulk_updated", {
-        storyIds,
-        count: storyIds.length,
+        storyIds: uniqueStoryIds,
+        count: uniqueStoryIds.length,
         ...payload,
       });
 
-      queryClient.invalidateQueries({ queryKey: storyKeys.all(workspaceSlug) });
+      queryClient.invalidateQueries({
+        queryKey: storyKeys.all(workspaceSlug),
+        predicate: (query) =>
+          !affectsWipCapacity(payload) ||
+          !isWipCapacityQuery(query, workspaceSlug),
+      });
+      if (affectsWipCapacity(payload)) {
+        void refreshWipCapacity({
+          queryClient,
+          workspaceSlug,
+          loadCapacity: loadWipCapacity,
+          snapshots: context.wipSnapshots,
+          payload,
+          successfulStoryIds: uniqueStoryIds,
+        });
+      }
     },
   });
 

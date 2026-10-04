@@ -18,27 +18,24 @@ export const WorkspaceSecuritySettings = ({
     return <Text color="muted">Workspace admins manage security.</Text>;
   return (
     <Box>
-      <Text as="h1" className="mb-2 text-2xl font-medium">
-        Workspace security
+      <Text as="h1" className="mb-6 text-2xl font-medium">
+        Security
       </Text>
-      <Text className="max-w-3xl" color="muted">
-        Manage access, sessions, and administrative activity.
-      </Text>
-      <Tabs className="mt-6" defaultValue={initialTab}>
-        <Tabs.List className="mx-0 mb-5 flex-nowrap overflow-x-auto md:mx-0">
+      <Tabs defaultValue={initialTab}>
+        <Tabs.List className="mx-0 mb-4 max-w-full flex-nowrap overflow-x-auto md:mx-0 [&>button]:shrink-0">
           <Tabs.Tab value="policies">Access policies</Tabs.Tab>
           <Tabs.Tab value="sso">Single sign-on</Tabs.Tab>
           <Tabs.Tab value="provisioning">Provisioning</Tabs.Tab>
           <Tabs.Tab value="sessions">Member sessions</Tabs.Tab>
           <Tabs.Tab value="audit">Audit log</Tabs.Tab>
         </Tabs.List>
-        <Tabs.Panel value="policies">
+        <Tabs.Panel className="max-w-[48rem]" value="policies">
           <SecurityPolicies />
         </Tabs.Panel>
-        <Tabs.Panel value="sso">
+        <Tabs.Panel className="max-w-[48rem]" value="sso">
           <SecuritySingleSignOn />
         </Tabs.Panel>
-        <Tabs.Panel value="provisioning">
+        <Tabs.Panel className="max-w-[48rem]" value="provisioning">
           <SecurityProvisioning />
         </Tabs.Panel>
         <Tabs.Panel value="sessions">

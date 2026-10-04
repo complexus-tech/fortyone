@@ -128,7 +128,8 @@ type strategyMonthlySummarySnapshot struct {
 
 // NotificationEmailData represents all data needed for sending notification emails
 type NotificationEmailData struct {
-	NotificationID   uuid.UUID       `db:"notification_id"`
+	NotificationID   uuid.UUID `db:"notification_id"`
+	ContentHash      []byte
 	RecipientID      uuid.UUID       `db:"recipient_id"`
 	WorkspaceID      uuid.UUID       `db:"workspace_id"`
 	NotificationType string          `db:"type"`
@@ -149,7 +150,8 @@ type NotificationEmailData struct {
 }
 
 type NotificationEmailDigestItem struct {
-	NotificationID   uuid.UUID       `db:"notification_id"`
+	NotificationID   uuid.UUID `db:"notification_id"`
+	ContentHash      []byte
 	NotificationType string          `db:"type"`
 	EntityType       string          `db:"entity_type"`
 	EntityID         uuid.UUID       `db:"entity_id"`

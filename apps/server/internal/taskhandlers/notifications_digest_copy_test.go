@@ -402,7 +402,7 @@ func TestTaskDigestKeepsLatestEventBeforeApplyingDetailLimit(t *testing.T) {
 	items := make([]NotificationEmailDigestItem, 0, 10)
 	for i := range 7 {
 		items = append(items, NotificationEmailDigestItem{
-			NotificationID: uuid.New(), EntityType: "story", EntityID: taskID,
+			NotificationID: uuid.New(), NotificationType: "story_update", EntityType: "story", EntityID: taskID,
 			Title: "Ticketing system mobile app", CreatedAt: now.Add(time.Duration(i) * time.Minute),
 			Message: json.RawMessage(`{"template":"hector changed priority to High"}`),
 		})
@@ -447,7 +447,7 @@ func TestTaskDigestKeepsLatestEventBeforeApplyingDetailLimit(t *testing.T) {
 
 func TestLatestTaskDigestItemsPreservesOtherEntitiesAndUsesStableTies(t *testing.T) {
 	entityID := uuid.New()
-	older := NotificationEmailDigestItem{EntityType: "story", EntityID: entityID, NotificationID: uuid.MustParse("00000000-0000-0000-0000-000000000001")}
+	older := NotificationEmailDigestItem{NotificationType: "story_update", EntityType: "story", EntityID: entityID, NotificationID: uuid.MustParse("00000000-0000-0000-0000-000000000001")}
 	newer := older
 	newer.NotificationID = uuid.MustParse("00000000-0000-0000-0000-000000000002")
 	feedback := older

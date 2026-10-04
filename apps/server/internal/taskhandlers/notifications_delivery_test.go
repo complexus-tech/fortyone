@@ -61,6 +61,22 @@ func (stub *notificationDeliveryStoreStub) MarkEmailSent(
 	return stub.err
 }
 
+func (stub *notificationDeliveryStoreStub) MarkEmailSnapshotsSent(_ context.Context, scope notificationsdomain.DeliveryScope, snapshots []notificationsdomain.EmailSnapshot) error {
+	stub.markScope = scope
+	stub.markedIDs = make([]uuid.UUID, len(snapshots))
+	for index, snapshot := range snapshots {
+		stub.markedIDs[index] = snapshot.NotificationID
+	}
+	return stub.err
+}
+
+func TestNotificationPlainTextVariablesPreserveLiteralHTMLSyntax(t *testing.T) {
+	message := NotificationMessage{Template: "New comment: {content}", Variables: map[string]Variable{"content": {Value: "Use <example> &amp; literally", Type: "plain_text"}}}
+	parsed := parseNotificationMessage(message)
+	require.Equal(t, "New comment: Use <example> &amp; literally", parsed.Text)
+	require.Contains(t, parsed.HTML, "Use &lt;example&gt; &amp;amp; literally")
+}
+
 func TestNotificationTaskHandlerUsesScopedDeliveryPort(t *testing.T) {
 	t.Parallel()
 

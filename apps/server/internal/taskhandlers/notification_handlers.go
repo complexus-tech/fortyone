@@ -2,196 +2,230 @@ package taskhandlers
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
-	notificationsdomain "github.com/complexus-tech/projects-api/internal/modules/notifications/domain"
+	feedback "github.com/complexus-tech/projects-api/internal/modules/feedback/domain"
+	notifications "github.com/complexus-tech/projects-api/internal/modules/notifications/domain"
+	"github.com/complexus-tech/projects-api/pkg/jobs"
 	"github.com/complexus-tech/projects-api/pkg/mailer"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
 )
 
-// HandleNotificationEmail processes the notification email task.
+// Older queued single-notification jobs join the same weekly workspace summary.
 func (h *handlers) HandleNotificationEmail(ctx context.Context, t *asynq.Task) error {
-	// Older queued tasks must join the recipient/workspace batch too.
 	return h.HandleNotificationEmailDigest(ctx, t)
 }
 
-// HandleNotificationEmailDigest processes a coalesced notification email task.
 func (h *handlers) HandleNotificationEmailDigest(ctx context.Context, t *asynq.Task) error {
 	return h.handleNotificationEmailDigestAt(ctx, t, time.Now().UTC())
 }
 
 func (h *handlers) handleNotificationEmailDigestAt(ctx context.Context, t *asynq.Task, now time.Time) error {
-	taskID, _ := asynq.GetTaskID(ctx)
-	var p tasks.NotificationEmailDigestPayload
-	if err := json.Unmarshal(t.Payload(), &p); err != nil {
-		h.log.Error(ctx, "Failed to unmarshal NotificationEmailDigestPayload in Handlers", "error", err, "task_id", taskID)
-		return fmt.Errorf("unmarshal payload failed: %w: %w", err, asynq.SkipRetry)
+	var payload tasks.NotificationEmailDigestPayload
+	if err := json.Unmarshal(t.Payload(), &payload); err != nil {
+		return fmt.Errorf("unmarshal notification digest: %w: %w", err, asynq.SkipRetry)
 	}
-
-	h.log.Info(ctx, "HANDLER: Processing NotificationEmailDigest task",
-		"recipient_id", p.RecipientID,
-		"workspace_id", p.WorkspaceID,
-		"task_id", taskID,
-	)
-
-	data, err := h.getNotificationEmailDigestData(ctx, p.RecipientID, p.WorkspaceID)
+	scope := notifications.DeliveryScope{RecipientID: payload.RecipientID, WorkspaceID: payload.WorkspaceID}
+	if err := scope.Validate(); err != nil {
+		return fmt.Errorf("invalid digest scope: %w: %w", err, asynq.SkipRetry)
+	}
+	recipient, err := h.routineRecipient(ctx, scope)
 	if err != nil {
-		h.log.Error(ctx, "Failed to get notification email digest data", "error", err, "task_id", taskID)
 		return err
 	}
-
-	if data == nil || len(data.Items) == 0 {
-		h.log.Info(ctx, "No unread unsent notifications for digest - skipping email",
-			"recipient_id", p.RecipientID,
-			"workspace_id", p.WorkspaceID,
-			"task_id", taskID)
+	timezone := "UTC"
+	if recipient != nil {
+		timezone = recipient.Timezone
+	}
+	date, ready := routineDeliveryDate(now, timezone)
+	if h.routineDeliveries != nil && !ready {
+		// The hourly sweep picks up pending content after the weekly delivery window opens.
 		return nil
 	}
-	// Take a shared claim before re-reading so a briefing cannot consume the
-	// same notification snapshot between our eligibility check and send.
+
 	claimID := uuid.Nil
-	completed := false
+	accepted := false
 	if h.routineDeliveries != nil {
-		claimID, err = h.routineDeliveries.ClaimRoutine(ctx, notificationsdomain.RoutineClaim{RecipientID: p.RecipientID, WorkspaceID: p.WorkspaceID, Key: notificationDigestMessageID(*data), Kind: "activity", LocalDate: now, Now: now})
-		if err != nil {
+		claimID, err = h.routineDeliveries.ClaimRoutine(ctx, notifications.RoutineClaim{
+			RecipientID: scope.RecipientID, WorkspaceID: scope.WorkspaceID,
+			Key: routineDeliveryKey(date), Kind: "activity", LocalDate: date, Now: now,
+		})
+		if err != nil || claimID == uuid.Nil {
 			return err
 		}
-		if claimID == uuid.Nil {
-			return nil
-		}
 		defer func() {
-			if !completed {
+			if !accepted {
 				if err := h.failRoutine(ctx, claimID); err != nil {
-					h.log.Error(ctx, "Release activity email claim", "error", err)
+					h.log.Error(ctx, "Release routine email claim", "error", err)
 				}
 			}
 		}()
-		data, err = h.getNotificationEmailDigestData(ctx, p.RecipientID, p.WorkspaceID)
+	}
+
+	// Read under the claim. Completion covers this exact content, so an update
+	// arriving during SMTP remains pending for next week's summary.
+	data, err := h.getNotificationEmailDigestData(ctx, scope.RecipientID, scope.WorkspaceID)
+	if err != nil {
+		return err
+	}
+	if data == nil {
+		data = routineDigestData(scope, recipient)
+	}
+	snapshots := notificationEmailSnapshots(data.Items)
+	suppressed, err := h.filterStrategyDigestForCurrentAccess(ctx, data)
+	if err != nil {
+		return err
+	}
+	batch, err := h.prepareRoutineFeedback(ctx, recipient, now)
+	if err != nil {
+		return err
+	}
+	if batch != nil {
+		defer func() {
+			if !accepted {
+				stateCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+				defer cancel()
+				if err := h.feedbackDigest.FailDigestDelivery(stateCtx, batch.Completion.DeliveryID, "workspace summary was not sent"); err != nil {
+					h.log.Error(ctx, "Release summary feedback claim", "error", err)
+				}
+			}
+		}()
+	}
+	if len(data.Items) == 0 && batch == nil {
+		if claimID == uuid.Nil {
+			return h.markNotificationEmailSnapshotsSent(ctx, scope, snapshots)
+		}
+		err := h.completeRoutine(ctx, notifications.RoutineCompletion{ID: claimID, Scope: scope, NotificationIDs: suppressed, NotificationSnapshots: snapshots, Now: now})
+		accepted = err == nil // An empty summary does not consume the weekly send.
+		return err
+	}
+
+	email, guidanceDay, err := h.buildRoutineSummary(ctx, *data, batch, date, now)
+	if err != nil {
+		return err
+	}
+	if claimID != uuid.Nil {
+		// Fence the SMTP attempt durably. An accepted send whose completion
+		// fails must not be reclaimed and sent again within the same week.
+		if err := h.routineDeliveries.BeginRoutineSend(ctx, claimID, scope, now); err != nil {
+			return fmt.Errorf("begin routine send: %w", err)
+		}
+	}
+	if err := h.mailerService.SendTemplated(ctx, email); err != nil {
+		return fmt.Errorf("send workspace summary: %w", err)
+	}
+	accepted = true // Never release claims after SMTP has accepted the email.
+	if claimID == uuid.Nil {
+		return h.markNotificationEmailSnapshotsSent(ctx, scope, snapshots)
+	}
+	ids := make([]uuid.UUID, 0, len(data.Items)+len(suppressed))
+	for _, item := range data.Items {
+		ids = append(ids, item.NotificationID)
+	}
+	completion := notifications.RoutineCompletion{
+		ID: claimID, Scope: scope, NotificationIDs: append(ids, suppressed...),
+		NotificationSnapshots: snapshots, GuidanceDate: guidanceDay, Sent: true, Now: now,
+	}
+	if batch != nil {
+		completion.FeedbackDigest = &batch.Completion
+	}
+	return h.completeRoutine(ctx, completion)
+}
+
+func routineDigestData(scope notifications.DeliveryScope, recipient *notifications.RoutineRecipient) *NotificationEmailDigestData {
+	data := &NotificationEmailDigestData{RecipientID: scope.RecipientID, WorkspaceID: scope.WorkspaceID}
+	if recipient != nil {
+		data.UserEmail, data.UserName = recipient.Email, recipient.Name
+		data.WorkspaceSlug, data.WorkspaceName = recipient.WorkspaceSlug, recipient.WorkspaceName
+	}
+	return data
+}
+
+func (h *handlers) prepareRoutineFeedback(ctx context.Context, recipient *notifications.RoutineRecipient, now time.Time) (*jobs.FeedbackDigestBatch, error) {
+	// A feedback section must commit with the durable weekly delivery claim.
+	if recipient == nil || h.feedbackDigest == nil || h.routineDeliveries == nil {
+		return nil, nil
+	}
+	return jobs.PrepareFeedbackDigest(ctx, h.feedbackDigest, feedback.CoreDigestRecipient{
+		UserID: recipient.UserID, WorkspaceID: recipient.WorkspaceID,
+		UserEmail: recipient.Email, UserName: recipient.Name, Timezone: recipient.Timezone,
+		WorkspaceName: recipient.WorkspaceName, WorkspaceSlug: recipient.WorkspaceSlug,
+	}, now)
+}
+
+func (h *handlers) buildRoutineSummary(ctx context.Context, data NotificationEmailDigestData, batch *jobs.FeedbackDigestBatch, date, now time.Time) (mailer.TemplatedEmail, *time.Time, error) {
+	workspaceURL := "https://" + data.WorkspaceSlug + ".fortyone.app"
+	copy := notificationDigestCopy{
+		Subject: "Your workspace updates · " + data.WorkspaceName, Heading: "Your workspace updates",
+		Sender: mailer.SenderProfileMaya, CTA: notificationDigestCopyCTA{Label: "Open workspace", URL: workspaceURL},
+	}
+	sections := make([]mailer.Digest, 0, 4)
+	if len(data.Items) > 0 {
+		input, err := buildNotificationDigestCopyInput(data, workspaceURL)
 		if err != nil {
-			return err
+			return mailer.TemplatedEmail{}, nil, err
 		}
-		if data == nil || len(data.Items) == 0 {
-			completed = true
-			return h.completeRoutine(ctx, notificationsdomain.RoutineCompletion{ID: claimID, Scope: notificationsdomain.DeliveryScope{RecipientID: p.RecipientID, WorkspaceID: p.WorkspaceID}, Now: now})
+		var copyErr error
+		copy, copyErr = generateNotificationDigestCopy(ctx, h.emailCopy, input)
+		if copyErr != nil {
+			h.log.Error(ctx, "Use deterministic notification summary copy", "error", copyErr)
 		}
+		activity := templateDigest(copy)
+		h.resolveDigestAvatars(ctx, &activity)
+		sections = append(sections, activity)
 	}
-	suppressedNotificationIDs, err := h.filterStrategyDigestForCurrentAccess(ctx, data)
+	guidance, guidanceDay, err := h.activityGuidance(ctx, notifications.DeliveryScope{RecipientID: data.RecipientID, WorkspaceID: data.WorkspaceID}, now)
 	if err != nil {
-		h.log.Error(ctx, "Failed to filter notification digest for current access", "error", err, "task_id", taskID)
-		return err
+		return mailer.TemplatedEmail{}, nil, fmt.Errorf("build summary guidance: %w", err)
 	}
-	if len(data.Items) == 0 {
-		if claimID != uuid.Nil {
-			completed = true
-			return h.completeRoutine(ctx, notificationsdomain.RoutineCompletion{ID: claimID, Scope: notificationsdomain.DeliveryScope{RecipientID: data.RecipientID, WorkspaceID: data.WorkspaceID}, NotificationIDs: suppressedNotificationIDs, Now: now})
-		}
-		return h.markNotificationsEmailSent(ctx, notificationsdomain.DeliveryScope{RecipientID: data.RecipientID, WorkspaceID: data.WorkspaceID}, suppressedNotificationIDs)
+	sections = append(guidance.Sections, sections...)
+	targets := guidance.Targets
+	if batch != nil {
+		sections = append(sections, batch.Section)
+		targets = append(targets, batch.Targets...)
 	}
-
-	workspaceURL := fmt.Sprintf("https://%s.fortyone.app", data.WorkspaceSlug)
-	copyInput, err := buildNotificationDigestCopyInput(*data, workspaceURL)
-	if err != nil {
-		h.log.Error(ctx, "Failed to build notification email digest facts", "error", err, "task_id", taskID)
-		return err
+	if batch != nil || len(guidance.Sections) > 0 {
+		copy.Subject, copy.Heading = "Your workspace updates · "+data.WorkspaceName, "Your workspace updates"
+		copy.Sender = mailer.SenderProfileMaya
+		copy.CTA = notificationDigestCopyCTA{Label: "Open workspace", URL: workspaceURL}
 	}
-	digestCopy, copyErr := generateNotificationDigestCopy(ctx, h.emailCopy, copyInput)
-	if copyErr != nil {
-		h.log.Error(ctx, "Email copy generation failed; using deterministic notification digest copy", "error", copyErr, "task_id", taskID)
-	}
-	notificationMessage := renderNotificationDigestCopy(digestCopy)
-	typedDigest := templateDigest(digestCopy)
-	h.resolveDigestAvatars(ctx, &typedDigest)
-
-	guidance, guidanceDay, err := h.activityGuidance(ctx, notificationsdomain.DeliveryScope{RecipientID: data.RecipientID, WorkspaceID: data.WorkspaceID}, now)
-	if err != nil {
-		return fmt.Errorf("build activity guidance: %w", err)
-	}
-	if len(guidance.Sections) > 0 {
-		digestCopy.Subject = "Your workspace updates · " + data.WorkspaceName
-		digestCopy.Heading = "Your workspace updates"
-		digestCopy.Sender = mailer.SenderProfileMaya
-		digestCopy.CTA.URL, digestCopy.CTA.Label = workspaceURL, "Open workspace"
-	}
-
-	notificationsSettingsURL := fmt.Sprintf("%s/settings/account/notifications", workspaceURL)
-	if feedbackOnlyDigest(data.Items) {
-		notificationsSettingsURL = ""
+	sections = limitRoutineEmailSections(sections, workspaceURL)
+	settingsURL := workspaceURL + "/settings/account/notifications"
+	if feedbackOnlyDigest(data.Items) && batch == nil {
+		settingsURL = ""
 	}
 	mailData := map[string]any{
-		"UserName":                 data.UserName,
-		"ActorName":                "",
-		"UserEmail":                data.UserEmail,
-		"WorkspaceName":            data.WorkspaceName,
-		"WorkspaceURL":             workspaceURL,
-		"NotificationTitle":        digestCopy.Heading,
-		"NotificationMessage":      notificationMessage,
-		"NotificationDigest":       typedDigest,
-		"NotificationType":         "notification_digest",
-		"NotificationCTAURL":       digestCopy.CTA.URL,
-		"NotificationCTALabel":     digestCopy.CTA.Label,
-		"NotificationsSettingsURL": notificationsSettingsURL,
+		"UserName": data.UserName, "ActorName": "", "UserEmail": data.UserEmail,
+		"WorkspaceName": data.WorkspaceName, "WorkspaceURL": workspaceURL,
+		"NotificationTitle": copy.Heading, "NotificationMessage": renderNotificationDigestCopy(copy),
+		"NotificationType": "notification_digest", "NotificationCTAURL": copy.CTA.URL,
+		"NotificationCTALabel": copy.CTA.Label, "NotificationsSettingsURL": settingsURL,
 	}
-	if len(guidance.Sections) > 0 {
-		mailData["NotificationSections"] = append(guidance.Sections, typedDigest)
-	}
-	messageID := notificationDigestMessageID(*data)
-	plainText := renderNotificationDigestPlainText(digestCopy)
-	if len(guidance.Sections) > 0 {
-		var summary strings.Builder
-		for _, section := range guidance.Sections {
-			summary.WriteString(section.Intro + "\n")
-			for _, row := range section.Rows {
-				summary.WriteString(strings.TrimSpace(row.Label+" "+row.Text) + "\n" + row.URL + "\n\n")
-			}
-		}
-		plainText = summary.String() + plainText
-	}
-	if notificationsSettingsURL != "" {
-		plainText += "\n\nManage notifications: " + notificationsSettingsURL
-	}
-	replyTo, err := h.prepareNotificationGuidanceThread(ctx, *data, digestCopy, messageID, plainText, guidance.Targets...)
-	if err != nil {
-		return fmt.Errorf("prepare notification digest reply thread: %w", err)
-	}
-
-	if err := h.mailerService.SendTemplated(ctx, mailer.TemplatedEmail{
-		To:            []string{data.UserEmail},
-		Template:      "notifications/notification",
-		Subject:       digestCopy.Subject,
-		Data:          mailData,
-		PlainTextBody: plainText,
-		Sender:        digestCopy.Sender,
-		ReplyTo:       replyTo,
-		MessageID:     messageID,
-	}); err != nil {
-		h.log.Error(ctx, "Failed to send notification email digest", "error", err, "task_id", taskID)
-		return err
-	}
-
-	notificationIDs := make([]uuid.UUID, 0, len(data.Items)+len(suppressedNotificationIDs))
-	for _, item := range data.Items {
-		notificationIDs = append(notificationIDs, item.NotificationID)
-	}
-	notificationIDs = append(notificationIDs, suppressedNotificationIDs...)
-	completed = true // Once SMTP returns success, never release the claim as a failed send.
-	if claimID != uuid.Nil {
-		err = h.completeRoutine(ctx, notificationsdomain.RoutineCompletion{ID: claimID, Scope: notificationsdomain.DeliveryScope{RecipientID: data.RecipientID, WorkspaceID: data.WorkspaceID}, NotificationIDs: notificationIDs, GuidanceDate: guidanceDay, Sent: true, Now: now})
+	if len(sections) == 1 && batch == nil {
+		mailData["NotificationDigest"] = sections[0]
 	} else {
-		err = h.markNotificationsEmailSent(ctx, notificationsdomain.DeliveryScope{RecipientID: data.RecipientID, WorkspaceID: data.WorkspaceID}, notificationIDs)
+		mailData["NotificationSections"] = sections
 	}
+	messageID := notificationDigestMessageID(data)
+	if batch != nil {
+		digest := sha256.Sum256([]byte(messageID + ":" + date.Format(time.DateOnly) + ":" + batch.Completion.DeliveryID.String()))
+		messageID = fmt.Sprintf("<workspace-summary-%x@fortyone.app>", digest[:16])
+	}
+	plainText := routineSectionsPlainText(sections) + "\n" + copy.CTA.Label + ": " + copy.CTA.URL
+	if settingsURL != "" {
+		plainText += "\n\nManage notifications: " + settingsURL
+	}
+	replyTo, err := h.prepareNotificationGuidanceThread(ctx, data, copy, messageID, plainText, targets...)
 	if err != nil {
-		return err
+		return mailer.TemplatedEmail{}, nil, fmt.Errorf("prepare summary reply thread: %w", err)
 	}
-
-	h.log.Info(ctx, "HANDLER: Successfully processed NotificationEmailDigest task",
-		"recipient_id", p.RecipientID,
-		"workspace_id", p.WorkspaceID,
-		"notifications_count", len(data.Items),
-		"task_id", taskID)
-	return nil
+	return mailer.TemplatedEmail{
+		To: []string{data.UserEmail}, Template: "notifications/notification", Subject: copy.Subject,
+		Data: mailData, PlainTextBody: plainText, Sender: copy.Sender, ReplyTo: replyTo, MessageID: messageID,
+	}, guidanceDay, nil
 }

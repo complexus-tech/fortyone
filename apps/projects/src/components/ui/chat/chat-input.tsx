@@ -24,6 +24,7 @@ import { useVoiceRecording } from "@/hooks/use-voice-recording";
 import { useTerminology } from "@/hooks";
 import { walkthroughTargets } from "@/shared/walkthrough/targets";
 import type { GoogleDriveFileContext } from "@/lib/ai/google-drive-context";
+import { MayaSkillSlot, useHasMayaSkillSlot } from "@/shared/maya/skill-slot";
 import {
   CHAT_ATTACHMENT_ACCEPT,
   getChatAttachmentMediaType,
@@ -34,6 +35,7 @@ import styles from "./chat-input.module.css";
 type ChatInputProps = {
   value: string;
   onChange: (e: ChangeEvent<HTMLTextAreaElement>) => void;
+  onValueChange?: (value: string) => void;
   onSend: () => void;
   onStop: () => void;
   status: ChatStatus;
@@ -117,6 +119,7 @@ const AttachmentPreviewItem = ({
 export const ChatInput = ({
   value,
   onChange,
+  onValueChange,
   onSend,
   status,
   onStop,
@@ -132,9 +135,11 @@ export const ChatInput = ({
   realtimeVoice,
 }: ChatInputProps) => {
   const { getTermDisplay } = useTerminology();
+  const hasSkillPicker = useHasMayaSkillSlot();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [currentPlaceholderIndex, setCurrentPlaceholderIndex] = useState(0);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [skillsOpen, setSkillsOpen] = useState(false);
   const processRecordingRef = useRef<() => void>(() => {});
   const handleAutoStop = useCallback(() => {
     processRecordingRef.current();
@@ -178,6 +183,10 @@ export const ChatInput = ({
     getAudioBlob,
     resetRecording,
   } = useVoiceRecording(handleAutoStop);
+  const skillsDisabled =
+    isLiveVoiceActive ||
+    isChatResponseInProgress(status) ||
+    recordingState !== "idle";
 
   const onDropRejected = (fileRejections: FileRejection[]) => {
     const errors: string[] = [];
@@ -262,6 +271,17 @@ export const ChatInput = ({
   }, [placeholderTexts.length]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (
+      e.key === "/" &&
+      !value.trim() &&
+      onValueChange &&
+      hasSkillPicker &&
+      !skillsDisabled
+    ) {
+      e.preventDefault();
+      setSkillsOpen(true);
+      return;
+    }
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       if (isLiveVoiceActive || isChatResponseInProgress(status)) {
@@ -461,7 +481,9 @@ export const ChatInput = ({
           </Box>
           <Flex
             align="center"
-            className={cn("mb-1 px-3", { "md:px-4": isEmptyState })}
+            className={cn("mb-1 flex-wrap gap-y-2 px-3", {
+              "md:px-4": isEmptyState,
+            })}
             gap={2}
             justify="between"
           >
@@ -498,6 +520,18 @@ export const ChatInput = ({
                   </span>
                 </Button>
               </Tooltip>
+              {onValueChange && hasSkillPicker ? (
+                <MayaSkillSlot
+                  disabled={skillsDisabled}
+                  onOpenChange={setSkillsOpen}
+                  onReturnFocus={() => {
+                    textareaRef.current?.focus();
+                  }}
+                  onValueChange={onValueChange}
+                  open={skillsOpen}
+                  value={value}
+                />
+              ) : null}
             </Flex>
 
             <Flex align="center" gap={2}>

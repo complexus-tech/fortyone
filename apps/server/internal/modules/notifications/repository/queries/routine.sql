@@ -19,6 +19,22 @@ WHERE account.is_active
     AND NOT account.is_system
     AND NULLIF(TRIM(account.email), '') IS NOT NULL
     AND (
+        EXISTS (
+            SELECT 1 FROM notifications AS pending
+            WHERE pending.recipient_id = account.user_id
+                AND pending.workspace_id = workspace.workspace_id
+                AND pending.read_at IS NULL
+                AND pending.email_sent_at IS NULL
+        )
+        OR EXISTS (
+            SELECT 1 FROM feedback_board_subscriptions AS subscription
+            JOIN feedback_boards AS board ON board.id = subscription.board_id
+            WHERE subscription.user_id = account.user_id
+                AND board.workspace_id = workspace.workspace_id
+                AND subscription.email_frequency IN ('daily', 'weekly')
+        )
+    )
+    AND (
         NOT CAST(sqlc.arg(has_cursor) AS boolean)
         OR (workspace.workspace_id, account.user_id) > (sqlc.arg(after_workspace_id), sqlc.arg(after_user_id))
     )
@@ -36,6 +52,21 @@ SELECT EXISTS (
         AND claimed_at > sqlc.arg(stale_before)
 );
 
+-- name: HasSentRoutineEmailWeek :one
+SELECT EXISTS (
+    SELECT 1 FROM routine_email_deliveries
+    WHERE recipient_id = sqlc.arg(recipient_id)
+        AND workspace_id = sqlc.arg(workspace_id)
+        AND kind = 'activity'
+        AND (status = 'sent' OR (status = 'processing' AND send_started_at IS NOT NULL))
+        AND (
+            date_trunc('week', CAST(local_date AS timestamp))
+                = date_trunc('week', CAST(sqlc.arg(local_date) AS timestamp))
+            OR COALESCE(send_started_at, completed_at, claimed_at)
+                > CAST(sqlc.arg(now) AS timestamptz) - INTERVAL '168 hours'
+        )
+);
+
 -- name: ClaimRoutineEmail :one
 INSERT INTO routine_email_deliveries (
     recipient_id, workspace_id, delivery_key, kind, local_date, status, claimed_at
@@ -46,11 +77,37 @@ VALUES (
 )
 ON CONFLICT (recipient_id, workspace_id, delivery_key) DO UPDATE
 SET id = gen_random_uuid(), status = 'processing',
-    claimed_at = EXCLUDED.claimed_at, local_date = EXCLUDED.local_date
-WHERE routine_email_deliveries.status = 'failed'
+    claimed_at = EXCLUDED.claimed_at, local_date = EXCLUDED.local_date,
+    send_started_at = NULL
+WHERE routine_email_deliveries.status IN ('failed', 'skipped')
     OR (routine_email_deliveries.status = 'processing'
-        AND routine_email_deliveries.claimed_at <= sqlc.arg(stale_before))
+        AND routine_email_deliveries.claimed_at <= sqlc.arg(stale_before)
+        AND routine_email_deliveries.send_started_at IS NULL)
 RETURNING id;
+
+-- name: BeginRoutineEmailSend :execrows
+UPDATE routine_email_deliveries AS delivery
+SET send_started_at = CAST(sqlc.arg(now) AS timestamptz)
+WHERE delivery.id = sqlc.arg(id)
+    AND delivery.recipient_id = sqlc.arg(recipient_id)
+    AND delivery.workspace_id = sqlc.arg(workspace_id)
+    AND delivery.status = 'processing'
+    AND delivery.send_started_at IS NULL
+    AND NOT EXISTS (
+        SELECT 1 FROM routine_email_deliveries AS other
+        WHERE other.recipient_id = delivery.recipient_id
+            AND other.workspace_id = delivery.workspace_id
+            AND other.kind = 'activity'
+            AND other.id <> delivery.id
+            AND (other.status = 'sent'
+                OR (other.status = 'processing' AND other.send_started_at IS NOT NULL))
+            AND (
+                date_trunc('week', CAST(other.local_date AS timestamp))
+                    = date_trunc('week', CAST(delivery.local_date AS timestamp))
+                OR COALESCE(other.send_started_at, other.completed_at, other.claimed_at)
+                    > CAST(sqlc.arg(now) AS timestamptz) - INTERVAL '168 hours'
+            )
+    );
 
 -- name: CompleteRoutineEmail :execrows
 UPDATE routine_email_deliveries

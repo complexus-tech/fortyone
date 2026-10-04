@@ -23,6 +23,7 @@ Notifications.setNotificationHandler({
 
 type PushData = {
   notificationId: string;
+  observedCreatedAt?: string;
   recipientId: string;
   workspaceSlug: string;
   entityType: "story" | "comment" | "objective" | "key_result" | "strategy";
@@ -45,6 +46,8 @@ const readPushData = (value: unknown): PushData | null => {
     typeof data.workspaceSlug !== "string" ||
     typeof data.entityId !== "string" ||
     typeof data.entityType !== "string" ||
+    (data.observedCreatedAt !== undefined &&
+      typeof data.observedCreatedAt !== "string") ||
     !entityTypes.has(data.entityType)
   )
     return null;
@@ -100,7 +103,11 @@ export const usePushNotifications = () => {
       } else {
         router.push("/inbox");
       }
-      void readNotification(data.notificationId).catch(() => undefined);
+      void readNotification(data.notificationId, data.observedCreatedAt)
+        .catch(() => undefined)
+        .finally(() =>
+          queryClient.invalidateQueries({ queryKey: notificationKeys.all }),
+        );
     };
 
     const responseSubscription =

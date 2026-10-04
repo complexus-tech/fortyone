@@ -211,19 +211,36 @@ func buildScheduleTransitionOutboxInput(
 	schedule *events.StoryScheduleTransition,
 	claimImmediately bool,
 ) (CoreScheduleTransitionOutboxInput, error) {
+	storyPayload, ok := event.Payload.(events.StoryUpdatedPayload)
+	if !ok {
+		return CoreScheduleTransitionOutboxInput{}, errors.New("story schedule transition payload is required")
+	}
+	var issue *storydomain.ScheduleIssue
+	if schedule != nil && storydomain.IsUnresolvedScheduleStatus(status) {
+		copy := *schedule
+		copy.IssueCode = strings.TrimSpace(copy.IssueCode)
+		if copy.IssueCode == "" {
+			copy.IssueCode = status
+		}
+		copy.IssueID = uuid.New()
+		schedule = &copy
+		storyPayload.Schedule = schedule
+		event.Payload = storyPayload
+		issue = &storydomain.ScheduleIssue{ID: copy.IssueID, OwnerID: copy.UserID, Code: copy.IssueCode}
+	}
 	payload, err := json.Marshal(event)
 	if err != nil {
 		return CoreScheduleTransitionOutboxInput{}, fmt.Errorf("encode story schedule transition event: %w", err)
-	}
-	storyPayload, ok := event.Payload.(events.StoryUpdatedPayload)
-	if !ok || schedule == nil {
-		return CoreScheduleTransitionOutboxInput{}, errors.New("story schedule transition payload is required")
 	}
 	// Deduplicate the latest outcome, not the planner's changing inputs. A new
 	// story version or previous slot must not announce the same destination
 	// again. The repository compares only the latest fingerprint under the
 	// story lock, so moving A -> B -> A still produces all three decisions.
-	outcome := *schedule
+	outcome := events.StoryScheduleTransition{}
+	if schedule != nil {
+		outcome = *schedule
+	}
+	outcome.IssueID = uuid.Nil
 	outcome.PreviousState = ""
 	outcome.PreviousStartAt = nil
 	outcome.PreviousEndAt = nil
@@ -271,7 +288,9 @@ func buildScheduleTransitionOutboxInput(
 		ActorID:             event.ActorID,
 		SemanticFingerprint: hex.EncodeToString(digest[:]),
 		EventPayload:        payload,
-		ClaimImmediately:    claimImmediately,
+		ClaimImmediately:    claimImmediately && schedule != nil,
+		StateOnly:           schedule == nil,
+		Issue:               issue,
 	}, nil
 }
 

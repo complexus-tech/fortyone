@@ -64,6 +64,7 @@
     "expo-updates": "~57.0.23",
     "expo-web-browser": "~57.0.3",
     "ky": "^1.5.0",
+    "lib": "workspace:*",
     "nativewind": "5.0.0-preview.4",
     "qs": "^6.12.3",
     "react": "19.2.3",

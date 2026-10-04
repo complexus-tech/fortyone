@@ -201,6 +201,13 @@ func (s *Service) reconcileStorySchedule(ctx context.Context, ref ScheduleStoryR
 			); err != nil {
 				return affectedUsers, err
 			}
+		} else {
+			if err := s.stories.UpdateAutomationStateIfUnchanged(
+				ctx, s.mayaActorID, story.ID, story.Workspace, story.UpdatedAt,
+				AutoSchedulingStatusOff, nil, nil, nil,
+			); err != nil {
+				return affectedUsers, err
+			}
 		}
 		for _, ownerID := range owners {
 			if _, cleanupErr := scheduleCalendar.ReconcileMayaScheduleBlocks(ctx, ScheduleReconcileInput{
@@ -347,6 +354,7 @@ func (s *Service) reconcileStorySchedule(ctx context.Context, ref ScheduleStoryR
 	planTimezone := "UTC"
 	outcomeStatus := AutoSchedulingStatusScheduled
 	outcomeReason := "Maya scheduled this story around the assignee's availability."
+	issueCode := ""
 	if story.AutoSchedulingLocked {
 		lockedBlocks := append([]ScheduleBlock(nil), blocksByOwner[desiredOwner]...)
 		if len(lockedBlocks) == 0 {
@@ -366,6 +374,7 @@ func (s *Service) reconcileStorySchedule(ctx context.Context, ref ScheduleStoryR
 		if len(lockedBlocks) == 0 {
 			outcomeStatus = AutoSchedulingStatusAtRisk
 			outcomeReason = "The story is marked locked, but there is no Maya schedule to retain."
+			issueCode = "locked_schedule_missing"
 		} else {
 			timezoneView, timezoneErr := scheduleCalendar.ListSchedulingAvailability(
 				ctx,
@@ -399,9 +408,10 @@ func (s *Service) reconcileStorySchedule(ctx context.Context, ref ScheduleStoryR
 			}
 			outcomeStatus = AutoSchedulingStatusLocked
 			outcomeReason = "Maya retained the locked schedule without moving its time."
-			if riskReason, atRisk := lockedScheduleRisk(story, lockedBlocks, planTimezone, asOf); atRisk {
+			if code, riskReason, atRisk := lockedScheduleIssue(story, lockedBlocks, planTimezone, asOf); atRisk {
 				outcomeStatus = AutoSchedulingStatusAtRisk
 				outcomeReason = riskReason
+				issueCode = code
 			}
 		}
 	} else {
@@ -442,6 +452,7 @@ func (s *Service) reconcileStorySchedule(ctx context.Context, ref ScheduleStoryR
 			}
 		}
 		outcomeStatus, outcomeReason = autoSchedulingOutcome(planResult, desiredSegments)
+		issueCode = schedulingIssueCode(outcomeStatus, planResult)
 	}
 	outcomeReason = refineScheduleOutcomeReason(previousBlocks, desiredSegments, outcomeStatus, outcomeReason)
 	if !recordNoop {
@@ -457,6 +468,9 @@ func (s *Service) reconcileStorySchedule(ctx context.Context, ref ScheduleStoryR
 			})
 			if stateErr == nil {
 				transition := buildStoryScheduleTransitionAt(story, desiredOwner, previousBlocks, desiredSegments, planTimezone, outcomeStatus, outcomeReason, asOf)
+				if transition != nil {
+					transition.IssueCode = issueCode
+				}
 				stateErr = s.stories.UpdateAutomationStateIfUnchanged(
 					ctx, s.mayaActorID, story.ID, story.Workspace, story.UpdatedAt,
 					outcomeStatus, &outcomeReason, nil, transition,
@@ -533,6 +547,9 @@ func (s *Service) reconcileStorySchedule(ctx context.Context, ref ScheduleStoryR
 		return affectedUsers, err
 	}
 	transition := buildStoryScheduleTransitionAt(story, desiredOwner, previousBlocks, desiredSegments, planTimezone, outcomeStatus, outcomeReason, asOf)
+	if transition != nil {
+		transition.IssueCode = issueCode
+	}
 	if err := s.stories.UpdateAutomationStateIfUnchanged(
 		ctx, s.mayaActorID, story.ID, story.Workspace, story.UpdatedAt,
 		outcomeStatus, &outcomeReason, nil, transition,
@@ -556,9 +573,14 @@ func unlockedAutoSchedulingState(story Story, mayaActorID uuid.UUID) (string, st
 }
 
 func lockedScheduleRisk(story Story, blocks []ScheduleBlock, timezone string, asOf time.Time) (string, bool) {
+	_, reason, atRisk := lockedScheduleIssue(story, blocks, timezone, asOf)
+	return reason, atRisk
+}
+
+func lockedScheduleIssue(story Story, blocks []ScheduleBlock, timezone string, asOf time.Time) (string, string, bool) {
 	for _, block := range blocks {
 		if block.HasConflict {
-			return "The locked time now conflicts with another calendar event. Unlock it so Maya can move the work.", true
+			return "locked_calendar_conflict", "The locked time now conflicts with another calendar event. Unlock it so Maya can move the work.", true
 		}
 	}
 	allElapsed := len(blocks) > 0
@@ -569,10 +591,10 @@ func lockedScheduleRisk(story Story, blocks []ScheduleBlock, timezone string, as
 		}
 	}
 	if allElapsed {
-		return "The locked work time has passed, but this story is still incomplete. Unlock it so Maya can schedule the remaining work.", true
+		return "locked_time_elapsed", "The locked work time has passed, but this story is still incomplete. Unlock it so Maya can schedule the remaining work.", true
 	}
 	if story.EstimatedDurationMinutes == nil || *story.EstimatedDurationMinutes <= 0 {
-		return "This locked schedule no longer has a valid time needed. Add time needed and unlock it so Maya can rebuild the work blocks.", true
+		return "missing_duration", "This locked schedule no longer has a valid time needed. Add time needed and unlock it so Maya can rebuild the work blocks.", true
 	}
 
 	expectedMinutes := *story.EstimatedDurationMinutes
@@ -587,7 +609,7 @@ func lockedScheduleRisk(story Story, blocks []ScheduleBlock, timezone string, as
 	for _, block := range blocks {
 		blockMinutes := int(block.EndAt.Sub(block.StartAt) / time.Minute)
 		if minimumFocusMinutes > 0 && blockMinutes < minimumFocusMinutes {
-			return fmt.Sprintf(
+			return "locked_focus_block_too_short", fmt.Sprintf(
 				"A locked work block is shorter than the %d-minute minimum focus block. Unlock it so Maya can rebuild the schedule.",
 				minimumFocusMinutes,
 			), true
@@ -595,7 +617,7 @@ func lockedScheduleRisk(story Story, blocks []ScheduleBlock, timezone string, as
 		reservedMinutes += blockMinutes
 	}
 	if reservedMinutes != expectedMinutes {
-		return fmt.Sprintf(
+		return "locked_duration_mismatch", fmt.Sprintf(
 			"The locked schedule reserves %d minutes, but this story now needs %d minutes. Unlock it so Maya can rebuild the work blocks.",
 			reservedMinutes,
 			expectedMinutes,
@@ -605,19 +627,19 @@ func lockedScheduleRisk(story Story, blocks []ScheduleBlock, timezone string, as
 	location := calendarLocation(timezone)
 	for _, block := range blocks {
 		if story.StartDate != nil && block.StartAt.Before(story.StartDate.UTC()) {
-			return "A locked work block is before this story's start date. Unlock it so Maya can move the work into the valid window.", true
+			return "locked_before_start", "A locked work block is before this story's start date. Unlock it so Maya can move the work into the valid window.", true
 		}
 		if story.EndDate != nil && block.EndAt.After(story.EndDate.UTC().Add(24*time.Hour)) {
-			return "A locked work block is after this story's deadline. Unlock it so Maya can move the work into the valid window.", true
+			return "locked_after_deadline", "A locked work block is after this story's deadline. Unlock it so Maya can move the work into the valid window.", true
 		}
 		if story.SprintSummary != nil {
 			defaultSchedule := workschedule.Default()
 			sprintStart := workdayBoundary(story.SprintSummary.StartDate, defaultSchedule.StartMinute, location)
 			sprintEnd := workdayBoundary(story.SprintSummary.EndDate, defaultSchedule.EndMinute, location)
 			if block.StartAt.Before(sprintStart) || block.EndAt.After(sprintEnd) {
-				return "A locked work block falls outside this story's sprint. Unlock it so Maya can move the work into the sprint window.", true
+				return "locked_outside_sprint", "A locked work block falls outside this story's sprint. Unlock it so Maya can move the work into the sprint window.", true
 			}
 		}
 	}
-	return "", false
+	return "", "", false
 }

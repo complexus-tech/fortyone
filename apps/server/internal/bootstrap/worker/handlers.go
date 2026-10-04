@@ -81,7 +81,9 @@ func buildTaskMux(dependencies taskMuxDependencies) *asynq.ServeMux {
 		EmailThreads: dependencies.EmailThreads, NotificationDeliveries: dependencies.Notifications,
 		PushDeliveries:    dependencies.Notifications,
 		PushSender:        expopush.New(nil),
-		RoutineDeliveries: notificationsrepository.New(dependencies.DatabasePool),
+		RoutineDeliveries: notificationsrepository.New(dependencies.DatabasePool, notificationsrepository.WithFeedbackDigestCompletion(feedbackStore)),
+		RoutineTasks:      dependencies.FeedbackTasks,
+		FeedbackDigest:    feedbackStore,
 		EmailAvatars:      users, APIPublicURL: dependencies.APIPublicURL,
 		BriefingSources: jobs.BriefingSources{Stories: storyStore, Objectives: objectiveGuidance, Weekly: dependencies.WeeklyDigest},
 		SlackEvents:     dependencies.SlackEvents, SlackFileImports: dependencies.SlackFileImports,
@@ -128,16 +130,6 @@ func buildTaskMux(dependencies taskMuxDependencies) *asynq.ServeMux {
 		StripeWebhookEvents: subscriptions,
 		MessagingData:       messaging,
 		Feedback:            feedbackStore,
-	})
-	guidanceHandlers := taskhandlers.NewGuidanceHandlers(taskhandlers.GuidanceHandlerDependencies{
-		Log:               dependencies.Log,
-		Objectives:        objectiveGuidance,
-		Stories:           storyStore,
-		WeeklyDigest:      dependencies.WeeklyDigest,
-		FeedbackDigest:    feedbackStore,
-		Mailer:            dependencies.Mailer,
-		CopyGenerator:     dependencies.EmailCopy,
-		ThreadPreparation: dependencies.EmailThreads,
 	})
 	workspaceLifecycleHandlers := taskhandlers.NewWorkspaceLifecycleHandlers(
 		taskhandlers.WorkspaceLifecycleHandlerDependencies{
@@ -219,12 +211,12 @@ func buildTaskMux(dependencies taskMuxDependencies) *asynq.ServeMux {
 	mux.HandleFunc(tasks.TypeStoryAutoClose, storyAutomationHandlers.HandleStoryAutoClose)
 	mux.HandleFunc(tasks.TypeSprintStoryMigration, storyAutomationHandlers.HandleSprintStoryMigration)
 	mux.HandleFunc(tasks.TypeMayaWorkFocusInference, mayaMaintenanceHandlers.HandleWorkFocusInference)
-	// Route legacy queued guidance jobs through the same daily claim during rollout.
+	// Consume retired guidance jobs without sending a separate email.
 	mux.HandleFunc(tasks.TypeMorningBriefing, workerTaskService.HandleMorningBriefing)
 	mux.HandleFunc(tasks.TypeOverdueStoriesEmail, workerTaskService.HandleMorningBriefing)
 	mux.HandleFunc(tasks.TypeObjectiveOverdueEmail, workerTaskService.HandleMorningBriefing)
 	mux.HandleFunc(tasks.TypeWeeklyDigestEmail, workerTaskService.HandleMorningBriefing)
-	mux.HandleFunc(tasks.TypeFeedbackDigestEmail, guidanceHandlers.HandleFeedbackDigestEmail)
+	mux.HandleFunc(tasks.TypeFeedbackDigestEmail, workerTaskService.HandleRoutineEmailSweep)
 	mux.HandleFunc(tasks.TypeStrategyCommunications, strategyHandlers.HandleStrategyCommunications)
 	mux.HandleFunc(tasks.TypeDisableInactiveAutomation, sprintAutomationHandlers.HandleDisableInactiveAutomation)
 

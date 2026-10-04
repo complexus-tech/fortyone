@@ -1,11 +1,13 @@
 "use client";
 
 import { useId, useState } from "react";
-import { Badge, Box, Button, Dialog, Flex, Input, Select, Text } from "ui";
+import { Badge, Box, Button, Dialog, Flex, Select, Text } from "ui";
 import { getApiUrl } from "@/lib/api-url";
 import { useWorkspacePath } from "@/hooks/use-workspace-path";
 import { SectionHeader } from "@/modules/settings/components/section-header";
 import { useSCIMMutations, useSCIMStatus } from "./scim-api";
+import { SecuritySettingRow } from "./setting-row";
+import { SecurityInput } from "./security-input";
 
 export const SecurityProvisioning = () => {
   const status = useSCIMStatus();
@@ -31,30 +33,47 @@ export const SecurityProvisioning = () => {
     mutations.mint.reset();
   };
   return (
-    <Box className="border-border overflow-hidden rounded-xl border">
+    <Box className="border-border bg-surface overflow-hidden rounded-2xl border">
       <SectionHeader
+        action={
+          status.isSuccess ? (
+            <Button
+              color="tertiary"
+              onClick={() => {
+                mutations.mint.reset();
+                setCreating(true);
+              }}
+              variant="outline"
+            >
+              Create token
+            </Button>
+          ) : null
+        }
         description="Sync workspace members with your identity provider."
         title="Member provisioning"
       />
-      <Box className="space-y-5 px-6 py-5">
-        <Box className="border-border bg-surface-elevated rounded-xl border p-4">
-          <Text fontWeight="medium">SCIM base URL</Text>
-          <Text className="mt-2 break-all select-all">{endpoint}</Text>
-          <Text className="mt-2" color="muted">
-            Supports users and deactivation. Team groups are managed in
-            FortyOne.
+      <Box className="divide-border divide-y-[0.5px]">
+        <SecuritySettingRow
+          description="Supports users and deactivation. Team groups are managed in FortyOne."
+          title="SCIM base URL"
+        >
+          <Text className="max-w-full break-all select-all md:max-w-[60%] md:shrink-0">
+            {endpoint}
           </Text>
-        </Box>
+        </SecuritySettingRow>
         {status.isPending ? (
-          <Text color="muted">Loading provisioning…</Text>
+          <Text aria-live="polite" className="px-6 py-4" color="muted">
+            Loading provisioning…
+          </Text>
         ) : null}
         {status.isError ? (
-          <Box>
+          <Box className="px-6 py-4">
             <Text color="danger" role="alert">
               Provisioning settings could not be loaded.
             </Text>
             <Button
               className="mt-3"
+              color="tertiary"
               onClick={() => {
                 void status.refetch();
               }}
@@ -66,28 +85,29 @@ export const SecurityProvisioning = () => {
         ) : null}
         {status.isSuccess ? (
           <>
-            <Flex align="center" className="gap-3" justify="between" wrap>
-              <Text>{status.data.managedUsers} managed members</Text>
-              <Button
-                onClick={() => {
-                  mutations.mint.reset();
-                  setCreating(true);
-                }}
-              >
-                Create token
-              </Button>
-            </Flex>
+            <SecuritySettingRow
+              description="Members managed by your identity provider."
+              layout="inline"
+              title="Provisioned members"
+            >
+              <Text className="shrink-0">
+                {status.data.managedUsers} managed members
+              </Text>
+            </SecuritySettingRow>
             {status.data.pendingSeatSync ? (
-              <Box className="border-border rounded-xl border p-4">
-                <Text fontWeight="medium">Seat sync pending</Text>
-                <Text className="mt-1" color="muted">
-                  {status.data.seatSyncError ||
-                    "Membership changed. Sync the current seat count."}
-                </Text>
+              <SecuritySettingRow
+                description={
+                  status.data.seatSyncError ||
+                  "Membership changed. Sync the current seat count."
+                }
+                title="Seat sync pending"
+              >
                 <Button
-                  className="mt-3"
+                  className="shrink-0"
+                  color="tertiary"
                   disabled={mutations.retry.isPending}
                   loading={mutations.retry.isPending}
+                  loadingText="Syncing seats…"
                   onClick={() => {
                     mutations.retry.mutate();
                   }}
@@ -95,11 +115,11 @@ export const SecurityProvisioning = () => {
                 >
                   Retry seat sync
                 </Button>
-              </Box>
+              </SecuritySettingRow>
             ) : null}
-            <Box className="divide-border divide-y">
+            <Box className="divide-border divide-y-[0.5px]">
               {status.data.credentials.length === 0 ? (
-                <Text color="muted">
+                <Text className="px-6 py-4" color="muted">
                   Create a token to connect your provider.
                 </Text>
               ) : (
@@ -110,13 +130,15 @@ export const SecurityProvisioning = () => {
                   return (
                     <Flex
                       align="center"
-                      className="gap-4 py-4 first:pt-0"
+                      className="gap-4 px-6 py-4"
                       justify="between"
                       key={credential.id}
                       wrap
                     >
-                      <Box className="min-w-0">
-                        <Text fontWeight="medium">{credential.name}</Text>
+                      <Box className="min-w-0 flex-1">
+                        <Text className="break-words" fontWeight="medium">
+                          {credential.name}
+                        </Text>
                         <Text className="mt-1 break-all" color="muted">
                           {credential.prefix}… · Expires{" "}
                           {new Date(credential.expiresAt).toLocaleDateString()}
@@ -146,7 +168,7 @@ export const SecurityProvisioning = () => {
           </>
         ) : null}
         {error ? (
-          <Text color="danger" role="alert">
+          <Text className="px-6 py-4" color="danger" role="alert">
             {error.message}
           </Text>
         ) : null}
@@ -157,7 +179,17 @@ export const SecurityProvisioning = () => {
         }}
         open={creating}
       >
-        <Dialog.Content className="flex max-h-[calc(100dvh-15vw-1rem)] flex-col md:max-h-[calc(100dvh-10vw-1rem)]">
+        <Dialog.Content
+          aria-busy={mutations.mint.isPending}
+          className="flex max-h-[calc(100dvh-15vw-1rem)] flex-col md:max-h-[calc(100dvh-10vw-1rem)]"
+          hideClose={mutations.mint.isPending}
+          onEscapeKeyDown={(event) => {
+            if (mutations.mint.isPending) event.preventDefault();
+          }}
+          onInteractOutside={(event) => {
+            if (mutations.mint.isPending) event.preventDefault();
+          }}
+        >
           <Dialog.Header className="shrink-0 px-6 py-5">
             <Dialog.Title className="text-lg">
               {token ? "Copy your SCIM token" : "Create SCIM token"}
@@ -171,7 +203,7 @@ export const SecurityProvisioning = () => {
           <Dialog.Body className="max-h-none min-h-0 flex-1 space-y-4 py-5">
             {token ? (
               <>
-                <Input
+                <SecurityInput
                   autoComplete="off"
                   label="Bearer token"
                   readOnly
@@ -179,6 +211,7 @@ export const SecurityProvisioning = () => {
                   value={token}
                 />
                 <Button
+                  color="tertiary"
                   onClick={() => {
                     void navigator.clipboard
                       .writeText(token)
@@ -201,7 +234,7 @@ export const SecurityProvisioning = () => {
               </>
             ) : (
               <>
-                <Input
+                <SecurityInput
                   disabled={mutations.mint.isPending}
                   label="Token name"
                   maxLength={100}
@@ -212,14 +245,15 @@ export const SecurityProvisioning = () => {
                   value={name}
                 />
                 <Box>
-                  <label className="mb-1 block" htmlFor={lifetimeId}>
+                  <label className="mb-[0.35rem] block" htmlFor={lifetimeId}>
                     Expires after
                   </label>
-                  <Select onValueChange={setLifetime} value={lifetime}>
-                    <Select.Trigger
-                      className="h-11 w-full px-4 text-base"
-                      id={lifetimeId}
-                    >
+                  <Select
+                    disabled={mutations.mint.isPending}
+                    onValueChange={setLifetime}
+                    value={lifetime}
+                  >
+                    <Select.Trigger className="text-base" id={lifetimeId}>
                       <Select.Input />
                     </Select.Trigger>
                     <Select.Content>
@@ -249,6 +283,7 @@ export const SecurityProvisioning = () => {
           </Dialog.Body>
           <Dialog.Footer className="shrink-0 justify-end gap-3 py-4">
             <Button
+              color="tertiary"
               disabled={mutations.mint.isPending}
               onClick={closeCreate}
               variant="outline"
@@ -259,6 +294,7 @@ export const SecurityProvisioning = () => {
               <Button
                 disabled={!name.trim() || mutations.mint.isPending}
                 loading={mutations.mint.isPending}
+                loadingText="Creating token…"
                 onClick={() => {
                   mutations.mint.mutate(
                     { name: name.trim(), lifetimeDays: Number(lifetime) },
@@ -283,15 +319,33 @@ export const SecurityProvisioning = () => {
         }}
         open={Boolean(revokeId)}
       >
-        <Dialog.Content className="flex max-h-[calc(100dvh-15vw-1rem)] flex-col md:max-h-[calc(100dvh-10vw-1rem)]">
+        <Dialog.Content
+          aria-busy={mutations.revoke.isPending}
+          className="flex max-h-[calc(100dvh-15vw-1rem)] flex-col md:max-h-[calc(100dvh-10vw-1rem)]"
+          hideClose={mutations.revoke.isPending}
+          onEscapeKeyDown={(event) => {
+            if (mutations.revoke.isPending) event.preventDefault();
+          }}
+          onInteractOutside={(event) => {
+            if (mutations.revoke.isPending) event.preventDefault();
+          }}
+        >
           <Dialog.Header className="shrink-0 px-6 py-5">
             <Dialog.Title className="text-lg">Revoke SCIM token?</Dialog.Title>
             <Dialog.Description className="px-0 text-base">
               The provider using this token will lose provisioning access.
             </Dialog.Description>
           </Dialog.Header>
+          {mutations.revoke.error ? (
+            <Dialog.Body>
+              <Text color="danger" role="alert">
+                {mutations.revoke.error.message}
+              </Text>
+            </Dialog.Body>
+          ) : null}
           <Dialog.Footer className="shrink-0 justify-end gap-3 py-4">
             <Button
+              color="tertiary"
               disabled={mutations.revoke.isPending}
               onClick={() => {
                 setRevokeId("");
@@ -304,6 +358,7 @@ export const SecurityProvisioning = () => {
               color="danger"
               disabled={mutations.revoke.isPending}
               loading={mutations.revoke.isPending}
+              loadingText="Revoking token…"
               onClick={() => {
                 mutations.revoke.mutate(revokeId, {
                   onSuccess: () => {

@@ -548,6 +548,9 @@ importers:
       ky:
         specifier: ^1.5.0
         version: 1.14.3
+      lib:
+        specifier: workspace:*
+        version: link:../../packages/lib
       nativewind:
         specifier: 5.0.0-preview.4
         version: 5.0.0-preview.4(react-native-css@3.0.7(chwmyivl4z6rl2qfk772pb4to4))(tailwindcss@4.1.18)
@@ -1131,6 +1134,9 @@ importers:
       classnames:
         specifier: ^2.5.1
         version: 2.5.1
+      htmlparser2:
+        specifier: 10.1.0
+        version: 10.1.0
       tailwind-merge:
         specifier: ^1.14.0
         version: 1.14.0

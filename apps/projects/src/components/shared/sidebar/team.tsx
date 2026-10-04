@@ -1,6 +1,6 @@
 "use client";
 import { cn } from "lib";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import type { ReactNode } from "react";
 import {
@@ -29,6 +29,7 @@ import {
   SettingsIcon,
   SprintsIcon,
   StoryIcon,
+  ViewsIcon,
 } from "icons";
 import Link from "next/link";
 import { useSortable } from "@dnd-kit/sortable";
@@ -45,6 +46,7 @@ import { ConfirmDialog, NavLink, TeamColor } from "@/components/ui";
 import type { Team as TeamType } from "@/modules/teams/types";
 import type { TeamFeedbackSummary } from "@/modules/team-feedback/types";
 import { walkthroughTargets } from "@/shared/walkthrough/targets";
+import { FavoriteContextMenuItem, FavoriteMenuItem } from "@/shared/favorites";
 // import { useTeamStatuses } from "@/lib/hooks/statuses";
 import { useTeamIntegrationRequests } from "@/modules/integration-requests/hooks/use-team-requests";
 import { NavCount } from "./nav-count";
@@ -55,6 +57,7 @@ type TeamLink = {
   href: string;
   count?: number;
   disabled?: boolean;
+  active?: boolean;
 };
 
 const CollapsedTeamNavigation = ({
@@ -106,10 +109,10 @@ const CollapsedTeamNavigation = ({
         <Text className="truncate px-2 py-1.5 font-medium">{teamName}</Text>
         <Divider className="my-1" />
         <Flex direction="column" gap={1}>
-          {links.map(({ name, icon, href, count, disabled }) => {
+          {links.map(({ name, icon, href, count, disabled, active }) => {
             if (disabled) return null;
 
-            const isActive = pathname.startsWith(href);
+            const isActive = active ?? pathname.startsWith(href);
             return (
               <NavLink
                 active={isActive}
@@ -165,12 +168,15 @@ export const Team = ({
   // const { data: statuses } = useTeamStatuses(id);
   const { data: pendingRequestsPage } = useTeamIntegrationRequests(id);
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { withWorkspace } = useWorkspacePath();
   const { mutate: removeMember, isPending } = useRemoveMemberMutation();
   const { userRole } = useUserRole();
   // const hasBacklog = statuses?.some((status) => status.category === "backlog");
   const intakeCount = pendingRequestsPage?.pagination.totalCount ?? 0;
   const hasIntake = intakeCount > 0;
+  const isViewsActive =
+    pathname === withWorkspace("/views") && searchParams.get("team") === id;
 
   const {
     attributes,
@@ -224,6 +230,12 @@ export const Team = ({
       disabled: !features.objectiveEnabled,
     },
     {
+      name: "Views",
+      icon: <ViewsIcon />,
+      href: withWorkspace(`/views?team=${id}`),
+      active: isViewsActive,
+    },
+    {
       name: getTermDisplay("sprintTerm", { variant: "plural" }),
       icon: <SprintsIcon />,
       href: withWorkspace(`/teams/${id}/sprints`),
@@ -232,7 +244,9 @@ export const Team = ({
   ];
   const teamPath = withWorkspace(`/teams/${id}`);
   const isTeamActive =
-    pathname === teamPath || pathname.startsWith(`${teamPath}/`);
+    isViewsActive ||
+    pathname === teamPath ||
+    pathname.startsWith(`${teamPath}/`);
 
   return (
     <ContextMenu>
@@ -308,8 +322,9 @@ export const Team = ({
                   <Menu>
                     <Menu.Button>
                       <Button
+                        aria-label={`${teamName} team menu`}
                         asIcon
-                        className="opacity-0 transition-opacity group-hover:opacity-100"
+                        className="opacity-100 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:hover)]:opacity-0"
                         color="tertiary"
                         leftIcon={<MoreHorizontalIcon />}
                         size="sm"
@@ -318,8 +333,12 @@ export const Team = ({
                         <span className="sr-only">Team menu</span>
                       </Button>
                     </Menu.Button>
-                    <Menu.Items>
+                    <Menu.Items className="max-w-[var(--radix-dropdown-menu-content-available-width)] min-w-[min(calc(11rem+50px),var(--radix-dropdown-menu-content-available-width))]">
                       <Menu.Group>
+                        <FavoriteMenuItem
+                          item={{ kind: "team", id }}
+                          name={teamName}
+                        />
                         <Menu.Item
                           className="py-0"
                           disabled={userRole !== "admin"}
@@ -388,34 +407,37 @@ export const Team = ({
                     direction="column"
                     gap={1}
                   >
-                    {links.map(({ name, icon, href, count, disabled }) => {
-                      if (disabled) return null;
+                    {links.map(
+                      ({ name, icon, href, count, disabled, active }) => {
+                        if (disabled) return null;
 
-                      const isActive =
-                        href === withWorkspace("/")
-                          ? pathname === href ||
-                            pathname.startsWith(withWorkspace("/dashboard"))
-                          : pathname.startsWith(href);
-                      return (
-                        <NavLink
-                          active={isActive}
-                          aria-current={isActive ? "page" : undefined}
-                          className={cn(
-                            "hover:bg-primary/5 hover:text-primary hover:[&_svg]:text-primary",
-                            isActive &&
-                              "bg-primary/5 text-primary [&_svg]:text-primary",
-                          )}
-                          href={href}
-                          key={name}
-                        >
-                          {icon}
-                          <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
-                            <span className="capitalize">{name}</span>
-                            <NavCount count={count ?? 0} />
-                          </span>
-                        </NavLink>
-                      );
-                    })}
+                        const isActive =
+                          active ??
+                          (href === withWorkspace("/")
+                            ? pathname === href ||
+                              pathname.startsWith(withWorkspace("/dashboard"))
+                            : pathname.startsWith(href));
+                        return (
+                          <NavLink
+                            active={isActive}
+                            aria-current={isActive ? "page" : undefined}
+                            className={cn(
+                              "hover:bg-primary/5 hover:text-primary hover:[&_svg]:text-primary",
+                              isActive &&
+                                "bg-primary/5 text-primary [&_svg]:text-primary",
+                            )}
+                            href={href}
+                            key={name}
+                          >
+                            {icon}
+                            <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
+                              <span className="capitalize">{name}</span>
+                              <NavCount count={count ?? 0} />
+                            </span>
+                          </NavLink>
+                        );
+                      },
+                    )}
                   </Flex>
                 </Collapsible.Content>
               ) : null}
@@ -423,8 +445,12 @@ export const Team = ({
           </Collapsible>
         </div>
       </ContextMenu.Trigger>
-      <ContextMenu.Items>
+      <ContextMenu.Items className="max-w-[var(--radix-context-menu-content-available-width)] min-w-[min(calc(11rem+50px),var(--radix-context-menu-content-available-width))]">
         <ContextMenu.Group>
+          <FavoriteContextMenuItem
+            item={{ kind: "team", id }}
+            name={teamName}
+          />
           <ContextMenu.Item className="py-0" disabled={userRole !== "admin"}>
             <Link
               className="flex items-center gap-1.5 py-2"

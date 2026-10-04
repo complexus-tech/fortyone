@@ -81,7 +81,7 @@ func TestStoryPriorityAndStatusUpdatesReachInbox(t *testing.T) {
 	_, err = subscription.Receive(ctx)
 	require.NoError(t, err)
 	var lastEvent events.Event
-	for index, update := range []map[string]any{{"priority": "Urgent"}, {"status_id": statusID}} {
+	for _, update := range []map[string]any{{"priority": "Urgent"}, {"status_id": statusID}} {
 		require.NoError(t, storyService.Update(actorCtx, fixture.visible, fixture.workspaceA, update))
 		rows, err := client.XRevRangeN(ctx, "events-stream", "+", "-", 1).Result()
 		require.NoError(t, err)
@@ -97,7 +97,7 @@ func TestStoryPriorityAndStatusUpdatesReachInbox(t *testing.T) {
 		lastEvent = event
 		require.Eventually(t, func() bool {
 			count, err := inboxRepo.CountUnread(ctx, notificationdomain.WorkspaceAccess{ActorID: recipient, WorkspaceID: fixture.workspaceA})
-			return err == nil && count == index+1
+			return err == nil && count == 1
 		}, 5*time.Second, 20*time.Millisecond, "no inbox notification for %v; published payload: %s", update, body)
 		realtimeCtx, stop := context.WithTimeout(ctx, 2*time.Second)
 		message, err := subscription.ReceiveMessage(realtimeCtx)
@@ -110,9 +110,8 @@ func TestStoryPriorityAndStatusUpdatesReachInbox(t *testing.T) {
 	}
 	items, err := inboxRepo.List(ctx, notificationdomain.ListQuery{Access: notificationdomain.WorkspaceAccess{ActorID: recipient, WorkspaceID: fixture.workspaceA}, Limit: 20})
 	require.NoError(t, err)
-	require.Len(t, items, 2)
+	require.Len(t, items, 1)
 	require.Equal(t, "To do", items[0].Message.Variables["value"].Value)
-	require.Equal(t, "Urgent", items[1].Message.Variables["value"].Value)
 
 	// Exact event replay remains idempotent after removing resource uniqueness.
 	require.NoError(t, publisher.New(client, log).Publish(ctx, lastEvent))
@@ -124,5 +123,5 @@ func TestStoryPriorityAndStatusUpdatesReachInbox(t *testing.T) {
 	}, 5*time.Second, 20*time.Millisecond)
 	count, err := inboxRepo.CountUnread(ctx, notificationdomain.WorkspaceAccess{ActorID: recipient, WorkspaceID: fixture.workspaceA})
 	require.NoError(t, err)
-	require.Equal(t, 2, count)
+	require.Equal(t, 1, count)
 }

@@ -3,7 +3,8 @@ import type { NotificationsPage } from "../types";
 
 export type NotificationsData = InfiniteData<NotificationsPage, number>;
 export type NotificationChange =
-  | { type: "read" | "unread" | "delete"; id: string }
+  | { type: "read"; id: string; observedCreatedAt?: string }
+  | { type: "unread" | "delete"; id: string }
   | { type: "read-all" | "delete-all" | "delete-read" };
 
 export const updateNotificationsCache = (
@@ -18,6 +19,12 @@ export const updateNotificationsCache = (
     ...page,
     notifications: page.notifications.flatMap((notification) => {
       if ("id" in change && notification.id !== change.id)
+        return [notification];
+      if (
+        change.type === "read" &&
+        change.observedCreatedAt &&
+        notification.createdAt !== change.observedCreatedAt
+      )
         return [notification];
       const unread = notification.readAt === null;
       if (!counted.has(notification.id)) {

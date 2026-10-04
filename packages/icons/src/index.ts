@@ -197,3 +197,4 @@ export * from "./package";
 export * from "./call";
 export * from "./handshake";
 export * from "./shopping-cart-01";
+export * from "./views";

@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { Box, Flex, Text, Switch } from "ui";
 import { SectionHeader } from "@/modules/settings/components";
 import { useTerminology } from "@/hooks";
@@ -6,6 +7,7 @@ import { useUpdateAutomationPreferencesMutation } from "@/lib/hooks/users/update
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 
 export const Automations = () => {
+  const id = useId();
   const { data: preferences } = useAutomationPreferences();
   const { getTermDisplay } = useTerminology();
   const { hasFeature } = useSubscriptionFeatures();
@@ -34,14 +36,22 @@ export const Automations = () => {
         <Flex direction="column" gap={6}>
           <Flex align="center" gap={2} justify="between">
             <Box>
-              <Text className="font-medium">Auto-assign to self</Text>
-              <Text className="line-clamp-2" color="muted">
+              <Text className="font-medium" id={`${id}-auto-assign-label`}>
+                Auto-assign to self
+              </Text>
+              <Text
+                className="line-clamp-2"
+                color="muted"
+                id={`${id}-auto-assign-description`}
+              >
                 When creating new{" "}
                 {getTermDisplay("storyTerm", { variant: "plural" })}, always
                 assign them to yourself by default
               </Text>
             </Box>
             <Switch
+              aria-describedby={`${id}-auto-assign-description`}
+              aria-labelledby={`${id}-auto-assign-label`}
               checked={preferences?.autoAssignSelf}
               className="shrink-0"
               name="autoAssignSelf"
@@ -53,20 +63,36 @@ export const Automations = () => {
 
           <Flex align="center" gap={2} justify="between">
             <Box>
-              <Text className="font-medium">Auto-scheduling</Text>
-              <Text className="line-clamp-2" color="muted">
+              <Text className="font-medium" id={`${id}-auto-scheduling-label`}>
+                Auto-scheduling
+              </Text>
+              <Text
+                className="line-clamp-2"
+                color="muted"
+                id={`${id}-auto-scheduling-description`}
+              >
                 When creating new{" "}
                 {getTermDisplay("storyTerm", { variant: "plural" })}, enable
                 auto-scheduling by default. You can turn it off on individual{" "}
                 {getTermDisplay("storyTerm", { variant: "plural" })}.
               </Text>
               {!canUseBackgroundMaya && (
-                <Text className="mt-1" color="muted">
+                <Text
+                  className="mt-1"
+                  color="muted"
+                  id={`${id}-auto-scheduling-availability`}
+                >
                   Available on paid plans.
                 </Text>
               )}
             </Box>
             <Switch
+              aria-describedby={
+                canUseBackgroundMaya
+                  ? `${id}-auto-scheduling-description`
+                  : `${id}-auto-scheduling-description ${id}-auto-scheduling-availability`
+              }
+              aria-labelledby={`${id}-auto-scheduling-label`}
               checked={Boolean(
                 canUseBackgroundMaya && preferences?.autoScheduling,
               )}
@@ -81,16 +107,25 @@ export const Automations = () => {
 
           <Flex align="center" gap={2} justify="between">
             <Box>
-              <Text className="line-clamp-1 font-medium">
+              <Text
+                className="line-clamp-1 font-medium"
+                id={`${id}-branch-status-label`}
+              >
                 On git branch copy, move {getTermDisplay("storyTerm")} to
                 started status
               </Text>
-              <Text className="line-clamp-2" color="muted">
+              <Text
+                className="line-clamp-2"
+                color="muted"
+                id={`${id}-branch-status-description`}
+              >
                 After copying the git branch name, {getTermDisplay("storyTerm")}{" "}
                 is moved to the started workflow status
               </Text>
             </Box>
             <Switch
+              aria-describedby={`${id}-branch-status-description`}
+              aria-labelledby={`${id}-branch-status-label`}
               checked={preferences?.moveStoryToStartedOnBranch}
               className="shrink-0"
               name="autoBranchMoveStatus"
@@ -102,15 +137,21 @@ export const Automations = () => {
 
           <Flex align="center" gap={2} justify="between">
             <Box>
-              <Text className="font-medium">
+              <Text className="font-medium" id={`${id}-branch-assign-label`}>
                 On git branch copy, assign to yourself
               </Text>
-              <Text className="line-clamp-2" color="muted">
+              <Text
+                className="line-clamp-2"
+                color="muted"
+                id={`${id}-branch-assign-description`}
+              >
                 After copying the git branch name, {getTermDisplay("storyTerm")}{" "}
                 is assigned to yourself
               </Text>
             </Box>
             <Switch
+              aria-describedby={`${id}-branch-assign-description`}
+              aria-labelledby={`${id}-branch-assign-label`}
               checked={preferences?.assignSelfOnBranchCopy}
               className="shrink-0"
               name="autoBranchAssign"

@@ -101,11 +101,10 @@ export const buildSettingsNavigation = ({
     {
       category: "Administration",
       items: [
-        // Enable Workspace security in Administration when it is ready.
-        // {
-        //   title: "Workspace security",
-        //   href: withWorkspace("/settings/workspace/security"),
-        // },
+        {
+          title: "Security",
+          href: withWorkspace("/settings/workspace/security"),
+        },
         {
           title: "Members",
           href: withWorkspace("/settings/workspace/members"),

@@ -172,9 +172,19 @@ jest.mock("@/hooks", () => {
     useTerminology: () => ({
       getTermDisplay: (term: string) => term,
     }),
-    useWorkspacePath: () => ({ workspaceSlug: "workspace" }),
+    useWorkspacePath: () => ({
+      workspaceSlug: "workspace",
+      withWorkspace: (path: string) => `/workspace${path}`,
+    }),
   };
 });
+
+jest.mock("@/hooks/use-workspace-path", () => ({
+  useWorkspacePath: () => ({
+    workspaceSlug: "workspace",
+    withWorkspace: (path: string) => `/workspace${path}`,
+  }),
+}));
 
 jest.mock("@/hooks/role", () => ({
   useUserRole: () => ({ userRole: "admin" }),
@@ -196,11 +206,9 @@ jest.mock("./roadmap-key-results", () => ({
   },
   RoadmapObjectiveListItem: ({
     objective,
-    onObjectiveSelect,
     selected,
   }: {
     objective: Objective;
-    onObjectiveSelect: () => void;
     selected: boolean;
   }) => {
     const { data = [] } = mockUseKeyResults(
@@ -208,15 +216,14 @@ jest.mock("./roadmap-key-results", () => ({
       objective.keyResultCount > 0,
     ) as { data?: KeyResult[] };
     return (
-      <button
-        aria-pressed={selected}
+      <a
+        aria-current={selected ? "true" : undefined}
         data-key-result-count={data.length}
         data-roadmap-list-objective={objective.id}
-        onClick={onObjectiveSelect}
-        type="button"
+        href={`/workspace/teams/${objective.teamId}/objectives/${objective.id}`}
       >
         {objective.name}
-      </button>
+      </a>
     );
   },
 }));
@@ -386,14 +393,12 @@ describe("Roadmap large objective datasets", () => {
   it.each(["list", "kanban"] as const)(
     "keeps %s rows and key-result subscriptions bounded",
     (layout) => {
-      const onObjectiveSelect = jest.fn();
       const { container } = render(
         <ObjectivesBoard
           layout={layout}
           objectives={objectives}
           onCreateObjective={jest.fn()}
           onKeyResultSelect={jest.fn()}
-          onObjectiveSelect={onObjectiveSelect}
           selectedObjectiveId={middleObjective.id}
           setViewOptions={jest.fn()}
           viewOptions={viewOptions}
@@ -417,8 +422,10 @@ describe("Roadmap large objective datasets", () => {
       expect(mockUseKeyResults).toHaveBeenCalledWith(middleObjective.id, true);
 
       const middleLabel = screen.getByText(middleObjective.name);
-      fireEvent.click(middleLabel.closest("button")!);
-      expect(onObjectiveSelect).toHaveBeenCalledWith(middleObjective);
+      expect(middleLabel.closest("a")).toHaveAttribute(
+        "href",
+        `/workspace/teams/${middleObjective.teamId}/objectives/${middleObjective.id}`,
+      );
     },
   );
 });

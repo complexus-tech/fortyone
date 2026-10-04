@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useContext } from "react";
+import { createContext, useContext, useState } from "react";
 import type { ReactNode } from "react";
 import type { StoriesViewOptions } from "@/components/ui/stories-view-options-button";
 import { useLocalStorage } from "@/hooks";
@@ -15,6 +15,7 @@ type TeamOptions = {
   setFilters: (value: StoriesFilter) => void;
   resetFilters: () => void;
   applyView: (configuration: SavedViewConfiguration) => void;
+  viewMetadata: Pick<SavedViewConfiguration, "scope" | "icon" | "description">;
 };
 
 const TeamOptionsContext = createContext<TeamOptions | undefined>(undefined);
@@ -22,10 +23,18 @@ const TeamOptionsContext = createContext<TeamOptions | undefined>(undefined);
 export const TeamOptionsProvider = ({
   children,
   layout,
+  viewId,
 }: {
   children: ReactNode;
   layout: StoriesLayout;
+  viewId?: string | null;
 }) => {
+  const [savedMetadata, setSavedMetadata] = useState<{
+    viewId: string | null | undefined;
+    metadata: TeamOptions["viewMetadata"];
+  } | null>(null);
+  const viewMetadata =
+    viewId && savedMetadata?.viewId === viewId ? savedMetadata.metadata : {};
   const initialOptions: StoriesViewOptions = {
     groupBy: "status",
     orderBy: "created",
@@ -61,7 +70,16 @@ export const TeamOptionsProvider = ({
         filters,
         setFilters,
         resetFilters,
+        viewMetadata,
         applyView: (configuration) => {
+          setSavedMetadata({
+            viewId,
+            metadata: {
+              scope: configuration.scope,
+              icon: configuration.icon,
+              description: configuration.description,
+            },
+          });
           setFilters(configuration.filters);
           if (configuration.layout === layout) {
             setViewOptions(configuration.viewOptions);

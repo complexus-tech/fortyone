@@ -13,6 +13,7 @@ import { StoryStatusIcon } from "./story-status-icon";
 import { NewStoryDialog } from "./new-story-dialog";
 import { PriorityIcon } from "./priority-icon";
 import { getCategoryHeaderStyle } from "./category-header-style";
+import { isWipLimitExceeded, WipLimitIndicator } from "./wip-limit-indicator";
 
 type StoryHeaderProps = {
   status?: State;
@@ -39,6 +40,9 @@ export const StoriesHeader = ({
   const { newStoryDefaults, selectedStories, setSelectedStories } = useBoard();
   const { userRole } = useUserRole();
   const { getTermDisplay } = useTerminology();
+  const activeCount = status?.activeCount ?? group.totalCount;
+  const wipLimit = groupBy === "status" ? status?.wipLimit : undefined;
+  const isOverLimit = isWipLimitExceeded(activeCount, wipLimit);
 
   const groupedStories = group.stories.map((s) => s.id);
   const headerStyle = getCategoryHeaderStyle({
@@ -138,12 +142,20 @@ export const StoriesHeader = ({
               />
             </span>
           </Tooltip>
-          <Text color="muted">
+          <Text className={cn({ "text-warning": isOverLimit })} color="muted">
             {group.totalCount}{" "}
             {getTermDisplay("storyTerm", {
               variant: group.totalCount === 1 ? "singular" : "plural",
             })}
           </Text>
+          <WipLimitIndicator
+            activeCount={activeCount}
+            limit={wipLimit}
+            pluralTaskTerm={getTermDisplay("storyTerm", { variant: "plural" })}
+            taskTerm={getTermDisplay("storyTerm", {
+              variant: activeCount === 1 ? "singular" : "plural",
+            })}
+          />
         </Flex>
         <Flex gap={2}>
           <Tooltip

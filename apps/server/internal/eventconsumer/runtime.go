@@ -178,6 +178,7 @@ func (c *Consumer) handleEvent(ctx context.Context, event events.Event) error {
 }
 
 func withEventDedupeKey(event events.Event, notification notifications.CoreNewNotification, index int) notifications.CoreNewNotification {
+	notification.OccurredAt = event.Timestamp.UTC()
 	if strings.TrimSpace(notification.DedupeKey) != "" {
 		return notification
 	}

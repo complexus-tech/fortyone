@@ -33,6 +33,7 @@ type PolicyUpdate struct {
 type SessionIdentity struct {
 	ID                         uuid.UUID
 	AuthenticatedAt, ExpiresAt time.Time
+	BrowserName                *string
 }
 type AccessState struct {
 	Email, Role              string
@@ -43,6 +44,8 @@ type Session struct {
 	ID              uuid.UUID  `json:"id"`
 	UserID          uuid.UUID  `json:"userId"`
 	Name            string     `json:"name"`
+	Username        string     `json:"username"`
+	BrowserName     *string    `json:"browserName"`
 	Email           string     `json:"email"`
 	Role            string     `json:"role"`
 	AuthenticatedAt time.Time  `json:"authenticatedAt"`

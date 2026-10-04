@@ -42,7 +42,7 @@ describe("renderTemplate", () => {
     const result = renderTemplate(message);
 
     expect(result.text).toBe(
-      `<img src=x onerror="actor()"> mentioned you: ${content}`,
+      '<img src=x onerror="actor()"> mentioned you: <entity>',
     );
     expect(result.segments).toEqual([
       {
@@ -56,9 +56,49 @@ describe("renderTemplate", () => {
         emphasized: false,
         key: "content",
         kind: "variable",
-        value: content,
+        value: "<entity>",
       },
     ]);
     expect(result).not.toHaveProperty("html");
+  });
+
+  it("renders the screenshot's historical linked comment as a readable URL", () => {
+    const url = "https://app.reversecontact.com/contact/find-phone-from-url";
+    const result = renderTemplate({
+      template: "{actor} left a comment: {content}",
+      variables: {
+        actor: { value: "hector", type: "actor" },
+        content: {
+          value: `<p><a target="_blank" rel="noopener noreferrer nofollow" href="${url}">${url}</a></p>`,
+          type: "text",
+        },
+      },
+    });
+    expect(result.text).toBe(`hector left a comment: ${url}`);
+    expect(result.text).not.toMatch(/target=|href=|<\/?[pa]>/);
+  });
+
+  it("preserves newly normalized literal text without decoding it again", () => {
+    const result = renderTemplate({
+      template: "{actor} replied: {content}",
+      variables: {
+        actor: { value: "hector" },
+        content: { value: "<example> &amp;", type: "plain_text" },
+      },
+    });
+    expect(result.text).toBe("hector replied: <example> &amp;");
+    expect(result.segments[2]).toMatchObject({ emphasized: false });
+  });
+
+  it("does not expose a placeholder when an attachment-only comment has no text", () => {
+    expect(
+      renderTemplate({
+        template: "{actor} left a comment: {content}",
+        variables: {
+          actor: { value: "hector" },
+          content: { value: "", type: "plain_text" },
+        },
+      }).text,
+    ).toBe("hector left a comment: ");
   });
 });

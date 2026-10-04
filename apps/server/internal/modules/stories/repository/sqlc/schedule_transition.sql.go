@@ -216,6 +216,37 @@ func (q *Queries) GetLatestStoryScheduleTransition(ctx context.Context, arg GetL
 	return i, err
 }
 
+const getStoryScheduleIssue = `-- name: GetStoryScheduleIssue :one
+SELECT issue_id, owner_id, cause_code, resolved_at
+FROM public.story_schedule_issues
+WHERE workspace_id = $1
+  AND story_id = $2
+`
+
+type GetStoryScheduleIssueParams struct {
+	WorkspaceID uuid.UUID
+	StoryID     uuid.UUID
+}
+
+type GetStoryScheduleIssueRow struct {
+	IssueID    uuid.UUID
+	OwnerID    uuid.UUID
+	CauseCode  string
+	ResolvedAt *time.Time
+}
+
+func (q *Queries) GetStoryScheduleIssue(ctx context.Context, arg GetStoryScheduleIssueParams) (GetStoryScheduleIssueRow, error) {
+	row := q.db.QueryRow(ctx, getStoryScheduleIssue, arg.WorkspaceID, arg.StoryID)
+	var i GetStoryScheduleIssueRow
+	err := row.Scan(
+		&i.IssueID,
+		&i.OwnerID,
+		&i.CauseCode,
+		&i.ResolvedAt,
+	)
+	return i, err
+}
+
 const insertStoryScheduleTransition = `-- name: InsertStoryScheduleTransition :exec
 INSERT INTO public.story_schedule_transition_outbox (
     schedule_transition_event_id,
@@ -308,6 +339,81 @@ func (q *Queries) LockStoryForScheduleTransition(ctx context.Context, arg LockSt
 	var i LockStoryForScheduleTransitionRow
 	err := row.Scan(&i.AutoSchedulingStatus, &i.AutoSchedulingReason, &i.AutoSchedulingLocked)
 	return i, err
+}
+
+const openStoryScheduleIssue = `-- name: OpenStoryScheduleIssue :exec
+INSERT INTO public.story_schedule_issues (
+    workspace_id, story_id, issue_id, owner_id, cause_code, opened_at, updated_at
+) VALUES (
+    $1, $2, $3,
+    $4, $5, $6, $6
+)
+ON CONFLICT (workspace_id, story_id) DO UPDATE
+SET issue_id = EXCLUDED.issue_id,
+    owner_id = EXCLUDED.owner_id,
+    cause_code = EXCLUDED.cause_code,
+    opened_at = EXCLUDED.opened_at,
+    updated_at = EXCLUDED.updated_at,
+    resolved_at = NULL
+`
+
+type OpenStoryScheduleIssueParams struct {
+	WorkspaceID uuid.UUID
+	StoryID     uuid.UUID
+	IssueID     uuid.UUID
+	OwnerID     uuid.UUID
+	CauseCode   string
+	ObservedAt  time.Time
+}
+
+func (q *Queries) OpenStoryScheduleIssue(ctx context.Context, arg OpenStoryScheduleIssueParams) error {
+	_, err := q.db.Exec(ctx, openStoryScheduleIssue,
+		arg.WorkspaceID,
+		arg.StoryID,
+		arg.IssueID,
+		arg.OwnerID,
+		arg.CauseCode,
+		arg.ObservedAt,
+	)
+	return err
+}
+
+const refreshStoryScheduleIssue = `-- name: RefreshStoryScheduleIssue :exec
+UPDATE public.story_schedule_issues
+SET updated_at = $1
+WHERE workspace_id = $2
+  AND story_id = $3
+  AND resolved_at IS NULL
+`
+
+type RefreshStoryScheduleIssueParams struct {
+	ObservedAt  time.Time
+	WorkspaceID uuid.UUID
+	StoryID     uuid.UUID
+}
+
+func (q *Queries) RefreshStoryScheduleIssue(ctx context.Context, arg RefreshStoryScheduleIssueParams) error {
+	_, err := q.db.Exec(ctx, refreshStoryScheduleIssue, arg.ObservedAt, arg.WorkspaceID, arg.StoryID)
+	return err
+}
+
+const resolveStoryScheduleIssue = `-- name: ResolveStoryScheduleIssue :exec
+UPDATE public.story_schedule_issues
+SET resolved_at = $1, updated_at = $1
+WHERE workspace_id = $2
+  AND story_id = $3
+  AND resolved_at IS NULL
+`
+
+type ResolveStoryScheduleIssueParams struct {
+	ObservedAt  *time.Time
+	WorkspaceID uuid.UUID
+	StoryID     uuid.UUID
+}
+
+func (q *Queries) ResolveStoryScheduleIssue(ctx context.Context, arg ResolveStoryScheduleIssueParams) error {
+	_, err := q.db.Exec(ctx, resolveStoryScheduleIssue, arg.ObservedAt, arg.WorkspaceID, arg.StoryID)
+	return err
 }
 
 const retryStoryScheduleTransition = `-- name: RetryStoryScheduleTransition :execrows

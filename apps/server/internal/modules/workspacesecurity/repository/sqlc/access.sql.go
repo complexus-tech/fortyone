@@ -97,7 +97,7 @@ func (q *Queries) GetPolicy(ctx context.Context, arg GetPolicyParams) (GetPolicy
 }
 
 const listBrowserSessions = `-- name: ListBrowserSessions :many
-SELECT session.session_id, session.user_id, account.full_name, account.email, CAST(member.role AS text) AS role,
+SELECT session.session_id, session.user_id, account.full_name, account.username, account.email, CAST(member.role AS text) AS role, session.browser_name,
     session.authenticated_at, session.last_seen_at, session.expires_at, session.revoked_at, epoch.revoked_before
 FROM public.workspace_browser_sessions AS session
 JOIN public.workspace_members AS member ON member.workspace_id = session.workspace_id AND member.user_id = session.user_id
@@ -119,8 +119,10 @@ type ListBrowserSessionsRow struct {
 	SessionID       uuid.UUID
 	UserID          uuid.UUID
 	FullName        *string
+	Username        string
 	Email           string
 	Role            string
+	BrowserName     *string
 	AuthenticatedAt time.Time
 	LastSeenAt      time.Time
 	ExpiresAt       time.Time
@@ -141,8 +143,10 @@ func (q *Queries) ListBrowserSessions(ctx context.Context, arg ListBrowserSessio
 			&i.SessionID,
 			&i.UserID,
 			&i.FullName,
+			&i.Username,
 			&i.Email,
 			&i.Role,
+			&i.BrowserName,
 			&i.AuthenticatedAt,
 			&i.LastSeenAt,
 			&i.ExpiresAt,
@@ -351,11 +355,12 @@ func (q *Queries) SessionAccessState(ctx context.Context, arg SessionAccessState
 }
 
 const trackBrowserSession = `-- name: TrackBrowserSession :execrows
-INSERT INTO public.workspace_browser_sessions (workspace_id, session_id, user_id, authenticated_at, last_seen_at, expires_at)
-VALUES ($1, $2, $3, $4, GREATEST(CURRENT_TIMESTAMP, CAST($4 AS timestamptz)), $5)
+INSERT INTO public.workspace_browser_sessions (workspace_id, session_id, user_id, authenticated_at, last_seen_at, expires_at, browser_name)
+VALUES ($1, $2, $3, $4, GREATEST(CURRENT_TIMESTAMP, CAST($4 AS timestamptz)), $5, $6)
 ON CONFLICT (workspace_id, session_id) DO UPDATE SET
     last_seen_at = CASE WHEN workspace_browser_sessions.last_seen_at < CURRENT_TIMESTAMP - INTERVAL '1 minute' THEN CURRENT_TIMESTAMP ELSE workspace_browser_sessions.last_seen_at END,
-    expires_at = EXCLUDED.expires_at
+    expires_at = EXCLUDED.expires_at,
+    browser_name = COALESCE(workspace_browser_sessions.browser_name, EXCLUDED.browser_name)
 WHERE workspace_browser_sessions.user_id = EXCLUDED.user_id
   AND workspace_browser_sessions.authenticated_at = EXCLUDED.authenticated_at
   AND workspace_browser_sessions.revoked_at IS NULL
@@ -367,6 +372,7 @@ type TrackBrowserSessionParams struct {
 	ActorID         uuid.UUID
 	AuthenticatedAt time.Time
 	ExpiresAt       time.Time
+	BrowserName     *string
 }
 
 func (q *Queries) TrackBrowserSession(ctx context.Context, arg TrackBrowserSessionParams) (int64, error) {
@@ -376,6 +382,7 @@ func (q *Queries) TrackBrowserSession(ctx context.Context, arg TrackBrowserSessi
 		arg.ActorID,
 		arg.AuthenticatedAt,
 		arg.ExpiresAt,
+		arg.BrowserName,
 	)
 	if err != nil {
 		return 0, err

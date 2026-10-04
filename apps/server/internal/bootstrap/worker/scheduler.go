@@ -228,7 +228,7 @@ func registerSchedules(scheduler scheduleRegistrar) error {
 	}
 
 	_, err = scheduler.Register(
-		"0 * * * *", // Hourly; each recipient is evaluated in their local timezone
+		"0 * * * *", // Catch up one weekly workspace summary in each recipient's timezone.
 		asynq.NewTask(tasks.TypeFeedbackDigestEmail, nil),
 		asynq.Queue("notifications"),
 	)

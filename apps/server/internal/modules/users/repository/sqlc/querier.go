@@ -94,6 +94,9 @@ type Querier interface {
 	DeleteAccountMessagingEmailThreads(ctx context.Context, arg DeleteAccountMessagingEmailThreadsParams) error
 	DeleteAccountMessagingNonces(ctx context.Context, arg DeleteAccountMessagingNoncesParams) error
 	DeleteAccountNotificationEmails(ctx context.Context, arg DeleteAccountNotificationEmailsParams) error
+	// Original event snapshots are immutable. Remove personally identified
+	// receipts before inbox snapshots are reattributed, including deferred erasure.
+	DeleteAccountNotificationEventReceipts(ctx context.Context, arg DeleteAccountNotificationEventReceiptsParams) error
 	DeleteAccountNotificationPreferences(ctx context.Context, arg DeleteAccountNotificationPreferencesParams) error
 	DeleteAccountNotifications(ctx context.Context, arg DeleteAccountNotificationsParams) error
 	DeleteAccountOAuthGrants(ctx context.Context, arg DeleteAccountOAuthGrantsParams) error

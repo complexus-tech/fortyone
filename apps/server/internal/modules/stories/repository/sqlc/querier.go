@@ -58,6 +58,7 @@ type Querier interface {
 	// Story mutation queries deliberately repeat their authorization predicate.
 	// Credentials only narrow current product membership; they never replace it.
 	GetStoryMutationSnapshot(ctx context.Context, arg GetStoryMutationSnapshotParams) (GetStoryMutationSnapshotRow, error)
+	GetStoryScheduleIssue(ctx context.Context, arg GetStoryScheduleIssueParams) (GetStoryScheduleIssueRow, error)
 	GetStoryWatchStateForUpdate(ctx context.Context, arg GetStoryWatchStateForUpdateParams) (GetStoryWatchStateForUpdateRow, error)
 	GetSystemStoryComment(ctx context.Context, arg GetSystemStoryCommentParams) (GetSystemStoryCommentRow, error)
 	GetSystemStoryStatusCategory(ctx context.Context, arg GetSystemStoryStatusCategoryParams) (string, error)
@@ -134,8 +135,11 @@ type Querier interface {
 	MayaScheduleBlocksExist(ctx context.Context, arg MayaScheduleBlocksExistParams) (bool, error)
 	MigrateEligibleSprintStoriesBatch(ctx context.Context, arg MigrateEligibleSprintStoriesBatchParams) ([]MigrateEligibleSprintStoriesBatchRow, error)
 	NextStorySequence(ctx context.Context, arg NextStorySequenceParams) (int32, error)
+	OpenStoryScheduleIssue(ctx context.Context, arg OpenStoryScheduleIssueParams) error
 	PurgeCompletedAttachmentObjectDeletions(ctx context.Context, arg PurgeCompletedAttachmentObjectDeletionsParams) (int64, error)
 	RecordImportReceipt(ctx context.Context, arg RecordImportReceiptParams) error
+	RefreshStoryScheduleIssue(ctx context.Context, arg RefreshStoryScheduleIssueParams) error
+	ResolveStoryScheduleIssue(ctx context.Context, arg ResolveStoryScheduleIssueParams) error
 	ResolveVisibleStoryKeyResult(ctx context.Context, arg ResolveVisibleStoryKeyResultParams) (ResolveVisibleStoryKeyResultRow, error)
 	RestoreSecondaryStories(ctx context.Context, arg RestoreSecondaryStoriesParams) ([]uuid.UUID, error)
 	RetryStoryMutationEvent(ctx context.Context, arg RetryStoryMutationEventParams) (int64, error)

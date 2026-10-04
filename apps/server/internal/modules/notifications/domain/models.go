@@ -9,12 +9,21 @@ import (
 )
 
 type NotificationMessage struct {
-	Template  string                        `json:"template"`
-	Variables map[string]Variable           `json:"variables"`
-	Strategy  *StrategyNotificationSnapshot `json:"strategy,omitempty"`
+	Template      string                        `json:"template"`
+	Variables     map[string]Variable           `json:"variables"`
+	Strategy      *StrategyNotificationSnapshot `json:"strategy,omitempty"`
+	ScheduleIssue *StoryScheduleIssueSnapshot   `json:"scheduleIssue,omitempty"`
 	// IdentityReferences links display snapshots to accounts for targeted erasure.
 	// It is stored with the message but never included in public responses.
 	IdentityReferences map[string]uuid.UUID `json:"identityReferences,omitempty"`
+}
+
+// StoryScheduleIssueSnapshot identifies the scheduling episode rather than its
+// wording. Delivery can then discard an alert after Maya resolves or replaces it.
+type StoryScheduleIssueSnapshot struct {
+	ID      uuid.UUID `json:"id"`
+	Code    string    `json:"code"`
+	OwnerID uuid.UUID `json:"ownerId"`
 }
 
 func (message NotificationMessage) Public() NotificationMessage {
@@ -139,6 +148,7 @@ type StrategyMonthlySummarySnapshot struct {
 
 type NewNotification struct {
 	DedupeKey   string    `json:"-"`
+	OccurredAt  time.Time `json:"-"`
 	RecipientID uuid.UUID `json:"recipient_id"`
 	WorkspaceID uuid.UUID `json:"workspace_id"`
 	// InAppEnabled is an explicit delivery override. Nil resolves the current
@@ -163,6 +173,12 @@ func (notification NewNotification) Validate() error {
 	}
 	if strings.TrimSpace(notification.Title) == "" {
 		return fmt.Errorf("%w: notification title is required", ErrInvalid)
+	}
+	if issue := notification.Message.ScheduleIssue; issue != nil {
+		if notification.Type != NotificationTypeStoryUpdate || notification.EntityType != EntityTypeStory ||
+			issue.ID == uuid.Nil || issue.OwnerID != notification.RecipientID || strings.TrimSpace(issue.Code) == "" {
+			return fmt.Errorf("%w: schedule issue must identify the story recipient and active episode", ErrInvalid)
+		}
 	}
 	return nil
 }

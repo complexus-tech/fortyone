@@ -66,10 +66,23 @@ type Position struct {
 }
 
 type ViewConfiguration struct {
-	Version     int         `json:"version"`
-	Layout      string      `json:"layout"`
-	Filters     Filters     `json:"filters"`
-	ViewOptions ViewOptions `json:"viewOptions"`
+	Version     int          `json:"version"`
+	Description *string      `json:"description,omitempty"`
+	Icon        *string      `json:"icon,omitempty"`
+	Scope       *MyWorkScope `json:"scope,omitempty"`
+	Layout      string       `json:"layout"`
+	Filters     Filters      `json:"filters"`
+	ViewOptions ViewOptions  `json:"viewOptions"`
+}
+
+// My Work is evaluated for the reader, independently of the preset's owning team.
+type MyWorkScope struct {
+	Kind          string  `json:"kind"`
+	Tab           string  `json:"tab"`
+	Category      *string `json:"category,omitempty"`
+	Overdue       *bool   `json:"overdue,omitempty"`
+	CreatedAfter  *string `json:"createdAfter,omitempty"`
+	CreatedBefore *string `json:"createdBefore,omitempty"`
 }
 
 type Filters struct {

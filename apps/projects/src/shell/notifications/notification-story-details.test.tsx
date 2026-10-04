@@ -25,11 +25,15 @@ describe("NotificationStoryDetails", () => {
       <NotificationStoryDetails
         entityId="story-1"
         notificationId="notification-1"
+        observedCreatedAt="2026-10-03T20:00:00.123456Z"
       />,
     );
 
     await waitFor(() => {
-      expect(readNotification).toHaveBeenCalledWith("notification-1");
+      expect(readNotification).toHaveBeenCalledWith({
+        id: "notification-1",
+        observedCreatedAt: "2026-10-03T20:00:00.123456Z",
+      });
     });
 
     expect(screen.getByRole("status")).toHaveAttribute(

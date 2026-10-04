@@ -16,6 +16,7 @@ import { useAutomationPreferences } from "@/lib/hooks/users/preferences";
 import { useTeamStatuses } from "@/lib/hooks/statuses";
 import { useGitHubIntegration } from "@/lib/hooks/github";
 import { MobileMenuButton } from "@/components/shared";
+import { FavoriteButton } from "@/shared/favorites";
 import { buildGitBranchName } from "@/modules/settings/workspace/integrations/github/branch-format";
 import { useUpdateStoryMutation } from "../hooks/update-mutation";
 import { StoryActionsMenu } from "./story-actions-menu";
@@ -111,6 +112,10 @@ export const OptionsHeader = ({
             </>
           ) : null}
         </Text>
+        <FavoriteButton
+          item={{ kind: "story", id }}
+          name={code ? `${code}-${sequenceId}: ${title}` : title}
+        />
       </Flex>
       <Flex align="center" gap={2}>
         {isDialog ? (

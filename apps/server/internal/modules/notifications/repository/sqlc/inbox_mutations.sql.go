@@ -131,11 +131,23 @@ WITH actor_scope AS (
     FROM authorized_notification AS authorized
     WHERE NOT CAST($4 AS boolean)
       AND notification.notification_id = authorized.notification_id
+      AND (
+          NOT CAST($5 AS boolean)
+          OR (
+              notification.created_at <= CAST($6 AS timestamptz)
+              AND (CAST($7 AS timestamptz) IS NULL
+                   OR notification.created_at = CAST($7 AS timestamptz))
+          )
+      )
     RETURNING notification.notification_id
 )
-SELECT notification_id FROM deleted_notification
+SELECT notification_id, TRUE AS mutated FROM deleted_notification
 UNION ALL
-SELECT notification_id FROM updated_notification
+SELECT notification_id, TRUE AS mutated FROM updated_notification
+UNION ALL
+SELECT notification_id, FALSE AS mutated FROM authorized_notification
+WHERE NOT EXISTS (SELECT 1 FROM deleted_notification)
+  AND NOT EXISTS (SELECT 1 FROM updated_notification)
 LIMIT 1
 `
 
@@ -146,12 +158,18 @@ type MutateWorkspaceNotificationParams struct {
 	DeleteNotification bool
 	MarkRead           bool
 	MutatedAt          time.Time
+	ExpectedCreatedAt  *time.Time
+}
+
+type MutateWorkspaceNotificationRow struct {
+	NotificationID uuid.UUID
+	Mutated        bool
 }
 
 // MutateWorkspaceNotification performs one finite notification mutation. The
 // adapter maps the typed domain intent to delete/read flags; SQL never accepts
 // identifiers, predicates, or ordering fragments from callers.
-func (q *Queries) MutateWorkspaceNotification(ctx context.Context, arg MutateWorkspaceNotificationParams) (uuid.UUID, error) {
+func (q *Queries) MutateWorkspaceNotification(ctx context.Context, arg MutateWorkspaceNotificationParams) (MutateWorkspaceNotificationRow, error) {
 	row := q.db.QueryRow(ctx, mutateWorkspaceNotification,
 		arg.WorkspaceID,
 		arg.ActorID,
@@ -159,10 +177,11 @@ func (q *Queries) MutateWorkspaceNotification(ctx context.Context, arg MutateWor
 		arg.DeleteNotification,
 		arg.MarkRead,
 		arg.MutatedAt,
+		arg.ExpectedCreatedAt,
 	)
-	var notification_id uuid.UUID
-	err := row.Scan(&notification_id)
-	return notification_id, err
+	var i MutateWorkspaceNotificationRow
+	err := row.Scan(&i.NotificationID, &i.Mutated)
+	return i, err
 }
 
 const mutateWorkspaceNotifications = `-- name: MutateWorkspaceNotifications :one

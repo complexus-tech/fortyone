@@ -1,97 +1,91 @@
+import type { QueryKey } from "@tanstack/react-query";
+import type { ReadNotificationInput } from "lib/src/notification-read";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useWorkspacePath } from "@/hooks";
 import { notificationKeys } from "@/constants/keys";
 import { readNotification } from "../actions/read";
-import type { AppNotification } from "../types";
+import {
+  isNotificationReadCache,
+  markNotificationReadInCache,
+} from "../utils/read-cache";
+import type { NotificationReadCache } from "../utils/read-cache";
 
-/**
- * This hook is used to read a notification.
- * It is optimistic by default, meaning it will update the notification as read even if the server request fails.
- * @param isOptimistic - Whether to use optimistic updates.
- * @returns A mutation object.
- */
+type CacheSnapshot = {
+  key: QueryKey;
+  before: NotificationReadCache;
+  after: unknown;
+};
 
 export const useReadNotificationMutation = (isOptimistic = true) => {
   const queryClient = useQueryClient();
   const { workspaceSlug } = useWorkspacePath();
+  const allKey = notificationKeys.all(workspaceSlug);
+  const unreadKey = notificationKeys.unread(workspaceSlug);
 
   const mutation = useMutation({
-    mutationFn: (notificationId: string) =>
-      readNotification(notificationId, workspaceSlug),
-
-    onMutate: async (notificationId) => {
-      // Cancel any outgoing refetches
-      await queryClient.cancelQueries({
-        queryKey: notificationKeys.all(workspaceSlug),
-      });
-
-      // Get the previous data
-      const previousNotifications = queryClient.getQueryData<AppNotification[]>(
-        notificationKeys.all(workspaceSlug),
+    mutationFn: async ({ id, observedCreatedAt }: ReadNotificationInput) => {
+      const response = await readNotification(
+        id,
+        workspaceSlug,
+        observedCreatedAt,
       );
-
-      const previousUnreadCount = queryClient.getQueryData<number>(
-        notificationKeys.unread(workspaceSlug),
-      );
-
-      if (previousUnreadCount && isOptimistic) {
-        queryClient.setQueryData<number>(
-          notificationKeys.unread(workspaceSlug),
-          previousUnreadCount - 1,
-        );
-      }
-
-      // Optimistically update the notifications
-      if (previousNotifications && isOptimistic) {
-        queryClient.setQueryData<AppNotification[]>(
-          notificationKeys.all(workspaceSlug),
-          previousNotifications.map((notification) =>
-            notification.id === notificationId
-              ? { ...notification, readAt: new Date().toISOString() }
-              : notification,
-          ),
-        );
-      }
-
-      return { previousNotifications, previousUnreadCount };
+      if (response?.error) throw new Error(response.error.message);
     },
 
-    onError: (error, notificationId, context) => {
-      // Rollback on error
-      if (context?.previousNotifications) {
-        queryClient.setQueryData(
-          notificationKeys.all(workspaceSlug),
-          context.previousNotifications,
-        );
+    onMutate: async (input) => {
+      await queryClient.cancelQueries({ queryKey: allKey });
+      if (!isOptimistic) return undefined;
+      const snapshots: CacheSnapshot[] = [];
+      let changed = false;
+      const readAt = new Date().toISOString();
+      for (const [key, before] of queryClient.getQueriesData({
+        queryKey: allKey,
+      })) {
+        if (!isNotificationReadCache(before)) continue;
+        const next = markNotificationReadInCache(before, input, readAt);
+        if (!next.changed) continue;
+        changed = true;
+        queryClient.setQueryData(key, next.data);
+        snapshots.push({ key, before, after: queryClient.getQueryData(key) });
       }
+      const beforeUnread = queryClient.getQueryData<number>(unreadKey);
+      const afterUnread =
+        changed && beforeUnread !== undefined
+          ? Math.max(0, beforeUnread - 1)
+          : beforeUnread;
+      if (afterUnread !== beforeUnread) {
+        queryClient.setQueryData(unreadKey, afterUnread);
+      }
+      return { snapshots, beforeUnread, afterUnread, unreadKey, allKey };
+    },
 
-      if (context?.previousUnreadCount) {
-        queryClient.setQueryData<number>(
-          notificationKeys.unread(workspaceSlug),
-          context.previousUnreadCount,
-        );
+    onError: (error, input, context) => {
+      for (const snapshot of context?.snapshots ?? []) {
+        // Preserve refreshes and mutations that arrived after this displayed version.
+        if (queryClient.getQueryData(snapshot.key) === snapshot.after) {
+          queryClient.setQueryData(snapshot.key, snapshot.before);
+        }
+      }
+      if (
+        context &&
+        queryClient.getQueryData(context.unreadKey) === context.afterUnread
+      ) {
+        queryClient.setQueryData(context.unreadKey, context.beforeUnread);
       }
       toast.error("Failed to mark notification as read", {
         description: error.message || "Please try again",
         action: {
           label: "Retry",
           onClick: () => {
-            mutation.mutate(notificationId);
+            mutation.mutate(input);
           },
         },
       });
     },
 
-    onSettled: () => {
-      // Invalidate relevant queries
-      queryClient.invalidateQueries({
-        queryKey: notificationKeys.all(workspaceSlug),
-      });
-      queryClient.invalidateQueries({
-        queryKey: notificationKeys.unread(workspaceSlug),
-      });
-    },
+    onSettled: (_data, _error, _input, context) =>
+      queryClient.invalidateQueries({ queryKey: context?.allKey ?? allKey }),
   });
 
   return mutation;

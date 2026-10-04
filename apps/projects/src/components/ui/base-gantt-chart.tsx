@@ -37,6 +37,8 @@ export const BaseGanttTimelineChart = <T extends GanttItem>({
   barClassName,
   onInteractionChange,
   virtualized,
+  selectedItemId,
+  detailsPanelId,
 }: {
   itemCount: number;
   rows: RenderedGanttRow<T>[];
@@ -52,6 +54,8 @@ export const BaseGanttTimelineChart = <T extends GanttItem>({
   barClassName?: string;
   onInteractionChange: (itemId: string | null) => void;
   virtualized: boolean;
+  selectedItemId?: string | null;
+  detailsPanelId?: string;
 }) => {
   const [hoverPosition, setHoverPosition] = useState<number | null>(null);
   const periods = useMemo(
@@ -163,9 +167,11 @@ export const BaseGanttTimelineChart = <T extends GanttItem>({
               aria-setsize={itemCount}
               className={cn(
                 "border-border hover:bg-state-hover/50 dark:border-border/40 border-b-[0.5px] dark:hover:bg-white/[0.02]",
+                selectedItemId === item.id && "bg-primary/5 dark:bg-primary/5",
                 virtualized ? "absolute inset-x-0 top-0" : "relative",
               )}
               data-gantt-item-id={item.id}
+              data-selected={selectedItemId === item.id || undefined}
               key={item.id}
               role="listitem"
               style={
@@ -186,6 +192,12 @@ export const BaseGanttTimelineChart = <T extends GanttItem>({
                 <BaseGanttBar
                   className={barClassName}
                   dateRange={dateRange}
+                  detailsPanelId={detailsPanelId}
+                  expanded={
+                    selectedItemId === undefined
+                      ? undefined
+                      : selectedItemId === item.id
+                  }
                   item={item}
                   onBarClick={onBarClick}
                   onDateUpdate={onDateUpdate}

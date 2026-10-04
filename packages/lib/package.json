@@ -6,6 +6,7 @@
   "types": "src/index.ts",
   "dependencies": {
     "classnames": "^2.5.1",
+    "htmlparser2": "10.1.0",
     "tailwind-merge": "^1.14.0"
   },
   "devDependencies": {

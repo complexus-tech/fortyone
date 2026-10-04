@@ -57,7 +57,10 @@ const Items = ({
   const { setOpen } = useTimezoneMenu();
 
   return (
-    <Popover.Content align={align} className="mr-0 w-80">
+    <Popover.Content
+      align={align}
+      className="mr-0 w-max max-w-[calc(100vw-2rem)]"
+    >
       <Command>
         <Command.Input
           autoFocus
@@ -125,6 +128,7 @@ export const Timezone = () => {
                 <Button
                   className="text-opacity-80 shrink-0"
                   color="tertiary"
+                  size="sm"
                   variant="outline"
                 >
                   <Flex align="center" gap={2}>

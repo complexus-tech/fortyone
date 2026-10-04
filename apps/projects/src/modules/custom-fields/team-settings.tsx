@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Box, Button, Flex, Menu, Text } from "ui";
-import { ArchiveIcon, EditIcon, MoreHorizontalIcon } from "icons";
+import { ArchiveIcon, EditIcon, MoreHorizontalIcon, PlusIcon } from "icons";
 import { useUserRole } from "@/hooks/role";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { SectionHeader } from "@/components/ui/section-header";
@@ -12,7 +12,64 @@ import { CUSTOM_FIELD_TYPE_LABELS } from "./types";
 import type { CustomField } from "./types";
 import { CustomFieldIcon } from "./icons";
 
+const CustomFieldActions = ({
+  field,
+  onEdit,
+  onArchive,
+}: {
+  field: CustomField;
+  onEdit: (trigger: HTMLButtonElement | null) => void;
+  onArchive: () => void;
+}) => {
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const openingEditor = useRef(false);
+  return (
+    <Menu>
+      <Menu.Button asChild>
+        <Button
+          aria-label={`Actions for ${field.name}`}
+          asIcon
+          color="tertiary"
+          ref={triggerRef}
+          size="sm"
+        >
+          <MoreHorizontalIcon />
+        </Button>
+      </Menu.Button>
+      <Menu.Items
+        align="end"
+        className="w-44"
+        onCloseAutoFocus={(event) => {
+          if (!openingEditor.current) return;
+          event.preventDefault();
+          openingEditor.current = false;
+        }}
+      >
+        <Menu.Group>
+          <Menu.Item
+            onSelect={() => {
+              openingEditor.current = true;
+              onEdit(triggerRef.current);
+            }}
+          >
+            <EditIcon aria-hidden="true" className="h-[1.15rem]" />
+            Edit field
+          </Menu.Item>
+        </Menu.Group>
+        <Menu.Separator />
+        <Menu.Group>
+          <Menu.Item onSelect={onArchive}>
+            <ArchiveIcon aria-hidden="true" className="h-[1.15rem]" />
+            Archive field
+          </Menu.Item>
+        </Menu.Group>
+      </Menu.Items>
+    </Menu>
+  );
+};
+
 export const TeamCustomFieldSettings = ({ teamId }: { teamId: string }) => {
+  const settingsRef = useRef<HTMLDivElement>(null);
   const {
     data: fields = [],
     isPending,
@@ -21,9 +78,10 @@ export const TeamCustomFieldSettings = ({ teamId }: { teamId: string }) => {
   } = useTeamCustomFields(teamId);
   const { userRole } = useUserRole();
   const canManage = userRole === "admin";
-  const [editor, setEditor] = useState<{ field: CustomField | null } | null>(
-    null,
-  );
+  const [editor, setEditor] = useState<{
+    field: CustomField | null;
+    trigger: HTMLButtonElement | null;
+  } | null>(null);
   const [archiving, setArchiving] = useState<CustomField | null>(null);
   const { archive } = useCustomFieldMutations(teamId);
   const active = fields.filter((field) => !field.archivedAt);
@@ -38,17 +96,24 @@ export const TeamCustomFieldSettings = ({ teamId }: { teamId: string }) => {
     }
   };
   return (
-    <Box className="border-border bg-surface overflow-hidden rounded-2xl border">
+    <Box
+      aria-label="Custom fields"
+      className="border-border bg-surface overflow-hidden rounded-2xl border"
+      ref={settingsRef}
+      role="region"
+      tabIndex={-1}
+    >
       <SectionHeader
         action={
           canManage ? (
             <Button
+              className="shrink-0"
               color="tertiary"
               disabled={isPending || isError || active.length >= 50}
-              onClick={() => {
-                setEditor({ field: null });
+              leftIcon={<PlusIcon />}
+              onClick={(event) => {
+                setEditor({ field: null, trigger: event.currentTarget });
               }}
-              variant="outline"
             >
               Create field
             </Button>
@@ -88,7 +153,7 @@ export const TeamCustomFieldSettings = ({ teamId }: { teamId: string }) => {
             {active.map((field) => (
               <Flex
                 align="center"
-                className="gap-4 px-6 py-4"
+                className="hover:bg-state-hover/50 gap-4 px-6 py-4"
                 justify="between"
                 key={field.id}
                 wrap
@@ -110,60 +175,26 @@ export const TeamCustomFieldSettings = ({ teamId }: { teamId: string }) => {
                   </Box>
                 </Flex>
                 {canManage ? (
-                  <Menu>
-                    <Menu.Button asChild>
-                      <Button
-                        aria-label={`Actions for ${field.name}`}
-                        color="tertiary"
-                        size="sm"
-                        variant="naked"
-                      >
-                        <MoreHorizontalIcon />
-                      </Button>
-                    </Menu.Button>
-                    <Menu.Items align="end" className="w-44">
-                      <Menu.Group>
-                        <Menu.Item
-                          onSelect={() => {
-                            setEditor({ field });
-                          }}
-                        >
-                          <EditIcon
-                            aria-hidden="true"
-                            className="h-[1.15rem]"
-                          />
-                          Edit field
-                        </Menu.Item>
-                      </Menu.Group>
-                      <Menu.Separator />
-                      <Menu.Group>
-                        <Menu.Item
-                          onSelect={() => {
-                            archive.reset();
-                            setArchiving(field);
-                          }}
-                        >
-                          <ArchiveIcon
-                            aria-hidden="true"
-                            className="h-[1.15rem]"
-                          />
-                          Archive field
-                        </Menu.Item>
-                      </Menu.Group>
-                    </Menu.Items>
-                  </Menu>
+                  <CustomFieldActions
+                    field={field}
+                    onArchive={() => {
+                      archive.reset();
+                      setArchiving(field);
+                    }}
+                    onEdit={(trigger) => {
+                      setEditor({ field, trigger });
+                    }}
+                  />
                 ) : null}
               </Flex>
             ))}
           </Box>
         ) : null}
         {!isPending && !isError && active.length === 0 ? (
-          <Box className="px-6 py-8">
-            <Text fontSize="lg" fontWeight="medium">
-              A place for your team’s details
-            </Text>
-            <Text className="mt-2 max-w-xl leading-6" color="muted">
-              Add customers, amounts, categories, or dates to your work.
+          <Box className="px-6 py-6">
+            <Text color="muted">
+              No custom fields yet. Add details such as customers, amounts,
+              categories, or dates to your work.
             </Text>
           </Box>
         ) : null}
@@ -205,6 +236,11 @@ export const TeamCustomFieldSettings = ({ teamId }: { teamId: string }) => {
           key={editor.field?.id ?? "new"}
           onClose={() => {
             setEditor(null);
+          }}
+          onReturnFocus={() => {
+            if (editor.trigger?.isConnected && !editor.trigger.disabled)
+              editor.trigger.focus();
+            else settingsRef.current?.focus();
           }}
           teamId={teamId}
         />

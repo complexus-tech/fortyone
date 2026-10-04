@@ -2,12 +2,18 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { InfiniteData } from "@tanstack/react-query";
+import { loadWipCapacity } from "@/modules/stories/public/wip-capacity";
 import { useAnalytics, useTerminology, useWorkspacePath } from "@/hooks";
 import { DEFAULT_ESTIMATE_SCHEME } from "@/lib/estimate";
 import { deriveAutoSchedulingStatus } from "@/lib/auto-scheduling";
 import { getStoryPath } from "@/shared/routing/story";
 import { objectiveKeys } from "@/modules/objectives/constants";
 import { storyKeys } from "@/modules/stories/constants";
+import {
+  isWipCapacityQuery,
+  refreshWipCapacity,
+  wipCapacityToastId,
+} from "@/shared/story/wip-capacity";
 import type {
   GroupedStoriesResponse,
   Story,
@@ -383,26 +389,43 @@ export const useCreateStoryMutation = () => {
 
       queryClient.invalidateQueries({
         queryKey: storyKeys.all(workspaceSlug),
+        predicate: (query) => !isWipCapacityQuery(query, workspaceSlug),
       });
       queryClient.invalidateQueries({
         queryKey: objectiveKeys.list(workspaceSlug),
       });
 
+      const viewAction = {
+        label: `View ${storyTerm}`,
+        onClick: () => {
+          router.push(withWorkspace(getStoryPath(createdStory)));
+        },
+      };
       if (createdStory.parentId) {
         queryClient.invalidateQueries({
           queryKey: storyKeys.detail(workspaceSlug, createdStory.parentId),
         });
       } else {
         toast.success("Success", {
+          id: wipCapacityToastId(workspaceSlug, createdStory.statusId),
           description: `${storyTermCapitalized} created successfully`,
-          action: {
-            label: `View ${storyTerm}`,
-            onClick: () => {
-              router.push(withWorkspace(getStoryPath(createdStory)));
-            },
-          },
+          action: viewAction,
         });
       }
+      void refreshWipCapacity({
+        queryClient,
+        workspaceSlug,
+        loadCapacity: loadWipCapacity,
+        createdStory: {
+          id: createdStory.id,
+          statusId: createdStory.statusId,
+          teamId: createdStory.teamId,
+          parentId: createdStory.parentId || null,
+          archivedAt: createdStory.archivedAt,
+          deletedAt: createdStory.deletedAt,
+        },
+        toastOptions: { action: viewAction },
+      });
     },
   });
 

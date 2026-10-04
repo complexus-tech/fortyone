@@ -29,6 +29,7 @@ describe("settings navigation", () => {
       "Integrations",
     ]);
     expect(navigation[2]?.items.map(({ title }) => title)).toEqual([
+      "Security",
       "Members",
       "Teams",
       "Billing & plans",
@@ -72,6 +73,9 @@ describe("settings navigation", () => {
       expect(
         navigation.flatMap(({ items }) => items).map(({ title }) => title),
       ).not.toContain("Imports & exports");
+      expect(
+        navigation.flatMap(({ items }) => items).map(({ title }) => title),
+      ).not.toContain("Security");
       expect(
         navigation.flatMap(({ items }) => items).map(({ title }) => title),
       ).toContain("Google Drive");

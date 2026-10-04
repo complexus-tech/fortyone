@@ -1,10 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Badge, Box, Button, Dialog, Flex, Input, Switch, Text } from "ui";
+import { Badge, Box, Button, Dialog, Flex, Switch, Text } from "ui";
+import { toast } from "sonner";
 import { SectionHeader } from "@/modules/settings/components/section-header";
 import type { SSOSettings } from "./sso-api";
 import { useSSOMutations, useSSOSettings } from "./sso-api";
+import { SecuritySettingRow } from "./setting-row";
+import { SecurityInput } from "./security-input";
 
 const ConnectionForm = ({ settings }: { settings: SSOSettings }) => {
   const connection = settings.connection;
@@ -33,16 +36,18 @@ const ConnectionForm = ({ settings }: { settings: SSOSettings }) => {
       required !== connection.requireSSO ||
       rotating);
   return (
-    <Box className="space-y-5 px-6 pt-5 pb-6">
-      <Box className="bg-surface-elevated border-border rounded-xl border p-4">
-        <Text fontWeight="medium">Identity provider callback URL</Text>
-        <Text className="mt-2 break-all select-all">
+    <Box className="divide-border divide-y-[0.5px]">
+      <SecuritySettingRow
+        description="Add this callback URL to your identity provider."
+        title="Identity provider callback URL"
+      >
+        <Text className="max-w-full break-all select-all md:max-w-[60%] md:shrink-0">
           {settings.callbackUrl}
         </Text>
-      </Box>
+      </SecuritySettingRow>
       {!connection ? (
         <form
-          className="max-w-2xl space-y-4"
+          className="divide-border divide-y-[0.5px]"
           onSubmit={(event) => {
             event.preventDefault();
             if (createValid)
@@ -55,54 +60,94 @@ const ConnectionForm = ({ settings }: { settings: SSOSettings }) => {
                 {
                   onSuccess: () => {
                     setSecret("");
+                    toast.success("Identity provider connected");
                   },
                 },
               );
           }}
         >
-          <Input
-            disabled={busy}
-            label="Issuer URL"
-            maxLength={2048}
-            onChange={(event) => {
-              setIssuer(event.target.value);
-            }}
-            placeholder="https://your-provider.example.com"
-            type="url"
-            value={issuer}
-          />
-          <Input
-            disabled={busy}
-            label="Client ID"
-            maxLength={512}
-            onChange={(event) => {
-              setClientId(event.target.value);
-            }}
-            value={clientId}
-          />
-          <Input
-            autoComplete="new-password"
-            disabled={busy}
-            label="Client secret"
-            maxLength={8192}
-            onChange={(event) => {
-              setSecret(event.target.value);
-            }}
-            type="password"
-            value={secret}
-          />
-          {error ? (
-            <Text color="danger" role="alert">
-              {error.message}
-            </Text>
-          ) : null}
-          <Button disabled={!createValid || busy} loading={busy} type="submit">
-            {busy ? "Connecting…" : "Connect identity provider"}
-          </Button>
+          <SecuritySettingRow
+            description="The HTTPS issuer address for your OpenID Connect provider."
+            htmlFor="sso-issuer"
+            title="Issuer URL"
+          >
+            <Box className="w-full md:w-64 md:shrink-0">
+              <SecurityInput
+                aria-describedby="sso-issuer-description"
+                disabled={busy}
+                id="sso-issuer"
+                maxLength={2048}
+                onChange={(event) => {
+                  setIssuer(event.target.value);
+                }}
+                placeholder="https://your-provider.example.com"
+                type="url"
+                value={issuer}
+              />
+            </Box>
+          </SecuritySettingRow>
+          <SecuritySettingRow
+            description="The client identifier registered with your provider."
+            htmlFor="sso-client-id"
+            title="Client ID"
+          >
+            <Box className="w-full md:w-64 md:shrink-0">
+              <SecurityInput
+                aria-describedby="sso-client-id-description"
+                disabled={busy}
+                id="sso-client-id"
+                maxLength={512}
+                onChange={(event) => {
+                  setClientId(event.target.value);
+                }}
+                value={clientId}
+              />
+            </Box>
+          </SecuritySettingRow>
+          <SecuritySettingRow
+            description="The secret issued for this client by your provider."
+            htmlFor="sso-client-secret"
+            title="Client secret"
+          >
+            <Box className="w-full md:w-64 md:shrink-0">
+              <SecurityInput
+                aria-describedby="sso-client-secret-description"
+                autoComplete="new-password"
+                disabled={busy}
+                id="sso-client-secret"
+                maxLength={8192}
+                onChange={(event) => {
+                  setSecret(event.target.value);
+                }}
+                type="password"
+                value={secret}
+              />
+            </Box>
+          </SecuritySettingRow>
+          <Box className="space-y-3 px-6 py-4">
+            {error ? (
+              <Text color="danger" role="alert">
+                {error.message}
+              </Text>
+            ) : null}
+            <Button
+              disabled={!createValid || busy}
+              loading={busy}
+              loadingText="Connecting…"
+              type="submit"
+            >
+              Connect identity provider
+            </Button>
+          </Box>
         </form>
       ) : (
         <>
-          <Flex align="center" className="gap-3" justify="between" wrap>
+          <Flex
+            align="center"
+            className="gap-3 px-6 py-4"
+            justify="between"
+            wrap
+          >
             <Box className="min-w-0">
               <Text className="break-all" fontWeight="medium">
                 {connection.issuer}
@@ -116,7 +161,7 @@ const ConnectionForm = ({ settings }: { settings: SSOSettings }) => {
             </Badge>
           </Flex>
           <form
-            className="max-w-2xl space-y-5"
+            className="divide-border divide-y-[0.5px]"
             onSubmit={(event) => {
               event.preventDefault();
               mutations.update.mutate(
@@ -130,21 +175,20 @@ const ConnectionForm = ({ settings }: { settings: SSOSettings }) => {
                   onSuccess: () => {
                     setSecret("");
                     setRotating(false);
+                    toast.success("SSO settings updated");
                   },
                 },
               );
             }}
           >
-            <Flex align="center" className="gap-5" justify="between">
-              <Box>
-                <label className="font-medium" htmlFor="sso-enabled">
-                  Enable SSO sign-in
-                </label>
-                <Text className="mt-1" color="muted">
-                  Allow linked members to sign in through this provider.
-                </Text>
-              </Box>
+            <SecuritySettingRow
+              description="Allow linked members to sign in through this provider."
+              htmlFor="sso-enabled"
+              layout="inline"
+              title="Enable SSO sign-in"
+            >
               <Switch
+                aria-describedby="sso-enabled-description"
                 aria-label="Enable SSO sign-in"
                 checked={enabled}
                 disabled={busy}
@@ -154,18 +198,15 @@ const ConnectionForm = ({ settings }: { settings: SSOSettings }) => {
                   if (!value) setRequired(false);
                 }}
               />
-            </Flex>
-            <Flex align="center" className="gap-5" justify="between">
-              <Box>
-                <label className="font-medium" htmlFor="sso-required">
-                  Require SSO for this workspace
-                </label>
-                <Text className="mt-1" color="muted">
-                  Test your sign-in first. Current sessions must then use this
-                  provider.
-                </Text>
-              </Box>
+            </SecuritySettingRow>
+            <SecuritySettingRow
+              description="Test your sign-in first. Current sessions must then use this provider."
+              htmlFor="sso-required"
+              layout="inline"
+              title="Require SSO for this workspace"
+            >
               <Switch
+                aria-describedby="sso-required-description"
                 aria-label="Require SSO for this workspace"
                 checked={required}
                 disabled={
@@ -177,80 +218,90 @@ const ConnectionForm = ({ settings }: { settings: SSOSettings }) => {
                 id="sso-required"
                 onCheckedChange={setRequired}
               />
-            </Flex>
+            </SecuritySettingRow>
             {rotating ? (
-              <Input
-                autoComplete="new-password"
-                disabled={busy}
-                label="New client secret"
-                maxLength={8192}
-                onChange={(event) => {
-                  setSecret(event.target.value);
-                }}
-                type="password"
-                value={secret}
-              />
-            ) : null}
-            {rotating ? (
-              <Text color="muted">
-                SSO enforcement turns off until you test the new secret.
-              </Text>
-            ) : null}
-            {error ? (
-              <Text color="danger" role="alert">
-                {error.message}
-              </Text>
-            ) : null}
-            <Flex className="gap-3" wrap>
-              <Button
-                disabled={!changed || busy || (rotating && !secret)}
-                loading={mutations.update.isPending}
-                type="submit"
+              <SecuritySettingRow
+                description="SSO enforcement turns off until you test the new secret."
+                htmlFor="sso-new-client-secret"
+                title="New client secret"
               >
-                {mutations.update.isPending ? "Saving…" : "Save SSO settings"}
-              </Button>
-              <Button
-                color="tertiary"
-                disabled={busy || !connection.enabled}
-                onClick={() => {
-                  window.location.assign(settings.signInUrl);
-                }}
-                type="button"
-                variant="outline"
-              >
-                Test SSO sign-in
-              </Button>
-              {!rotating ? (
+                <Box className="w-full md:w-64 md:shrink-0">
+                  <SecurityInput
+                    aria-describedby="sso-new-client-secret-description"
+                    autoComplete="new-password"
+                    disabled={busy}
+                    id="sso-new-client-secret"
+                    maxLength={8192}
+                    onChange={(event) => {
+                      setSecret(event.target.value);
+                    }}
+                    type="password"
+                    value={secret}
+                  />
+                </Box>
+              </SecuritySettingRow>
+            ) : null}
+            <Box className="space-y-3 px-6 py-4">
+              {error ? (
+                <Text color="danger" role="alert">
+                  {error.message}
+                </Text>
+              ) : null}
+              <Flex className="gap-3" wrap>
+                <Button
+                  disabled={!changed || busy || (rotating && !secret)}
+                  loading={mutations.update.isPending}
+                  loadingText="Saving…"
+                  type="submit"
+                >
+                  Save SSO settings
+                </Button>
                 <Button
                   color="tertiary"
-                  disabled={busy}
+                  disabled={busy || !connection.enabled}
                   onClick={() => {
-                    setRotating(true);
-                    setRequired(false);
+                    window.location.assign(settings.signInUrl);
                   }}
                   type="button"
                   variant="outline"
                 >
-                  Rotate client secret
+                  Test SSO sign-in
                 </Button>
-              ) : (
-                <Button
-                  color="tertiary"
-                  disabled={busy}
-                  onClick={() => {
-                    setRotating(false);
-                    setSecret("");
-                    setRequired(connection.requireSSO);
-                  }}
-                  type="button"
-                  variant="outline"
-                >
-                  Cancel rotation
-                </Button>
-              )}
-            </Flex>
+                {!rotating ? (
+                  <Button
+                    color="tertiary"
+                    disabled={busy}
+                    onClick={() => {
+                      setRotating(true);
+                      setRequired(false);
+                    }}
+                    type="button"
+                    variant="outline"
+                  >
+                    Rotate client secret
+                  </Button>
+                ) : (
+                  <Button
+                    color="tertiary"
+                    disabled={busy}
+                    onClick={() => {
+                      setRotating(false);
+                      setSecret("");
+                      setRequired(connection.requireSSO);
+                    }}
+                    type="button"
+                    variant="outline"
+                  >
+                    Cancel rotation
+                  </Button>
+                )}
+              </Flex>
+            </Box>
           </form>
-          <Box className="border-border border-t pt-5">
+          <SecuritySettingRow
+            description="End SSO enforcement and linked sign-ins for this provider."
+            title="Remove identity provider"
+          >
             <Button
               color="danger"
               disabled={busy}
@@ -263,10 +314,10 @@ const ConnectionForm = ({ settings }: { settings: SSOSettings }) => {
             >
               Remove identity provider
             </Button>
-          </Box>
+          </SecuritySettingRow>
         </>
       )}
-      <Text color="muted">
+      <Text className="px-6 py-4" color="muted">
         Members connect their existing account once before using SSO sign-in.
       </Text>
       <Dialog
@@ -276,6 +327,7 @@ const ConnectionForm = ({ settings }: { settings: SSOSettings }) => {
         open={removing}
       >
         <Dialog.Content
+          aria-busy={busy}
           className="flex max-h-[calc(100dvh-15vw-1rem)] flex-col md:max-h-[calc(100dvh-10vw-1rem)]"
           hideClose={busy}
           onEscapeKeyDown={(event) => {
@@ -291,12 +343,12 @@ const ConnectionForm = ({ settings }: { settings: SSOSettings }) => {
             </Dialog.Title>
           </Dialog.Header>
           <Dialog.Body className="max-h-none min-h-0 flex-1 space-y-4">
-            <Dialog.Description asChild className="px-0 text-base leading-6">
+            <Dialog.Description asChild className="px-0 text-base">
               <Text color="muted">
                 SSO enforcement and linked sign-ins will end for this provider.
               </Text>
             </Dialog.Description>
-            <Input
+            <SecurityInput
               disabled={busy}
               label="Reason"
               maxLength={240}
@@ -326,10 +378,12 @@ const ConnectionForm = ({ settings }: { settings: SSOSettings }) => {
               color="danger"
               disabled={busy || !reason.trim()}
               loading={mutations.archive.isPending}
+              loadingText="Removing…"
               onClick={() => {
                 mutations.archive.mutate(reason.trim(), {
                   onSuccess: () => {
                     setRemoving(false);
+                    toast.success("Identity provider removed");
                   },
                 });
               }}
@@ -351,12 +405,12 @@ export const SecuritySingleSignOn = () => {
         title="Single sign-on"
       />
       {query.isPending ? (
-        <Text aria-live="polite" className="px-6 pt-5 pb-6" color="muted">
+        <Text aria-live="polite" className="px-6 py-4" color="muted">
           Loading SSO settings…
         </Text>
       ) : null}
       {query.isError ? (
-        <Box className="px-6 pt-5 pb-6">
+        <Box className="px-6 py-4">
           <Text color="danger" role="alert">
             SSO settings could not be loaded.
           </Text>

@@ -1,5 +1,10 @@
 import type { Metadata } from "next";
-import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
+import {
+  defaultShouldDehydrateQuery,
+  dehydrate,
+  hashKey,
+  HydrationBoundary,
+} from "@tanstack/react-query";
 import { getQueryClient } from "@/app/get-query-client";
 import { memberKeys, teamKeys } from "@/constants/keys";
 import { getTeamMembers } from "@/lib/queries/members/get-members";
@@ -32,19 +37,33 @@ export default async function TeamManagementPage({
   const ctx = { session: session!, workspaceSlug };
 
   const queryClient = getQueryClient();
+  const teamMembersKey = memberKeys.team(workspaceSlug, teamId);
+  const teamSettingsKey = teamKeys.settings(workspaceSlug, teamId);
+  const pageQueryHashes = new Set([
+    hashKey(teamMembersKey),
+    hashKey(teamSettingsKey),
+  ]);
   await Promise.all([
     queryClient.prefetchQuery({
-      queryKey: memberKeys.team(workspaceSlug, teamId),
+      queryKey: teamMembersKey,
       queryFn: () => getTeamMembers(teamId, ctx),
     }),
     queryClient.prefetchQuery({
-      queryKey: teamKeys.settings(workspaceSlug, teamId),
+      queryKey: teamSettingsKey,
       queryFn: () => getTeamSettings(teamId, ctx),
     }),
   ]);
 
   return (
-    <HydrationBoundary state={dehydrate(queryClient)}>
+    <HydrationBoundary
+      state={dehydrate(queryClient, {
+        // The workspace boundary owns shared streams. Rehydrating their
+        // pending promises here can repeatedly queue an active browser query.
+        shouldDehydrateQuery: (query) =>
+          pageQueryHashes.has(query.queryHash) &&
+          defaultShouldDehydrateQuery(query),
+      })}
+    >
       <TeamManagement />
     </HydrationBoundary>
   );
