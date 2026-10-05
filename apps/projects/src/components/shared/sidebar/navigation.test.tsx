@@ -8,6 +8,11 @@ import { Navigation } from "./navigation";
 let mockPathname = "/acme/calendar";
 let mockTeamScope: string | null = null;
 let mockView: string | null = null;
+let mockHasViews = true;
+
+jest.mock("@/shared/views/presence-context", () => ({
+  useViewsPresence: () => ({ hasViews: mockHasViews }),
+}));
 
 jest.mock("next/navigation", () => ({
   usePathname: () => mockPathname,
@@ -132,6 +137,7 @@ describe("Navigation", () => {
     mockPathname = "/acme/calendar";
     mockTeamScope = null;
     mockView = null;
+    mockHasViews = true;
   });
 
   it("groups shared destinations under an expanded Workspace section", () => {
@@ -234,6 +240,24 @@ describe("Navigation", () => {
     expect(screen.queryByRole("link", { name: "Roadmap" })).toBeNull();
     expect(screen.getByRole("link", { name: "Calendar" })).toBeVisible();
   });
+
+  it.each([false, true])(
+    "only shows Views when saved views exist (collapsed=%s)",
+    (isCollapsed) => {
+      mockHasViews = false;
+      const { rerender } = render(<Navigation isCollapsed={isCollapsed} />);
+      expect(screen.queryByRole("link", { name: "Views" })).toBeNull();
+      expect(screen.getByRole("link", { name: "Documents" })).toBeVisible();
+
+      mockHasViews = true;
+      rerender(<Navigation isCollapsed={isCollapsed} />);
+      expect(screen.getByRole("link", { name: "Views" })).toBeVisible();
+
+      mockHasViews = false;
+      rerender(<Navigation isCollapsed={isCollapsed} />);
+      expect(screen.queryByRole("link", { name: "Views" })).toBeNull();
+    },
+  );
 
   it("opens Workspace when the current route belongs there", () => {
     localStorage.setItem("sidebar:acme:workspace-expanded", "false");

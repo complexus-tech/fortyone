@@ -24,6 +24,7 @@ import {
   useWorkspacePath,
 } from "@/hooks";
 import { useRunningSprints } from "@/modules/sprints/hooks/running-sprints";
+import { useViewsPresence } from "@/shared/views/presence-context";
 import {
   walkthroughTargets,
   type WalkthroughTarget,
@@ -48,6 +49,7 @@ export const Navigation = ({
   const { data: runningSprints = [] } = useRunningSprints();
   const { getTermDisplay } = useTerminology();
   const { userRole } = useUserRole();
+  const { hasViews } = useViewsPresence();
 
   const features = useFeatures();
   const [isWorkspaceOpen, setIsWorkspaceOpen] = useLocalStorage(
@@ -110,6 +112,7 @@ export const Navigation = ({
       name: "Views",
       icon: <ViewsIcon className={isCollapsed ? "h-5.5" : undefined} />,
       href: withWorkspace("/views"),
+      disabled: !hasViews,
     },
     {
       name: "Strategy Map",

@@ -7,7 +7,6 @@ import { Button, Flex, Skeleton } from "ui";
 import { useWorkspacePath } from "@/hooks/use-workspace-path";
 import { useSession } from "@/lib/auth/client";
 import type { SavedViewLoadState } from "@/shared/story/view-configuration";
-import { PresetPicker } from "./preset-picker";
 import type { SavedViewConfiguration } from "./types";
 import { useSelectedView } from "./use-selected-view";
 import { SavedViewIdentity } from "./saved-view-identity";
@@ -141,22 +140,21 @@ export const SavedViews = ({
     else if (preset.id === viewId) reselect();
     else void setViewId(preset.id);
   };
+  if (!viewId) return null;
   return (
     <Flex
       align="center"
       className="min-w-0"
       data-view-focus-scope={`${workspaceSlug}:${session?.user.id ?? ""}:${teamId}`}
-      data-view-id={viewId ?? ""}
+      data-view-id={viewId}
       gap={1}
     >
-      {viewId ? (
-        <ViewsSwitcher
-          loading={status === "loading"}
-          onSelect={selectView}
-          selected={selected}
-          triggerRef={selected ? undefined : trigger}
-        />
-      ) : null}
+      <ViewsSwitcher
+        loading={status === "loading"}
+        onSelect={selectView}
+        selected={selected}
+        triggerRef={selected ? undefined : trigger}
+      />
       {selected ? (
         <SavedViewIdentity
           onArchived={() =>
@@ -179,23 +177,13 @@ export const SavedViews = ({
           view={selected}
         />
       ) : null}
-      {viewId && status === "loading" ? (
+      {status === "loading" ? (
         <Flex align="center" aria-hidden gap={2}>
           <Skeleton className="size-8 rounded-full" />
           <Skeleton className="size-8 rounded-full" />
         </Flex>
       ) : null}
-      {!selected && !viewId ? (
-        <PresetPicker
-          browseHref={withWorkspace("/views")}
-          kind="view"
-          label={status === "loading" && viewId ? "Loading view..." : "Views"}
-          onSelect={selectView}
-          teamId={teamId}
-          triggerRef={trigger}
-        />
-      ) : null}
-      {viewId && (status === "error" || status === "unavailable") ? (
+      {status === "error" || status === "unavailable" ? (
         <Button
           color="tertiary"
           onClick={() => void query.refetch()}

@@ -16,7 +16,10 @@ import type { CreationPropertySlots } from "@/shared/story/creation-property-slo
 import { MayaSkillPicker } from "@/modules/maya-skills/public";
 import { MayaSkillSlotProvider } from "@/shared/maya/skill-slot";
 import { ViewFavoritesProvider } from "@/shared/views/favorites-slot";
-import { SaveViewAction } from "@/modules/work-presets/public/views";
+import {
+  SavedViewsPresenceProvider,
+  SaveViewAction,
+} from "@/modules/work-presets/public/views";
 import { SaveViewProvider } from "@/shared/views/save-slot";
 import { FavoritesSidebar } from "./favorites-sidebar";
 
@@ -39,7 +42,7 @@ export const WorkFeatureSlots = ({ children }: { children: ReactNode }) => (
       <MayaSkillSlotProvider Picker={MayaSkillPicker}>
         <ViewFavoritesProvider Favorites={FavoritesSidebar}>
           <SaveViewProvider SaveView={SaveViewAction}>
-            {children}
+            <SavedViewsPresenceProvider>{children}</SavedViewsPresenceProvider>
           </SaveViewProvider>
         </ViewFavoritesProvider>
       </MayaSkillSlotProvider>

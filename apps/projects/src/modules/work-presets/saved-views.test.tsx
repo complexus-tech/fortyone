@@ -112,6 +112,45 @@ describe("selected saved views", () => {
   });
   afterEach(() => jest.restoreAllMocks());
 
+  it("does not add a Views toolbar control or apply cached data to an ordinary task list", () => {
+    mockViewId = null;
+    const onApply = jest.fn();
+    const onLoadStateChange = jest.fn();
+    const { container, rerender } = render(
+      <SavedViews
+        configuration={VIEW.configuration}
+        onApply={onApply}
+        onLoadStateChange={onLoadStateChange}
+        teamId="team"
+      />,
+    );
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    expect(container).toBeEmptyDOMElement();
+    expect(onApply).not.toHaveBeenCalled();
+    expect(onLoadStateChange).toHaveBeenLastCalledWith({
+      workspaceSlug: "acme",
+      userId: "owner",
+      teamId: "team",
+      viewId: null,
+      status: "idle",
+    });
+
+    mockSelected.mockReturnValue(
+      loaded({ data: undefined, isFetchedAfterMount: false, isFetching: true }),
+    );
+    rerender(
+      <SavedViews
+        configuration={VIEW.configuration}
+        onApply={onApply}
+        onLoadStateChange={onLoadStateChange}
+        teamId="team"
+      />,
+    );
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    expect(container).toBeEmptyDOMElement();
+    expect(onApply).not.toHaveBeenCalled();
+  });
+
   it.each(["workspace", "account", "view"])(
     "does not restore deferred created-view focus into a changed %s",
     (change) => {

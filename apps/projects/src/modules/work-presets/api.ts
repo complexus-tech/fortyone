@@ -20,11 +20,12 @@ export const listPresets = (
   cursor: string,
   ctx: WorkspaceCtx,
   signal?: AbortSignal,
+  limit = 50,
 ) => {
   const query = new URLSearchParams({
     teamId,
     kind,
-    limit: "50",
+    limit: String(limit),
     ...(cursor ? { cursor } : {}),
   });
   return get(

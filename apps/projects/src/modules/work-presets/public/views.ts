@@ -13,3 +13,4 @@ export { ViewsPage } from "../views-page";
 
 export { SavedViewIcon } from "@/shared/views/icons";
 export { SaveViewAction } from "../save-view-action";
+export { SavedViewsPresenceProvider } from "../views-presence-provider";

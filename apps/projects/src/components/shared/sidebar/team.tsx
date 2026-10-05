@@ -47,6 +47,7 @@ import type { Team as TeamType } from "@/modules/teams/types";
 import type { TeamFeedbackSummary } from "@/modules/team-feedback/types";
 import { walkthroughTargets } from "@/shared/walkthrough/targets";
 import { FavoriteContextMenuItem, FavoriteMenuItem } from "@/shared/favorites";
+import { useViewsPresence } from "@/shared/views/presence-context";
 // import { useTeamStatuses } from "@/lib/hooks/statuses";
 import { useTeamIntegrationRequests } from "@/modules/integration-requests/hooks/use-team-requests";
 import { NavCount } from "./nav-count";
@@ -172,6 +173,7 @@ export const Team = ({
   const { withWorkspace } = useWorkspacePath();
   const { mutate: removeMember, isPending } = useRemoveMemberMutation();
   const { userRole } = useUserRole();
+  const { hasTeamViews } = useViewsPresence();
   // const hasBacklog = statuses?.some((status) => status.category === "backlog");
   const intakeCount = pendingRequestsPage?.pagination.totalCount ?? 0;
   const hasIntake = intakeCount > 0;
@@ -234,6 +236,7 @@ export const Team = ({
       icon: <ViewsIcon />,
       href: withWorkspace(`/views?team=${id}`),
       active: isViewsActive,
+      disabled: !hasTeamViews(id),
     },
     {
       name: getTermDisplay("sprintTerm", { variant: "plural" }),
