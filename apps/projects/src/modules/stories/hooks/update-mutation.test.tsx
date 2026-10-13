@@ -122,6 +122,13 @@ describe("useBulkUpdateStoriesMutation", () => {
       const recentKey = [...detailKey, "maya-recent", "user-1"];
       queryClient.setQueryData(groupedKey, {
         groups: [{ key: "status-backlog", stories }],
+        meta: {
+          groupBy: "status",
+          filters: {},
+          orderBy: "created",
+          orderDirection: "desc",
+          totalGroups: 1,
+        },
       });
       queryClient.setQueryData(infiniteKey, {
         pages: [{ stories }],

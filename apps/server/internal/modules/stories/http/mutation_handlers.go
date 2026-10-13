@@ -178,23 +178,8 @@ func (h *Handlers) BulkUpdate(ctx context.Context, w http.ResponseWriter, r *htt
 		return nil
 	}
 
-	for _, storyId := range storyIDs {
-		cacheKeys := cache.InvalidateStoryKeys(workspace.ID, storyId)
-		for _, key := range cacheKeys {
-			if strings.Contains(key, "*") {
-				h.cache.DeleteByPattern(ctx, key)
-			} else {
-				h.cache.Delete(ctx, key)
-			}
-		}
-	}
-
-	listCachePattern := fmt.Sprintf(cache.StoryListKey+"*", workspace.ID.String())
-	h.cache.DeleteByPattern(ctx, listCachePattern)
-
-	myStoriesCachePattern := fmt.Sprintf(cache.MyStoriesKey+"*", workspace.ID.String())
-	h.cache.DeleteByPattern(ctx, myStoriesCachePattern)
-
+	// Story reads query the repository directly, so Redis invalidation scans
+	// would only delay this mutation without refreshing any cached responses.
 	result, err := h.stories.BulkUpdatePatch(ctx, storyIDs, workspace.ID, patch)
 	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusBadRequest)

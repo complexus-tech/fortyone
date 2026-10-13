@@ -1,7 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useParams } from "next/navigation";
-import type { InfiniteData } from "@tanstack/react-query";
 import { useAnalytics, useTerminology, useWorkspacePath } from "@/hooks";
 import { objectiveKeys } from "@/shared/objectives/keys";
 import type { WipStorySnapshot } from "@/shared/story/wip-capacity";
@@ -12,15 +11,14 @@ import {
   refreshWipCapacity,
 } from "@/shared/story/wip-capacity";
 import { storyKeys } from "../constants";
-import type {
-  DetailedStory,
-  GroupedStoriesResponse,
-  GroupStoriesResponse,
-  Story,
-} from "../types";
+import type { DetailedStory } from "../types";
 import { bulkUpdateAction } from "../actions/bulk-update-stories";
 import { loadWipCapacity } from "../public/wip-capacity";
-import { patchSelectedStory } from "../utils/optimistic";
+import {
+  applyBulkStoryUpdate,
+  restoreBulkStoryUpdate,
+} from "../utils/bulk-optimistic";
+import type { BulkStoryCacheSnapshot } from "../utils/bulk-optimistic";
 import {
   assertBulkStoryUpdateSucceeded,
   BulkStoryUpdateFailure,
@@ -32,111 +30,8 @@ type BulkUpdateVariables = {
 };
 
 type BulkUpdateContext = {
-  previousQueryStates: Map<string, unknown>;
+  previousQueryStates: BulkStoryCacheSnapshot;
   wipSnapshots: WipStorySnapshot[];
-};
-
-const restorePreviousQueryStates = (
-  queryClient: ReturnType<typeof useQueryClient>,
-  context?: BulkUpdateContext,
-) => {
-  context?.previousQueryStates.forEach((data, queryKey) => {
-    try {
-      queryClient.setQueryData(JSON.parse(queryKey), data);
-    } catch {
-      // Query keys are JSON-serializable in this cache. Ignore stale entries
-      // if a custom key violates that contract instead of masking the mutation.
-    }
-  });
-};
-
-const updateDetailQuery = (
-  queryClient: ReturnType<typeof useQueryClient>,
-  queryKey: readonly unknown[],
-  storyIds: ReadonlySet<string>,
-  payload: Partial<DetailedStory>,
-) => {
-  queryClient.setQueryData(queryKey, (data: DetailedStory | undefined) => {
-    return data ? patchSelectedStory(data, storyIds, payload) : data;
-  });
-};
-
-const updateInfiniteQuery = (
-  queryClient: ReturnType<typeof useQueryClient>,
-  queryKey: readonly unknown[],
-  storyIds: ReadonlySet<string>,
-  payload: Partial<DetailedStory>,
-) => {
-  queryClient.setQueryData(
-    queryKey,
-    (data: InfiniteData<GroupStoriesResponse> | undefined) => {
-      if (!data?.pages) return data;
-      return {
-        ...data,
-        pages: data.pages.map((page) => {
-          if (!Array.isArray(page.stories)) return page;
-          return {
-            ...page,
-            stories: page.stories.map((story) =>
-              patchSelectedStory(story, storyIds, payload),
-            ),
-          };
-        }),
-      };
-    },
-  );
-};
-
-const updateGroupedQuery = (
-  queryClient: ReturnType<typeof useQueryClient>,
-  queryKey: readonly unknown[],
-  storyIds: ReadonlySet<string>,
-  payload: Partial<DetailedStory>,
-) => {
-  queryClient.setQueryData(
-    queryKey,
-    (data: GroupedStoriesResponse | undefined) => {
-      if (!data || !Array.isArray(data.groups)) return data;
-      return {
-        ...data,
-        groups: data.groups.map((group) => {
-          if (!Array.isArray(group.stories)) return group;
-          return {
-            ...group,
-            stories: group.stories.map((story) =>
-              patchSelectedStory(story, storyIds, payload),
-            ),
-          };
-        }),
-      };
-    },
-  );
-};
-
-const updateListQuery = (
-  queryClient: ReturnType<typeof useQueryClient>,
-  queryKey: readonly unknown[],
-  storyIds: ReadonlySet<string>,
-  payload: Partial<DetailedStory>,
-) => {
-  const queryData = queryClient.getQueryData(queryKey);
-  if (Array.isArray(queryData)) {
-    queryClient.setQueryData<Story[]>(queryKey, (data) => {
-      if (!Array.isArray(data)) return data;
-      return data.map((story) => patchSelectedStory(story, storyIds, payload));
-    });
-    return;
-  }
-
-  const isInfiniteQuery = Boolean(
-    queryData && typeof queryData === "object" && "pages" in queryData,
-  );
-
-  if (isInfiniteQuery) {
-    updateInfiniteQuery(queryClient, queryKey, storyIds, payload);
-  } else {
-    updateGroupedQuery(queryClient, queryKey, storyIds, payload);
-  }
 };
 
 export const useBulkUpdateStoriesMutation = () => {
@@ -163,69 +58,31 @@ export const useBulkUpdateStoriesMutation = () => {
       return assertBulkStoryUpdateSucceeded(response.data);
     },
 
-    onMutate: async ({ storyIds, payload }) => {
-      const selectedStoryIds = new Set(storyIds);
+    onMutate: async ({ storyIds, payload }): Promise<BulkUpdateContext> => {
       const wipSnapshots = await captureWipStorySnapshots(
         queryClient,
         workspaceSlug,
         storyIds,
         payload,
       );
-      const previousQueryStates = new Map<string, unknown>();
-      const queryCache = queryClient.getQueryCache();
-      const queries = queryCache.getAll();
-
-      queries.forEach((query) => {
-        const queryKey = JSON.stringify(query.queryKey);
-        if (query.isActive() && queryKey.toLowerCase().includes("stories")) {
-          queryClient.cancelQueries({ queryKey: query.queryKey });
-
-          const previousData = queryClient.getQueryData(query.queryKey);
-          if (!previousQueryStates.has(queryKey)) {
-            previousQueryStates.set(queryKey, previousData);
-          }
-
-          if (queryKey.toLowerCase().includes("detail")) {
-            updateDetailQuery(
-              queryClient,
-              query.queryKey,
-              selectedStoryIds,
-              payload,
-            );
-          } else {
-            updateListQuery(
-              queryClient,
-              query.queryKey,
-              selectedStoryIds,
-              payload,
-            );
-          }
-        }
+      await queryClient.cancelQueries({
+        queryKey: storyKeys.all(workspaceSlug),
       });
-
-      if (storyId) {
-        const parentStoryKey = storyKeys.detail(workspaceSlug, storyId);
-        const serializedParentStoryKey = JSON.stringify(parentStoryKey);
-        const parentStory =
-          queryClient.getQueryData<DetailedStory>(parentStoryKey);
-        if (parentStory && !previousQueryStates.has(serializedParentStoryKey)) {
-          const previousParentData = queryClient.getQueryData(parentStoryKey);
-          previousQueryStates.set(serializedParentStoryKey, previousParentData);
-
-          updateDetailQuery(
-            queryClient,
-            parentStoryKey,
-            selectedStoryIds,
-            payload,
-          );
-        }
-      }
+      const previousQueryStates = applyBulkStoryUpdate({
+        queryClient,
+        workspaceSlug,
+        storyIds,
+        payload,
+        parentStoryId: storyId,
+      });
 
       return { previousQueryStates, wipSnapshots };
     },
 
     onError: (error, variables, context) => {
-      restorePreviousQueryStates(queryClient, context);
+      if (context) {
+        restoreBulkStoryUpdate(queryClient, context.previousQueryStates);
+      }
 
       const itemFailure =
         error instanceof BulkStoryUpdateFailure ? error : null;

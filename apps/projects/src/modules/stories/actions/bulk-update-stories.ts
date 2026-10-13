@@ -4,6 +4,8 @@ import type { ApiResponse } from "@/types";
 import { getApiError } from "@/utils";
 import type { DetailedStory } from "../types";
 
+const BULK_UPDATE_TIMEOUT_MS = 60_000;
+
 type Payload = {
   storyIds: string[];
   updates: Partial<DetailedStory>;
@@ -32,9 +34,20 @@ export const bulkUpdateAction = async (
       "stories",
       updates,
       ctx,
+      { timeout: BULK_UPDATE_TIMEOUT_MS, retry: 0 },
     );
     return stories;
   } catch (error) {
-    return getApiError(error);
+    const response = getApiError(error);
+    if (error instanceof Error && error.name === "TimeoutError") {
+      return {
+        data: null,
+        error: {
+          message:
+            "The bulk update timed out. Refresh the stories to check which changes were saved before retrying.",
+        },
+      };
+    }
+    return response;
   }
 };
