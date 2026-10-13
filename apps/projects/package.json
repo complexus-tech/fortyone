@@ -67,6 +67,7 @@
     "chrono-node": "^2.8.3",
     "date-fns": "^2.30.0",
     "framer-motion": "^11.0.28",
+    "hyperellipse": "1.0.5",
     "icons": "workspace:*",
     "idb-keyval": "^6.2.2",
     "javascript-time-ago": "^2.5.11",

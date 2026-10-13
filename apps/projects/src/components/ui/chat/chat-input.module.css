@@ -63,3 +63,29 @@
     corner-shape: squircle;
   }
 }
+
+/* Use the same native squircle radii when Hyperellipse is active in Tauri.
+   The existing frame/surface layers preserve the gradient border. */
+@supports not (corner-shape: squircle) {
+  :global(html[data-desktop-squircles="true"]) .emptyStateFrame,
+  :global(html[data-desktop-squircles="true"]) .emptyStateSurface,
+  :global(html[data-desktop-squircles="true"]) .dockedFrame,
+  :global(html[data-desktop-squircles="true"]) .dockedSurface {
+    --corner-shape: squircle;
+    --corner-scale: 0.8181818182;
+  }
+
+  :global(html[data-desktop-squircles="true"]) .emptyStateFrame {
+    border-radius: calc(2.75rem * var(--corner-scale));
+  }
+
+  :global(html[data-desktop-squircles="true"]) .emptyStateSurface {
+    border-radius: calc(2.75rem * var(--corner-scale) - 6px);
+  }
+
+  :global(html[data-desktop-squircles="true"]) .dockedFrame,
+  :global(html[data-desktop-squircles="true"]) .dockedSurface {
+    --corner-scale: 0.3409090909;
+    --radius-2xl: calc(var(--radius-base-2xl) * 2.2 * var(--corner-scale));
+  }
+}

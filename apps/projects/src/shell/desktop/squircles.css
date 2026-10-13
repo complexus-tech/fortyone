@@ -1,0 +1,43 @@
+/* Hyperellipse paints solid borders, shadows and focus outlines. Keep native
+   form controls, circular shapes, translucent backdrops, and surfaces that own
+   decorative pseudo elements on their existing styles during this trial. */
+@supports not (corner-shape: squircle) {
+  html[data-desktop-squircles="true"]
+    :where([class*="rounded"]):not(
+      input,
+      textarea,
+      select,
+      img,
+      video,
+      canvas,
+      table,
+      tr,
+      td,
+      th,
+      [class*="rounded-full"],
+      [class*="rounded-none"],
+      [class*="before:"],
+      [class*="after:"],
+      [class*="bg-linear"],
+      [class*="bg-gradient"],
+      [class*="backdrop-blur"],
+      .button-gradient-outline,
+      .button-gradient-solid,
+      [data-app-content-canvas],
+      [data-squircle="off"]
+    ) {
+    --corner-shape: squircle;
+    /* Resolve tokens locally: excluded controls retain their circular fallback.
+       Hyperellipse reads at --corner-scale:1, then restores the pending scale. */
+    --corner-scale: 0.3409090909;
+    --radius: calc(var(--radius-base) * 2.2 * var(--corner-scale));
+    --radius-xs: calc(var(--radius-base-xs) * 2.2 * var(--corner-scale));
+    --radius-sm: calc(var(--radius-base-sm) * 2.2 * var(--corner-scale));
+    --radius-md: calc(var(--radius-base-md) * 2.2 * var(--corner-scale));
+    --radius-lg: calc(var(--radius-base-lg) * 2.2 * var(--corner-scale));
+    --radius-xl: calc(var(--radius-base-xl) * 2.2 * var(--corner-scale));
+    --radius-2xl: calc(var(--radius-base-2xl) * 2.2 * var(--corner-scale));
+    --radius-3xl: calc(var(--radius-base-3xl) * 2.2 * var(--corner-scale));
+    --radius-4xl: calc(var(--radius-base-4xl) * 2.2 * var(--corner-scale));
+  }
+}

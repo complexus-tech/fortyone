@@ -1,0 +1,580 @@
+diff --git a/dist/index.cjs b/dist/index.cjs
+index 90903ee6380d1ccf3f09ad32ee79b00d1c0d6d9a..6db503c61656d91a965d01dccf8932bcd6e9a4bd 100644
+--- a/dist/index.cjs
++++ b/dist/index.cjs
+@@ -681,6 +681,7 @@ var readSource = (element) => {
+       (prop) => parseRadiusLonghand(cs.getPropertyValue(prop))
+     ),
+     border: readBorder(cs),
++    clipsDescendants: cs.contentVisibility === "auto" || cs.contentVisibility === "hidden" || /\b(?:paint|content|strict)\b/.test(cs.contain) || ["hidden", "clip", "auto", "scroll", "overlay"].includes(cs.overflowX) || ["hidden", "clip", "auto", "scroll", "overlay"].includes(cs.overflowY),
+     shadows: parseBoxShadow(cs.boxShadow),
+     outline: readOutline(cs),
+     background: {
+@@ -724,10 +725,10 @@ var ringPathMarkup = (x, y, width, height, corners, border) => {
+   });
+   return `<path d="${outer} ${inner}" fill="${border.color}" fill-rule="evenodd"/>`;
+ };
+-var buildRingSvg = (width, height, corners, border) => svgDataUri(
++var buildRingSvg = (width, height, corners, border, backgroundColor) => svgDataUri(
+   width,
+   height,
+-  ringPathMarkup(0, 0, width, height, corners, border)
++  (backgroundColor ? ringPathMarkup(0, 0, width, height, corners, { ...border, color: backgroundColor }) : "") + ringPathMarkup(0, 0, width, height, corners, border)
+ );
+ var OUTLINE_MITER_LIMIT = 12;
+ var OUTLINE_SEAM_BLEED = 1;
+@@ -898,8 +899,18 @@ var computeLayerTarget = (source, width, height, corners) => {
+   if (source.position === "static") {
+     styles.position = "relative";
+   }
++  let hostBorderUri = "";
+   if (source.border.visible) {
+     styles["border-color"] = "transparent";
++    if (source.clipsDescendants) {
++      // Containment/overflow clips the child layer at the padding edge. Keep the
++      // original border width/color on the host, including its background base.
++      const backgroundClip = source.background.clip.split(",").pop()?.trim();
++      const backgroundColor = backgroundClip === "border-box" ? source.background.color : void 0;
++      hostBorderUri = buildRingSvg(width, height, corners, source.border, backgroundColor);
++      images.push(hostBorderUri);
++      Object.assign(styles, composeBackground(source.background, cssUrl(hostBorderUri)));
++    }
+   }
+   if (source.shadows.length > 0) {
+     styles["box-shadow"] = "none";
+@@ -921,7 +932,7 @@ var computeLayerTarget = (source, width, height, corners) => {
+     hostAttr = "layer outline";
+   }
+   return {
+-    key: `layer|${layer.uri}|${outlineUri}`,
++    key: `layer|${layer.uri}|${outlineUri}|${hostBorderUri}`,
+     styles,
+     hostAttr,
+     images
+@@ -950,6 +961,8 @@ var createEntry = () => ({
+   source: null,
+   key: "",
+   applied: {},
++  authorStyle: null,
++  paintedStyle: null,
+   seq: 0,
+   snapshot: "",
+   hostAttr: "",
+@@ -962,6 +975,15 @@ var NATIVE_SUPPRESSIONS = [
+   "outline-color",
+   "box-shadow"
+ ];
++// These properties are rendered by the polyfill, not by native CSS transitions.
++var PAINT_TRANSITION_PATTERN = /^(?:background(?:-.+)?|border(?:-(?:top|right|bottom|left))?-color|border-(?:top-left|top-right|bottom-left|bottom-right)-radius|border-radius|outline-color|box-shadow|(?:-webkit-)?clip-path)$/;
++var cancelPaintTransitions = (element) => {
++  for (const animation of element.getAnimations?.() ?? []) {
++    if (animation.effect?.target === element && !animation.effect?.pseudoElement && typeof animation.transitionProperty === "string" && PAINT_TRANSITION_PATTERN.test(animation.transitionProperty)) {
++      animation.cancel();
++    }
++  }
++};
+ var isValidSelector = (doc, selector) => {
+   try {
+     doc.querySelector(selector);
+@@ -1063,12 +1085,16 @@ var createEngine = (doc, options) => {
+     };
+   };
+   const track = (element) => {
+-    if (!(element instanceof HTMLElement)) {
++    if (!(element instanceof HTMLElement) || !element.isConnected || element.ownerDocument !== doc) {
+       return;
+     }
+     if (!tracked.has(element)) {
+       tracked.add(element);
+       const entry = entries.get(element) ?? createEntry();
++      entry.authorStyle = doc.createElement("span").style;
++      entry.authorStyle.cssText = element.style.cssText;
++      entry.paintedStyle = doc.createElement("span").style;
++      entry.paintedStyle.cssText = element.style.cssText;
+       entries.set(element, entry);
+       resizeObserver.observe(element);
+       intersectionObserver?.observe(element);
+@@ -1080,6 +1106,8 @@ var createEngine = (doc, options) => {
+     const entry = entries.get(element);
+     if (entry) {
+       detachHoverListeners(entry);
++      clearOwned(element, entry, false);
++      entries.delete(element);
+     }
+     tracked.delete(element);
+     dirty.delete(element);
+@@ -1102,18 +1130,47 @@ var createEngine = (doc, options) => {
+     }
+     scheduleFlush();
+   };
+-  const removeApplied = (element, entry) => {
+-    for (const prop of Object.keys(entry.applied)) {
+-      element.style.removeProperty(prop);
++  // Keep author declarations separate from our paint. CSSStyleDeclaration expands
++  // shorthands consistently and retains priorities, including external updates.
++  const captureAuthorStyle = (element, entry) => {
++    const current = element.style;
++    const previous = entry.paintedStyle;
++    const author = entry.authorStyle;
++    if (!previous || !author || current.cssText === previous.cssText) {
++      return;
++    }
++    const properties = new Set([...current, ...previous]);
++    for (const prop of properties) {
++      const value = current.getPropertyValue(prop);
++      const priority = current.getPropertyPriority(prop);
++      if (value !== previous.getPropertyValue(prop) || priority !== previous.getPropertyPriority(prop)) {
++        if (value) {
++          author.setProperty(prop, value, priority);
++        } else {
++          author.removeProperty(prop);
++        }
++      }
+     }
+   };
++  const rememberPaint = (element, entry) => {
++    entry.paintedStyle.cssText = element.style.cssText;
++    entry.snapshot = element.getAttribute("style") ?? "";
++  };
++  const removeApplied = (element, entry) => {
++    captureAuthorStyle(element, entry);
++    element.style.cssText = entry.authorStyle.cssText;
++    // getAnimations flushes pending styles; cancel only paint transitions before
++    // sampling the author source, leaving transform/opacity animations running.
++    cancelPaintTransitions(element);
++  };
+   const restoreApplied = (element, entry) => {
+     for (const [prop, value] of Object.entries(entry.applied)) {
+       element.style.setProperty(prop, value);
+     }
+-    entry.snapshot = element.getAttribute("style") ?? "";
++    cancelPaintTransitions(element);
++    rememberPaint(element, entry);
+   };
+-  const clearOwned = (element, entry) => {
++  const clearOwned = (element, entry, resetScale = true) => {
+     entry.seq += 1;
+     removeApplied(element, entry);
+     if (entry.hostAttr) {
+@@ -1122,14 +1179,16 @@ var createEngine = (doc, options) => {
+     entry.applied = {};
+     entry.key = "";
+     entry.hostAttr = "";
+-    element.style.setProperty(CORNER_SCALE_VAR, "1");
+-    entry.applied[CORNER_SCALE_VAR] = "1";
+-    entry.snapshot = element.getAttribute("style") ?? "";
++    if (resetScale) {
++      entry.applied[CORNER_SCALE_VAR] = "1";
++    }
++    restoreApplied(element, entry);
+   };
+   const applyNativeSuppressions = (element, entry, target) => {
+     if (target === CLEAR_TARGET) {
+       return;
+     }
++    captureAuthorStyle(element, entry);
+     let changed = false;
+     for (const prop of NATIVE_SUPPRESSIONS) {
+       const value = target.styles[prop];
+@@ -1140,24 +1199,20 @@ var createEngine = (doc, options) => {
+       }
+     }
+     if (changed) {
+-      entry.snapshot = element.getAttribute("style") ?? "";
++      cancelPaintTransitions(element);
++      rememberPaint(element, entry);
+     }
+   };
+   const applyTarget = (element, entry, target) => {
+     entry.seq += 1;
+     if (target === CLEAR_TARGET) {
+       clearOwned(element, entry);
+-      entry.snapshot = element.getAttribute("style") ?? "";
+       return;
+     }
+     if (target.key === entry.key) {
+       return;
+     }
+-    for (const prop of Object.keys(entry.applied)) {
+-      if (!(prop in target.styles)) {
+-        element.style.removeProperty(prop);
+-      }
+-    }
++    removeApplied(element, entry);
+     for (const [prop, value] of Object.entries(target.styles)) {
+       element.style.setProperty(prop, value);
+     }
+@@ -1173,7 +1228,8 @@ var createEngine = (doc, options) => {
+     entry.applied = { ...target.styles };
+     entry.key = target.key;
+     entry.hostAttr = target.hostAttr;
+-    entry.snapshot = element.getAttribute("style") ?? "";
++    cancelPaintTransitions(element);
++    rememberPaint(element, entry);
+   };
+   const rememberDecoded = (uris) => {
+     if (decodedImages.size >= DECODED_CACHE_LIMIT) {
+@@ -1331,7 +1387,7 @@ var createEngine = (doc, options) => {
+       if (isStyleNode(node)) {
+         scheduleRescan();
+       }
+-      if (node instanceof Element) {
++      if (node instanceof Element && node.isConnected && node.ownerDocument === doc) {
+         if (node instanceof HTMLElement && node.matches(selectorString)) {
+           track(node);
+         }
+@@ -1342,6 +1398,23 @@ var createEngine = (doc, options) => {
+       if (isStyleNode(node)) {
+         scheduleRescan();
+       }
++      if (!(node instanceof Element)) {
++        continue;
++      }
++      for (const element of [node, ...node.querySelectorAll("*")]) {
++        if (!tracked.has(element)) {
++          continue;
++        }
++        if (element.isConnected && element.ownerDocument === doc) {
++          // A move must replace listeners attached to the old ancestor chain.
++          const entry = entries.get(element);
++          detachHoverListeners(entry);
++          attachHoverListeners(element, entry);
++          markDirty(element);
++        } else {
++          untrack(element);
++        }
++      }
+     }
+   };
+   const handleAttributeMutation = (record) => {
+@@ -1378,6 +1451,11 @@ var createEngine = (doc, options) => {
+     }
+   });
+   const handleTransitionLifecycle = (event) => {
++    // Source restoration can queue transitionrun before cancellation. Hover,
++    // focus and style observers already refresh these polyfill-owned paints.
++    if (typeof event.propertyName === "string" && PAINT_TRANSITION_PATTERN.test(event.propertyName)) {
++      return;
++    }
+     const target = event.target;
+     if (target instanceof HTMLElement && tracked.has(target)) {
+       markDirty(target);
+@@ -1385,8 +1463,13 @@ var createEngine = (doc, options) => {
+   };
+   const handleFocusChange = (event) => {
+     const target = event.target;
+-    if (target instanceof HTMLElement && tracked.has(target)) {
+-      markDirty(target);
++    if (!(target instanceof Element)) {
++      return;
++    }
++    for (let element = target; element; element = element.parentElement) {
++      if (tracked.has(element)) {
++        markDirty(element);
++      }
+     }
+   };
+   const handlePageShow = (event) => {
+@@ -1450,11 +1533,7 @@ var createEngine = (doc, options) => {
+       doc.defaultView?.removeEventListener("load", handleLoad);
+       colorScheme?.removeEventListener?.("change", handleColorScheme);
+       for (const element of tracked) {
+-        const entry = entries.get(element);
+-        if (entry) {
+-          detachHoverListeners(entry);
+-          clearOwned(element, entry);
+-        }
++        untrack(element);
+       }
+       tracked.clear();
+       dirty.clear();
+diff --git a/dist/index.js b/dist/index.js
+index 77905f0e48d995dd3c7d18c793881a66805d82f6..7fa1af376d6bcf3d753010a36746eba294b496b6 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -679,6 +679,7 @@ var readSource = (element) => {
+       (prop) => parseRadiusLonghand(cs.getPropertyValue(prop))
+     ),
+     border: readBorder(cs),
++    clipsDescendants: cs.contentVisibility === "auto" || cs.contentVisibility === "hidden" || /\b(?:paint|content|strict)\b/.test(cs.contain) || ["hidden", "clip", "auto", "scroll", "overlay"].includes(cs.overflowX) || ["hidden", "clip", "auto", "scroll", "overlay"].includes(cs.overflowY),
+     shadows: parseBoxShadow(cs.boxShadow),
+     outline: readOutline(cs),
+     background: {
+@@ -722,10 +723,10 @@ var ringPathMarkup = (x, y, width, height, corners, border) => {
+   });
+   return `<path d="${outer} ${inner}" fill="${border.color}" fill-rule="evenodd"/>`;
+ };
+-var buildRingSvg = (width, height, corners, border) => svgDataUri(
++var buildRingSvg = (width, height, corners, border, backgroundColor) => svgDataUri(
+   width,
+   height,
+-  ringPathMarkup(0, 0, width, height, corners, border)
++  (backgroundColor ? ringPathMarkup(0, 0, width, height, corners, { ...border, color: backgroundColor }) : "") + ringPathMarkup(0, 0, width, height, corners, border)
+ );
+ var OUTLINE_MITER_LIMIT = 12;
+ var OUTLINE_SEAM_BLEED = 1;
+@@ -896,8 +897,18 @@ var computeLayerTarget = (source, width, height, corners) => {
+   if (source.position === "static") {
+     styles.position = "relative";
+   }
++  let hostBorderUri = "";
+   if (source.border.visible) {
+     styles["border-color"] = "transparent";
++    if (source.clipsDescendants) {
++      // Containment/overflow clips the child layer at the padding edge. Keep the
++      // original border width/color on the host, including its background base.
++      const backgroundClip = source.background.clip.split(",").pop()?.trim();
++      const backgroundColor = backgroundClip === "border-box" ? source.background.color : void 0;
++      hostBorderUri = buildRingSvg(width, height, corners, source.border, backgroundColor);
++      images.push(hostBorderUri);
++      Object.assign(styles, composeBackground(source.background, cssUrl(hostBorderUri)));
++    }
+   }
+   if (source.shadows.length > 0) {
+     styles["box-shadow"] = "none";
+@@ -919,7 +930,7 @@ var computeLayerTarget = (source, width, height, corners) => {
+     hostAttr = "layer outline";
+   }
+   return {
+-    key: `layer|${layer.uri}|${outlineUri}`,
++    key: `layer|${layer.uri}|${outlineUri}|${hostBorderUri}`,
+     styles,
+     hostAttr,
+     images
+@@ -948,6 +959,8 @@ var createEntry = () => ({
+   source: null,
+   key: "",
+   applied: {},
++  authorStyle: null,
++  paintedStyle: null,
+   seq: 0,
+   snapshot: "",
+   hostAttr: "",
+@@ -960,6 +973,15 @@ var NATIVE_SUPPRESSIONS = [
+   "outline-color",
+   "box-shadow"
+ ];
++// These properties are rendered by the polyfill, not by native CSS transitions.
++var PAINT_TRANSITION_PATTERN = /^(?:background(?:-.+)?|border(?:-(?:top|right|bottom|left))?-color|border-(?:top-left|top-right|bottom-left|bottom-right)-radius|border-radius|outline-color|box-shadow|(?:-webkit-)?clip-path)$/;
++var cancelPaintTransitions = (element) => {
++  for (const animation of element.getAnimations?.() ?? []) {
++    if (animation.effect?.target === element && !animation.effect?.pseudoElement && typeof animation.transitionProperty === "string" && PAINT_TRANSITION_PATTERN.test(animation.transitionProperty)) {
++      animation.cancel();
++    }
++  }
++};
+ var isValidSelector = (doc, selector) => {
+   try {
+     doc.querySelector(selector);
+@@ -1061,12 +1083,16 @@ var createEngine = (doc, options) => {
+     };
+   };
+   const track = (element) => {
+-    if (!(element instanceof HTMLElement)) {
++    if (!(element instanceof HTMLElement) || !element.isConnected || element.ownerDocument !== doc) {
+       return;
+     }
+     if (!tracked.has(element)) {
+       tracked.add(element);
+       const entry = entries.get(element) ?? createEntry();
++      entry.authorStyle = doc.createElement("span").style;
++      entry.authorStyle.cssText = element.style.cssText;
++      entry.paintedStyle = doc.createElement("span").style;
++      entry.paintedStyle.cssText = element.style.cssText;
+       entries.set(element, entry);
+       resizeObserver.observe(element);
+       intersectionObserver?.observe(element);
+@@ -1078,6 +1104,8 @@ var createEngine = (doc, options) => {
+     const entry = entries.get(element);
+     if (entry) {
+       detachHoverListeners(entry);
++      clearOwned(element, entry, false);
++      entries.delete(element);
+     }
+     tracked.delete(element);
+     dirty.delete(element);
+@@ -1100,18 +1128,47 @@ var createEngine = (doc, options) => {
+     }
+     scheduleFlush();
+   };
+-  const removeApplied = (element, entry) => {
+-    for (const prop of Object.keys(entry.applied)) {
+-      element.style.removeProperty(prop);
++  // Keep author declarations separate from our paint. CSSStyleDeclaration expands
++  // shorthands consistently and retains priorities, including external updates.
++  const captureAuthorStyle = (element, entry) => {
++    const current = element.style;
++    const previous = entry.paintedStyle;
++    const author = entry.authorStyle;
++    if (!previous || !author || current.cssText === previous.cssText) {
++      return;
++    }
++    const properties = new Set([...current, ...previous]);
++    for (const prop of properties) {
++      const value = current.getPropertyValue(prop);
++      const priority = current.getPropertyPriority(prop);
++      if (value !== previous.getPropertyValue(prop) || priority !== previous.getPropertyPriority(prop)) {
++        if (value) {
++          author.setProperty(prop, value, priority);
++        } else {
++          author.removeProperty(prop);
++        }
++      }
+     }
+   };
++  const rememberPaint = (element, entry) => {
++    entry.paintedStyle.cssText = element.style.cssText;
++    entry.snapshot = element.getAttribute("style") ?? "";
++  };
++  const removeApplied = (element, entry) => {
++    captureAuthorStyle(element, entry);
++    element.style.cssText = entry.authorStyle.cssText;
++    // getAnimations flushes pending styles; cancel only paint transitions before
++    // sampling the author source, leaving transform/opacity animations running.
++    cancelPaintTransitions(element);
++  };
+   const restoreApplied = (element, entry) => {
+     for (const [prop, value] of Object.entries(entry.applied)) {
+       element.style.setProperty(prop, value);
+     }
+-    entry.snapshot = element.getAttribute("style") ?? "";
++    cancelPaintTransitions(element);
++    rememberPaint(element, entry);
+   };
+-  const clearOwned = (element, entry) => {
++  const clearOwned = (element, entry, resetScale = true) => {
+     entry.seq += 1;
+     removeApplied(element, entry);
+     if (entry.hostAttr) {
+@@ -1120,14 +1177,16 @@ var createEngine = (doc, options) => {
+     entry.applied = {};
+     entry.key = "";
+     entry.hostAttr = "";
+-    element.style.setProperty(CORNER_SCALE_VAR, "1");
+-    entry.applied[CORNER_SCALE_VAR] = "1";
+-    entry.snapshot = element.getAttribute("style") ?? "";
++    if (resetScale) {
++      entry.applied[CORNER_SCALE_VAR] = "1";
++    }
++    restoreApplied(element, entry);
+   };
+   const applyNativeSuppressions = (element, entry, target) => {
+     if (target === CLEAR_TARGET) {
+       return;
+     }
++    captureAuthorStyle(element, entry);
+     let changed = false;
+     for (const prop of NATIVE_SUPPRESSIONS) {
+       const value = target.styles[prop];
+@@ -1138,24 +1197,20 @@ var createEngine = (doc, options) => {
+       }
+     }
+     if (changed) {
+-      entry.snapshot = element.getAttribute("style") ?? "";
++      cancelPaintTransitions(element);
++      rememberPaint(element, entry);
+     }
+   };
+   const applyTarget = (element, entry, target) => {
+     entry.seq += 1;
+     if (target === CLEAR_TARGET) {
+       clearOwned(element, entry);
+-      entry.snapshot = element.getAttribute("style") ?? "";
+       return;
+     }
+     if (target.key === entry.key) {
+       return;
+     }
+-    for (const prop of Object.keys(entry.applied)) {
+-      if (!(prop in target.styles)) {
+-        element.style.removeProperty(prop);
+-      }
+-    }
++    removeApplied(element, entry);
+     for (const [prop, value] of Object.entries(target.styles)) {
+       element.style.setProperty(prop, value);
+     }
+@@ -1171,7 +1226,8 @@ var createEngine = (doc, options) => {
+     entry.applied = { ...target.styles };
+     entry.key = target.key;
+     entry.hostAttr = target.hostAttr;
+-    entry.snapshot = element.getAttribute("style") ?? "";
++    cancelPaintTransitions(element);
++    rememberPaint(element, entry);
+   };
+   const rememberDecoded = (uris) => {
+     if (decodedImages.size >= DECODED_CACHE_LIMIT) {
+@@ -1329,7 +1385,7 @@ var createEngine = (doc, options) => {
+       if (isStyleNode(node)) {
+         scheduleRescan();
+       }
+-      if (node instanceof Element) {
++      if (node instanceof Element && node.isConnected && node.ownerDocument === doc) {
+         if (node instanceof HTMLElement && node.matches(selectorString)) {
+           track(node);
+         }
+@@ -1340,6 +1396,23 @@ var createEngine = (doc, options) => {
+       if (isStyleNode(node)) {
+         scheduleRescan();
+       }
++      if (!(node instanceof Element)) {
++        continue;
++      }
++      for (const element of [node, ...node.querySelectorAll("*")]) {
++        if (!tracked.has(element)) {
++          continue;
++        }
++        if (element.isConnected && element.ownerDocument === doc) {
++          // A move must replace listeners attached to the old ancestor chain.
++          const entry = entries.get(element);
++          detachHoverListeners(entry);
++          attachHoverListeners(element, entry);
++          markDirty(element);
++        } else {
++          untrack(element);
++        }
++      }
+     }
+   };
+   const handleAttributeMutation = (record) => {
+@@ -1376,6 +1449,11 @@ var createEngine = (doc, options) => {
+     }
+   });
+   const handleTransitionLifecycle = (event) => {
++    // Source restoration can queue transitionrun before cancellation. Hover,
++    // focus and style observers already refresh these polyfill-owned paints.
++    if (typeof event.propertyName === "string" && PAINT_TRANSITION_PATTERN.test(event.propertyName)) {
++      return;
++    }
+     const target = event.target;
+     if (target instanceof HTMLElement && tracked.has(target)) {
+       markDirty(target);
+@@ -1383,8 +1461,13 @@ var createEngine = (doc, options) => {
+   };
+   const handleFocusChange = (event) => {
+     const target = event.target;
+-    if (target instanceof HTMLElement && tracked.has(target)) {
+-      markDirty(target);
++    if (!(target instanceof Element)) {
++      return;
++    }
++    for (let element = target; element; element = element.parentElement) {
++      if (tracked.has(element)) {
++        markDirty(element);
++      }
+     }
+   };
+   const handlePageShow = (event) => {
+@@ -1448,11 +1531,7 @@ var createEngine = (doc, options) => {
+       doc.defaultView?.removeEventListener("load", handleLoad);
+       colorScheme?.removeEventListener?.("change", handleColorScheme);
+       for (const element of tracked) {
+-        const entry = entries.get(element);
+-        if (entry) {
+-          detachHoverListeners(entry);
+-          clearOwned(element, entry);
+-        }
++        untrack(element);
+       }
+       tracked.clear();
+       dirty.clear();

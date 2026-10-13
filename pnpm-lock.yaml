@@ -9,6 +9,11 @@ overrides:
   '@types/react-dom': 19.2.3
   '@expo/metro-config>lightningcss': 1.30.1
 
+patchedDependencies:
+  hyperellipse@1.0.5:
+    hash: ucgedf6ijiuftbqmghf7tbgdtu
+    path: patches/hyperellipse@1.0.5.patch
+
 importers:
 
   .:
@@ -825,6 +830,9 @@ importers:
       framer-motion:
         specifier: ^11.0.28
         version: 11.0.28(@emotion/is-prop-valid@1.4.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      hyperellipse:
+        specifier: 1.0.5
+        version: 1.0.5(patch_hash=ucgedf6ijiuftbqmghf7tbgdtu)
       icons:
         specifier: workspace:*
         version: link:../../packages/icons
@@ -8880,6 +8888,9 @@ packages:
   human-signals@2.1.0:
     resolution: {integrity: sha512-B4FFZ6q/T2jhhksgkbEW3HBvWIfDW85snkQgawt07S7J5QXTk6BkNV+0yAeZrM5QpMAdYlocGoljn0sJ/WQkFw==}
     engines: {node: '>=10.17.0'}
+
+  hyperellipse@1.0.5:
+    resolution: {integrity: sha512-kXHjOE7xShPPfD5wT6bTSxyuzspBmsTXnzN4rxZm3eIbRHWW2OIAc/TCCfIiJ9fAqppmi8uIQDi2OHDU3mzO7g==}
 
   hyphenate-style-name@1.1.0:
     resolution: {integrity: sha512-WDC/ui2VVRrz3jOVi+XtjqkDjiVjTtFaAGiW37k6b+ohyQ5wYDOGkvCZa8+H0nx3gyvv0+BST9xuOgIyGQ00gw==}
@@ -21822,6 +21833,8 @@ snapshots:
       - supports-color
 
   human-signals@2.1.0: {}
+
+  hyperellipse@1.0.5(patch_hash=ucgedf6ijiuftbqmghf7tbgdtu): {}
 
   hyphenate-style-name@1.1.0: {}
 
