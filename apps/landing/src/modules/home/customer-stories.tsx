@@ -123,6 +123,8 @@ const CustomerStoryCard = ({
         "bg-surface-elevated focus-visible:outline-primary relative isolate w-full overflow-hidden rounded-lg text-white shadow-lg shadow-black/10 focus-visible:outline-2 focus-visible:outline-offset-4",
         mobile ? "h-[430px] rounded-md sm:h-[460px]" : "h-[540px]",
       )}
+      // Preserve clipping of the full-bleed photograph beneath the shadow.
+      data-squircle="off"
       onPointerEnter={
         mobile
           ? undefined

@@ -80,7 +80,7 @@ html:not(.dark) .landing-footer-gradient {
   }
 }
 
-/* Large circular corners need less radius than the squircle versions. */
+/* Keep the existing circular fallback until the renderer opts a surface in. */
 @supports not (corner-shape: squircle) {
   @media (min-width: 40rem) {
     .landing-large-surface {
@@ -94,6 +94,25 @@ html:not(.dark) .landing-footer-gradient {
 
     .landing-blog-cover {
       border-radius: 1rem;
+    }
+
+    /* The renderer measures at scale 1, then restores the pending scale. */
+    html[data-squircle-fallback="true"]
+      .landing-large-surface:not([data-squircle="off"]) {
+      border-radius: calc(3rem * var(--corner-scale, 0.3333333333));
+    }
+
+    html[data-squircle-fallback="true"]
+      .landing-large-surface-bottom:not([data-squircle="off"]) {
+      border-bottom-right-radius: calc(
+        3rem * var(--corner-scale, 0.3333333333)
+      );
+      border-bottom-left-radius: calc(3rem * var(--corner-scale, 0.3333333333));
+    }
+
+    html[data-squircle-fallback="true"]
+      .landing-blog-cover:not(img, video, canvas, [data-squircle="off"]) {
+      border-radius: calc(2rem * var(--corner-scale, 0.5));
     }
   }
 
@@ -113,6 +132,27 @@ html:not(.dark) .landing-footer-gradient {
 
     .landing-integration-tile {
       border-radius: 0.625rem;
+    }
+
+    html[data-squircle-fallback="true"]
+      .landing-large-surface:not([data-squircle="off"]) {
+      border-radius: calc(4rem * var(--corner-scale, 0.3125));
+    }
+
+    html[data-squircle-fallback="true"]
+      .landing-large-surface-bottom:not([data-squircle="off"]) {
+      border-bottom-right-radius: calc(4rem * var(--corner-scale, 0.3125));
+      border-bottom-left-radius: calc(4rem * var(--corner-scale, 0.3125));
+    }
+
+    html[data-squircle-fallback="true"]
+      .landing-resource-card:not([data-squircle="off"]) {
+      border-radius: calc(2rem * var(--corner-scale, 0.5));
+    }
+
+    html[data-squircle-fallback="true"]
+      .landing-integration-tile:not([data-squircle="off"]) {
+      border-radius: calc(1.5rem * var(--corner-scale, 0.4166666667));
     }
   }
 }

@@ -1269,6 +1269,9 @@ importers:
       date-fns:
         specifier: ^2.30.0
         version: 2.30.0
+      hyperellipse:
+        specifier: 1.0.5
+        version: 1.0.5(patch_hash=ucgedf6ijiuftbqmghf7tbgdtu)
       icons:
         specifier: workspace:*
         version: link:../icons

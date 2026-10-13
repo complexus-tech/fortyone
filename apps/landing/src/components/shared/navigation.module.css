@@ -11,6 +11,12 @@
     border-radius: 1.25rem;
   }
 
+  /* Glass panels stay opted out; links use the shared rounded-md geometry. */
+  :global(html[data-squircle-fallback="true"])
+    .topLevelLink:not([data-squircle="off"]) {
+    border-radius: calc(1.1rem * var(--corner-scale, 0.5681818182));
+  }
+
   @media (min-width: 48rem) {
     .navigationSurface {
       border-radius: 0.5rem;

@@ -6,6 +6,7 @@
   "exports": {
     ".": "./shared-styles.css",
     "./mobile-theme": "./mobile-theme.css",
+    "./squircle-fallback.css": "./squircle-fallback.css",
     "./postcss": "./postcss.config.js"
   },
   "devDependencies": {

@@ -65,6 +65,8 @@ export default function Page() {
             "landing-large-surface-bottom rounded-b-2xl sm:rounded-b-[3rem] md:rounded-b-[4rem]",
             styles.progressBand,
           )}
+          // Its decorative cap inherits the host radius through ::before.
+          data-squircle="off"
         >
           <ProductWorkflowShowcase />
           <CustomerStories />

@@ -29,6 +29,22 @@
     border-radius: 0.75rem;
   }
 
+  /* Preserve literal design radii when Hyperellipse reads at scale 1. */
+  :global(html[data-squircle-fallback="true"])
+    .featuredFrame:not([data-squircle="off"]) {
+    border-radius: calc(2.75rem * var(--corner-scale, 0.4090909091));
+  }
+
+  :global(html[data-squircle-fallback="true"])
+    .pageCard:not([data-squircle="off"]) {
+    border-radius: calc(2.5rem * var(--corner-scale, 0.4));
+  }
+
+  :global(html[data-squircle-fallback="true"])
+    .pageCardHeader:not([data-squircle="off"]) {
+    border-radius: calc(2rem * var(--corner-scale, 0.375));
+  }
+
   @media (min-width: 48rem) {
     .featuredFrame {
       border-radius: 1.25rem;
@@ -40,6 +56,21 @@
 
     .pageCardHeader {
       border-radius: 0.875rem;
+    }
+
+    :global(html[data-squircle-fallback="true"])
+      .featuredFrame:not([data-squircle="off"]) {
+      border-radius: calc(3.5rem * var(--corner-scale, 0.3571428571));
+    }
+
+    :global(html[data-squircle-fallback="true"])
+      .pageCard:not([data-squircle="off"]) {
+      border-radius: calc(3rem * var(--corner-scale, 0.375));
+    }
+
+    :global(html[data-squircle-fallback="true"])
+      .pageCardHeader:not([data-squircle="off"]) {
+      border-radius: calc(2.5rem * var(--corner-scale, 0.35));
     }
   }
 }

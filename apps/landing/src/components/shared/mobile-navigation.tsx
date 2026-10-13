@@ -116,6 +116,8 @@ export const MobileNavigation = () => {
           aria-label="Mobile navigation"
           className="landing-hero-shell landing-large-surface border-border/50 dark:border-border/60 m-0 max-h-[calc(100dvh-6rem)] w-[calc(100vw-1rem)] max-w-none overflow-hidden rounded-2xl border bg-transparent p-0 shadow-[0_24px_64px_-24px_rgba(31,24,18,0.48)] outline-none sm:w-[calc(100vw-1.5rem)] sm:rounded-[3rem] md:w-[calc(100vw-3rem)] md:rounded-[4rem] xl:hidden dark:bg-transparent dark:shadow-[0_24px_64px_-24px_rgba(0,0,0,0.82)]"
           collisionPadding={8}
+          // Retain the CSS gradient and shadow on the same rounded surface.
+          data-squircle="off"
           id={menuId}
           side="bottom"
           sideOffset={12}

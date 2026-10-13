@@ -275,6 +275,7 @@ const NavigationDropdown = ({
           "border-border/60 bg-popover/98 text-popover-foreground shadow-shadow rounded-xl border p-3 shadow-[0_24px_60px_-24px_rgba(31,24,18,0.38)] backdrop-blur-xl dark:shadow-[0_24px_60px_-24px_rgba(0,0,0,0.78)]",
           styles.dropdownPanel,
         )}
+        data-squircle="off"
       >
         {heading ? (
           <div className="text-text-muted px-2.5 pt-1 pb-2 text-[0.7rem] font-medium tracking-[0.12em] uppercase">
@@ -374,6 +375,7 @@ export const Navigation = () => {
             ? "translate-y-0 scale-100 opacity-100"
             : "-translate-y-2 scale-[0.985] opacity-0",
         )}
+        data-squircle="off"
       />
       <Container
         className={cn(

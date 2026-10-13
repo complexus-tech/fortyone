@@ -16,7 +16,8 @@ function GlassFrame({
   title: ReactNode;
 }) {
   return (
-    <div className={cn("rounded-2xl", styles.frame)}>
+    // The glass frame combines a gradient, blur, and shadows in its CSS module.
+    <div className={cn("rounded-2xl", styles.frame)} data-squircle="off">
       <div className={styles.header}>{title}</div>
       <div className={cn("rounded-xl", styles.surface)}>{children}</div>
       <div className={styles.footer}>{footer}</div>

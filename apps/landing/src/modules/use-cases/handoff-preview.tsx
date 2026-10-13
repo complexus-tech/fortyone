@@ -101,7 +101,11 @@ function PreviewMark({
 function ReviewSheet({ preview }: { preview: ReviewPreview }) {
   return (
     <>
-      <div className={cn("rounded-xl", styles.sheet, styles.brief)}>
+      {/* Keep the CSS-module glass and inset highlights on their native layers. */}
+      <div
+        className={cn("rounded-xl", styles.sheet, styles.brief)}
+        data-squircle="off"
+      >
         <div className={styles.toolbar}>
           <span className={styles.inline}>
             <PreviewMark className={styles.skyIcon} mark="document" />
@@ -145,7 +149,7 @@ function ReviewSheet({ preview }: { preview: ReviewPreview }) {
           <span className={styles.meta}>Source links included</span>
         </div>
       </div>
-      <div className={cn("rounded-lg", styles.annotation)}>
+      <div className={cn("rounded-lg", styles.annotation)} data-squircle="off">
         <CheckIcon
           className={cn("size-4 shrink-0", styles.sageIcon)}
           strokeWidth={1.75}
@@ -162,7 +166,10 @@ function ReviewSheet({ preview }: { preview: ReviewPreview }) {
 function IntakeCards({ preview }: { preview: IntakePreview }) {
   return (
     <>
-      <div className={cn("rounded-xl", styles.sheet, styles.message)}>
+      <div
+        className={cn("rounded-xl", styles.sheet, styles.message)}
+        data-squircle="off"
+      >
         <div className={styles.inline}>
           <PreviewMark mark={preview.source.icon} size={20} />
           <span className="font-medium">{preview.source.label}</span>
@@ -197,11 +204,14 @@ function IntakeCards({ preview }: { preview: IntakePreview }) {
             strokeWidth="1.75"
           />
         </svg>
-        <span className={cn("rounded-md", styles.inline)}>
+        <span className={cn("rounded-md", styles.inline)} data-squircle="off">
           Context travels with the work
         </span>
       </div>
-      <div className={cn("rounded-xl", styles.sheet, styles.task)}>
+      <div
+        className={cn("rounded-xl", styles.sheet, styles.task)}
+        data-squircle="off"
+      >
         <div className={styles.toolbar}>
           <span className={styles.meta}>{preview.task.identifier}</span>
           <span className={styles.inline}>
@@ -239,7 +249,10 @@ function IntakeCards({ preview }: { preview: IntakePreview }) {
 function CapacityChart({ preview }: { preview: CapacityPreview }) {
   return (
     <>
-      <div className={cn("rounded-xl", styles.sheet, styles.capacity)}>
+      <div
+        className={cn("rounded-xl", styles.sheet, styles.capacity)}
+        data-squircle="off"
+      >
         <div className={styles.toolbar}>
           <span className={cn("font-medium", styles.inline)}>
             <PreviewMark className={styles.skyIcon} mark="team" />
@@ -299,7 +312,10 @@ function CapacityChart({ preview }: { preview: CapacityPreview }) {
           </div>
         </div>
       </div>
-      <div className={cn("rounded-xl", styles.sheet, styles.proposal)}>
+      <div
+        className={cn("rounded-xl", styles.sheet, styles.proposal)}
+        data-squircle="off"
+      >
         <span className={styles.proposalMark}>
           <AiIcon className="size-5 text-current" strokeWidth={1.75} />
         </span>
