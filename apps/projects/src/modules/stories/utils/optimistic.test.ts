@@ -92,6 +92,21 @@ describe("computeTargetKey", () => {
 });
 
 describe("patchStories", () => {
+  it("patches nested descendants while preserving their ancestors and siblings", () => {
+    const child = createStory("child");
+    const sibling = createStory("sibling");
+    const parent = createStory("parent", { subStories: [child, sibling] });
+    const ancestor = createStory("ancestor", { subStories: [parent] });
+
+    const result = patchStories([ancestor], child.id, { statusId: "qa" });
+
+    expect(result[0]?.statusId).toBe("development");
+    expect(result[0]?.subStories[0]?.statusId).toBe("development");
+    expect(result[0]?.subStories[0]?.subStories[0]?.statusId).toBe("qa");
+    expect(result[0]?.subStories[0]?.subStories[1]).toBe(sibling);
+    expect(child.statusId).toBe("development");
+  });
+
   it("returns the original array when the story is absent", () => {
     const stories = [story];
 
@@ -235,6 +250,40 @@ describe("moveStoryBetweenGroups", () => {
 });
 
 describe("updateStoryInGroups", () => {
+  it("updates a nested child without moving its parent or changing group counts", () => {
+    const child = createStory("child");
+    const parent = createStory("parent", {
+      statusId: "qa",
+      subStories: [child],
+    });
+    const groups = [
+      createGroup({ key: "development", stories: [story] }),
+      createGroup({ key: "qa", stories: [parent], totalCount: 3 }),
+    ];
+
+    const result = updateStoryInGroups(groups, child.id, "status", {
+      statusId: "released",
+    });
+
+    expect(result[0]).toBe(groups[0]);
+    expect(result[1]).toEqual(
+      expect.objectContaining({
+        key: "qa",
+        loadedCount: 1,
+        totalCount: 3,
+        stories: [
+          expect.objectContaining({
+            id: parent.id,
+            statusId: "qa",
+            subStories: [
+              expect.objectContaining({ id: child.id, statusId: "released" }),
+            ],
+          }),
+        ],
+      }),
+    );
+  });
+
   it("patches time needed without removing the story from its active group", () => {
     const groups = [
       createGroup({

@@ -20,6 +20,7 @@ import type {
 } from "../types";
 import { bulkUpdateAction } from "../actions/bulk-update-stories";
 import { loadWipCapacity } from "../public/wip-capacity";
+import { patchSelectedStory } from "../utils/optimistic";
 import {
   assertBulkStoryUpdateSucceeded,
   BulkStoryUpdateFailure,
@@ -52,36 +53,22 @@ const restorePreviousQueryStates = (
 const updateDetailQuery = (
   queryClient: ReturnType<typeof useQueryClient>,
   queryKey: readonly unknown[],
-  storyIds: string[],
+  storyIds: ReadonlySet<string>,
   payload: Partial<DetailedStory>,
 ) => {
-  queryClient.setQueriesData(
-    { queryKey },
-    (data: DetailedStory | undefined) => {
-      if (data && storyIds.includes(data.id)) {
-        return { ...data, ...payload };
-      }
-      if (data?.subStories) {
-        return {
-          ...data,
-          subStories: data.subStories.map((story) =>
-            storyIds.includes(story.id) ? { ...story, ...payload } : story,
-          ),
-        };
-      }
-      return data;
-    },
-  );
+  queryClient.setQueryData(queryKey, (data: DetailedStory | undefined) => {
+    return data ? patchSelectedStory(data, storyIds, payload) : data;
+  });
 };
 
 const updateInfiniteQuery = (
   queryClient: ReturnType<typeof useQueryClient>,
   queryKey: readonly unknown[],
-  storyIds: string[],
+  storyIds: ReadonlySet<string>,
   payload: Partial<DetailedStory>,
 ) => {
-  queryClient.setQueriesData(
-    { queryKey },
+  queryClient.setQueryData(
+    queryKey,
     (data: InfiniteData<GroupStoriesResponse> | undefined) => {
       if (!data?.pages) return data;
       return {
@@ -91,7 +78,7 @@ const updateInfiniteQuery = (
           return {
             ...page,
             stories: page.stories.map((story) =>
-              storyIds.includes(story.id) ? { ...story, ...payload } : story,
+              patchSelectedStory(story, storyIds, payload),
             ),
           };
         }),
@@ -103,11 +90,11 @@ const updateInfiniteQuery = (
 const updateGroupedQuery = (
   queryClient: ReturnType<typeof useQueryClient>,
   queryKey: readonly unknown[],
-  storyIds: string[],
+  storyIds: ReadonlySet<string>,
   payload: Partial<DetailedStory>,
 ) => {
-  queryClient.setQueriesData(
-    { queryKey },
+  queryClient.setQueryData(
+    queryKey,
     (data: GroupedStoriesResponse | undefined) => {
       if (!data || !Array.isArray(data.groups)) return data;
       return {
@@ -117,7 +104,7 @@ const updateGroupedQuery = (
           return {
             ...group,
             stories: group.stories.map((story) =>
-              storyIds.includes(story.id) ? { ...story, ...payload } : story,
+              patchSelectedStory(story, storyIds, payload),
             ),
           };
         }),
@@ -129,16 +116,14 @@ const updateGroupedQuery = (
 const updateListQuery = (
   queryClient: ReturnType<typeof useQueryClient>,
   queryKey: readonly unknown[],
-  storyIds: string[],
+  storyIds: ReadonlySet<string>,
   payload: Partial<DetailedStory>,
 ) => {
   const queryData = queryClient.getQueryData(queryKey);
   if (Array.isArray(queryData)) {
     queryClient.setQueryData<Story[]>(queryKey, (data) => {
       if (!Array.isArray(data)) return data;
-      return data.map((story) =>
-        storyIds.includes(story.id) ? { ...story, ...payload } : story,
-      );
+      return data.map((story) => patchSelectedStory(story, storyIds, payload));
     });
     return;
   }
@@ -179,6 +164,7 @@ export const useBulkUpdateStoriesMutation = () => {
     },
 
     onMutate: async ({ storyIds, payload }) => {
+      const selectedStoryIds = new Set(storyIds);
       const wipSnapshots = await captureWipStorySnapshots(
         queryClient,
         workspaceSlug,
@@ -200,9 +186,19 @@ export const useBulkUpdateStoriesMutation = () => {
           }
 
           if (queryKey.toLowerCase().includes("detail")) {
-            updateDetailQuery(queryClient, query.queryKey, storyIds, payload);
+            updateDetailQuery(
+              queryClient,
+              query.queryKey,
+              selectedStoryIds,
+              payload,
+            );
           } else {
-            updateListQuery(queryClient, query.queryKey, storyIds, payload);
+            updateListQuery(
+              queryClient,
+              query.queryKey,
+              selectedStoryIds,
+              payload,
+            );
           }
         }
       });
@@ -216,7 +212,12 @@ export const useBulkUpdateStoriesMutation = () => {
           const previousParentData = queryClient.getQueryData(parentStoryKey);
           previousQueryStates.set(serializedParentStoryKey, previousParentData);
 
-          updateDetailQuery(queryClient, parentStoryKey, storyIds, payload);
+          updateDetailQuery(
+            queryClient,
+            parentStoryKey,
+            selectedStoryIds,
+            payload,
+          );
         }
       }
 

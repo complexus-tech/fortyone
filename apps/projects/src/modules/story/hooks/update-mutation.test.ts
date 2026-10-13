@@ -105,6 +105,44 @@ const createQueryClient = () =>
   });
 
 describe("updateInfiniteQuery", () => {
+  it.each(["development", "qa"])(
+    "patches a nested child while its parent stays in the %s group",
+    (parentStatus) => {
+      const queryClient = createQueryClient();
+      const params = createParams(parentStatus);
+      const queryKey = storyKeys.groupStories(
+        "workspace-1",
+        params.groupKey,
+        params,
+      );
+      const child = createStory("child", "development");
+      const parent = createStory("parent", parentStatus, {
+        subStories: [child],
+      });
+      const firstPage = createPage(parentStatus, [parent]);
+      const secondPage = createPage(
+        parentStatus,
+        [createStory("unrelated-story", parentStatus)],
+        2,
+      );
+      queryClient.setQueryData(
+        queryKey,
+        createInfiniteData([firstPage, secondPage]),
+      );
+
+      updateInfiniteQuery(queryClient, queryKey, child.id, { statusId: "qa" });
+
+      const result =
+        queryClient.getQueryData<InfiniteData<GroupStoriesResponse>>(queryKey)!;
+      expect(result.pages[0]?.groupKey).toBe(parentStatus);
+      expect(result.pages[0]?.stories).toHaveLength(1);
+      expect(result.pages[0]?.stories[0]?.statusId).toBe(parentStatus);
+      expect(result.pages[0]?.stories[0]?.subStories[0]?.statusId).toBe("qa");
+      expect(result.pages[1]).toBe(secondPage);
+      expect(queryClient.getQueryCache().getAll()).toHaveLength(1);
+    },
+  );
+
   it("keeps an unrelated infinite query and its pages referentially stable", () => {
     const queryClient = createQueryClient();
     const params = createParams("development");

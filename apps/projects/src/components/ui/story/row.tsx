@@ -13,7 +13,7 @@ import type {
   Story as StoryProps,
   StoryPriority,
 } from "@/modules/stories/types";
-import type { DetailedStory } from "@/modules/story/types";
+import type { StoryUpdate } from "@/modules/story/types";
 import type { UserSummary } from "@/types";
 import { getStoryPath } from "@/shared/routing/story";
 import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
@@ -162,18 +162,8 @@ export const StoryRow = ({
 
   const { mutate } = useUpdateStoryMutation();
 
-  const handleUpdate = (data: Partial<DetailedStory>) => {
-    if ("id" in data) {
-      mutate({
-        storyId: data.id!,
-        payload: data,
-      });
-    } else {
-      mutate({
-        storyId: story.id,
-        payload: data,
-      });
-    }
+  const handleUpdate = (data: StoryUpdate, targetStoryId?: string) => {
+    mutate({ storyId: targetStoryId ?? story.id, payload: data });
   };
 
   return (

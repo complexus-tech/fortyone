@@ -47,22 +47,45 @@ const patchesActiveGroup = (
   );
 };
 
+export const patchSelectedStory = <T extends Story>(
+  story: T,
+  storyIds: ReadonlySet<string>,
+  patch: Partial<DetailedStory>,
+): T => {
+  const updatedStory = storyIds.has(story.id) ? { ...story, ...patch } : story;
+  if (
+    !Array.isArray(updatedStory.subStories) ||
+    updatedStory.subStories.length === 0
+  ) {
+    return updatedStory;
+  }
+
+  const subStories = updatedStory.subStories.map((subStory) =>
+    patchSelectedStory(subStory, storyIds, patch),
+  );
+  if (
+    subStories.every(
+      (subStory, index) => subStory === updatedStory.subStories[index],
+    )
+  ) {
+    return updatedStory;
+  }
+
+  return { ...updatedStory, subStories };
+};
+
 export const patchStories = <T extends Story>(
   stories: T[],
   storyId: string,
   patch: Partial<DetailedStory>,
 ): T[] => {
-  if (!stories.some((story) => story.id === storyId)) return stories;
-
-  return stories.map((story) => {
-    if (story.id !== storyId) return story;
-
-    return {
-      ...story,
-      subStories: story.subStories,
-      ...patch,
-    } as T;
-  });
+  const storyIds = new Set([storyId]);
+  const updatedStories = stories.map((story) =>
+    patchSelectedStory(story, storyIds, patch),
+  );
+  return updatedStories.every((story, index) => story === stories[index])
+    ? stories
+    : updatedStories;
 };
 
 const patchStoryInGroups = (
@@ -70,10 +93,6 @@ const patchStoryInGroups = (
   storyId: string,
   patch: Partial<DetailedStory>,
 ) => {
-  if (!groups.some((group) => group.stories.some(({ id }) => id === storyId))) {
-    return groups;
-  }
-
   const nextGroups = groups.map((group) => {
     const stories = patchStories(group.stories, storyId, patch);
     if (stories === group.stories) return group;
@@ -81,7 +100,9 @@ const patchStoryInGroups = (
     return { ...group, stories };
   });
 
-  return nextGroups;
+  return nextGroups.every((group, index) => group === groups[index])
+    ? groups
+    : nextGroups;
 };
 
 /**
@@ -118,13 +139,16 @@ export const moveStoryBetweenGroups = (
   patch: Partial<DetailedStory>,
 ): StoryGroup[] => {
   if (!groups.some((group) => group.stories.some(({ id }) => id === storyId))) {
-    return groups;
+    return patchStoryInGroups(groups, storyId, patch);
   }
 
   let moved: DetailedStory | undefined;
 
   const withoutStory = groups.map((g) => {
-    if (!g.stories.some((story) => story.id === storyId)) return g;
+    if (!g.stories.some((story) => story.id === storyId)) {
+      const stories = patchStories(g.stories, storyId, patch);
+      return stories === g.stories ? g : { ...g, stories };
+    }
 
     const remaining = g.stories.filter((s) => {
       if (s.id === storyId) {
@@ -141,7 +165,7 @@ export const moveStoryBetweenGroups = (
     return {
       ...g,
       loadedCount: Math.max(0, g.loadedCount - 1),
-      stories: remaining,
+      stories: patchStories(remaining, storyId, patch),
       totalCount: Math.max(0, g.totalCount - 1),
     };
   });

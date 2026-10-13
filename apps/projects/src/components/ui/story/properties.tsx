@@ -27,6 +27,7 @@ import { PriorityIcon } from "@/components/ui/priority-icon";
 import { StatusesMenu } from "@/components/ui/story/statuses-menu";
 import { PrioritiesMenu } from "@/components/ui/story/priorities-menu";
 import type { Story } from "@/modules/stories/types";
+import type { StoryUpdate } from "@/modules/story/types";
 import { useBoard } from "@/components/ui/board-context";
 import type { StateCategory } from "@/types/states";
 import {
@@ -46,7 +47,7 @@ import { RowWrapper } from "../row-wrapper";
 import { StoryStrategyProperties } from "./strategy-properties";
 
 type StoryPropertiesProps = Story & {
-  handleUpdate: (data: Partial<Story>) => void;
+  handleUpdate: (data: StoryUpdate, storyId?: string) => void;
   asKanban?: boolean;
   teamCode?: string;
   isExpanded?: boolean;
@@ -264,7 +265,7 @@ export const StoryProperties = ({
     if (markChildrenAsDone) {
       const undoneChildrenIds = getUndoneChildren();
       for (const childId of undoneChildrenIds) {
-        handleUpdate({ id: childId, statusId: pendingStatusId });
+        handleUpdate({ statusId: pendingStatusId }, childId);
       }
     }
 

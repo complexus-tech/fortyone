@@ -7,7 +7,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { useSession } from "@/lib/auth/client";
 import type { Story as StoryProps } from "@/modules/stories/types";
-import type { DetailedStory } from "@/modules/story/types";
+import type { StoryUpdate } from "@/modules/story/types";
 import { getStoryPath } from "@/shared/routing/story";
 import { useMediaQuery, useUserRole, useWorkspacePath } from "@/hooks";
 import { storyKeys } from "@/modules/stories/constants";
@@ -78,8 +78,8 @@ const StoryCardContent = memo(function StoryCardContent({
 
   const { isColumnVisible, updateStory } = useBoard();
   const handleUpdate = useCallback(
-    (data: Partial<DetailedStory>) => {
-      updateStory(story.id, data);
+    (data: StoryUpdate, targetStoryId?: string) => {
+      updateStory(targetStoryId ?? story.id, data);
     },
     [story.id, updateStory],
   );

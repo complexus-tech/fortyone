@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { InfiniteData } from "@tanstack/react-query";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import {
   QueryClient,
@@ -8,7 +9,12 @@ import {
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
 import { useAnalytics, useTerminology, useWorkspacePath } from "@/hooks";
-import type { DetailedStory, Story } from "../types";
+import type {
+  DetailedStory,
+  GroupedStoriesResponse,
+  GroupStoriesResponse,
+  Story,
+} from "../types";
 import { storyKeys } from "../constants";
 import { bulkUpdateAction } from "../actions/bulk-update-stories";
 import { useBulkUpdateStoriesMutation } from "./update-mutation";
@@ -90,6 +96,159 @@ describe("useBulkUpdateStoriesMutation", () => {
       getTermDisplay: (_term, options) =>
         options?.variant === "singular" ? "story" : "stories",
     } as ReturnType<typeof useTerminology>);
+  });
+
+  it.each(["success", "error"] as const)(
+    "updates selected nested stories in all active cache shapes before a bulk %s",
+    async (outcome) => {
+      mockUseParams.mockReturnValue({});
+      const queryClient = createQueryClient();
+      const parent = {
+        ...createStory(PARENT_STORY_ID),
+        subStories: [createStory("story-1"), createStory("story-2")],
+      };
+      const unrelatedStory = createStory("unrelated-story");
+      const stories = [parent, unrelatedStory];
+      const groupedKey = storyKeys.teamGrouped(WORKSPACE_SLUG, "team-1", {
+        groupBy: "status",
+      });
+      const infiniteKey = storyKeys.groupStories(
+        WORKSPACE_SLUG,
+        "status-backlog",
+        { groupBy: "status" },
+      );
+      const listKey = storyKeys.list(WORKSPACE_SLUG, "filtered");
+      const detailKey = storyKeys.detail(WORKSPACE_SLUG, PARENT_STORY_ID);
+      const recentKey = [...detailKey, "maya-recent", "user-1"];
+      queryClient.setQueryData(groupedKey, {
+        groups: [{ key: "status-backlog", stories }],
+      });
+      queryClient.setQueryData(infiniteKey, {
+        pages: [{ stories }],
+        pageParams: [1],
+      });
+      queryClient.setQueryData(listKey, stories);
+      queryClient.setQueryData(detailKey, parent);
+      queryClient.setQueryData(recentKey, parent);
+      const unsubscribes = [
+        groupedKey,
+        infiniteKey,
+        listKey,
+        detailKey,
+        recentKey,
+      ].map((queryKey) =>
+        new QueryObserver(queryClient, {
+          queryKey,
+          queryFn: () =>
+            new Promise<unknown>(() => {
+              // Keep invalidation from replacing the mutation's cache data.
+            }),
+          staleTime: Infinity,
+        }).subscribe(() => undefined),
+      );
+      const readParents = () => [
+        queryClient.getQueryData<GroupedStoriesResponse>(groupedKey)?.groups[0]
+          .stories[0],
+        queryClient.getQueryData<InfiniteData<GroupStoriesResponse>>(
+          infiniteKey,
+        )?.pages[0].stories[0],
+        queryClient.getQueryData<Story[]>(listKey)?.[0],
+        queryClient.getQueryData<DetailedStory>(detailKey),
+        queryClient.getQueryData<DetailedStory>(recentKey),
+      ];
+      let finishUpdate:
+        | ((response: Awaited<ReturnType<typeof bulkUpdateAction>>) => void)
+        | undefined;
+      mockBulkUpdateAction.mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            finishUpdate = resolve;
+          }),
+      );
+      const { result } = renderHook(() => useBulkUpdateStoriesMutation(), {
+        wrapper: wrapperFor(queryClient),
+      });
+
+      act(() => {
+        result.current.mutate({
+          storyIds: ["story-1"],
+          payload: { statusId: "status-started" },
+        });
+      });
+      await waitFor(() => {
+        expect(mockBulkUpdateAction).toHaveBeenCalledTimes(1);
+      });
+
+      expect(result.current.isPending).toBe(true);
+      for (const cachedParent of readParents()) {
+        expect(cachedParent?.statusId).toBe("status-backlog");
+        expect(cachedParent?.subStories[0].statusId).toBe("status-started");
+        expect(cachedParent?.subStories[1]).toBe(parent.subStories[1]);
+      }
+      expect(queryClient.getQueryData<Story[]>(listKey)?.[1]).toBe(
+        unrelatedStory,
+      );
+
+      act(() => {
+        finishUpdate?.(
+          outcome === "success"
+            ? {
+                data: {
+                  totalCount: 1,
+                  succeededCount: 1,
+                  failedCount: 0,
+                  partial: false,
+                  items: [{ storyId: "story-1", success: true }],
+                },
+              }
+            : { data: null, error: { message: "Status update rejected" } },
+        );
+      });
+      await waitFor(() => {
+        expect(result.current.status).toBe(outcome);
+      });
+
+      for (const cachedParent of readParents()) {
+        expect(cachedParent?.statusId).toBe("status-backlog");
+        expect(
+          cachedParent?.subStories.map(({ statusId }) => statusId),
+        ).toEqual([
+          outcome === "success" ? "status-started" : "status-backlog",
+          "status-backlog",
+        ]);
+      }
+      for (const unsubscribe of unsubscribes) unsubscribe();
+    },
+  );
+
+  it("updates selected children even when their parent is selected too", async () => {
+    const queryClient = createQueryClient();
+    const parentKey = storyKeys.detail(WORKSPACE_SLUG, PARENT_STORY_ID);
+    queryClient.setQueryData(parentKey, createParentStory());
+    mockBulkUpdateAction.mockImplementationOnce(
+      () =>
+        new Promise(() => {
+          // Observe both optimistic updates before the request completes.
+        }),
+    );
+    const { result } = renderHook(() => useBulkUpdateStoriesMutation(), {
+      wrapper: wrapperFor(queryClient),
+    });
+
+    act(() => {
+      result.current.mutate({
+        storyIds: [PARENT_STORY_ID, "story-1"],
+        payload: { priority: "High" },
+      });
+    });
+    await waitFor(() => {
+      expect(mockBulkUpdateAction).toHaveBeenCalledTimes(1);
+    });
+
+    const parent = queryClient.getQueryData<DetailedStory>(parentKey);
+    expect(parent?.priority).toBe("High");
+    expect(parent?.subStories[0].priority).toBe("High");
+    expect(parent?.subStories[1].priority).toBeUndefined();
   });
 
   it("turns HTTP-200 item failures into a rollback and item-aware error", async () => {

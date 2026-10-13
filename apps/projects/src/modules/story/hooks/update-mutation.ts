@@ -376,67 +376,32 @@ export const updateInfiniteQuery = (
     const { groupKey, params } = parseGroupQueryKey(queryKey);
     const target = computeTargetKey(params.groupBy ?? "none", payload);
 
-    if (!target || target === groupKey) {
-      if (
-        !data.pages.some(
-          (page) =>
-            Array.isArray(page.stories) &&
-            page.stories.some((story) => story.id === storyId),
-        )
-      ) {
-        return data;
-      }
-
-      const pages = data.pages.map((page) => {
-        if (!Array.isArray(page.stories)) return page;
-
-        const stories = patchStories(page.stories, storyId, payload);
-        if (stories === page.stories) return page;
-
-        movedStory = stories.findLast((story) => story.id === storyId);
-        return { ...page, stories };
-      });
-
-      return {
-        ...data,
-        pages,
-      };
-    }
-
-    // moved: filter out and capture
-    if (
-      !data.pages.some(
-        (page) =>
-          Array.isArray(page.stories) &&
-          page.stories.some((story) => story.id === storyId),
-      )
-    ) {
-      return data;
-    }
-
+    const shouldMove = Boolean(target && target !== groupKey);
     const pages = data.pages.map((page) => {
-      if (
-        !Array.isArray(page.stories) ||
-        !page.stories.some((story) => story.id === storyId)
-      ) {
-        return page;
+      if (!Array.isArray(page.stories)) return page;
+
+      const stories = patchStories(page.stories, storyId, payload);
+      if (stories === page.stories) return page;
+
+      const topLevelStory = shouldMove
+        ? stories.find((story) => story.id === storyId)
+        : undefined;
+      if (topLevelStory) {
+        movedStory = topLevelStory;
+        return {
+          ...page,
+          stories: stories.filter((story) => story.id !== storyId),
+        };
       }
-
-      const stories = page.stories.filter((story) => {
-        if (story.id !== storyId) return true;
-
-        movedStory = { ...story, ...payload };
-        return false;
-      });
 
       return { ...page, stories };
     });
+    if (pages.every((page, index) => page === data.pages[index])) return data;
 
-    return {
-      ...data,
-      pages,
-    };
+    return { ...data, pages };
   });
+
+  if (!movedStory) return;
 
   const { params: currentParams, workspaceSlug: keyWorkspaceSlug } =
     parseGroupQueryKey(queryKey);
