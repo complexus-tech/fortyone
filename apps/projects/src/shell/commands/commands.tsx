@@ -111,9 +111,9 @@ export const Commands = ({
         >
           <search
             className={cn(
-              "bg-surface-muted focus-within:ring-ring flex w-full max-w-xl min-w-0 items-center gap-2 rounded-lg px-3 focus-within:ring-2",
+              "bg-accent/60 focus-within:ring-ring flex w-full max-w-xl min-w-0 items-center gap-2 rounded-lg px-3 focus-within:ring-2",
               isDesktop
-                ? "border-border/70 bg-surface-muted/60 h-[30px] rounded-md border-[0.5px] px-2.5"
+                ? "border-border/70 h-[30px] rounded-md border-[0.5px] px-2.5"
                 : "h-11",
             )}
             key={query}
@@ -159,7 +159,7 @@ export const Commands = ({
         <button
           aria-label={searchLabel}
           className={cn(
-            "bg-surface-muted text-text-muted hover:bg-state-hover focus-visible:ring-ring flex h-11 min-w-0 items-center gap-2 rounded-lg px-3 text-left transition-colors outline-none focus-visible:ring-2",
+            "bg-accent/60 text-text-muted hover:bg-accent/80 focus-visible:ring-ring flex h-11 min-w-0 items-center gap-2 rounded-lg px-3 text-left transition-colors outline-none focus-visible:ring-2",
             className,
           )}
           onClick={() => {
@@ -178,7 +178,7 @@ export const Commands = ({
         <button
           aria-label={searchLabel}
           className={cn(
-            "border-border/70 bg-surface-muted/60 text-text-muted hover:bg-state-hover focus-visible:ring-ring flex h-[30px] min-w-0 items-center gap-2 rounded-md border-[0.5px] px-2.5 text-left transition-colors outline-none focus-visible:ring-2",
+            "border-border/70 bg-accent/60 text-text-muted hover:bg-accent/80 focus-visible:ring-ring flex h-[30px] min-w-0 items-center gap-2 rounded-md border-[0.5px] px-2.5 text-left transition-colors outline-none focus-visible:ring-2",
             className,
           )}
           onClick={() => {

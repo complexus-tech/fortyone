@@ -53,9 +53,6 @@ export const buttonVariants = cva(
       loading: {
         true: "opacity-80 cursor-progress",
       },
-      fullWidth: {
-        true: "w-full",
-      },
       align: {
         center: "justify-center",
         left: "justify-start",
@@ -63,7 +60,10 @@ export const buttonVariants = cva(
         between: "justify-between",
       },
       asIcon: {
-        true: "px-0 aspect-square justify-center",
+        true: "w-auto px-0 aspect-square justify-center",
+      },
+      fullWidth: {
+        true: "w-full",
       },
     },
     compoundVariants: [
@@ -256,7 +256,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
             {loading ? (
               <>
                 <LoadingIcon className="animate-spin" />
-                {loadingText || "Loading..."}
+                {asIcon ? (
+                  <span className="sr-only">{loadingText || "Loading..."}</span>
+                ) : (
+                  loadingText || "Loading..."
+                )}
               </>
             ) : (
               <>

@@ -3,10 +3,15 @@
 import type { QueryClient } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { render } from "@testing-library/react";
+import { useSquircleFallback } from "@/shell/compatibility/use-squircle-fallback";
 import { getQueryClient } from "./get-query-client";
 import { Providers } from "./providers";
 
 const mockObservedClients: unknown[] = [];
+
+jest.mock("@/shell/compatibility/use-squircle-fallback", () => ({
+  useSquircleFallback: jest.fn(),
+}));
 
 jest.mock("@tanstack/react-query", () => ({
   QueryClientProvider: ({
@@ -52,6 +57,16 @@ describe("Providers", () => {
     jest.clearAllMocks();
     mockObservedClients.splice(0);
     mockGetQueryClient.mockReturnValue(mockQueryClient);
+  });
+
+  it("does not initialize DOM painting above streamed route boundaries", () => {
+    render(
+      <Providers>
+        <div>Route shell is still loading</div>
+      </Providers>,
+    );
+
+    expect(useSquircleFallback).not.toHaveBeenCalled();
   });
 
   it("keeps one query client across provider rerenders", () => {

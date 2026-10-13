@@ -22,6 +22,8 @@ import { useMyInvitations } from "@/modules/invitations/hooks/my-invitations";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { DEFAULT_WORKSPACE_PATH } from "@/shared/routing/workspace";
 import { Commands } from "@/shell/commands/commands";
+import { useSquircleFallback } from "@/shell/compatibility/use-squircle-fallback";
+import "@/shell/compatibility/squircles.css";
 import { MobileMenuButton } from "../shared/mobile-menu";
 import { NavLink } from "../ui";
 import {
@@ -39,6 +41,8 @@ const categoryIcons: Record<SettingsNavigationCategory["category"], ReactNode> =
   };
 
 export const SettingsLayout = ({ children }: { children: ReactNode }) => {
+  useSquircleFallback();
+
   const { userRole } = useUserRole();
   const { hasFeature } = useSubscriptionFeatures();
   const [prevPage, setPrevPage] = useLocalStorage("pathBeforeSettings", "");

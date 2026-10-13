@@ -3,11 +3,10 @@ import { useEffect } from "react";
 
 const loadHyperellipse = () => import("hyperellipse");
 
-/** Load the compatibility renderer only in desktop webviews that need it. */
-export const useDesktopSquircles = (isDesktop: boolean) => {
+/** Mount from the hydrated workspace or settings shell, not a streaming ancestor. */
+export const useSquircleFallback = () => {
   useEffect(() => {
     if (
-      !isDesktop ||
       typeof CSS === "undefined" ||
       typeof CSS.supports !== "function" ||
       CSS.supports("corner-shape", "squircle")
@@ -24,20 +23,20 @@ export const useDesktopSquircles = (isDesktop: boolean) => {
         if (cancelled) return;
 
         // CSS carriers are scoped to this marker, including portaled menus.
-        root.dataset.desktopSquircles = "true";
+        root.dataset.squircleFallback = "true";
         controller = registerHyperellipse({ pendingRadiusScale: 0.75 / 2.2 });
       })
       .catch((error: unknown) => {
         if (cancelled) return;
-        delete root.dataset.desktopSquircles;
+        delete root.dataset.squircleFallback;
         // eslint-disable-next-line no-console -- A cosmetic fallback must not interrupt the app; retain diagnostics.
-        console.error("Could not initialize desktop squircles", error);
+        console.error("Could not initialize squircle fallback", error);
       });
 
     return () => {
       cancelled = true;
       controller?.destroy();
-      delete root.dataset.desktopSquircles;
+      delete root.dataset.squircleFallback;
     };
-  }, [isDesktop]);
+  }, []);
 };

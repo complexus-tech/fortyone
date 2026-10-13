@@ -5,12 +5,17 @@ import { WorkspaceChatLayout } from "@/components/ui/chat";
 import { WalkthroughIntegration } from "@/components/walkthrough/walkthrough-integration";
 import { walkthroughTargets } from "@/shared/walkthrough/targets";
 import { AppCommandBar } from "@/shell/commands/app-command-bar";
+import { useSquircleFallback } from "@/shell/compatibility/use-squircle-fallback";
+import "@/shell/compatibility/squircles.css";
 import { AppCommandActionProvider } from "../shared/app-command-action-context";
 import { SidebarProvider } from "../shared/sidebar/sidebar-context";
 import { Sidebar } from "../shared/sidebar/sidebar";
 import { SidebarEdgeToggle } from "../shared/sidebar/sidebar-edge-toggle";
 
 export const ApplicationLayout = ({ children }: { children: ReactNode }) => {
+  // The streamed workspace shell must hydrate before its DOM can be painted.
+  useSquircleFallback();
+
   return (
     <SidebarProvider>
       <AppCommandActionProvider>
@@ -23,7 +28,7 @@ export const ApplicationLayout = ({ children }: { children: ReactNode }) => {
             </Box>
             <Box className="h-dvh min-w-0 flex-1 md:h-full md:pl-2">
               <Box
-                className="app-content-canvas-gradient border-border/80 bg-surface-muted/60 dark:bg-surface-muted/40 h-full min-w-0 overflow-hidden md:rounded-tl-2xl md:border-l-[0.5px] md:border-t-[0.5px]"
+                className="app-content-canvas-gradient border-border/80 bg-surface-muted/60 dark:bg-surface-muted/40 h-full min-w-0 overflow-hidden md:rounded-tl-2xl md:border-t-[0.5px] md:border-l-[0.5px]"
                 data-app-content-canvas
                 data-walkthrough-target={walkthroughTargets.workspaceContent}
               >

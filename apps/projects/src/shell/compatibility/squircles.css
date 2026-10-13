@@ -2,7 +2,7 @@
    form controls, circular shapes, translucent backdrops, and surfaces that own
    decorative pseudo elements on their existing styles during this trial. */
 @supports not (corner-shape: squircle) {
-  html[data-desktop-squircles="true"]
+  html[data-squircle-fallback="true"]
     :where([class*="rounded"]):not(
       input,
       textarea,

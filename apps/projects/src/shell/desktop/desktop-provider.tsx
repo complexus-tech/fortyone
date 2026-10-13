@@ -20,11 +20,9 @@ import {
 } from "./bridge";
 import "./desktop.css";
 import "./fallback.css";
-import "./squircles.css";
 import { DESKTOP_DRAG_HANDLERS, EMPTY_DRAG_HANDLERS } from "./drag-region";
 import { DesktopHistoryControls } from "./desktop-history-controls";
 import { useNativeNavigation } from "./use-native-navigation";
-import { useDesktopSquircles } from "./use-desktop-squircles";
 
 type DesktopContextValue = {
   isDesktop: boolean;
@@ -52,7 +50,6 @@ export const DesktopProvider = ({ children }: { children: ReactNode }) => {
   const resynchronizeChrome = useRef<(() => void) | null>(null);
   const { resolvedTheme, theme } = useTheme();
   const navigation = useNativeNavigation(isDesktop);
-  useDesktopSquircles(isDesktop);
   const showFallback = isDesktop && !shellMounted;
 
   useEffect(() => {
