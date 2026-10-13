@@ -47,7 +47,7 @@ manual dispatch remains available after the workflows are present there.
 
 | Tool        | Version                                 | Purpose                                                                                                                    |
 | ----------- | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| Staticcheck | `v0.7.0`                                | Go 1.25-compatible correctness/static analysis                                                                             |
+| Staticcheck | `v0.7.0`                                | Go correctness/static analysis                                                                                             |
 | govulncheck | `v1.7.0`                                | Reachable Go vulnerability analysis                                                                                        |
 | gosec       | `v2.29.0`                               | AST/SSA security analysis of handwritten Go; generated SQLC/OpenAPI code is excluded and regenerated from reviewed sources |
 | Gitleaks    | `v8.27.2`                               | Committed secret detection                                                                                                 |

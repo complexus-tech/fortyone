@@ -17,7 +17,7 @@ from route and actor policy through SQLC, tests, and generated documentation.
 
 ### Prerequisites
 
-- Go 1.25.14 (the version declared by `go.mod`)
+- Go 1.26.9 (the version declared by `go.mod`)
 - Approved PostgreSQL and Redis development endpoints
 - No globally installed Go tools. `make dev` and the migration targets install
   repository-pinned binaries under the ignored `apps/server/.tools` directory.
@@ -421,7 +421,7 @@ graph TD
 
 ### Technology Stack
 
-- **Language**: Go 1.25.14
+- **Language**: Go 1.26.9
 - **Database**: PostgreSQL via pgx/v5 and sqlc
 - **Caching**: Redis (via `go-redis`)
 - **Background Jobs**: Asynq (Redis-backed queue)

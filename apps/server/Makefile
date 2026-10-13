@@ -2,8 +2,10 @@
 # Make syntax: passwords may contain Make metacharacters, and SQLC validation
 # must receive SQLC_DATABASE_URL explicitly from its calling environment.
 
-# Air v1.64.5 is the latest reviewed release whose module contract remains on
-# the API's Go 1.25 toolchain. Later releases require Go 1.26.
+# Compile local tools with the same patched Go toolchain as the API.
+GO_TOOLCHAIN := go$(shell awk '/^go / { print $$2; exit }' go.mod)
+
+# Keep the reviewed Air release pinned independently of the Go toolchain.
 AIR_VERSION := v1.64.5
 AIR := $(CURDIR)/.tools/bin/air
 MIGRATE_VERSION := v4.18.3
@@ -112,7 +114,7 @@ bootstrap-tools: air-bootstrap migrate-bootstrap sqlc-bootstrap oapi-bootstrap o
 air-bootstrap:
 	@if [ ! -x "$(AIR)" ]; then \
 		mkdir -p "$(dir $(AIR))"; \
-		GOTOOLCHAIN=go1.25.14 GOBIN="$(dir $(AIR))" go install github.com/air-verse/air@$(AIR_VERSION); \
+		GOTOOLCHAIN=$(GO_TOOLCHAIN) GOBIN="$(dir $(AIR))" go install github.com/air-verse/air@$(AIR_VERSION); \
 	fi
 
 migrate-bootstrap:
@@ -123,7 +125,7 @@ migrate-bootstrap:
 			exit 1; \
 		fi; \
 		mkdir -p "$(dir $(MIGRATE))"; \
-		GOTOOLCHAIN=go1.25.14 go build -tags postgres -ldflags '-X main.Version=$(MIGRATE_VERSION)' -o "$(MIGRATE)" github.com/golang-migrate/migrate/v4/cmd/migrate; \
+		GOTOOLCHAIN=$(GO_TOOLCHAIN) go build -tags postgres -ldflags '-X main.Version=$(MIGRATE_VERSION)' -o "$(MIGRATE)" github.com/golang-migrate/migrate/v4/cmd/migrate; \
 	fi
 
 tool-versions:

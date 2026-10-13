@@ -80,4 +80,4 @@ change unless the coupling is unavoidable and explicitly documented.
 The current TypeScript generator is paired with TypeScript 5.9.3 because its
 published peer contract is TypeScript 5.x. Do not silently substitute the
 monorepo's newer compiler. The selected Go runtime currently requires Go 1.24;
-the server itself remains on Go 1.25.
+the server itself uses Go 1.26.9.
