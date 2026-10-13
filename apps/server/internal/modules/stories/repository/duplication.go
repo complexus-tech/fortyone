@@ -84,6 +84,11 @@ func (r *repo) DuplicateStoryMutation(
 			}); err != nil {
 				return fmt.Errorf("copy duplicate story media links: %w", err)
 			}
+			if err := queries.CopyDuplicatedStoryChecklist(ctx, storyreadsql.CopyDuplicatedStoryChecklistParams{
+				SourceStoryID: command.SourceStoryID, TargetStoryID: command.TargetStoryID, WorkspaceID: command.Scope.WorkspaceID, Now: command.OccurredAt,
+			}); err != nil {
+				return fmt.Errorf("copy duplicate story checklist: %w", err)
+			}
 			if err := upsertMutationActivity(ctx, queries, command.Activity, false); err != nil {
 				return err
 			}

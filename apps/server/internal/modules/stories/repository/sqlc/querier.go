@@ -22,16 +22,20 @@ type Querier interface {
 	ClaimAttachmentObjectDeletions(ctx context.Context, arg ClaimAttachmentObjectDeletionsParams) ([]ClaimAttachmentObjectDeletionsRow, error)
 	ClaimStoryMutationEvents(ctx context.Context, arg ClaimStoryMutationEventsParams) ([]ClaimStoryMutationEventsRow, error)
 	ClaimStoryScheduleTransitions(ctx context.Context, arg ClaimStoryScheduleTransitionsParams) ([]ClaimStoryScheduleTransitionsRow, error)
+	ClearStoryChecklist(ctx context.Context, arg ClearStoryChecklistParams) error
 	CloseEligibleStoriesBatch(ctx context.Context, arg CloseEligibleStoriesBatchParams) ([]CloseEligibleStoriesBatchRow, error)
 	CompleteAttachmentObjectDeletion(ctx context.Context, arg CompleteAttachmentObjectDeletionParams) (int64, error)
+	CompleteStoryChecklistConversion(ctx context.Context, arg CompleteStoryChecklistConversionParams) error
 	CompleteStoryMutationEvent(ctx context.Context, arg CompleteStoryMutationEventParams) (int64, error)
 	CompleteStoryScheduleTransition(ctx context.Context, arg CompleteStoryScheduleTransitionParams) (int64, error)
+	CopyDuplicatedStoryChecklist(ctx context.Context, arg CopyDuplicatedStoryChecklistParams) error
 	CopyDuplicatedStoryMediaLinks(ctx context.Context, arg CopyDuplicatedStoryMediaLinksParams) error
 	CountValidStoryCollaborators(ctx context.Context, arg CountValidStoryCollaboratorsParams) (int64, error)
 	CountVisibleStories(ctx context.Context, arg CountVisibleStoriesParams) (int32, error)
 	CreateStoryMutation(ctx context.Context, arg CreateStoryMutationParams) (CreateStoryMutationRow, error)
 	DeleteCompletedStoryScheduleTransitions(ctx context.Context, arg DeleteCompletedStoryScheduleTransitionsParams) (int64, error)
 	DeleteStoryAssociation(ctx context.Context, arg DeleteStoryAssociationParams) (DeleteStoryAssociationRow, error)
+	DeleteStoryChecklistItem(ctx context.Context, arg DeleteStoryChecklistItemParams) (int64, error)
 	DeleteStoryCollaboratorsForUpdate(ctx context.Context, arg DeleteStoryCollaboratorsForUpdateParams) error
 	DeleteStoryLabelsForUpdate(ctx context.Context, arg DeleteStoryLabelsForUpdateParams) error
 	DeleteStoryMediaLink(ctx context.Context, arg DeleteStoryMediaLinkParams) (int64, error)
@@ -46,6 +50,7 @@ type Querier interface {
 	DuplicateAuthorizedStory(ctx context.Context, arg DuplicateAuthorizedStoryParams) (uuid.UUID, error)
 	FailAttachmentObjectDeletion(ctx context.Context, arg FailAttachmentObjectDeletionParams) (int64, error)
 	FailStoryScheduleTransition(ctx context.Context, arg FailStoryScheduleTransitionParams) (int64, error)
+	FindChecklistConversionStatus(ctx context.Context, arg FindChecklistConversionStatusParams) (uuid.UUID, error)
 	FindVisibleFirstStatusByCategory(ctx context.Context, arg FindVisibleFirstStatusByCategoryParams) (uuid.UUID, error)
 	// Metadata for trusted asynchronous events. This is separate from interactive
 	// reads: the event actor is explicit, and notification creation rechecks the
@@ -81,6 +86,7 @@ type Querier interface {
 	InsertSprintMigrationAuditEvents(ctx context.Context, arg InsertSprintMigrationAuditEventsParams) (int64, error)
 	InsertStoryAssociation(ctx context.Context, arg InsertStoryAssociationParams) (InsertStoryAssociationRow, error)
 	InsertStoryAutoCloseActivities(ctx context.Context, arg InsertStoryAutoCloseActivitiesParams) (int64, error)
+	InsertStoryChecklistItem(ctx context.Context, arg InsertStoryChecklistItemParams) error
 	InsertStoryCollaboratorsForUpdate(ctx context.Context, arg InsertStoryCollaboratorsForUpdateParams) (int64, error)
 	InsertStoryMutationEvent(ctx context.Context, arg InsertStoryMutationEventParams) error
 	InsertStoryNotificationMute(ctx context.Context, arg InsertStoryNotificationMuteParams) error
@@ -96,6 +102,9 @@ type Querier interface {
 	ListMyVisibleStories(ctx context.Context, arg ListMyVisibleStoriesParams) ([]ListMyVisibleStoriesRow, error)
 	ListOverdueStoryGuidanceItems(ctx context.Context, arg ListOverdueStoryGuidanceItemsParams) ([]ListOverdueStoryGuidanceItemsRow, error)
 	ListOverdueStoryGuidanceRecipients(ctx context.Context, arg ListOverdueStoryGuidanceRecipientsParams) ([]ListOverdueStoryGuidanceRecipientsRow, error)
+	// All writes run after AuthorizeSecondaryStoryTargets locks the owning story.
+	// That single aggregate lock serializes adds, edits, ordering, clearing and conversion.
+	ListStoryChecklist(ctx context.Context, arg ListStoryChecklistParams) ([]ListStoryChecklistRow, error)
 	ListStoryCollaboratorsForUpdate(ctx context.Context, arg ListStoryCollaboratorsForUpdateParams) ([]uuid.UUID, error)
 	ListStoryLabelsForUpdate(ctx context.Context, arg ListStoryLabelsForUpdateParams) ([]uuid.UUID, error)
 	ListStoryNotificationAudience(ctx context.Context, arg ListStoryNotificationAudienceParams) ([]*uuid.UUID, error)
@@ -139,6 +148,7 @@ type Querier interface {
 	PurgeCompletedAttachmentObjectDeletions(ctx context.Context, arg PurgeCompletedAttachmentObjectDeletionsParams) (int64, error)
 	RecordImportReceipt(ctx context.Context, arg RecordImportReceiptParams) error
 	RefreshStoryScheduleIssue(ctx context.Context, arg RefreshStoryScheduleIssueParams) error
+	ReorderStoryChecklist(ctx context.Context, arg ReorderStoryChecklistParams) (int64, error)
 	ResolveStoryScheduleIssue(ctx context.Context, arg ResolveStoryScheduleIssueParams) error
 	ResolveVisibleStoryKeyResult(ctx context.Context, arg ResolveVisibleStoryKeyResultParams) (ResolveVisibleStoryKeyResultRow, error)
 	RestoreSecondaryStories(ctx context.Context, arg RestoreSecondaryStoriesParams) ([]uuid.UUID, error)
@@ -147,9 +157,11 @@ type Querier interface {
 	SoftDeleteSecondaryStories(ctx context.Context, arg SoftDeleteSecondaryStoriesParams) ([]uuid.UUID, error)
 	StoryMediaAttachmentIsOrphaned(ctx context.Context, arg StoryMediaAttachmentIsOrphanedParams) (*bool, error)
 	SynchronizeStorySequence(ctx context.Context, arg SynchronizeStorySequenceParams) error
+	TouchChecklistStory(ctx context.Context, arg TouchChecklistStoryParams) error
 	UnarchiveSecondaryStories(ctx context.Context, arg UnarchiveSecondaryStoriesParams) ([]uuid.UUID, error)
 	UpdateAutoSchedulingState(ctx context.Context, arg UpdateAutoSchedulingStateParams) (int64, error)
 	UpdateStoryAssociation(ctx context.Context, arg UpdateStoryAssociationParams) (UpdateStoryAssociationRow, error)
+	UpdateStoryChecklistItem(ctx context.Context, arg UpdateStoryChecklistItemParams) (int64, error)
 	UpdateStoryScheduleTransitionState(ctx context.Context, arg UpdateStoryScheduleTransitionStateParams) (int64, error)
 	UpsertStoryMutationActivity(ctx context.Context, arg UpsertStoryMutationActivityParams) (UpsertStoryMutationActivityRow, error)
 }

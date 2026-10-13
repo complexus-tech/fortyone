@@ -2382,6 +2382,40 @@
         "Only a recognized reported browser name is stored; raw user agents, device identifiers and browser versions are not retained. Browser metadata does not affect authentication or authorization.",
         "Browsers using another browser's compatibility identity cannot always be distinguished. Arc and Dia labels require an explicitly reported brand. An independent native mobile session does not inherit the authorizing browser label."
       ]
+    },
+    {
+      "version": 217,
+      "slug": "story_checklists",
+      "classification": "forward-only",
+      "files": {
+        "up": "000217_story_checklists.up.sql",
+        "down": "000217_story_checklists.down.sql"
+      },
+      "compatibility": {
+        "schema": "Adds ordered checklist items independently of sub-stories, with retained conversion history.",
+        "api": "Checklist endpoints require schema 217. Existing story endpoints remain compatible.",
+        "worker": "Deploy the updated worker to broadcast checklist changes through the existing story event stream. Durable creation and change events use the existing outbox.",
+        "mixed_versions": "Apply schema before the API, then deploy the updated web client. Older clients ignore checklists."
+      },
+      "rollout": {
+        "sequence": 66,
+        "mode": "schema-first",
+        "steps": [
+          "Apply migration 000217 after 000216 before deploying the replacement API.",
+          "Deploy the API, worker and web app and verify checklist CRUD, ordering, conversion, realtime updates and tenant authorization."
+        ]
+      },
+      "recovery": {
+        "strategy": "forward-fix",
+        "procedure": [
+          "Preserve checklist data and repair the API or web app forward.",
+          "The down migration refuses to remove a populated checklist table."
+        ]
+      },
+      "operational_notes": [
+        "Checklist conversion creates one related standalone story atomically and retains its completed source item.",
+        "Checklist updates do not complete the owning story or change its sub-stories."
+      ]
     }
   ]
 }

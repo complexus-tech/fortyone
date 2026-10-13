@@ -4,6 +4,7 @@ import type {
 } from "@/modules/stories/types";
 
 type StoryWorkspaceChanges = {
+  checklistChanged?: true;
   statusId?: string;
   completedAt?: string | null;
   assigneeId?: string | null;
@@ -56,6 +57,7 @@ const STORY_PRIORITIES = new Set<StoryPriority>([
 ]);
 
 const STORY_CHANGE_KEYS: ReadonlySet<string> = new Set([
+  "checklistChanged",
   "statusId",
   "completedAt",
   "assigneeId",
@@ -92,6 +94,13 @@ const decodeStoryChanges = (value: unknown): StoryWorkspaceChanges => {
   }
 
   const changes: StoryWorkspaceChanges = {};
+
+  if ("checklistChanged" in value) {
+    if (value.checklistChanged !== true) {
+      throw new WorkspaceRealtimeContractError("Invalid checklist update");
+    }
+    changes.checklistChanged = true;
+  }
 
   if ("statusId" in value) {
     if (!isNonEmptyString(value.statusId)) {

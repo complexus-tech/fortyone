@@ -14,7 +14,9 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-func insertMutationEvent(ctx context.Context, queries *storyreadsql.Queries, event storydomain.MutationEvent) error {
+func insertMutationEvent(ctx context.Context, queries interface {
+	InsertStoryMutationEvent(context.Context, storyreadsql.InsertStoryMutationEventParams) error
+}, event storydomain.MutationEvent) error {
 	credentialID := event.Actor.CredentialID
 	var optionalCredentialID *uuid.UUID
 	if credentialID != uuid.Nil {
@@ -33,7 +35,9 @@ func insertMutationEvent(ctx context.Context, queries *storyreadsql.Queries, eve
 
 func upsertMutationActivity(
 	ctx context.Context,
-	queries *storyreadsql.Queries,
+	queries interface {
+		UpsertStoryMutationActivity(context.Context, storyreadsql.UpsertStoryMutationActivityParams) (storyreadsql.UpsertStoryMutationActivityRow, error)
+	},
 	activity storydomain.MutationActivity,
 	compact bool,
 ) error {

@@ -23,6 +23,7 @@ type repo struct {
 	runRetentionTransaction func(context.Context, func(storyRetentionQueries) error) error
 
 	runStoryAutomationTransaction func(context.Context, func(storyAutomationQueries) error) error
+	runChecklistTransaction       func(context.Context, func(checklistQueries) error) error
 }
 
 // New constructs the stories PostgreSQL adapter. All story persistence uses

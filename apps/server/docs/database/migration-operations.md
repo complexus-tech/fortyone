@@ -81,6 +81,7 @@ The machine-readable source of truth is [`internal/migrations/manifest.json`](..
 | `000214` | `routine_email_send_fence` | `forward-only` | `schema-first` | No client API contract changes are required. Routine delivery adapters record the owned scoped send-start attempt under the recipient lock before handing a summary to the mail service. | Replacement workers count sent and uncertain begun activity attempts against the local weekly limit and a minimum 168-hour interval. Existing daily delivery history participates in both checks. Unstarted stale claims can be reclaimed; begun processing claims cannot. An explicit mail rejection may fail the attempt and allow a newly fenced retry. |
 | `000215` | `maya_skills` | `forward-only` | `schema-first` | The new skill CRUD endpoints require schema 215. Existing Maya and user-memory APIs remain compatible. | Unaffected; skills are selected and edited by users in the web composer. |
 | `000216` | `browser_session_metadata` | `forward-only` | `schema-first` | The session list adds username and nullable browserName fields. New session issuance captures recognized browser request metadata; cookie renewal retains the original value. The replacement API requires schema 216. | Unaffected; browser metadata is captured and tracked by the first-party API only. |
+| `000217` | `story_checklists` | `forward-only` | `schema-first` | Checklist endpoints require schema 217. Existing story endpoints remain compatible. | Deploy the updated worker to broadcast checklist changes through the existing story event stream. Durable creation and change events use the existing outbox. |
 
 ## `000152_harden_verification_tokens`
 
@@ -1866,6 +1867,31 @@ Operational notes:
 
 - Only a recognized reported browser name is stored; raw user agents, device identifiers and browser versions are not retained. Browser metadata does not affect authentication or authorization.
 - Browsers using another browser's compatibility identity cannot always be distinguished. Arc and Dia labels require an explicitly reported brand. An independent native mobile session does not inherit the authorizing browser label.
+
+## `000217_story_checklists`
+
+- **Classification:** `forward-only`
+- **Files:** `000217_story_checklists.up.sql`, `000217_story_checklists.down.sql`
+- **Schema:** Adds ordered checklist items independently of sub-stories, with retained conversion history.
+- **API:** Checklist endpoints require schema 217. Existing story endpoints remain compatible.
+- **Worker:** Deploy the updated worker to broadcast checklist changes through the existing story event stream. Durable creation and change events use the existing outbox.
+- **Mixed versions:** Apply schema before the API, then deploy the updated web client. Older clients ignore checklists.
+- **Rollout mode:** `schema-first`
+
+Rollout:
+
+1. Apply migration 000217 after 000216 before deploying the replacement API.
+2. Deploy the API, worker and web app and verify checklist CRUD, ordering, conversion, realtime updates and tenant authorization.
+
+Recovery (`forward-fix`):
+
+1. Preserve checklist data and repair the API or web app forward.
+2. The down migration refuses to remove a populated checklist table.
+
+Operational notes:
+
+- Checklist conversion creates one related standalone story atomically and retains its completed source item.
+- Checklist updates do not complete the owning story or change its sub-stories.
 
 ## Adding the next migration
 

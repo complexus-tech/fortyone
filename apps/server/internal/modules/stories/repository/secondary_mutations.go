@@ -331,7 +331,9 @@ func (r *repo) ListStoryNotificationAudience(ctx context.Context, storyID, works
 
 func authorizeSecondaryTargets(
 	ctx context.Context,
-	queries *storyreadsql.Queries,
+	queries interface {
+		AuthorizeSecondaryStoryTargets(context.Context, storyreadsql.AuthorizeSecondaryStoryTargetsParams) ([]storyreadsql.AuthorizeSecondaryStoryTargetsRow, error)
+	},
 	scope storydomain.MutationScope,
 	storyIDs []uuid.UUID,
 	now time.Time,

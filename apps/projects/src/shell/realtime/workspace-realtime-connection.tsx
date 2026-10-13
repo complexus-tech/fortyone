@@ -50,6 +50,8 @@ export const WorkspaceRealtimeConnection = () => {
         }
 
         if (realtimeEvent.kind === "story-updated") {
+          const { checklistChanged, ...storyChanges } = realtimeEvent.changes;
+
           void queryClient.invalidateQueries({
             predicate: (query) => {
               const queryKey = query.queryKey;
@@ -62,14 +64,24 @@ export const WorkspaceRealtimeConnection = () => {
             },
           });
 
-          queryClient.setQueryData(
-            storyKeys.detail(workspaceSlug, realtimeEvent.storyId),
-            (oldData: DetailedStory | undefined) => {
-              if (!oldData) return oldData;
+          if (Object.keys(storyChanges).length > 0) {
+            queryClient.setQueryData(
+              storyKeys.detail(workspaceSlug, realtimeEvent.storyId),
+              (oldData: DetailedStory | undefined) => {
+                if (!oldData) return oldData;
 
-              return { ...oldData, ...realtimeEvent.changes };
-            },
-          );
+                return { ...oldData, ...storyChanges };
+              },
+            );
+          }
+
+          if (checklistChanged) {
+            // Includes the checklist and activity queries, plus associations
+            // when an item has been converted to a related story.
+            void queryClient.invalidateQueries({
+              queryKey: storyKeys.detail(workspaceSlug, realtimeEvent.storyId),
+            });
+          }
 
           if (
             "statusId" in realtimeEvent.changes ||

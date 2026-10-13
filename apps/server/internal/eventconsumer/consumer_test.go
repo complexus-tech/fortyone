@@ -331,6 +331,15 @@ func TestCompletionUpdatesBroadcastForCalendarRefresh(t *testing.T) {
 	}, frontendStoryChanges(updates))
 }
 
+func TestChecklistUpdatesBroadcastWithoutChangingStoryScheduling(t *testing.T) {
+	updates := map[string]any{"checklist_changed": true}
+
+	consumer := &Consumer{}
+	require.True(t, consumer.hasSignificantChanges(updates))
+	require.False(t, shouldReconcileStorySchedule(updates), "checklist completion is independent of story completion")
+	require.Equal(t, map[string]any{"checklistChanged": true}, frontendStoryChanges(updates))
+}
+
 type eventStoryRulesStub struct{}
 
 func (eventStoryRulesStub) GetEventStoryTitle(context.Context, uuid.UUID, uuid.UUID, uuid.UUID) (string, error) {

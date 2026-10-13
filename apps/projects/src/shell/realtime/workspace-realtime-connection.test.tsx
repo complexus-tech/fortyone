@@ -257,6 +257,56 @@ describe("WorkspaceRealtimeConnection", () => {
     expect(captureException).toHaveBeenCalledTimes(1);
   });
 
+  it("refetches checklist, activities, and associations without changing story completion", () => {
+    render(<WorkspaceRealtimeConnection />);
+
+    connection().onmessage?.({
+      data: JSON.stringify({
+        changes: { checklistChanged: true },
+        storyId: "story-1",
+        type: "story.workspace_update",
+      }),
+    } as MessageEvent);
+
+    expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
+      queryKey: storyKeys.detail("engineering", "story-1"),
+    });
+    expect(queryClient.invalidateQueries).not.toHaveBeenCalledWith({
+      queryKey: calendarKeys.all("engineering"),
+    });
+    expect(queryClient.invalidateQueries).not.toHaveBeenCalledWith({
+      queryKey: notificationKeys.all("engineering"),
+    });
+    expect(queryClient.setQueryData).not.toHaveBeenCalled();
+    expect(captureException).not.toHaveBeenCalled();
+  });
+
+  it("does not persist the checklist invalidation marker in story detail data", () => {
+    render(<WorkspaceRealtimeConnection />);
+
+    connection().onmessage?.({
+      data: JSON.stringify({
+        changes: { checklistChanged: true, title: "Updated title" },
+        storyId: "story-1",
+        type: "story.workspace_update",
+      }),
+    } as MessageEvent);
+
+    const detailUpdater = queryClient.setQueryData.mock
+      .calls[0]?.[1] as (oldData: {
+      id: string;
+      title: string;
+      completedAt: null;
+    }) => { id: string; title: string; completedAt: null };
+
+    expect(
+      detailUpdater({ id: "story-1", title: "Original", completedAt: null }),
+    ).toEqual({ id: "story-1", title: "Updated title", completedAt: null });
+    expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
+      queryKey: storyKeys.detail("engineering", "story-1"),
+    });
+  });
+
   it("reconciles caches after EventSource reconnects", () => {
     render(<WorkspaceRealtimeConnection />);
     const source = connection();

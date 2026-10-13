@@ -48,10 +48,28 @@ describe("workspace realtime contract", () => {
     '{"type":"story.workspace_update","storyId":"story-1","changes":{}}',
     '{"type":"story.workspace_update","storyId":"story-1","changes":{"priority":"Impossible"}}',
     '{"type":"story.workspace_update","storyId":"story-1","changes":{"unknown":true}}',
+    '{"type":"story.workspace_update","storyId":"story-1","changes":{"checklistChanged":false}}',
+    '{"type":"story.workspace_update","storyId":"story-1","changes":{"checklistChanged":"true"}}',
   ])("rejects malformed or unsupported payload %s", (payload) => {
     expect(() => parseWorkspaceRealtimeEvent(payload)).toThrow(
       WorkspaceRealtimeContractError,
     );
+  });
+
+  it("decodes checklist invalidation alongside ordinary story changes", () => {
+    expect(
+      parseWorkspaceRealtimeEvent(
+        JSON.stringify({
+          changes: { checklistChanged: true, title: "Review release" },
+          storyId: "story-1",
+          type: "story.workspace_update",
+        }),
+      ),
+    ).toEqual({
+      changes: { checklistChanged: true, title: "Review release" },
+      kind: "story-updated",
+      storyId: "story-1",
+    });
   });
 
   it("does not retain malformed event contents in the contract error", () => {

@@ -64,6 +64,15 @@ func Routes(cfg Config, app *web.App) {
 	app.Post("/workspaces/{workspaceSlug}/stories/{id}/duplicate", h.DuplicateStory, auth, workspace)
 	app.Get("/workspaces/{workspaceSlug}/stories/count", h.CountInWorkspace, auth, workspace)
 
+	// Checklist items are independent from sub-stories.
+	app.Get("/workspaces/{workspaceSlug}/stories/{id}/checklist", h.GetChecklist, auth, workspace)
+	app.Post("/workspaces/{workspaceSlug}/stories/{id}/checklist", h.AddChecklistItem, auth, workspace, memberAndAdmin)
+	app.Patch("/workspaces/{workspaceSlug}/stories/{id}/checklist/{itemId}", h.UpdateChecklistItem, auth, workspace, memberAndAdmin)
+	app.Delete("/workspaces/{workspaceSlug}/stories/{id}/checklist/{itemId}", h.DeleteChecklistItem, auth, workspace, memberAndAdmin)
+	app.Delete("/workspaces/{workspaceSlug}/stories/{id}/checklist/items", h.DeleteChecklist, auth, workspace, memberAndAdmin)
+	app.Put("/workspaces/{workspaceSlug}/stories/{id}/checklist/order", h.ReorderChecklist, auth, workspace, memberAndAdmin)
+	app.Post("/workspaces/{workspaceSlug}/stories/{id}/checklist/{itemId}/convert", h.ConvertChecklistItem, auth, workspace, memberAndAdmin)
+
 	// Comments
 	app.Post("/workspaces/{workspaceSlug}/stories/{id}/comments", h.CreateComment, auth, workspace, memberAndAdmin)
 	app.Get("/workspaces/{workspaceSlug}/stories/{id}/comments", h.GetComments, auth, workspace, gzip)

@@ -33,6 +33,7 @@ import { Associations } from "./associations";
 import { Attachments } from "./attachments";
 import { Links } from "./links";
 import { SubStories } from "./sub-stories";
+import { StoryChecklist } from "./checklist";
 import { StoryBanners } from "./story-banners";
 import { LinksSkeleton } from "./links-skeleton";
 import { FigmaSection } from "./figma-section";
@@ -270,6 +271,7 @@ export const MainDetails = ({
         />
         {googleDriveDescriptionPicker}
         <RichTextTableMenu editor={descriptionEditor} scrollTarget={null} />
+        <StoryChecklist key={storyId} story={data!} />
         <SubStories
           isSubStoriesOpen={isSubStoriesOpen}
           parent={data!}
