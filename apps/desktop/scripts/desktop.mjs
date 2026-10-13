@@ -4,7 +4,12 @@ import { createRequire } from "node:module";
 import { homedir } from "node:os";
 import { delimiter, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { getDesktopUrl, getTauriArguments } from "./config.mjs";
+import {
+  getDesktopUrl,
+  getProductionEnvironment,
+  getProductionPackageArguments,
+  getTauriArguments,
+} from "./config.mjs";
 
 const DESKTOP_DIR = fileURLToPath(new URL("..", import.meta.url));
 const RUST_DIR = join(DESKTOP_DIR, "src-tauri");
@@ -98,15 +103,15 @@ function run(command, args, env, cwd = DESKTOP_DIR) {
 async function main() {
   const [command, ...args] = process.argv.slice(2);
 
-  if (!["dev", "build", "check", "tauri"].includes(command)) {
+  if (!["dev", "build", "package", "check", "tauri"].includes(command)) {
     throw new Error(
-      "Use pnpm dev:desktop, pnpm check:desktop, or pnpm build:desktop.",
+      "Use pnpm dev:desktop, pnpm check:desktop, pnpm build:desktop, or pnpm package:desktop.",
     );
   }
 
   if (command !== "tauri" && args.length) {
     throw new Error(
-      "Desktop commands do not accept extra flags. Set FORTYONE_DESKTOP_URL to change the local web app URL; use pnpm --filter desktop tauri for direct CLI access.",
+      "Desktop commands do not accept extra flags. Set FORTYONE_DESKTOP_URL for local dev/build only; package:desktop always uses the fixed production configuration. Use pnpm --filter desktop tauri for direct CLI access.",
     );
   }
 
@@ -116,7 +121,11 @@ async function main() {
     verifyPrerequisites(env);
 
     for (const [executable, commandArgs, cwd] of [
-      [process.execPath, ["--test", "scripts/config.test.mjs"], DESKTOP_DIR],
+      [
+        process.execPath,
+        ["--test", "scripts/config.test.mjs", "scripts/bridge.test.mjs"],
+        DESKTOP_DIR,
+      ],
       ["cargo", ["fmt", "--check"], RUST_DIR],
       ["cargo", ["check", "--locked"], RUST_DIR],
       ["cargo", ["test", "--locked"], RUST_DIR],
@@ -139,6 +148,15 @@ async function main() {
 
   if (command === "tauri") {
     await run(process.execPath, [cli, ...args], env);
+    return;
+  }
+
+  if (command === "package") {
+    const packageArgs = getProductionPackageArguments();
+    const productionEnv = getProductionEnvironment(env);
+    verifyPrerequisites(productionEnv);
+    console.log("Packaging FortyOne for macOS at https://cloud.fortyone.app");
+    await run(process.execPath, [cli, ...packageArgs], productionEnv);
     return;
   }
 

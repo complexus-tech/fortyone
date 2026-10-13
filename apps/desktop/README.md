@@ -1,6 +1,22 @@
 # FortyOne Desktop
 
-A Tauri 2 desktop window for the existing local FortyOne web app. The web app and its backend keep running independently; this workspace attaches to the web server you already use.
+A Tauri 2 desktop app for FortyOne. Package the production app for this Mac, or use the development window with your existing local web server.
+
+## Package the production app on macOS
+
+With stable Rust, Apple's command line tools, and workspace dependencies installed as described below, run this from the repository root:
+
+```sh
+pnpm package:desktop
+```
+
+This creates a release-mode `FortyOne.app` and a DMG using the `production` Cargo feature and `src-tauri/tauri.production.conf.json`. The app is named **FortyOne**, uses the separate bundle identifier `app.fortyone.desktop`, and always opens [cloud.fortyone.app](https://cloud.fortyone.app). Local `FORTYONE_DESKTOP_URL` and inherited Tauri configuration overrides are removed from the packaging environment. No local web server or Go API is needed to run this version.
+
+With the default Cargo target directory, find the DMG in `apps/desktop/src-tauri/target/release/bundle/dmg/`; the app is inside it. The build targets the Mac running the command: Apple silicon on this machine. Open the DMG, drag **FortyOne** into **Applications**, eject the image, and launch FortyOne from Applications. Sign in separately from FortyOne Development or your browser.
+
+The local package uses [ad-hoc signing](https://v2.tauri.app/distribute/sign/macos/#ad-hoc-signing) (`-`), with no Apple credentials or notarization. macOS may require allowing the app in **System Settings → Privacy & Security**. This is a local installation build, not a notarized public release.
+
+The DMG contains the native shell and loads the production web frontend over HTTPS; it does not bundle your local Next.js files. Internet access and the production services are required. Frontend changes appear only after they are deployed to the production site. To pick up native changes, run `pnpm package:desktop` again, quit the installed app, and replace it in Applications using the new DMG.
 
 ## Run on macOS
 
@@ -54,13 +70,15 @@ The desktop webview has its own cookie store. Signing in to the web app in Safar
 
 On macOS, native traffic lights share one flat header with Back, Forward, search, and the app's existing invite, help, notifications, profile, and contextual create controls. The header follows the web app's light, dark, or system theme and matches its background without Liquid Glass. Drag empty header space to move the window, or double-click it to maximize and restore. Back and Forward are disabled when the webview has no history in that direction. Use the existing sidebar edge handle to expand or collapse the sidebar.
 
+Login, sign-up, and onboarding extend to the top of the desktop window with only the native traffic lights visible. Their transparent top drag region retains the same move and double-click behavior; it adds no toolbar spacing or Back/Forward buttons. This scoped presentation is included in the native bridge, so rebuilding the DMG updates it without deploying the web app. Browser pages, workspace headers, and settings keep their existing layout.
+
 File → New Story (`Cmd+N`) opens the existing creation dialog, and View → Search (`Cmd+K`) opens app search. The creation label follows the workspace's terminology, and actions remain disabled until the app is ready and the relevant permissions are available.
 
-The native Navigate menu provides Back, Forward, Reload (`Cmd+R`), Open Start Page, Open in Browser, and Developer Tools (`Cmd+Option+I`). Window size and position are saved between launches. Links to other sites open in your system browser; the desktop window stays on the configured app origin.
+The native Navigate menu provides Back, Forward, Reload (`Cmd+R`), Open Start Page, Open in Browser, and Developer Tools (`Cmd+Option+I`, development builds only). Window size and position are saved between launches. Local development stays on its configured app origin. Production keeps the sign-in host and workspace subdomains inside the same window, using the existing hosted routing and session cookies. Links to other sites open in your system browser.
 
-The configured app origin in the main webview can call four narrowly scoped native commands to synchronize appearance and menu availability, read navigation availability, go back or forward, and drag or maximize the window. These commands have no file, network, or record-writing access. Header and native menu actions open the existing web app interfaces, which retain their existing validation and permissions.
+The configured app origin and validated production workspace origins in the main webview can call four narrowly scoped native commands to synchronize appearance and menu availability, read navigation availability, go back or forward, and drag or maximize the window. Production permissions are registered for each exact HTTPS origin as it is visited; infrastructure hosts and unrelated sites receive none. These commands have no file, network, or record-writing access. Header and native menu actions open the existing web app interfaces, which retain their existing validation and permissions.
 
-System-browser OAuth/SSO sign-in and callback handoff are not implemented yet. Native notifications, deep links, automatic updates, installers, and offline support are also outside this local prototype. The existing web app, API configuration, and network connection are still required. Keep both the web server and Go API running while using the desktop app.
+System-browser OAuth/SSO sign-in and callback handoff are not implemented yet. Native notifications, deep links, automatic updates, and offline support are also outside this prototype. Local development still requires the existing web app, API configuration, and network connection. Keep both the web server and Go API running while using FortyOne Development; the packaged production app uses the hosted services instead.
 
 ## Sign-in troubleshooting
 
@@ -100,7 +118,21 @@ The workspace uses dedicated desktop script names so the repository's ordinary `
 
 ## Desktop icon
 
-The desktop icon uses the user-provided FortyOne artwork, preserved in `src-tauri/icons/source.png`. The Tauri icon CLI generated the PNG, macOS ICNS, and Windows ICO assets from that source without redesigning the artwork. Restart the desktop development process after changing these assets to rebuild the native icon.
+The desktop icon uses the user-provided FortyOne artwork, preserved unchanged in `src-tauri/icons/source.png`. The derived `source-cropped.png` enlarges the white 4 by 23%: it crops 24 pixels from each side of the original 256×256 image, scales that 208×208 crop back to the canvas, and restores the original alpha mask so the black tile keeps its exact corner silhouette. The mark is resampled, never redrawn.
+
+To reproduce the crop and desktop assets on macOS, run from the repository root:
+
+```sh
+swift apps/desktop/scripts/prepare-icon.swift
+icon_output_dir="$(mktemp -d)"
+pnpm --filter desktop tauri icon "$PWD/apps/desktop/src-tauri/icons/source-cropped.png" --output "$icon_output_dir"
+for icon in icon.png 32x32.png 128x128.png 128x128@2x.png icon.icns icon.ico; do
+  cp "$icon_output_dir/$icon" apps/desktop/src-tauri/icons/
+done
+rm -r "$icon_output_dir"
+```
+
+Only the configured desktop PNG, macOS ICNS, and Windows ICO outputs are copied; the CLI's unused mobile assets stay out of the repository. Repackage the desktop app after changing these assets to include the new icon.
 
 ## Squircle compatibility
 

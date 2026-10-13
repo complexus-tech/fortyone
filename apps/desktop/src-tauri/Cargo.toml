@@ -1,9 +1,12 @@
 [package]
 name = "fortyone-desktop"
-version = "0.1.0"
-description = "FortyOne desktop development shell"
+version = "0.1.1"
+description = "FortyOne desktop application"
 edition = "2021"
 publish = false
+
+[features]
+production = []
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }

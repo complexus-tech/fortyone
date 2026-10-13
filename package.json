@@ -7,6 +7,7 @@
     "dev:desktop": "pnpm --filter desktop desktop:dev",
     "check:desktop": "pnpm --filter desktop desktop:check",
     "build:desktop": "pnpm --filter desktop desktop:build",
+    "package:desktop": "pnpm --filter desktop desktop:package",
     "ios26": "pnpm --filter mobile ios26",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\""

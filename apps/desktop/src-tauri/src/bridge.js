@@ -1,6 +1,33 @@
 (() => {
   if (window.top !== window) return;
 
+  const installAuthChrome = () => {
+    const style = document.createElement("style");
+    // Keep the existing React header as a transparent drag region. Scoping to
+    // mounted onboarding content also preserves workspace and settings chrome.
+    style.textContent = `
+      html[data-desktop-platform="macos"][data-desktop-fallback="true"]:has(.onboarding-layout) body {
+        padding-top: 0;
+      }
+      html[data-desktop-platform="macos"][data-desktop-fallback="true"]:has(.onboarding-layout) .desktop-fallback-titlebar {
+        height: 36px;
+        background: transparent;
+      }
+      html[data-desktop-platform="macos"][data-desktop-fallback="true"]:has(.onboarding-layout) .desktop-fallback-titlebar > [data-desktop-history] {
+        display: none;
+      }
+    `;
+    document.head.appendChild(style);
+  };
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", installAuthChrome, {
+      once: true,
+    });
+  } else {
+    installAuthChrome();
+  }
+
   // Preserve Next.js history metadata; the native webview owns the actual stack.
   for (const method of ["pushState", "replaceState"]) {
     const original = window.history[method];

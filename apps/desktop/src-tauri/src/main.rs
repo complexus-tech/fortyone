@@ -29,9 +29,38 @@ fn open_in_browser(app: &AppHandle, url: &Url) {
     }
 }
 
+fn prepare_app_destination(
+    app: &AppHandle,
+    policy: &NavigationPolicy,
+    url: &Url,
+) -> Result<Option<Url>, String> {
+    let Some(destination) = policy.app_destination(url) else {
+        return Ok(None);
+    };
+    app.state::<chrome::ChromeCapabilities>()
+        .ensure(app, policy, &destination)?;
+    Ok(Some(destination))
+}
+
+fn navigate_main_window(app: &AppHandle, url: Url) {
+    let app = app.clone();
+    // Queue from a worker so the current native navigation decision finishes
+    // before asking the same webview to load its replacement destination.
+    tauri::async_runtime::spawn(async move {
+        let Some(window) = app.get_webview_window(WINDOW_LABEL) else {
+            eprintln!("Could not find the main desktop window for navigation");
+            return;
+        };
+        if let Err(error) = window.navigate(url) {
+            eprintln!("Could not open the app destination: {error}");
+        }
+    });
+}
+
 fn main() {
     tauri::Builder::default()
         .manage(chrome::ChromeController::default())
+        .manage(chrome::ChromeCapabilities::default())
         .invoke_handler(tauri::generate_handler![
             chrome::sync_desktop_chrome,
             window_controls::desktop_navigation_state,
@@ -46,13 +75,23 @@ fn main() {
         )
         .plugin(tauri_plugin_window_state::Builder::default().build())
         .setup(|app| {
-            let configured_url = std::env::var("FORTYONE_DESKTOP_URL")
-                .unwrap_or_else(|_| env!("FORTYONE_DESKTOP_DEFAULT_URL").to_owned());
-            let policy = Arc::new(NavigationPolicy::new(Url::parse(&configured_url)?)?);
+            #[cfg(feature = "production")]
+            let policy = Arc::new(NavigationPolicy::production());
+            #[cfg(not(feature = "production"))]
+            let policy = {
+                let configured_url = std::env::var("FORTYONE_DESKTOP_URL")
+                    .unwrap_or_else(|_| env!("FORTYONE_DESKTOP_DEFAULT_URL").to_owned());
+                Arc::new(NavigationPolicy::new(Url::parse(&configured_url)?)?)
+            };
             app.manage(Arc::clone(&policy));
-            app.add_capability(chrome::capability(&policy))?;
+            app.state::<chrome::ChromeCapabilities>().ensure(
+                app.handle(),
+                &policy,
+                policy.app_url(),
+            )?;
 
             let navigation_policy = Arc::clone(&policy);
+            let new_window_policy = Arc::clone(&policy);
             let navigation_app = app.handle().clone();
             let new_window_app = app.handle().clone();
 
@@ -68,14 +107,20 @@ fn main() {
             // Keep the browser's file drag-and-drop behavior used by the web app.
             .disable_drag_drop_handler()
             .on_navigation(move |url| {
-                if navigation_policy.allows_navigation(url) {
-                    return true;
+                match prepare_app_destination(&navigation_app, &navigation_policy, url) {
+                    Ok(Some(destination)) if destination == *url => return true,
+                    Ok(Some(destination)) => navigate_main_window(&navigation_app, destination),
+                    Ok(None) => open_in_browser(&navigation_app, url),
+                    Err(error) => eprintln!("Blocked desktop navigation: {error}"),
                 }
-                open_in_browser(&navigation_app, url);
                 false
             })
             .on_new_window(move |url, _features| {
-                open_in_browser(&new_window_app, &url);
+                match prepare_app_destination(&new_window_app, &new_window_policy, &url) {
+                    Ok(Some(destination)) => navigate_main_window(&new_window_app, destination),
+                    Ok(None) => open_in_browser(&new_window_app, &url),
+                    Err(error) => eprintln!("Blocked desktop navigation: {error}"),
+                }
                 NewWindowResponse::Deny
             })
             .on_page_load(|window, payload| {
@@ -149,7 +194,7 @@ fn main() {
                     }
                 }
             }
-            menu.append(&Submenu::with_items(
+            let navigate_menu = Submenu::with_items(
                 app.handle(),
                 "Navigate",
                 true,
@@ -171,15 +216,17 @@ fn main() {
                     &MenuItem::with_id(app, "reload", "Reload", true, Some("CmdOrCtrl+R"))?,
                     &MenuItem::with_id(app, "home", "Open Start Page", true, None::<&str>)?,
                     &MenuItem::with_id(app, "browser", "Open in Browser", true, None::<&str>)?,
-                    &MenuItem::with_id(
-                        app,
-                        "devtools",
-                        "Developer Tools",
-                        true,
-                        Some("CmdOrCtrl+Alt+I"),
-                    )?,
                 ],
+            )?;
+            #[cfg(debug_assertions)]
+            navigate_menu.append(&MenuItem::with_id(
+                app,
+                "devtools",
+                "Developer Tools",
+                true,
+                Some("CmdOrCtrl+Alt+I"),
             )?)?;
+            menu.append(&navigate_menu)?;
             app.set_menu(menu)?;
 
             app.on_menu_event(move |app, event| {

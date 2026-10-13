@@ -1,11 +1,12 @@
 {
   "name": "desktop",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "scripts": {
     "desktop:dev": "node scripts/desktop.mjs dev",
     "desktop:check": "node scripts/desktop.mjs check",
     "desktop:build": "node scripts/desktop.mjs build",
+    "desktop:package": "node scripts/desktop.mjs package",
     "tauri": "node scripts/desktop.mjs tauri"
   },
   "devDependencies": {
