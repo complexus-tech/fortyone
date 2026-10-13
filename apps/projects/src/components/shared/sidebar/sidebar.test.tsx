@@ -11,6 +11,16 @@ let mockTrialDaysRemaining = 14;
 let mockWorkspaceDeletedAt: string | null = null;
 let mockSidebarCollapsed = false;
 let mockAssistantCollapsed = false;
+let mockIsDesktop = false;
+
+jest.mock("@/shell/desktop/desktop-provider", () => ({
+  useDesktop: () => ({ isDesktop: mockIsDesktop }),
+}));
+jest.mock("./workspaces-menu", () => ({
+  WorkspacesMenu: ({ isCollapsed }: { isCollapsed: boolean }) => (
+    <div data-collapsed={String(isCollapsed)}>Workspace switcher</div>
+  ),
+}));
 
 jest.mock("ui", () => {
   const MockBox = ({ children, ...props }: HTMLAttributes<HTMLDivElement>) => (
@@ -130,7 +140,30 @@ describe("Sidebar", () => {
     mockUserRole = "admin";
     mockSidebarCollapsed = false;
     mockAssistantCollapsed = false;
+    mockIsDesktop = false;
   });
+
+  it("keeps the browser workspace switcher in the existing top bar", () => {
+    render(<Sidebar />);
+    expect(screen.queryByText("Workspace switcher")).not.toBeInTheDocument();
+  });
+
+  it.each([false, true])(
+    "places the desktop workspace switcher above navigation when collapsed=%s",
+    (isCollapsed) => {
+      mockIsDesktop = true;
+      mockSidebarCollapsed = isCollapsed;
+      render(<Sidebar />);
+      const switcher = screen.getByText("Workspace switcher");
+      expect(switcher).toHaveAttribute("data-collapsed", String(isCollapsed));
+      const workspaceArea = switcher.closest(
+        "[data-sidebar-workspace-switcher]",
+      );
+      expect(workspaceArea?.nextElementSibling).toHaveAttribute(
+        "data-sidebar-content",
+      );
+    },
+  );
 
   it("keeps navigation scrollable and the footer fixed", () => {
     render(<Sidebar />);

@@ -24,10 +24,17 @@ export const SidebarEdgeToggleIcon = ({
     width="24"
     xmlns="http://www.w3.org/2000/svg"
   >
-    <path
-      className="sidebar-edge-toggle-path"
-      d="M12 4L12 12L12 20"
-      data-direction={direction}
-    />
+    <g className="sidebar-edge-toggle-shape" data-direction={direction}>
+      <path
+        className="sidebar-edge-toggle-segment"
+        d="M12 4V12"
+        data-segment="top"
+      />
+      <path
+        className="sidebar-edge-toggle-segment"
+        d="M12 12V20"
+        data-segment="bottom"
+      />
+    </g>
   </svg>
 );

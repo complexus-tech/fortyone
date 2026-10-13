@@ -31,8 +31,13 @@ jest.mock("./posthog", () => ({
 
 jest.mock("./posthog-page-view", () => () => null);
 
+jest.mock("@/shell/work-feature-slots", () => ({
+  WorkFeatureSlots: ({ children }: { children: ReactNode }) => <>{children}</>,
+}));
+
 jest.mock("next-themes", () => ({
   ThemeProvider: ({ children }: { children: ReactNode }) => <>{children}</>,
+  useTheme: () => ({ resolvedTheme: "light" }),
 }));
 
 jest.mock("nuqs/adapters/next/app", () => ({

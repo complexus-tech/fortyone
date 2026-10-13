@@ -9,6 +9,7 @@ import TimeAgo from "javascript-time-ago";
 import en from "javascript-time-ago/locale/en";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { WorkFeatureSlots } from "@/shell/work-feature-slots";
+import { DesktopProvider } from "@/shell/desktop/desktop-provider";
 import { getQueryClient } from "./get-query-client";
 import { PostHogProvider } from "./posthog";
 import PostHogPageView from "./posthog-page-view";
@@ -27,7 +28,9 @@ export const Providers = ({ children }: { children: ReactNode }) => {
       <PostHogProvider>
         <NuqsAdapter>
           <ThemeProvider attribute="class" enableSystem>
-            <WorkFeatureSlots>{children}</WorkFeatureSlots>
+            <DesktopProvider>
+              <WorkFeatureSlots>{children}</WorkFeatureSlots>
+            </DesktopProvider>
           </ThemeProvider>
         </NuqsAdapter>
         <Suspense>{isProduction ? <PostHogPageView /> : null}</Suspense>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { InviteMembersIcon } from "icons";
 import { Button, Flex, Tooltip } from "ui";
+import { cn } from "lib";
 import type { SubscriptionTier } from "@/lib/hooks/subscription-features";
 import { InviteMembersDialog } from "@/components/ui/invite-members";
 import { useUserRole } from "@/hooks/role";
@@ -11,7 +12,7 @@ import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { useSubscription } from "@/lib/hooks/subscriptions/subscription";
 import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
 
-type WorkspaceActionsVariant = "topbar" | "mobile";
+type WorkspaceActionsVariant = "topbar" | "mobile" | "desktop";
 
 type WorkspaceActionsProps = {
   sidebarHasActions?: boolean;
@@ -21,6 +22,7 @@ type WorkspaceActionsProps = {
 const ACTION_LAYOUTS: Record<WorkspaceActionsVariant, string> = {
   topbar: "shrink-0 items-center gap-2",
   mobile: "w-full flex-col items-stretch gap-2",
+  desktop: "shrink-0 items-center gap-1",
 };
 
 const getActionVisibility = ({
@@ -41,6 +43,7 @@ const getActionVisibility = ({
   return {
     showsInvite: canInvite && (!sidebarHasActions || isLimitedPlan),
     showsSubscriptionStatus:
+      variant !== "desktop" &&
       isSubscriptionReady &&
       !sidebarHasActions &&
       (tier === "free" || (tier === "trial" && variant === "mobile")),
@@ -55,25 +58,37 @@ const InvitePeopleButton = ({
   variant: WorkspaceActionsVariant;
 }) => {
   const isMobile = variant === "mobile";
+  const isDesktop = variant === "desktop";
 
   return (
     <Tooltip title={isMobile ? null : "Invite people"}>
       <Button
         aria-label="Invite people"
-        className={
+        className={cn(
           isMobile
             ? "h-11 whitespace-nowrap"
-            : "h-11 w-11 justify-center px-0 whitespace-nowrap xl:w-auto xl:px-3"
-        }
+            : "h-11 w-11 justify-center px-0 whitespace-nowrap xl:w-auto xl:px-3",
+          isDesktop &&
+            "h-[32px] w-auto gap-1.5 px-2 md:h-[32px] xl:w-auto xl:px-2",
+        )}
         color="tertiary"
         data-invite-button
         fullWidth={isMobile}
-        leftIcon={<InviteMembersIcon aria-hidden className="h-5 shrink-0" />}
+        leftIcon={
+          <InviteMembersIcon
+            aria-hidden
+            className={cn("h-5 shrink-0", isDesktop && "h-[18px] w-[18px]")}
+          />
+        }
         onClick={onInvite}
         size="md"
         variant="naked"
       >
-        <span className={isMobile ? undefined : "sr-only xl:not-sr-only"}>
+        <span
+          className={
+            variant === "topbar" ? "sr-only xl:not-sr-only" : undefined
+          }
+        >
           Invite people
         </span>
       </Button>

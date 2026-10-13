@@ -1,0 +1,45 @@
+:root {
+  --desktop-titlebar-height: 44px;
+  --desktop-titlebar-leading-inset: 96px;
+}
+
+html[data-desktop-platform="macos"]:has([data-app-shell]) {
+  --app-shell-header-height: var(--desktop-titlebar-height);
+}
+
+.desktop-app-header {
+  --desktop-header-track-width: max(
+    184px,
+    var(--desktop-header-side-width, 400px)
+  );
+  display: grid;
+  grid-template-columns:
+    minmax(var(--desktop-header-track-width), 1fr)
+    minmax(0, 420px)
+    minmax(var(--desktop-header-track-width), 1fr);
+  user-select: none;
+}
+
+.desktop-app-header-content {
+  display: contents;
+}
+
+.desktop-app-header > [data-desktop-history] {
+  justify-self: start;
+  margin-left: var(--desktop-titlebar-leading-inset);
+}
+
+.desktop-app-header-search {
+  grid-column: 2;
+  align-self: center;
+}
+
+.desktop-app-header [data-desktop-header-actions] {
+  grid-column: 3;
+  justify-self: end;
+  margin: 0 12px 0 0;
+}
+
+.desktop-app-header [data-app-contextual-create-button] {
+  max-width: 180px;
+}

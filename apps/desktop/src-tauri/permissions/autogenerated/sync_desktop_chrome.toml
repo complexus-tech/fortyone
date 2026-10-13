@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-sync-desktop-chrome"
+description = "Enables the sync_desktop_chrome command without any pre-configured scope."
+commands.allow = ["sync_desktop_chrome"]
+
+[[permission]]
+identifier = "deny-sync-desktop-chrome"
+description = "Denies the sync_desktop_chrome command without any pre-configured scope."
+commands.deny = ["sync_desktop_chrome"]

@@ -1,0 +1,16 @@
+html[data-desktop-fallback="true"] body {
+  padding-top: var(--desktop-titlebar-height);
+}
+
+.desktop-fallback-titlebar {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 40;
+  display: flex;
+  height: var(--desktop-titlebar-height);
+  align-items: center;
+  gap: 4px;
+  padding: 0 12px 0 var(--desktop-titlebar-leading-inset);
+  background: var(--background);
+  user-select: none;
+}

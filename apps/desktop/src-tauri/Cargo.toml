@@ -1,0 +1,20 @@
+[package]
+name = "fortyone-desktop"
+version = "0.1.0"
+description = "FortyOne desktop development shell"
+edition = "2021"
+publish = false
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+tauri-plugin-window-state = "2"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2-app-kit = { version = "0.3.2", default-features = false, features = ["std", "NSAppearance", "NSButton", "NSColor", "NSResponder", "NSView", "NSWindow", "objc2-core-foundation"] }
+objc2-web-kit = { version = "0.3.2", default-features = false, features = ["std", "WKNavigation", "WKWebView", "objc2-app-kit"] }
+

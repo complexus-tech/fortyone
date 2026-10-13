@@ -27,7 +27,7 @@ export const ProfileMenu = ({
   variant = "sidebar",
 }: {
   isCollapsed?: boolean;
-  variant?: "sidebar" | "topbar";
+  variant?: "sidebar" | "topbar" | "desktop";
 }) => {
   const { data: myInvitations = [] } = useMyInvitations();
   const { data: profile } = useProfile();
@@ -37,7 +37,8 @@ export const ProfileMenu = ({
   const { theme, setTheme } = useTheme();
   const [_, setPathBeforeSettings] = useLocalStorage("pathBeforeSettings", "");
   const adminUrl = getPublicEnv().ADMIN_URL;
-  const isTopbar = variant === "topbar";
+  const isTopbar = variant !== "sidebar";
+  const isDesktop = variant === "desktop";
 
   const rememberCurrentPath = () => {
     setPathBeforeSettings(
@@ -79,6 +80,7 @@ export const ProfileMenu = ({
                   isCollapsed &&
                   "h-12 w-12 justify-center px-0 md:h-12",
                 isTopbar && "h-11 w-11 justify-center px-0",
+                isDesktop && "h-[32px] w-[32px] md:h-[32px]",
               )}
               color="tertiary"
               fullWidth={!isCollapsed && !isTopbar}
@@ -91,6 +93,7 @@ export const ProfileMenu = ({
                     "relative h-7 text-sm",
                     isCollapsed && "h-9",
                     isTopbar && "h-9",
+                    isDesktop && "h-[24px]",
                   )}
                   name={profile?.fullName || profile?.username}
                   src={profile?.avatarUrl}

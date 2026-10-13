@@ -9,10 +9,12 @@ import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { useUserRole, useWorkspacePath } from "@/hooks";
 import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
 import { ViewFavoritesSlot } from "@/shared/views/favorites-slot";
+import { useDesktop } from "@/shell/desktop/desktop-provider";
 import { Navigation } from "./navigation";
 import { Teams } from "./teams";
 import { SidebarAssistantCards } from "./upcoming-meeting-card";
 import { useSidebar } from "./sidebar-context";
+import { WorkspacesMenu } from "./workspaces-menu";
 
 const SidebarSubscriptionAction = ({
   href,
@@ -78,6 +80,7 @@ export const Sidebar = () => {
   const { workspace } = useCurrentWorkspace();
   const { withWorkspace } = useWorkspacePath();
   const { isCollapsed } = useSidebar();
+  const { isDesktop } = useDesktop();
 
   const { tier, trialDaysRemaining } = useSubscriptionFeatures();
   const { userRole } = useUserRole();
@@ -129,6 +132,17 @@ export const Sidebar = () => {
       )}
       data-sidebar-collapsed={isCollapsed ? "true" : "false"}
     >
+      {isDesktop ? (
+        <Box
+          className={cn(
+            "flex shrink-0 items-center px-4 pt-2 pb-1",
+            isCollapsed && "justify-center px-3",
+          )}
+          data-sidebar-workspace-switcher
+        >
+          <WorkspacesMenu isCollapsed={isCollapsed} />
+        </Box>
+      ) : null}
       <Box
         className={cn(
           "relative z-1 min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-2 pb-3",

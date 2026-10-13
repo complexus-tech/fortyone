@@ -4,6 +4,9 @@
     "build": "turbo run build",
     "dev": "turbo run dev",
     "dev:projects": "pnpm --filter projects dev",
+    "dev:desktop": "pnpm --filter desktop desktop:dev",
+    "check:desktop": "pnpm --filter desktop desktop:check",
+    "build:desktop": "pnpm --filter desktop desktop:build",
     "ios26": "pnpm --filter mobile ios26",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\""

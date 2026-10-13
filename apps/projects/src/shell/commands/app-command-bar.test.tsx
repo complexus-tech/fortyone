@@ -1,15 +1,32 @@
-/* global describe, expect, it, jest -- Jest globals are provided by the projects test runner. */
+/* global afterEach, beforeEach, describe, expect, it, jest -- Jest globals are provided by the projects test runner. */
 
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { toast } from "sonner";
+import type * as DesktopBridgeModule from "@/shell/desktop/bridge";
 import { walkthroughTargets } from "@/shared/walkthrough/targets";
+import { DESKTOP_ACTION_EVENT } from "@/shell/desktop/bridge";
+import { DesktopProvider } from "@/shell/desktop/desktop-provider";
 import { AppCommandBar } from "./app-command-bar";
 
 const mockCompleteWalkthroughAction = jest.fn();
 const mockStartWalkthrough = jest.fn();
 const mockCloseWalkthrough = jest.fn();
 const mockRouterPush = jest.fn();
+const mockToggleSidebar = jest.fn();
+const mockSyncChrome = jest.fn().mockResolvedValue(undefined);
+const installDesktopBridge = () => {
+  window.__FORTYONE_DESKTOP__ = {
+    version: 2,
+    platform: "macos",
+    syncChrome: mockSyncChrome,
+    navigationState: jest
+      .fn()
+      .mockResolvedValue({ canGoBack: false, canGoForward: false }),
+    navigate: jest.fn().mockResolvedValue(undefined),
+    windowAction: jest.fn().mockResolvedValue(undefined),
+  };
+};
 let mockUserRole: "admin" | "member" | "guest" | undefined = "admin";
 let mockMembersPending = false;
 let mockTeamsPending = false;
@@ -29,6 +46,13 @@ let mockAction: {
 } | null = null;
 
 jest.mock("sonner", () => ({ toast: jest.fn() }));
+jest.mock("next-themes", () => ({
+  useTheme: () => ({ resolvedTheme: "light" }),
+}));
+jest.mock("@/shell/desktop/bridge", () => ({
+  ...jest.requireActual<typeof DesktopBridgeModule>("@/shell/desktop/bridge"),
+  readDesktopBackground: () => [251, 250, 248],
+}));
 
 jest.mock("next/navigation", () => ({
   useParams: () => mockParams,
@@ -243,6 +267,7 @@ jest.mock("@/components/shared/sidebar/sidebar-context", () => ({
   useSidebar: () => ({
     isCollapsed: mockSidebarCollapsed,
     hasAssistantCards: mockHasAssistantCards,
+    toggleSidebar: mockToggleSidebar,
   }),
 }));
 
@@ -264,6 +289,9 @@ describe("AppCommandBar", () => {
     mockStartWalkthrough.mockClear();
     mockCloseWalkthrough.mockClear();
     mockRouterPush.mockClear();
+    mockToggleSidebar.mockClear();
+    mockSyncChrome.mockClear();
+    delete window.__FORTYONE_DESKTOP__;
     jest.mocked(toast).mockClear();
     mockUserRole = "admin";
     mockMembersPending = false;
@@ -278,6 +306,128 @@ describe("AppCommandBar", () => {
     mockObjectiveTerm = "objective";
     mockAction = null;
     window.history.replaceState(null, "", "/acme/my-work");
+  });
+
+  afterEach(() => {
+    delete window.__FORTYONE_DESKTOP__;
+  });
+
+  it("opens the existing story dialog from native create with the current route context", async () => {
+    installDesktopBridge();
+    mockPathname = "/acme/roadmap";
+    mockParams = {
+      objectiveId: "objective-1",
+      sprintId: "sprint-1",
+      teamId: "team-1",
+    };
+    mockStoryTerm = "task";
+    render(
+      <DesktopProvider>
+        <AppCommandBar />
+      </DesktopProvider>,
+    );
+    await waitFor(() => {
+      expect(mockSyncChrome).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          ready: true,
+          canCreateStory: true,
+          storyLabel: "task",
+        }),
+      );
+    });
+    fireEvent(
+      window,
+      new CustomEvent(DESKTOP_ACTION_EVENT, {
+        detail: { action: "create-story" },
+      }),
+    );
+    const dialog = screen.getByTestId("new-story-dialog");
+    expect(dialog).toHaveAttribute("data-objective-id", "objective-1");
+    expect(dialog).toHaveAttribute("data-sprint-id", "sprint-1");
+    expect(dialog).toHaveAttribute("data-team-id", "team-1");
+    expect(screen.queryByText("New objective dialog")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Create objective" }),
+    ).toBeInTheDocument();
+  });
+
+  it.each(["guest", undefined] as const)(
+    "does not open native story creation for role %s",
+    async (role) => {
+      installDesktopBridge();
+      mockUserRole = role;
+      render(
+        <DesktopProvider>
+          <AppCommandBar />
+        </DesktopProvider>,
+      );
+      await waitFor(() => {
+        expect(document.documentElement.dataset.desktopPlatform).toBe("macos");
+      });
+      fireEvent(
+        window,
+        new CustomEvent(DESKTOP_ACTION_EVENT, {
+          detail: { action: "create-story" },
+        }),
+      );
+      expect(screen.queryByTestId("new-story-dialog")).not.toBeInTheDocument();
+      expect(mockSyncChrome).toHaveBeenLastCalledWith(
+        expect.objectContaining({ canCreateStory: false }),
+      );
+    },
+  );
+
+  it("ignores desktop create events in an ordinary browser", () => {
+    render(<AppCommandBar />);
+    fireEvent(
+      window,
+      new CustomEvent(DESKTOP_ACTION_EVENT, {
+        detail: { action: "create-story" },
+      }),
+    );
+    expect(screen.queryByTestId("new-story-dialog")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Create story" }),
+    ).toBeInTheDocument();
+  });
+
+  it("keeps the profile last after contextual creation and preserves desktop walkthrough targets", async () => {
+    installDesktopBridge();
+    const { rerender } = render(
+      <DesktopProvider>
+        <AppCommandBar />
+      </DesktopProvider>,
+    );
+    await waitFor(() => {
+      expect(document.documentElement.dataset.desktopPlatform).toBe("macos");
+    });
+    const createButton = screen.getByRole("button", { name: "Create story" });
+    const profile = screen.getByText("Profile");
+    expect(createButton.nextElementSibling).toBe(profile);
+    expect(createButton.parentElement?.lastElementChild).toBe(profile);
+    expect(screen.getByText("Help", { selector: "span" })).not.toHaveClass(
+      "sr-only",
+    );
+    expect(screen.queryByText("Workspace")).not.toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Back" })).toHaveLength(1);
+    expect(screen.getByRole("button", { name: "Forward" })).toBeDisabled();
+    expect(
+      screen.queryByLabelText("Desktop title bar"),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("Workspace actions")).toHaveAttribute(
+      "data-sidebar-has-actions",
+      "false",
+    );
+
+    mockWalkthroughActive = true;
+    rerender(
+      <DesktopProvider>
+        <AppCommandBar />
+      </DesktopProvider>,
+    );
+    expect(
+      screen.getByRole("button", { name: "Create story" }),
+    ).toHaveAttribute("data-walkthrough-target", walkthroughTargets.create);
   });
 
   it("shows Help with the existing command controls", () => {

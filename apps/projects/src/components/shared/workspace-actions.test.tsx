@@ -188,6 +188,22 @@ describe("WorkspaceActions", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
+  it("uses compact desktop invitations while keeping subscription details in the sidebar", () => {
+    mockTier = "free";
+    render(<WorkspaceActions variant="desktop" />);
+    const invite = screen.getByRole("button", { name: "Invite people" });
+    expect(
+      screen.getByText("Invite people", { selector: "span" }),
+    ).not.toHaveClass("sr-only");
+    expect(
+      screen.queryByRole("link", { name: "Upgrade" }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(invite);
+    expect(
+      screen.getByRole("dialog", { name: "Invite people" }),
+    ).toBeInTheDocument();
+  });
+
   it.each([
     [1, "1 day left in trial"],
     [14, "14 days left in trial"],

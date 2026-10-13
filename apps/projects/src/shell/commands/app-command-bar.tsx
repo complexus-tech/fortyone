@@ -12,6 +12,7 @@ import {
   ProductTourIcon,
 } from "icons";
 import { useParams, usePathname } from "next/navigation";
+import { cn } from "lib";
 import { useUnreadNotifications } from "@/modules/notifications/hooks/unread";
 import { useCurrentAppCommandAction } from "@/components/shared/app-command-action-context";
 import { useWalkthrough } from "@/components/walkthrough/walkthrough-provider";
@@ -26,6 +27,14 @@ import { useUserRole } from "@/hooks/role";
 import { useTerminology } from "@/hooks/use-terminology-display";
 import { useWorkspacePath } from "@/hooks/use-workspace-path";
 import { walkthroughTargets } from "@/shared/walkthrough/targets";
+import {
+  useDesktopAction,
+  useDesktopDragRegion,
+  useDesktopNavigation,
+  useDesktopShell,
+} from "@/shell/desktop/desktop-provider";
+import { DesktopHistoryControls } from "@/shell/desktop/desktop-history-controls";
+import { useDesktopHeaderLayout } from "@/shell/desktop/use-desktop-header-layout";
 import { Commands } from "./commands";
 import { useStoryCreationDialog } from "./use-story-creation-dialog";
 
@@ -53,6 +62,8 @@ export const AppCommandBar = () => {
   const { userRole } = useUserRole();
   const { withWorkspace } = useWorkspacePath();
   const { startWalkthrough } = useWalkthrough();
+  const dragRegion = useDesktopDragRegion();
+  const desktopNavigation = useDesktopNavigation();
 
   const createsObjective =
     pathname === withWorkspace("/roadmap") || isTeamObjectivesIndex(pathname);
@@ -62,6 +73,16 @@ export const AppCommandBar = () => {
   const label = action?.label ?? fallbackLabel;
   const isDisabled = action?.disabled ?? userRole === "guest";
   const createsStory = !action && !createsObjective;
+  const canCreateStory = userRole === "admin" || userRole === "member";
+  const isDesktop = useDesktopShell({
+    ready: Boolean(userRole),
+    canCreateStory,
+    storyLabel: getTermDisplay("storyTerm"),
+  });
+  const desktopHeaderRef = useDesktopHeaderLayout(isDesktop);
+  useDesktopAction("create-story", () => {
+    if (canCreateStory) setStoryDialogOpen(true);
+  });
 
   const handleCreate = () => {
     if (isDisabled) return;
@@ -78,43 +99,88 @@ export const AppCommandBar = () => {
 
   return (
     <>
-      <Flex
-        align="center"
-        className="hidden h-(--app-shell-header-height) shrink-0 py-3.5 md:flex"
+      <div
+        className={cn(
+          "hidden h-(--app-shell-header-height) shrink-0 items-center md:flex",
+          isDesktop ? "desktop-app-header py-0" : "py-3.5",
+        )}
         data-app-command-bar
+        data-desktop-app-header={isDesktop || undefined}
+        ref={desktopHeaderRef}
+        {...dragRegion}
       >
+        {isDesktop ? (
+          <DesktopHistoryControls {...desktopNavigation} />
+        ) : (
+          <Flex
+            align="center"
+            className={
+              isCollapsed
+                ? "w-(--sidebar-width-collapsed) px-2"
+                : "w-(--sidebar-width) gap-2 pl-4"
+            }
+            justify={isCollapsed ? "center" : undefined}
+          >
+            <WorkspacesMenu isCollapsed={isCollapsed} />
+          </Flex>
+        )}
         <Flex
           align="center"
-          className={
-            isCollapsed
-              ? "w-(--sidebar-width-collapsed) px-2"
-              : "w-(--sidebar-width) gap-2 pl-4"
-          }
-          justify={isCollapsed ? "center" : undefined}
+          className={cn(
+            "min-w-0 flex-1",
+            isDesktop
+              ? "desktop-app-header-content"
+              : "gap-2 pr-4 pl-2 xl:gap-4",
+          )}
         >
-          <WorkspacesMenu isCollapsed={isCollapsed} />
-        </Flex>
-        <Flex
-          align="center"
-          className="min-w-0 flex-1 gap-2 pr-4 pl-2 xl:gap-4"
-        >
-          <Commands className="max-w-xl flex-1" showTrigger />
-          <Flex align="center" className="ml-auto shrink-0 gap-2 xl:gap-3">
+          <Commands
+            className={
+              isDesktop
+                ? "desktop-app-header-search w-full min-w-0"
+                : "max-w-xl flex-1"
+            }
+            showTrigger
+          />
+          <Flex
+            align="center"
+            className={cn(
+              "ml-auto shrink-0",
+              isDesktop ? "gap-1" : "gap-2 xl:gap-3",
+            )}
+            data-desktop-header-actions={isDesktop || undefined}
+          >
             <WorkspaceActions
-              sidebarHasActions={!isCollapsed && !hasAssistantCards}
+              sidebarHasActions={
+                !isDesktop && !isCollapsed && !hasAssistantCards
+              }
+              variant={isDesktop ? "desktop" : "topbar"}
             />
             <Menu>
               <Tooltip title="Help">
                 <Menu.Button>
                   <Button
                     aria-label="Help"
-                    className="h-11 w-11 justify-center px-0 xl:w-auto xl:px-3"
+                    className={
+                      isDesktop
+                        ? "h-[32px] gap-1.5 px-2 md:h-[32px]"
+                        : "h-11 w-11 justify-center px-0 xl:w-auto xl:px-3"
+                    }
                     color="tertiary"
                     data-walkthrough-target={walkthroughTargets.help}
-                    leftIcon={<HelpIcon className="h-5" />}
+                    leftIcon={
+                      <HelpIcon
+                        className={isDesktop ? "h-[18px] w-[18px]" : "h-5"}
+                      />
+                    }
                     variant="naked"
                   >
-                    <span className="sr-only xl:not-sr-only">Help</span>
+                    <span
+                      className={
+                        isDesktop ? undefined : "sr-only xl:not-sr-only"
+                      }
+                    >
+                      Help
+                    </span>
                   </Button>
                 </Menu.Button>
               </Tooltip>
@@ -163,11 +229,21 @@ export const AppCommandBar = () => {
               <Box data-walkthrough-target={walkthroughTargets.notifications}>
                 <Button
                   asIcon
-                  className="group relative h-11 w-11"
+                  className={
+                    isDesktop
+                      ? "group relative h-[32px] w-[32px] md:h-[32px]"
+                      : "group relative h-11 w-11"
+                  }
                   color="tertiary"
                   href={withWorkspace("/notifications")}
                   leftIcon={
-                    <Notification02Icon className="h-[1.4rem] transition-transform group-hover:rotate-12" />
+                    <Notification02Icon
+                      className={
+                        isDesktop
+                          ? "h-[18px] w-[18px]"
+                          : "h-[1.4rem] transition-transform group-hover:rotate-12"
+                      }
+                    />
                   }
                   prefetch
                   variant="naked"
@@ -187,22 +263,34 @@ export const AppCommandBar = () => {
             </Tooltip>
             <Button
               aria-label={label}
-              className="shrink-0 whitespace-nowrap"
+              className={cn(
+                "shrink-0 whitespace-nowrap",
+                isDesktop && "ml-1 h-[28px] gap-1 px-2.5 md:h-[28px]",
+              )}
               color="primary"
               data-app-contextual-create-button
               data-walkthrough-create-kind={createsStory ? "story" : undefined}
               data-walkthrough-target={walkthroughTargets.create}
               disabled={isDisabled}
-              leftIcon={<PlusIcon className="text-current dark:text-current" />}
+              leftIcon={
+                <PlusIcon
+                  className={cn(
+                    "text-current dark:text-current",
+                    isDesktop && "h-[18px] w-[18px]",
+                  )}
+                />
+              }
               onClick={handleCreate}
               variant="solid"
             >
-              {label}
+              <span className={isDesktop ? "truncate" : undefined}>
+                {label}
+              </span>
             </Button>
-            <ProfileMenu variant="topbar" />
+            <ProfileMenu variant={isDesktop ? "desktop" : "topbar"} />
           </Flex>
         </Flex>
-      </Flex>
+      </div>
 
       <NewStoryDialog
         isOpen={isStoryOpen}

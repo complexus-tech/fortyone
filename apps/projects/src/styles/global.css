@@ -71,19 +71,36 @@ html:has(.onboarding-layout) :is(input, textarea, select) {
   }
 }
 
-.sidebar-edge-toggle-path {
-  d: path("M 12 4 L 12 12 L 12 20");
-  transition: d 200ms cubic-bezier(0.22, 1, 0.36, 1);
+.sidebar-edge-toggle-shape,
+.sidebar-edge-toggle-segment {
+  transform-box: view-box;
+  transform-origin: 12px 12px;
+  transition: transform 160ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.group:hover .sidebar-edge-toggle-path[data-direction="left"],
-.group:focus-visible .sidebar-edge-toggle-path[data-direction="left"] {
-  d: path("M 13.5 4 L 10.5 12 L 13.5 20");
+.sidebar-edge-toggle-shape[data-direction="left"] {
+  --sidebar-edge-bend: 20deg;
+  --sidebar-edge-offset: -1.5px;
 }
 
-.group:hover .sidebar-edge-toggle-path[data-direction="right"],
-.group:focus-visible .sidebar-edge-toggle-path[data-direction="right"] {
-  d: path("M 10.5 4 L 13.5 12 L 10.5 20");
+.sidebar-edge-toggle-shape[data-direction="right"] {
+  --sidebar-edge-bend: -20deg;
+  --sidebar-edge-offset: 1.5px;
+}
+
+[data-sidebar-toggle-location="edge"]:is(:hover, :focus-visible)
+  .sidebar-edge-toggle-shape {
+  transform: translateX(var(--sidebar-edge-offset));
+}
+
+[data-sidebar-toggle-location="edge"]:is(:hover, :focus-visible)
+  .sidebar-edge-toggle-segment[data-segment="top"] {
+  transform: rotate(var(--sidebar-edge-bend));
+}
+
+[data-sidebar-toggle-location="edge"]:is(:hover, :focus-visible)
+  .sidebar-edge-toggle-segment[data-segment="bottom"] {
+  transform: rotate(calc(-1 * var(--sidebar-edge-bend)));
 }
 
 @layer utilities {
