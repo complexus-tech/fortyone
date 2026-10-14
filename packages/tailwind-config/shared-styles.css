@@ -202,40 +202,40 @@
 .dark {
   color-scheme: dark;
 
-  --color-background: oklch(0.1821 0.0139 94);
-  --color-foreground: var(--brand-paper);
+  --color-background: oklch(0.1821 0.004 94);
+  --color-foreground: oklch(0.94 0.005 55);
   --color-foreground-inverse: var(--brand-ink);
-  --color-background-inverse: var(--brand-paper);
+  --color-background-inverse: var(--color-foreground);
 
-  --color-surface: oklch(0.2135 0.0118 91.8);
+  --color-surface: oklch(0.2135 0.004 91.8);
   --color-surface-foreground: var(--color-foreground);
-  --color-surface-elevated: oklch(0.2351 0.0115 91.7);
+  --color-surface-elevated: oklch(0.2351 0.004 91.7);
   --color-surface-elevated-foreground: var(--color-foreground);
-  --color-surface-muted: oklch(0.2351 0.0115 91.7);
-  --color-surface-muted-foreground: oklch(0.94 0.014 55 / 60%);
-  --color-surface-prominent: oklch(0.281 0.0111 91.7);
-  --color-popover: oklch(0.2351 0.0115 91.7);
+  --color-surface-muted: oklch(0.2351 0.004 91.7);
+  --color-surface-muted-foreground: oklch(0.94 0.005 55 / 60%);
+  --color-surface-prominent: oklch(0.281 0.004 91.7);
+  --color-popover: oklch(0.2351 0.004 91.7);
   --color-popover-foreground: var(--color-foreground);
 
-  --color-muted: oklch(0.2135 0.0118 91.8);
-  --color-muted-foreground: oklch(0.94 0.014 55 / 60%);
-  --color-accent: oklch(0.281 0.0111 91.7);
+  --color-muted: oklch(0.2135 0.004 91.8);
+  --color-muted-foreground: oklch(0.94 0.005 55 / 60%);
+  --color-accent: oklch(0.281 0.004 91.7);
   --color-accent-foreground: var(--color-foreground);
 
-  --color-border: oklch(0.94 0.014 55 / 10%);
-  --color-border-strong: oklch(0.94 0.014 55 / 16%);
-  --color-input: oklch(0.94 0.014 55 / 8%);
+  --color-border: oklch(0.94 0.005 55 / 10%);
+  --color-border-strong: oklch(0.94 0.005 55 / 16%);
+  --color-input: oklch(0.94 0.005 55 / 8%);
   --color-ring: oklch(0.6522 0.2135 38);
   --color-focus: oklch(0.6522 0.2135 38);
-  --color-shadow: oklch(0.1 0.01 94 / 25%);
-  --color-icon: oklch(0.94 0.014 55 / 60%);
+  --color-shadow: oklch(0.1 0.003 94 / 25%);
+  --color-icon: oklch(0.94 0.005 55 / 60%);
 
   --color-brand: oklch(0.6522 0.2135 38);
   --color-brand-foreground: var(--brand-ink);
   --color-primary: oklch(0.6522 0.2135 38);
   --color-primary-solid: oklch(0.615 0.2135 38);
   --color-primary-foreground: var(--brand-ink);
-  --color-secondary: var(--brand-paper);
+  --color-secondary: var(--color-foreground);
   --color-secondary-foreground: var(--brand-ink);
 
   --color-success: oklch(0.5654 0.1101 164.5);
@@ -243,7 +243,7 @@
   --color-warning: oklch(0.6522 0.2135 38);
   --color-warning-foreground: var(--brand-ink);
   --color-danger: oklch(0.5659 0.1967 12.3);
-  --color-danger-foreground: var(--brand-paper);
+  --color-danger-foreground: var(--color-foreground);
   --color-info-foreground: var(--brand-ink);
 
   --color-text-primary: var(--color-foreground);
@@ -252,21 +252,21 @@
     var(--color-foreground) 85%,
     transparent
   );
-  --color-text-secondary: oklch(0.94 0.014 55 / 64%);
-  --color-text-muted: oklch(0.94 0.014 55 / 60%);
-  --color-text-disabled: oklch(0.94 0.014 55 / 40%);
+  --color-text-secondary: oklch(0.94 0.005 55 / 64%);
+  --color-text-muted: oklch(0.94 0.005 55 / 60%);
+  --color-text-disabled: oklch(0.94 0.005 55 / 40%);
 
-  --color-state-hover: oklch(0.94 0.014 55 / 5%);
-  --color-state-active: oklch(0.94 0.014 55 / 10%);
-  --color-state-selected: oklch(0.94 0.014 55 / 15%);
-  --color-state-disabled: oklch(0.94 0.014 55 / 48%);
+  --color-state-hover: oklch(0.94 0.005 55 / 5%);
+  --color-state-active: oklch(0.94 0.005 55 / 10%);
+  --color-state-selected: oklch(0.94 0.005 55 / 15%);
+  --color-state-disabled: oklch(0.94 0.005 55 / 48%);
 
-  --color-sidebar: oklch(0.2135 0.0118 91.8);
+  --color-sidebar: oklch(0.2135 0.004 91.8);
   --color-sidebar-foreground: var(--color-foreground);
-  --color-sidebar-accent: oklch(0.2351 0.0115 91.7);
+  --color-sidebar-accent: oklch(0.2351 0.004 91.7);
   --color-sidebar-accent-foreground: var(--color-foreground);
-  --color-sidebar-border: oklch(0.94 0.014 55 / 8%);
-  --color-skeleton: oklch(0.281 0.0111 91.7);
+  --color-sidebar-border: oklch(0.94 0.005 55 / 8%);
+  --color-skeleton: oklch(0.281 0.004 91.7);
 }
 
 button {
