@@ -528,6 +528,30 @@ it("captures page records and recognizes nested sub-tasks before optimism", asyn
   expect(getStory).not.toHaveBeenCalled();
 });
 
+it("refreshes capacity silently when checklist conversion suppresses notices", async () => {
+  const client = createClient();
+  await refreshWipCapacity({
+    queryClient: client,
+    workspaceSlug: WORKSPACE,
+    loadCapacity: loadWipCapacity,
+    createdStory: {
+      id: "converted-item",
+      teamId: TEAM,
+      statusId: STATUS,
+      parentId: null,
+      archivedAt: null,
+      deletedAt: null,
+    },
+    showCapacityWarning: false,
+  });
+  expect(
+    client.getQueryData<GroupedStoriesResponse>(capacityKey)?.groups[0]
+      ?.totalCount,
+  ).toBe(6);
+  expect(toast.warning).not.toHaveBeenCalled();
+  expect(toast.success).not.toHaveBeenCalled();
+});
+
 it("keeps the latest server count and emits one warning when refreshes complete out of order", async () => {
   const client = createClient();
   let finishFirst: ((value: GroupedStoriesResponse) => void) | undefined;

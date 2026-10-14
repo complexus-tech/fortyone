@@ -245,6 +245,7 @@ type WipFeedbackOptions = {
   successfulStoryIds?: string[];
   createdStory?: WipStorySnapshot;
   toastOptions?: ExternalToast;
+  showCapacityWarning?: boolean;
 };
 
 /** Run after persistence; capacity failures must not turn a saved change into an error. */
@@ -257,6 +258,7 @@ export const refreshWipCapacity = async ({
   successfulStoryIds,
   createdStory,
   toastOptions,
+  showCapacityWarning = true,
 }: WipFeedbackOptions) => {
   const successfulIds = successfulStoryIds ? new Set(successfulStoryIds) : null;
   const entrants = createdStory
@@ -344,6 +346,7 @@ export const refreshWipCapacity = async ({
       }
     }
     if (
+      !showCapacityWarning ||
       !status?.wipLimit ||
       !noticeKey ||
       coordinator.notices.get(noticeKey) !== noticeVersion ||

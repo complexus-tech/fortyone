@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import type { ReactNode } from "react";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -5,8 +6,9 @@ import { toast } from "sonner";
 import { storyKeys } from "@/modules/stories/constants";
 import { refreshWipCapacity } from "@/shared/story/wip-capacity";
 import { updateChecklistAction } from "../actions/checklist";
+import { getStoryChecklist } from "../queries/get-checklist";
 import type { StoryChecklistItem } from "../types/checklist";
-import { useChecklistMutation } from "./checklist";
+import { useChecklistMutation, useStoryChecklist } from "./checklist";
 
 jest.mock("@/hooks", () => ({
   useWorkspacePath: () => ({ workspaceSlug: "acme" }),
@@ -38,6 +40,40 @@ const item: StoryChecklistItem = {
   updatedAt: "2026-10-13T12:00:00Z",
 };
 const key = storyKeys.checklist("acme", "story");
+const randomUUIDDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis.crypto,
+  "randomUUID",
+);
+
+beforeAll(() => {
+  Object.defineProperty(globalThis.crypto, "randomUUID", {
+    configurable: true,
+    value: randomUUID,
+  });
+});
+
+afterAll(() => {
+  if (randomUUIDDescriptor) {
+    Object.defineProperty(
+      globalThis.crypto,
+      "randomUUID",
+      randomUUIDDescriptor,
+    );
+  } else {
+    Reflect.deleteProperty(globalThis.crypto, "randomUUID");
+  }
+});
+
+const deferred = <T,>() => {
+  let resolve!: (value: T) => void;
+  let reject!: (error: Error) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve, reject };
+};
+
 const setup = () => {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
@@ -53,7 +89,198 @@ const setup = () => {
   return { ...hook, client, wrapper };
 };
 
-beforeEach(() => jest.clearAllMocks());
+beforeEach(() => {
+  jest.clearAllMocks();
+  jest.mocked(getStoryChecklist).mockReset();
+});
+
+it("appends a new item before saving and reconciles by identity without removing matching titles", async () => {
+  const { client, result } = setup();
+  const existingItems = [
+    { ...item, position: 9 },
+    { ...item, id: "second", title: "Review tests", position: 1 },
+  ];
+  client.setQueryData(key, existingItems);
+  const save = deferred<StoryChecklistItem>();
+  jest.mocked(updateChecklistAction).mockReturnValue(save.promise);
+
+  act(() => {
+    result.current.mutate({ type: "create", title: item.title });
+  });
+  await waitFor(() => {
+    expect(client.getQueryData<StoryChecklistItem[]>(key)).toHaveLength(3);
+  });
+  const optimisticItem = client.getQueryData<StoryChecklistItem[]>(key)![2];
+  expect(optimisticItem).toEqual(
+    expect.objectContaining({
+      storyId: "story",
+      title: item.title,
+      completed: false,
+      position: 10,
+      convertedAt: null,
+      convertedStory: null,
+    }),
+  );
+  expect(existingItems.map(({ id }) => id)).not.toContain(optimisticItem.id);
+  expect(result.current.isPending).toBe(true);
+
+  const persistedItem = { ...optimisticItem, id: "persisted" };
+  // A server row already in the cache must not duplicate the optimistic row.
+  client.setQueryData<StoryChecklistItem[]>(key, (items = []) => [
+    ...items,
+    persistedItem,
+  ]);
+  act(() => {
+    save.resolve(persistedItem);
+  });
+  await waitFor(() => {
+    expect(result.current.isPending).toBe(false);
+  });
+  expect(client.getQueryData(key)).toEqual([...existingItems, persistedItem]);
+  expect(toast.success).not.toHaveBeenCalled();
+  expect(toast.error).not.toHaveBeenCalled();
+});
+
+it("shows the first item immediately when the checklist has no cached data", async () => {
+  const { client, result } = setup();
+  client.removeQueries({ queryKey: key, exact: true });
+  const save = deferred<StoryChecklistItem>();
+  jest.mocked(updateChecklistAction).mockReturnValue(save.promise);
+
+  act(() => {
+    result.current.mutate({ type: "create", title: "First checklist item" });
+  });
+  await waitFor(() => {
+    expect(client.getQueryData<StoryChecklistItem[]>(key)).toHaveLength(1);
+  });
+  const optimisticItem = client.getQueryData<StoryChecklistItem[]>(key)![0];
+  expect(optimisticItem).toEqual(
+    expect.objectContaining({
+      title: "First checklist item",
+      completed: false,
+      position: 0,
+    }),
+  );
+  expect(result.current.isPending).toBe(true);
+
+  const persistedItem = { ...optimisticItem, id: "persisted" };
+  act(() => {
+    save.resolve(persistedItem);
+  });
+  await waitFor(() => {
+    expect(result.current.isPending).toBe(false);
+  });
+  expect(client.getQueryData(key)).toEqual([persistedItem]);
+  expect(toast.success).not.toHaveBeenCalled();
+  expect(toast.error).not.toHaveBeenCalled();
+});
+
+it.each(["populated", "not yet loaded"])(
+  "removes a failed optimistic creation and restores a %s checklist",
+  async (cacheState) => {
+    const { client, result } = setup();
+    if (cacheState === "not yet loaded") {
+      client.removeQueries({ queryKey: key, exact: true });
+    }
+    const previousItems = client.getQueryData<StoryChecklistItem[]>(key) ?? [];
+    const save = deferred<StoryChecklistItem>();
+    jest.mocked(updateChecklistAction).mockReturnValue(save.promise);
+
+    act(() => {
+      result.current.mutate({ type: "create", title: "A failed creation" });
+    });
+    await waitFor(() => {
+      expect(client.getQueryData<StoryChecklistItem[]>(key)).toHaveLength(
+        previousItems.length + 1,
+      );
+    });
+    act(() => {
+      save.reject(new Error("Unable to connect"));
+    });
+    await waitFor(() => {
+      expect(result.current.isPending).toBe(false);
+    });
+    expect(client.getQueryData(key)).toEqual(previousItems);
+    expect(toast.error).toHaveBeenCalledTimes(1);
+    expect(toast.error).toHaveBeenCalledWith(
+      "Unable to save checklist changes",
+      expect.objectContaining({
+        description: expect.stringContaining("Unable to connect"),
+      }),
+    );
+    expect(toast.success).not.toHaveBeenCalled();
+  },
+);
+
+it("keeps an optimistic creation visible through realtime invalidation and guards writes until refetch finishes", async () => {
+  const { client, result, wrapper } = setup();
+  const existingItems = client.getQueryData<StoryChecklistItem[]>(key)!;
+  const save = deferred<StoryChecklistItem>();
+  const refresh = deferred<StoryChecklistItem[]>();
+  jest.mocked(updateChecklistAction).mockReturnValue(save.promise);
+  jest.mocked(getStoryChecklist).mockReturnValue(refresh.promise);
+  const checklist = renderHook(() => useStoryChecklist("story"), { wrapper });
+  const secondSurface = renderHook(() => useChecklistMutation("story"), {
+    wrapper,
+  });
+
+  act(() => {
+    result.current.mutate({ type: "create", title: "Keep me visible" });
+  });
+  await waitFor(() => {
+    expect(checklist.result.current.data).toHaveLength(3);
+  });
+  const optimisticItem = checklist.result.current.data![2];
+  let invalidation = Promise.resolve();
+  act(() => {
+    // Story SSE events invalidate the detail subtree, including its checklist.
+    invalidation = client.invalidateQueries({
+      queryKey: storyKeys.detail("acme", "story"),
+    });
+  });
+  await waitFor(() => {
+    expect(client.getQueryState(key)?.fetchStatus).toBe("fetching");
+  });
+  expect(getStoryChecklist).not.toHaveBeenCalled();
+  expect(checklist.result.current.data).toEqual([
+    ...existingItems,
+    optimisticItem,
+  ]);
+
+  const persistedItem = { ...optimisticItem, id: "persisted" };
+  act(() => {
+    save.resolve(persistedItem);
+  });
+  await waitFor(() => {
+    expect(getStoryChecklist).toHaveBeenCalled();
+    expect(checklist.result.current.data).toEqual([
+      ...existingItems,
+      persistedItem,
+    ]);
+  });
+  expect(result.current.isPending).toBe(true);
+  await act(async () => {
+    await expect(
+      secondSurface.result.current.mutateAsync({ type: "clear" }),
+    ).rejects.toThrow("Wait for the current");
+  });
+  expect(updateChecklistAction).toHaveBeenCalledTimes(1);
+  expect(client.getQueryData(key)).toEqual([...existingItems, persistedItem]);
+
+  act(() => {
+    refresh.resolve([...existingItems, persistedItem]);
+  });
+  await waitFor(() => {
+    expect(result.current.isPending).toBe(false);
+    expect(client.getQueryState(key)?.fetchStatus).toBe("idle");
+  });
+  await invalidation;
+  expect(checklist.result.current.data).toEqual([
+    ...existingItems,
+    persistedItem,
+  ]);
+  expect(toast.success).not.toHaveBeenCalled();
+});
 
 it("checks an item immediately and rolls back a rejected save without touching sub-stories", async () => {
   const { client, result } = setup();
@@ -163,6 +390,7 @@ it("retains the checklist row after conversion and refreshes story collections a
   expect(refreshWipCapacity).toHaveBeenCalledWith(
     expect.objectContaining({
       workspaceSlug: "acme",
+      showCapacityWarning: false,
       createdStory: expect.objectContaining({
         id: "converted",
         parentId: null,
@@ -170,6 +398,8 @@ it("retains the checklist row after conversion and refreshes story collections a
       }),
     }),
   );
+  expect(toast.success).not.toHaveBeenCalled();
+  expect(toast.error).not.toHaveBeenCalled();
 });
 
 it("prevents a second mounted surface from overwriting an in-flight change", async () => {

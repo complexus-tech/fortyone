@@ -107,6 +107,41 @@ describe("StoryChecklist", () => {
     expect(mockMutate).not.toHaveBeenCalled();
   });
 
+  it("shows the submitted item while saving and restores the create draft after failure", () => {
+    const { rerender } = render(<StoryChecklist story={story} />);
+    fireEvent.click(screen.getByRole("button", { name: "Add checklist" }));
+    const input = screen.getByRole("textbox", { name: "New checklist item" });
+    fireEvent.change(input, { target: { value: "  Review design  " } });
+    // Enter submits the native form without waiting for the save to finish.
+    fireEvent.submit(input.closest("form")!);
+    expect(mockMutate).toHaveBeenCalledWith(
+      { type: "create", title: "Review design" },
+      expect.any(Object),
+    );
+
+    setQuery([makeItem({ id: "pending-item" })]);
+    jest.mocked(useChecklistMutation).mockReturnValue({
+      mutate: mockMutate,
+      isPending: true,
+    } as unknown as ReturnType<typeof useChecklistMutation>);
+    rerender(<StoryChecklist story={story} />);
+    expect(screen.getByText("Review design")).toBeVisible();
+    expect(input).not.toBeVisible();
+    expect(input).toHaveValue("  Review design  ");
+    expect(screen.queryByRole("button", { name: "Creating..." })).toBeNull();
+
+    setQuery([]);
+    jest.mocked(useChecklistMutation).mockReturnValue({
+      mutate: mockMutate,
+      isPending: false,
+    } as unknown as ReturnType<typeof useChecklistMutation>);
+    rerender(<StoryChecklist story={story} />);
+    expect(
+      screen.getByRole("textbox", { name: "New checklist item" }),
+    ).toHaveValue("  Review design  ");
+    expect(screen.getByRole("button", { name: "Create" })).toBeEnabled();
+  });
+
   it("tracks checklist completion independently and exposes keyboard sorting handles", () => {
     setQuery([
       makeItem(),

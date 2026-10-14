@@ -18,16 +18,37 @@ import type {
 import { updateChecklistAction } from "../actions/checklist";
 import { getStoryChecklist } from "../queries/get-checklist";
 
-const activeChecklistWrites = new WeakMap<object, Set<string>>();
+type ChecklistWrite = {
+  settled: Promise<void>;
+  releaseReads: () => void;
+};
+
+const activeChecklistWrites = new WeakMap<
+  object,
+  Map<string, ChecklistWrite>
+>();
 
 export const useStoryChecklist = (storyId: string) => {
+  const queryClient = useQueryClient();
   const { workspaceSlug } = useWorkspacePath();
   const { data: session } = useSession();
+  const queryKey = storyKeys.checklist(workspaceSlug, storyId);
 
   return useQuery({
-    queryKey: storyKeys.checklist(workspaceSlug, storyId),
-    queryFn: ({ signal }) =>
-      getStoryChecklist(storyId, { workspaceSlug, session }, signal),
+    queryKey,
+    queryFn: async ({ signal }) => {
+      // Realtime and focus refreshes must not overwrite an in-flight change.
+      await activeChecklistWrites
+        .get(queryClient)
+        ?.get(JSON.stringify(queryKey))?.settled;
+      if (signal.aborted) {
+        throw new DOMException(
+          "The checklist refresh was cancelled.",
+          "AbortError",
+        );
+      }
+      return getStoryChecklist(storyId, { workspaceSlug, session }, signal);
+    },
     enabled: Boolean(session && storyId),
     staleTime: 30_000,
   });
@@ -78,7 +99,10 @@ export const useChecklistMutation = (storyId: string) => {
     ChecklistMutationResult,
     Error,
     ChecklistCommand,
-    { previousItems: StoryChecklistItem[] | undefined }
+    {
+      previousItems: StoryChecklistItem[] | undefined;
+      optimisticItemId?: string;
+    }
   >({
     mutationKey,
     retry: false,
@@ -88,20 +112,43 @@ export const useChecklistMutation = (storyId: string) => {
       // Story details can be mounted in more than one surface at a time.
       // Reject overlapping writes before applying optimism or sending a request.
       const activeWrites =
-        activeChecklistWrites.get(queryClient) ?? new Set<string>();
+        activeChecklistWrites.get(queryClient) ??
+        new Map<string, ChecklistWrite>();
       if (activeWrites.has(writeKey)) {
         throw new Error("Wait for the current checklist change to finish.");
       }
-      activeWrites.add(writeKey);
+      let releaseReads!: () => void;
+      const settled = new Promise<void>((resolve) => {
+        releaseReads = resolve;
+      });
+      activeWrites.set(writeKey, { settled, releaseReads });
       activeChecklistWrites.set(queryClient, activeWrites);
       try {
         await queryClient.cancelQueries({ queryKey });
       } catch (error) {
+        releaseReads();
         activeWrites.delete(writeKey);
         throw error;
       }
       const previousItems =
         queryClient.getQueryData<StoryChecklistItem[]>(queryKey);
+      if (command.type === "create") {
+        const items = previousItems ?? [];
+        const now = new Date().toISOString();
+        const optimisticItem: StoryChecklistItem = {
+          id: crypto.randomUUID(),
+          storyId,
+          title: command.title,
+          completed: false,
+          position: Math.max(-1, ...items.map((item) => item.position)) + 1,
+          convertedAt: null,
+          convertedStory: null,
+          createdAt: now,
+          updatedAt: now,
+        };
+        queryClient.setQueryData(queryKey, [...items, optimisticItem]);
+        return { previousItems, optimisticItemId: optimisticItem.id };
+      }
       if (previousItems) {
         queryClient.setQueryData(
           queryKey,
@@ -110,7 +157,7 @@ export const useChecklistMutation = (storyId: string) => {
       }
       return { previousItems };
     },
-    onSuccess: (result, command) => {
+    onSuccess: (result, command, context) => {
       if (Array.isArray(result)) {
         queryClient.setQueryData(queryKey, result);
       } else if (result) {
@@ -118,7 +165,14 @@ export const useChecklistMutation = (storyId: string) => {
           queryKey,
           (items = []) =>
             command.type === "create"
-              ? [...items.filter((item) => item.id !== result.id), result]
+              ? [
+                  ...items.filter(
+                    (item) =>
+                      item.id !== context.optimisticItemId &&
+                      item.id !== result.id,
+                  ),
+                  result,
+                ]
               : items.map((item) => (item.id === result.id ? result : item)),
         );
       }
@@ -129,7 +183,6 @@ export const useChecklistMutation = (storyId: string) => {
         void queryClient.invalidateQueries({
           queryKey: storyKeys.total(workspaceSlug),
         });
-        toast.success("Checklist item converted to a story");
         const createdStory = Array.isArray(result)
           ? null
           : result?.convertedStory;
@@ -138,6 +191,7 @@ export const useChecklistMutation = (storyId: string) => {
             queryClient,
             workspaceSlug,
             loadCapacity: loadWipCapacity,
+            showCapacityWarning: false,
             createdStory: {
               ...createdStory,
               statusId: createdStory.statusId,
@@ -150,8 +204,8 @@ export const useChecklistMutation = (storyId: string) => {
       }
     },
     onError: (error, _command, context) => {
-      if (context?.previousItems) {
-        queryClient.setQueryData(queryKey, context.previousItems);
+      if (context) {
+        queryClient.setQueryData(queryKey, context.previousItems ?? []);
       }
       toast.error("Unable to save checklist changes", {
         description: `${error.message} Refresh to check the latest checklist before trying again.`,
@@ -159,6 +213,7 @@ export const useChecklistMutation = (storyId: string) => {
     },
     onSettled: (_data, _error, _command, context) => {
       if (!context) return;
+      activeChecklistWrites.get(queryClient)?.get(writeKey)?.releaseReads();
       return queryClient.invalidateQueries({ queryKey }).finally(() => {
         activeChecklistWrites.get(queryClient)?.delete(writeKey);
       });

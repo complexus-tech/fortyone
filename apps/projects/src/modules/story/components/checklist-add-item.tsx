@@ -21,11 +21,13 @@ export const ChecklistAddItem = ({
 }) => {
   if (isAdding)
     return (
-      <ChecklistItemForm
-        isPending={isPending}
-        onCancel={onCancel}
-        onSave={onSave}
-      />
+      <div hidden={isPending}>
+        <ChecklistItemForm
+          isPending={isPending}
+          onCancel={onCancel}
+          onSave={onSave}
+        />
+      </div>
     );
   if (itemCount >= MAX_CHECKLIST_ITEMS)
     return (
