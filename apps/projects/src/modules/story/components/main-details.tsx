@@ -247,7 +247,7 @@ export const MainDetails = ({
         <StoryBanners story={data!} />
         <TextEditor
           asTitle
-          className="text-foreground relative -left-px mb-6 text-3xl font-semibold md:text-4xl"
+          className="text-foreground relative -left-px mb-4 text-3xl font-semibold md:text-4xl"
           editor={titleEditor}
         />
         <input
@@ -265,16 +265,16 @@ export const MainDetails = ({
           ref={mediaInputRef}
           type="file"
         />
-        <StoryDescription key={storyId}>
+        <StoryDescription key={`description-${storyId}`}>
           <TextEditor
-            className="rich-document-editor text-foreground dark:text text-[1.1rem]"
+            className="rich-document-editor story-description-editor text-foreground dark:text text-[1.1rem]"
             editor={descriptionEditor}
             onPaste={handleDescriptionPaste}
           />
         </StoryDescription>
         {googleDriveDescriptionPicker}
         <RichTextTableMenu editor={descriptionEditor} scrollTarget={null} />
-        <StoryChecklist key={storyId} story={data!} />
+        <StoryChecklist key={`checklist-${storyId}`} story={data!} />
         <SubStories
           isSubStoriesOpen={isSubStoriesOpen}
           parent={data!}

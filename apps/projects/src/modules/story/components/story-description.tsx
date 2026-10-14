@@ -1,8 +1,7 @@
 import type { ReactNode } from "react";
 import { useEffect, useId, useRef, useState } from "react";
-import { Button } from "ui";
 
-const COLLAPSED_HEIGHT = 320;
+const COLLAPSED_HEIGHT = 240;
 
 export const StoryDescription = ({ children }: { children: ReactNode }) => {
   const contentId = useId();
@@ -29,9 +28,9 @@ export const StoryDescription = ({ children }: { children: ReactNode }) => {
   }, []);
 
   return (
-    <div className="mb-10">
+    <div>
       <div
-        className={isExpanded ? undefined : "overflow-hidden"}
+        className={isExpanded ? undefined : "overflow-clip"}
         id={contentId}
         style={
           isExpanded
@@ -56,20 +55,20 @@ export const StoryDescription = ({ children }: { children: ReactNode }) => {
         </div>
       </div>
       {canExpand ? (
-        <Button
+        <button
           aria-controls={contentId}
           aria-expanded={isExpanded}
-          className="text-text-muted mt-2 -ml-2"
-          color="tertiary"
-          onClick={() => {
+          className="text-foreground focus-visible:outline-ring mt-2 ml-2 block cursor-pointer rounded-sm py-1 underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2"
+          onClick={(event) => {
+            // Safari does not focus buttons on pointer clicks. Move focus out of
+            // the editor before collapsing so its caret cannot keep hidden text active.
+            event.currentTarget.focus({ preventScroll: true });
             setIsExpanded((expanded) => !expanded);
           }}
-          size="sm"
           type="button"
-          variant="naked"
         >
           {isExpanded ? "See less" : "See more"}
-        </Button>
+        </button>
       ) : null}
     </div>
   );

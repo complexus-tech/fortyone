@@ -287,6 +287,17 @@ ul[data-type="taskList"] > li ol[data-type="taskList"] {
   @apply relative;
 }
 
+@layer components {
+  /* Match the shared editor's layer so its important prose margins can be reset. */
+  .story-description-editor .tiptap > :first-child {
+    margin-block-start: 0 !important;
+  }
+
+  .story-description-editor .tiptap > :last-child {
+    margin-block-end: 0 !important;
+  }
+}
+
 .rich-document-editor .tiptap .tableWrapper {
   @apply my-4 rounded-md;
 }

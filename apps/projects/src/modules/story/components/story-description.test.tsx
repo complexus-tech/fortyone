@@ -86,7 +86,7 @@ const EditableDescription = () => (
   </div>
 );
 
-it.each([0, 120, 320])(
+it.each([0, 120, 240])(
   "does not offer expansion for content measuring %i pixels",
   (height) => {
     contentHeight = height;
@@ -188,6 +188,48 @@ it("expands when editing starts and stays expanded after focus leaves the editor
   );
 });
 
+it("moves focus out of the editor before collapsing when the browser does not focus a clicked button", async () => {
+  contentHeight = 640;
+  const onEditorBlur = jest.fn();
+  render(
+    <StoryDescription>
+      <div onBlur={onEditorBlur}>
+        <EditableDescription />
+      </div>
+    </StoryDescription>,
+  );
+  await screen.findByRole("button", { name: "See more" });
+  const editor = screen.getByRole("textbox");
+  act(() => {
+    editor.focus();
+  });
+  editor.textContent = "An updated description that must keep its draft.";
+  fireEvent.input(editor);
+  const toggle = screen.getByRole("button", { name: "See less" });
+  expect(editor).toHaveFocus();
+
+  // fireEvent.click does not perform a browser's automatic pointer focus.
+  // This reproduces clicking See less while editing in Safari on macOS.
+  fireEvent.click(toggle);
+
+  expect(toggle).toHaveFocus();
+  expect(editor).not.toHaveFocus();
+  expect(onEditorBlur).toHaveBeenCalledTimes(1);
+  expect(toggle).toHaveAccessibleName("See more");
+  expect(toggle).toHaveAttribute("aria-expanded", "false");
+  expect(screen.getByRole("textbox")).toBe(editor);
+  expect(editor).toHaveTextContent(
+    "An updated description that must keep its draft.",
+  );
+
+  act(() => {
+    editor.focus();
+  });
+  expect(editor).toHaveFocus();
+  expect(toggle).toHaveAccessibleName("See less");
+  expect(toggle).toHaveAttribute("aria-expanded", "true");
+});
+
 it("reveals focused links in read-only descriptions", async () => {
   contentHeight = 640;
   render(
@@ -251,7 +293,7 @@ it("starts collapsed when switching to another story", async () => {
   ).toHaveAttribute("aria-expanded", "false");
 });
 
-it("associates controls with their own content when multiple story surfaces are mounted", async () => {
+it("toggles multiple story surfaces independently and associates each control with its own content", async () => {
   contentHeight = 640;
   render(
     <>
@@ -275,4 +317,16 @@ it("associates controls with their own content when multiple story surfaces are 
   expect(document.getElementById(contentIds[1]!)).toHaveTextContent(
     "Desktop description.",
   );
+
+  fireEvent.click(toggles[0]);
+  expect(toggles[0]).toHaveAttribute("aria-expanded", "true");
+  expect(toggles[1]).toHaveAttribute("aria-expanded", "false");
+
+  fireEvent.click(toggles[1]);
+  expect(toggles[0]).toHaveAttribute("aria-expanded", "true");
+  expect(toggles[1]).toHaveAttribute("aria-expanded", "true");
+
+  fireEvent.click(toggles[0]);
+  expect(toggles[0]).toHaveAttribute("aria-expanded", "false");
+  expect(toggles[1]).toHaveAttribute("aria-expanded", "true");
 });
