@@ -162,28 +162,28 @@ export const StoryRow = ({
     mutate({ storyId: targetStoryId ?? story.id, payload: data });
   };
 
+  const handlePrefetch = () => {
+    if (session) {
+      void prefetchStory(queryClient, story.id, {
+        session,
+        workspaceSlug,
+      });
+    }
+    if (!isDesktop || !openStoryInDialog) {
+      router.prefetch(
+        withWorkspace(
+          getStoryPath({
+            id: story.id,
+            sequenceId: story.sequenceId,
+            teamCode: resolvedTeamCode,
+          }),
+        ),
+      );
+    }
+  };
+
   return (
-    <Box
-      onMouseEnter={() => {
-        if (session) {
-          void prefetchStory(queryClient, story.id, {
-            session,
-            workspaceSlug,
-          });
-        }
-        if (!isDesktop || !openStoryInDialog) {
-          router.prefetch(
-            withWorkspace(
-              getStoryPath({
-                id: story.id,
-                sequenceId: story.sequenceId,
-                teamCode: resolvedTeamCode,
-              }),
-            ),
-          );
-        }
-      }}
-    >
+    <Box onMouseEnter={handlePrefetch}>
       <div ref={setNodeRef}>
         <StoryContextMenu story={story}>
           <RowWrapper
@@ -270,6 +270,7 @@ export const StoryRow = ({
                       handleStoryClick(story.id);
                     }
                   }}
+                  onFocus={handlePrefetch}
                 >
                   {isSubStory ? <SubStoryIcon className="shrink-0" /> : null}
                   <Box className="min-w-0 flex-1">

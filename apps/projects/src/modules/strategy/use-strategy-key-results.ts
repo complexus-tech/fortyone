@@ -1,5 +1,5 @@
-import { useMemo } from "react";
-import { useQueries } from "@tanstack/react-query";
+import { useCallback, useMemo } from "react";
+import { useQueries, type UseQueryResult } from "@tanstack/react-query";
 import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
 import { useWorkspacePath } from "@/hooks";
 import { useSession } from "@/lib/auth/client";
@@ -26,7 +26,18 @@ export const useStrategyKeyResults = (
     () => getStrategyKeyResultQueryObjectives(objectives, activeObjectiveIds),
     [activeObjectiveIds, objectives],
   );
-  const queries = useQueries({
+  const combine = useCallback(
+    (queries: UseQueryResult<KeyResult[]>[]) => ({
+      entries: objectivesWithKeyResults.map(({ id }, index) => ({
+        objectiveId: id,
+        keyResults: queries[index]?.data,
+      })),
+      isPending: queries.some(({ isPending }) => isPending),
+      workspaceSlug,
+    }),
+    [objectivesWithKeyResults, workspaceSlug],
+  );
+  const { entries, isPending } = useQueries({
     queries: objectivesWithKeyResults.map((objective) => ({
       queryKey: objectiveKeys.keyResults(workspaceSlug, objective.id),
       queryFn: () =>
@@ -34,21 +45,25 @@ export const useStrategyKeyResults = (
       enabled: Boolean(session),
       staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 10,
     })),
+    combine,
   });
 
-  return useMemo(() => {
+  // useQueries returns a new result array on each render. Its combined plain
+  // snapshot is structurally shared, so camera updates cannot invalidate layout
+  // maps when the visible query window and key-result data have not changed.
+  const maps = useMemo(() => {
     const keyResultsByObjective = new Map<string, KeyResult[]>();
     const loadedObjectiveIds = new Set<string>();
-    objectivesWithKeyResults.forEach((objective, index) => {
-      const keyResults = queries[index]?.data;
-      if (keyResults !== undefined) loadedObjectiveIds.add(objective.id);
-      keyResultsByObjective.set(objective.id, keyResults ?? []);
+    entries.forEach(({ objectiveId, keyResults }) => {
+      if (keyResults !== undefined) loadedObjectiveIds.add(objectiveId);
+      keyResultsByObjective.set(objectiveId, keyResults ?? []);
     });
 
     return {
-      isPending: queries.some(({ isPending }) => isPending),
       keyResultsByObjective,
       loadedObjectiveIds,
     };
-  }, [objectivesWithKeyResults, queries]);
+  }, [entries]);
+
+  return { ...maps, isPending };
 };

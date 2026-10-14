@@ -92,6 +92,9 @@ func (r *repo) DuplicateStoryMutation(
 			if err := upsertMutationActivity(ctx, queries, command.Activity, false); err != nil {
 				return err
 			}
+			if err := insertCopiedChecklistActivities(ctx, queries, command); err != nil {
+				return err
+			}
 			if err := insertMutationEvent(ctx, queries, command.Event); err != nil {
 				return err
 			}

@@ -38,7 +38,7 @@ jest.mock("next/link", () => ({
   default: ({ children }: { children?: ReactModule.ReactNode }) => children,
 }));
 jest.mock("@/components/ui/board-context", () => ({
-  useBoard: () => ({ isColumnVisible: mockIsColumnVisible }),
+  useBoardView: () => ({ isColumnVisible: mockIsColumnVisible }),
 }));
 
 jest.mock("@/components/ui/confirm-dialog", () => ({

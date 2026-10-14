@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"sync"
 	"testing"
 	"time"
@@ -18,6 +19,7 @@ type checklistFixture struct {
 	checklistQueries
 	storyID, workspaceID, teamID, statusID      uuid.UUID
 	items                                       []storyreadsql.ListStoryChecklistRow
+	activities                                  []storyreadsql.UpsertStoryMutationActivityParams
 	created                                     *storyreadsql.CreateStoryMutationParams
 	createdCount, associations, events, touched int
 	allowed                                     bool
@@ -86,7 +88,11 @@ func (f *checklistFixture) InsertStoryMutationEvent(_ context.Context, p storyre
 	f.events++
 	return nil
 }
-func (f *checklistFixture) UpsertStoryMutationActivity(context.Context, storyreadsql.UpsertStoryMutationActivityParams) (storyreadsql.UpsertStoryMutationActivityRow, error) {
+func (f *checklistFixture) UpsertStoryMutationActivity(_ context.Context, p storyreadsql.UpsertStoryMutationActivityParams) (storyreadsql.UpsertStoryMutationActivityRow, error) {
+	if (f.fail == "activity" && p.StoryID == f.storyID) || (f.fail == "created_activity" && p.StoryID != f.storyID) || (f.fail == "activity_after_first" && len(f.activities) > 0) {
+		return storyreadsql.UpsertStoryMutationActivityRow{}, fmt.Errorf("activity failed")
+	}
+	f.activities = append(f.activities, p)
 	return storyreadsql.UpsertStoryMutationActivityRow{}, nil
 }
 func (f *checklistFixture) TouchChecklistStory(context.Context, storyreadsql.TouchChecklistStoryParams) error {
@@ -96,6 +102,32 @@ func (f *checklistFixture) TouchChecklistStory(context.Context, storyreadsql.Tou
 func (f *checklistFixture) InsertStoryChecklistItem(_ context.Context, p storyreadsql.InsertStoryChecklistItemParams) error {
 	f.items = append(f.items, storyreadsql.ListStoryChecklistRow{ID: p.ID, StoryID: p.StoryID, Title: p.Title, Position: p.Position, CreatedAt: p.Now, UpdatedAt: p.Now})
 	return nil
+}
+func (f *checklistFixture) UpdateStoryChecklistItem(_ context.Context, p storyreadsql.UpdateStoryChecklistItemParams) (int64, error) {
+	for i := range f.items {
+		if f.items[i].ID != p.ID || f.items[i].StoryID != p.StoryID {
+			continue
+		}
+		if p.Title != nil {
+			f.items[i].Title = *p.Title
+		}
+		if p.Completed != nil {
+			f.items[i].Completed = *p.Completed
+		}
+		f.items[i].UpdatedAt = p.Now
+		return 1, nil
+	}
+	return 0, nil
+}
+func (f *checklistFixture) DeleteStoryChecklistItem(_ context.Context, p storyreadsql.DeleteStoryChecklistItemParams) (int64, error) {
+	index := slices.IndexFunc(f.items, func(item storyreadsql.ListStoryChecklistRow) bool {
+		return item.ID == p.ID && item.StoryID == p.StoryID
+	})
+	if index < 0 {
+		return 0, nil
+	}
+	f.items = slices.Delete(f.items, index, index+1)
+	return 1, nil
 }
 func (f *checklistFixture) ReorderStoryChecklist(_ context.Context, p storyreadsql.ReorderStoryChecklistParams) (int64, error) {
 	ordered := make([]storyreadsql.ListStoryChecklistRow, 0, len(p.ItemIds))
@@ -133,6 +165,7 @@ func newChecklistFixture(t *testing.T) (*repo, *checklistFixture, storydomain.Ch
 		defer mutex.Unlock()
 		working := *f
 		working.items = append([]storyreadsql.ListStoryChecklistRow(nil), f.items...)
+		working.activities = slices.Clone(f.activities)
 		if err := operation(&working); err != nil {
 			return err
 		}
@@ -181,7 +214,7 @@ func TestChecklistConcurrentConversionCreatesOneStandaloneRelatedStory(t *testin
 			t.Fatal("conversion retry created another story")
 		}
 	}
-	if changed != 1 || f.createdCount != 1 || f.associations != 1 || f.events != 2 {
+	if changed != 1 || f.createdCount != 1 || f.associations != 1 || f.events != 2 || len(f.activities) != 2 {
 		t.Fatalf("side effects repeated: changed=%d fixture=%+v", changed, f)
 	}
 	if f.created.ParentID != nil || f.created.AssigneeID != nil || f.created.AutoSchedulingStatus != storydomain.AutoSchedulingStatusOff || f.created.StatusID == nil || *f.created.StatusID != f.statusID {
@@ -190,14 +223,14 @@ func TestChecklistConcurrentConversionCreatesOneStandaloneRelatedStory(t *testin
 }
 
 func TestChecklistConversionRollsBackAllEffectsOnFailure(t *testing.T) {
-	for _, stage := range []string{"create", "association", "complete", "event"} {
+	for _, stage := range []string{"create", "association", "complete", "event", "created_activity", "activity"} {
 		t.Run(stage, func(t *testing.T) {
 			r, f, command := newChecklistFixture(t)
 			f.fail = stage
 			if _, err := r.ApplyChecklistMutation(context.Background(), command); err == nil {
 				t.Fatal("expected injected failure")
 			}
-			if f.createdCount != 0 || f.associations != 0 || f.events != 0 || f.touched != 0 || f.items[0].Completed || f.items[0].ConvertedAt != nil {
+			if f.createdCount != 0 || f.associations != 0 || f.events != 0 || f.touched != 0 || len(f.activities) != 0 || f.items[0].Completed || f.items[0].ConvertedAt != nil {
 				t.Fatalf("partial conversion survived rollback: %+v", f)
 			}
 		})

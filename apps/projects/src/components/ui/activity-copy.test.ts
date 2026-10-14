@@ -223,4 +223,95 @@ describe("activity copy", () => {
       "Moved because of planning",
     );
   });
+
+  it.each([
+    ["checklist_item_added", "added"],
+    ["checklist_item_completed", "completed"],
+    ["checklist_item_reopened", "reopened"],
+    ["checklist_item_removed", "removed"],
+  ])("describes %s using the recorded item title", (reason, verb) => {
+    const copy = getActivityCopy({
+      currentValue: "Review launch notes",
+      field: "checklist_item",
+      fieldLabel: "checklist_item",
+      oldValue: {
+        id: "item-1",
+        title: "Review launch notes",
+        completed: false,
+      },
+      reason,
+      type: "update",
+    });
+
+    expect(copy.text).toBe(`${verb} checklist item Review launch notes`);
+    expect(getDisplayActivityReason(reason)).toBe("");
+  });
+
+  it("shows the previous title from the snapshot when renaming an item", () => {
+    const copy = getActivityCopy({
+      currentValue: "Publish launch notes",
+      field: "checklist_item",
+      fieldLabel: "checklist_item",
+      oldValue: {
+        id: "item-1",
+        title: "Review launch notes",
+        completed: false,
+      },
+      reason: "checklist_item_updated",
+      type: "update",
+    });
+
+    expect(copy.text).toBe(
+      "renamed checklist item Review launch notes to Publish launch notes",
+    );
+    expect(copy.segments).toContainEqual({
+      type: "oldValue",
+      value: "Review launch notes",
+    });
+    expect(getDisplayActivityReason("checklist_item_updated")).toBe("");
+  });
+
+  it.each([null, undefined, {}, { title: { text: "Unexpected shape" } }])(
+    "keeps an update readable when its old snapshot is %p",
+    (oldValue) => {
+      expect(
+        getActivityCopy({
+          currentValue: "Publish launch notes",
+          field: "checklist_item",
+          fieldLabel: "checklist_item",
+          oldValue,
+          reason: "checklist_item_updated",
+          type: "update",
+        }).text,
+      ).toBe("updated checklist item Publish launch notes");
+    },
+  );
+
+  it("uses the workspace terminology when an item becomes a story", () => {
+    expect(
+      getActivityCopy({
+        currentValue: "Publish launch notes",
+        field: "checklist_item",
+        fieldLabel: "checklist_item",
+        reason: "checklist_item_converted",
+        storyTerm: "issue",
+        type: "update",
+      }).text,
+    ).toBe("converted checklist item Publish launch notes to a new issue");
+    expect(getDisplayActivityReason("checklist_item_converted")).toBe("");
+  });
+
+  it("describes reordering without displaying snapshot objects or IDs", () => {
+    expect(
+      getActivityCopy({
+        currentValue: "",
+        field: "checklist",
+        fieldLabel: "checklist",
+        oldValue: [{ id: "item-1", title: "Review launch notes", position: 0 }],
+        reason: "checklist_reordered",
+        type: "update",
+      }).text,
+    ).toBe("reordered the checklist");
+    expect(getDisplayActivityReason("checklist_reordered")).toBe("");
+  });
 });

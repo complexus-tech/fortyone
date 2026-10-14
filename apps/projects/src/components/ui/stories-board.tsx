@@ -39,7 +39,7 @@ import { StoryCardPreview } from "./story/card";
 import { ListBoard } from "./list-board";
 import { GanttBoard } from "./gantt-board";
 import { StoriesToolbar } from "./stories-toolbar";
-import { BoardContext } from "./board-context";
+import { BoardProvider } from "./board-context";
 import { NewStoryButton } from "./new-story-button";
 import { getStoryDropUpdate } from "./story-drag";
 import { StoriesEmptyIllustration } from "./illustrations/stories-empty-illustration";
@@ -263,6 +263,11 @@ export const StoriesBoard = ({
 
   const sensors = useSensors(pointerSensor, touchSensor);
 
+  const newStoryDefaults = useMemo(
+    () => ({ teamId, objectiveId, sprintId }),
+    [teamId, objectiveId, sprintId],
+  );
+
   // Memoize the context value to prevent unnecessary re-renders
   const boardContextValue = useMemo(
     () => ({
@@ -273,11 +278,7 @@ export const StoriesBoard = ({
       setViewOptions,
       isColumnVisible,
       updateStory,
-      newStoryDefaults: {
-        teamId,
-        objectiveId,
-        sprintId,
-      },
+      newStoryDefaults,
     }),
     [
       embedded,
@@ -286,9 +287,7 @@ export const StoriesBoard = ({
       viewOptions,
       isColumnVisible,
       updateStory,
-      teamId,
-      objectiveId,
-      sprintId,
+      newStoryDefaults,
     ],
   );
 
@@ -297,7 +296,7 @@ export const StoriesBoard = ({
   );
 
   return (
-    <BoardContext.Provider value={boardContextValue}>
+    <BoardProvider value={boardContextValue}>
       <Box
         className={cn("min-h-0 w-full min-w-0", {
           "h-full overflow-hidden": !embedded && !isInSearch,
@@ -381,6 +380,6 @@ export const StoriesBoard = ({
         {/* This toolbar pops up when the user selects stories */}
         {selectedStories.length > 0 && <StoriesToolbar />}
       </Box>
-    </BoardContext.Provider>
+    </BoardProvider>
   );
 };

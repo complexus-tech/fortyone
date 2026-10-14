@@ -11,21 +11,15 @@ import {
   sprintKeys,
   userKeys,
 } from "@/constants/keys";
-import { objectiveKeys } from "@/modules/objectives/constants";
-import { getObjectiveStatuses } from "@/modules/objectives/queries/statuses";
 import { getStatuses } from "@/lib/queries/states/get-states";
 import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
 import { getWorkspaceSettings } from "@/lib/queries/workspaces/get-settings";
 import { getRunningSprints } from "@/modules/sprints/queries/get-running-sprints";
 import { Chat } from "@/components/ui/chat";
 import { WalkthroughProvider } from "@/components/walkthrough/walkthrough-provider";
-import {
-  WORKSPACE_GETTING_STARTED_TOUR_KEY,
-  WORKSPACE_GETTING_STARTED_TOUR_VERSION,
-} from "@/components/walkthrough/walkthrough-tour";
+import { WORKSPACE_GETTING_STARTED_TOUR_VERSION } from "@/components/walkthrough/walkthrough-tour";
 import { ChatProvider } from "@/context/chat-context";
 import { getProfile } from "@/lib/queries/users/profile";
-import { getOnboardingTourProgress } from "@/shared/walkthrough/progress/get-progress";
 import { getCookieHeader } from "@/lib/http/header";
 import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
 import { getWorkspaceAccess } from "@/modules/auth/workspace-access";
@@ -40,9 +34,11 @@ export default async function RootLayout({
   children: ReactNode;
   params: Promise<{ workspaceSlug: string }>;
 }) {
-  const session = await auth();
-  const cookieHeader = await getCookieHeader();
-  const { workspaceSlug } = await params;
+  const [session, cookieHeader, { workspaceSlug }] = await Promise.all([
+    auth(),
+    getCookieHeader(),
+    params,
+  ]);
   const ctx = { session, workspaceSlug, cookieHeader };
   const workspaces = await getWorkspaces(session?.token, cookieHeader);
 
@@ -69,9 +65,14 @@ export default async function RootLayout({
   // Reuse the membership list already checked above within this request only.
   // Hydrating it avoids a second lookup before the workspace switcher is ready.
   queryClient.setQueryData(workspaceKeys.lists(), workspaces);
-  fetchNonCriticalImportantQueries(queryClient, ctx);
+  fetchNonCriticalImportantQueries(
+    queryClient,
+    ctx,
+    session?.user.id ?? "anonymous",
+  );
 
-  // await critical queries
+  // Settle the data used by the initial navigation and terminology. Supporting
+  // feature queries stream independently through the hydration boundary.
   await Promise.all([
     // Terminology affects the shell's server-rendered text and must hydrate
     // from the same settled snapshot on the client.
@@ -87,14 +88,12 @@ export default async function RootLayout({
     queryClient.prefetchQuery({
       queryKey: statusKeys.lists(workspaceSlug),
       queryFn: () => getStatuses(ctx),
-    }),
-    queryClient.prefetchQuery({
-      queryKey: objectiveKeys.statuses(workspaceSlug),
-      queryFn: () => getObjectiveStatuses(ctx),
+      staleTime: DURATION_FROM_MILLISECONDS.MINUTE,
     }),
     queryClient.prefetchQuery({
       queryKey: sprintKeys.running(workspaceSlug),
       queryFn: () => getRunningSprints(ctx),
+      staleTime: DURATION_FROM_MILLISECONDS.MINUTE,
     }),
     queryClient.prefetchQuery({
       queryKey: userKeys.profile(),
@@ -105,20 +104,6 @@ export default async function RootLayout({
         }),
       staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
     }),
-    queryClient.prefetchQuery({
-      queryKey: userKeys.onboardingTourProgress(
-        session?.user.id ?? "anonymous",
-        WORKSPACE_GETTING_STARTED_TOUR_KEY,
-        WORKSPACE_GETTING_STARTED_TOUR_VERSION,
-      ),
-      queryFn: () =>
-        getOnboardingTourProgress(ctx, {
-          tourKey: WORKSPACE_GETTING_STARTED_TOUR_KEY,
-          tourVersion: WORKSPACE_GETTING_STARTED_TOUR_VERSION,
-        }),
-      staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
-    }),
-    // switchWorkspace(workspace.id),
   ]);
 
   return (

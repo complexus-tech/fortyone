@@ -55,6 +55,9 @@ export const useDeleteSprintMutation = () => {
       queryClient.invalidateQueries({
         queryKey: sprintKeys.lists(workspaceSlug),
       });
+      queryClient.invalidateQueries({
+        queryKey: sprintKeys.running(workspaceSlug),
+      });
       analytics.track("sprint_deleted", {
         sprintId,
       });

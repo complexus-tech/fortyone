@@ -77,6 +77,9 @@ export const useUpdateSprintMutation = () => {
       queryClient.invalidateQueries({
         queryKey: sprintKeys.lists(workspaceSlug),
       });
+      queryClient.invalidateQueries({
+        queryKey: sprintKeys.running(workspaceSlug),
+      });
 
       toast.success("Success", {
         description: "Sprint updated successfully",

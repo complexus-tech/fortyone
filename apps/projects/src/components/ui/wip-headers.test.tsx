@@ -18,6 +18,12 @@ jest.mock("./board-context", () => ({
     selectedStories: [],
     setSelectedStories: jest.fn(),
   }),
+  useBoardView: () => ({
+    newStoryDefaults: {},
+    viewOptions: { showEmptyGroups: true },
+    selectedStories: [],
+    setSelectedStories: jest.fn(),
+  }),
 }));
 jest.mock("./new-story-dialog", () => ({ NewStoryDialog: () => null }));
 jest.mock("./story-status-icon", () => ({ StoryStatusIcon: () => null }));

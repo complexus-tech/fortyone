@@ -56,8 +56,7 @@ export const HeaderSkeleton = ({ layout }: { layout: StoriesLayout }) => {
           </>
         )}
         <Flex align="center" gap={1}>
-          <Skeleton className="size-8 rounded" />
-          <Skeleton className="size-8 rounded" />
+          <Skeleton className="h-8 w-24 rounded" />
           <Skeleton className="size-8 rounded" />
         </Flex>
       </Flex>

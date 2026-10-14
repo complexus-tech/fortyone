@@ -24,7 +24,7 @@ jest.mock("@ai-sdk/react", () => ({ useChat: jest.fn() }));
 
 jest.mock("@tanstack/react-query", () => ({
   useQueryClient: () => ({
-    fetchQuery: jest.fn(),
+    fetchQuery: mockFetchQuery,
     invalidateQueries: jest.fn(),
   }),
 }));
@@ -138,6 +138,7 @@ let mockTotalMessages = 0;
 const sendMessage = jest.fn(() => Promise.resolve());
 const regenerate = jest.fn(() => Promise.resolve());
 const setMessages = jest.fn();
+const mockFetchQuery = jest.fn();
 const mockedUseChat = jest.mocked(useChat);
 const mockedUseAiChatMessages = jest.mocked(useAiChatMessages);
 let onFinish: ChatFinishHandler | undefined;
@@ -207,6 +208,7 @@ describe("useMayaChat onboarding completion", () => {
     sendMessage.mockResolvedValue(undefined);
     regenerate.mockResolvedValue(undefined);
     setMessages.mockReset();
+    mockFetchQuery.mockReset();
     onFinish = undefined;
     mockedUseAiChatMessages.mockReturnValue({
       data: [],
@@ -468,4 +470,92 @@ describe("useMayaChat onboarding completion", () => {
       expect(result.current.googleDriveFiles).toEqual([firstFile, secondFile]);
     });
   });
+
+  it("ignores older history when a later conversation selection finishes first", async () => {
+    let finishFirstSelection: ((messages: unknown[]) => void) | undefined;
+    mockFetchQuery
+      .mockImplementationOnce(
+        () =>
+          new Promise<unknown[]>((resolve) => {
+            finishFirstSelection = resolve;
+          }),
+      )
+      .mockResolvedValueOnce([
+        { id: "newer-message", role: "assistant", parts: [] },
+      ]);
+    const updateChatRef = jest.fn();
+    const { result } = renderHook(() =>
+      useMayaChat({
+        clearChatRef: jest.fn(),
+        currentChatId: "current-chat",
+        hasSelectedChat: false,
+        updateChatRef,
+      }),
+    );
+    let firstSelection: Promise<void>;
+    act(() => {
+      firstSelection = result.current.handleChatSelect("older-chat");
+    });
+    await act(async () => {
+      await result.current.handleChatSelect("newer-chat");
+      finishFirstSelection?.([
+        { id: "older-message", role: "assistant", parts: [] },
+      ]);
+      await firstSelection;
+    });
+
+    expect(updateChatRef).toHaveBeenCalledTimes(1);
+    expect(updateChatRef).toHaveBeenCalledWith("newer-chat");
+    expect(setMessages).toHaveBeenCalledTimes(1);
+    expect(setMessages).toHaveBeenCalledWith([
+      { id: "newer-message", role: "assistant", parts: [] },
+    ]);
+  });
+
+  it.each(["new chat", "workspace unmount", "cancelled selection"])(
+    "ignores a pending history result after %s",
+    async (action) => {
+      let finishSelection: ((messages: unknown[]) => void) | undefined;
+      mockFetchQuery.mockImplementationOnce(
+        () =>
+          new Promise<unknown[]>((resolve) => {
+            finishSelection = resolve;
+          }),
+      );
+      const updateChatRef = jest.fn();
+      const { result, unmount } = renderHook(() =>
+        useMayaChat({
+          clearChatRef: jest.fn(),
+          currentChatId: "current-chat",
+          hasSelectedChat: false,
+          updateChatRef,
+        }),
+      );
+      let selection: Promise<void>;
+      act(() => {
+        selection = result.current.handleChatSelect("older-chat");
+      });
+      if (action === "new chat") {
+        act(() => {
+          result.current.handleNewChat();
+        });
+      } else if (action === "workspace unmount") {
+        unmount();
+      } else {
+        act(() => {
+          result.current.cancelPendingChatSelection();
+        });
+      }
+      setMessages.mockClear();
+      await act(async () => {
+        finishSelection?.([
+          { id: "older-message", role: "assistant", parts: [] },
+        ]);
+        await selection;
+      });
+
+      expect(updateChatRef).not.toHaveBeenCalled();
+      expect(setMessages).not.toHaveBeenCalled();
+    },
+  );
 });

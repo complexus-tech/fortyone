@@ -3,6 +3,7 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { useStoryById } from "./hooks/story";
+import { preloadMainDetails } from "./load-main-details";
 import { StoryPage } from ".";
 
 jest.mock("ui", () => ({
@@ -53,6 +54,10 @@ jest.mock("./components/story-skeleton", () => ({
   StorySkeleton: () => <p>Loading item</p>,
 }));
 jest.mock("./hooks/story", () => ({ useStoryById: jest.fn() }));
+jest.mock("./load-main-details", () => ({
+  loadMainDetails: jest.fn(),
+  preloadMainDetails: jest.fn(),
+}));
 
 const mockedUseStoryById = jest.mocked(useStoryById);
 const mockRefetch = jest.fn();
@@ -66,6 +71,7 @@ const ready = {
 
 beforeEach(() => {
   mockRefetch.mockClear();
+  jest.mocked(preloadMainDetails).mockClear();
   mockedUseStoryById.mockReturnValue(ready);
 });
 
@@ -122,6 +128,24 @@ it("does not mount editors while loading or when the item is unavailable", () =>
   rerender(<StoryPage storyId="story" />);
   expect(screen.getByText("Item not found")).toBeInTheDocument();
   expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+});
+
+it("starts loading editor code while direct-entry ticket data is still pending", () => {
+  mockedUseStoryById.mockReturnValue({
+    ...ready,
+    data: undefined,
+    isPending: true,
+  } as ReturnType<typeof useStoryById>);
+
+  const { rerender } = render(<StoryPage storyId="story" />);
+  expect(preloadMainDetails).toHaveBeenCalledTimes(1);
+  expect(screen.getByText("Loading item")).toBeInTheDocument();
+  expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+
+  mockedUseStoryById.mockReturnValue(ready);
+  rerender(<StoryPage storyId="story" />);
+  expect(preloadMainDetails).toHaveBeenCalledTimes(1);
+  expect(screen.getAllByRole("textbox")).toHaveLength(2);
 });
 
 it("preserves the error retry path without mounting editors", () => {

@@ -2,6 +2,7 @@
 import { Box, Button, Text } from "ui";
 import { cn } from "lib";
 import type { ReactNode } from "react";
+import { useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useWorkspacePath } from "@/hooks";
 import { useRecordStoryVisit } from "@/shared/story/use-recent-story-history";
@@ -11,14 +12,12 @@ import { MainDetailsSkeleton } from "./components/main-details-skeleton";
 import { Options } from "./components/options";
 import { useStoryById } from "./hooks/story";
 import { StorySkeleton } from "./components/story-skeleton";
+import { loadMainDetails, preloadMainDetails } from "./load-main-details";
 
-const MainDetails = dynamic(
-  () => import("./components/main-details").then((mod) => mod.MainDetails),
-  {
-    ssr: false,
-    loading: () => <MainDetailsSkeleton />,
-  },
-);
+const MainDetails = dynamic(loadMainDetails, {
+  ssr: false,
+  loading: () => <MainDetailsSkeleton />,
+});
 
 export const StoryPage = ({
   storyId,
@@ -42,6 +41,12 @@ export const StoryPage = ({
   useRecordStoryVisit(
     !isError && story && !story.deletedAt ? story.id : undefined,
   );
+
+  useEffect(() => {
+    // Direct links and immediate clicks should load code alongside ticket data.
+    // Importing the component does not create editors before access is resolved.
+    void preloadMainDetails();
+  }, []);
 
   if (isPending) {
     return <StorySkeleton isDialog={isDialog} />;

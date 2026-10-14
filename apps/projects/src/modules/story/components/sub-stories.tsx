@@ -14,7 +14,7 @@ import { RowWrapper, StoriesBoard } from "@/components/ui";
 import { useTeamStatuses } from "@/lib/hooks/statuses";
 import { useTerminology, useUserRole, useWorkspacePath } from "@/hooks";
 import { Thinking } from "@/components/ui/chat/thinking";
-import { useChatContext } from "@/context/chat-context";
+import { useChatActions } from "@/context/chat-context";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import type { DetailedStory } from "../types";
 import { StoryRelationshipPicker } from "./story-relationship-picker";
@@ -35,7 +35,7 @@ export const SubStories = ({
   const { data: statuses = [] } = useTeamStatuses(parent.teamId);
   const { data: teams = [] } = useTeams();
   const team = teams.find((team) => team.id === parent.teamId);
-  const { openChat } = useChatContext();
+  const { openChat } = useChatActions();
   const { userRole } = useUserRole();
   const { workspaceSlug } = useWorkspacePath();
   const completedStatus = statuses.find(

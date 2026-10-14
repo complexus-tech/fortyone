@@ -113,6 +113,12 @@ jest.mock("@/components/ui/board-context", () => ({
     selectedStories: [],
     updateStory: mockUpdateStory,
   }),
+  useBoardView: () => ({
+    embedded: true,
+    isColumnVisible: (column: string) => column === "Status",
+    selectedStories: [],
+    updateStory: mockUpdateStory,
+  }),
 }));
 jest.mock("@/modules/story/hooks/update-mutation", () => ({
   useUpdateStoryMutation: () => ({ mutate: mockMutate }),

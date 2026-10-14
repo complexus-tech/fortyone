@@ -27,7 +27,7 @@ import { useBoardPropertySlots } from "@/shared/story/board-property-slots";
 import { StoryCard } from "./story/card";
 import type { ViewOptionsGroupBy } from "./stories-view-options-button";
 import { NewStoryDialog } from "./new-story-dialog";
-import { useBoard } from "./board-context";
+import { useBoardView } from "./board-context";
 import { StoryDialog } from "./story-dialog";
 import { groupFilters } from "./group-filters";
 
@@ -42,7 +42,7 @@ const List = ({
   scrollRootRef: IntersectionObserverHookRootRefCallback;
   totalStories: number;
 }) => {
-  const { viewOptions } = useBoard();
+  const { viewOptions } = useBoardView();
   const { showEmptyGroups } = viewOptions;
   const { isOver, setNodeRef } = useDroppable({
     id,
@@ -90,7 +90,7 @@ export const KanbanGroup = ({
 }) => {
   const { Provider: BoardPropertyProvider } = useBoardPropertySlots();
   const { getTermDisplay } = useTerminology();
-  const { newStoryDefaults, viewOptions } = useBoard();
+  const { newStoryDefaults, viewOptions } = useBoardView();
   const [isOpen, setIsOpen] = useState(false);
 
   const [storyId, setStoryId] = useState<string | null>(null);

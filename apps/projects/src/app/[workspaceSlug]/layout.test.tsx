@@ -2,11 +2,15 @@ import { QueryClient } from "@tanstack/react-query";
 import { redirect } from "next/navigation";
 import { getQueryClient } from "@/app/get-query-client";
 import { auth } from "@/auth";
-import { workspaceKeys } from "@/constants/keys";
+import { userKeys, workspaceKeys } from "@/constants/keys";
+import { objectiveKeys } from "@/modules/objectives/constants";
+import { getObjectiveStatuses } from "@/modules/objectives/queries/statuses";
+import { getOnboardingTourProgress } from "@/shared/walkthrough/progress/get-progress";
 import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
 import { getWorkspaceAccess } from "@/modules/auth/workspace-access";
 import RootLayout from "./layout";
 import { fetchNonCriticalImportantQueries } from "./non-critical-important-queries";
+import type * as NonCriticalQueriesModule from "./non-critical-important-queries";
 
 jest.mock("next/navigation", () => ({ redirect: jest.fn() }));
 jest.mock("@/app/get-query-client", () => ({ getQueryClient: jest.fn() }));
@@ -21,7 +25,51 @@ jest.mock("@/modules/auth/workspace-access", () => ({
   getWorkspaceAccess: jest.fn(),
 }));
 jest.mock("./non-critical-important-queries", () => ({
-  fetchNonCriticalImportantQueries: jest.fn(),
+  fetchNonCriticalImportantQueries: jest.fn(
+    (...args: Parameters<typeof fetchNonCriticalImportantQueries>) =>
+      jest
+        .requireActual<
+          typeof NonCriticalQueriesModule
+        >("./non-critical-important-queries")
+        .fetchNonCriticalImportantQueries(...args),
+  ),
+}));
+jest.mock("@/modules/objectives/queries/get-objectives", () => ({
+  getObjectives: jest.fn().mockResolvedValue([]),
+}));
+jest.mock("@/modules/sprints/queries/get-sprints", () => ({
+  getSprints: jest.fn().mockResolvedValue([]),
+}));
+jest.mock("@/lib/queries/labels/get-labels", () => ({
+  getLabels: jest.fn().mockResolvedValue([]),
+}));
+jest.mock("@/modules/teams/queries/get-public-teams", () => ({
+  getPublicTeams: jest.fn().mockResolvedValue([]),
+}));
+jest.mock("@/modules/invitations/public/server", () => ({
+  myInvitationsPrefetchOptions: () => ({
+    queryKey: ["my-invitations"],
+    queryFn: () => Promise.resolve([]),
+  }),
+  pendingInvitationsPrefetchOptions: () => ({
+    queryKey: ["pending-invitations"],
+    queryFn: () => Promise.resolve([]),
+  }),
+}));
+jest.mock("@/lib/queries/users/automation-preferences", () => ({
+  getAutomationPreferences: jest.fn().mockResolvedValue({}),
+}));
+jest.mock("@/modules/notifications/queries/get-unread", () => ({
+  getUnreadNotifications: jest.fn().mockResolvedValue([]),
+}));
+jest.mock("@/lib/queries/members/get-members", () => ({
+  getMembers: jest.fn().mockResolvedValue([]),
+}));
+jest.mock("@/modules/notifications/queries/get-preferences", () => ({
+  getNotificationPreferences: jest.fn().mockResolvedValue({}),
+}));
+jest.mock("@/lib/queries/subscriptions/get-subscription", () => ({
+  getSubscription: jest.fn().mockResolvedValue({}),
 }));
 jest.mock("@/modules/teams/queries/get-teams", () => ({
   getTeams: jest.fn().mockResolvedValue([]),
@@ -50,7 +98,7 @@ jest.mock("@/components/walkthrough/walkthrough-provider", () => ({
 }));
 jest.mock("@/components/walkthrough/walkthrough-tour", () => ({
   WORKSPACE_GETTING_STARTED_TOUR_KEY: "getting-started",
-  WORKSPACE_GETTING_STARTED_TOUR_VERSION: 1,
+  WORKSPACE_GETTING_STARTED_TOUR_VERSION: "1",
 }));
 jest.mock("@/context/chat-context", () => ({ ChatProvider: () => null }));
 jest.mock("../server-sent-events", () => ({ ServerSentEvents: () => null }));
@@ -109,5 +157,47 @@ describe("workspace shell query reuse", () => {
     expect(getQueryClient).not.toHaveBeenCalled();
     expect(fetchNonCriticalImportantQueries).not.toHaveBeenCalled();
     expect(queryClient.getQueryData(workspaceKeys.lists())).toBeUndefined();
+  });
+
+  it("renders the authorized shell while objective metadata and tour progress are pending", async () => {
+    let resolveStatuses!: (
+      value: Awaited<ReturnType<typeof getObjectiveStatuses>>,
+    ) => void;
+    const statuses = new Promise<
+      Awaited<ReturnType<typeof getObjectiveStatuses>>
+    >((resolve) => {
+      resolveStatuses = resolve;
+    });
+    let resolveProgress!: (
+      value: Awaited<ReturnType<typeof getOnboardingTourProgress>>,
+    ) => void;
+    const progress = new Promise<
+      Awaited<ReturnType<typeof getOnboardingTourProgress>>
+    >((resolve) => {
+      resolveProgress = resolve;
+    });
+    jest.mocked(getObjectiveStatuses).mockReturnValueOnce(statuses);
+    jest.mocked(getOnboardingTourProgress).mockReturnValueOnce(progress);
+
+    const shell = await RootLayout({
+      children: null,
+      params: Promise.resolve({ workspaceSlug: "acme" }),
+    });
+
+    expect(shell).toBeTruthy();
+    expect(
+      queryClient.getQueryState(objectiveKeys.statuses("acme"))?.status,
+    ).toBe("pending");
+    expect(
+      queryClient.getQueryState(
+        userKeys.onboardingTourProgress("anonymous", "getting-started", "1"),
+      )?.status,
+    ).toBe("pending");
+
+    resolveStatuses([]);
+    resolveProgress(
+      {} as Awaited<ReturnType<typeof getOnboardingTourProgress>>,
+    );
+    await Promise.all([statuses, progress]);
   });
 });

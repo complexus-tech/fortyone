@@ -20,7 +20,7 @@ import type { State } from "@/types/states";
 import { BodyContainer } from "../shared/body";
 import { KanbanGroupTitle, StoriesKanbanHeader } from "./kanban-header";
 import { KanbanGroup } from "./kanban-group";
-import { useBoard } from "./board-context";
+import { useBoardView } from "./board-context";
 import {
   getHiddenKanbanGroupKeys,
   hideKanbanGroup,
@@ -241,7 +241,7 @@ export const KanbanBoard = ({
   useKanbanAutoScroll(scrollContainerRef);
 
   const { teamId } = useParams<{ teamId: string }>();
-  const { viewOptions, setViewOptions } = useBoard();
+  const { viewOptions, setViewOptions } = useBoardView();
   const { groupBy } = viewOptions;
   const { data: teamStatuses = [] } = useTeamStatuses(teamId);
   const { data: allStatuses = [] } = useStatuses();

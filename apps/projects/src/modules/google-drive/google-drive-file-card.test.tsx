@@ -1,15 +1,19 @@
 /* global beforeEach, describe, expect, it, jest -- Jest globals are provided by the projects test runner. */
 
 import { fireEvent, render, screen } from "@testing-library/react";
+import TimeAgo from "javascript-time-ago";
+import en from "javascript-time-ago/locale/en";
 import type { GoogleDriveFileReference } from "@/shared/google-drive/types";
 import { GoogleDriveFileCard } from "./google-drive-file-card";
+
+TimeAgo.addDefaultLocale(en);
 
 const mockOpenChatWithGoogleDriveFile = jest.fn();
 const mockDeleteFile = jest.fn();
 const mockRefreshFile = jest.fn();
 
 jest.mock("@/context/chat-context", () => ({
-  useChatContext: () => ({
+  useChatActions: () => ({
     openChatWithGoogleDriveFile: mockOpenChatWithGoogleDriveFile,
   }),
 }));
@@ -135,5 +139,15 @@ describe("GoogleDriveFileCard", () => {
     expect(
       screen.queryByRole("menuitem", { name: "Convert" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("opens Maya with the selected linked file through the action context", () => {
+    const file = createFile();
+    renderCard(file);
+    openActions(file.name);
+
+    fireEvent.click(screen.getByRole("menuitem", { name: "Ask Maya" }));
+
+    expect(mockOpenChatWithGoogleDriveFile).toHaveBeenCalledWith(file);
   });
 });

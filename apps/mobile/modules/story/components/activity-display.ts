@@ -302,6 +302,39 @@ function collectionValue(
   return scalar(raw);
 }
 
+function checklistSnapshotTitle(value: unknown): string {
+  if (!value || typeof value !== "object" || !("title" in value)) return "";
+  return typeof value.title === "string" ? value.title.trim() : "";
+}
+
+function checklistActivityMessage(activity: StoryActivity, storyTerm: string) {
+  const previousTitle = checklistSnapshotTitle(activity.oldValue);
+  const title =
+    activity.currentValue.trim() ||
+    checklistSnapshotTitle(activity.newValue) ||
+    previousTitle;
+  const item = title ? `checklist item “${title}”` : "a checklist item";
+
+  switch (activity.reason) {
+    case "checklist_item_added":
+      return `added ${item}`;
+    case "checklist_item_updated":
+      return previousTitle && title && previousTitle !== title
+        ? `renamed checklist item “${previousTitle}” to “${title}”`
+        : `updated ${item}`;
+    case "checklist_item_completed":
+      return `completed ${item}`;
+    case "checklist_item_reopened":
+      return `reopened ${item}`;
+    case "checklist_item_removed":
+      return `removed ${item}`;
+    case "checklist_item_converted":
+      return `converted ${item} to a new ${storyTerm}`;
+    default:
+      return `updated ${item}`;
+  }
+}
+
 function activityMessage(
   activity: StoryActivity,
   context: ActivityDisplayContext,
@@ -313,6 +346,12 @@ function activityMessage(
     return currentValue ? `linked ${currentValue}` : "added a link";
   if (field === "description" || field === "description_html")
     return "updated the description";
+  if (field === "checklist_item")
+    return checklistActivityMessage(activity, term);
+  if (field === "checklist")
+    return reason === "checklist_reordered"
+      ? "reordered the checklist"
+      : "updated the checklist";
   const current = fieldValue(field, currentValue, context, activity);
   const previous = isMissing(oldValue)
     ? ""
@@ -387,7 +426,7 @@ export function getActivityDisplay(
   context: ActivityDisplayContext,
 ) {
   const actor = resolveActivityActor(activity, context);
-  // Mobile omits explanatory rationale. Association reason codes still inform
-  // the event verb inside activityMessage, so removals retain their meaning.
+  // Mobile omits explanatory rationale. Machine reason codes still inform
+  // the event verb inside activityMessage, so changes retain their meaning.
   return { actor, message: activityMessage(activity, context) };
 }

@@ -15,7 +15,7 @@ import { useAutomationPreferences } from "@/lib/hooks/users/preferences";
 import { useFigmaHandoffStatuses } from "@/lib/hooks/figma";
 import { FigmaIcon } from "@/modules/settings/workspace/integrations/figma/icon";
 import { useBoardPropertySlots } from "@/shared/story/board-property-slots";
-import { useBoard } from "../board-context";
+import { useBoardView } from "../board-context";
 import { MemberTooltip } from "../member-tooltip";
 import { PriorityIcon } from "../priority-icon";
 import { StoryContextMenu } from "./context-menu";
@@ -71,7 +71,7 @@ const StoryCardContent = memo(function StoryCardContent({
   const selectedAssignee = story.assignee;
   const figmaHandoffStatus = figmaHandoffStatuses?.[story.id];
 
-  const { isColumnVisible, updateStory } = useBoard();
+  const { isColumnVisible, updateStory } = useBoardView();
   const handleUpdate = useCallback(
     (data: StoryUpdate, targetStoryId?: string) => {
       updateStory(targetStoryId ?? story.id, data);
@@ -79,19 +79,17 @@ const StoryCardContent = memo(function StoryCardContent({
     [story.id, updateStory],
   );
 
-  return (
-    <Box
-      onMouseEnter={() => {
-        if (!canPrefetch()) return;
+  const handlePrefetch = () => {
+    if (!canPrefetch() || !session) return;
 
-        if (session) {
-          void prefetchStory(queryClient, story.id, {
-            session,
-            workspaceSlug,
-          });
-        }
-      }}
-    >
+    void prefetchStory(queryClient, story.id, {
+      session,
+      workspaceSlug,
+    });
+  };
+
+  return (
+    <Box onMouseEnter={handlePrefetch}>
       <StoryContextMenu story={story}>
         <div ref={setNodeRef}>
           <Box
@@ -129,6 +127,7 @@ const StoryCardContent = memo(function StoryCardContent({
                     }
                   }
                 }}
+                onFocus={handlePrefetch}
               >
                 <Text className="line-clamp-3 text-[1.1rem] leading-[1.4rem]">
                   {story.title}

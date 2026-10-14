@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useSession } from "@/lib/auth/client";
 import { useWorkspacePath } from "@/hooks";
 import { sprintKeys } from "@/constants/keys";
+import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
 import { getRunningSprints } from "../queries/get-running-sprints";
 
 export const useRunningSprints = () => {
@@ -10,5 +11,6 @@ export const useRunningSprints = () => {
   return useQuery({
     queryKey: sprintKeys.running(workspaceSlug),
     queryFn: () => getRunningSprints({ session: session!, workspaceSlug }),
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE,
   });
 };

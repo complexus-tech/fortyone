@@ -179,8 +179,14 @@ func (r *repo) ApplyChecklistMutation(ctx context.Context, command storydomain.C
 				return err
 			}
 			result.Items, err = listChecklist(ctx, queries, command.Scope.WorkspaceID, command.StoryID)
-			result.Changed = err == nil
-			return err
+			if err != nil {
+				return err
+			}
+			if err := insertChecklistActivities(ctx, queries, command, items, result.Items); err != nil {
+				return err
+			}
+			result.Changed = true
+			return nil
 		})
 		if err == nil {
 			return result, nil

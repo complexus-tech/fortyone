@@ -273,8 +273,9 @@ func assertMutationRowCount(
 ) {
 	t.Helper()
 	allowed := map[string]string{
-		"stories:id":                "SELECT COUNT(*) FROM stories WHERE id = $1",
-		"story_activities:story_id": "SELECT COUNT(*) FROM story_activities WHERE story_id = $1",
+		"stories:id":                     "SELECT COUNT(*) FROM stories WHERE id = $1",
+		"story_activities:story_id":      "SELECT COUNT(*) FROM story_activities WHERE story_id = $1",
+		"story_checklist_items:story_id": "SELECT COUNT(*) FROM story_checklist_items WHERE story_id = $1",
 	}
 	query, ok := allowed[table+":"+idColumn]
 	if !ok {

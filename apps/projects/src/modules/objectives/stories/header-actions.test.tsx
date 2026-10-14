@@ -16,9 +16,6 @@ jest.mock("@/hooks", () => ({
       options?.capitalize ? "Objective" : "objective",
   }),
   useUserRole: () => ({ userRole: mockUserRole }),
-  useWorkspacePath: () => ({
-    withWorkspace: (path: string) => `/acme${path}`,
-  }),
 }));
 jest.mock("@/hooks/owner", () => ({
   useIsAdminOrOwner: () => ({ isAdminOrOwner: mockIsAdminOrOwner }),
@@ -101,15 +98,11 @@ it("reports clipboard failure without reporting success", async () => {
   expect(toast.info).not.toHaveBeenCalled();
 });
 
-it("keeps navigation and copy available to guests while hiding Smart fill and unauthorized deletion", async () => {
+it("keeps copy available to guests while hiding Smart fill and unauthorized deletion", async () => {
   mockUserRole = "guest";
   mockIsAdminOrOwner = false;
   render(<HeaderActions objective={objective} />);
 
-  expect(screen.getByRole("link", { name: "Map view" })).toHaveAttribute(
-    "href",
-    "/acme/strategy",
-  );
   expect(
     screen.queryByRole("button", { name: "Smart fill" }),
   ).not.toBeInTheDocument();

@@ -14,7 +14,7 @@ import {
   TeamColor,
 } from "@/components/ui";
 import { useMediaQuery, useTerminology, useUserRole } from "@/hooks";
-import { useChatContext } from "@/context/chat-context";
+import { useChatActions } from "@/context/chat-context";
 import { useTeams } from "../../teams/hooks/teams";
 import { useSprint } from "../hooks/sprint-details";
 import { useSprintOptions } from "./provider";
@@ -40,7 +40,7 @@ export const Header = ({
   const { data: teams = [] } = useTeams();
   const { data: sprint } = useSprint(sprintId);
   const { userRole } = useUserRole();
-  const { openChat } = useChatContext();
+  const { openChat } = useChatActions();
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
   useHotkeys("v+l", () => {

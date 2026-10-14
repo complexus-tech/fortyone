@@ -4,11 +4,14 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { storyKeys } from "@/modules/stories/constants";
+import type { StoryActivity } from "@/modules/stories/types";
 import { refreshWipCapacity } from "@/shared/story/wip-capacity";
 import { updateChecklistAction } from "../actions/checklist";
 import { getStoryChecklist } from "../queries/get-checklist";
-import type { StoryChecklistItem } from "../types/checklist";
+import { getStoryActivities } from "../queries/get-activities";
+import type { ChecklistCommand, StoryChecklistItem } from "../types/checklist";
 import { useChecklistMutation, useStoryChecklist } from "./checklist";
+import { useStoryActivitiesInfinite } from "./story-activities";
 
 jest.mock("@/hooks", () => ({
   useWorkspacePath: () => ({ workspaceSlug: "acme" }),
@@ -21,6 +24,9 @@ jest.mock("sonner", () => ({
 }));
 jest.mock("../actions/checklist", () => ({ updateChecklistAction: jest.fn() }));
 jest.mock("../queries/get-checklist", () => ({ getStoryChecklist: jest.fn() }));
+jest.mock("../queries/get-activities", () => ({
+  getStoryActivities: jest.fn(),
+}));
 jest.mock("@/shared/story/wip-capacity", () => ({
   refreshWipCapacity: jest.fn(),
 }));
@@ -92,6 +98,100 @@ const setup = () => {
 beforeEach(() => {
   jest.clearAllMocks();
   jest.mocked(getStoryChecklist).mockReset();
+  jest.mocked(getStoryActivities).mockReset();
+});
+
+it.each(["success", "lost response"])(
+  "refreshes persisted activity without realtime after a checklist save (%s)",
+  async (outcome) => {
+    const { client, result, wrapper } = setup();
+    const activityKey = storyKeys.activitiesInfinite("acme", "story");
+    const emptyPage = {
+      activities: [],
+      pagination: { page: 1, pageSize: 20, hasMore: false, nextPage: 2 },
+    };
+    client.setQueryData(activityKey, { pages: [emptyPage], pageParams: [1] });
+    const activity: StoryActivity = {
+      id: "completion",
+      storyId: "story",
+      userId: "viewer",
+      user: {
+        id: "viewer",
+        username: "joseph",
+        fullName: "Joseph",
+        avatarUrl: null,
+        isActive: true,
+        isSystem: false,
+      },
+      type: "update",
+      field: "checklist_item",
+      currentValue: item.title,
+      oldValue: { id: item.id, title: item.title, completed: false },
+      newValue: { id: item.id, title: item.title, completed: true },
+      reason: "checklist_item_completed",
+      createdAt: "2026-10-14T10:30:00Z",
+    };
+    jest.mocked(getStoryActivities).mockResolvedValue({
+      ...emptyPage,
+      activities: [activity],
+    });
+    const feed = renderHook(() => useStoryActivitiesInfinite("story"), {
+      wrapper,
+    });
+    const save = deferred<StoryChecklistItem>();
+    jest.mocked(updateChecklistAction).mockReturnValue(save.promise);
+
+    act(() => {
+      result.current.mutate({
+        type: "update",
+        itemId: item.id,
+        updates: { completed: true },
+      });
+    });
+    await waitFor(() => {
+      expect(updateChecklistAction).toHaveBeenCalledTimes(1);
+    });
+    expect(getStoryActivities).not.toHaveBeenCalled();
+    expect(feed.result.current.data?.pages[0].activities).toEqual([]);
+
+    act(() => {
+      if (outcome === "success") {
+        save.resolve({ ...item, completed: true });
+      } else {
+        save.reject(new Error("Connection lost after saving"));
+      }
+    });
+    await waitFor(() => {
+      expect(feed.result.current.data?.pages[0].activities).toEqual([activity]);
+    });
+    expect(getStoryActivities).toHaveBeenCalledTimes(1);
+  },
+);
+
+it.each<ChecklistCommand>([
+  { type: "create", title: "New task" },
+  { type: "update", itemId: item.id, updates: { title: "Renamed task" } },
+  { type: "update", itemId: item.id, updates: { completed: true } },
+  { type: "delete", itemId: item.id },
+  { type: "clear" },
+  { type: "reorder", itemIds: ["second", "first"] },
+])("invalidates only the owning activity feed after $type", async (command) => {
+  const { client, result } = setup();
+  const activityKey = storyKeys.activitiesInfinite("acme", "story");
+  const otherStoryKey = storyKeys.activitiesInfinite("acme", "other");
+  const otherWorkspaceKey = storyKeys.activitiesInfinite("other", "story");
+  for (const queryKey of [activityKey, otherStoryKey, otherWorkspaceKey]) {
+    client.setQueryData(queryKey, { pages: [], pageParams: [] });
+  }
+  jest.mocked(updateChecklistAction).mockResolvedValue(null);
+
+  await act(async () => {
+    await result.current.mutateAsync(command);
+  });
+
+  expect(client.getQueryState(activityKey)?.isInvalidated).toBe(true);
+  expect(client.getQueryState(otherStoryKey)?.isInvalidated).toBe(false);
+  expect(client.getQueryState(otherWorkspaceKey)?.isInvalidated).toBe(false);
 });
 
 it("appends a new item before saving and reconciles by identity without removing matching titles", async () => {

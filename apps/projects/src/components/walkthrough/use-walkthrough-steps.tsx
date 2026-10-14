@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Box, Kbd, Text } from "ui";
 import { usePathname, useRouter } from "next/navigation";
-import { useChatContext } from "@/context/chat-context";
+import { useChatActions } from "@/context/chat-context";
 import {
   useFeatures,
   useTerminology,
@@ -26,7 +26,7 @@ export const useWalkthroughSteps = (): WalkthroughStep[] => {
   const { getTermDisplay } = useTerminology();
   const { userRole } = useUserRole();
   const { withWorkspace } = useWorkspacePath();
-  const { openChat } = useChatContext();
+  const { openChat } = useChatActions();
   const storyTerm = getTermDisplay("storyTerm");
   const storyTermPlural = getTermDisplay("storyTerm", { variant: "plural" });
   const objectiveTerm = getTermDisplay("objectiveTerm");

@@ -85,11 +85,19 @@ export const useMayaChat = (config: MayaChatConfig) => {
   const isSendingRef = useRef(false);
   const hydratedChatIdRef = useRef<string | null>(null);
   const locallyModifiedChatIdRef = useRef<string | null>(null);
+  const chatSelectionRequestRef = useRef(0);
   const onUserMessageSubmittedRef = useRef(config.onUserMessageSubmitted);
 
   useEffect(() => {
     onUserMessageSubmittedRef.current = config.onUserMessageSubmitted;
   }, [config.onUserMessageSubmitted]);
+
+  useEffect(
+    () => () => {
+      chatSelectionRequestRef.current += 1;
+    },
+    [],
+  );
 
   const terminology = {
     stories: getTermDisplay("storyTerm", { variant: "plural" }),
@@ -121,7 +129,12 @@ export const useMayaChat = (config: MayaChatConfig) => {
     transport.setRequestBody(requestBody);
   });
 
+  const cancelPendingChatSelection = useCallback(() => {
+    chatSelectionRequestRef.current += 1;
+  }, []);
+
   const handleNewChat = () => {
+    cancelPendingChatSelection();
     const newChatId = generateId();
     realtimeVoice.disconnect();
     realtimeVoice.clearMessages();
@@ -135,14 +148,29 @@ export const useMayaChat = (config: MayaChatConfig) => {
   };
 
   const handleChatSelect = async (chatId: string) => {
+    const selectionRequest = ++chatSelectionRequestRef.current;
+    // Fetch messages for the new chat ID directly
+    const newMessages = await queryClient
+      .fetchQuery({
+        queryKey: aiChatKeys.messages(workspaceSlug, chatId),
+        queryFn: () =>
+          getAiChatMessages({ session: session!, workspaceSlug }, chatId),
+      })
+      .catch((selectionError: unknown) => {
+        if (selectionRequest !== chatSelectionRequestRef.current) return null;
+        throw selectionError;
+      });
+    // A later selection, explicit new chat, or workspace change owns the
+    // session now. A slow history request must not replace that newer work.
+    if (
+      newMessages === null ||
+      selectionRequest !== chatSelectionRequestRef.current
+    ) {
+      return;
+    }
+
     realtimeVoice.disconnect();
     realtimeVoice.clearMessages();
-    // Fetch messages for the new chat ID directly
-    const newMessages = await queryClient.fetchQuery({
-      queryKey: aiChatKeys.messages(workspaceSlug, chatId),
-      queryFn: () =>
-        getAiChatMessages({ session: session!, workspaceSlug }, chatId),
-    });
     setMessages(newMessages);
     hydratedChatIdRef.current = chatId;
     locallyModifiedChatIdRef.current = null;
@@ -441,6 +469,7 @@ export const useMayaChat = (config: MayaChatConfig) => {
     regenerate: handleRegenerate,
     handleNewChat,
     handleChatSelect,
+    cancelPendingChatSelection,
     handleSuggestedPrompt,
     addToolApprovalResponse,
     setAttachments,

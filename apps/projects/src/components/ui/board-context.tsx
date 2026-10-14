@@ -1,12 +1,13 @@
 "use client";
-import { createContext, use } from "react";
+import { createContext, use, useMemo } from "react";
+import type { ReactNode } from "react";
 import type {
   DisplayColumn,
   StoriesViewOptions,
 } from "@/components/ui/stories-view-options-button";
 import type { DetailedStory } from "@/modules/story/types";
 
-export const BoardContext = createContext<{
+type BoardState = {
   embedded?: boolean;
   selectedStories: string[];
   setSelectedStories: (value: string[]) => void;
@@ -19,7 +20,64 @@ export const BoardContext = createContext<{
     objectiveId?: string;
     sprintId?: string;
   };
-} | null>(null);
+};
+
+type BoardView = Omit<BoardState, "selectedStories" | "setSelectedStories">;
+
+const BoardContext = createContext<BoardState | null>(null);
+const BoardViewContext = createContext<BoardView | null>(null);
+
+export const BoardProvider = ({
+  children,
+  value,
+}: {
+  children: ReactNode;
+  value: BoardState;
+}) => {
+  const {
+    embedded,
+    viewOptions,
+    setViewOptions,
+    isColumnVisible,
+    updateStory,
+    newStoryDefaults,
+  } = value;
+  const view = useMemo(
+    () => ({
+      embedded,
+      viewOptions,
+      setViewOptions,
+      isColumnVisible,
+      updateStory,
+      newStoryDefaults,
+    }),
+    [
+      embedded,
+      viewOptions,
+      setViewOptions,
+      isColumnVisible,
+      updateStory,
+      newStoryDefaults,
+    ],
+  );
+
+  return (
+    <BoardContext.Provider value={value}>
+      <BoardViewContext.Provider value={view}>
+        {children}
+      </BoardViewContext.Provider>
+    </BoardContext.Provider>
+  );
+};
+
+// Cards and display controls do not subscribe to the full selection array.
+export const useBoardView = () => {
+  const context = use(BoardViewContext);
+  if (!context) {
+    throw new Error("useBoardView must be used within a BoardProvider");
+  }
+  return context;
+};
 
 export const useBoard = () => {
   const context = use(BoardContext);

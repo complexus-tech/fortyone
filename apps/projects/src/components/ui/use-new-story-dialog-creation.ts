@@ -1,3 +1,4 @@
+import type { Editor } from "@tiptap/core";
 import { useState } from "react";
 import { toast } from "sonner";
 import {
@@ -10,8 +11,6 @@ import {
   runStoryCreatedFollowUp,
   type NewStoryDialogForm,
 } from "./new-story-dialog-form";
-
-type DescriptionEditor = Parameters<typeof getPersistableRichTextContent>[0];
 
 type TitleEditor = {
   commands: {
@@ -54,11 +53,11 @@ export const useNewStoryDialogCreation = <
 }: {
   createMore: boolean;
   currentTeamId?: string;
-  editor: DescriptionEditor | null;
+  editor: Editor | null;
   figmaArtifacts: TArtifact[];
   finalizeStagedMedia: (
     createdStoryId: string,
-    editor: DescriptionEditor,
+    editor: Editor,
   ) => Promise<ReturnType<typeof getPersistableRichTextContent> | null>;
   isMayaAssigneeLoading: boolean;
   linkFigmaStory: (input: { storyId: string; url: string }) => Promise<unknown>;

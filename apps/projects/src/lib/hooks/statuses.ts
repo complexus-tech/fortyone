@@ -13,6 +13,7 @@ export const useStatuses = () => {
   return useQuery({
     queryKey: statusKeys.lists(workspaceSlug),
     queryFn: () => getStatuses({ session: session!, workspaceSlug }),
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE,
   });
 };
 

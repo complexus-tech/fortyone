@@ -73,8 +73,12 @@ export const ActivityUpdateSegments = ({
       }
 
       const isTruncatableValue =
-        segment.type === "currentValue" &&
-        (field === "title" || isAssociationActivityField(field));
+        (segment.type === "currentValue" &&
+          (field === "title" || isAssociationActivityField(field))) ||
+        (field === "checklist_item" &&
+          (segment.type === "currentValue" || segment.type === "oldValue"));
+      const segmentTitle =
+        segment.type === "oldValue" ? segment.value : currentValue;
 
       return (
         <Text
@@ -85,7 +89,7 @@ export const ActivityUpdateSegments = ({
           )}
           fontWeight="medium"
           key={getSegmentKey(segment)}
-          title={isTruncatableValue ? currentValue : undefined}
+          title={isTruncatableValue ? segmentTitle : undefined}
         >
           {getSegmentContent({
             activityLabels,

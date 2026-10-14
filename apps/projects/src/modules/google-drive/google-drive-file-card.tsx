@@ -11,7 +11,7 @@ import {
   RefreshIcon,
 } from "icons";
 import { useEffect, useState } from "react";
-import { useChatContext } from "@/context/chat-context";
+import { useChatActions } from "@/context/chat-context";
 import { useWorkspacePath } from "@/hooks/use-workspace-path";
 import {
   canMayaReadGoogleDriveFile,
@@ -56,7 +56,7 @@ export const GoogleDriveFileCard = ({
   onPreviewError: () => void;
   target: GoogleDriveTarget;
 }) => {
-  const { openChatWithGoogleDriveFile } = useChatContext();
+  const { openChatWithGoogleDriveFile } = useChatActions();
   const { workspaceSlug } = useWorkspacePath();
   const deleteFile = useDeleteGoogleDriveFile(target);
   const refreshFile = useRefreshGoogleDriveFile(target);

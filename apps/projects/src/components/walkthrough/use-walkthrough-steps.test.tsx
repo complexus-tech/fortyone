@@ -9,7 +9,7 @@ import {
   useUserRole,
   useWorkspacePath,
 } from "@/hooks";
-import { useChatContext } from "@/context/chat-context";
+import { useChatActions } from "@/context/chat-context";
 import { useMayaMessageAvailability } from "@/shared/maya-usage/use-maya-message-availability";
 import {
   getWalkthroughTargetSelector,
@@ -39,7 +39,7 @@ jest.mock("@/hooks", () => ({
 }));
 
 jest.mock("@/context/chat-context", () => ({
-  useChatContext: jest.fn(),
+  useChatActions: jest.fn(),
 }));
 
 jest.mock("@/shared/maya-usage/use-maya-message-availability", () => ({
@@ -52,7 +52,7 @@ const useTerminologyMock = jest.mocked(useTerminology);
 const useUserRoleMock = jest.mocked(useUserRole);
 const useFeaturesMock = jest.mocked(useFeatures);
 const useWorkspacePathMock = jest.mocked(useWorkspacePath);
-const useChatContextMock = jest.mocked(useChatContext);
+const useChatActionsMock = jest.mocked(useChatActions);
 const useMayaMessageAvailabilityMock = jest.mocked(useMayaMessageAvailability);
 const routerPushMock = jest.fn();
 const openChatMock = jest.fn();
@@ -85,9 +85,9 @@ describe("useWalkthroughSteps", () => {
       isPending: false,
       objectiveEnabled: true,
     } as ReturnType<typeof useFeatures>);
-    useChatContextMock.mockReturnValue({
+    useChatActionsMock.mockReturnValue({
       openChat: openChatMock,
-    } as unknown as ReturnType<typeof useChatContext>);
+    } as unknown as ReturnType<typeof useChatActions>);
     useMayaMessageAvailabilityMock.mockReturnValue({
       isLimited: false,
       isPending: false,

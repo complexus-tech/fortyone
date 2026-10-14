@@ -3,6 +3,7 @@
 import { Extension, type Editor, type JSONContent } from "@tiptap/core";
 import { DOMSerializer, type Node as ProseMirrorNode } from "@tiptap/pm/model";
 import { Plugin } from "@tiptap/pm/state";
+import type { RichTextSnapshot } from "./rich-text-snapshot";
 import {
   DEFAULT_RICH_TEXT_IMAGE_ALIGNMENT,
   DEFAULT_RICH_TEXT_IMAGE_WIDTH,
@@ -168,7 +169,9 @@ const insertUploadingMedia = ({
     : chain.insertContent(content).run();
 };
 
-export const hasPendingRichTextMedia = (editor: Editor) => {
+export const hasPendingRichTextMedia = (
+  editor: Pick<RichTextSnapshot, "state">,
+) => {
   let uploading = false;
   editor.state.doc.descendants((node) => {
     if (node.attrs.isUploading === true) uploading = true;
@@ -224,7 +227,7 @@ const isEmptyDocumentContent = (content: JSONContent[] | undefined) =>
   !content?.length ||
   content.every((node) => node.type === "paragraph" && !node.content?.length);
 
-export const getPersistableRichTextContent = (editor: Editor) => {
+export const getPersistableRichTextContent = (editor: RichTextSnapshot) => {
   if (!hasPendingRichTextMedia(editor)) {
     return {
       contentHtml: editor.isEmpty ? "" : editor.getHTML(),

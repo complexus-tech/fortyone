@@ -272,10 +272,14 @@ export const StrategyMapCanvas = ({
     strategy,
     viewport,
   });
-  const averageProgress = getCompleteStrategyMapAverageProgress(
-    objectives,
-    keyResultsByObjective,
-    loadedObjectiveIds,
+  const averageProgress = useMemo(
+    () =>
+      getCompleteStrategyMapAverageProgress(
+        objectives,
+        keyResultsByObjective,
+        loadedObjectiveIds,
+      ),
+    [keyResultsByObjective, loadedObjectiveIds, objectives],
   );
 
   useLayoutEffect(() => {
@@ -314,11 +318,12 @@ export const StrategyMapCanvas = ({
     viewportRef,
     zoom,
   });
+  const { mutate: updateObjectiveData } = updateObjective;
   const handleObjectiveUpdate = useCallback(
     (objectiveId: string, data: ObjectiveUpdate) => {
-      updateObjective.mutate({ objectiveId, data });
+      updateObjectiveData({ objectiveId, data });
     },
-    [updateObjective],
+    [updateObjectiveData],
   );
 
   const canvasConnections = {

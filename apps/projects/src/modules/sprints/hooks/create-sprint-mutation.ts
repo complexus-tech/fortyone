@@ -113,6 +113,9 @@ export const useCreateSprintMutation = () => {
         queryKey: sprintKeys.lists(workspaceSlug),
       });
       queryClient.invalidateQueries({
+        queryKey: sprintKeys.running(workspaceSlug),
+      });
+      queryClient.invalidateQueries({
         queryKey: sprintKeys.team(workspaceSlug, newSprint.teamId),
       });
 

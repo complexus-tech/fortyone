@@ -190,10 +190,15 @@ export const persistStrategyMapKeyResultOwners = ({
   keyResultOwnerStorageKey: string;
 }) => {
   try {
-    window.localStorage.setItem(
-      keyResultOwnerStorageKey,
-      JSON.stringify(Object.fromEntries(keyResultOwnerIds)),
+    const serializedOwners = JSON.stringify(
+      Object.fromEntries(keyResultOwnerIds),
     );
+    if (
+      window.localStorage.getItem(keyResultOwnerStorageKey) === serializedOwners
+    ) {
+      return;
+    }
+    window.localStorage.setItem(keyResultOwnerStorageKey, serializedOwners);
   } catch {
     // Existing node positions remain usable when storage is unavailable or full.
   }

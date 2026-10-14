@@ -35,7 +35,7 @@ jest.mock("../priority-icon", () => ({
   PriorityIcon: () => null,
 }));
 jest.mock("../board-context", () => ({
-  useBoard: jest.fn(),
+  useBoardView: jest.fn(),
 }));
 jest.mock("./assignees-menu", () => ({ AssigneesMenu: () => null }));
 jest.mock("./context-menu", () => ({ StoryContextMenu: () => null }));

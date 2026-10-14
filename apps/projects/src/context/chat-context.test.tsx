@@ -2,9 +2,15 @@
 
 import { generateId } from "ai";
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { useMayaChat } from "@/modules/maya";
+import { useMayaChat } from "@/modules/maya/hooks/use-maya-chat";
 import type { MayaChatConfig } from "@/modules/maya";
-import { ChatProvider, useChatContext } from "./chat-context";
+import { ChatProvider, useChatActions } from "./chat-context";
+
+jest.mock("next/navigation", () => ({
+  usePathname: () => "/acme/my-work",
+  useSearchParams: () => new URLSearchParams(),
+  useRouter: () => ({ replace: jest.fn() }),
+}));
 
 jest.mock("ai", () => ({ generateId: jest.fn() }));
 
@@ -12,7 +18,9 @@ jest.mock("@/components/walkthrough/walkthrough-provider", () => ({
   useWalkthrough: () => ({ completeWalkthroughAction: jest.fn() }),
 }));
 
-jest.mock("@/modules/maya", () => ({ useMayaChat: jest.fn() }));
+jest.mock("@/modules/maya/hooks/use-maya-chat", () => ({
+  useMayaChat: jest.fn(),
+}));
 
 const generateIdMock = jest.mocked(generateId);
 const useMayaChatMock = jest.mocked(useMayaChat);
@@ -24,7 +32,7 @@ const GoogleDriveContextProbe = ({
 }: {
   name?: string;
 }) => {
-  const { openChatWithGoogleDriveFile } = useChatContext();
+  const { openChatWithGoogleDriveFile } = useChatActions();
   return (
     <button
       onClick={() => {

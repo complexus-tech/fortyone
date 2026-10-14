@@ -1,6 +1,6 @@
 # FortyOne desktop performance and quality plan
 
-Status: initial performance changes implemented locally; UX and visual changes proposed for review.
+Status: initial performance changes and the React performance pass implemented locally; UX and visual changes proposed for review.
 
 The first priority is moving between pages and opening tickets. The quality target is consistently fast, predictable daily use on the Mac, measured with repeatable workloads. A score out of ten should follow those results rather than replace them.
 
@@ -20,6 +20,19 @@ The local implementation now:
 
 The performance work does not change the base font or color and border tokens. Separate theme token edits are outside this pass. Native route restoration requires a rebuilt desktop binary; web changes require the updated Projects application. No deployment or replacement of the installed app is included.
 
+## React performance pass
+
+The follow-up implementation addresses repeated work during navigation, ticket editing, and large Strategy Maps:
+
+- Keeps Maya's runtime mounted in the workspace and shares it between the full page and chat rail. Navigation preserves the active conversation, stream, draft, attachments, approvals, and voice session. Explicit conversation selection, new chat, and workspace changes still establish the appropriate session. Stable action and visibility contexts prevent streaming updates from notifying unrelated controls.
+- Starts loading ticket editor code alongside intent-based data prefetch and direct ticket loading. The module stays dynamically imported; preloading does not mount editors. A failed speculative import can be retried when opening the ticket.
+- Captures immutable editor documents on each edit and serializes only when the debounced save runs or flushes. Title and description saves remain independent; navigation, blur, pending uploads, and editor destruction preserve the correct content and ticket ID.
+- Separates board display settings from selected ticket IDs. A 250-consumer regression fixture verifies that selection changes do not notify card display consumers, while actual display-setting changes do. Stable ticket keys also preserve row state when titles change.
+- Streams objective metadata and onboarding progress outside the workspace shell's blocking query group. Access checks remain mandatory. Short freshness windows avoid immediate duplicate status and running-sprint reads; sprint mutations explicitly invalidate the running-sprint cache.
+- Stabilizes Strategy Map query snapshots and caches connector geometry independently of the camera. A 500-objective fixture verifies that 30 camera-only updates within the same query window perform no layout rebuilds, connection-list rebuilds, path calculations, storage writes, or API requests. Data changes, moved nodes, workspace changes, and new query windows still refresh the relevant results. Existing viewport culling remains in place.
+
+These are automated work-count and behavior checks, not measured production latency or frame-rate improvements. Authenticated before/after timings remain a release verification step.
+
 ## Measure the complete application
 
 Use a production-mode profiling build with Web Inspector enabled only for that build, plus an authenticated test workspace. Keep the ordinary release build's debugging restrictions. Record browser network requests, script execution, layout, paint, allocations, and WebContent CPU together; [WebKit Timelines](https://webkit.org/web-inspector/timelines-tab/) provides these views. Capture separate runs without profiling overhead for the final interaction timings.
@@ -37,7 +50,7 @@ Use the same Mac, visible window, viewport, theme, dataset, and network for befo
 | Idle and long sessions         | CPU after settling; memory after 30 navigation and ticket cycles                     | No sustained idle CPU loop or growing retained editor/listener count                          |
 | Reconnect and workspace switch | Recovery, authorization, subscriptions, and cache isolation                          | No duplicate event streams, stale workspace data, or lost pending input                       |
 
-Measure cache hits, first-load JavaScript, editor construction, server response time, and request waterfalls before choosing the next optimization. One remaining candidate is first-ticket loading: its detail data currently gates the dynamic editor module. If traces show a material delay, preload that module alongside intent-based data fetching. Virtualize large lists only if row rendering is the measured bottleneck; verify keyboard navigation, drag behavior, and variable heights before adopting it.
+Measure cache hits, first-load JavaScript, editor construction, server response time, and request waterfalls before choosing the next optimization. Ticket editor code now preloads alongside data; verify the remaining cold-open cost with actual traces. Virtualize large lists only if row rendering is the measured bottleneck; verify keyboard navigation, drag behavior, and variable heights before adopting it.
 
 ## Desktop integration sequence
 

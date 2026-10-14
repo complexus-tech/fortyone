@@ -102,6 +102,18 @@ beforeEach(() => {
 });
 
 describe("story row intent prefetch", () => {
+  it("waits for intent and warms resources on keyboard focus", () => {
+    render(<StoryRow handleStoryClick={jest.fn()} story={story} />);
+    expect(prefetchStory).not.toHaveBeenCalled();
+
+    fireEvent.focus(screen.getByRole("link", { name: story.title }));
+    expect(prefetchStory).toHaveBeenCalledWith(mockQueryClient, story.id, {
+      session: mockSession,
+      workspaceSlug: "workspace",
+    });
+    expect(mockRouterPrefetch).not.toHaveBeenCalled();
+  });
+
   it("warms the dialog resources without requesting an unused page", () => {
     const handleStoryClick = jest.fn();
     render(<StoryRow handleStoryClick={handleStoryClick} story={story} />);

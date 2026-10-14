@@ -11,7 +11,7 @@ import { StoryStatusIcon } from "./story-status-icon";
 import { NewStoryDialog } from "./new-story-dialog";
 import type { ViewOptionsGroupBy } from "./stories-view-options-button";
 import { PriorityIcon } from "./priority-icon";
-import { useBoard } from "./board-context";
+import { useBoardView } from "./board-context";
 import { isWipLimitExceeded, WipLimitIndicator } from "./wip-limit-indicator";
 
 export const KanbanGroupTitle = ({
@@ -80,7 +80,7 @@ export const StoriesKanbanHeader = ({
   onHide?: () => void;
 }) => {
   const { getTermDisplay } = useTerminology();
-  const { newStoryDefaults, viewOptions } = useBoard();
+  const { newStoryDefaults, viewOptions } = useBoardView();
   const { showEmptyGroups } = viewOptions;
   const [isOpen, setIsOpen] = useState(false);
   const { userRole } = useUserRole();

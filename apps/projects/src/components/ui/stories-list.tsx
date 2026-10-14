@@ -42,7 +42,7 @@ export const StoriesList = ({
               setIsDialogOpen(true);
             }}
             isInSearch={isInSearch}
-            key={`${story.id}-${story.title.slice(0, 10)}`}
+            key={story.id}
             story={story}
             teamCode={story.team?.code ?? teamCodesById.get(story.teamId)}
           />

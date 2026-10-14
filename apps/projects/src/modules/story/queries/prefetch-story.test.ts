@@ -6,6 +6,7 @@ import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
 import { linkKeys } from "@/constants/keys";
 import { getLinks } from "@/lib/queries/links/get-links";
 import { storyKeys } from "@/modules/stories/constants";
+import { preloadMainDetails } from "../load-main-details";
 import { getStoryAttachments } from "./get-attachments";
 import { getStory } from "./get-story";
 import { prefetchStory } from "./prefetch-story";
@@ -13,6 +14,9 @@ import { prefetchStory } from "./prefetch-story";
 jest.mock("./get-story", () => ({ getStory: jest.fn() }));
 jest.mock("./get-attachments", () => ({ getStoryAttachments: jest.fn() }));
 jest.mock("@/lib/queries/links/get-links", () => ({ getLinks: jest.fn() }));
+jest.mock("../load-main-details", () => ({
+  preloadMainDetails: jest.fn(),
+}));
 
 const ctx = {
   session: { token: "test-session" },
@@ -30,6 +34,7 @@ beforeEach(() => {
   mockedGetStory.mockReset().mockResolvedValue(null);
   mockedGetAttachments.mockReset().mockResolvedValue([]);
   mockedGetLinks.mockReset().mockResolvedValue([]);
+  jest.mocked(preloadMainDetails).mockReset().mockResolvedValue(undefined);
 });
 
 afterEach(() => {
@@ -49,6 +54,24 @@ it("fetches the three ticket resources once across concurrent and repeated hover
   expect(mockedGetStory).toHaveBeenCalledWith("story", ctx);
   expect(mockedGetAttachments).toHaveBeenCalledWith("story", ctx);
   expect(mockedGetLinks).toHaveBeenCalledWith("story", ctx);
+});
+
+it("starts every ticket resource without waiting for the editor module", async () => {
+  let finishPreload!: () => void;
+  jest.mocked(preloadMainDetails).mockReturnValue(
+    new Promise<void>((resolve) => {
+      finishPreload = resolve;
+    }),
+  );
+
+  const prefetch = prefetchStory(queryClient, "story", ctx);
+  expect(preloadMainDetails).toHaveBeenCalledTimes(1);
+  expect(mockedGetStory).toHaveBeenCalledTimes(1);
+  expect(mockedGetAttachments).toHaveBeenCalledTimes(1);
+  expect(mockedGetLinks).toHaveBeenCalledTimes(1);
+
+  finishPreload();
+  await prefetch;
 });
 
 it("refreshes each resource when its existing reader freshness expires", async () => {

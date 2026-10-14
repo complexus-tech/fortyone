@@ -5,7 +5,7 @@ import { cn } from "lib";
 import { Box, Button, Flex, Text } from "ui";
 import { NewObjectiveDialog, NewStoryDialog } from "@/components/ui";
 import { NewSprintDialog } from "@/components/ui/new-sprint-dialog";
-import { useChatContext } from "@/context/chat-context";
+import { useChatActions, useChatRuntime } from "@/context/chat-context";
 import { useMayaMessageAvailability } from "@/shared/maya-usage/use-maya-message-availability";
 import { ChatHeader } from "./chat-header";
 import { ChatInput } from "./chat-input";
@@ -14,7 +14,8 @@ import { LimitReached } from "./limit-reached";
 import { SuggestedPrompts } from "./suggested-prompts";
 
 export const ChatContent = ({ isPopup = false }: { isPopup?: boolean }) => {
-  const { chat, setIsOpen } = useChatContext();
+  const chat = useChatRuntime();
+  const { setIsOpen } = useChatActions();
   const { isLimited: needsUpgrade } = useMayaMessageAvailability();
   const isWorking = chat.status === "submitted" || chat.status === "streaming";
 

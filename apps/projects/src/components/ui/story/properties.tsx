@@ -28,7 +28,7 @@ import { StatusesMenu } from "@/components/ui/story/statuses-menu";
 import { PrioritiesMenu } from "@/components/ui/story/priorities-menu";
 import type { Story } from "@/modules/stories/types";
 import type { StoryUpdate } from "@/modules/story/types";
-import { useBoard } from "@/components/ui/board-context";
+import { useBoardView } from "@/components/ui/board-context";
 import type { StateCategory } from "@/types/states";
 import {
   useHydratedNow,
@@ -189,7 +189,7 @@ export const StoryProperties = ({
   setIsExpanded,
 }: StoryPropertiesProps) => {
   const { getTermDisplay } = useTerminology();
-  const { isColumnVisible } = useBoard();
+  const { isColumnVisible } = useBoardView();
   const { withWorkspace } = useWorkspacePath();
   const now = useHydratedNow();
   const { data: statuses = [] } = useTeamStatuses(teamId);

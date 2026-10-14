@@ -4,7 +4,6 @@ import type { PointerEvent as ReactPointerEvent, ReactNode } from "react";
 import { memo, useMemo } from "react";
 import { cn } from "lib";
 import {
-  createConnectionPath,
   getStrategyConnections,
   GOAL_NODE_ID,
   GOAL_NODE_WIDTH,
@@ -19,7 +18,8 @@ import {
 } from "./strategy-map-layout";
 import type { StrategyMap } from "./types";
 import {
-  getVisibleStrategyConnections,
+  getStrategyConnectionPath,
+  isStrategyConnectionPathVisible,
   type StrategyMapViewport,
 } from "./strategy-map-visibility";
 
@@ -121,17 +121,32 @@ export const CanvasConnections = memo(
         ),
       [expandedObjectiveIds, keyResultsByObjective, objectiveIds, strategy],
     );
+    // Edge geometry depends on node positions and dimensions, not the camera.
+    // Reuse each path for culling and drawing rather than rebuilding it per pan.
+    const connectionPaths = useMemo(
+      () =>
+        connections.map((connection) => ({
+          connection,
+          path: getStrategyConnectionPath({
+            connection,
+            getDimensions: (nodeId) =>
+              dimensions[nodeId] ?? getDefaultNodeDimensions(nodeId),
+            positions,
+          }),
+        })),
+      [connections, dimensions, positions],
+    );
     const visibleConnections = useMemo(
       () =>
-        getVisibleStrategyConnections({
-          alwaysVisibleNodeIds,
-          connections,
-          getDimensions: (nodeId) =>
-            dimensions[nodeId] ?? getDefaultNodeDimensions(nodeId),
-          positions,
-          viewport,
-        }),
-      [alwaysVisibleNodeIds, connections, dimensions, positions, viewport],
+        connectionPaths.filter(({ connection, path }) =>
+          isStrategyConnectionPathVisible({
+            alwaysVisibleNodeIds,
+            connection,
+            path,
+            viewport,
+          }),
+        ),
+      [alwaysVisibleNodeIds, connectionPaths, viewport],
     );
 
     return (
@@ -146,25 +161,8 @@ export const CanvasConnections = memo(
           strokeLinejoin="round"
           strokeWidth="2.25"
         >
-          {visibleConnections.map((connection) => {
-            const sourcePosition = getNodePosition(
-              positions,
-              connection.sourceId,
-            );
-            const targetPosition = getNodePosition(
-              positions,
-              connection.targetId,
-            );
-            if (!sourcePosition || !targetPosition) return null;
-
-            const path = createConnectionPath(
-              sourcePosition,
-              dimensions[connection.sourceId] ??
-                getDefaultNodeDimensions(connection.sourceId),
-              targetPosition,
-              dimensions[connection.targetId] ??
-                getDefaultNodeDimensions(connection.targetId),
-            );
+          {visibleConnections.map(({ connection, path }) => {
+            if (!path) return null;
 
             return (
               <g key={connection.id}>

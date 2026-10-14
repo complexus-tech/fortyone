@@ -6,6 +6,16 @@ const ASSOCIATION_REASONS = new Set([
   "association_removed",
 ]);
 
+const CHECKLIST_REASONS = new Set([
+  "checklist_item_added",
+  "checklist_item_updated",
+  "checklist_item_completed",
+  "checklist_item_reopened",
+  "checklist_item_removed",
+  "checklist_item_converted",
+  "checklist_reordered",
+]);
+
 const ASSOCIATION_FIELDS = new Set([
   "blocked_by_id",
   "blocking_id",
@@ -86,7 +96,10 @@ export const formatScheduleActivityValue = (
 
 export const getDisplayActivityReason = (reason?: string | null) => {
   const normalizedReason = reason?.trim() ?? "";
-  return ASSOCIATION_REASONS.has(normalizedReason) ? "" : normalizedReason;
+  return ASSOCIATION_REASONS.has(normalizedReason) ||
+    CHECKLIST_REASONS.has(normalizedReason)
+    ? ""
+    : normalizedReason;
 };
 
 export const getActivityValueIds = (value: unknown): string[] => {
@@ -140,6 +153,18 @@ export const getActivityCopy = ({
     });
   }
 
+  const checklistCopy = getChecklistActivityCopy({
+    currentValue,
+    field,
+    fieldLabel,
+    oldValue,
+    reason,
+    storyTerm,
+  });
+  if (checklistCopy) {
+    return checklistCopy;
+  }
+
   const associationCopy = getAssociationActivityCopy({
     currentValue,
     field,
@@ -158,6 +183,72 @@ export const getActivityCopy = ({
     oldValueText,
     storyTerm,
   );
+  return buildCopy(segments, { currentValue, fieldLabel });
+};
+
+const getChecklistActivityCopy = ({
+  currentValue,
+  field,
+  fieldLabel,
+  oldValue,
+  reason,
+  storyTerm,
+}: Omit<ActivityCopyInput, "type">): ActivityCopy | null => {
+  const normalizedReason = reason?.trim() ?? "";
+  if (field === "checklist" && normalizedReason === "checklist_reordered") {
+    return buildCopy([{ text: "reordered the checklist", type: "text" }], {
+      currentValue,
+      fieldLabel,
+    });
+  }
+  if (field !== "checklist_item") return null;
+
+  const item: ActivityCopySegment = {
+    type: "currentValue",
+    value: currentValue,
+  };
+  let segments: ActivityCopySegment[];
+  switch (normalizedReason) {
+    case "checklist_item_added":
+      segments = [{ text: "added checklist item", type: "text" }, item];
+      break;
+    case "checklist_item_updated": {
+      const previousTitle =
+        typeof oldValue === "object" &&
+        oldValue !== null &&
+        "title" in oldValue &&
+        typeof oldValue.title === "string"
+          ? oldValue.title
+          : "";
+      segments = previousTitle
+        ? [
+            { text: "renamed checklist item", type: "text" },
+            { type: "oldValue", value: previousTitle },
+            { text: "to", type: "text" },
+            item,
+          ]
+        : [{ text: "updated checklist item", type: "text" }, item];
+      break;
+    }
+    case "checklist_item_completed":
+      segments = [{ text: "completed checklist item", type: "text" }, item];
+      break;
+    case "checklist_item_reopened":
+      segments = [{ text: "reopened checklist item", type: "text" }, item];
+      break;
+    case "checklist_item_removed":
+      segments = [{ text: "removed checklist item", type: "text" }, item];
+      break;
+    case "checklist_item_converted":
+      segments = [
+        { text: "converted checklist item", type: "text" },
+        item,
+        { text: `to a new ${storyTerm}`, type: "text" },
+      ];
+      break;
+    default:
+      return null;
+  }
   return buildCopy(segments, { currentValue, fieldLabel });
 };
 

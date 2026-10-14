@@ -214,6 +214,12 @@ export const useChecklistMutation = (storyId: string) => {
     onSettled: (_data, _error, _command, context) => {
       if (!context) return;
       activeChecklistWrites.get(queryClient)?.get(writeKey)?.releaseReads();
+      // Refresh committed history even if realtime is unavailable or the save
+      // response was lost after the server committed the change.
+      void queryClient.invalidateQueries({
+        queryKey: storyKeys.activitiesInfinite(workspaceSlug, storyId),
+        refetchType: "all",
+      });
       return queryClient.invalidateQueries({ queryKey }).finally(() => {
         activeChecklistWrites.get(queryClient)?.delete(writeKey);
       });

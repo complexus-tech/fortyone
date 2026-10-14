@@ -19,6 +19,10 @@ import {
   hasPendingRichTextMedia,
   RICH_TEXT_MEDIA_ACCEPT,
 } from "@/lib/tiptap/rich-text-media";
+import {
+  createRichTextSnapshot,
+  type RichTextSnapshot,
+} from "@/lib/tiptap/rich-text-snapshot";
 import { RichTextTableMenu } from "@/lib/tiptap/rich-text-table-menu";
 import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
 import { useStoryDescriptionMedia } from "@/modules/story/hooks/use-story-description-media";
@@ -46,6 +50,11 @@ const DEBOUNCE_DELAY = 1000; // 1000ms delay
 
 type QueuedStoryUpdate = {
   payload: StoryUpdate;
+  storyId: string;
+};
+
+type QueuedDescriptionUpdate = {
+  snapshot: RichTextSnapshot;
   storyId: string;
 };
 
@@ -98,12 +107,26 @@ export const MainDetails = ({
     },
     [updateStory],
   );
+  const handleDescriptionUpdate = useCallback(
+    ({ snapshot, storyId: targetStoryId }: QueuedDescriptionUpdate) => {
+      const content = getPersistableRichTextContent(snapshot);
+      handleUpdate({
+        payload: {
+          descriptionHTML: content.contentHtml,
+          description: content.contentText,
+          reconcileDescriptionMedia: !hasPendingRichTextMedia(snapshot),
+        },
+        storyId: targetStoryId,
+      });
+    },
+    [handleUpdate],
+  );
 
   // Keep independent queues so editing one field never cancels the other field's save.
   const {
     callback: debouncedDescriptionUpdate,
     flush: flushDescriptionUpdate,
-  } = useDebouncedCallback(handleUpdate, DEBOUNCE_DELAY, {
+  } = useDebouncedCallback(handleDescriptionUpdate, DEBOUNCE_DELAY, {
     flushOnUnmount: true,
   });
   const { callback: debouncedTitleUpdate, flush: flushTitleUpdate } =
@@ -140,13 +163,8 @@ export const MainDetails = ({
       });
     },
     onUpdate: ({ editor }) => {
-      const content = getPersistableRichTextContent(editor);
       debouncedDescriptionUpdate({
-        payload: {
-          descriptionHTML: content.contentHtml,
-          description: content.contentText,
-          reconcileDescriptionMedia: !hasPendingRichTextMedia(editor),
-        },
+        snapshot: createRichTextSnapshot(editor),
         storyId,
       });
     },

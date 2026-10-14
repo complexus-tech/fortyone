@@ -1,5 +1,4 @@
 "use client";
-import { useCallback } from "react";
 import { Box, Button, Text } from "ui";
 import { ReloadIcon } from "icons";
 import { cn } from "lib";
@@ -10,30 +9,14 @@ import { ChatInput } from "@/components/ui/chat/chat-input";
 import { SuggestedPrompts } from "@/components/ui/chat/suggested-prompts";
 import { LimitReached } from "@/components/ui/chat/limit-reached";
 import { BodyContainer } from "@/components/shared";
-import { useWalkthrough } from "@/components/walkthrough/walkthrough-provider";
+import { useChatRuntime } from "@/context/chat-context";
 import { useProfile } from "@/lib/hooks/profile";
 import { useMayaMessageAvailability } from "@/shared/maya-usage/use-maya-message-availability";
-import { useMayaChat } from "../hooks/use-maya-chat";
-import { useMayaNavigation } from "../hooks/use-maya-navigation";
-import type { MayaChatConfig } from "../types";
 import { Header } from "./header";
 import { RecentWork } from "./recent-work";
 import styles from "./index.module.css";
 
 export const MayaChat = () => {
-  const { chatRef, getInitialChatId, updateChatRef, clearChatRef } =
-    useMayaNavigation();
-  const { completeWalkthroughAction } = useWalkthrough();
-  const handleUserMessageSubmitted = useCallback(() => {
-    completeWalkthroughAction("maya-message-completed");
-  }, [completeWalkthroughAction]);
-  const config: MayaChatConfig = {
-    currentChatId: getInitialChatId(),
-    hasSelectedChat: Boolean(chatRef),
-    onUserMessageSubmitted: handleUserMessageSubmitted,
-    updateChatRef,
-    clearChatRef,
-  };
   const {
     // Chat state
     displayMessages,
@@ -64,7 +47,7 @@ export const MayaChat = () => {
     setIsObjectiveOpen,
     isSprintOpen,
     setIsSprintOpen,
-  } = useMayaChat(config);
+  } = useChatRuntime();
 
   const { isLimited: needsUpgrade } = useMayaMessageAvailability();
   const { data: profile } = useProfile();

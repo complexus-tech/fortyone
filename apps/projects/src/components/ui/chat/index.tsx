@@ -3,7 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useMediaQuery, useUserRole, useWorkspacePath } from "@/hooks";
-import { useChatContext } from "@/context/chat-context";
+import { useChatActions, useChatVisibility } from "@/context/chat-context";
 import { ChatButton } from "./chat-button";
 import { ChatRail } from "./rail";
 import { WorkspaceChatLayout } from "./workspace-chat-layout";
@@ -13,7 +13,8 @@ export const Chat = () => {
   const router = useRouter();
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const { userRole } = useUserRole();
-  const { closeChat, isOpen, openChat } = useChatContext();
+  const { closeChat, openChat } = useChatActions();
+  const isOpen = useChatVisibility();
   const { withWorkspace } = useWorkspacePath();
   const isOnMayaPage = pathname.includes("maya");
 

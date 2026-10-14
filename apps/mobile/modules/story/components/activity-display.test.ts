@@ -456,6 +456,116 @@ test("description activities never display HTML and relationship codes stay inte
   assert.equal("reason" in result, false);
 });
 
+test("checklist actions retain the actor and item title without exposing machine reasons", () => {
+  const actions = ["added", "completed", "reopened", "removed"];
+  for (const action of actions) {
+    const result = display({
+      userId: MEMBER_ID,
+      user: person,
+      field: "checklist_item",
+      currentValue: "Write tests",
+      reason: `checklist_item_${action}`,
+    });
+    assert.deepEqual(result, {
+      actor: { name: "Jane Doe", isSystem: false },
+      message: `${action} checklist item “Write tests”`,
+    });
+  }
+});
+
+test("checklist conversions use the workspace story terminology", () => {
+  assert.equal(
+    display(
+      {
+        field: "checklist_item",
+        currentValue: "Write tests",
+        reason: "checklist_item_converted",
+      },
+      { ...context, storyTerm: "ticket" },
+    ).message,
+    "converted checklist item “Write tests” to a new ticket",
+  );
+});
+
+test("checklist renames use retained titles and preserve literal item names", () => {
+  assert.equal(
+    display({
+      field: "checklist_item",
+      currentValue: "Write regression tests",
+      oldValue: { id: "item-1", title: "Write tests", completed: false },
+      newValue: {
+        id: "item-1",
+        title: "Write regression tests",
+        completed: false,
+      },
+      reason: "checklist_item_updated",
+    }).message,
+    "renamed checklist item “Write tests” to “Write regression tests”",
+  );
+  assert.equal(
+    display({
+      field: "checklist_item",
+      currentValue: "nil",
+      reason: "checklist_item_added",
+    }).message,
+    "added checklist item “nil”",
+  );
+});
+
+test("checklist messages fall back to snapshots or generic wording for unavailable titles", () => {
+  assert.equal(
+    display({
+      field: "checklist_item",
+      currentValue: "",
+      oldValue: { title: "Write tests" },
+      newValue: null,
+      reason: "checklist_item_removed",
+    }).message,
+    "removed checklist item “Write tests”",
+  );
+  assert.equal(
+    display({
+      field: "checklist_item",
+      currentValue: "",
+      newValue: { title: "Write tests" },
+      reason: "checklist_item_added",
+    }).message,
+    "added checklist item “Write tests”",
+  );
+  for (const oldValue of [null, "invalid", { title: false }, []]) {
+    assert.equal(
+      display({
+        field: "checklist_item",
+        currentValue: "Write tests",
+        oldValue,
+        reason: "checklist_item_updated",
+      }).message,
+      "updated checklist item “Write tests”",
+    );
+  }
+  assert.equal(
+    display({
+      field: "checklist_item",
+      currentValue: "",
+      reason: "checklist_item_removed",
+    }).message,
+    "removed a checklist item",
+  );
+});
+
+test("checklist reordering describes the operation without exposing stored IDs", () => {
+  assert.equal(
+    display({
+      field: "checklist",
+      currentValue: "",
+      oldValue: [MEMBER_ID, OTHER_ID],
+      newValue: [OTHER_ID, MEMBER_ID],
+      reason: "checklist_reordered",
+    }).message,
+    "reordered the checklist",
+  );
+});
+
 test("mobile updates omit rationale while preserving the actor and scheduled event", () => {
   const result = getActivityDisplay(
     {

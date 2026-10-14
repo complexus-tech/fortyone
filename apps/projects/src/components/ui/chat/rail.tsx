@@ -3,13 +3,14 @@
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { useMediaQuery } from "@/hooks";
-import { useChatContext } from "@/context/chat-context";
+import { useChatActions, useChatVisibility } from "@/context/chat-context";
 import { ChatContent } from "./content";
 
 export const ChatRail = () => {
   const pathname = usePathname();
   const isDesktop = useMediaQuery("(min-width: 768px)");
-  const { closeChat, isOpen } = useChatContext();
+  const { closeChat } = useChatActions();
+  const isOpen = useChatVisibility();
   const popupRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

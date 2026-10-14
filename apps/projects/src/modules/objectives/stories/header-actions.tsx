@@ -1,23 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import {
-  AiIcon,
-  CopyIcon,
-  DeleteIcon,
-  MoreHorizontalIcon,
-  StrategyIcon,
-} from "icons";
+import { AiIcon, CopyIcon, DeleteIcon, MoreHorizontalIcon } from "icons";
 import { Button, Flex, Menu, Tooltip } from "ui";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useChatActions } from "@/context/chat-context";
-import {
-  useCopyToClipboard,
-  useTerminology,
-  useUserRole,
-  useWorkspacePath,
-} from "@/hooks";
+import { useCopyToClipboard, useTerminology, useUserRole } from "@/hooks";
 import { useIsAdminOrOwner } from "@/hooks/owner";
 import { useDeleteObjectiveMutation } from "../hooks/delete-mutation";
 import type { Objective } from "../types";
@@ -30,7 +19,6 @@ export const HeaderActions = ({
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [, copyText] = useCopyToClipboard();
   const { getTermDisplay } = useTerminology();
-  const { withWorkspace } = useWorkspacePath();
   const { userRole } = useUserRole();
   const { isAdminOrOwner } = useIsAdminOrOwner(objective.createdBy);
   const { openChat } = useChatActions();
@@ -67,21 +55,10 @@ export const HeaderActions = ({
               size="sm"
               variant="naked"
             >
-              <span className="hidden 2xl:inline">Smart fill</span>
+              Smart fill
             </Button>
           </Tooltip>
         )}
-        <Tooltip title="Open strategy map">
-          <Button
-            color="tertiary"
-            href={withWorkspace("/strategy")}
-            leftIcon={<StrategyIcon className="size-5" />}
-            size="sm"
-            variant="naked"
-          >
-            <span className="sr-only 2xl:not-sr-only">Map view</span>
-          </Button>
-        </Tooltip>
         <Menu>
           <Menu.Button>
             <Button

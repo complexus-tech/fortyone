@@ -4,6 +4,7 @@ import { linkKeys } from "@/constants/keys";
 import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
 import { getLinks } from "@/lib/queries/links/get-links";
 import { storyKeys } from "@/modules/stories/constants";
+import { preloadMainDetails } from "../load-main-details";
 import { getStoryAttachments } from "./get-attachments";
 import { getStory } from "./get-story";
 
@@ -13,6 +14,7 @@ export const prefetchStory = (
   ctx: WorkspaceCtx,
 ) =>
   Promise.all([
+    preloadMainDetails(),
     queryClient.prefetchQuery({
       queryKey: storyKeys.detail(ctx.workspaceSlug, storyId),
       queryFn: () => getStory(storyId, ctx),

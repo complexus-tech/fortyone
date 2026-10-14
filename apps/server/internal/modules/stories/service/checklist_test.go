@@ -73,6 +73,9 @@ func TestChecklistServiceDerivesActorAndPublishesOnlyCommittedChanges(t *testing
 			if command == nil || command.ItemID == uuid.Nil || command.Scope.Actor.PrincipalID != actor.PrincipalID || *command.Title != "Test item" {
 				t.Fatalf("unsafe command: %+v", command)
 			}
+			if command.Scope.ActivityUser == nil || *command.Scope.ActivityUser != actor.PrincipalID || command.Event.Actor.PrincipalID != actor.PrincipalID || command.Event.OccurredAt.IsZero() {
+				t.Fatalf("checklist audit identity or timestamp missing: %+v", command)
+			}
 			if test.failure == nil && itemID != command.ItemID {
 				t.Fatal("created item identity lost")
 			}

@@ -239,40 +239,49 @@ const isVerticalSegmentVisible = (
   Math.max(Math.min(startY, endY), viewport.top) <=
     Math.min(Math.max(startY, endY), getViewportBottom(viewport));
 
-export const isStrategyConnectionVisible = ({
-  alwaysVisibleNodeIds = new Set<string>(),
+export const getStrategyConnectionPath = ({
   connection,
   getDimensions,
   positions,
-  viewport,
 }: {
-  alwaysVisibleNodeIds?: ReadonlySet<string>;
   connection: StrategyConnection;
   getDimensions: (nodeId: string) => StrategyNodeDimensions;
   positions: StrategyNodePositions;
-  viewport: StrategyMapViewport;
 }) => {
-  if (
-    alwaysVisibleNodeIds.has(connection.sourceId) ||
-    alwaysVisibleNodeIds.has(connection.targetId)
-  ) {
-    return true;
-  }
-
   const sourcePosition = Object.hasOwn(positions, connection.sourceId)
     ? positions[connection.sourceId]
     : undefined;
   const targetPosition = Object.hasOwn(positions, connection.targetId)
     ? positions[connection.targetId]
     : undefined;
-  if (!sourcePosition || !targetPosition) return false;
+  if (!sourcePosition || !targetPosition) return null;
 
-  const path = createConnectionPath(
+  return createConnectionPath(
     sourcePosition,
     getDimensions(connection.sourceId),
     targetPosition,
     getDimensions(connection.targetId),
   );
+};
+
+export const isStrategyConnectionPathVisible = ({
+  alwaysVisibleNodeIds,
+  connection,
+  path,
+  viewport,
+}: {
+  alwaysVisibleNodeIds?: ReadonlySet<string>;
+  connection: StrategyConnection;
+  path: ReturnType<typeof createConnectionPath> | null;
+  viewport: StrategyMapViewport;
+}) => {
+  if (
+    alwaysVisibleNodeIds?.has(connection.sourceId) ||
+    alwaysVisibleNodeIds?.has(connection.targetId)
+  ) {
+    return true;
+  }
+  if (!path) return false;
 
   return (
     isVerticalSegmentVisible(
@@ -295,6 +304,26 @@ export const isStrategyConnectionVisible = ({
     )
   );
 };
+
+export const isStrategyConnectionVisible = ({
+  alwaysVisibleNodeIds,
+  connection,
+  getDimensions,
+  positions,
+  viewport,
+}: {
+  alwaysVisibleNodeIds?: ReadonlySet<string>;
+  connection: StrategyConnection;
+  getDimensions: (nodeId: string) => StrategyNodeDimensions;
+  positions: StrategyNodePositions;
+  viewport: StrategyMapViewport;
+}) =>
+  isStrategyConnectionPathVisible({
+    alwaysVisibleNodeIds,
+    connection,
+    path: getStrategyConnectionPath({ connection, getDimensions, positions }),
+    viewport,
+  });
 
 export const getVisibleStrategyConnections = ({
   alwaysVisibleNodeIds,
