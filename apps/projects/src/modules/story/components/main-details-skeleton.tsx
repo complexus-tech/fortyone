@@ -12,11 +12,7 @@ export const MainDetailsSkeleton = ({
   isDialog?: boolean;
 }) => {
   return (
-    <BodyContainer
-      className={cn("h-full min-h-0 overflow-y-auto pb-8", {
-        "h-[84.99999dvh]": isDialog,
-      })}
-    >
+    <BodyContainer className="h-full min-h-0 overflow-y-auto pb-8">
       <Container className={cn("pt-7", isDialog && "px-6 md:px-6")}>
         {/* Title skeleton */}
         <Skeleton className="h-8 w-3/4 rounded md:h-10" />

@@ -49,12 +49,7 @@ export const StoryPage = ({
 
   if (isError) {
     return (
-      <Box
-        className={cn(
-          "flex h-full min-h-0 items-center justify-center",
-          isDialog && "h-[85dvh]",
-        )}
-      >
+      <Box className="flex h-full min-h-0 items-center justify-center">
         <Box className="flex flex-col items-center">
           <NotFoundIllustration />
           <Text className="mt-10 mb-6" fontSize="3xl">
@@ -78,13 +73,13 @@ export const StoryPage = ({
   return (
     <Box
       className={cn("h-full min-h-0", {
-        "h-[85dvh] overflow-y-auto": isDialog,
+        "overflow-y-auto": isDialog,
       })}
     >
       {story ? (
         <>
           <Box
-            className={cn("md:hidden", {
+            className={cn("h-full min-h-0 md:hidden", {
               "dark:bg-surface": isDialog,
             })}
           >

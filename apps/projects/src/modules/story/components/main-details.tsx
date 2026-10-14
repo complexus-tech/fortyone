@@ -226,7 +226,7 @@ export const MainDetails = ({
   return (
     <BodyContainer
       className={cn("h-full min-h-0 overflow-y-auto pb-8", {
-        "h-[84.99999dvh] pb-48": isDialog,
+        "pb-48": isDialog,
       })}
     >
       {mainHeader}

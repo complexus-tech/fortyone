@@ -22,7 +22,7 @@ export const StorySkeleton = ({
   return (
     <Box className="h-full min-h-0">
       <Box
-        className={cn("md:hidden", {
+        className={cn("h-full min-h-0 md:hidden", {
           "dark:bg-surface": isDialog,
         })}
       >
