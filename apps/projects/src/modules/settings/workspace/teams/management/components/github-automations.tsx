@@ -1,8 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { Box, Command, Divider, Flex, Popover, Text } from "ui";
-import { CheckIcon } from "icons";
+import { Box, Flex, Select, Text } from "ui";
 import { useParams } from "next/navigation";
 import { SectionHeader } from "@/modules/settings/components/section-header";
 import { useGitHubTeamSettings } from "@/lib/hooks/github/use-team-settings";
@@ -30,89 +28,69 @@ const orderedEvents = [
 ] as const;
 
 const StatusPicker = ({
+  label,
   value,
   statuses,
+  disabled,
+  placeholder,
   onChange,
 }: {
+  label: string;
   value: string;
   statuses: { id: string; name: string }[];
+  disabled: boolean;
+  placeholder?: string;
   onChange: (statusId: string) => void;
 }) => {
-  const [open, setOpen] = useState(false);
-  const selected = statuses.find((s) => s.id === value);
+  const selected = statuses.find((status) => status.id === value);
+  const selectedLabel =
+    placeholder ??
+    (value === "none" ? "No action" : selected?.name ?? "Unavailable status");
 
   return (
-    <Popover onOpenChange={setOpen} open={open}>
-      <Popover.Trigger asChild>
-        <button
-          className="border-border hover:bg-surface-muted flex w-48 items-center gap-2 rounded-lg border px-3 py-1.5 transition-colors"
-          type="button"
-        >
-          {value !== "none" && selected ? (
-            <>
-              <StoryStatusIcon statusId={selected.id} />
-              <Text className="truncate">{selected.name}</Text>
-            </>
-          ) : (
-            <>
-              <StoryStatusIcon className="opacity-30" />
-              <Text>No action</Text>
-            </>
-          )}
-        </button>
-      </Popover.Trigger>
-      <Popover.Content align="end" className="w-64">
-        <Command>
-          <Command.Input autoFocus placeholder="Search statuses..." />
-          <Divider className="my-2" />
-          <Command.Empty className="py-2">
-            <Text color="muted">No statuses found.</Text>
-          </Command.Empty>
-          <Command.Group className="max-h-60 overflow-y-auto">
-            <Command.Item
-              active={value === "none"}
-              className="justify-between"
-              onSelect={() => {
-                onChange("none");
-                setOpen(false);
-              }}
-              value="No action"
-            >
-              <Flex align="center" gap={2}>
-                <StoryStatusIcon className="opacity-30" />
-                <Text>No action</Text>
-              </Flex>
-              {value === "none" && (
-                <CheckIcon className="h-5 w-auto shrink-0" strokeWidth={2.1} />
-              )}
-            </Command.Item>
-            {statuses.map((status) => (
-              <Command.Item
-                active={value === status.id}
-                className="justify-between"
-                key={status.id}
-                onSelect={() => {
-                  onChange(status.id);
-                  setOpen(false);
-                }}
-                value={status.name}
-              >
-                <Flex align="center" gap={2}>
-                  <StoryStatusIcon statusId={status.id} />
-                  <Text className="truncate">{status.name}</Text>
-                </Flex>
-                {value === status.id && (
-                  <CheckIcon
-                    className="h-5 w-auto shrink-0"
-                    strokeWidth={2.1}
-                  />
-                )}
-              </Command.Item>
-            ))}
-          </Command.Group>
-        </Command>
-      </Popover.Content>
-    </Popover>
+    <Select disabled={disabled} onValueChange={onChange} value={value}>
+      <Select.Trigger
+        aria-label={label}
+        className="w-full shrink-0 text-base disabled:cursor-not-allowed disabled:opacity-50 sm:w-48"
+      >
+        <Select.Input>
+          <span className="flex min-w-0 items-center gap-2">
+            {selected && !placeholder ? (
+              <StoryStatusIcon
+                className="size-4 shrink-0"
+                statusId={selected.id}
+              />
+            ) : (
+              <StoryStatusIcon className="size-4 shrink-0 opacity-30" />
+            )}
+            <span className="truncate">{selectedLabel}</span>
+          </span>
+        </Select.Input>
+      </Select.Trigger>
+      <Select.Content>
+        <Select.Option className="text-base" value="none">
+          <span className="flex min-w-0 items-center gap-2">
+            <StoryStatusIcon className="size-4 shrink-0 opacity-30" />
+            <span className="truncate">No action</span>
+          </span>
+        </Select.Option>
+        {statuses.map((status) => (
+          <Select.Option
+            className="text-base"
+            key={status.id}
+            value={status.id}
+          >
+            <span className="flex min-w-0 items-center gap-2">
+              <StoryStatusIcon
+                className="size-4 shrink-0"
+                statusId={status.id}
+              />
+              <span className="truncate">{status.name}</span>
+            </span>
+          </Select.Option>
+        ))}
+      </Select.Content>
+    </Select>
   );
 };
 
@@ -121,13 +99,27 @@ export const GitHubAutomations = () => {
   const storyTerm = getTermDisplay("storyTerm");
   const storyTermPlural = getTermDisplay("storyTerm", { variant: "plural" });
   const { teamId } = useParams<{ teamId: string }>();
-  const { data: teamSettings } = useGitHubTeamSettings(teamId);
-  const { data: statuses = [] } = useTeamStatuses(teamId);
+  const settingsQuery = useGitHubTeamSettings(teamId);
+  const statusesQuery = useTeamStatuses(teamId);
+  const teamSettings = settingsQuery.data;
+  const statuses = statusesQuery.data ?? [];
   const updateTeamSettings = useUpdateGitHubTeamSettings(teamId);
 
   const rules = teamSettings?.rules ?? [];
+  const loading = settingsQuery.isPending || statusesQuery.isPending;
+  const unavailable =
+    settingsQuery.isError ||
+    statusesQuery.isError ||
+    !teamSettings ||
+    !statusesQuery.data;
+  const disabled = loading || unavailable || updateTeamSettings.isPending;
+  let placeholder: string | undefined;
+  if (loading) placeholder = "Loading settings...";
+  else if (unavailable) placeholder = "Settings unavailable";
 
   const handleChange = (eventKey: string, nextValue: string) => {
+    if (disabled) return;
+
     const nextRules = orderedEvents.map((item) => {
       const existing = rules.find((entry) => entry.eventKey === item.key) ?? {
         id: `${item.key}-draft`,
@@ -159,18 +151,24 @@ export const GitHubAutomations = () => {
         title="GitHub automations"
       />
 
-      <Box className="divide-border divide-y-[0.5px]">
+      {!loading && unavailable ? (
+        <Text className="px-6 py-4" color="danger" role="alert">
+          Could not load GitHub automation settings. Reload the page to try
+          again.
+        </Text>
+      ) : null}
+      <Box aria-busy={loading} className="divide-border divide-y-[0.5px]">
         {orderedEvents.map((event) => {
           const rule = rules.find((item) => item.eventKey === event.key);
           const value = rule?.targetStatusId ?? "none";
           return (
             <Flex
               align="center"
-              className="px-6 py-4"
+              className="flex-col items-stretch gap-4 px-6 py-4 sm:flex-row sm:items-center"
               justify="between"
               key={event.key}
             >
-              <Box>
+              <Box className="min-w-0">
                 <Text className="font-medium">{event.label}</Text>
                 <Text color="muted">
                   Leave as no action to keep the {storyTerm} in its current
@@ -178,9 +176,12 @@ export const GitHubAutomations = () => {
                 </Text>
               </Box>
               <StatusPicker
+                disabled={disabled}
+                label={event.label}
                 onChange={(statusId) => {
                   handleChange(event.key, statusId);
                 }}
+                placeholder={placeholder}
                 statuses={statuses}
                 value={value}
               />

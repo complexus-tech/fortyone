@@ -72,16 +72,23 @@ export const WorkspaceMember = ({
             value={role}
           >
             <Select.Trigger
-              className={cn("w-32", {
+              aria-label={`Role for ${fullName}`}
+              className={cn("w-32 text-base", {
                 "opacity-50": isCurrentUser,
               })}
             >
               <Select.Input />
             </Select.Trigger>
             <Select.Content>
-              <Select.Option value="admin">Admin</Select.Option>
-              <Select.Option value="member">Member</Select.Option>
-              <Select.Option value="guest">Guest</Select.Option>
+              <Select.Option className="text-base" value="admin">
+                Admin
+              </Select.Option>
+              <Select.Option className="text-base" value="member">
+                Member
+              </Select.Option>
+              <Select.Option className="text-base" value="guest">
+                Guest
+              </Select.Option>
             </Select.Content>
           </Select>
         </Box>

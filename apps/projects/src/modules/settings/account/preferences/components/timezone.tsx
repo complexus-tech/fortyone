@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, type ReactNode } from "react";
 import { Box, Flex, Text, Button, Command, Popover, Divider } from "ui";
-import { ArrowDown2Icon, CheckIcon, InternetIcon } from "icons";
+import { ArrowDownIcon, CheckIcon, InternetIcon } from "icons";
 import { SectionHeader } from "@/modules/settings/components";
 import { timezones } from "@/lib/timezones";
 import { useProfile } from "@/lib/hooks/profile";
@@ -135,7 +135,7 @@ export const Timezone = () => {
                     <InternetIcon className="h-4 w-4" />
                     <span className="truncate">{profile?.timezone}</span>
                   </Flex>
-                  <ArrowDown2Icon className="h-4 w-4" />
+                  <ArrowDownIcon className="h-3.5 w-auto shrink-0" />
                 </Button>
               </TimezoneMenu.Trigger>
               <TimezoneMenu.Items

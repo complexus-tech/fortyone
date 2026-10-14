@@ -1,5 +1,5 @@
 import type { FormEvent } from "react";
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { Box, Button, Dialog, Flex, Input, Select, Switch, Text } from "ui";
 import { PlusIcon } from "icons";
 import { CUSTOM_FIELD_TYPE_LABELS } from "./types";
@@ -34,6 +34,7 @@ export const CustomFieldEditor = ({
   onReturnFocus?: () => void;
 }) => {
   const controlsId = useId();
+  const nameInputRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState(field?.name ?? "");
   const [type, setType] = useState<CustomFieldType>(field?.type ?? "text");
   const [icon, setIcon] = useState<CustomFieldIconKey | null>(
@@ -146,41 +147,53 @@ export const CustomFieldEditor = ({
         onInteractOutside={(event) => {
           if (isPending) event.preventDefault();
         }}
+        onOpenAutoFocus={(event) => {
+          event.preventDefault();
+          nameInputRef.current?.focus({ preventScroll: true });
+        }}
       >
-        <Dialog.Header className="shrink-0 px-6 py-4">
+        <Dialog.Header className="border-border shrink-0 border-b px-6 py-5">
           <Dialog.Title className="pr-8 text-lg">
             {field ? "Edit field" : "Create field"}
           </Dialog.Title>
-          <Dialog.Description className="mt-2 px-0">
+          <Dialog.Description className="mt-2 px-0 text-base leading-6">
             Set a team property for tasks and reports.
           </Dialog.Description>
         </Dialog.Header>
         <form className="flex min-h-0 flex-1 flex-col" onSubmit={submit}>
-          <Dialog.Body className="max-h-none min-h-0 flex-1 space-y-5">
-            <Box className="space-y-3">
-              <CustomFieldIconPicker
-                disabled={isPending}
-                onChange={setIcon}
-                type={type}
-                value={icon}
-              />
-              <Input
-                aria-label="Field name"
-                autoFocus
-                disabled={isPending}
-                maxLength={100}
-                onChange={(event) => {
-                  setName(event.target.value);
-                }}
-                placeholder="Field name"
-                required
-                value={name}
-              />
+          <Dialog.Body className="max-h-none min-h-0 flex-1 scroll-py-5 space-y-5 py-5">
+            <Box>
+              <label className="mb-2 block" htmlFor={`${controlsId}-name`}>
+                Field name
+              </label>
+              <Flex align="center" gap={2}>
+                <CustomFieldIconPicker
+                  disabled={isPending}
+                  onChange={setIcon}
+                  type={type}
+                  value={icon}
+                />
+                <Box className="min-w-0 flex-1">
+                  <Input
+                    className="h-[2.1rem] px-3 leading-normal"
+                    disabled={isPending}
+                    id={`${controlsId}-name`}
+                    maxLength={100}
+                    onChange={(event) => {
+                      setName(event.target.value);
+                    }}
+                    placeholder="e.g. Customer, Impact, Launch date"
+                    ref={nameInputRef}
+                    required
+                    value={name}
+                  />
+                </Box>
+              </Flex>
             </Box>
             <Flex align="center" className="gap-4" justify="between">
               <Box className="min-w-0 flex-1">
                 <Text id={`${controlsId}-type`}>Field type</Text>
-                <Text className="mt-1 truncate" color="muted">
+                <Text className="mt-1 leading-6" color="muted">
                   {FIELD_TYPE_DESCRIPTIONS[type]}
                 </Text>
               </Box>
@@ -193,7 +206,7 @@ export const CustomFieldEditor = ({
               >
                 <Select.Trigger
                   aria-labelledby={`${controlsId}-type`}
-                  className="shrink-0 text-base"
+                  className="w-40 shrink-0 text-base"
                 >
                   <Select.Input />
                 </Select.Trigger>
@@ -219,6 +232,7 @@ export const CustomFieldEditor = ({
                       <Box className="min-w-0 flex-1">
                         <Input
                           aria-label="Option name"
+                          className="h-[2.1rem] px-3 leading-normal"
                           disabled={isPending}
                           maxLength={100}
                           onChange={(event) => {
@@ -236,6 +250,7 @@ export const CustomFieldEditor = ({
                       </Box>
                       <Button
                         aria-label={`Remove ${option.name || "option"}`}
+                        className="h-[2.1rem] shrink-0 px-2"
                         color="tertiary"
                         disabled={isPending}
                         onClick={() => {
@@ -243,6 +258,7 @@ export const CustomFieldEditor = ({
                             current.filter((entry) => entry.id !== option.id),
                           );
                         }}
+                        size="sm"
                         type="button"
                         variant="naked"
                       >
@@ -252,7 +268,7 @@ export const CustomFieldEditor = ({
                   ))}
                 </Box>
                 <Button
-                  className="mt-3"
+                  className="mt-3 h-[2.1rem]"
                   color="tertiary"
                   disabled={isPending || options.length >= 100}
                   leftIcon={<PlusIcon />}
@@ -262,6 +278,7 @@ export const CustomFieldEditor = ({
                       { id: crypto.randomUUID(), name: "" },
                     ]);
                   }}
+                  size="sm"
                   type="button"
                   variant="outline"
                 >
@@ -286,21 +303,27 @@ export const CustomFieldEditor = ({
                       : "Use a three-letter code, such as USD or EUR."}
                   </Text>
                 </Box>
-                <Input
-                  className="h-[2.1rem] w-24 px-3 leading-[2.1rem]"
-                  disabled={Boolean(field) || isPending}
-                  id={`${controlsId}-currency`}
-                  maxLength={3}
-                  onChange={(event) => {
-                    setCurrency(event.target.value.toUpperCase());
-                  }}
-                  placeholder="USD"
-                  required
-                  value={currency}
-                />
+                <Box className="w-24 shrink-0">
+                  <Input
+                    className="h-[2.1rem] px-3 leading-normal"
+                    disabled={Boolean(field) || isPending}
+                    id={`${controlsId}-currency`}
+                    maxLength={3}
+                    onChange={(event) => {
+                      setCurrency(event.target.value.toUpperCase());
+                    }}
+                    placeholder="USD"
+                    required
+                    value={currency}
+                  />
+                </Box>
               </Flex>
             ) : null}
-            <Flex align="center" className="gap-4" justify="between">
+            <Flex
+              align="center"
+              className="border-border gap-4 border-t pt-5"
+              justify="between"
+            >
               <Box className="min-w-0">
                 <label
                   className="block"
@@ -314,6 +337,7 @@ export const CustomFieldEditor = ({
               </Box>
               <Switch
                 checked={showOnCreate}
+                className="shrink-0"
                 disabled={isPending}
                 id={`${controlsId}-show-on-create`}
                 onCheckedChange={setShowOnCreate}

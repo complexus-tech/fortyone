@@ -39,6 +39,22 @@ export const WorkExportSection = () => {
       className="border-border bg-surface mt-6 overflow-hidden rounded-2xl border-[0.5px]"
     >
       <SectionHeader
+        action={
+          <Button
+            color="tertiary"
+            disabled={
+              !session || teamsPending || teamsError || exportWork.isPending
+            }
+            loading={exportWork.isPending}
+            onClick={() => {
+              exportWork.mutate();
+            }}
+            size="sm"
+            variant="outline"
+          >
+            {exportWork.isPending ? "Preparing export…" : "Download export"}
+          </Button>
+        }
         description="Back up your work as JSON or export a CSV for analysis."
         title="Export your work"
       />
@@ -138,18 +154,6 @@ export const WorkExportSection = () => {
               {exportWork.error.message}
             </Text>
           ) : null}
-          <Button
-            className="mt-4"
-            disabled={
-              !session || teamsPending || teamsError || exportWork.isPending
-            }
-            loading={exportWork.isPending}
-            onClick={() => {
-              exportWork.mutate();
-            }}
-          >
-            {exportWork.isPending ? "Preparing export…" : "Download export"}
-          </Button>
         </Box>
       </Box>
     </Box>

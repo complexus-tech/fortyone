@@ -9,8 +9,8 @@ import {
   Dialog,
   Divider,
   Flex,
-  Menu,
   Popover,
+  Select,
   Switch,
   Text,
 } from "ui";
@@ -61,7 +61,6 @@ export const GitHubIntegrationSettings = () => {
   const [syncDirection, setSyncDirection] = useState<
     "inbound_only" | "bidirectional"
   >("inbound_only");
-  const [branchFormatOpen, setBranchFormatOpen] = useState(false);
   const [repoPickerOpen, setRepoPickerOpen] = useState(false);
   const [teamPickerOpen, setTeamPickerOpen] = useState(false);
 
@@ -100,6 +99,7 @@ export const GitHubIntegrationSettings = () => {
                 onClick={() => {
                   resyncRepositories.mutate();
                 }}
+                size="sm"
               >
                 Resync
               </Button>
@@ -108,6 +108,7 @@ export const GitHubIntegrationSettings = () => {
                 onClick={() => {
                   createInstallSession.mutate();
                 }}
+                size="sm"
               >
                 Connect GitHub
               </Button>
@@ -171,6 +172,7 @@ export const GitHubIntegrationSettings = () => {
               onClick={() => {
                 setIsModalOpen(true);
               }}
+              size="sm"
             >
               Link repository
             </Button>
@@ -191,11 +193,11 @@ export const GitHubIntegrationSettings = () => {
             {integration?.issueSyncLinks.map((link) => (
               <Flex
                 align="center"
-                className="px-6 py-4"
+                className="flex-col items-start gap-4 px-6 py-4 sm:flex-row sm:items-center"
                 justify="between"
                 key={link.id}
               >
-                <Flex align="center" gap={3}>
+                <Flex align="center" className="min-w-0 flex-1" gap={3}>
                   <Flex
                     align="center"
                     className="bg-surface-muted size-9 shrink-0 rounded-lg"
@@ -203,8 +205,13 @@ export const GitHubIntegrationSettings = () => {
                   >
                     <GitIcon className="h-4" />
                   </Flex>
-                  <Box>
-                    <Text className="font-medium">{link.repositoryName}</Text>
+                  <Box className="min-w-0">
+                    <Text
+                      className="truncate font-medium"
+                      title={link.repositoryName}
+                    >
+                      {link.repositoryName}
+                    </Text>
                     <Text color="muted">
                       {link.teamName} ·{" "}
                       {link.syncDirection === "bidirectional"
@@ -213,14 +220,28 @@ export const GitHubIntegrationSettings = () => {
                     </Text>
                   </Box>
                 </Flex>
-                <Button
-                  color="tertiary"
-                  onClick={() => {
-                    deleteLink.mutate(link.id);
-                  }}
-                >
-                  Unlink
-                </Button>
+                <Flex className="shrink-0" gap={2}>
+                  <Button
+                    aria-label={`Manage ${link.teamName} GitHub automations`}
+                    color="tertiary"
+                    href={withWorkspace(
+                      `/settings/workspace/teams/${link.teamId}?tab=automations&section=github`,
+                    )}
+                    size="sm"
+                    variant="outline"
+                  >
+                    Automations
+                  </Button>
+                  <Button
+                    color="tertiary"
+                    onClick={() => {
+                      deleteLink.mutate(link.id);
+                    }}
+                    size="sm"
+                  >
+                    Unlink
+                  </Button>
+                </Flex>
               </Flex>
             ))}
           </Box>
@@ -232,37 +253,44 @@ export const GitHubIntegrationSettings = () => {
           description="Keep branch names consistent across the workspace."
           title="Branch format"
         />
-        <Flex align="center" className="px-6 py-4" justify="between">
+        <Flex
+          align="center"
+          className="flex-col items-start gap-4 px-6 py-4 sm:flex-row sm:items-center"
+          justify="between"
+        >
           <Box>
             <Text className="font-medium">Format</Text>
             <Text color="muted">
               Choose the branch name template copied from {storyTerm} pages.
             </Text>
           </Box>
-          <Menu onOpenChange={setBranchFormatOpen} open={branchFormatOpen}>
-            <Menu.Button>
-              <Button color="tertiary">
-                {integration?.settings.branchFormat ??
-                  "username/identifier-title"}
-              </Button>
-            </Menu.Button>
-            <Menu.Items align="end">
-              <Menu.Group>
-                {GITHUB_BRANCH_FORMATS.map((format) => (
-                  <Menu.Item
-                    key={format}
-                    onSelect={() => {
-                      updateSettings.mutate({
-                        branchFormat: format,
-                      });
-                    }}
-                  >
-                    {format}
-                  </Menu.Item>
-                ))}
-              </Menu.Group>
-            </Menu.Items>
-          </Menu>
+          <Select
+            disabled={!integration || updateSettings.isPending}
+            onValueChange={(branchFormat) => {
+              updateSettings.mutate({ branchFormat });
+            }}
+            value={
+              integration?.settings.branchFormat ?? "username/identifier-title"
+            }
+          >
+            <Select.Trigger
+              aria-label="Branch name format"
+              className="shrink-0 text-base"
+            >
+              <Select.Input />
+            </Select.Trigger>
+            <Select.Content align="end">
+              {GITHUB_BRANCH_FORMATS.map((format) => (
+                <Select.Option
+                  className="text-base"
+                  key={format}
+                  value={format}
+                >
+                  {format}
+                </Select.Option>
+              ))}
+            </Select.Content>
+          </Select>
         </Flex>
       </Box>
 

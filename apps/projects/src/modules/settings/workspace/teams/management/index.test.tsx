@@ -279,6 +279,25 @@ describe("team settings organization", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("jumps directly to GitHub automations and keeps the section link shareable", () => {
+    mockInitialQuery = { tab: "automations", section: null };
+    render(<TeamManagement />);
+
+    fireEvent.click(screen.getByRole("button", { name: "GitHub" }));
+
+    expect(mockSetQuery).toHaveBeenCalledWith({
+      tab: "automations",
+      section: "github",
+    });
+    expect(
+      screen.getByRole("region", { name: "GitHub automations" }),
+    ).toHaveFocus();
+    expect(mockScrollIntoView).toHaveBeenCalledWith({ block: "start" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Cleanup" }));
+    expect(screen.getByRole("region", { name: "Cleanup" })).toHaveFocus();
+  });
+
   it("groups Complexity and sprint scheduling in Planning", () => {
     mockInitialQuery = { tab: "planning", section: null };
     render(<TeamManagement />);

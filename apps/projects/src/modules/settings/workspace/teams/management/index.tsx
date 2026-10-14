@@ -159,7 +159,12 @@ export const TeamManagement = () => {
             </TeamSettingsSection>
           </Tabs.Panel>
           <Tabs.Panel value="automations">
-            <Automations />
+            <Automations
+              onNavigate={(section) => {
+                void setQuery({ tab: "automations", section });
+                focusSection(section);
+              }}
+            />
           </Tabs.Panel>
         </Box>
       </Tabs>

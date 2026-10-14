@@ -77,13 +77,17 @@ const ReviewerRow = ({
       >
         <Select.Trigger
           aria-label={`Email summary for ${reviewer.name}`}
-          className="h-9 w-28 shrink-0 px-2"
+          className="w-28 shrink-0 text-base"
         >
           <Select.Input />
         </Select.Trigger>
         <Select.Content align="end">
           {frequencies.map((frequency) => (
-            <Select.Option key={frequency.value} value={frequency.value}>
+            <Select.Option
+              className="text-base"
+              key={frequency.value}
+              value={frequency.value}
+            >
               {frequency.label}
             </Select.Option>
           ))}
@@ -104,7 +108,7 @@ const ReviewersSkeleton = () => (
             <Skeleton className="h-3 w-48 max-w-full" />
           </Box>
         </Flex>
-        <Skeleton className="h-9 w-28" />
+        <Skeleton className="h-[2.1rem] w-28" />
       </Flex>
     ))}
   </Box>
@@ -134,7 +138,7 @@ export const FeedbackReviewersDialog = ({
       <Dialog.Content className="max-w-xl">
         <Dialog.Header className="space-y-2 px-6 pt-5 pb-3">
           <Dialog.Title className="pr-10 text-lg">Reviewers</Dialog.Title>
-          <Dialog.Description className="px-0">
+          <Dialog.Description className="px-0 text-base">
             Choose who receives grouped weekly email summaries for {board.name}.
           </Dialog.Description>
         </Dialog.Header>

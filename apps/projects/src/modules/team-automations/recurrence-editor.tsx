@@ -175,7 +175,7 @@ export const RecurrenceEditor = ({
         aria-busy={pending}
         aria-label="Create recurring task"
         aria-labelledby={undefined}
-        className="mt-4 flex max-h-[calc(100dvh-2rem)] flex-col overflow-visible md:mt-[10%] md:max-h-[calc(90dvh-1rem)]"
+        className="mt-0 flex max-h-[calc(100dvh-2rem)] flex-col overflow-visible md:mt-0"
         hideClose
         onEscapeKeyDown={(event) => {
           if (pending) event.preventDefault();
@@ -183,6 +183,7 @@ export const RecurrenceEditor = ({
         onInteractOutside={(event) => {
           if (pending) event.preventDefault();
         }}
+        overlayClassName="items-center py-4"
         size="lg"
       >
         <StoryComposerHeader
@@ -216,7 +217,7 @@ export const RecurrenceEditor = ({
         <Dialog.Description className="sr-only">
           Compose the task and choose when to create each occurrence.
         </Dialog.Description>
-        <Dialog.Body className="max-h-[75dvh] min-h-0 flex-1 space-y-5 overflow-y-auto pt-0 pb-6 md:max-h-[60dvh]">
+        <Dialog.Body className="max-h-none min-h-0 flex-1 space-y-6 overflow-y-auto pt-0 pb-6">
           <section aria-label="Task details" className="min-w-0">
             <TextEditor
               asTitle
@@ -261,7 +262,7 @@ export const RecurrenceEditor = ({
             </Text>
           ) : null}
         </Dialog.Body>
-        <Dialog.Footer className="flex shrink-0 items-center justify-between gap-2">
+        <Dialog.Footer className="flex shrink-0 flex-wrap items-center justify-end gap-2 py-4">
           <Button
             color="tertiary"
             disabled={pending}

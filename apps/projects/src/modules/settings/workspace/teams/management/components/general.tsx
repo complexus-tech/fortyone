@@ -69,49 +69,53 @@ export const GeneralSettings = ({ team }: { team: Team }) => {
       <form className="divide-border divide-y-[0.5px]" onSubmit={handleSubmit}>
         <Box className="flex flex-col gap-4 px-6 py-4 md:flex-row md:items-center md:justify-between">
           <Box>
-            <Text>Team name</Text>
-            <Text color="muted" fontSize="sm">
-              Choose a descriptive name for your team
-            </Text>
+            <Text className="font-medium">Team name</Text>
+            <Text color="muted">Choose a descriptive name for your team</Text>
           </Box>
-          <Input
-            aria-label="Team name"
-            className="h-10 md:w-64"
-            maxLength={24}
-            minLength={3}
-            name="name"
-            onChange={(e) => {
-              setForm({ ...form, name: e.target.value });
-            }}
-            placeholder="eg. Growth, Product, Operations"
-            required
-            value={form.name}
-          />
+          <Box className="w-full shrink-0 md:w-56">
+            <Input
+              aria-label="Team name"
+              className="h-[2.1rem] px-3 leading-normal"
+              maxLength={24}
+              minLength={3}
+              name="name"
+              onChange={(e) => {
+                setForm({ ...form, name: e.target.value });
+              }}
+              placeholder="eg. Growth, Product, Operations"
+              required
+              value={form.name}
+            />
+          </Box>
         </Box>
-        <Flex align="center" className="px-6 py-4" justify="between">
+        <Flex align="center" className="gap-4 px-6 py-4" justify="between">
           <Box>
-            <Text>Team code</Text>
-            <Text color="muted" fontSize="sm">
+            <Text className="font-medium">Team code</Text>
+            <Text color="muted">
               Prefix for this team&apos;s work IDs (e.g., ENG-123)
             </Text>
           </Box>
-          <Input
-            aria-label="Team code"
-            className="h-10 w-28"
-            maxLength={3}
-            minLength={2}
-            name="code"
-            onChange={(e) => {
-              setForm({ ...form, code: formatTeamCode(e.target.value) });
-            }}
-            placeholder="ENG"
-            required
-            value={form.code}
-          />
+          <Box className="w-24 shrink-0">
+            <Input
+              aria-label="Team code"
+              className="h-[2.1rem] px-3 leading-normal"
+              maxLength={3}
+              minLength={2}
+              name="code"
+              onChange={(e) => {
+                setForm({ ...form, code: formatTeamCode(e.target.value) });
+              }}
+              placeholder="ENG"
+              required
+              value={form.code}
+            />
+          </Box>
         </Flex>
         <Box className="flex flex-col gap-4 px-6 py-4 md:flex-row md:items-center md:justify-between">
           <Box>
-            <Text id={`team-work-naming-${team.id}`}>Work naming</Text>
+            <Text className="font-medium" id={`team-work-naming-${team.id}`}>
+              Work naming
+            </Text>
             <Text color="muted">Name this team&apos;s work.</Text>
           </Box>
           <Select
@@ -149,10 +153,10 @@ export const GeneralSettings = ({ team }: { team: Team }) => {
             </Select.Content>
           </Select>
         </Box>
-        <Flex align="center" className="px-6 py-4" justify="between">
+        <Flex align="center" className="gap-4 px-6 py-4" justify="between">
           <Box>
-            <Text>Team color</Text>
-            <Text color="muted" fontSize="sm">
+            <Text className="font-medium">Team color</Text>
+            <Text color="muted">
               Used to identify the team in the workspace
             </Text>
           </Box>
@@ -191,8 +195,8 @@ export const GeneralSettings = ({ team }: { team: Team }) => {
         >
           <Flex align="center" className="gap-3 px-6 py-4" justify="between">
             <Box>
-              <Text>Private team</Text>
-              <Text className="max-w-xl" color="muted" fontSize="sm">
+              <Text className="font-medium">Private team</Text>
+              <Text className="max-w-xl" color="muted">
                 Private teams are only visible to members of the team. Admin and
                 team leads can add members to private teams.
               </Text>

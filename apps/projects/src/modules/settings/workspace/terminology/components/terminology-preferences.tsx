@@ -198,7 +198,7 @@ export const TerminologyPreferences = () => {
                     }}
                     value={settings[entity.key] as string}
                   >
-                    <Select.Trigger className="h-9 w-max text-base disabled:opacity-50 md:min-w-36">
+                    <Select.Trigger className="w-max shrink-0 text-base disabled:opacity-50 md:min-w-36">
                       <Select.Input />
                     </Select.Trigger>
                     <Select.Content align="center">

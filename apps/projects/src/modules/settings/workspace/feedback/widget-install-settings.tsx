@@ -173,8 +173,8 @@ const WidgetOptionRow = ({
     justify="between"
   >
     <Box className="min-w-0 flex-1">
-      <Text>{label}</Text>
-      <Text className="max-w-xl" color="muted" fontSize="sm">
+      <Text fontWeight="medium">{label}</Text>
+      <Text className="max-w-xl" color="muted">
         {description}
       </Text>
     </Box>
@@ -215,7 +215,7 @@ export const WidgetInstallSettings = ({
       ? buildInlineFeedbackWidgetMarkup(options)
       : buildFeedbackWidgetSnippet({ ...options, mode });
 
-  const selectTriggerClassName = "w-max text-[0.9rem] md:text-base";
+  const selectTriggerClassName = "w-max text-base";
 
   return (
     <>
@@ -349,7 +349,8 @@ export const WidgetInstallSettings = ({
               label="Trigger selector"
             >
               <Input
-                className="h-10 w-full sm:w-72"
+                aria-label="Trigger selector"
+                className="h-[2.1rem] w-full px-3 leading-normal sm:w-72"
                 id="feedback-widget-trigger"
                 onChange={(event) => {
                   setTrigger(event.target.value);

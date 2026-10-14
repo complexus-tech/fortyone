@@ -123,9 +123,7 @@ export const WorkingDaysSetting = ({
               <Flex align="center" justify="between">
                 <Box>
                   <Text fontWeight="medium">Use workspace default</Text>
-                  <Text color="muted" fontSize="sm">
-                    Follow the organization schedule.
-                  </Text>
+                  <Text color="muted">Follow the organization schedule.</Text>
                 </Box>
                 <Switch checked={inherit} onCheckedChange={setInherit} />
               </Flex>
@@ -259,9 +257,7 @@ export const WorkingHoursSetting = ({
               <Flex align="center" justify="between">
                 <Box>
                   <Text fontWeight="medium">Use workspace default</Text>
-                  <Text color="muted" fontSize="sm">
-                    Follow the organization schedule.
-                  </Text>
+                  <Text color="muted">Follow the organization schedule.</Text>
                 </Box>
                 <Switch checked={inherit} onCheckedChange={setInherit} />
               </Flex>
@@ -289,9 +285,7 @@ export const WorkingHoursSetting = ({
               />
             </Box>
             {!isValid ? (
-              <Text color="danger" fontSize="sm">
-                End time must be after start time.
-              </Text>
+              <Text color="danger">End time must be after start time.</Text>
             ) : null}
           </Dialog.Body>
           <Dialog.Footer className="justify-end gap-2">

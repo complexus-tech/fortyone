@@ -109,7 +109,14 @@ const IntegrationCard = ({
   );
 
   if (integration.href) {
-    return <Link href={integration.href}>{content}</Link>;
+    return (
+      <Link
+        className="focus-visible:outline-ring rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2"
+        href={integration.href}
+      >
+        {content}
+      </Link>
+    );
   }
 
   return content;
@@ -198,13 +205,12 @@ export const IntegrationsIndex = () => {
 
       <Box className="mt-6">
         <Input
+          aria-label="Search integrations"
           leftIcon={<SearchIcon className="h-4.5" />}
           onChange={(e) => {
             setSearch(e.target.value);
           }}
           placeholder="Search integrations"
-          rounded="xl"
-          size="lg"
           value={search}
         />
       </Box>

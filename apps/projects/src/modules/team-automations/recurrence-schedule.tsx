@@ -66,7 +66,7 @@ const ScheduleInput = ({
         {label}
       </label>
       <Input
-        className="border-border h-[2.1rem] min-w-0 px-2 py-1 leading-normal"
+        className="border-border h-[2.1rem] min-w-0 px-3 py-1 leading-normal"
         id={id}
         {...props}
       />
@@ -105,10 +105,15 @@ export const RecurrenceSchedule = ({
     aria-labelledby="recurrence-schedule"
     className="border-border min-w-0 space-y-4 border-t-[0.5px] pt-4"
   >
-    <Text as="h3" className="sr-only" id="recurrence-schedule">
-      Schedule
-    </Text>
-    <div className="flex flex-wrap items-end gap-3 sm:gap-4">
+    <div>
+      <Text as="h3" fontWeight="medium" id="recurrence-schedule">
+        Schedule
+      </Text>
+      <Text className="mt-1" color="muted">
+        Choose when to create each task and the timezone to use.
+      </Text>
+    </div>
+    <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2 lg:grid-cols-3">
       <AutomationSelect
         disabled={disabled}
         label="Repeat"
@@ -137,7 +142,7 @@ export const RecurrenceSchedule = ({
       ) : null}
       {schedule.frequency === "monthly" ? (
         <ScheduleInput
-          className="w-28"
+          className="w-full"
           disabled={disabled}
           label="Day of month"
           max={31}
@@ -149,10 +154,8 @@ export const RecurrenceSchedule = ({
           value={schedule.monthDay}
         />
       ) : null}
-    </div>
-    <div className="flex flex-wrap items-end gap-3 sm:gap-4">
       <ScheduleInput
-        className="w-48 sm:w-44"
+        className="w-full"
         disabled={disabled}
         label="Start date"
         onChange={(event) => {
@@ -162,7 +165,7 @@ export const RecurrenceSchedule = ({
         value={schedule.startsOn}
       />
       <ScheduleInput
-        className="w-40"
+        className="w-full"
         disabled={disabled}
         label="Time"
         onChange={(event) => {
@@ -173,7 +176,7 @@ export const RecurrenceSchedule = ({
       />
       <ScheduleInput
         aria-invalid={Boolean(validation.timezoneError)}
-        className="w-44"
+        className="w-full"
         disabled={disabled}
         label="Timezone"
         maxLength={100}
@@ -185,7 +188,7 @@ export const RecurrenceSchedule = ({
         value={schedule.timezone}
       />
       <ScheduleInput
-        className="w-64"
+        className="w-full"
         disabled={disabled}
         label="Schedule name (optional)"
         maxLength={100}

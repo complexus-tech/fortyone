@@ -97,9 +97,10 @@ export const RuleEditor = ({
             Automatically update tasks when your conditions are met.
           </Dialog.Description>
         </Dialog.Header>
-        <Dialog.Body className="max-h-none min-h-0 flex-1 space-y-5">
+        <Dialog.Body className="max-h-none min-h-0 flex-1 space-y-5 pb-6">
           <Input
             autoFocus
+            className="h-[2.1rem] px-3 leading-normal"
             disabled={pending}
             id="automation-rule-name"
             label="Rule name"
@@ -123,10 +124,10 @@ export const RuleEditor = ({
             ]}
             value={trigger}
           />
-          <fieldset className="border-border min-w-0 border-t-[0.5px] pt-4">
-            <legend className="float-left mb-1 w-full font-medium">If</legend>
-            <Text className="clear-both mb-4" color="muted">
-              All selected conditions match.
+          <fieldset className="border-border min-w-0 rounded-xl border p-4">
+            <legend className="px-1 font-medium">Conditions</legend>
+            <Text className="mb-4" color="muted">
+              Run when all selected conditions match.
             </Text>
             <div className="space-y-3">
               <AutomationSelect
@@ -153,9 +154,9 @@ export const RuleEditor = ({
               />
             </div>
           </fieldset>
-          <fieldset className="border-border min-w-0 border-t-[0.5px] pt-4">
-            <legend className="float-left mb-1 w-full font-medium">Then</legend>
-            <Text className="clear-both mb-4" color="muted">
+          <fieldset className="border-border min-w-0 rounded-xl border p-4">
+            <legend className="px-1 font-medium">Changes</legend>
+            <Text className="mb-4" color="muted">
               Apply these changes to the task.
             </Text>
             <div className="space-y-3">

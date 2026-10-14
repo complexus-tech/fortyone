@@ -21,7 +21,7 @@ export const AutomationSelect = ({
   return (
     <Box
       className={cn({
-        "space-y-2": layout === "stacked",
+        "min-w-0 space-y-2": layout === "stacked",
         "min-w-0 space-y-1.5": layout === "compact",
         "grid gap-2 sm:grid-cols-[8rem_minmax(0,1fr)] sm:items-center":
           layout === "inline",
@@ -32,10 +32,7 @@ export const AutomationSelect = ({
       </label>
       <Select disabled={disabled} onValueChange={onChange} value={value}>
         <Select.Trigger
-          className={cn("text-base disabled:opacity-50", {
-            "h-10 w-full px-3": layout === "stacked",
-            "px-2": layout === "compact",
-          })}
+          className="w-full text-base disabled:opacity-50"
           id={id}
         >
           <Select.Input />

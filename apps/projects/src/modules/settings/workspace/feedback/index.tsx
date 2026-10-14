@@ -108,7 +108,7 @@ const isWorkspaceSubdomainDeployment =
   process.env.NEXT_PUBLIC_DOMAIN === "fortyone.app";
 
 const selectClassName =
-  "border-border ring-ring h-11 w-full appearance-none rounded-xl border bg-white pr-10 pl-3 text-sm outline-none focus-visible:ring-2 dark:bg-surface-elevated";
+  "border-input ring-ring h-[2.8rem] w-full appearance-none rounded-lg border bg-white pr-10 pl-3 text-base outline-none focus-visible:ring-2 dark:bg-surface-elevated";
 
 const PublicUrl = ({ portal }: { portal: FeedbackPortal }) => {
   return (
@@ -222,10 +222,10 @@ const PortalConfiguration = ({
         title="General Information"
       />
       <Box className="divide-border divide-y-[0.5px]">
-        <Flex align="center" className="gap-3 px-6 py-4" justify="between">
-          <Box>
-            <Text>Enabled</Text>
-            <Text color="muted" fontSize="sm">
+        <Flex align="center" className="gap-4 px-6 py-4" justify="between">
+          <Box className="min-w-0 flex-1">
+            <Text fontWeight="medium">Enabled</Text>
+            <Text color="muted">
               When enabled, people can view and submit feedback on the public
               portal.
             </Text>
@@ -239,10 +239,14 @@ const PortalConfiguration = ({
             }}
           />
         </Flex>
-        <Flex align="center" className="gap-4 px-6 py-4" justify="between">
+        <Flex
+          align="center"
+          className="flex-col items-stretch gap-4 px-6 py-4 sm:flex-row sm:items-center"
+          justify="between"
+        >
           <Box className="min-w-0 flex-1">
-            <Text>Who can submit feedback</Text>
-            <Text className="max-w-xl" color="muted" fontSize="sm">
+            <Text fontWeight="medium">Who can submit feedback</Text>
+            <Text className="max-w-xl" color="muted">
               {selectedParticipation.description}
             </Text>
           </Box>
@@ -255,7 +259,7 @@ const PortalConfiguration = ({
           >
             <Select.Trigger
               aria-label="Who can submit feedback"
-              className="w-max shrink-0 text-[0.9rem] md:text-base"
+              className="w-max shrink-0 text-base"
             >
               <Select.Input />
             </Select.Trigger>
@@ -277,10 +281,14 @@ const PortalConfiguration = ({
           </Select>
         </Flex>
         {participationMode !== "account_required" ? (
-          <Flex align="center" className="gap-4 px-6 py-4" justify="between">
+          <Flex
+            align="center"
+            className="flex-col items-stretch gap-4 px-6 py-4 sm:flex-row sm:items-center"
+            justify="between"
+          >
             <Box className="min-w-0 flex-1">
-              <Text>Guest public identity</Text>
-              <Text className="max-w-xl" color="muted" fontSize="sm">
+              <Text fontWeight="medium">Guest public identity</Text>
+              <Text className="max-w-xl" color="muted">
                 {selectedGuestIdentity.description}
               </Text>
             </Box>
@@ -295,7 +303,7 @@ const PortalConfiguration = ({
             >
               <Select.Trigger
                 aria-label="Guest public identity"
-                className="w-max shrink-0 text-[0.9rem] md:text-base"
+                className="w-max shrink-0 text-base"
               >
                 <Select.Input />
               </Select.Trigger>
@@ -315,7 +323,7 @@ const PortalConfiguration = ({
         ) : null}
         {!anonymousFeedbackAvailable ? (
           <Box className="px-6 py-4">
-            <Text color="muted" fontSize="sm">
+            <Text color="muted">
               Anonymous feedback is unavailable on this deployment. Configure a
               trusted reverse proxy and FEEDBACK_TRUSTED_CLIENT_IP_HEADER before
               enabling it.
@@ -373,7 +381,7 @@ const CreateBoardDialog = ({ portal }: { portal?: FeedbackPortal }) => {
         </Dialog.Header>
         <Dialog.Body className="space-y-4">
           <Box>
-            <Text className="mb-2 text-sm" fontWeight="medium">
+            <Text className="mb-2" fontWeight="medium">
               Owning team
             </Text>
             <Box className="relative">
@@ -395,37 +403,47 @@ const CreateBoardDialog = ({ portal }: { portal?: FeedbackPortal }) => {
             </Box>
           </Box>
           <Input
+            label="Board name"
             onChange={(event) => {
               setName(event.target.value);
             }}
             placeholder="Board name"
             value={name}
           />
-          <Flex className="flex-wrap gap-2">
-            {colorOptions.map((option) => (
-              <button
-                aria-pressed={color === option.value}
-                className={cn(
-                  "bg-surface-muted hover:bg-state-hover flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition",
-                  color === option.value
-                    ? "border-primary/40 bg-primary/5"
-                    : "border-transparent",
-                )}
-                key={option.value}
-                onClick={() => {
-                  setColor(option.value);
-                }}
-                type="button"
-              >
-                <Box
-                  aria-hidden="true"
-                  className="size-3 rounded-sm"
-                  style={{ backgroundColor: option.value }}
-                />
-                {option.label}
-              </button>
-            ))}
-          </Flex>
+          <Box>
+            <Text className="mb-2" fontWeight="medium">
+              Board color
+            </Text>
+            <Flex
+              aria-label="Board color"
+              className="flex-wrap gap-2"
+              role="group"
+            >
+              {colorOptions.map((option) => (
+                <button
+                  aria-pressed={color === option.value}
+                  className={cn(
+                    "bg-surface-muted hover:bg-state-hover focus-visible:ring-ring flex items-center gap-2 rounded-lg border px-3 py-2 text-base transition-colors focus-visible:ring-2 focus-visible:outline-none",
+                    color === option.value
+                      ? "border-border-strong bg-state-selected"
+                      : "border-transparent",
+                  )}
+                  key={option.value}
+                  onClick={() => {
+                    setColor(option.value);
+                  }}
+                  type="button"
+                >
+                  <Box
+                    aria-hidden="true"
+                    className="size-3 rounded-sm"
+                    style={{ backgroundColor: option.value }}
+                  />
+                  {option.label}
+                </button>
+              ))}
+            </Flex>
+          </Box>
         </Dialog.Body>
         <Dialog.Footer className="justify-end gap-3">
           <Button

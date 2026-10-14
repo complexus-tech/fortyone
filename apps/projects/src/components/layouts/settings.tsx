@@ -191,9 +191,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
           >
             <Container
               className={cn("pt-6 pb-8 md:max-w-216 md:pt-16 md:pb-12", {
-                "md:max-w-[80rem]":
-                  pathname.includes("billing") ||
-                  pathname.endsWith("/settings/workspace/security"),
+                "md:max-w-[80rem]": pathname.includes("billing"),
               })}
             >
               {children}

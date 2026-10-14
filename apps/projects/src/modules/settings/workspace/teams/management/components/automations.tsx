@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { Box, Flex, Select, Switch, Text } from "ui";
+import { Box, Button, Flex, Select, Switch, Text } from "ui";
 import { useTerminology } from "@/hooks";
 import { SectionHeader } from "@/modules/settings/components/section-header";
 import { useTeamSettings } from "@/modules/teams/hooks/use-team-settings";
@@ -10,7 +10,19 @@ import { TeamAutomations } from "@/modules/team-automations/public/settings";
 import { GitHubAutomations } from "./github-automations";
 import { TeamSettingsSection } from "./settings-sections";
 
-export const Automations = () => {
+type AutomationSection = "rules" | "cleanup" | "github";
+
+const AUTOMATION_SECTIONS: { value: AutomationSection; label: string }[] = [
+  { value: "rules", label: "Rules & recurring work" },
+  { value: "cleanup", label: "Cleanup" },
+  { value: "github", label: "GitHub" },
+];
+
+export const Automations = ({
+  onNavigate,
+}: {
+  onNavigate: (section: AutomationSection) => void;
+}) => {
   const { teamId } = useParams<{ teamId: string }>();
   const { getTermDisplay } = useTerminology();
   const { data: teamSettings } = useTeamSettings(teamId);
@@ -19,6 +31,21 @@ export const Automations = () => {
 
   return (
     <Box className="space-y-6">
+      <Flex aria-label="Automation sections" as="nav" gap={2} wrap>
+        {AUTOMATION_SECTIONS.map(({ value, label }) => (
+          <Button
+            color="tertiary"
+            key={value}
+            onClick={() => {
+              onNavigate(value);
+            }}
+            size="sm"
+            variant="outline"
+          >
+            {label}
+          </Button>
+        ))}
+      </Flex>
       <TeamSettingsSection label="Rules and recurring work" value="rules">
         <TeamAutomations teamId={teamId} />
       </TeamSettingsSection>
@@ -30,7 +57,7 @@ export const Automations = () => {
           />
 
           <Box className="divide-border divide-y-[0.5px]">
-            <Flex align="center" className="px-6 py-4" justify="between">
+            <Flex align="center" className="gap-4 px-6 py-4" justify="between">
               <Box>
                 <Text className="font-medium">
                   Auto-close{" "}
@@ -55,7 +82,11 @@ export const Automations = () => {
             </Flex>
 
             {storySettings?.autoCloseInactiveEnabled ? (
-              <Flex align="center" className="px-6 py-4" justify="between">
+              <Flex
+                align="center"
+                className="flex-col items-start gap-4 px-6 py-4 sm:flex-row sm:items-center"
+                justify="between"
+              >
                 <Box>
                   <Text className="font-medium">
                     Close after being inactive for
@@ -76,7 +107,7 @@ export const Automations = () => {
                 >
                   <Select.Trigger
                     aria-label="Close after being inactive for"
-                    className="w-32 text-base"
+                    className="w-32 shrink-0 text-base"
                   >
                     <Select.Input />
                   </Select.Trigger>
@@ -95,7 +126,7 @@ export const Automations = () => {
               </Flex>
             ) : null}
 
-            <Flex align="center" className="px-6 py-4" justify="between">
+            <Flex align="center" className="gap-4 px-6 py-4" justify="between">
               <Box>
                 <Text className="font-medium">
                   Auto-archive{" "}
@@ -117,7 +148,11 @@ export const Automations = () => {
             </Flex>
 
             {storySettings?.autoArchiveEnabled ? (
-              <Flex align="center" className="px-6 py-4" justify="between">
+              <Flex
+                align="center"
+                className="flex-col items-start gap-4 px-6 py-4 sm:flex-row sm:items-center"
+                justify="between"
+              >
                 <Box>
                   <Text className="font-medium">Archive after</Text>
                   <Text className="line-clamp-2" color="muted">
@@ -136,7 +171,7 @@ export const Automations = () => {
                 >
                   <Select.Trigger
                     aria-label="Archive after"
-                    className="w-32 text-base"
+                    className="w-32 shrink-0 text-base"
                   >
                     <Select.Input />
                   </Select.Trigger>

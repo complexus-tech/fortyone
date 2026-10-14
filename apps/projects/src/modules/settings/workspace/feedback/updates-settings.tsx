@@ -86,7 +86,7 @@ const UpdateEditor = ({
       </Dialog.Header>
       <Dialog.Body className="max-h-[75dvh] space-y-5 overflow-y-auto">
         <label className="block space-y-2" htmlFor="feedback-update-title">
-          <Text as="span" className="block text-sm" fontWeight="medium">
+          <Text as="span" className="block" fontWeight="medium">
             Title
           </Text>
           <Input
@@ -101,7 +101,7 @@ const UpdateEditor = ({
           />
         </label>
         <label className="block space-y-2" htmlFor="feedback-update-summary">
-          <Text as="span" className="block text-sm" fontWeight="medium">
+          <Text as="span" className="block" fontWeight="medium">
             Summary
           </Text>
           <Input
@@ -115,11 +115,11 @@ const UpdateEditor = ({
           />
         </label>
         <label className="block space-y-2" htmlFor="feedback-update-body">
-          <Text as="span" className="block text-sm" fontWeight="medium">
+          <Text as="span" className="block" fontWeight="medium">
             Update
           </Text>
           <textarea
-            className="border-border bg-surface ring-ring min-h-48 w-full resize-y rounded-xl border p-3 text-sm leading-6 outline-none placeholder:text-[var(--color-text-muted)] focus-visible:ring-2"
+            className="border-input ring-ring dark:bg-surface-elevated placeholder:text-text-muted min-h-48 w-full resize-y rounded-lg border bg-white px-4 py-3 text-base leading-relaxed outline-none focus-visible:ring-2"
             id="feedback-update-body"
             maxLength={20000}
             onChange={(event) => {
@@ -137,13 +137,13 @@ const UpdateEditor = ({
             >
               Preview
             </Text>
-            <Text className="text-sm leading-6 whitespace-pre-wrap">
+            <Text className="leading-relaxed whitespace-pre-wrap">
               {body.trim()}
             </Text>
           </Box>
         ) : null}
         <label className="block space-y-2" htmlFor="feedback-update-cover">
-          <Text as="span" className="block text-sm" fontWeight="medium">
+          <Text as="span" className="block" fontWeight="medium">
             Cover image URL{" "}
             <span className="text-text-muted font-normal">(optional)</span>
           </Text>
@@ -158,14 +158,13 @@ const UpdateEditor = ({
           />
         </label>
         <Box>
-          <Text className="text-sm" fontWeight="medium">
-            Linked feedback
-          </Text>
-          <Text className="mt-1 text-sm" color="muted">
+          <Text fontWeight="medium">Linked feedback</Text>
+          <Text className="mt-1" color="muted">
             Followers of linked requests are notified when this update is
             published.
           </Text>
           <Input
+            aria-label="Search feedback"
             className="mt-3"
             leftIcon={<SearchIcon className="h-4" />}
             onChange={(event) => {
@@ -177,7 +176,7 @@ const UpdateEditor = ({
           />
           <Box className="border-border/70 mt-2 max-h-52 overflow-y-auto rounded-xl border">
             {candidatesQuery.isLoading ? (
-              <Text className="px-4 py-8 text-center text-sm" color="muted">
+              <Text className="px-4 py-8 text-center" color="muted">
                 Loading feedback…
               </Text>
             ) : null}
@@ -206,7 +205,7 @@ const UpdateEditor = ({
                       className="min-w-0 flex-1 cursor-pointer"
                       htmlFor={`feedback-update-item-${item.id}`}
                     >
-                      <Text className="truncate text-sm" fontWeight="medium">
+                      <Text className="truncate" fontWeight="medium">
                         {item.title}
                       </Text>
                       <Text className="mt-0.5 text-xs capitalize" color="muted">
@@ -217,7 +216,7 @@ const UpdateEditor = ({
                 ))
               : null}
             {!candidatesQuery.isLoading && visibleCandidates.length === 0 ? (
-              <Text className="px-4 py-8 text-center text-sm" color="muted">
+              <Text className="px-4 py-8 text-center" color="muted">
                 No matching feedback
               </Text>
             ) : null}
@@ -259,7 +258,7 @@ export const FeedbackUpdatesSettings = ({
   const updates = updatesQuery.data ?? [];
 
   return (
-    <Box className="bg-surface overflow-hidden rounded-2xl">
+    <Box className="border-border bg-surface overflow-hidden rounded-2xl border">
       <SectionHeader
         action={
           <Button
@@ -310,7 +309,7 @@ export const FeedbackUpdatesSettings = ({
                     {update.publishedAt ? "Published" : "Draft"}
                   </span>
                 </Flex>
-                <Text className="mt-1 truncate text-sm" color="muted">
+                <Text className="mt-1 truncate" color="muted">
                   {update.summary ||
                     `${update.linkedItems.length} linked feedback request${update.linkedItems.length === 1 ? "" : "s"}`}
                 </Text>
@@ -445,7 +444,7 @@ const UpdatesEmpty = () => (
     <Text className="text-base" fontWeight="semibold">
       No updates yet
     </Text>
-    <Text className="mx-auto mt-1 max-w-lg text-sm leading-6" color="muted">
+    <Text className="mx-auto mt-1 max-w-lg leading-relaxed" color="muted">
       Create a draft when you have progress to share. Updates stay private until
       you explicitly publish them.
     </Text>

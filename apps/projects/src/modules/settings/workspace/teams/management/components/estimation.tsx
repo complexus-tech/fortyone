@@ -50,7 +50,7 @@ export const EstimationSettings = ({ teamId }: { teamId: string }) => {
             </Select.Trigger>
             <Select.Content>
               <Select.Option className="text-base" value="tshirt">
-                T-Shirt — recommended (XS, S, M, L, XL)
+                T-Shirt (XS, S, M, L, XL)
               </Select.Option>
               <Select.Option className="text-base" value="points">
                 Points (1, 2, 3, 5, 8)
