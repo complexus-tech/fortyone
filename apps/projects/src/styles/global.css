@@ -16,6 +16,7 @@
 
 :root {
   --nprogress-color: var(--color-primary);
+  --settings-control-height: calc(2.1rem + 2px);
   --app-shell-header-height: 4.5rem;
   --app-content-inset: 0.75rem;
   --app-content-canvas-height: 100dvh;

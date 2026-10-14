@@ -97,7 +97,7 @@ export const CredentialDialog = ({
           <Text color="muted">{description}</Text>
           <Input
             autoFocus
-            className="h-[2.1rem] px-3 leading-normal"
+            className="h-[var(--settings-control-height)] px-3 leading-normal"
             label="Name"
             maxLength={120}
             onChange={(event) => {
@@ -165,7 +165,7 @@ export const CredentialDialog = ({
             <Flex align="center" gap={2}>
               <Input
                 aria-label="Expiration in days"
-                className="h-[2.1rem] px-3 leading-normal"
+                className="h-[var(--settings-control-height)] px-3 leading-normal"
                 max={365}
                 min={1}
                 onChange={(event) => {

@@ -81,7 +81,7 @@ export const WorkExportSection = () => {
           >
             <Select.Trigger
               aria-labelledby="export-team-label"
-              className="max-w-64 shrink-0 text-base"
+              className="h-[var(--settings-control-height)] max-w-64 shrink-0 text-base"
             >
               <Select.Input />
             </Select.Trigger>
@@ -126,7 +126,7 @@ export const WorkExportSection = () => {
             <Select.Trigger
               aria-describedby="export-format-help"
               aria-labelledby="export-format-label"
-              className="shrink-0 text-base"
+              className="h-[var(--settings-control-height)] shrink-0 text-base"
             >
               <Select.Input />
             </Select.Trigger>

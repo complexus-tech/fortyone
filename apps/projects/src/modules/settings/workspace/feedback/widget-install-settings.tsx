@@ -215,7 +215,8 @@ export const WidgetInstallSettings = ({
       ? buildInlineFeedbackWidgetMarkup(options)
       : buildFeedbackWidgetSnippet({ ...options, mode });
 
-  const selectTriggerClassName = "w-max text-base";
+  const selectTriggerClassName =
+    "h-[var(--settings-control-height)] w-max text-base";
 
   return (
     <>
@@ -350,7 +351,7 @@ export const WidgetInstallSettings = ({
             >
               <Input
                 aria-label="Trigger selector"
-                className="h-[2.1rem] w-full px-3 leading-normal sm:w-72"
+                className="h-[var(--settings-control-height)] w-full px-3 leading-normal sm:w-72"
                 id="feedback-widget-trigger"
                 onChange={(event) => {
                   setTrigger(event.target.value);

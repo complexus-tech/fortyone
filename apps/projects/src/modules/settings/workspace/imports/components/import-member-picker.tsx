@@ -45,7 +45,7 @@ export const ImportMemberPicker = ({
         <Button
           align="between"
           aria-label={`Map source identity${selectedMember ? ` to ${getMemberDisplayName(selectedMember)}` : " to a workspace member"}`}
-          className="max-w-full"
+          className="h-[var(--settings-control-height)] max-w-full"
           color="tertiary"
           disabled={disabled}
           rightIcon={<ArrowDown2Icon className="h-4 shrink-0" />}

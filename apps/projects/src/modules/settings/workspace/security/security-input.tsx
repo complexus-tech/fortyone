@@ -8,7 +8,7 @@ export const SecurityInput = ({
 }: ComponentProps<typeof Input>) => (
   <Input
     className={cn(
-      "border-border h-[2.1rem] px-3 py-1 text-base leading-normal",
+      "border-border h-[var(--settings-control-height)] px-3 py-1 text-base leading-normal",
       className,
     )}
     {...props}

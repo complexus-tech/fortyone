@@ -80,7 +80,7 @@ export const ImportFieldMapping = ({
                           : undefined
                       }
                       className={cn(
-                        "bg-surface text-base",
+                        "bg-surface h-[var(--settings-control-height)] text-base",
                         mappingFieldLocked && "cursor-not-allowed opacity-60",
                       )}
                     >

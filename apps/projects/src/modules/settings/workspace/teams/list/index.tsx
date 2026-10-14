@@ -29,7 +29,7 @@ export const TeamsList = () => {
         {teams.length > 1 && (
           <Input
             aria-label="Search teams"
-            className="bg-surface-muted dark:bg-surface-elevated h-[2.1rem] w-72 rounded-lg px-3 leading-normal"
+            className="bg-surface-muted dark:bg-surface-elevated h-[var(--settings-control-height)] w-72 rounded-lg px-3 leading-normal"
             leftIcon={<SearchIcon className="h-4" />}
             onChange={(e) => {
               setSearch(e.target.value);
@@ -90,7 +90,7 @@ export const TeamsList = () => {
           <Flex align="center" gap={3} justify="between">
             <Text className="w-32">Members</Text>
             <Text className="w-32">Created</Text>
-            <Box className="w-[2.1rem]" />
+            <Box className="w-[var(--settings-control-height)]" />
           </Flex>
         </Flex>
 

@@ -77,7 +77,7 @@ const ReviewerRow = ({
       >
         <Select.Trigger
           aria-label={`Email summary for ${reviewer.name}`}
-          className="w-28 shrink-0 text-base"
+          className="h-[var(--settings-control-height)] w-28 shrink-0 text-base"
         >
           <Select.Input />
         </Select.Trigger>
@@ -108,7 +108,7 @@ const ReviewersSkeleton = () => (
             <Skeleton className="h-3 w-48 max-w-full" />
           </Box>
         </Flex>
-        <Skeleton className="h-[2.1rem] w-28" />
+        <Skeleton className="h-[var(--settings-control-height)] w-28" />
       </Flex>
     ))}
   </Box>

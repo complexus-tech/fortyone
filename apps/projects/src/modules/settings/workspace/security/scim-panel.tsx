@@ -253,7 +253,10 @@ export const SecurityProvisioning = () => {
                     onValueChange={setLifetime}
                     value={lifetime}
                   >
-                    <Select.Trigger className="text-base" id={lifetimeId}>
+                    <Select.Trigger
+                      className="h-[var(--settings-control-height)] text-base"
+                      id={lifetimeId}
+                    >
                       <Select.Input />
                     </Select.Trigger>
                     <Select.Content>

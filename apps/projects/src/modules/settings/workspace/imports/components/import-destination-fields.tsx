@@ -82,7 +82,7 @@ export const ImportDestinationFields = ({
         <Box className="border-border bg-surface mt-5 rounded-xl border-[0.5px] p-5">
           <Box className="grid gap-4 md:grid-cols-[minmax(0,1fr)_8rem_7rem]">
             <Input
-              className="h-[2.1rem] px-3 text-base leading-normal"
+              className="h-[var(--settings-control-height)] px-3 text-base leading-normal"
               disabled={hasAttemptedImport}
               label="Team name"
               maxLength={24}
@@ -106,7 +106,7 @@ export const ImportDestinationFields = ({
               value={destination.name}
             />
             <Input
-              className="h-[2.1rem] px-3 text-base leading-normal uppercase"
+              className="h-[var(--settings-control-height)] px-3 text-base leading-normal uppercase"
               disabled={hasAttemptedImport}
               label="Team code"
               maxLength={3}
@@ -129,7 +129,7 @@ export const ImportDestinationFields = ({
               <Text className="mb-[0.35rem] font-medium">Team color</Text>
               <ColorPicker
                 ariaLabel="Choose team color"
-                className="h-[2.1rem] w-[2.1rem] rounded-lg"
+                className="h-[var(--settings-control-height)] w-[var(--settings-control-height)] rounded-lg"
                 disabled={hasAttemptedImport}
                 onChange={(color) => {
                   setDestination((current) =>

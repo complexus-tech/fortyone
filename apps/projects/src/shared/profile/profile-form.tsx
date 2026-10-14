@@ -66,7 +66,7 @@ export const ProfileForm = ({ initialProfile }: ProfileFormProps) => {
       <form className="p-6" onSubmit={handleUpdateProfile}>
         <Box className="mb-2 grid gap-4 md:grid-cols-2 md:gap-6">
           <Input
-            className="h-[2.1rem] px-3 leading-normal"
+            className="h-[var(--settings-control-height)] px-3 leading-normal"
             label="Full name"
             name="fullName"
             onChange={(event) => {
@@ -79,7 +79,7 @@ export const ProfileForm = ({ initialProfile }: ProfileFormProps) => {
             value={form.fullName}
           />
           <Input
-            className="h-[2.1rem] px-3 leading-normal"
+            className="h-[var(--settings-control-height)] px-3 leading-normal"
             label="Username"
             name="username"
             onChange={(event) => {

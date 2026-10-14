@@ -80,7 +80,7 @@ export const Automations = () => {
                 >
                   <Select.Trigger
                     aria-label="Close after being inactive for"
-                    className="w-32 shrink-0 text-base"
+                    className="h-[var(--settings-control-height)] w-32 shrink-0 text-base"
                   >
                     <Select.Input />
                   </Select.Trigger>
@@ -144,7 +144,7 @@ export const Automations = () => {
                 >
                   <Select.Trigger
                     aria-label="Archive after"
-                    className="w-32 shrink-0 text-base"
+                    className="h-[var(--settings-control-height)] w-32 shrink-0 text-base"
                   >
                     <Select.Input />
                   </Select.Trigger>

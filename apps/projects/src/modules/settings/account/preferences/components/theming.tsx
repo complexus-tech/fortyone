@@ -56,7 +56,7 @@ export const Theming = () => {
               <Select.Trigger
                 aria-describedby={`${id}-appearance-description`}
                 aria-labelledby={`${id}-appearance-label`}
-                className="w-max shrink-0 text-base"
+                className="h-[var(--settings-control-height)] w-max shrink-0 text-base"
               >
                 <Select.Input />
               </Select.Trigger>

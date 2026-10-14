@@ -190,7 +190,7 @@ const TeamMemberAIContextEditor = ({
   return (
     <Box className="grid gap-4">
       <Input
-        className="h-[2.1rem] px-3 leading-normal"
+        className="h-[var(--settings-control-height)] px-3 leading-normal"
         disabled={!canUseBackgroundMaya}
         label="Role"
         onChange={(event) => {

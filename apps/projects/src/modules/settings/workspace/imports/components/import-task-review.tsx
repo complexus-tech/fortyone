@@ -100,7 +100,7 @@ export const ImportTaskReview = ({
                       aria-invalid={titleMissing}
                       aria-label={`Title for ${task.sourceId}`}
                       className={cn(
-                        "h-[2.1rem] bg-transparent px-3 text-base leading-normal font-medium dark:bg-transparent",
+                        "h-[var(--settings-control-height)] bg-transparent px-3 text-base leading-normal font-medium dark:bg-transparent",
                         titleMissing
                           ? "border-danger"
                           : "hover:border-input border-transparent",

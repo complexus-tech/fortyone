@@ -90,7 +90,7 @@ export const WorkspaceLabel = ({
           />
           <input
             className={cn(
-              "placeholder:text-foreground h-[2.1rem] bg-transparent leading-normal font-medium",
+              "placeholder:text-foreground h-[var(--settings-control-height)] bg-transparent leading-normal font-medium",
               isEditing &&
                 "border-border focus-visible:ring-ring dark:bg-surface-elevated rounded-lg border bg-white px-3 outline-none focus-visible:ring-2",
             )}

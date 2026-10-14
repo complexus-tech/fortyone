@@ -290,7 +290,7 @@ export const ObjectiveImportReview = ({
               <Box className="min-w-0 flex-1">
                 <Input
                   aria-label={`Name for ${objectiveTerm} ${objective.sourceId}`}
-                  className="h-[2.1rem] px-3 text-base leading-normal font-medium"
+                  className="h-[var(--settings-control-height)] px-3 text-base leading-normal font-medium"
                   disabled={!checked || destinationMatch?.locked}
                   maxLength={255}
                   onChange={(event) => {
@@ -438,7 +438,7 @@ export const StrategicPillarImportReview = ({
               <Box className="min-w-0 flex-1">
                 <Input
                   aria-label={`Name for strategic pillar ${pillar.sourceId}`}
-                  className="h-[2.1rem] px-3 text-base leading-normal font-medium"
+                  className="h-[var(--settings-control-height)] px-3 text-base leading-normal font-medium"
                   disabled={!checked}
                   maxLength={255}
                   onChange={(event) => {

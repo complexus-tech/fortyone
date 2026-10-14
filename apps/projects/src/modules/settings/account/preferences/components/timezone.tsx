@@ -126,7 +126,7 @@ export const Timezone = () => {
             <TimezoneMenu>
               <TimezoneMenu.Trigger>
                 <Button
-                  className="text-opacity-80 shrink-0"
+                  className="text-opacity-80 h-[var(--settings-control-height)] shrink-0"
                   color="tertiary"
                   size="sm"
                   variant="outline"

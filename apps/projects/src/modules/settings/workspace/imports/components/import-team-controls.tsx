@@ -79,7 +79,7 @@ export const DestinationTeamPicker = ({
       <Popover.Trigger asChild>
         <Button
           align="between"
-          className="mt-3 max-w-full"
+          className="mt-3 h-[var(--settings-control-height)] max-w-full"
           color="tertiary"
           disabled={disabled}
           rightIcon={<ArrowDown2Icon className="h-4 shrink-0" />}

@@ -51,7 +51,7 @@ const StatusPicker = ({
     <Select disabled={disabled} onValueChange={onChange} value={value}>
       <Select.Trigger
         aria-label={label}
-        className="w-full shrink-0 text-base disabled:cursor-not-allowed disabled:opacity-50 sm:w-48"
+        className="h-[var(--settings-control-height)] w-full shrink-0 text-base disabled:cursor-not-allowed disabled:opacity-50 sm:w-48"
       >
         <Select.Input>
           <span className="flex min-w-0 items-center gap-2">

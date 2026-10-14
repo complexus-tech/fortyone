@@ -66,7 +66,7 @@ const ScheduleInput = ({
         {label}
       </label>
       <Input
-        className="border-border h-[2.1rem] min-w-0 px-3 py-1 leading-normal"
+        className="border-border h-[var(--settings-control-height)] min-w-0 px-3 py-1 leading-normal"
         id={id}
         {...props}
       />

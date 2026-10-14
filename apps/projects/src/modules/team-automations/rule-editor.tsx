@@ -100,7 +100,7 @@ export const RuleEditor = ({
         <Dialog.Body className="max-h-none min-h-0 flex-1 space-y-5 pb-6">
           <Input
             autoFocus
-            className="h-[2.1rem] px-3 leading-normal"
+            className="h-[var(--settings-control-height)] px-3 leading-normal"
             disabled={pending}
             id="automation-rule-name"
             label="Rule name"

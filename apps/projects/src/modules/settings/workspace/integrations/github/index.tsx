@@ -275,7 +275,7 @@ export const GitHubIntegrationSettings = () => {
           >
             <Select.Trigger
               aria-label="Branch name format"
-              className="shrink-0 text-base"
+              className="h-[var(--settings-control-height)] shrink-0 text-base"
             >
               <Select.Input />
             </Select.Trigger>

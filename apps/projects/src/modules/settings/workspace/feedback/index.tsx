@@ -108,7 +108,7 @@ const isWorkspaceSubdomainDeployment =
   process.env.NEXT_PUBLIC_DOMAIN === "fortyone.app";
 
 const selectClassName =
-  "border-input ring-ring h-[2.1rem] w-full appearance-none rounded-lg border bg-white pr-10 pl-3 text-base leading-normal outline-none focus-visible:ring-2 dark:bg-surface-elevated";
+  "border-input ring-ring h-[var(--settings-control-height)] w-full appearance-none rounded-lg border bg-white pr-10 pl-3 text-base leading-normal outline-none focus-visible:ring-2 dark:bg-surface-elevated";
 
 const PublicUrl = ({ portal }: { portal: FeedbackPortal }) => {
   return (
@@ -259,7 +259,7 @@ const PortalConfiguration = ({
           >
             <Select.Trigger
               aria-label="Who can submit feedback"
-              className="w-max shrink-0 text-base"
+              className="h-[var(--settings-control-height)] w-max shrink-0 text-base"
             >
               <Select.Input />
             </Select.Trigger>
@@ -303,7 +303,7 @@ const PortalConfiguration = ({
             >
               <Select.Trigger
                 aria-label="Guest public identity"
-                className="w-max shrink-0 text-base"
+                className="h-[var(--settings-control-height)] w-max shrink-0 text-base"
               >
                 <Select.Input />
               </Select.Trigger>
@@ -403,7 +403,7 @@ const CreateBoardDialog = ({ portal }: { portal?: FeedbackPortal }) => {
             </Box>
           </Box>
           <Input
-            className="h-[2.1rem] px-3 leading-normal"
+            className="h-[var(--settings-control-height)] px-3 leading-normal"
             label="Board name"
             onChange={(event) => {
               setName(event.target.value);

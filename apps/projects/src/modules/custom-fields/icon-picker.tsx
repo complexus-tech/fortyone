@@ -126,7 +126,7 @@ export const CustomFieldIconPicker = ({
     "h-auto w-full min-w-0 rounded-md p-0 ring-ring aria-selected:bg-state-hover focus-visible:ring-2 data-[chosen=true]:bg-state-selected data-[chosen=true]:ring-1";
 
   return (
-    <Box className="w-[2.1rem] shrink-0">
+    <Box className="w-[var(--settings-control-height)] shrink-0">
       <Popover
         onOpenChange={(nextOpen) => {
           if (nextOpen && disabled) return;
@@ -142,7 +142,7 @@ export const CustomFieldIconPicker = ({
           <Button
             aria-label={`Field icon: ${selected?.label ?? "Automatic"}`}
             asIcon
-            className="h-[2.1rem] w-[2.1rem]"
+            className="h-[var(--settings-control-height)] w-[var(--settings-control-height)]"
             color="tertiary"
             disabled={disabled}
             size="sm"

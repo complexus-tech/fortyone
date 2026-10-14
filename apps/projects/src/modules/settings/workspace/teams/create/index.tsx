@@ -121,7 +121,7 @@ export const CreateTeam = () => {
               </Box>
               <Input
                 aria-label="Team name"
-                className="h-[2.1rem] px-3 leading-normal md:w-56"
+                className="h-[var(--settings-control-height)] px-3 leading-normal md:w-56"
                 maxLength={24}
                 minLength={3}
                 name="name"
@@ -143,7 +143,7 @@ export const CreateTeam = () => {
               </Box>
               <Input
                 aria-label="Team code"
-                className="h-[2.1rem] w-24 px-3 leading-normal"
+                className="h-[var(--settings-control-height)] w-24 px-3 leading-normal"
                 maxLength={3}
                 minLength={2}
                 name="code"

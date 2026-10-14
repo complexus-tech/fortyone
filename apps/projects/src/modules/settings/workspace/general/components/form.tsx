@@ -41,7 +41,7 @@ export const WorkspaceForm = () => {
     <form className="p-6" onSubmit={handleSubmit}>
       <Box className="mb-4 grid gap-4 md:grid-cols-2 md:gap-6">
         <Input
-          className="h-[2.1rem] px-3 leading-normal"
+          className="h-[var(--settings-control-height)] px-3 leading-normal"
           label="Name"
           name="name"
           onChange={handleChange}
@@ -49,7 +49,7 @@ export const WorkspaceForm = () => {
           value={currentName}
         />
         <Input
-          className="h-[2.1rem] cursor-default px-3 leading-normal lowercase opacity-80"
+          className="h-[var(--settings-control-height)] cursor-default px-3 leading-normal lowercase opacity-80"
           label="URL (read-only)"
           name="slug"
           onClick={() => {

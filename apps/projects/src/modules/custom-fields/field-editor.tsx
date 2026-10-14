@@ -175,7 +175,7 @@ export const CustomFieldEditor = ({
                 />
                 <Box className="min-w-0 flex-1">
                   <Input
-                    className="h-[2.1rem] px-3 leading-normal"
+                    className="h-[var(--settings-control-height)] px-3 leading-normal"
                     disabled={isPending}
                     id={`${controlsId}-name`}
                     maxLength={100}
@@ -206,7 +206,7 @@ export const CustomFieldEditor = ({
               >
                 <Select.Trigger
                   aria-labelledby={`${controlsId}-type`}
-                  className="w-40 shrink-0 text-base"
+                  className="h-[var(--settings-control-height)] w-40 shrink-0 text-base"
                 >
                   <Select.Input />
                 </Select.Trigger>
@@ -232,7 +232,7 @@ export const CustomFieldEditor = ({
                       <Box className="min-w-0 flex-1">
                         <Input
                           aria-label="Option name"
-                          className="h-[2.1rem] px-3 leading-normal"
+                          className="h-[var(--settings-control-height)] px-3 leading-normal"
                           disabled={isPending}
                           maxLength={100}
                           onChange={(event) => {
@@ -250,7 +250,7 @@ export const CustomFieldEditor = ({
                       </Box>
                       <Button
                         aria-label={`Remove ${option.name || "option"}`}
-                        className="h-[2.1rem] shrink-0 px-2"
+                        className="h-[var(--settings-control-height)] shrink-0 px-2"
                         color="tertiary"
                         disabled={isPending}
                         onClick={() => {
@@ -268,7 +268,7 @@ export const CustomFieldEditor = ({
                   ))}
                 </Box>
                 <Button
-                  className="mt-3 h-[2.1rem]"
+                  className="mt-3 h-[var(--settings-control-height)]"
                   color="tertiary"
                   disabled={isPending || options.length >= 100}
                   leftIcon={<PlusIcon />}
@@ -305,7 +305,7 @@ export const CustomFieldEditor = ({
                 </Box>
                 <Box className="w-24 shrink-0">
                   <Input
-                    className="h-[2.1rem] px-3 leading-normal"
+                    className="h-[var(--settings-control-height)] px-3 leading-normal"
                     disabled={Boolean(field) || isPending}
                     id={`${controlsId}-currency`}
                     maxLength={3}

@@ -73,9 +73,12 @@ export const WorkspaceMember = ({
           >
             <Select.Trigger
               aria-label={`Role for ${fullName}`}
-              className={cn("w-32 text-base", {
-                "opacity-50": isCurrentUser,
-              })}
+              className={cn(
+                "h-[var(--settings-control-height)] w-32 text-base",
+                {
+                  "opacity-50": isCurrentUser,
+                },
+              )}
             >
               <Select.Input />
             </Select.Trigger>

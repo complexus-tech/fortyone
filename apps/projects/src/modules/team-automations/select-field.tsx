@@ -32,7 +32,7 @@ export const AutomationSelect = ({
       </label>
       <Select disabled={disabled} onValueChange={onChange} value={value}>
         <Select.Trigger
-          className="w-full text-base disabled:opacity-50"
+          className="h-[var(--settings-control-height)] w-full text-base disabled:opacity-50"
           id={id}
         >
           <Select.Input />

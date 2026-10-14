@@ -129,7 +129,7 @@ export const SprintSettings = () => {
               >
                 <Select.Trigger
                   aria-label={`Number of upcoming ${getTermDisplay("sprintTerm", { variant: "plural" })}`}
-                  className="w-32 text-base"
+                  className="h-[var(--settings-control-height)] w-32 text-base"
                 >
                   <Select.Input />
                 </Select.Trigger>
@@ -200,7 +200,7 @@ export const SprintSettings = () => {
               >
                 <Select.Trigger
                   aria-label={`${getTermDisplay("sprintTerm", { capitalize: true })} duration`}
-                  className="w-32 text-base"
+                  className="h-[var(--settings-control-height)] w-32 text-base"
                 >
                   <Select.Input />
                 </Select.Trigger>
@@ -248,7 +248,7 @@ export const SprintSettings = () => {
               >
                 <Select.Trigger
                   aria-label={`${getTermDisplay("sprintTerm", { capitalize: true })} start day`}
-                  className="w-32 text-base"
+                  className="h-[var(--settings-control-height)] w-32 text-base"
                 >
                   <Select.Input />
                 </Select.Trigger>
@@ -314,7 +314,7 @@ export const SprintSettings = () => {
           <Dialog.Body className="px-6 pt-2 pb-4">
             <Input
               autoFocus
-              className="h-[2.1rem] w-32 px-3 leading-normal"
+              className="h-[var(--settings-control-height)] w-32 px-3 leading-normal"
               label={`Next ${getTermDisplay("sprintTerm")} number`}
               max={10000}
               min={1}

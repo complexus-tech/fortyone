@@ -44,7 +44,7 @@ export const EstimationSettings = ({ teamId }: { teamId: string }) => {
           >
             <Select.Trigger
               aria-labelledby={`team-complexity-${teamId}`}
-              className="w-max max-w-full text-base"
+              className="h-[var(--settings-control-height)] w-max max-w-full text-base"
             >
               <Select.Input />
             </Select.Trigger>

@@ -138,7 +138,10 @@ export const SecurityAudit = () => {
                         }}
                         value={actorId || "all"}
                       >
-                        <Select.Trigger className="text-base" id={actorInputId}>
+                        <Select.Trigger
+                          className="h-[var(--settings-control-height)] text-base"
+                          id={actorInputId}
+                        >
                           <Select.Input />
                         </Select.Trigger>
                         <Select.Content>

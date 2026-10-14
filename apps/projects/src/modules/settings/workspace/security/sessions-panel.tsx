@@ -87,7 +87,7 @@ export const SecuritySessions = () => {
               value={userId || "all"}
             >
               <Select.Trigger
-                className="text-base"
+                className="h-[var(--settings-control-height)] text-base"
                 id="security-session-member"
                 ref={memberFilterRef}
               >

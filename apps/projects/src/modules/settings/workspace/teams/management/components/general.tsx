@@ -75,7 +75,7 @@ export const GeneralSettings = ({ team }: { team: Team }) => {
           <Box className="w-full shrink-0 md:w-56">
             <Input
               aria-label="Team name"
-              className="h-[2.1rem] px-3 leading-normal"
+              className="h-[var(--settings-control-height)] px-3 leading-normal"
               maxLength={24}
               minLength={3}
               name="name"
@@ -98,7 +98,7 @@ export const GeneralSettings = ({ team }: { team: Team }) => {
           <Box className="w-24 shrink-0">
             <Input
               aria-label="Team code"
-              className="h-[2.1rem] px-3 leading-normal"
+              className="h-[var(--settings-control-height)] px-3 leading-normal"
               maxLength={3}
               minLength={2}
               name="code"
@@ -132,7 +132,7 @@ export const GeneralSettings = ({ team }: { team: Team }) => {
           >
             <Select.Trigger
               aria-labelledby={`team-work-naming-${team.id}`}
-              className="w-max max-w-full text-base"
+              className="h-[var(--settings-control-height)] w-max max-w-full text-base"
             >
               <Select.Input />
             </Select.Trigger>
