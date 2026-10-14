@@ -40,6 +40,7 @@ import { FigmaSection } from "./figma-section";
 import { OptionsHeader } from "./options-header";
 import { Options } from "./options";
 import { useFigmaDescriptionPaste } from "./use-figma-description-paste";
+import { StoryDescription } from "./story-description";
 
 const DEBOUNCE_DELAY = 1000; // 1000ms delay
 
@@ -264,11 +265,13 @@ export const MainDetails = ({
           ref={mediaInputRef}
           type="file"
         />
-        <TextEditor
-          className="rich-document-editor text-foreground dark:text mb-10 text-[1.1rem]"
-          editor={descriptionEditor}
-          onPaste={handleDescriptionPaste}
-        />
+        <StoryDescription key={storyId}>
+          <TextEditor
+            className="rich-document-editor text-foreground dark:text text-[1.1rem]"
+            editor={descriptionEditor}
+            onPaste={handleDescriptionPaste}
+          />
+        </StoryDescription>
         {googleDriveDescriptionPicker}
         <RichTextTableMenu editor={descriptionEditor} scrollTarget={null} />
         <StoryChecklist key={storyId} story={data!} />
