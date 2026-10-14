@@ -499,7 +499,7 @@ export const ObjectiveNodeCard = ({
           {keyResultCount > 0 ? (
             <button
               aria-expanded={isKeyResultsExpanded}
-              className="border-border text-foreground hover:bg-state-hover focus-visible:ring-foreground/30 mt-3 flex min-h-9 w-full items-center justify-between gap-2 rounded-md border-t px-2 py-2 text-left text-[0.95rem] leading-5 transition-colors outline-none focus-visible:ring-2"
+              className="border-border text-foreground hover:bg-state-hover focus-visible:ring-foreground/30 mt-3 flex min-h-9 w-full items-center justify-between gap-2 rounded-md border px-2 py-2 text-left text-[0.95rem] leading-5 transition-colors outline-none focus-visible:ring-2"
               data-no-drag
               onClick={onToggleKeyResults}
               type="button"
