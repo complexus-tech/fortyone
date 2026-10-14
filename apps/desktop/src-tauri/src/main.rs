@@ -4,6 +4,8 @@ mod chrome;
 #[cfg(target_os = "macos")]
 mod macos_chrome;
 mod navigation;
+#[cfg(any(feature = "production", test))]
+mod session;
 mod window_controls;
 
 use std::sync::Arc;
@@ -84,52 +86,63 @@ fn main() {
                 Arc::new(NavigationPolicy::new(Url::parse(&configured_url)?)?)
             };
             app.manage(Arc::clone(&policy));
+            #[cfg(feature = "production")]
+            let start_url = session::start_url(app.handle(), &policy);
+            #[cfg(not(feature = "production"))]
+            let start_url = policy.app_url().clone();
             app.state::<chrome::ChromeCapabilities>().ensure(
                 app.handle(),
                 &policy,
                 policy.app_url(),
             )?;
+            app.state::<chrome::ChromeCapabilities>()
+                .ensure(app.handle(), &policy, &start_url)?;
 
             let navigation_policy = Arc::clone(&policy);
             let new_window_policy = Arc::clone(&policy);
             let navigation_app = app.handle().clone();
             let new_window_app = app.handle().clone();
 
-            let builder = WebviewWindowBuilder::new(
-                app,
-                WINDOW_LABEL,
-                WebviewUrl::External(policy.app_url().clone()),
-            )
-            .title("FortyOne")
-            .inner_size(1280.0, 800.0)
-            .min_inner_size(960.0, 640.0)
-            .center()
-            // Keep the browser's file drag-and-drop behavior used by the web app.
-            .disable_drag_drop_handler()
-            .on_navigation(move |url| {
-                match prepare_app_destination(&navigation_app, &navigation_policy, url) {
-                    Ok(Some(destination)) if destination == *url => return true,
-                    Ok(Some(destination)) => navigate_main_window(&navigation_app, destination),
-                    Ok(None) => open_in_browser(&navigation_app, url),
-                    Err(error) => eprintln!("Blocked desktop navigation: {error}"),
-                }
-                false
-            })
-            .on_new_window(move |url, _features| {
-                match prepare_app_destination(&new_window_app, &new_window_policy, &url) {
-                    Ok(Some(destination)) => navigate_main_window(&new_window_app, destination),
-                    Ok(None) => open_in_browser(&new_window_app, &url),
-                    Err(error) => eprintln!("Blocked desktop navigation: {error}"),
-                }
-                NewWindowResponse::Deny
-            })
-            .on_page_load(|window, payload| {
-                if payload.event() == PageLoadEvent::Started {
-                    if let Err(error) = chrome::reset(&window) {
-                        eprintln!("Could not reset desktop actions while the page loads: {error}");
-                    }
-                }
-            });
+            let builder =
+                WebviewWindowBuilder::new(app, WINDOW_LABEL, WebviewUrl::External(start_url))
+                    .title("FortyOne")
+                    .inner_size(1280.0, 800.0)
+                    .min_inner_size(960.0, 640.0)
+                    .center()
+                    // Keep the browser's file drag-and-drop behavior used by the web app.
+                    .disable_drag_drop_handler()
+                    .on_navigation(move |url| {
+                        #[cfg(feature = "production")]
+                        session::clear_after_logout(&navigation_app, &navigation_policy, url);
+                        match prepare_app_destination(&navigation_app, &navigation_policy, url) {
+                            Ok(Some(destination)) if destination == *url => return true,
+                            Ok(Some(destination)) => {
+                                navigate_main_window(&navigation_app, destination)
+                            }
+                            Ok(None) => open_in_browser(&navigation_app, url),
+                            Err(error) => eprintln!("Blocked desktop navigation: {error}"),
+                        }
+                        false
+                    })
+                    .on_new_window(move |url, _features| {
+                        match prepare_app_destination(&new_window_app, &new_window_policy, &url) {
+                            Ok(Some(destination)) => {
+                                navigate_main_window(&new_window_app, destination)
+                            }
+                            Ok(None) => open_in_browser(&new_window_app, &url),
+                            Err(error) => eprintln!("Blocked desktop navigation: {error}"),
+                        }
+                        NewWindowResponse::Deny
+                    })
+                    .on_page_load(|window, payload| {
+                        if payload.event() == PageLoadEvent::Started {
+                            if let Err(error) = chrome::reset(&window) {
+                                eprintln!(
+                                    "Could not reset desktop actions while the page loads: {error}"
+                                );
+                            }
+                        }
+                    });
 
             #[cfg(target_os = "macos")]
             let builder = builder
@@ -137,6 +150,15 @@ fn main() {
                 .hidden_title(true)
                 .initialization_script(include_str!("bridge.js"));
             let window = builder.build()?;
+            #[cfg(feature = "production")]
+            {
+                let session_window = window.clone();
+                window.on_window_event(move |event| {
+                    if matches!(event, tauri::WindowEvent::CloseRequested { .. }) {
+                        session::save_window(&session_window);
+                    }
+                });
+            }
             #[cfg(target_os = "macos")]
             {
                 macos_chrome::install(&window)?;
@@ -253,6 +275,14 @@ fn main() {
             });
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("Could not start FortyOne desktop");
+        .build(tauri::generate_context!())
+        .expect("Could not start FortyOne desktop")
+        .run(|_app, _event| {
+            #[cfg(feature = "production")]
+            if matches!(_event, tauri::RunEvent::ExitRequested { .. }) {
+                if let Some(window) = _app.get_webview_window(WINDOW_LABEL) {
+                    session::save_window(&window);
+                }
+            }
+        });
 }

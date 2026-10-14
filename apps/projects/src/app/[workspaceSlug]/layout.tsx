@@ -65,8 +65,11 @@ export default async function RootLayout({
   }
   if (access === "denied") redirect("/unauthorized");
 
-  // kick off non-critical important queries without waiting for them
-  const queryClient = fetchNonCriticalImportantQueries(getQueryClient(), ctx);
+  const queryClient = getQueryClient();
+  // Reuse the membership list already checked above within this request only.
+  // Hydrating it avoids a second lookup before the workspace switcher is ready.
+  queryClient.setQueryData(workspaceKeys.lists(), workspaces);
+  fetchNonCriticalImportantQueries(queryClient, ctx);
 
   // await critical queries
   await Promise.all([
@@ -88,10 +91,6 @@ export default async function RootLayout({
     queryClient.prefetchQuery({
       queryKey: objectiveKeys.statuses(workspaceSlug),
       queryFn: () => getObjectiveStatuses(ctx),
-    }),
-    queryClient.prefetchQuery({
-      queryKey: workspaceKeys.lists(),
-      queryFn: () => getWorkspaces(ctx.session?.token, ctx.cookieHeader),
     }),
     queryClient.prefetchQuery({
       queryKey: sprintKeys.running(workspaceSlug),

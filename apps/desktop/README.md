@@ -76,6 +76,8 @@ File → New Story (`Cmd+N`) opens the existing creation dialog, and View → Se
 
 The native Navigate menu provides Back, Forward, Reload (`Cmd+R`), Open Start Page, Open in Browser, and Developer Tools (`Cmd+Option+I`, development builds only). Window size and position are saved between launches. Local development stays on its configured app origin. Production keeps the sign-in host and workspace subdomains inside the same window, using the existing hosted routing and session cookies. Links to other sites open in your system browser.
 
+The production app also restores the last approved workspace page after a normal close or quit. It saves the current webview location at shutdown, including pages reached through client-side navigation, without writing to disk during ordinary navigation. Only known app routes on validated workspace origins are eligible; authentication callbacks, public/shared links, query strings, and URL fragments are excluded. Sign-out or returning to cloud sign-in clears the saved location. Missing, invalid, or unreadable state falls back to cloud sign-in, and local development retains its configured start URL. This restores the page, not open dialogs, unsaved edits, or crash state.
+
 The configured app origin and validated production workspace origins in the main webview can call four narrowly scoped native commands to synchronize appearance and menu availability, read navigation availability, go back or forward, and drag or maximize the window. Production permissions are registered for each exact HTTPS origin as it is visited; infrastructure hosts and unrelated sites receive none. These commands have no file, network, or record-writing access. Header and native menu actions open the existing web app interfaces, which retain their existing validation and permissions.
 
 System-browser OAuth/SSO sign-in and callback handoff are not implemented yet. Native notifications, deep links, automatic updates, and offline support are also outside this prototype. Local development still requires the existing web app, API configuration, and network connection. Keep both the web server and Go API running while using FortyOne Development; the packaged production app uses the hosted services instead.
@@ -108,6 +110,8 @@ pnpm build:desktop
 
 The check command runs launcher validation tests, Rust formatting, compilation checks, and Rust tests. The build command creates a debug executable for local use without signing or generating an installer. It captures `FORTYONE_DESKTOP_URL` at build time, so set that variable for a custom port when building too. The output remains dependent on the running local web app.
 
+For production-only native changes, also run `cargo test --locked --features production` and `cargo check --locked --features production` from `apps/desktop/src-tauri`. Route restoration tests use isolated temporary directories and cover safe URL normalization, auth/public-route exclusions, missing or corrupt state, logout clearing policy, and preserving the previous file when replacement fails. They do not launch the installed app; close/quit/relaunch behavior still needs a packaged-app smoke test before distribution.
+
 Direct Tauri CLI access is available for diagnostics:
 
 ```sh
@@ -136,6 +140,8 @@ Only the configured desktop PNG, macOS ICNS, and Windows ICO outputs are copied;
 
 ## Squircle compatibility
 
-The authenticated Projects workspace and settings shells load Hyperellipse after they hydrate when `CSS.supports("corner-shape", "squircle")` is false, in both ordinary browsers and desktop webviews. The active shell owns the renderer and its scoped CSS marker, including portaled controls, and removes them on unmount. Authentication and onboarding retain their existing corner rendering; browsers with native support keep native rendering throughout. The fallback uses the same radius tokens as the native squircle styles. Form controls, circular shapes, translucent backdrops, the main content canvas, and controls with decorative pseudo-elements retain their existing corners. Add `data-squircle="off"` to opt a surface out.
+Projects uses native CSS squircles where supported and ordinary CSS rounded corners elsewhere, including macOS webviews without `corner-shape` support. The Hyperellipse fallback is disabled in the interactive workspace and settings shells: controlled WKWebView measurements showed substantial scripting and frame-delay costs during board updates and ticket opening. Existing radius, color, border, and font tokens remain in use.
+
+The separate marketing landing page still uses the shared fallback; its workload has not been benchmarked. The opt-in benchmark and its measured results live in [`scripts/performance`](scripts/performance).
 
 Hyperellipse is pinned to 1.0.5 with a pnpm patch. The patch preserves author inline styles during rendering and cleanup, releases observers and listeners for removed elements, refreshes focus-within ancestors, and prevents its temporary paint changes from being sampled as transparent CSS transitions. Transform and opacity transitions remain native. Paint-contained and overflow-clipped surfaces keep their border ring on the host background so descendant clipping cannot erase it. Keep the patch when upgrading until the upstream implementation covers these cases; verify task cards (including their thin borders), hover and focus states, theme changes, and portaled menus in Safari and WKWebView after an upgrade.

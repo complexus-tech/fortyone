@@ -71,6 +71,55 @@ impl NavigationPolicy {
         &self.app_url
     }
 
+    /// Restore only authenticated app pages, never authentication callbacks,
+    /// public links, or URL-carried credentials and transient filter state.
+    #[cfg(any(feature = "production", test))]
+    pub fn restorable_location(&self, url: &Url) -> Option<Url> {
+        if !self.production
+            || !self.allows_navigation(url)
+            || url.host_str() == self.app_url.host_str()
+        {
+            return None;
+        }
+        let route = url.path().split('/').nth(1)?;
+        if !matches!(
+            route,
+            "my-work"
+                | "summary"
+                | "strategy"
+                | "analytics"
+                | "roadmap"
+                | "docs"
+                | "maya"
+                | "sprints"
+                | "key-results"
+                | "calendar"
+                | "notifications"
+                | "story"
+                | "work"
+                | "teams"
+                | "profile"
+                | "views"
+                | "search"
+                | "settings"
+        ) {
+            return None;
+        }
+        let mut location = url.clone();
+        location.set_query(None);
+        location.set_fragment(None);
+        Some(location)
+    }
+
+    #[cfg(any(feature = "production", test))]
+    pub fn clears_restored_location(&self, url: &Url) -> bool {
+        self.production
+            && (url.as_str() == "https://fortyone.app/?signedOut=true"
+                || (self.allows_navigation(url)
+                    && url.origin() == self.app_url.origin()
+                    && url.path() == "/"))
+    }
+
     pub fn allows_navigation(&self, url: &Url) -> bool {
         if has_credentials(url) {
             return false;
@@ -123,6 +172,60 @@ fn has_credentials(url: &Url) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn restores_only_known_workspace_pages_without_transient_url_state() {
+        let policy = NavigationPolicy::production();
+        let target =
+            Url::parse("https://acme.fortyone.app/work/ENG-42?token=secret#private").unwrap();
+        assert_eq!(
+            policy.restorable_location(&target).unwrap().as_str(),
+            "https://acme.fortyone.app/work/ENG-42"
+        );
+        for target in [
+            "https://cloud.fortyone.app/work/ENG-42",
+            "https://api.fortyone.app/work/ENG-42",
+            "https://acme.fortyone.app/auth-callback?code=secret",
+            "https://acme.fortyone.app/verify/email/token",
+            "https://acme.fortyone.app/shared/docs/token",
+            "https://acme.fortyone.app/onboarding",
+            "https://acme.fortyone.app/unknown",
+            "https://acme.fortyone.app/",
+            "https://user:password@acme.fortyone.app/my-work",
+            "https://acme.fortyone.app:8443/my-work",
+            "http://acme.fortyone.app/my-work",
+        ] {
+            assert!(policy
+                .restorable_location(&Url::parse(target).unwrap())
+                .is_none());
+        }
+        let local = NavigationPolicy::new(Url::parse("http://localhost:3000/").unwrap()).unwrap();
+        assert!(local
+            .restorable_location(&Url::parse("http://localhost:3000/acme/my-work").unwrap())
+            .is_none());
+    }
+
+    #[test]
+    fn sign_out_and_returning_to_cloud_login_clear_restored_workspace() {
+        let policy = NavigationPolicy::production();
+        for target in [
+            "https://fortyone.app/?signedOut=true",
+            "https://cloud.fortyone.app/?signedOut=true",
+            "https://cloud.fortyone.app/",
+            "https://cloud.fortyone.app/?callbackUrl=%2Fmy-work",
+        ] {
+            assert!(policy.clears_restored_location(&Url::parse(target).unwrap()));
+        }
+        for target in [
+            "https://cloud.fortyone.app/auth-callback",
+            "https://acme.fortyone.app/my-work",
+            "https://fortyone.app/",
+            "https://attacker.example/?signedOut=true",
+            "https://user@cloud.fortyone.app/",
+        ] {
+            assert!(!policy.clears_restored_location(&Url::parse(target).unwrap()));
+        }
+    }
 
     #[test]
     fn production_keeps_auth_and_workspace_transitions_in_the_app() {

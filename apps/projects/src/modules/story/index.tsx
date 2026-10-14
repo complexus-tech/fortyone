@@ -77,51 +77,42 @@ export const StoryPage = ({
       })}
     >
       {story ? (
-        <>
+        <Box
+          className={cn("h-full min-h-0 md:flex", {
+            "md:[container:notification-story/inline-size]": isNotifications,
+          })}
+        >
           <Box
-            className={cn("h-full min-h-0 md:hidden", {
+            className={cn("h-full min-h-0 min-w-0 flex-1", {
               "dark:bg-surface": isDialog,
             })}
           >
             <MainDetails
               isDialog={isDialog}
               isNotifications={Boolean(isNotifications)}
+              mainHeader={
+                mainHeader ? (
+                  <Box className="hidden md:contents">{mainHeader}</Box>
+                ) : undefined
+              }
               storyId={storyId}
             />
           </Box>
           <Box
-            className={cn("hidden h-full min-h-0 md:flex", {
-              "notification-story-container": isNotifications,
-            })}
+            className={cn(
+              "border-border hidden h-full min-h-0 w-(--story-sidebar-width) shrink-0 overflow-hidden border-l-[0.5px] md:block",
+              {
+                "notification-story-sidebar": isNotifications,
+              },
+            )}
           >
-            <Box
-              className={cn("min-h-0 min-w-0 flex-1", {
-                "dark:bg-surface": isDialog,
-              })}
-            >
-              <MainDetails
-                isDialog={isDialog}
-                isNotifications={Boolean(isNotifications)}
-                mainHeader={mainHeader}
-                storyId={storyId}
-              />
-            </Box>
-            <Box
-              className={cn(
-                "border-border h-full min-h-0 w-(--story-sidebar-width) shrink-0 overflow-hidden border-l-[0.5px]",
-                {
-                  "notification-story-sidebar": isNotifications,
-                },
-              )}
-            >
-              <Options
-                isDialog={isDialog}
-                isNotifications={Boolean(isNotifications)}
-                storyId={storyId}
-              />
-            </Box>
+            <Options
+              isDialog={isDialog}
+              isNotifications={Boolean(isNotifications)}
+              storyId={storyId}
+            />
           </Box>
-        </>
+        </Box>
       ) : (
         <ResourceNotFoundState
           description="This item might not exist or you do not have access to it."

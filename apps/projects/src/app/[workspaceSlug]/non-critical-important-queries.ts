@@ -7,7 +7,6 @@ import {
   sprintKeys,
   userKeys,
   notificationKeys,
-  workspaceKeys,
   memberKeys,
   subscriptionKeys,
 } from "@/constants/keys";
@@ -21,11 +20,9 @@ import {
 import { getAutomationPreferences } from "@/lib/queries/users/automation-preferences";
 import { getUnreadNotifications } from "@/modules/notifications/queries/get-unread";
 import { getMembers } from "@/lib/queries/members/get-members";
-import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
 import { getNotificationPreferences } from "@/modules/notifications/queries/get-preferences";
 import { getSubscription } from "@/lib/queries/subscriptions/get-subscription";
 import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
-import { getInvoices } from "@/lib/queries/billing/invoices";
 import type { WorkspaceCtx } from "@/lib/http";
 
 export const fetchNonCriticalImportantQueries = (
@@ -73,11 +70,6 @@ export const fetchNonCriticalImportantQueries = (
     queryFn: () => getMembers(ctx),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
-  queryClient.prefetchQuery({
-    queryKey: workspaceKeys.lists(),
-    queryFn: () => getWorkspaces(ctx.session?.token, ctx.cookieHeader),
-    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
-  });
   queryClient.prefetchQuery(pendingInvitationsPrefetchOptions(ctx));
   queryClient.prefetchQuery({
     queryKey: notificationKeys.preferences(ctx.workspaceSlug),
@@ -87,11 +79,6 @@ export const fetchNonCriticalImportantQueries = (
   queryClient.prefetchQuery({
     queryKey: subscriptionKeys.details(ctx.workspaceSlug),
     queryFn: () => getSubscription(ctx),
-    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 10,
-  });
-  queryClient.prefetchQuery({
-    queryKey: ["invoices", ctx.workspaceSlug],
-    queryFn: () => getInvoices(ctx),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 10,
   });
   return queryClient;

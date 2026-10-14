@@ -1,0 +1,48 @@
+[
+  { "id": "warmup-off", "mode": "off", "cards": 24, "warmup": true },
+  { "id": "warmup-on", "mode": "on", "cards": 24, "warmup": true },
+  { "id": "24-0-on", "mode": "on", "cards": 24, "warmup": false, "pair": 0 },
+  { "id": "24-0-off", "mode": "off", "cards": 24, "warmup": false, "pair": 0 },
+  { "id": "24-3-on", "mode": "on", "cards": 24, "warmup": false, "pair": 3 },
+  { "id": "24-3-off", "mode": "off", "cards": 24, "warmup": false, "pair": 3 },
+  { "id": "240-1-on", "mode": "on", "cards": 240, "warmup": false, "pair": 1 },
+  {
+    "id": "240-1-off",
+    "mode": "off",
+    "cards": 240,
+    "warmup": false,
+    "pair": 1
+  },
+  { "id": "24-1-on", "mode": "on", "cards": 24, "warmup": false, "pair": 1 },
+  { "id": "24-1-off", "mode": "off", "cards": 24, "warmup": false, "pair": 1 },
+  { "id": "240-2-on", "mode": "on", "cards": 240, "warmup": false, "pair": 2 },
+  {
+    "id": "240-2-off",
+    "mode": "off",
+    "cards": 240,
+    "warmup": false,
+    "pair": 2
+  },
+  { "id": "24-2-on", "mode": "on", "cards": 24, "warmup": false, "pair": 2 },
+  { "id": "24-2-off", "mode": "off", "cards": 24, "warmup": false, "pair": 2 },
+  { "id": "24-4-on", "mode": "on", "cards": 24, "warmup": false, "pair": 4 },
+  { "id": "24-4-off", "mode": "off", "cards": 24, "warmup": false, "pair": 4 },
+  { "id": "240-4-on", "mode": "on", "cards": 240, "warmup": false, "pair": 4 },
+  {
+    "id": "240-4-off",
+    "mode": "off",
+    "cards": 240,
+    "warmup": false,
+    "pair": 4
+  },
+  {
+    "id": "240-3-off",
+    "mode": "off",
+    "cards": 240,
+    "warmup": false,
+    "pair": 3
+  },
+  { "id": "240-3-on", "mode": "on", "cards": 240, "warmup": false, "pair": 3 },
+  { "id": "240-0-on", "mode": "on", "cards": 240, "warmup": false, "pair": 0 },
+  { "id": "240-0-off", "mode": "off", "cards": 240, "warmup": false, "pair": 0 }
+]

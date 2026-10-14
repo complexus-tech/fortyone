@@ -3,13 +3,13 @@
 import type { QueryClient } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { render } from "@testing-library/react";
-import { useSquircleFallback } from "@/shell/compatibility/use-squircle-fallback";
+import { useSquircleFallback } from "ui/squircle-fallback";
 import { getQueryClient } from "./get-query-client";
 import { Providers } from "./providers";
 
 const mockObservedClients: unknown[] = [];
 
-jest.mock("@/shell/compatibility/use-squircle-fallback", () => ({
+jest.mock("ui/squircle-fallback", () => ({
   useSquircleFallback: jest.fn(),
 }));
 

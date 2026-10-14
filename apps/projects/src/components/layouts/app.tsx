@@ -5,17 +5,12 @@ import { WorkspaceChatLayout } from "@/components/ui/chat";
 import { WalkthroughIntegration } from "@/components/walkthrough/walkthrough-integration";
 import { walkthroughTargets } from "@/shared/walkthrough/targets";
 import { AppCommandBar } from "@/shell/commands/app-command-bar";
-import { useSquircleFallback } from "@/shell/compatibility/use-squircle-fallback";
-import "@/shell/compatibility/squircles.css";
 import { AppCommandActionProvider } from "../shared/app-command-action-context";
 import { SidebarProvider } from "../shared/sidebar/sidebar-context";
 import { Sidebar } from "../shared/sidebar/sidebar";
 import { SidebarEdgeToggle } from "../shared/sidebar/sidebar-edge-toggle";
 
 export const ApplicationLayout = ({ children }: { children: ReactNode }) => {
-  // The streamed workspace shell must hydrate before its DOM can be painted.
-  useSquircleFallback();
-
   return (
     <SidebarProvider>
       <AppCommandActionProvider>

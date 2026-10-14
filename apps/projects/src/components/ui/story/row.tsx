@@ -23,11 +23,7 @@ import {
   useUserRole,
   useWorkspacePath,
 } from "@/hooks";
-import { storyKeys } from "@/modules/stories/constants";
-import { getStory } from "@/modules/story/queries/get-story";
-import { getStoryAttachments } from "@/modules/story/queries/get-attachments";
-import { linkKeys } from "@/constants/keys";
-import { getLinks } from "@/lib/queries/links/get-links";
+import { prefetchStory } from "@/modules/story/queries/prefetch-story";
 import { useAutomationPreferences } from "@/lib/hooks/users/preferences";
 import { useBoardPropertySlots } from "@/shared/story/board-property-slots";
 import { useBoard } from "../board-context";
@@ -170,29 +166,22 @@ export const StoryRow = ({
     <Box
       onMouseEnter={() => {
         if (session) {
-          const ctx = { session, workspaceSlug };
-          queryClient.prefetchQuery({
-            queryKey: storyKeys.detail(workspaceSlug, story.id),
-            queryFn: () => getStory(story.id, ctx),
-          });
-          queryClient.prefetchQuery({
-            queryKey: storyKeys.attachments(workspaceSlug, story.id),
-            queryFn: () => getStoryAttachments(story.id, ctx),
-          });
-          queryClient.prefetchQuery({
-            queryKey: linkKeys.story(story.id),
-            queryFn: () => getLinks(story.id, ctx),
+          void prefetchStory(queryClient, story.id, {
+            session,
+            workspaceSlug,
           });
         }
-        router.prefetch(
-          withWorkspace(
-            getStoryPath({
-              id: story.id,
-              sequenceId: story.sequenceId,
-              teamCode: resolvedTeamCode,
-            }),
-          ),
-        );
+        if (!isDesktop || !openStoryInDialog) {
+          router.prefetch(
+            withWorkspace(
+              getStoryPath({
+                id: story.id,
+                sequenceId: story.sequenceId,
+                teamCode: resolvedTeamCode,
+              }),
+            ),
+          );
+        }
       }}
     >
       <div ref={setNodeRef}>

@@ -10,15 +10,10 @@ import type { Story as StoryProps } from "@/modules/stories/types";
 import type { StoryUpdate } from "@/modules/story/types";
 import { getStoryPath } from "@/shared/routing/story";
 import { useMediaQuery, useUserRole, useWorkspacePath } from "@/hooks";
-import { storyKeys } from "@/modules/stories/constants";
-import { getStory } from "@/modules/story/queries/get-story";
-import { getStoryAttachments } from "@/modules/story/queries/get-attachments";
-import { linkKeys } from "@/constants/keys";
-import { getLinks } from "@/lib/queries/links/get-links";
+import { prefetchStory } from "@/modules/story/queries/prefetch-story";
 import { useAutomationPreferences } from "@/lib/hooks/users/preferences";
 import { useFigmaHandoffStatuses } from "@/lib/hooks/figma";
 import { FigmaIcon } from "@/modules/settings/workspace/integrations/figma/icon";
-import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
 import { useBoardPropertySlots } from "@/shared/story/board-property-slots";
 import { useBoard } from "../board-context";
 import { MemberTooltip } from "../member-tooltip";
@@ -90,21 +85,9 @@ const StoryCardContent = memo(function StoryCardContent({
         if (!canPrefetch()) return;
 
         if (session) {
-          const ctx = { session, workspaceSlug };
-          queryClient.prefetchQuery({
-            queryKey: storyKeys.detail(workspaceSlug, story.id),
-            queryFn: () => getStory(story.id, ctx),
-            staleTime: DURATION_FROM_MILLISECONDS.MINUTE,
-          });
-          queryClient.prefetchQuery({
-            queryKey: storyKeys.attachments(workspaceSlug, story.id),
-            queryFn: () => getStoryAttachments(story.id, ctx),
-            staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
-          });
-          queryClient.prefetchQuery({
-            queryKey: linkKeys.story(story.id),
-            queryFn: () => getLinks(story.id, ctx),
-            staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 10,
+          void prefetchStory(queryClient, story.id, {
+            session,
+            workspaceSlug,
           });
         }
       }}

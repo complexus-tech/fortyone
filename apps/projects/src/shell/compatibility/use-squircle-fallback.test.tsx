@@ -5,7 +5,7 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { StrictMode, Suspense, use } from "react";
 import { hydrateRoot } from "react-dom/client";
 import { renderToString } from "react-dom/server";
-import { useSquircleFallback } from "./use-squircle-fallback";
+import { useSquircleFallback } from "ui/squircle-fallback";
 
 const mockDestroy = jest.fn();
 const mockRegister = jest.fn();
