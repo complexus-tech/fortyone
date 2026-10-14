@@ -219,7 +219,7 @@
 
   --color-muted: oklch(0.2135 0 0);
   --color-muted-foreground: oklch(0.94 0.005 55 / 60%);
-  --color-accent: oklch(0.281 0 0);
+  --color-accent: oklch(0.33 0 0);
   --color-accent-foreground: var(--color-foreground);
 
   --color-border: oklch(0.94 0 0 / 10%);

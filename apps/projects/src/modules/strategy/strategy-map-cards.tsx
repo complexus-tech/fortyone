@@ -300,6 +300,7 @@ export const ObjectiveNodeCard = ({
   keyResults,
   memberById,
   objective,
+  onAddKeyResult,
   onAlign,
   onOpenDetails,
   onToggleKeyResults,
@@ -316,6 +317,7 @@ export const ObjectiveNodeCard = ({
   keyResults: KeyResult[];
   memberById: ReadonlyMap<string, StrategyMember>;
   objective: Objective;
+  onAddKeyResult: () => void;
   onAlign: (objectiveId: string, pillarId: string | null) => void;
   onOpenDetails: () => void;
   onToggleKeyResults: () => void;
@@ -497,7 +499,7 @@ export const ObjectiveNodeCard = ({
           {keyResultCount > 0 ? (
             <button
               aria-expanded={isKeyResultsExpanded}
-              className="border-border text-foreground hover:bg-state-hover mt-3 flex w-full items-center justify-between rounded-md border-t px-1 pt-3 pb-1 text-left text-[0.95rem] transition-colors"
+              className="border-border text-foreground hover:bg-state-hover focus-visible:ring-foreground/30 mt-3 flex min-h-9 w-full items-center justify-between gap-2 rounded-md border-t px-2 py-2 text-left text-[0.95rem] leading-5 transition-colors outline-none focus-visible:ring-2"
               data-no-drag
               onClick={onToggleKeyResults}
               type="button"
@@ -519,13 +521,18 @@ export const ObjectiveNodeCard = ({
       <StrategyMapObjectiveContextMenu
         canEdit={canEdit}
         currentPillarId={currentPillarId}
+        isKeyResultsExpanded={isKeyResultsExpanded}
+        keyResultCount={keyResultCount}
         objectiveId={objective.id}
         objectivePath={objectivePath}
         objectiveStatusId={objective.statusId}
+        onAddKeyResult={onAddKeyResult}
         onAlign={onAlign}
+        onOpenDetails={onOpenDetails}
         onSetStatus={(statusId) => {
           onUpdate(objective.id, { statusId });
         }}
+        onToggleKeyResults={onToggleKeyResults}
         pillars={pillars}
         status={status}
         statuses={statuses}

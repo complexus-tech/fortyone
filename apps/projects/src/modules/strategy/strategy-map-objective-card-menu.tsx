@@ -5,6 +5,7 @@ import {
   ChevronRightIcon,
   ExternalLinkIcon,
   ObjectiveIcon,
+  PlusIcon,
   UnlinkIcon,
 } from "icons";
 import { ContextMenu, Flex, Text } from "ui";
@@ -13,11 +14,16 @@ import { ContextMenuLabel } from "./strategy-map-card-primitives";
 type StrategyMapObjectiveContextMenuProps = {
   canEdit: boolean;
   currentPillarId: string | null;
+  isKeyResultsExpanded: boolean;
+  keyResultCount: number;
   objectiveId: string;
   objectivePath: string;
   objectiveStatusId: string;
   onAlign: (objectiveId: string, pillarId: string | null) => void;
+  onAddKeyResult: () => void;
+  onOpenDetails: () => void;
   onSetStatus: (statusId: string) => void;
+  onToggleKeyResults: () => void;
   pillars: readonly { id: string; name: string }[];
   status?: { color: string };
   statuses: readonly { color: string; id: string; name: string }[];
@@ -26,17 +32,27 @@ type StrategyMapObjectiveContextMenuProps = {
 export const StrategyMapObjectiveContextMenu = ({
   canEdit,
   currentPillarId,
+  isKeyResultsExpanded,
+  keyResultCount,
   objectiveId,
   objectivePath,
   objectiveStatusId,
   onAlign,
+  onAddKeyResult,
+  onOpenDetails,
   onSetStatus,
+  onToggleKeyResults,
   pillars,
   status,
   statuses,
 }: StrategyMapObjectiveContextMenuProps) => (
   <ContextMenu.Items className="w-64">
     <ContextMenu.Group>
+      <ContextMenu.Item onSelect={onOpenDetails}>
+        <ContextMenuLabel icon={<ObjectiveIcon className="h-4 w-4" />}>
+          Open details
+        </ContextMenuLabel>
+      </ContextMenu.Item>
       <ContextMenu.Item asChild>
         <Link href={objectivePath}>
           <ContextMenuLabel icon={<ExternalLinkIcon className="h-4 w-4" />}>
@@ -44,10 +60,34 @@ export const StrategyMapObjectiveContextMenu = ({
           </ContextMenuLabel>
         </Link>
       </ContextMenu.Item>
+      {keyResultCount > 0 ? (
+        <ContextMenu.Item onSelect={onToggleKeyResults}>
+          <ContextMenuLabel
+            icon={
+              <ChevronRightIcon
+                className={
+                  isKeyResultsExpanded ? "h-4 w-4 rotate-90" : "h-4 w-4"
+                }
+              />
+            }
+          >
+            {isKeyResultsExpanded
+              ? "Collapse key results"
+              : "Expand key results"}
+          </ContextMenuLabel>
+        </ContextMenu.Item>
+      ) : null}
     </ContextMenu.Group>
     {canEdit ? (
       <>
         <ContextMenu.Separator />
+        <ContextMenu.Group>
+          <ContextMenu.Item onSelect={onAddKeyResult}>
+            <ContextMenuLabel icon={<PlusIcon className="h-4 w-4" />}>
+              Add key result...
+            </ContextMenuLabel>
+          </ContextMenu.Item>
+        </ContextMenu.Group>
         {statuses.length > 0 ? (
           <ContextMenu.Group>
             <ContextMenu.SubMenu>

@@ -30,6 +30,9 @@ jest.mock("@/modules/key-results/components/key-result-context-menu", () => ({
     <>{children}</>
   ),
 }));
+jest.mock("@/modules/objectives/stories/overview/new-key-result", () => ({
+  NewKeyResultDialog: () => null,
+}));
 jest.mock("@/modules/teams/public/client", () => ({
   useTeams: () => ({ data: [] }),
 }));

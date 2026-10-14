@@ -74,11 +74,12 @@ async function buildFixture({ directory, mode, baseline, esbuild, css }) {
     sourceHashes[file] = hash(source);
   }
   const mocks = {
-    "@/hooks": `export const useWorkspacePath=()=>({workspaceSlug:"motion-fixture"});`,
+    "@/hooks": `export const useWorkspacePath=()=>({workspaceSlug:"motion-fixture",withWorkspace:(path)=>"/motion-fixture"+path});`,
     "@/lib/auth/client": `const session={token:"synthetic"};export const useSession=()=>({data:session});`,
     "@/lib/hooks/members": `const data=[];export const useMembers=()=>({data});`,
     "@/lib/hooks/objective-statuses": `const data=[];export const useObjectiveStatuses=()=>({data});`,
     "@/modules/objectives/hooks": `const mutation={mutate:()=>{}};export const useUpdateObjectiveMutation=()=>mutation;`,
+    "@/modules/objectives/stories/overview/new-key-result": `export const NewKeyResultDialog=()=>null;`,
     "@/modules/teams/public/client": `const data=[];export const useTeams=()=>({data});`,
     "@/modules/key-results/components/key-result-context-menu": `export const KeyResultContextMenu=({children})=>children;`,
     "@/modules/objectives/queries/get-key-results": `export const getKeyResults=async(id)=>window.fixtureKeyResults.get(id)||[];`,

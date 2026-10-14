@@ -27,6 +27,7 @@ import {
   Text,
 } from "ui";
 import { AssigneesMenu } from "@/components/ui";
+import { FloatingDetailsPanel } from "@/components/ui/floating-details-panel";
 import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
 import { useTerminology, useUserRole, useWorkspacePath } from "@/hooks";
 import { useSession } from "@/lib/auth/client";
@@ -164,10 +165,10 @@ export const KeyResultDetails = ({
 
   return (
     <>
-      <Box className="border-border/70 dark:border-border dark:bg-surface absolute top-14 right-3 bottom-4 isolate z-40 w-[calc(100%-1.5rem)] overflow-y-auto rounded-xl border bg-white shadow-xl md:top-[1.625rem] md:right-6 md:bottom-[4.875rem] md:w-[34rem]">
+      <FloatingDetailsPanel>
         <Flex
           align="center"
-          className="border-border/70 dark:border-border dark:bg-surface/80 sticky top-0 z-10 min-h-16 gap-3 border-b-[0.5px] bg-white/80 px-6 backdrop-blur-2xl"
+          className="border-border/70 dark:border-border dark:bg-surface/80 sticky top-0 z-10 min-h-16 gap-3 rounded-t-[calc(var(--radius-xl)-1px)] border-b-[0.5px] bg-white/80 px-6 backdrop-blur-2xl"
           justify="between"
         >
           <Flex align="center" className="min-w-0 flex-1 gap-3">
@@ -395,7 +396,7 @@ export const KeyResultDetails = ({
             </Text>
           )}
         </Box>
-      </Box>
+      </FloatingDetailsPanel>
 
       <UpdateKeyResultDialog
         isOpen={isUpdateOpen}

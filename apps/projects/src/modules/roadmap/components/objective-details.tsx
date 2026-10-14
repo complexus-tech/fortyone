@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { Box, Button, Divider, Flex, Text } from "ui";
 import { ChevronRightIcon, CloseIcon, ObjectiveIcon } from "icons";
+import { FloatingDetailsPanel } from "@/components/ui/floating-details-panel";
 import { useWorkspacePath } from "@/hooks";
 import { useObjectiveAnalytics } from "@/modules/objectives/hooks/objective-analytics";
 import { useKeyResults } from "@/modules/objectives/hooks/use-key-results";
@@ -54,9 +55,9 @@ export const RoadmapObjectiveDetails = ({
   }, [initialObjective.id]);
 
   return (
-    <Box
+    <FloatingDetailsPanel
       aria-labelledby={`${panelId}-title`}
-      className="border-border-strong bg-surface-elevated absolute top-14 right-3 bottom-4 isolate z-50 w-[calc(100%-1.5rem)] overflow-y-auto rounded-xl border-[0.5px] shadow-xl outline-none md:top-[1.625rem] md:right-6 md:bottom-[4.875rem] md:w-[34rem]"
+      className="border-border-strong bg-surface-elevated/95 dark:border-border-strong dark:bg-surface-elevated/95 z-50 border-[0.5px] outline-none"
       id={panelId}
       onKeyDown={(event) => {
         if (event.key === "Escape" && !event.defaultPrevented) {
@@ -70,7 +71,7 @@ export const RoadmapObjectiveDetails = ({
     >
       <Flex
         align="center"
-        className="border-border bg-surface-elevated sticky top-0 z-10 min-h-16 gap-3 border-b-[0.5px] px-5 py-4"
+        className="border-border bg-surface-elevated sticky top-0 z-10 min-h-16 gap-3 rounded-t-[calc(var(--radius-xl)-1px)] border-b-[0.5px] px-5 py-4"
         justify="between"
       >
         <Link
@@ -127,6 +128,6 @@ export const RoadmapObjectiveDetails = ({
           onSelect={onKeyResultSelect}
         />
       </Box>
-    </Box>
+    </FloatingDetailsPanel>
   );
 };

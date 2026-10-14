@@ -8,6 +8,7 @@ import type {
 } from "react";
 import { memo } from "react";
 import { Text } from "ui";
+import { useWorkspacePath } from "@/hooks";
 import {
   KeyResultNodeCard,
   ObjectiveNodeCard,
@@ -37,6 +38,7 @@ type StrategyCanvasObjectiveUpdate = Parameters<
 type KeyResultContextMenuComponent = ComponentType<{
   children: ReactNode;
   keyResult: StrategyCanvasKeyResult;
+  objectivePath?: string;
   onOpenDetails: () => void;
 }>;
 
@@ -71,6 +73,7 @@ type StrategyCanvasNodesProps = {
   objectiveCount: number;
   objectives: readonly StrategyCanvasObjective[];
   onAddPillar: () => void;
+  onAddKeyResult: (objectiveId: string) => void;
   onAlign: (objectiveId: string, pillarId: string | null) => void;
   onDeletePillar: (pillarId: string) => void;
   onFinishNodeDrag: FinishNodeDrag;
@@ -230,6 +233,7 @@ const ObjectiveCanvasNode = memo(
     expandedObjectiveIds,
     keyResultsByObjective,
     memberById,
+    onAddKeyResult,
     onAlign,
     onFinishNodeDrag,
     onNodePointerDown,
@@ -251,6 +255,7 @@ const ObjectiveCanvasNode = memo(
     | "expandedObjectiveIds"
     | "keyResultsByObjective"
     | "memberById"
+    | "onAddKeyResult"
     | "onAlign"
     | "onFinishNodeDrag"
     | "onNodePointerDown"
@@ -293,6 +298,9 @@ const ObjectiveCanvasNode = memo(
           }
           memberById={memberById}
           objective={objective}
+          onAddKeyResult={() => {
+            onAddKeyResult(objective.id);
+          }}
           onAlign={onAlign}
           onOpenDetails={() => {
             onSelectObjective(objective);
@@ -339,6 +347,7 @@ const KeyResultCanvasNode = memo(
     StrategyCanvasKeyResultNode & { position: StrategyNodePosition }) => {
     const nodeId = getKeyResultNodeId(keyResult.id);
     const teamCode = teamCodeById.get(objective.teamId);
+    const { withWorkspace } = useWorkspacePath();
 
     return (
       <StrategyCanvasNode
@@ -355,6 +364,9 @@ const KeyResultCanvasNode = memo(
       >
         <KeyResultContextMenu
           keyResult={keyResult}
+          objectivePath={withWorkspace(
+            `/teams/${objective.teamId}/objectives/${objective.id}`,
+          )}
           onOpenDetails={() => {
             onSelectKeyResult(objective, keyResult);
           }}
@@ -395,6 +407,7 @@ export const StrategyCanvasNodes = memo(
     objectiveCount,
     objectives,
     onAddPillar,
+    onAddKeyResult,
     onAlign,
     onDeletePillar,
     onFinishNodeDrag,
@@ -480,6 +493,7 @@ export const StrategyCanvasNodes = memo(
           keyResultsByObjective={keyResultsByObjective}
           memberById={memberById}
           objective={objective}
+          onAddKeyResult={onAddKeyResult}
           onAlign={onAlign}
           onFinishNodeDrag={onFinishNodeDrag}
           onNodePointerDown={onNodePointerDown}

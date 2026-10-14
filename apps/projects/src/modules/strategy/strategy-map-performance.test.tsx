@@ -44,6 +44,9 @@ jest.mock("@/modules/teams/public/client", () => ({
 jest.mock("@/modules/key-results/components/key-result-context-menu", () => ({
   KeyResultContextMenu: ({ children }: { children: ReactNode }) => children,
 }));
+jest.mock("@/modules/objectives/stories/overview/new-key-result", () => ({
+  NewKeyResultDialog: () => null,
+}));
 jest.mock("@/modules/objectives/queries/get-key-results", () => ({
   getKeyResults: jest.fn(),
 }));

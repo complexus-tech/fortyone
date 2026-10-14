@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { useRef, useState } from "react";
 import { CloseIcon, ObjectiveIcon, StrategyIcon } from "icons";
 import { Box, Button, Flex, Input, Text } from "ui";
+import { FloatingDetailsPanel } from "@/components/ui/floating-details-panel";
 import { useDebouncedCallback } from "@/hooks/debounce";
 import { StrategyDescriptionEditor } from "./strategy-description-editor";
 
@@ -79,10 +80,10 @@ const StrategyNodeDetailsForm = ({
   };
 
   return (
-    <Box className="border-border/70 dark:border-border dark:bg-surface absolute top-14 right-3 bottom-4 isolate z-40 w-[calc(100%-1.5rem)] overflow-y-auto rounded-xl border bg-white shadow-xl md:top-[1.625rem] md:right-6 md:bottom-[4.875rem] md:w-[34rem]">
+    <FloatingDetailsPanel>
       <Flex
         align="center"
-        className="border-border/70 dark:border-border dark:bg-surface/80 sticky top-0 z-10 min-h-16 gap-6 border-b-[0.5px] bg-white/80 px-6 backdrop-blur-2xl"
+        className="border-border/70 dark:border-border dark:bg-surface/80 sticky top-0 z-10 min-h-16 gap-6 rounded-t-[calc(var(--radius-xl)-1px)] border-b-[0.5px] bg-white/80 px-6 backdrop-blur-2xl"
         justify="between"
       >
         <Flex align="center" className="min-w-0 gap-3">
@@ -147,7 +148,7 @@ const StrategyNodeDetailsForm = ({
           placeholder="Add a description..."
         />
       </Box>
-    </Box>
+    </FloatingDetailsPanel>
   );
 };
 

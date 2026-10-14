@@ -6,11 +6,13 @@ import {
   useLayoutEffect,
   useMemo,
   useRef,
+  useState,
 } from "react";
 import { useWorkspacePath } from "@/hooks";
 import { useMembers } from "@/lib/hooks/members";
 import { useObjectiveStatuses } from "@/lib/hooks/objective-statuses";
 import { useUpdateObjectiveMutation } from "@/modules/objectives/hooks";
+import { NewKeyResultDialog } from "@/modules/objectives/stories/overview/new-key-result";
 import type {
   KeyResult,
   Objective,
@@ -95,6 +97,9 @@ export const StrategyMapCanvas = ({
   const { data: statuses = [] } = useObjectiveStatuses();
   const { data: teams = [] } = useTeams();
   const updateObjective = useUpdateObjectiveMutation();
+  const [newKeyResultObjectiveId, setNewKeyResultObjectiveId] = useState<
+    string | null
+  >(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const positionsRef = useRef<StrategyNodePositions>({});
@@ -325,6 +330,12 @@ export const StrategyMapCanvas = ({
     },
     [updateObjectiveData],
   );
+  const handleAddKeyResult = useCallback(
+    (objectiveId: string) => {
+      if (canEdit) setNewKeyResultObjectiveId(objectiveId);
+    },
+    [canEdit],
+  );
 
   const canvasConnections = {
     alwaysVisibleNodeIds: alwaysRenderedNodeIds,
@@ -352,6 +363,7 @@ export const StrategyMapCanvas = ({
     objectiveCount: objectives.length,
     objectives: visibleObjectives,
     onAddPillar,
+    onAddKeyResult: handleAddKeyResult,
     onAlign,
     onDeletePillar,
     onFinishNodeDrag: finishNodeDrag,
@@ -374,18 +386,32 @@ export const StrategyMapCanvas = ({
   };
 
   return (
-    <StrategyMapCanvasSurface
-      canvasConnections={canvasConnections}
-      canvasNodes={canvasNodes}
-      canvasRef={canvasRef}
-      isPanning={isPanning}
-      layout={layout}
-      onViewportPointerCancel={handleViewportPointerUp}
-      onViewportPointerDown={handleViewportPointerDown}
-      onViewportPointerMove={handleViewportPointerMove}
-      onViewportPointerUp={handleViewportPointerUp}
-      viewportRef={viewportRef}
-      zoom={zoom}
-    />
+    <>
+      <StrategyMapCanvasSurface
+        canvasConnections={canvasConnections}
+        canvasNodes={canvasNodes}
+        canvasRef={canvasRef}
+        isPanning={isPanning}
+        layout={layout}
+        onViewportPointerCancel={handleViewportPointerUp}
+        onViewportPointerDown={handleViewportPointerDown}
+        onViewportPointerMove={handleViewportPointerMove}
+        onViewportPointerUp={handleViewportPointerUp}
+        viewportRef={viewportRef}
+        zoom={zoom}
+      />
+      {canEdit &&
+      newKeyResultObjectiveId &&
+      objectiveById.has(newKeyResultObjectiveId) ? (
+        <NewKeyResultDialog
+          isOpen
+          key={`${workspaceSlug}:${newKeyResultObjectiveId}`}
+          objectiveId={newKeyResultObjectiveId}
+          onOpenChange={(open) => {
+            if (!open) setNewKeyResultObjectiveId(null);
+          }}
+        />
+      ) : null}
+    </>
   );
 };

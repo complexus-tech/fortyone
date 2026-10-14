@@ -283,7 +283,13 @@ export const useStrategyMapCanvasInteractions = ({
 
   const handleNodePointerDown = useCallback(
     (nodeId: string, event: ReactPointerEvent<HTMLDivElement>) => {
-      if (event.button !== 0 || isInteractiveTarget(event.target)) return;
+      if (
+        event.button !== 0 ||
+        event.ctrlKey ||
+        isInteractiveTarget(event.target)
+      ) {
+        return;
+      }
       const draggedNodeIds = [nodeId];
       if (nodeId.startsWith("objective:")) {
         const objectiveId = nodeId.slice("objective:".length);
@@ -452,6 +458,7 @@ export const useStrategyMapCanvasInteractions = ({
     (event: ReactPointerEvent<HTMLDivElement>) => {
       if (
         event.button !== 0 ||
+        event.ctrlKey ||
         isInteractiveTarget(event.target) ||
         (event.target instanceof HTMLElement &&
           event.target.closest("[data-node-id], [data-canvas-control]"))
