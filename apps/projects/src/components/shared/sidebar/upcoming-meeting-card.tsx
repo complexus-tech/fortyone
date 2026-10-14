@@ -327,7 +327,7 @@ const ObjectiveRiskContent = ({ objective }: { objective: Objective }) => {
       </Text>
       <Link
         aria-label={`Review objective: ${objective.name}`}
-        className="bg-background-inverse text-foreground-inverse focus-visible:ring-ring mt-3 flex h-[2.1rem] w-full items-center justify-center rounded-xl px-2 text-center font-medium transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:outline-none"
+        className="bg-background-inverse text-foreground-inverse focus-visible:ring-ring mt-3 flex h-[2.1rem] w-full items-center justify-center rounded-lg px-2 text-center font-medium transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:outline-none"
         href={objectiveHref}
       >
         Review
@@ -628,7 +628,7 @@ export const SidebarAssistantCards = ({
               <button
                 aria-expanded={isCollapsedPopoverOpen}
                 aria-label={collapsedIndicatorLabel}
-                className={`focus-visible:ring-ring relative grid h-10 w-full place-items-center rounded-xl border transition-colors outline-none focus-visible:ring-2 ${collapsedIndicatorClass}`}
+                className={`focus-visible:ring-ring relative grid h-10 w-full place-items-center rounded-lg border transition-colors outline-none focus-visible:ring-2 ${collapsedIndicatorClass}`}
                 type="button"
               >
                 <CollapsedIndicatorIcon

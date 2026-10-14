@@ -70,7 +70,7 @@ export const KeyResultsFilterChip = ({
 }) => (
   <Flex
     align="center"
-    className="border-border bg-surface h-[2.1rem] shrink-0 overflow-hidden rounded-xl border"
+    className="border-border bg-surface h-[2.1rem] shrink-0 overflow-hidden rounded-lg border"
     gap={0}
   >
     <span className="border-border text-text-secondary flex h-full items-center gap-1.5 border-r px-2.5">

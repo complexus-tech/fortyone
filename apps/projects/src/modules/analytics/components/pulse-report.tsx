@@ -314,7 +314,6 @@ export const PulseReportPanel = () => {
         ? "rgba(24, 24, 27, 0.96)"
         : "rgba(255, 255, 255, 0.96)",
     border: `1px solid ${gridStroke}`,
-    borderRadius: 8,
   };
 
   return (
@@ -464,6 +463,7 @@ export const PulseReportPanel = () => {
               <Tooltip
                 contentStyle={tooltipStyle}
                 cursor={{ fill: "transparent" }}
+                wrapperClassName="rounded-xl"
               />
               <Bar barSize={35} dataKey="value" radius={[6, 6, 0, 0]}>
                 {storyHealthData.map((entry) => (
@@ -504,6 +504,7 @@ export const PulseReportPanel = () => {
               <Tooltip
                 contentStyle={tooltipStyle}
                 cursor={{ fill: "transparent" }}
+                wrapperClassName="rounded-xl"
               />
               <Bar
                 barSize={28}

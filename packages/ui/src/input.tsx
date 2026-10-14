@@ -6,9 +6,10 @@ import {
 } from "react";
 import { cva, type VariantProps } from "cva";
 import { cn } from "lib";
+import { radiusVariants } from "./radius";
 
 const inputVariants = cva(
-  "w-full rounded-md border border-input bg-white px-4 h-[2.8rem] leading-[2.8rem] focus-visible:outline-0 focus-visible:ring-2 focus-visible:ring-ring read-only:focus-visible:ring-0 placeholder:text-text-muted dark:bg-surface-elevated",
+  "w-full border border-input bg-white px-4 h-[2.8rem] leading-[2.8rem] focus-visible:outline-0 focus-visible:ring-2 focus-visible:ring-ring read-only:focus-visible:ring-0 placeholder:text-text-muted dark:bg-surface-elevated",
   {
     variants: {
       size: {
@@ -16,14 +17,7 @@ const inputVariants = cva(
         md: "h-[2.8rem]", // default size from original component
         lg: "h-[3.2rem] focus:ring-[3px]",
       },
-      rounded: {
-        none: "rounded-none",
-        sm: "rounded-md",
-        md: "rounded-lg", // default from original
-        lg: "rounded-xl",
-        xl: "rounded-2xl",
-        full: "rounded-full",
-      },
+      rounded: radiusVariants,
       variant: {
         default: "", // uses the base styles
         solid: "bg-surface-muted border-0",

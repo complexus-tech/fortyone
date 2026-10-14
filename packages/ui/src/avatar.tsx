@@ -96,12 +96,7 @@ export const Avatar: FC<AvatarProps> = (props) => {
           src={src}
           priority
           alt={name}
-          className={cn("w-full h-full aspect-square", {
-            "rounded-full": rounded === "full",
-            "rounded-sm": rounded === "sm",
-            "rounded-md": rounded === "md",
-            "rounded-lg": rounded === "lg",
-          })}
+          className="w-full h-full aspect-square"
           imageClassName="object-top object-cover"
         />
       )}

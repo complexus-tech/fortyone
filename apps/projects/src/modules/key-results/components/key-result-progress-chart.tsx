@@ -43,7 +43,6 @@ export const KeyResultProgressChart = ({
           contentStyle={{
             background: "var(--color-surface-elevated)",
             border: "1px solid var(--color-border-strong)",
-            borderRadius: "0.75rem",
           }}
           formatter={(value) => [
             formatKeyResultValue(Number(value), measurementType),
@@ -52,6 +51,7 @@ export const KeyResultProgressChart = ({
           labelFormatter={(value) =>
             format(new Date(String(value)), "MMM d, yyyy")
           }
+          wrapperClassName="rounded-xl"
         />
         <ReferenceLine
           stroke="var(--color-text-muted)"

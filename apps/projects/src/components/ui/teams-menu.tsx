@@ -132,7 +132,7 @@ const YourTeamsSubMenu = ({
               </DropdownMenu.Item>
               <DropdownMenu.Item
                 aria-label={`Leave ${team.name}`}
-                className="border-border/80 bg-surface hover:bg-surface-elevated focus:bg-surface-elevated focus-visible:ring-ring relative z-10 h-7.5 w-auto shrink-0 rounded-xl border px-2 py-0 text-[0.95rem] focus-visible:ring-1"
+                className="border-border/80 bg-surface hover:bg-surface-elevated focus:bg-surface-elevated focus-visible:ring-ring relative z-10 h-7.5 w-auto shrink-0 rounded-lg border px-2 py-0 text-[0.95rem] focus-visible:ring-1"
                 onSelect={() => {
                   setTeam(team.id, "leave");
                   setOpen(false);
@@ -143,7 +143,7 @@ const YourTeamsSubMenu = ({
               <Tooltip title="Pin">
                 <DropdownMenu.Item
                   aria-label={`Pin ${team.name}`}
-                  className="border-border/80 bg-surface hover:bg-surface-elevated focus:bg-surface-elevated focus-visible:ring-ring relative z-10 h-7.5 w-7.5 shrink-0 justify-center rounded-xl border p-0 focus-visible:ring-1"
+                  className="border-border/80 bg-surface hover:bg-surface-elevated focus:bg-surface-elevated focus-visible:ring-ring relative z-10 h-7.5 w-7.5 shrink-0 justify-center rounded-lg border p-0 focus-visible:ring-1"
                   onSelect={() => {
                     onPinTeam(team.id);
                     setOpen(false);
@@ -297,7 +297,7 @@ const Items = ({
                     />
                     <Text className="truncate">{team.name}</Text>
                   </Flex>
-                  <span className="border-border/80 bg-surface flex h-7.5 shrink-0 items-center rounded-xl border px-2 text-[0.95rem]">
+                  <span className="border-border/80 bg-surface flex h-7.5 shrink-0 items-center rounded-lg border px-2 text-[0.95rem]">
                     Join team
                   </span>
                 </DropdownMenu.Item>

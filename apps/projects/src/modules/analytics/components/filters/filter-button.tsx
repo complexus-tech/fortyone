@@ -26,7 +26,7 @@ export const FilterButton = ({
           <Button
             aria-label={`${label}: ${text}`}
             className={cn(
-              "justify-between rounded-xl md:h-[2.3rem]",
+              "justify-between md:h-[2.3rem]",
               compact ? "min-w-0 px-2 xl:px-3" : "min-w-28",
             )}
             color="tertiary"

@@ -104,7 +104,6 @@ export const ActivityLabelValue = ({ labels }: { labels: ActivityLabel[] }) => {
       <Badge
         className="h-6 shrink-0 gap-1.5 px-2 text-[0.85rem]"
         color="tertiary"
-        rounded="xl"
         variant="outline"
       >
         <TagsIcon className="h-4" style={{ color: firstLabel.color }} />

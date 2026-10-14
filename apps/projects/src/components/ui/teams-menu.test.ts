@@ -26,7 +26,7 @@ describe("TeamsMenu", () => {
     expect(source).toContain('<Tooltip title="Pin">');
     expect(source).toContain("h-7.5 w-7.5 shrink-0");
     expect(source).not.toContain("size-7.5 shrink-0");
-    expect(source).toContain("shrink-0 rounded-xl border");
+    expect(source).toContain("shrink-0 rounded-lg border");
     expect(source).toContain("hover:bg-accent focus-within:bg-accent");
     expect(source.match(/bg-surface hover:bg-surface-elevated/g)).toHaveLength(
       2,
@@ -40,7 +40,7 @@ describe("TeamsMenu", () => {
 
     expect(source).toContain("usePublicTeamsInfinite");
     expect(source).toContain("Join team");
-    expect(source).toContain("rounded-xl border px-2");
+    expect(source).toContain("rounded-lg border px-2");
     expect(source).not.toContain("Join a team");
     expect(source.indexOf("Manage Teams")).toBeLessThan(
       source.lastIndexOf("<YourTeamsSubMenu"),

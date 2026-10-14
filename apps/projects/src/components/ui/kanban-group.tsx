@@ -181,7 +181,7 @@ export const KanbanGroup = ({
         <Box>
           {Array.from({ length: 6 }).map((_, index) => (
             <Skeleton
-              className="mb-2 h-28 shadow-sm dark:shadow-none"
+              className="mb-2 h-28 rounded-xl shadow-sm dark:shadow-none"
               key={index}
             />
           ))}

@@ -80,13 +80,13 @@ const ObjectiveSkeleton = ({ left }: { left: number }) => (
     </Flex>
     <Flex align="center" className="mt-4 gap-1.5">
       <Skeleton className="h-7 w-7 rounded-lg" />
-      <Skeleton className="h-7 w-20 rounded-xl" />
-      <Skeleton className="h-7 w-16 rounded-xl" />
-      <Skeleton className="h-7 w-14 rounded-xl" />
+      <Skeleton className="h-7 w-20 rounded-lg" />
+      <Skeleton className="h-7 w-16 rounded-lg" />
+      <Skeleton className="h-7 w-14 rounded-lg" />
     </Flex>
     <Flex align="center" className="mt-2 gap-1.5">
-      <Skeleton className="h-7 w-24 rounded-xl" />
-      <Skeleton className="h-7 w-24 rounded-xl" />
+      <Skeleton className="h-7 w-24 rounded-lg" />
+      <Skeleton className="h-7 w-24 rounded-lg" />
     </Flex>
     <Box className="border-border mt-4 border-t pt-3">
       <Flex align="center" justify="between">

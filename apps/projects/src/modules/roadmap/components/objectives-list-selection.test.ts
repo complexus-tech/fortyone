@@ -125,7 +125,7 @@ describe("Roadmap objective list selection", () => {
     );
 
     expect(cardSource).toContain('size="row"');
-    expect(forecastSource).toContain("h-[2.1rem] rounded-xl px-2 text-[1rem]");
+    expect(forecastSource).toContain("h-[2.1rem] rounded-lg px-2 text-[1rem]");
   });
 
   it("opens the shared key-result details panel from roadmap surfaces", () => {

@@ -260,7 +260,7 @@ export const ObjectivesToolbar = ({
               Comment*
             </Text>
             <TextArea
-              className="border-border/80 resize-none rounded-2xl border bg-transparent py-4 leading-normal"
+              className="border-border/80 resize-none border bg-transparent py-4 leading-normal"
               onChange={(event) => {
                 setHealthComment(event.target.value);
               }}

@@ -298,7 +298,7 @@ const AnalyticsChartTooltip = ({
   if (!active || !payload?.length) return null;
 
   return (
-    <Box className="border-border/40 bg-surface-elevated/85 text-foreground z-50 min-w-40 rounded-2xl border-[0.5px] p-4 shadow-lg shadow-black/5 backdrop-blur-xl dark:border-white/[0.08] dark:shadow-black/20">
+    <Box className="border-border/40 bg-surface-elevated/85 text-foreground z-50 min-w-40 rounded-xl border-[0.5px] p-4 shadow-lg shadow-black/5 backdrop-blur-xl dark:border-white/[0.08] dark:shadow-black/20">
       <Text className="text-base font-semibold">
         {formatLabel ? formatLabel(label) : String(label ?? "")}
       </Text>

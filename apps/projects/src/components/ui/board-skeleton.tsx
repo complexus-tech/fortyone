@@ -93,7 +93,10 @@ const KanbanLayoutSkeleton = () => {
         {Array.from({ length: 4 }).map((_, i) => (
           <Box className="w-[280px]" key={i}>
             {Array.from({ length: 6 - i }).map((_, j) => (
-              <Skeleton className="shadow-shadow mb-3 h-28 shadow-sm" key={j} />
+              <Skeleton
+                className="shadow-shadow mb-3 h-28 rounded-xl shadow-sm"
+                key={j}
+              />
             ))}
           </Box>
         ))}

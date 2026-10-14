@@ -39,8 +39,8 @@ export const ObjectiveForecastRiskBadge = ({
         className={cn(
           "border-primary/20 bg-primary/5 text-primary inline-flex h-6 shrink-0 items-center gap-1 rounded-md border px-1.5 text-[0.75rem] leading-none font-medium tabular-nums",
           {
-            "h-[2.1rem] rounded-xl px-2 text-[1rem]": size === "row",
-            "h-[1.85rem] gap-[2px] rounded-xl px-1.5 text-[0.95rem]":
+            "h-[2.1rem] rounded-lg px-2 text-[1rem]": size === "row",
+            "h-[1.85rem] gap-[2px] rounded-lg px-1.5 text-[0.95rem]":
               size === "control",
           },
         )}

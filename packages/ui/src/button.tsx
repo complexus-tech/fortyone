@@ -4,6 +4,7 @@ import { LoadingIcon } from "icons";
 import { cn } from "lib";
 import Link, { LinkProps } from "next/link";
 import { ReactNode, forwardRef, type ButtonHTMLAttributes } from "react";
+import { radiusVariants } from "./radius";
 
 export const buttonVariants = cva(
   "flex text-foreground w-max items-center border gap-2 transition duration-200 ease-linear focus-visible:outline-0 cursor-pointer",
@@ -15,14 +16,7 @@ export const buttonVariants = cva(
         naked:
           "bg-transparent border-none hover:bg-state-hover focus-visible:bg-state-active active:bg-state-active",
       },
-      rounded: {
-        none: "rounded-none",
-        sm: "rounded",
-        md: "rounded-xl",
-        lg: "rounded-2xl",
-        xl: "rounded-3xl",
-        full: "rounded-full",
-      },
+      rounded: radiusVariants,
       color: {
         primary: "border-primary-solid bg-primary-solid",
         danger: "text-danger border-danger bg-danger ring-danger",

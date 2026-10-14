@@ -257,7 +257,7 @@ export const StoryCardPreview = ({
         />
         <Flex
           align="center"
-          className="border-border text-text-secondary h-6 gap-1 rounded-md border px-2 text-xs"
+          className="border-border text-text-secondary h-6 gap-1 rounded-lg border px-2 text-xs"
         >
           <PriorityIcon className="h-4" priority={story.priority} />
           {story.priority}

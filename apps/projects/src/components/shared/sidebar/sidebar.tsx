@@ -51,7 +51,7 @@ const SidebarSubscriptionAction = ({
           fullWidth={isTrialCollapsed}
           href={href}
           prefetch
-          rounded="lg"
+          rounded="md"
           size="sm"
         >
           {isOnTrial ? (

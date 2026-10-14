@@ -2,23 +2,17 @@ import { VariantProps, cva } from "cva";
 import { FC, HTMLAttributes } from "react";
 
 import { cn } from "lib";
+import { radiusVariants } from "./radius";
 
 const badge = cva(
-  "flex w-max items-center justify-center font-medium rounded-lg border gap-1",
+  "flex w-max items-center justify-center font-medium border gap-1",
   {
     variants: {
       variant: {
         outline: null,
         solid: null,
       },
-      rounded: {
-        none: "rounded-none",
-        sm: "rounded-md",
-        md: "rounded-lg",
-        lg: "rounded-xl",
-        xl: "rounded-2xl",
-        full: "rounded-full",
-      },
+      rounded: radiusVariants,
       color: {
         primary: "text-primary-foreground bg-primary border-primary",
         success: "text-success-foreground bg-success border-success",
