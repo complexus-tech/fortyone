@@ -15,7 +15,7 @@ html[data-desktop-vibrancy="true"]:has(
   ) {
   --desktop-chrome-tint: color-mix(
     in srgb,
-    var(--color-background) 18%,
+    var(--color-background) 60%,
     transparent
   );
   --desktop-content-background: color-mix(
@@ -29,7 +29,7 @@ html[data-desktop-vibrancy="true"]:has(
 html.dark[data-desktop-vibrancy="true"] {
   --desktop-chrome-tint: color-mix(
     in srgb,
-    var(--color-background) 12%,
+    var(--color-background) 60%,
     transparent
   );
   --desktop-content-background: color-mix(
