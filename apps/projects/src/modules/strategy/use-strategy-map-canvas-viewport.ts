@@ -1,25 +1,32 @@
 "use client";
 
-import type { MutableRefObject, RefObject } from "react";
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
-import type { StrategyNodeDimensions } from "./strategy-map-layout";
+import type { RefObject } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import {
   createStrategyMapViewport,
   getInitialStrategyMapViewport,
+  getRetainedStrategyMapViewport,
   type StrategyMapViewport,
 } from "./strategy-map-visibility";
+
+export { useStrategyMapCanvasNodeDimensions } from "./use-strategy-map-node-dimensions";
 
 type ZoomAnchor = {
   viewportX: number;
   viewportY: number;
   worldX: number;
   worldY: number;
+};
+
+type ZoomRequest = { anchor: ZoomAnchor; zoom: number };
+type CameraSnapshot = {
+  actualScrollLeft: number;
+  actualScrollTop: number;
+  clientHeight: number;
+  clientWidth: number;
+  scrollLeft: number;
+  scrollTop: number;
+  zoom: number;
 };
 
 type UseStrategyMapCanvasViewportOptions = {
@@ -30,15 +37,6 @@ type UseStrategyMapCanvasViewportOptions = {
   zoom: number;
 };
 
-const areViewportsEqual = (
-  current: StrategyMapViewport,
-  next: StrategyMapViewport,
-) =>
-  current.height === next.height &&
-  current.left === next.left &&
-  current.top === next.top &&
-  current.width === next.width;
-
 export const useStrategyMapCanvasViewport = ({
   layoutWidth,
   onZoomChange,
@@ -46,219 +44,226 @@ export const useStrategyMapCanvasViewport = ({
   viewportRef,
   zoom,
 }: UseStrategyMapCanvasViewportOptions) => {
-  const hasPositionedViewportRef = useRef(false);
   const previousResetSignalRef = useRef(resetSignal);
-  const previousZoomRef = useRef(zoom);
-  const pendingZoomAnchorRef = useRef<ZoomAnchor | null>(null);
+  const cameraRef = useRef<CameraSnapshot | null>(null);
+  const renderedZoomRef = useRef(zoom);
+  const desiredZoomRef = useRef(zoom);
+  const onZoomChangeRef = useRef(onZoomChange);
+  const pendingWheelRef = useRef<ZoomRequest | null>(null);
+  const publishedWheelRef = useRef<ZoomRequest | null>(null);
+  const wheelFrameRef = useRef<number | null>(null);
   const [viewport, setViewport] = useState<StrategyMapViewport>(() =>
-    getInitialStrategyMapViewport(layoutWidth, zoom),
+    getRetainedStrategyMapViewport(
+      null,
+      getInitialStrategyMapViewport(layoutWidth, zoom),
+    ),
   );
-  const updateViewport = useCallback(() => {
-    const element = viewportRef.current;
-    const nextViewport = element
-      ? createStrategyMapViewport({
-          clientHeight: element.clientHeight,
-          clientWidth: element.clientWidth,
-          scrollLeft: element.scrollLeft,
-          scrollTop: element.scrollTop,
-          zoom,
-        })
-      : getInitialStrategyMapViewport(layoutWidth, zoom);
 
+  const captureCamera = useCallback(() => {
+    const element = viewportRef.current;
+    if (!element) return null;
+    const previous = cameraRef.current;
+    const actualScrollLeft = element.scrollLeft;
+    const actualScrollTop = element.scrollTop;
+    const sameScale = previous?.zoom === renderedZoomRef.current;
+    const snapshot = {
+      actualScrollLeft,
+      actualScrollTop,
+      clientHeight: element.clientHeight,
+      clientWidth: element.clientWidth,
+      scrollLeft: sameScale
+        ? previous.scrollLeft + actualScrollLeft - previous.actualScrollLeft
+        : actualScrollLeft,
+      scrollTop: sameScale
+        ? previous.scrollTop + actualScrollTop - previous.actualScrollTop
+        : actualScrollTop,
+      zoom: renderedZoomRef.current,
+    };
+    cameraRef.current = snapshot;
+    return snapshot;
+  }, [viewportRef]);
+
+  const positionCamera = useCallback(
+    (left: number, top: number) => {
+      const element = viewportRef.current;
+      if (!element) return;
+      const scrollLeft = Math.max(
+        0,
+        Math.min(left, element.scrollWidth - element.clientWidth),
+      );
+      const scrollTop = Math.max(
+        0,
+        Math.min(top, element.scrollHeight - element.clientHeight),
+      );
+      element.scrollLeft = scrollLeft;
+      element.scrollTop = scrollTop;
+      // WebKit can round native scroll offsets to whole pixels. Retain the
+      // fractional remainder instead of feeding that error into every pinch.
+      cameraRef.current = {
+        actualScrollLeft: element.scrollLeft,
+        actualScrollTop: element.scrollTop,
+        clientHeight: element.clientHeight,
+        clientWidth: element.clientWidth,
+        scrollLeft,
+        scrollTop,
+        zoom: renderedZoomRef.current,
+      };
+    },
+    [viewportRef],
+  );
+
+  const updateViewport = useCallback(() => {
+    const camera = captureCamera();
+    if (!camera) return;
+    const requiredViewport = createStrategyMapViewport(camera);
+    // Native scrolling moves the same cards and paths together. React only
+    // replenishes their shared render window before its safety margin runs out.
     setViewport((current) =>
-      areViewportsEqual(current, nextViewport) ? current : nextViewport,
+      getRetainedStrategyMapViewport(current, requiredViewport),
     );
-  }, [layoutWidth, viewportRef, zoom]);
+  }, [captureCamera]);
+
+  useLayoutEffect(() => {
+    onZoomChangeRef.current = onZoomChange;
+  }, [onZoomChange]);
 
   useLayoutEffect(() => {
     const element = viewportRef.current;
     if (!element) return;
+    // Preserve the last camera BEFORE React resizes the scaled scroll surface.
+    // Reading scrollLeft here for the old zoom would use browser-clamped values.
+    const previousCamera = cameraRef.current;
+    const shouldReset =
+      !previousCamera || previousResetSignalRef.current !== resetSignal;
+    previousResetSignalRef.current = resetSignal;
+    renderedZoomRef.current = zoom;
 
-    let frameId: number | null = null;
+    if (shouldReset) {
+      if (wheelFrameRef.current !== null) {
+        cancelAnimationFrame(wheelFrameRef.current);
+        wheelFrameRef.current = null;
+      }
+      pendingWheelRef.current = null;
+      publishedWheelRef.current = null;
+      desiredZoomRef.current = zoom;
+      positionCamera((layoutWidth * zoom - element.clientWidth) / 2, 0);
+    } else if (previousCamera.zoom !== zoom) {
+      const wheelRequest = publishedWheelRef.current;
+      const isWheelZoom = wheelRequest?.zoom === zoom;
+      const anchor = isWheelZoom
+        ? wheelRequest.anchor
+        : {
+            viewportX: previousCamera.clientWidth / 2,
+            viewportY: previousCamera.clientHeight / 2,
+            worldX:
+              (previousCamera.scrollLeft + previousCamera.clientWidth / 2) /
+              previousCamera.zoom,
+            worldY:
+              (previousCamera.scrollTop + previousCamera.clientHeight / 2) /
+              previousCamera.zoom,
+          };
+      positionCamera(
+        anchor.worldX * zoom - anchor.viewportX,
+        anchor.worldY * zoom - anchor.viewportY,
+      );
+      publishedWheelRef.current = null;
+
+      if (!isWheelZoom) {
+        // An explicit toolbar action supersedes any uncommitted wheel input.
+        if (wheelFrameRef.current !== null) {
+          cancelAnimationFrame(wheelFrameRef.current);
+          wheelFrameRef.current = null;
+        }
+        pendingWheelRef.current = null;
+      }
+      if (!pendingWheelRef.current) desiredZoomRef.current = zoom;
+    }
+
+    updateViewport();
+  }, [
+    layoutWidth,
+    positionCamera,
+    resetSignal,
+    updateViewport,
+    viewportRef,
+    zoom,
+  ]);
+
+  useLayoutEffect(() => {
+    const element = viewportRef.current;
+    if (!element) return;
+    let viewportFrame: number | null = null;
     const scheduleViewportUpdate = () => {
-      if (frameId !== null) return;
-      frameId = requestAnimationFrame(() => {
-        frameId = null;
+      // Keep a pre-resize anchor even when React hasn't published the next
+      // culling window yet. No React work is needed for each scroll event.
+      captureCamera();
+      if (viewportFrame !== null) return;
+      viewportFrame = requestAnimationFrame(() => {
+        viewportFrame = null;
         updateViewport();
       });
     };
     const observer = new ResizeObserver(scheduleViewportUpdate);
-
     observer.observe(element);
     element.addEventListener("scroll", scheduleViewportUpdate, {
       passive: true,
     });
-    updateViewport();
-
-    return () => {
-      if (frameId !== null) cancelAnimationFrame(frameId);
-      observer.disconnect();
-      element.removeEventListener("scroll", scheduleViewportUpdate);
-    };
-  }, [updateViewport, viewportRef]);
-
-  useLayoutEffect(() => {
-    const viewportElement = viewportRef.current;
-    if (!viewportElement) return;
-
-    const shouldReset =
-      !hasPositionedViewportRef.current ||
-      previousResetSignalRef.current !== resetSignal;
-    previousResetSignalRef.current = resetSignal;
-    if (!shouldReset) return;
-
-    viewportElement.scrollLeft = Math.max(
-      0,
-      (layoutWidth * zoom - viewportElement.clientWidth) / 2,
-    );
-    viewportElement.scrollTop = 0;
-    hasPositionedViewportRef.current = true;
-    updateViewport();
-  }, [layoutWidth, resetSignal, updateViewport, viewportRef, zoom]);
-
-  useLayoutEffect(() => {
-    const viewportElement = viewportRef.current;
-    const previousZoom = previousZoomRef.current;
-    previousZoomRef.current = zoom;
-    if (
-      !viewportElement ||
-      previousZoom === zoom ||
-      !hasPositionedViewportRef.current
-    ) {
-      return;
-    }
-
-    const anchor = pendingZoomAnchorRef.current;
-    pendingZoomAnchorRef.current = null;
-    if (anchor) {
-      viewportElement.scrollLeft = anchor.worldX * zoom - anchor.viewportX;
-      viewportElement.scrollTop = anchor.worldY * zoom - anchor.viewportY;
-      updateViewport();
-      return;
-    }
-
-    const ratio = zoom / previousZoom;
-    viewportElement.scrollLeft =
-      (viewportElement.scrollLeft + viewportElement.clientWidth / 2) * ratio -
-      viewportElement.clientWidth / 2;
-    viewportElement.scrollTop =
-      (viewportElement.scrollTop + viewportElement.clientHeight / 2) * ratio -
-      viewportElement.clientHeight / 2;
-    updateViewport();
-  }, [updateViewport, viewportRef, zoom]);
-
-  useEffect(() => {
-    const viewportElement = viewportRef.current;
-    if (!viewportElement) return;
 
     const handleWheel = (event: WheelEvent) => {
       if (!event.ctrlKey && !event.metaKey) return;
       event.preventDefault();
-
+      let deltaUnit = 1;
+      if (event.deltaMode === WheelEvent.DOM_DELTA_LINE) deltaUnit = 16;
+      if (event.deltaMode === WheelEvent.DOM_DELTA_PAGE) {
+        deltaUnit = element.clientHeight;
+      }
       const nextZoom = Math.max(
         0.5,
         Math.min(
           1.6,
-          Number((zoom * Math.exp(-event.deltaY * 0.002)).toFixed(2)),
+          desiredZoomRef.current * Math.exp(-event.deltaY * deltaUnit * 0.002),
         ),
       );
-      if (nextZoom === zoom) return;
-
-      const bounds = viewportElement.getBoundingClientRect();
+      if (nextZoom === desiredZoomRef.current) return;
+      const bounds = element.getBoundingClientRect();
       const viewportX = event.clientX - bounds.left;
       const viewportY = event.clientY - bounds.top;
-      pendingZoomAnchorRef.current = {
-        viewportX,
-        viewportY,
-        worldX: (viewportElement.scrollLeft + viewportX) / zoom,
-        worldY: (viewportElement.scrollTop + viewportY) / zoom,
+      const camera = captureCamera();
+      if (!camera) return;
+      pendingWheelRef.current = {
+        anchor: {
+          viewportX,
+          viewportY,
+          worldX: (camera.scrollLeft + viewportX) / camera.zoom,
+          worldY: (camera.scrollTop + viewportY) / camera.zoom,
+        },
+        zoom: nextZoom,
       };
-      onZoomChange(nextZoom);
+      desiredZoomRef.current = nextZoom;
+      if (wheelFrameRef.current !== null) return;
+      wheelFrameRef.current = requestAnimationFrame(() => {
+        wheelFrameRef.current = null;
+        const request = pendingWheelRef.current;
+        pendingWheelRef.current = null;
+        if (!request) return;
+        publishedWheelRef.current = request;
+        onZoomChangeRef.current(request.zoom);
+      });
     };
+    element.addEventListener("wheel", handleWheel, { passive: false });
 
-    viewportElement.addEventListener("wheel", handleWheel, { passive: false });
     return () => {
-      viewportElement.removeEventListener("wheel", handleWheel);
+      if (viewportFrame !== null) cancelAnimationFrame(viewportFrame);
+      if (wheelFrameRef.current !== null) {
+        cancelAnimationFrame(wheelFrameRef.current);
+        wheelFrameRef.current = null;
+      }
+      pendingWheelRef.current = null;
+      observer.disconnect();
+      element.removeEventListener("scroll", scheduleViewportUpdate);
+      element.removeEventListener("wheel", handleWheel);
     };
-  }, [onZoomChange, viewportRef, zoom]);
+  }, [captureCamera, updateViewport, viewportRef]);
 
   return viewport;
-};
-
-export const useStrategyMapCanvasNodeDimensions = ({
-  canvasRef,
-  dimensionsRef,
-}: {
-  canvasRef: RefObject<HTMLDivElement | null>;
-  dimensionsRef: MutableRefObject<Record<string, StrategyNodeDimensions>>;
-}) => {
-  const [dimensions, setDimensions] = useState<
-    Record<string, StrategyNodeDimensions>
-  >({});
-
-  useLayoutEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const measureNodes = (nodes: Iterable<HTMLElement>) => {
-      const nextDimensions = { ...dimensionsRef.current };
-      const changedNodeIds: string[] = [];
-
-      for (const node of nodes) {
-        const nodeId = node.dataset.nodeId;
-        if (!nodeId) continue;
-
-        const next = { height: node.offsetHeight, width: node.offsetWidth };
-        const previous = Object.hasOwn(nextDimensions, nodeId)
-          ? nextDimensions[nodeId]
-          : undefined;
-        if (
-          previous &&
-          previous.height === next.height &&
-          previous.width === next.width
-        ) {
-          continue;
-        }
-
-        nextDimensions[nodeId] = next;
-        changedNodeIds.push(nodeId);
-      }
-
-      if (changedNodeIds.length === 0) return;
-      dimensionsRef.current = nextDimensions;
-      setDimensions(nextDimensions);
-    };
-    const observer = new ResizeObserver((entries) => {
-      measureNodes(entries.map((entry) => entry.target as HTMLElement));
-    });
-    const observedNodes = new Set<HTMLElement>();
-    const syncObservedNodes = () => {
-      const nodes = new Set(
-        canvas.querySelectorAll<HTMLElement>("[data-node-id]"),
-      );
-
-      observedNodes.forEach((node) => {
-        if (nodes.has(node)) return;
-        observer.unobserve(node);
-        observedNodes.delete(node);
-      });
-      nodes.forEach((node) => {
-        if (observedNodes.has(node)) return;
-        observer.observe(node);
-        observedNodes.add(node);
-      });
-      measureNodes(nodes);
-    };
-    const mutationObserver = new MutationObserver(syncObservedNodes);
-
-    mutationObserver.observe(canvas, { childList: true, subtree: true });
-    syncObservedNodes();
-
-    return () => {
-      mutationObserver.disconnect();
-      observer.disconnect();
-    };
-  }, [canvasRef, dimensionsRef]);
-
-  return dimensions;
 };

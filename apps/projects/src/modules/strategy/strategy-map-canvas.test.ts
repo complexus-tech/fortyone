@@ -236,13 +236,9 @@ describe("StrategyMapCanvas", () => {
     expect(layoutSource).toContain("targetId: keyResultNodeId");
   });
 
-  it("zooms around the pointer and drags visible objective subtrees", () => {
+  it("drags visible objective subtrees", () => {
     const source = readStrategyMapCanvasSource();
 
-    expect(source).toContain('addEventListener("wheel"');
-    expect(source).toContain("{ passive: false }");
-    expect(source).toContain("pendingZoomAnchorRef");
-    expect(source).toContain("event.ctrlKey");
     expect(source).toContain("startPositions");
     expect(source).toContain("getKeyResultNodeId(keyResult.id)");
   });

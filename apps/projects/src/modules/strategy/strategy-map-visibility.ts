@@ -34,6 +34,36 @@ const getViewportRight = (viewport: StrategyMapViewport) =>
 const getViewportBottom = (viewport: StrategyMapViewport) =>
   viewport.top + viewport.height;
 
+export const getRetainedStrategyMapViewport = (
+  current: StrategyMapViewport | null,
+  required: StrategyMapViewport,
+): StrategyMapViewport => {
+  if (
+    current &&
+    required.left >= current.left &&
+    required.top >= current.top &&
+    getViewportRight(required) <= getViewportRight(current) &&
+    getViewportBottom(required) <= getViewportBottom(current) &&
+    current.width <= required.width * 3 &&
+    current.height <= required.height * 3
+  ) {
+    return current;
+  }
+
+  // Keep a reserve beyond the already overscanned viewport. Ordinary camera
+  // movement reuses the same mounted cards and paths; refill before they enter
+  // view. Replace, rather than union, windows so long pans remain bounded.
+  const horizontalReserve = required.width / 2;
+  const verticalReserve = required.height / 2;
+
+  return {
+    height: required.height + verticalReserve * 2,
+    left: required.left - horizontalReserve,
+    top: required.top - verticalReserve,
+    width: required.width + horizontalReserve * 2,
+  };
+};
+
 export const createStrategyMapViewport = ({
   clientHeight,
   clientWidth,
@@ -48,12 +78,13 @@ export const createStrategyMapViewport = ({
   zoom: number;
 }): StrategyMapViewport => {
   const scale = Math.max(zoom, Number.EPSILON);
+  const overscan = STRATEGY_MAP_VIEWPORT_OVERSCAN / scale;
 
   return {
-    height: clientHeight / scale + STRATEGY_MAP_VIEWPORT_OVERSCAN * 2,
-    left: scrollLeft / scale - STRATEGY_MAP_VIEWPORT_OVERSCAN,
-    top: scrollTop / scale - STRATEGY_MAP_VIEWPORT_OVERSCAN,
-    width: clientWidth / scale + STRATEGY_MAP_VIEWPORT_OVERSCAN * 2,
+    height: clientHeight / scale + overscan * 2,
+    left: scrollLeft / scale - overscan,
+    top: scrollTop / scale - overscan,
+    width: clientWidth / scale + overscan * 2,
   };
 };
 
@@ -64,12 +95,13 @@ export const getInitialStrategyMapViewport = (
   const scale = Math.max(zoom, Number.EPSILON);
   const width = INITIAL_VIEWPORT_WIDTH / scale;
   const height = INITIAL_VIEWPORT_HEIGHT / scale;
+  const overscan = STRATEGY_MAP_VIEWPORT_OVERSCAN / scale;
 
   return {
-    height: height + STRATEGY_MAP_VIEWPORT_OVERSCAN * 2,
-    left: (layoutWidth - width) / 2 - STRATEGY_MAP_VIEWPORT_OVERSCAN,
-    top: -STRATEGY_MAP_VIEWPORT_OVERSCAN,
-    width: width + STRATEGY_MAP_VIEWPORT_OVERSCAN * 2,
+    height: height + overscan * 2,
+    left: (layoutWidth - width) / 2 - overscan,
+    top: -overscan,
+    width: width + overscan * 2,
   };
 };
 

@@ -152,9 +152,130 @@ it("keeps layout data stable across camera windows containing the same objective
 
   rerender({ activeIds: new Set(["objective-2"]) });
   expect([...result.current.keyResultsByObjective.keys()]).toEqual([
+    "objective-0",
+    "objective-1",
     "objective-2",
   ]);
-  expect([...result.current.loadedObjectiveIds]).toEqual(["objective-2"]);
+  expect([...result.current.loadedObjectiveIds]).toEqual([
+    "objective-0",
+    "objective-1",
+    "objective-2",
+  ]);
+
+  const afterEnteringWindow = result.current.keyResultsByObjective;
+  rerender({ activeIds: activeObjectiveIds });
+  expect(result.current.keyResultsByObjective).toBe(afterEnteringWindow);
+  expect(getKeyResults).not.toHaveBeenCalled();
+});
+
+it("retains offscreen graph data without fetching inactive objectives and prunes deleted owners", async () => {
+  const { result, rerender } = renderHook(
+    ({ activeIds, currentObjectives }) =>
+      useStrategyKeyResults(currentObjectives, activeIds),
+    {
+      initialProps: {
+        activeIds: new Set(["objective-0"]),
+        currentObjectives: objectives,
+      },
+      wrapper: Wrapper,
+    },
+  );
+  rerender({
+    activeIds: new Set(["objective-1"]),
+    currentObjectives: objectives,
+  });
+
+  await act(async () => {
+    await queryClient.invalidateQueries({
+      queryKey: objectiveKeys.keyResults(mockWorkspace, "objective-0"),
+    });
+  });
+  expect(getKeyResults).not.toHaveBeenCalled();
+  expect(result.current.keyResultsByObjective.has("objective-0")).toBe(true);
+  expect(result.current.keyResultsByObjective.has("objective-2")).toBe(false);
+
+  act(() => {
+    queryClient.setQueryData(
+      objectiveKeys.keyResults(mockWorkspace, "objective-0"),
+      [{ ...keyResultsFor("objective-0")[0], name: "Updated while offscreen" }],
+    );
+  });
+  await waitFor(() => {
+    expect(result.current.keyResultsByObjective.get("objective-0")).toEqual([
+      expect.objectContaining({ name: "Updated while offscreen" }),
+    ]);
+  });
+
+  rerender({
+    activeIds: new Set(["objective-1"]),
+    currentObjectives: objectives.filter(({ id }) => id !== "objective-0"),
+  });
+  expect(result.current.keyResultsByObjective.has("objective-0")).toBe(false);
+});
+
+it("keeps loaded key-result connector geometry when revisiting a previous window", () => {
+  const { result, rerender } = renderHook(
+    ({ activeIds }) => useStrategyKeyResults(objectives, activeIds),
+    {
+      initialProps: { activeIds: new Set(["objective-0"]) },
+      wrapper: Wrapper,
+    },
+  );
+  const firstResult = result.current.keyResultsByObjective.get("objective-0");
+  rerender({ activeIds: new Set(["objective-24"]) });
+  const retained = result.current.keyResultsByObjective;
+  const layout = createStrategyMapLayout(
+    strategy,
+    objectives,
+    retained,
+    new Set(["objective-0", "objective-24"]),
+  );
+  const connections = getStrategyConnections(
+    strategy,
+    new Set(objectives.map(({ id }) => id)),
+    retained,
+    new Set(["objective-0", "objective-24"]),
+  );
+
+  expect(retained.get("objective-0")).toBe(firstResult);
+  expect(layout.positions["key-result:objective-0-key-result-1"]).toBeDefined();
+  expect(
+    connections.some(
+      ({ targetId }) => targetId === "key-result:objective-0-key-result-1",
+    ),
+  ).toBe(true);
+  rerender({ activeIds: new Set(["objective-0"]) });
+  expect(result.current.keyResultsByObjective).toBe(retained);
+});
+
+it("refreshes invalidated retained data when its objective becomes active again", async () => {
+  const { result, rerender } = renderHook(
+    ({ activeIds }) => useStrategyKeyResults(objectives, activeIds),
+    {
+      initialProps: { activeIds: new Set(["objective-0"]) },
+      wrapper: Wrapper,
+    },
+  );
+  rerender({ activeIds: new Set(["objective-1"]) });
+  await act(async () => {
+    await queryClient.invalidateQueries({
+      queryKey: objectiveKeys.keyResults(mockWorkspace, "objective-0"),
+    });
+  });
+  expect(getKeyResults).not.toHaveBeenCalled();
+
+  jest
+    .mocked(getKeyResults)
+    .mockResolvedValue([
+      { ...keyResultsFor("objective-0")[0], name: "Refreshed" },
+    ]);
+  rerender({ activeIds: new Set(["objective-0"]) });
+  await waitFor(() => {
+    expect(result.current.keyResultsByObjective.get("objective-0")).toEqual([
+      expect.objectContaining({ name: "Refreshed" }),
+    ]);
+  });
+  expect(getKeyResults).toHaveBeenCalledTimes(1);
 });
 
 it("does not retain key results when moving into an uncached workspace", async () => {
@@ -221,6 +342,15 @@ it("does no layout, edge geometry, or persistence work during thirty camera-only
   rerender(renderMap());
   expect(createStrategyMapLayout).toHaveBeenCalled();
   expect(createConnectionPath).toHaveBeenCalled();
+
+  jest.mocked(createStrategyMapLayout).mockClear();
+  jest.mocked(createConnectionPath).mockClear();
+  persist.mockClear();
+  mockViewport = { height: 1100, left: 0, top: 0, width: 4000 };
+  rerender(renderMap());
+  expect(createStrategyMapLayout).not.toHaveBeenCalled();
+  expect(createConnectionPath).not.toHaveBeenCalled();
+  expect(persist).not.toHaveBeenCalled();
 });
 
 it("updates connector geometry when nodes move while retaining crossing and pinned edges", () => {

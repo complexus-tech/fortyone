@@ -491,10 +491,7 @@ export const StoryProperties = ({
                     </Flex>
                     <Flex align="center" className="shrink-0" gap={2}>
                       <PriorityIcon priority={subStory.priority} />
-                      <StoryStatusIcon
-                        className="h-[1.15rem]"
-                        statusId={subStory.statusId}
-                      />
+                      <StoryStatusIcon statusId={subStory.statusId} />
                     </Flex>
                   </RowWrapper>
                 </Link>

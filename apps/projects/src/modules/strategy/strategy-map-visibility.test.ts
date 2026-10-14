@@ -8,6 +8,8 @@ import type {
 } from "./strategy-map-layout";
 import { getObjectiveNodeId } from "./strategy-map-layout";
 import {
+  createStrategyMapViewport,
+  getRetainedStrategyMapViewport,
   getPersistedKeyResultFetchObjectiveIds,
   getStrategyKeyResultFetchObjectiveIds,
   getVisibleStrategyConnections,
@@ -28,6 +30,82 @@ const objective = (id: string, keyResultCount: number) =>
   ({ id, keyResultCount }) as Objective;
 
 describe("strategy map visibility", () => {
+  it("keeps the safety margin constant in screen pixels at every zoom", () => {
+    for (const zoom of [0.5, 1, 1.6]) {
+      const required = createStrategyMapViewport({
+        clientHeight: 800,
+        clientWidth: 1200,
+        scrollLeft: 2000,
+        scrollTop: 2000,
+        zoom,
+      });
+
+      expect(2000 - required.left * zoom).toBeCloseTo(320);
+      expect(2000 - required.top * zoom).toBeCloseTo(320);
+      expect(required.width * zoom - 1200).toBeCloseTo(640);
+      expect(required.height * zoom - 800).toBeCloseTo(640);
+    }
+  });
+
+  it("keeps the same render window through small pans and zoom changes", () => {
+    const initial = createStrategyMapViewport({
+      clientHeight: 800,
+      clientWidth: 1200,
+      scrollLeft: 2000,
+      scrollTop: 2000,
+      zoom: 1,
+    });
+    const retained = getRetainedStrategyMapViewport(null, initial);
+
+    for (let step = 1; step <= 60; step++) {
+      const required = createStrategyMapViewport({
+        clientHeight: 800,
+        clientWidth: 1200,
+        scrollLeft: 2000 + step * 3,
+        scrollTop: 2000 + step * 2,
+        zoom: 1 + step * 0.001,
+      });
+      expect(getRetainedStrategyMapViewport(retained, required)).toBe(retained);
+    }
+  });
+
+  it("refills before the visible area reaches an edge without growing over long pans", () => {
+    let retained: StrategyMapViewport | null = null;
+
+    for (let step = 0; step < 100; step++) {
+      const required = createStrategyMapViewport({
+        clientHeight: 800,
+        clientWidth: 1200,
+        scrollLeft: step * 1500,
+        scrollTop: step * 1000,
+        zoom: 0.5,
+      });
+      retained = getRetainedStrategyMapViewport(retained, required);
+
+      expect(retained.left).toBeLessThan(required.left);
+      expect(retained.top).toBeLessThan(required.top);
+      expect(retained.left + retained.width).toBeGreaterThan(
+        required.left + required.width,
+      );
+      expect(retained.top + retained.height).toBeGreaterThan(
+        required.top + required.height,
+      );
+      expect(retained.width).toBe(required.width * 2);
+      expect(retained.height).toBe(required.height * 2);
+    }
+  });
+
+  it("shrinks an oversized retained window after zooming in", () => {
+    const wide = { height: 2000, left: 0, top: 0, width: 3000 };
+    const retained = getRetainedStrategyMapViewport(null, wide);
+    const zoomed = { height: 600, left: 1000, top: 1000, width: 900 };
+    const next = getRetainedStrategyMapViewport(retained, zoomed);
+
+    expect(next).not.toBe(retained);
+    expect(next.width).toBe(zoomed.width * 2);
+    expect(next.height).toBe(zoomed.height * 2);
+  });
+
   it("renders visible nodes and explicitly pinned nodes, not distant nodes", () => {
     const positions: StrategyNodePositions = {
       distant: { x: 3000, y: 3000 },

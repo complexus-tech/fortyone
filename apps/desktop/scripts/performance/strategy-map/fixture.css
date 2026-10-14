@@ -1,0 +1,79 @@
+html,
+body,
+#root {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: #f8f8fa;
+  color: #222;
+  font-family: Arial, sans-serif;
+}
+* {
+  box-sizing: border-box;
+}
+.fixture-card {
+  overflow: hidden;
+  border: 2px solid #d6d6dd;
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 6px 20px #0001;
+  contain: layout style;
+}
+.fixture-card h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 6px 0;
+}
+.fixture-card p {
+  font-size: 12px;
+  color: #555;
+  line-height: 1.4;
+}
+.fixture-eyebrow {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #888;
+}
+.fixture-properties {
+  display: flex;
+  gap: 7px;
+  margin-top: 10px;
+  white-space: nowrap;
+  font-size: 11px;
+}
+.fixture-properties span {
+  background: #eee;
+  padding: 5px;
+  border-radius: 6px;
+}
+.fixture-progress {
+  height: 4px;
+  background: #eee;
+  margin: 10px 0;
+}
+.fixture-progress span {
+  display: block;
+  background: #4a9;
+  width: 55%;
+  height: 100%;
+}
+body {
+  --color-border-strong: #aaa;
+  --color-text-muted: #777;
+}
+.fixture-host {
+  position: absolute;
+  inset: 0;
+}
+.fixture-status {
+  position: fixed;
+  right: 12px;
+  top: 12px;
+  padding: 5px;
+  background: #fff;
+  z-index: 1000;
+  pointer-events: none;
+}

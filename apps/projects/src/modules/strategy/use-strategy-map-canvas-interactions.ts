@@ -7,7 +7,13 @@ import type {
   RefObject,
   SetStateAction,
 } from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   getKeyResultNodeId,
   getPillarNodeId,
@@ -142,6 +148,11 @@ export const useStrategyMapCanvasInteractions = ({
   const activePanRef = useRef<ActivePan | null>(null);
   const dragAnimationFrameRef = useRef<number | null>(null);
   const pendingDragPositionsRef = useRef<StrategyNodePositions | null>(null);
+  const zoomRef = useRef(zoom);
+
+  useLayoutEffect(() => {
+    zoomRef.current = zoom;
+  }, [zoom]);
 
   const flushPendingDragLayout = useCallback(() => {
     if (dragAnimationFrameRef.current !== null) {
@@ -239,11 +250,11 @@ export const useStrategyMapCanvasInteractions = ({
       if (!viewport) return null;
       const bounds = viewport.getBoundingClientRect();
       return {
-        x: (clientX - bounds.left + viewport.scrollLeft) / zoom,
-        y: (clientY - bounds.top + viewport.scrollTop) / zoom,
+        x: (clientX - bounds.left + viewport.scrollLeft) / zoomRef.current,
+        y: (clientY - bounds.top + viewport.scrollTop) / zoomRef.current,
       };
     },
-    [viewportRef, zoom],
+    [viewportRef],
   );
   const getPillarAtPointer = useCallback(
     (clientX: number, clientY: number) => {
@@ -326,8 +337,8 @@ export const useStrategyMapCanvasInteractions = ({
     (event: ReactPointerEvent<HTMLDivElement>) => {
       const drag = activeDragRef.current;
       if (!drag || drag.pointerId !== event.pointerId) return;
-      const rawDeltaX = (event.clientX - drag.startClientX) / zoom;
-      const rawDeltaY = (event.clientY - drag.startClientY) / zoom;
+      const rawDeltaX = (event.clientX - drag.startClientX) / zoomRef.current;
+      const rawDeltaY = (event.clientY - drag.startClientY) / zoomRef.current;
       let minimumDeltaX = Number.NEGATIVE_INFINITY;
       let maximumDeltaX = Number.POSITIVE_INFINITY;
       let minimumDeltaY = Number.NEGATIVE_INFINITY;
@@ -383,7 +394,6 @@ export const useStrategyMapCanvasInteractions = ({
       positionsRef,
       scheduleDragLayout,
       setDropTargetPillarId,
-      zoom,
     ],
   );
   const finishNodeDrag = useCallback(

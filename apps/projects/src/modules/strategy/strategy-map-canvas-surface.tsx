@@ -45,7 +45,11 @@ export const StrategyMapCanvasSurface = ({
       onPointerMove={onViewportPointerMove}
       onPointerUp={onViewportPointerUp}
       ref={viewportRef}
-      style={{ touchAction: "none" }}
+      style={{
+        overflowAnchor: "none",
+        scrollBehavior: "auto",
+        touchAction: "none",
+      }}
     >
       <div
         className="relative"
