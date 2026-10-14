@@ -115,7 +115,7 @@ export const Navigation = ({
       disabled: !hasViews,
     },
     {
-      name: "Strategy Map",
+      name: isCollapsed ? "Strategy" : "Strategy Map",
       icon: <StrategyIcon className={isCollapsed ? "h-5.5" : undefined} />,
       href: withWorkspace("/strategy"),
       disabled: !features.objectiveEnabled,

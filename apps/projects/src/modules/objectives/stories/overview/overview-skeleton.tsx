@@ -6,14 +6,13 @@ export const OverviewSkeleton = () => {
   return (
     <Container className="h-full min-h-0 overflow-y-auto pt-6">
       <Box>
-        <Flex align="center" gap={6} justify="between">
-          {/* Title skeleton */}
-          <Skeleton className="h-7 w-7/12 rounded md:h-10 md:w-3/4" />
-          <Skeleton className="h-7 w-20 rounded md:h-8" />
-        </Flex>
+        <Skeleton className="h-7 w-7/12 rounded md:h-10 md:w-3/4" />
+
+        <Skeleton className="mt-3 h-6 w-11/12 rounded" />
+        <Divider className="my-4 opacity-60" />
 
         {/* Description skeleton */}
-        <Box className="mt-12">
+        <Box>
           <Skeleton className="mb-3 h-4 w-full rounded" />
           <Skeleton className="mb-3 h-4 w-11/12 rounded" />
           <Skeleton className="h-4 w-5/6 rounded" />
@@ -21,7 +20,7 @@ export const OverviewSkeleton = () => {
       </Box>
 
       {/* Properties section */}
-      <Flex align="center" className="mt-10" gap={2} wrap>
+      <Flex align="center" className="mt-6" gap={2} wrap>
         <Skeleton className="h-6 w-24 rounded" />
         <Skeleton className="h-6 w-24 rounded" />
         <Skeleton className="h-6 w-24 rounded" />

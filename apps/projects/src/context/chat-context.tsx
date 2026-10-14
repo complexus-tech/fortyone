@@ -139,3 +139,5 @@ export const useChatContext = () => {
   }
   return context;
 };
+
+export const useChatActions = useChatContext;
