@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { Box, Button, Flex, Select, Switch, Text } from "ui";
+import { Box, Flex, Select, Switch, Text } from "ui";
 import { useTerminology } from "@/hooks";
 import { SectionHeader } from "@/modules/settings/components/section-header";
 import { useTeamSettings } from "@/modules/teams/hooks/use-team-settings";
@@ -10,19 +10,7 @@ import { TeamAutomations } from "@/modules/team-automations/public/settings";
 import { GitHubAutomations } from "./github-automations";
 import { TeamSettingsSection } from "./settings-sections";
 
-type AutomationSection = "rules" | "cleanup" | "github";
-
-const AUTOMATION_SECTIONS: { value: AutomationSection; label: string }[] = [
-  { value: "rules", label: "Rules & recurring work" },
-  { value: "cleanup", label: "Cleanup" },
-  { value: "github", label: "GitHub" },
-];
-
-export const Automations = ({
-  onNavigate,
-}: {
-  onNavigate: (section: AutomationSection) => void;
-}) => {
+export const Automations = () => {
   const { teamId } = useParams<{ teamId: string }>();
   const { getTermDisplay } = useTerminology();
   const { data: teamSettings } = useTeamSettings(teamId);
@@ -31,21 +19,6 @@ export const Automations = ({
 
   return (
     <Box className="space-y-6">
-      <Flex aria-label="Automation sections" as="nav" gap={2} wrap>
-        {AUTOMATION_SECTIONS.map(({ value, label }) => (
-          <Button
-            color="tertiary"
-            key={value}
-            onClick={() => {
-              onNavigate(value);
-            }}
-            size="sm"
-            variant="outline"
-          >
-            {label}
-          </Button>
-        ))}
-      </Flex>
       <TeamSettingsSection label="Rules and recurring work" value="rules">
         <TeamAutomations teamId={teamId} />
       </TeamSettingsSection>

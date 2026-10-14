@@ -101,7 +101,7 @@ const DialogClose = ({ className }: { className?: string }) => (
   <DialogPrimitive.Close
     data-testid="close-modal"
     className={cn(
-      "inline-block rounded-md p-1 outline-none transition hover:bg-accent",
+      "inline-block rounded-md p-1 outline-none transition hover:bg-accent focus-visible:bg-state-active focus-visible:ring-2 focus-visible:ring-ring",
       className,
     )}
   >
