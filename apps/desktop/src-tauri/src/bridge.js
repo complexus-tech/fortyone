@@ -42,6 +42,7 @@
     value: Object.freeze({
       version: 2,
       platform: "macos",
+      vibrancy: true,
       syncChrome: (state) =>
         window.__TAURI_INTERNALS__.invoke("sync_desktop_chrome", { state }),
       navigationState: () =>

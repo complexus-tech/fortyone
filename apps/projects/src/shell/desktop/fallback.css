@@ -11,6 +11,6 @@ html[data-desktop-fallback="true"] body {
   align-items: center;
   gap: 4px;
   padding: 0 12px 0 var(--desktop-titlebar-leading-inset);
-  background: var(--background);
+  background: var(--color-background);
   user-select: none;
 }

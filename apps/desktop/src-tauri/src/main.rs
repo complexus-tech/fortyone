@@ -148,6 +148,15 @@ fn main() {
             let builder = builder
                 .title_bar_style(tauri::TitleBarStyle::Overlay)
                 .hidden_title(true)
+                // One native material spans the header and sidebar. The web
+                // app keeps its content canvas opaque above this underlay.
+                .transparent(true)
+                .effects(
+                    tauri::window::EffectsBuilder::new()
+                        .effect(tauri::window::Effect::Sidebar)
+                        .state(tauri::window::EffectState::FollowsWindowActiveState)
+                        .build(),
+                )
                 .initialization_script(include_str!("bridge.js"));
             let window = builder.build()?;
             #[cfg(feature = "production")]

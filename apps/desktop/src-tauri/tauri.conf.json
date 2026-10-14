@@ -8,6 +8,7 @@
     "frontendDist": "http://localhost:3000"
   },
   "app": {
+    "macOSPrivateApi": true,
     "windows": [],
     "security": {
       "capabilities": []

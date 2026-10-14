@@ -145,6 +145,7 @@ test("the immutable version-two bridge retains its four native command contracts
   const state = { ready: false, background: [255, 255, 255] };
   assert.equal(bridge.version, 2);
   assert.equal(bridge.platform, "macos");
+  assert.equal(bridge.vibrancy, true);
   assert.ok(Object.isFrozen(bridge));
   const descriptor = Object.getOwnPropertyDescriptor(
     page.window,

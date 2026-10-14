@@ -7,6 +7,69 @@ html[data-desktop-platform="macos"]:has([data-app-shell]) {
   --app-shell-header-height: var(--desktop-titlebar-height);
 }
 
+/* One tint over the native material keeps the sidebar and title bar continuous.
+   Require native support: older desktop builds and browsers stay opaque. */
+html[data-desktop-vibrancy="true"]:has(
+    [data-app-shell],
+    [data-settings-shell]
+  ) {
+  --desktop-chrome-tint: color-mix(
+    in srgb,
+    var(--color-background) 18%,
+    transparent
+  );
+  --desktop-content-background: color-mix(
+    in srgb,
+    var(--color-surface-muted) 60%,
+    var(--color-background)
+  );
+  background: transparent;
+}
+
+html.dark[data-desktop-vibrancy="true"] {
+  --desktop-chrome-tint: color-mix(
+    in srgb,
+    var(--color-background) 12%,
+    transparent
+  );
+  --desktop-content-background: color-mix(
+    in srgb,
+    var(--color-surface-muted) 40%,
+    var(--color-background)
+  );
+}
+
+html[data-desktop-vibrancy="true"]:has([data-app-shell], [data-settings-shell])
+  body {
+  background: var(--desktop-chrome-tint);
+}
+
+html[data-desktop-vibrancy="true"]
+  :is([data-app-content-canvas], [data-settings-content-canvas]) {
+  /* Preserve the canvas's existing composited color without showing wallpaper
+     through text, tables, documents, or the chat panel. */
+  background-color: var(--desktop-content-background);
+}
+
+html[data-desktop-vibrancy="true"]:has([data-settings-shell])
+  .desktop-fallback-titlebar {
+  background: transparent;
+}
+
+html[data-desktop-vibrancy="true"]
+  [data-sidebar-content]::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  html[data-desktop-vibrancy="true"]:has(
+      [data-app-shell],
+      [data-settings-shell]
+    ) {
+    --desktop-chrome-tint: var(--color-background);
+  }
+}
+
 .desktop-app-header {
   --desktop-header-track-width: max(
     184px,

@@ -154,12 +154,13 @@ pub fn install(window: &WebviewWindow) -> tauri::Result<()> {
     })
 }
 
-/// Matches the native frame to the web theme without creating another toolbar.
+/// Matches the material and native controls to the web theme. Keep the window
+/// background transparent so theme changes cannot cover the vibrancy underlay.
 pub fn update(window: &WebviewWindow, state: ChromeState) -> tauri::Result<()> {
     with_native_window(window, move |native_window| {
         let [red, green, blue] = state.background.map(|channel| f64::from(channel) / 255.0);
         native_window.setBackgroundColor(Some(&NSColor::colorWithSRGBRed_green_blue_alpha(
-            red, green, blue, 1.0,
+            red, green, blue, 0.0,
         )));
         let appearance = if state.system_theme {
             None

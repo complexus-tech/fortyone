@@ -103,6 +103,35 @@ describe("DesktopProvider", () => {
     expect(mockSyncChrome).not.toHaveBeenCalled();
     expect(mockAction).not.toHaveBeenCalled();
     expect(document.documentElement.dataset.desktopPlatform).toBeUndefined();
+    expect(document.documentElement.dataset.desktopVibrancy).toBeUndefined();
+  });
+
+  it("enables vibrancy only after a capable native build connects and removes it on unmount", async () => {
+    installBridge();
+    window.__FORTYONE_DESKTOP__!.vibrancy = true;
+    let finishHandshake: () => void = () => {};
+    mockSyncChrome.mockReturnValue(
+      new Promise<void>((resolve) => {
+        finishHandshake = resolve;
+      }),
+    );
+    const { unmount } = render(
+      <DesktopProvider>
+        <Status />
+      </DesktopProvider>,
+    );
+    await waitFor(() => {
+      expect(mockSyncChrome).toHaveBeenCalled();
+    });
+    expect(document.documentElement.dataset.desktopVibrancy).toBeUndefined();
+
+    await act(async () => {
+      finishHandshake();
+    });
+    expect(document.documentElement.dataset.desktopVibrancy).toBe("true");
+    unmount();
+    expect(document.documentElement.dataset.desktopVibrancy).toBeUndefined();
+    expect(document.documentElement.dataset.desktopPlatform).toBeUndefined();
   });
 
   it("publishes shell capabilities, synchronizes theme, and clears actions on unmount", async () => {
@@ -182,6 +211,7 @@ describe("DesktopProvider", () => {
     expect(back).toBeDisabled();
     expect(forward).toBeDisabled();
     expect(document.documentElement.dataset.desktopFallback).toBe("true");
+    expect(document.documentElement.dataset.desktopVibrancy).toBeUndefined();
 
     mockNavigationState.mockResolvedValue({
       canGoBack: true,

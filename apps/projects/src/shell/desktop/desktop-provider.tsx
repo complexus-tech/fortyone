@@ -106,8 +106,12 @@ export const DesktopProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (!isDesktop) return;
     document.documentElement.dataset.desktopPlatform = "macos";
+    if (getDesktopBridge()?.vibrancy === true) {
+      document.documentElement.dataset.desktopVibrancy = "true";
+    }
     return () => {
       delete document.documentElement.dataset.desktopPlatform;
+      delete document.documentElement.dataset.desktopVibrancy;
     };
   }, [isDesktop]);
 

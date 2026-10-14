@@ -26,6 +26,7 @@ export type DesktopWindowAction = "drag" | "toggle-maximize";
 type DesktopBridge = {
   version: 2;
   platform: "macos";
+  vibrancy?: boolean;
   syncChrome: (state: DesktopChromeState) => Promise<void>;
   navigationState: () => Promise<DesktopNavigationState>;
   navigate: (direction: DesktopNavigationDirection) => Promise<void>;
@@ -73,7 +74,12 @@ export const getDesktopAction = (event: Event): DesktopAction | null => {
 };
 
 export const readDesktopBackground = (): [number, number, number] | null => {
-  const color = getComputedStyle(document.body).backgroundColor;
+  // The desktop body is translucent; resolve the opaque theme token so theme
+  // changes and restored pages can still synchronize the native window.
+  const color = getComputedStyle(document.documentElement)
+    .getPropertyValue("--color-background")
+    .trim();
+  if (!color) return null;
   const canvas = document.createElement("canvas");
   canvas.width = 1;
   canvas.height = 1;
