@@ -296,6 +296,28 @@ ul[data-type="taskList"] > li ol[data-type="taskList"] {
   .story-description-editor .tiptap > :last-child {
     margin-block-end: 0 !important;
   }
+
+  /* Avoid extra spacing around the editor's trailing caret line. */
+  .story-description-editor
+    .tiptap
+    > p:last-child:has(> .ProseMirror-trailingBreak:only-child) {
+    margin-block-start: 0 !important;
+  }
+
+  .story-description-editor
+    .tiptap
+    > :is(ul, ol):has(+ p:last-child > .ProseMirror-trailingBreak:only-child) {
+    margin-block-end: 0 !important;
+  }
+
+  /* Show the blank typing line while editing, without a gap in the reading view. */
+  .story-description-editor
+    .tiptap:not(.ProseMirror-focused)
+    > p:last-child:not(:only-child):has(
+      > .ProseMirror-trailingBreak:only-child
+    ) {
+    display: none;
+  }
 }
 
 .rich-document-editor .tiptap .tableWrapper {
