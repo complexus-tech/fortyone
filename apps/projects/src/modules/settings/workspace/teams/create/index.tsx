@@ -115,12 +115,13 @@ export const CreateTeam = () => {
             <Box className="flex flex-col gap-4 px-6 py-4 md:flex-row md:items-center md:justify-between">
               <Box>
                 <Text>Team name</Text>
-                <Text color="muted" fontSize="sm">
+                <Text color="muted">
                   Choose a descriptive name for your team
                 </Text>
               </Box>
               <Input
-                className="h-10 md:w-80"
+                aria-label="Team name"
+                className="h-[2.1rem] px-3 leading-normal md:w-56"
                 maxLength={24}
                 minLength={3}
                 name="name"
@@ -136,12 +137,13 @@ export const CreateTeam = () => {
             <Flex align="center" className="px-6 py-4" justify="between">
               <Box>
                 <Text>Team code</Text>
-                <Text color="muted" fontSize="sm">
+                <Text color="muted">
                   Short prefix for team&apos;s story IDs (e.g., ENG-123)
                 </Text>
               </Box>
               <Input
-                className="h-10 w-28"
+                aria-label="Team code"
+                className="h-[2.1rem] w-24 px-3 leading-normal"
                 maxLength={3}
                 minLength={2}
                 name="code"
@@ -154,7 +156,7 @@ export const CreateTeam = () => {
             <Flex align="center" className="px-6 py-4" justify="between">
               <Box>
                 <Text>Team color</Text>
-                <Text color="muted" fontSize="sm">
+                <Text color="muted">
                   Used to identify the team in the workspace
                 </Text>
               </Box>
@@ -198,7 +200,7 @@ export const CreateTeam = () => {
               >
                 <Box>
                   <Text>Private team</Text>
-                  <Text className="max-w-xl" color="muted" fontSize="sm">
+                  <Text className="max-w-xl" color="muted">
                     Private teams are only visible to members of the team. Admin
                     and team leads can add members to private teams.
                   </Text>

@@ -337,6 +337,7 @@ export const OAuthApplications = () => {
           <Dialog.Body className="space-y-5 px-6 pt-2 pb-4">
             <Input
               autoFocus
+              className="h-[2.1rem] px-3 leading-normal"
               label="Application name"
               maxLength={120}
               onChange={(event) => {
@@ -365,6 +366,7 @@ export const OAuthApplications = () => {
             <Flex className="flex-col sm:flex-row" gap={4}>
               <Box className="flex-1">
                 <Input
+                  className="h-[2.1rem] px-3 leading-normal"
                   label="Application lifetime (days)"
                   max={365}
                   min={1}
@@ -377,6 +379,7 @@ export const OAuthApplications = () => {
               </Box>
               <Box className="flex-1">
                 <Input
+                  className="h-[2.1rem] px-3 leading-normal"
                   label="Secret lifetime (days)"
                   max={365}
                   min={1}

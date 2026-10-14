@@ -319,6 +319,7 @@ export const ServiceAccounts = () => {
             </Text>
             <Input
               autoFocus
+              className="h-[2.1rem] px-3 leading-normal"
               label="Name"
               maxLength={120}
               onChange={(event) => {

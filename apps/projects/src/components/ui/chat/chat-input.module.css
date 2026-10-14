@@ -20,7 +20,7 @@
 
 .emptyStateFrame {
   padding: 6px;
-  border-radius: 2.25rem;
+  border-radius: calc(var(--radius-2xl) + 6px);
 }
 
 .dockedFrame {
@@ -40,7 +40,7 @@
 
 .emptyStateSurface {
   min-height: 9rem;
-  border-radius: calc(2.25rem - 6px);
+  border-radius: var(--radius-2xl);
 }
 
 .dockedSurface {

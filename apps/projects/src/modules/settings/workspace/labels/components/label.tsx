@@ -9,6 +9,7 @@ import {
 import type { FormEvent } from "react";
 import { useRef, useState, useEffect } from "react";
 import { format } from "date-fns";
+import { cn } from "lib";
 import type { Label } from "@/types";
 import { ConfirmDialog } from "@/components/ui";
 import { useCreateLabelMutation } from "@/lib/hooks/create-label-mutation";
@@ -88,7 +89,11 @@ export const WorkspaceLabel = ({
             value={form.color}
           />
           <input
-            className="placeholder:text-foreground bg-transparent font-medium"
+            className={cn(
+              "placeholder:text-foreground h-[2.1rem] bg-transparent leading-normal font-medium",
+              isEditing &&
+                "border-border focus-visible:ring-ring dark:bg-surface-elevated rounded-lg border bg-white px-3 outline-none focus-visible:ring-2",
+            )}
             onChange={(e) => {
               setForm({ ...form, name: e.target.value });
             }}

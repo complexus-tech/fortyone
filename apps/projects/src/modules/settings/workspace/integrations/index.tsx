@@ -206,6 +206,7 @@ export const IntegrationsIndex = () => {
       <Box className="mt-6">
         <Input
           aria-label="Search integrations"
+          className="h-[2.1rem] px-3 leading-normal"
           leftIcon={<SearchIcon className="h-4.5" />}
           onChange={(e) => {
             setSearch(e.target.value);

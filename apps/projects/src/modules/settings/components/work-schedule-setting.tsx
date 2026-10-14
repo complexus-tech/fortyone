@@ -264,6 +264,7 @@ export const WorkingHoursSetting = ({
             ) : null}
             <Box className="grid grid-cols-2 gap-3">
               <Input
+                className="h-[2.1rem] px-3 leading-normal"
                 disabled={inherit}
                 label="Starts"
                 onChange={(event) => {
@@ -274,6 +275,7 @@ export const WorkingHoursSetting = ({
                 value={startTime}
               />
               <Input
+                className="h-[2.1rem] px-3 leading-normal"
                 disabled={inherit}
                 label="Ends"
                 onChange={(event) => {

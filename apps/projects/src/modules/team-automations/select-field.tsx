@@ -23,7 +23,7 @@ export const AutomationSelect = ({
       className={cn({
         "min-w-0 space-y-2": layout === "stacked",
         "min-w-0 space-y-1.5": layout === "compact",
-        "grid gap-2 sm:grid-cols-[8rem_minmax(0,1fr)] sm:items-center":
+        "grid gap-2 sm:grid-cols-[minmax(0,1fr)_16rem] sm:items-center":
           layout === "inline",
       })}
     >

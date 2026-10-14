@@ -190,6 +190,7 @@ const TeamMemberAIContextEditor = ({
   return (
     <Box className="grid gap-4">
       <Input
+        className="h-[2.1rem] px-3 leading-normal"
         disabled={!canUseBackgroundMaya}
         label="Role"
         onChange={(event) => {
@@ -227,15 +228,14 @@ const TeamMemberAIContextEditor = ({
         </Text>
       )}
       {canUseBackgroundMaya &&
-        !member.teamAiRoleTitle &&
-        !member.teamAiRoleDescription &&
-        member.inferredTeamAiRoleTitle ? (
-          <Text color="muted">
-            Maya has learned that this person usually works as a{" "}
-            {member.inferredTeamAiRoleTitle.toLowerCase()} from recent team
-            work.
-          </Text>
-        ) : null}
+      !member.teamAiRoleTitle &&
+      !member.teamAiRoleDescription &&
+      member.inferredTeamAiRoleTitle ? (
+        <Text color="muted">
+          Maya has learned that this person usually works as a{" "}
+          {member.inferredTeamAiRoleTitle.toLowerCase()} from recent team work.
+        </Text>
+      ) : null}
     </Box>
   );
 };

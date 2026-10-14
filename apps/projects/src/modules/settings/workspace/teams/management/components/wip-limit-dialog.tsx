@@ -47,6 +47,7 @@ export const WipLimitDialog = ({
         <Dialog.Body className="max-h-none min-h-0 flex-1 space-y-4">
           <Input
             autoFocus
+            className="h-[2.1rem] w-32 px-3 leading-normal"
             disabled={update.isPending}
             label="Maximum active items"
             max={10000}

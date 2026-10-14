@@ -91,6 +91,7 @@ const UpdateEditor = ({
           </Text>
           <Input
             autoFocus
+            className="h-[2.1rem] px-3 leading-normal"
             id="feedback-update-title"
             maxLength={200}
             onChange={(event) => {
@@ -105,6 +106,7 @@ const UpdateEditor = ({
             Summary
           </Text>
           <Input
+            className="h-[2.1rem] px-3 leading-normal"
             id="feedback-update-summary"
             maxLength={300}
             onChange={(event) => {
@@ -148,6 +150,7 @@ const UpdateEditor = ({
             <span className="text-text-muted font-normal">(optional)</span>
           </Text>
           <Input
+            className="h-[2.1rem] px-3 leading-normal"
             id="feedback-update-cover"
             onChange={(event) => {
               setCoverImageUrl(event.target.value);
@@ -165,7 +168,7 @@ const UpdateEditor = ({
           </Text>
           <Input
             aria-label="Search feedback"
-            className="mt-3"
+            className="mt-3 h-[2.1rem] px-3 leading-normal"
             leftIcon={<SearchIcon className="h-4" />}
             onChange={(event) => {
               setSearch(event.target.value);

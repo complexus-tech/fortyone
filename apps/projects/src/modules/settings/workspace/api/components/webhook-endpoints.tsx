@@ -102,6 +102,7 @@ const WebhookDialog = ({
           </Text>
           <Box className="space-y-5">
             <Input
+              className="h-[2.1rem] px-3 leading-normal"
               disabled={Boolean(endpoint)}
               label="Name"
               maxLength={120}
@@ -112,6 +113,7 @@ const WebhookDialog = ({
               value={name}
             />
             <Input
+              className="h-[2.1rem] px-3 leading-normal"
               disabled={Boolean(endpoint)}
               label="Endpoint URL"
               maxLength={2048}

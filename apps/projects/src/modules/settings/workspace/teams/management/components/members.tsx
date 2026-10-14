@@ -31,6 +31,7 @@ export const MembersSettings = ({ team }: { team: Team }) => {
       {members.length > 10 && (
         <Box className="mb-4">
           <Input
+            className="h-[2.1rem] px-3 leading-normal"
             leftIcon={<SearchIcon className="h-4" />}
             onChange={(e) => {
               setSearch(e.target.value);

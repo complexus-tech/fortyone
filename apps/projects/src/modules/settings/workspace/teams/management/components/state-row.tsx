@@ -142,7 +142,7 @@ export const StateRow = ({
               className={cn(
                 "placeholder:text-foreground bg-transparent font-medium focus:outline-none",
                 {
-                  "border-border dark:bg-surface my-0.5 rounded-lg border bg-white px-3 py-1":
+                  "border-border dark:bg-surface my-0.5 h-[2.1rem] rounded-lg border bg-white px-3 leading-normal":
                     isEditing,
                 },
               )}
