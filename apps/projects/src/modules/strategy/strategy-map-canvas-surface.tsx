@@ -51,20 +51,21 @@ export const StrategyMapCanvasSurface = ({
         touchAction: "none",
       }}
     >
+      {/* Keep the grid at least viewport-sized and clip the unscaled canvas's
+          layout overflow so only its scaled bounds contribute to scrolling. */}
       <div
-        className="relative"
+        className="bg-surface-muted/15 dark:bg-background relative min-h-full min-w-full overflow-hidden"
         style={{
+          backgroundImage: `radial-gradient(var(--color-border-strong) ${1.15 * zoom}px, transparent ${1.15 * zoom}px)`,
+          backgroundSize: `${22 * zoom}px ${22 * zoom}px`,
           height: layout.height * zoom,
           width: layout.width * zoom,
         }}
       >
         <div
-          className="bg-surface-muted/15 dark:bg-background absolute top-0 left-0 origin-top-left"
+          className="absolute top-0 left-0 origin-top-left"
           ref={canvasRef}
           style={{
-            backgroundImage:
-              "radial-gradient(var(--color-border-strong) 1.15px, transparent 1.15px)",
-            backgroundSize: "22px 22px",
             height: layout.height,
             transform: `scale(${zoom})`,
             width: layout.width,

@@ -58,11 +58,13 @@ export const StrategyProgressBar = ({
   </Flex>
 );
 
+// Opaque cards avoid backdrop-filter compositing artifacts while the scaled
+// canvas scrolls, and keep grid dots and connectors from showing through.
 export const cardClasses = cn(
-  "border-border-strong/65 bg-white shadow-shadow dark:border-foreground/20 dark:bg-accent/70",
-  "rounded-xl border-2 shadow-lg backdrop-blur",
+  "border-border-strong/65 bg-white shadow-shadow dark:border-foreground/20 dark:bg-accent",
+  "rounded-xl border-2 shadow-lg",
   "transition-[border-color,box-shadow,background-color] duration-150",
-  "hover:border-foreground/35 hover:bg-surface-elevated hover:shadow-xl dark:hover:border-foreground/45 dark:hover:bg-accent/70",
+  "hover:border-foreground/35 hover:bg-surface-elevated hover:shadow-xl dark:hover:border-foreground/45 dark:hover:bg-accent",
   "group-data-[dragging=true]/node:border-foreground/65 group-data-[dragging=true]/node:shadow-2xl",
 );
 

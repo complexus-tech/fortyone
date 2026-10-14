@@ -18,6 +18,10 @@ import {
 } from "./strategy-map-layout";
 import { StrategyMapSkeleton } from "./strategy-map-skeleton";
 import {
+  STRATEGY_MAP_MAX_ZOOM,
+  STRATEGY_MAP_MIN_ZOOM,
+} from "./strategy-map-zoom";
+import {
   StrategySelectedDetails,
   type SelectedStrategyNode,
 } from "./strategy-selected-details";
@@ -97,7 +101,10 @@ export const WorkspaceStrategyMapPage = () => {
               className="hover:bg-state-hover grid h-8 w-9 place-items-center"
               onClick={() => {
                 setZoom((value) =>
-                  Math.max(0.5, Number((value - 0.1).toFixed(2))),
+                  Math.max(
+                    STRATEGY_MAP_MIN_ZOOM,
+                    Number((value - 0.1).toFixed(2)),
+                  ),
                 );
               }}
               type="button"
@@ -112,7 +119,10 @@ export const WorkspaceStrategyMapPage = () => {
               className="hover:bg-state-hover grid h-8 w-9 place-items-center"
               onClick={() => {
                 setZoom((value) =>
-                  Math.min(1.6, Number((value + 0.1).toFixed(2))),
+                  Math.min(
+                    STRATEGY_MAP_MAX_ZOOM,
+                    Number((value + 0.1).toFixed(2)),
+                  ),
                 );
               }}
               type="button"

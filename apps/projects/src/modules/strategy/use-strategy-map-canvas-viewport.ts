@@ -8,6 +8,10 @@ import {
   getRetainedStrategyMapViewport,
   type StrategyMapViewport,
 } from "./strategy-map-visibility";
+import {
+  STRATEGY_MAP_MAX_ZOOM,
+  STRATEGY_MAP_MIN_ZOOM,
+} from "./strategy-map-zoom";
 
 export { useStrategyMapCanvasNodeDimensions } from "./use-strategy-map-node-dimensions";
 
@@ -218,9 +222,9 @@ export const useStrategyMapCanvasViewport = ({
         deltaUnit = element.clientHeight;
       }
       const nextZoom = Math.max(
-        0.5,
+        STRATEGY_MAP_MIN_ZOOM,
         Math.min(
-          1.6,
+          STRATEGY_MAP_MAX_ZOOM,
           desiredZoomRef.current * Math.exp(-event.deltaY * deltaUnit * 0.002),
         ),
       );

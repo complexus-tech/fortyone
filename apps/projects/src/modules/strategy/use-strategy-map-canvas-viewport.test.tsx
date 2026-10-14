@@ -154,6 +154,42 @@ it.each(["ctrlKey", "metaKey"] as const)(
   },
 );
 
+it.each(["ctrlKey", "metaKey"] as const)(
+  "zooms below 50%% down to 10%% with %s and resumes immediately when reversed",
+  (modifier) => {
+    const { onZoomChange, rerender } = renderViewport(0.5);
+
+    wheel({ ctrlKey: false, deltaY: 1000, [modifier]: true });
+    flushFrame();
+    expect(onZoomChange).toHaveBeenLastCalledWith(0.1);
+
+    scrollWidth = 500;
+    scrollHeight = 400;
+    rerender({ resetSignal: 0, zoom: 0.1 });
+    wheel({ ctrlKey: false, deltaY: 1000, [modifier]: true });
+    flushFrame();
+    expect(onZoomChange).toHaveBeenCalledTimes(1);
+
+    wheel({ ctrlKey: false, deltaY: -50, [modifier]: true });
+    flushFrame();
+    expect(onZoomChange).toHaveBeenCalledTimes(2);
+    expect(onZoomChange.mock.calls[1][0]).toBeGreaterThan(0.1);
+    expect(onZoomChange.mock.calls[1][0]).toBeLessThan(0.5);
+  },
+);
+
+it("keeps wheel zoom capped at 160%", () => {
+  const { onZoomChange } = renderViewport();
+
+  wheel({ deltaY: -1000 });
+  flushFrame();
+  expect(onZoomChange).toHaveBeenLastCalledWith(1.6);
+
+  wheel({ deltaY: -1000 });
+  flushFrame();
+  expect(onZoomChange).toHaveBeenCalledTimes(1);
+});
+
 it("keeps the world point under the pointer stable through wheel zoom in and out", () => {
   const { onZoomChange, rerender } = renderViewport();
   scrollTo(1800, 1000);

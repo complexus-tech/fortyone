@@ -136,8 +136,6 @@ describe("StrategyMapCanvas", () => {
     expect(cardSource).not.toContain("min-h-[2.8rem]");
     expect(cardSource).not.toContain("hover:bg-danger/10");
     expect(cardSource).toContain("dark:border-foreground/20");
-    expect(cardSource).toContain("dark:bg-accent/70");
-    expect(cardSource).toContain("dark:hover:bg-accent/70");
     expect(cardSource).not.toContain("dark:bg-surface-elevated/55");
     expect(canvasSource).toContain("dark:bg-background");
     expect(pageSource).toContain("dark:bg-surface/70");
