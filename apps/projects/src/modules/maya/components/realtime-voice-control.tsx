@@ -8,6 +8,7 @@ import type { useMayaRealtimeVoice } from "../hooks/use-maya-realtime-voice";
 type RealtimeVoiceControlProps = {
   color?: "invert" | "tertiary";
   disabled?: boolean;
+  disabledReason?: string;
   isHighlighted?: boolean;
   voice: ReturnType<typeof useMayaRealtimeVoice>;
 };
@@ -30,6 +31,7 @@ const getButtonLabel = (voice: ReturnType<typeof useMayaRealtimeVoice>) => {
 export const RealtimeVoiceControl = ({
   color = "invert",
   disabled = false,
+  disabledReason,
   isHighlighted = false,
   voice,
 }: RealtimeVoiceControlProps) => {
@@ -39,6 +41,9 @@ export const RealtimeVoiceControl = ({
   const isDisconnecting = status === "disconnecting";
   const isActive = status !== "idle";
   const label = getButtonLabel(voice);
+  let tooltip = disabledReason ?? "Start a realtime voice conversation";
+  if (isActive) tooltip = "End the realtime voice session";
+  if (isConnecting) tooltip = "Cancel voice connection";
 
   const buttonIcon = (() => {
     if (isConnected) {
@@ -48,33 +53,28 @@ export const RealtimeVoiceControl = ({
   })();
 
   return (
-    <Tooltip
-      side="bottom"
-      title={
-        isActive
-          ? "End the realtime voice session"
-          : "Start a realtime voice conversation"
-      }
-    >
-      <Button
-        aria-label={label}
-        className={cn("shrink-0 gap-1.5", {
-          "bg-state-hover dark:bg-state-hover": isHighlighted,
-        })}
-        color={color}
-        disabled={disabled || isConnecting || isDisconnecting}
-        leftIcon={buttonIcon}
-        onClick={() => {
-          if (isConnected) {
-            disconnect();
-          } else {
-            void connect();
-          }
-        }}
-        rounded="md"
-      >
-        {label}
-      </Button>
+    <Tooltip side="bottom" title={tooltip}>
+      <span className="inline-flex">
+        <Button
+          aria-label={label}
+          className={cn("shrink-0 gap-1.5", {
+            "bg-state-hover dark:bg-state-hover": isHighlighted,
+          })}
+          color={color}
+          disabled={(disabled && !isActive) || isDisconnecting}
+          leftIcon={buttonIcon}
+          onClick={() => {
+            if (isActive) {
+              disconnect();
+            } else {
+              void connect();
+            }
+          }}
+          rounded="md"
+        >
+          {label}
+        </Button>
+      </span>
     </Tooltip>
   );
 };

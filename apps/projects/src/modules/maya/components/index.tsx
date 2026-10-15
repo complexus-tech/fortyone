@@ -66,21 +66,24 @@ export const MayaChat = () => {
         <Text>
           {realtimeVoice.error || error?.message || "An error occurred."}{" "}
         </Text>
-        <Button
-          className="mt-2"
-          leftIcon={<ReloadIcon className="text-current" />}
-          onClick={() => {
-            regenerate();
-          }}
-        >
-          Retry
-        </Button>
+        {!realtimeVoice.error && (
+          <Button
+            className="mt-2"
+            leftIcon={<ReloadIcon className="text-current" />}
+            onClick={() => {
+              regenerate();
+            }}
+          >
+            Retry
+          </Button>
+        )}
       </Box>
     ) : null;
 
   const composer = (
     <ChatInput
       attachments={attachments}
+      conversationId={currentChatId}
       googleDriveFiles={googleDriveFiles}
       isEmptyState={isEmptyState}
       isOnPage

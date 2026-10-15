@@ -8,6 +8,10 @@ import { useWorkspacePath } from "@/hooks/use-workspace-path";
 import { feedbackKeys, notificationKeys, sprintKeys } from "@/constants/keys";
 import { storyKeys } from "@/modules/stories/constants";
 import {
+  getNetworkOnline,
+  subscribeToNetworkStatus,
+} from "@/shared/network/status";
+import {
   applyRealtimeTranscriptUpdate,
   getMayaMessageText,
   getRealtimeTranscriptUpdate,
@@ -17,6 +21,10 @@ import {
   createRealtimePeerConnection,
   disposeRealtimePeerConnection,
 } from "../utils/realtime-peer-connection";
+import {
+  acquireRealtimeMicrophone,
+  configureRealtimeConnectionEvents,
+} from "../utils/realtime-connection-events";
 import { extractRealtimeClientAction } from "../utils/realtime-client-actions";
 import type { RealtimeClientAction } from "../utils/realtime-client-actions";
 import {
@@ -30,6 +38,7 @@ import {
   parseRealtimeToolOutput,
   REALTIME_ACTIVITY_EVENTS,
   REALTIME_CALLS_URL,
+  REALTIME_CONNECTION_TIMEOUT_MS,
   REALTIME_IDLE_TIMEOUT_MS,
   type RealtimeFunctionCall,
   type RealtimeServerEvent,
@@ -50,6 +59,7 @@ export const useMayaRealtimeVoice = ({
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const connectionAttemptRef = useRef(0);
   const connectionAbortControllerRef = useRef<AbortController | null>(null);
+  const connectionTimeoutRef = useRef<number | null>(null);
   const dataChannelRef = useRef<RTCDataChannel | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
   const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -139,6 +149,10 @@ export const useMayaRealtimeVoice = ({
     connectionAttemptRef.current += 1;
     connectionAbortControllerRef.current?.abort();
     connectionAbortControllerRef.current = null;
+    if (connectionTimeoutRef.current) {
+      window.clearTimeout(connectionTimeoutRef.current);
+      connectionTimeoutRef.current = null;
+    }
     clearSpeakingTimer();
     clearIdleTimer();
     clearSessionTimers();
@@ -155,7 +169,13 @@ export const useMayaRealtimeVoice = ({
       endRealtimeSession(activeSessionId);
     }
 
-    dataChannelRef.current?.close();
+    if (dataChannelRef.current) {
+      dataChannelRef.current.onopen = null;
+      dataChannelRef.current.onmessage = null;
+      dataChannelRef.current.onclose = null;
+      dataChannelRef.current.onerror = null;
+      dataChannelRef.current.close();
+    }
     dataChannelRef.current = null;
     handledFunctionCallsRef.current.clear();
     pendingClientActionRef.current = null;
@@ -165,6 +185,7 @@ export const useMayaRealtimeVoice = ({
     disposeRealtimePeerConnection(peerConnection);
 
     localStreamRef.current?.getTracks().forEach((track) => {
+      track.onended = null;
       track.stop();
     });
     localStreamRef.current = null;
@@ -263,6 +284,7 @@ export const useMayaRealtimeVoice = ({
       }
 
       const sessionId = activeSessionIdRef.current;
+      const attemptId = connectionAttemptRef.current;
       const output: RealtimeToolOutput = sessionId
         ? await fetch(
             `${getApiUrl()}/workspaces/${workspaceSlug}/maya/realtime-tool`,
@@ -316,6 +338,14 @@ export const useMayaRealtimeVoice = ({
         queryClient.invalidateQueries({
           queryKey: feedbackKeys.all(workspaceSlug),
         });
+      }
+      // Completed writes still refresh their workspace, but a late response
+      // must not send output or queue actions in a replacement voice session.
+      if (
+        connectionAttemptRef.current !== attemptId ||
+        activeSessionIdRef.current !== sessionId
+      ) {
+        return;
       }
       const { action, modelOutput } = extractRealtimeClientAction(output);
       if (action && output.success === true) {
@@ -473,19 +503,26 @@ export const useMayaRealtimeVoice = ({
   );
 
   const disconnect = useCallback(() => {
-    if (status === "idle") {
+    if (!connectionAbortControllerRef.current) {
       return;
     }
     setStatus("disconnecting");
     closeConnection();
     setStatus("idle");
-  }, [closeConnection, status]);
+  }, [closeConnection]);
 
   const connect = useCallback(async () => {
-    if (status !== "idle") {
+    if (connectionAbortControllerRef.current) {
       return;
     }
     setError(null);
+
+    if (!getNetworkOnline()) {
+      setError(
+        "Live voice requires an internet connection. Reconnect and try again.",
+      );
+      return;
+    }
 
     if (!isBrowserRealtimeSupported()) {
       setError("Realtime voice is not supported in this browser.");
@@ -499,15 +536,17 @@ export const useMayaRealtimeVoice = ({
     connectionAttemptRef.current = attemptId;
     const abortController = new AbortController();
     connectionAbortControllerRef.current = abortController;
+    const failConnection = (message: string) => {
+      if (connectionAttemptRef.current !== attemptId) {
+        return;
+      }
+      closeConnection();
+      setStatus("idle");
+      setError(message);
+    };
 
     try {
-      const localStream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          autoGainControl: true,
-          echoCancellation: true,
-          noiseSuppression: true,
-        },
-      });
+      const localStream = await acquireRealtimeMicrophone();
       if (connectionAttemptRef.current !== attemptId) {
         localStream.getTracks().forEach((track) => {
           track.stop();
@@ -515,9 +554,22 @@ export const useMayaRealtimeVoice = ({
         return;
       }
       localStreamRef.current = localStream;
+      localStream.getAudioTracks().forEach((track) => {
+        track.onended = () => {
+          failConnection(
+            "Your microphone disconnected. Check your microphone and start Live voice again.",
+          );
+        };
+      });
+      connectionTimeoutRef.current = window.setTimeout(() => {
+        failConnection(
+          "Live voice could not connect. Check your internet connection and try again.",
+        );
+      }, REALTIME_CONNECTION_TIMEOUT_MS);
 
       const session = await createRealtimeSession(abortController.signal);
       if (connectionAttemptRef.current !== attemptId) {
+        endRealtimeSession(session.sessionId);
         return;
       }
       activeSessionIdRef.current = session.sessionId;
@@ -530,43 +582,26 @@ export const useMayaRealtimeVoice = ({
       remoteAudio.setAttribute("playsinline", "true");
       remoteAudioRef.current = remoteAudio;
 
-      peerConnection.ontrack = (event) => {
-        remoteAudio.srcObject = event.streams[0] ?? null;
-      };
-      peerConnection.onconnectionstatechange = () => {
-        if (
-          peerConnection.connectionState === "failed" ||
-          peerConnection.connectionState === "closed"
-        ) {
-          closeConnection();
-          setStatus("idle");
-        }
-      };
-
-      localStream.getAudioTracks().forEach((track) => {
-        peerConnection.addTrack(track, localStream);
+      const dataChannel = configureRealtimeConnectionEvents({
+        peerConnection,
+        localStream,
+        remoteAudio,
+        isActive: () => connectionAttemptRef.current === attemptId,
+        onFailure: failConnection,
+        onMessage: handleRealtimeEvent,
+        onOpen: () => {
+          if (connectionTimeoutRef.current) {
+            window.clearTimeout(connectionTimeoutRef.current);
+            connectionTimeoutRef.current = null;
+          }
+          setStatus("connected");
+          startSessionTimer(session.maxSessionSeconds);
+          resetIdleTimer();
+          // Preserve the server's identity, greeting, and approval instructions.
+          dataChannel.send(JSON.stringify({ type: "response.create" }));
+        },
       });
-
-      const dataChannel = peerConnection.createDataChannel("oai-events");
       dataChannelRef.current = dataChannel;
-      dataChannel.onmessage = (event) => {
-        if (typeof event.data === "string") {
-          handleRealtimeEvent(event.data);
-        }
-      };
-      dataChannel.onopen = () => {
-        if (
-          connectionAttemptRef.current !== attemptId ||
-          dataChannel.readyState !== "open"
-        ) {
-          return;
-        }
-        setStatus("connected");
-        startSessionTimer(session.maxSessionSeconds);
-        resetIdleTimer();
-        // Preserve the server's identity, greeting, and approval instructions.
-        dataChannel.send(JSON.stringify({ type: "response.create" }));
-      };
 
       const offer = await peerConnection.createOffer();
       await peerConnection.setLocalDescription(offer);
@@ -599,16 +634,21 @@ export const useMayaRealtimeVoice = ({
       closeConnection();
       setStatus("idle");
       setError(
-        getRealtimeErrorMessage(connectError, "Failed to start voice session."),
+        connectError instanceof TypeError
+          ? "Live voice could not connect. Check your internet connection and try again."
+          : getRealtimeErrorMessage(
+              connectError,
+              "Failed to start voice session.",
+            ),
       );
     }
   }, [
     closeConnection,
     createRealtimeSession,
+    endRealtimeSession,
     handleRealtimeEvent,
     resetIdleTimer,
     startSessionTimer,
-    status,
   ]);
 
   const clearMessages = useCallback(() => {
@@ -621,10 +661,21 @@ export const useMayaRealtimeVoice = ({
   useEffect(() => {
     const handlePageHide = () => {
       closeConnection();
+      setStatus("idle");
     };
+    const unsubscribeNetwork = subscribeToNetworkStatus(() => {
+      if (!getNetworkOnline() && connectionAbortControllerRef.current) {
+        closeConnection();
+        setStatus("idle");
+        setError(
+          "Live voice disconnected because you are offline. Reconnect and try again.",
+        );
+      }
+    });
     window.addEventListener("pagehide", handlePageHide);
 
     return () => {
+      unsubscribeNetwork();
       window.removeEventListener("pagehide", handlePageHide);
       closeConnection();
     };

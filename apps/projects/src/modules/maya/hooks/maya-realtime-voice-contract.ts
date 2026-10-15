@@ -67,6 +67,7 @@ export type UseMayaRealtimeVoiceOptions = {
 export const REALTIME_CALLS_URL = "https://api.openai.com/v1/realtime/calls";
 export const FALLBACK_REALTIME_MAX_SESSION_SECONDS = 5 * 60;
 export const REALTIME_IDLE_TIMEOUT_MS = 60_000;
+export const REALTIME_CONNECTION_TIMEOUT_MS = 30_000;
 export const GOODBYE_DISCONNECT_DELAY_MS = 800;
 export const MAX_REALTIME_CONTEXT_MESSAGES = 24;
 export const REALTIME_ACTIVITY_EVENTS = new Set([
@@ -98,7 +99,7 @@ export const isBrowserRealtimeSupported = () => {
     return false;
   }
 
-  return "getUserMedia" in navigator.mediaDevices;
+  return typeof navigator.mediaDevices.getUserMedia === "function";
 };
 
 export const getRealtimeErrorMessage = (error: unknown, fallback: string) => {

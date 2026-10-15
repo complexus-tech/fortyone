@@ -67,6 +67,12 @@ The native badge mirrors the active workspace's unread query. Notification click
 
 Notifications require the preference to be enabled and the process to remain running. A hidden window can keep the existing stream connected; fully quitting stops delivery. macOS uses `UNUserNotificationCenter` to request alert and sound authorization when the notification switch is enabled, check system authorization before delivery, and request banners, Notification Center entries, and the default sound while the app is in the foreground. Focus/Do Not Disturb and OS notification settings still apply. Successful submission means macOS accepted the request; it does not prove that a banner was shown or a sound was heard. Windows retains the Tauri plugin, whose desktop permission API does not inspect the actual OS setting; an installed app and platform QA are required for notification identity and click behavior. macOS uses a numeric Dock badge; Windows uses an overlay indication. The unread badge is independent of the system notification preference.
 
+## Voice and recording
+
+The main app's Record and Live voice controls use the WebView microphone. macOS packages include `NSMicrophoneUsageDescription` and the Hardened Runtime `com.apple.security.device.audio-input` entitlement. Microphone access still requires the user's macOS permission when they start recording or a voice session; packaging does not grant that permission. No camera or system-audio capture entitlement is requested.
+
+After rebuilding, inspect the installed bundle's signed entitlements and test both controls in the actual app: first-use permission, denial and recovery, recorded transcription, two-way live audio, and microphone release after stopping or leaving the page. Configuration tests check the package inputs; they do not establish installed microphone or voice behavior. Live voice and transcription require their existing network services.
+
 ## Packaging and distribution
 
 Default packaging uses the `production` feature and the full hosted app. It does **not** enable `native-client`. A local macOS package is ad-hoc signed and not notarized; a local Windows package is not a signed public release. Packaging removes inherited signing/updater credentials and arbitrary Tauri overrides. With the default target directory, installers are under `apps/desktop/src-tauri/target/release/bundle/`.

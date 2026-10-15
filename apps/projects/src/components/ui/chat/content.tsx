@@ -76,15 +76,17 @@ export const ChatContent = ({ isPopup = false }: { isPopup?: boolean }) => {
                   chat.error?.message ||
                   "An error occurred."}{" "}
               </Text>
-              <Button
-                className="mt-2"
-                leftIcon={<ReloadIcon className="text-current" />}
-                onClick={() => {
-                  chat.regenerate();
-                }}
-              >
-                Retry
-              </Button>
+              {!chat.realtimeVoice.error && (
+                <Button
+                  className="mt-2"
+                  leftIcon={<ReloadIcon className="text-current" />}
+                  onClick={() => {
+                    chat.regenerate();
+                  }}
+                >
+                  Retry
+                </Button>
+              )}
             </Box>
           ) : null}
           {chat.displayMessages.length === 0 && !isWorking ? (
@@ -99,6 +101,7 @@ export const ChatContent = ({ isPopup = false }: { isPopup?: boolean }) => {
           {needsUpgrade ? <LimitReached isOnPage={!isPopup} /> : null}
           <ChatInput
             attachments={chat.attachments}
+            conversationId={chat.currentChatId}
             googleDriveFiles={chat.googleDriveFiles}
             isOnPage={!isPopup}
             isPopup={isPopup}

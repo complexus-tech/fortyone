@@ -1,7 +1,7 @@
 /* eslint-disable no-nested-ternary -- ok for now */
 import { Button, Box, Flex, Text, Tooltip } from "ui";
 import type { ChangeEvent } from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "lib";
 import {
   PlusIcon,
@@ -14,13 +14,11 @@ import {
 import type { FileRejection } from "react-dropzone";
 import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
-import ky from "ky";
 import type { ChatStatus } from "ai";
 import { StoryAttachmentPreview } from "@/modules/story/components/story-attachment-preview";
 import { RealtimeVoiceControl } from "@/modules/maya/components/realtime-voice-control";
 import type { useMayaRealtimeVoice } from "@/modules/maya/hooks/use-maya-realtime-voice";
 import { isChatResponseInProgress } from "@/modules/maya/utils/chat-send-policy";
-import { useVoiceRecording } from "@/hooks/use-voice-recording";
 import { useTerminology } from "@/hooks";
 import { walkthroughTargets } from "@/shared/walkthrough/targets";
 import type { GoogleDriveFileContext } from "@/lib/ai/google-drive-context";
@@ -30,6 +28,7 @@ import {
   getChatAttachmentMediaType,
 } from "./chat-attachment-types";
 import { GoogleDriveContextChips } from "./google-drive-context-chips";
+import { useRecordedChatMessage } from "./use-recorded-chat-message";
 import styles from "./chat-input.module.css";
 
 type ChatInputProps = {
@@ -48,6 +47,7 @@ type ChatInputProps = {
   isEmptyState?: boolean;
   messagesCount: number;
   liveVoiceDisabled?: boolean;
+  conversationId?: string | null;
   realtimeVoice: ReturnType<typeof useMayaRealtimeVoice>;
 };
 
@@ -132,18 +132,14 @@ export const ChatInput = ({
   isEmptyState = false,
   messagesCount,
   liveVoiceDisabled = false,
+  conversationId,
   realtimeVoice,
 }: ChatInputProps) => {
   const { getTermDisplay } = useTerminology();
   const hasSkillPicker = useHasMayaSkillSlot();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [currentPlaceholderIndex, setCurrentPlaceholderIndex] = useState(0);
-  const [isTranscribing, setIsTranscribing] = useState(false);
   const [skillsOpen, setSkillsOpen] = useState(false);
-  const processRecordingRef = useRef<() => void>(() => {});
-  const handleAutoStop = useCallback(() => {
-    processRecordingRef.current();
-  }, []);
   const isLiveVoiceActive = realtimeVoice.status !== "idle";
   const placeholderTexts = isEmptyState
     ? [
@@ -178,15 +174,20 @@ export const ChatInput = ({
     recordingDuration,
     formatDuration,
     MAX_RECORDING_TIME,
-    startRecording,
-    stopRecording,
-    getAudioBlob,
-    resetRecording,
-  } = useVoiceRecording(handleAutoStop);
+    recordingBusy,
+    canCancelRecording,
+    isTranscribing,
+    isOnline,
+    handleVoiceRecording,
+    cancelRecording,
+  } = useRecordedChatMessage({
+    value,
+    onChange,
+    conversationId,
+    disabled: isLiveVoiceActive || isChatResponseInProgress(status),
+  });
   const skillsDisabled =
-    isLiveVoiceActive ||
-    isChatResponseInProgress(status) ||
-    recordingState !== "idle";
+    isLiveVoiceActive || isChatResponseInProgress(status) || recordingBusy;
 
   const onDropRejected = (fileRejections: FileRejection[]) => {
     const errors: string[] = [];
@@ -284,7 +285,11 @@ export const ChatInput = ({
     }
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      if (isLiveVoiceActive || isChatResponseInProgress(status)) {
+      if (
+        isLiveVoiceActive ||
+        isChatResponseInProgress(status) ||
+        recordingBusy
+      ) {
         return;
       }
       onSend();
@@ -297,62 +302,6 @@ export const ChatInput = ({
   const documents = attachments.filter(
     (attachment) => !attachment.type.startsWith("image/"),
   );
-
-  const handleVoiceRecording = async () => {
-    if (isRecording) {
-      stopRecording();
-      // For manual stop, we need to handle transcription ourselves
-      processRecording();
-    } else {
-      startRecording();
-    }
-  };
-
-  const processRecording = useCallback(async () => {
-    // Wait for the recording to finish
-    setTimeout(async () => {
-      const audioBlob = getAudioBlob();
-      if (!audioBlob) {
-        toast.info("No audio recorded", {
-          description: "Please try again.",
-          duration: 2500,
-          closeButton: false,
-        });
-        resetRecording();
-        return;
-      }
-      setIsTranscribing(true);
-      const formData = new FormData();
-      formData.append("audio", audioBlob, "recording.webm");
-      const response = await ky
-        .post("/api/transcribe", {
-          body: formData,
-        })
-        .json<{ text: string }>()
-        .catch(() => {
-          toast.error("Failed to transcribe audio", {
-            description: "Please try again.",
-            duration: 2500,
-            closeButton: false,
-          });
-          return null;
-        });
-      const text = response?.text ?? "";
-      if (text.trim()) {
-        onChange({
-          target: { value: `${value} ${text}` },
-        } as ChangeEvent<HTMLTextAreaElement>);
-      }
-      setIsTranscribing(false);
-      resetRecording();
-    }, 100);
-  }, [getAudioBlob, onChange, resetRecording, value]);
-
-  useEffect(() => {
-    processRecordingRef.current = () => {
-      void processRecording();
-    };
-  }, [processRecording]);
 
   return (
     <Box
@@ -535,42 +484,78 @@ export const ChatInput = ({
             </Flex>
 
             <Flex align="center" gap={2}>
-              <Button
-                aria-label={isEmptyState ? "Record a voice message" : undefined}
-                className="bg-state-hover dark:bg-state-hover gap-1"
-                color="tertiary"
-                disabled={isLiveVoiceActive}
-                leftIcon={
-                  isTranscribing ? (
-                    <LoadingIcon className="animate-spin" />
-                  ) : isRecording ? (
-                    <CloseIcon />
-                  ) : (
-                    <MicrophoneIcon />
-                  )
+              <Tooltip
+                side="bottom"
+                title={
+                  !isOnline
+                    ? "Recording requires an internet connection"
+                    : canCancelRecording
+                      ? "Cancel recording"
+                      : "Record a voice message"
                 }
-                onClick={() => {
-                  if (isRecording) {
-                    stopRecording();
-                    resetRecording();
-                  } else {
-                    handleVoiceRecording();
-                  }
-                }}
-                rounded="md"
-                variant="naked"
               >
-                <span className={cn({ "hidden sm:inline": isEmptyState })}>
-                  {isTranscribing
-                    ? "Transcribing..."
-                    : isRecording
-                      ? "Cancel"
-                      : "Record"}
+                <span className="inline-flex">
+                  <Button
+                    aria-label={
+                      canCancelRecording
+                        ? "Cancel recording"
+                        : isTranscribing
+                          ? "Transcribing recording"
+                          : "Record a voice message"
+                    }
+                    className="bg-state-hover dark:bg-state-hover gap-1"
+                    color="tertiary"
+                    disabled={
+                      isLiveVoiceActive ||
+                      (!canCancelRecording &&
+                        (!isOnline ||
+                          recordingBusy ||
+                          isChatResponseInProgress(status)))
+                    }
+                    leftIcon={
+                      isTranscribing ? (
+                        <LoadingIcon className="animate-spin" />
+                      ) : canCancelRecording ? (
+                        <CloseIcon />
+                      ) : (
+                        <MicrophoneIcon />
+                      )
+                    }
+                    onClick={() => {
+                      if (canCancelRecording) {
+                        cancelRecording();
+                      } else {
+                        void handleVoiceRecording();
+                      }
+                    }}
+                    rounded="md"
+                    variant="naked"
+                  >
+                    <span className={cn({ "hidden sm:inline": isEmptyState })}>
+                      {isTranscribing
+                        ? "Transcribing..."
+                        : canCancelRecording
+                          ? "Cancel"
+                          : "Record"}
+                    </span>
+                  </Button>
                 </span>
-              </Button>
+              </Tooltip>
               <RealtimeVoiceControl
                 color="tertiary"
-                disabled={liveVoiceDisabled}
+                disabled={
+                  liveVoiceDisabled ||
+                  recordingBusy ||
+                  !isOnline ||
+                  isChatResponseInProgress(status)
+                }
+                disabledReason={
+                  !isOnline
+                    ? "Live voice requires an internet connection"
+                    : recordingBusy
+                      ? "Finish or cancel your recording first"
+                      : undefined
+                }
                 isHighlighted
                 voice={realtimeVoice}
               />
@@ -584,10 +569,10 @@ export const ChatInput = ({
                 }
                 asIcon
                 color="invert"
-                disabled={isLiveVoiceActive}
+                disabled={isLiveVoiceActive || (recordingBusy && !isRecording)}
                 onClick={() => {
                   if (isRecording) {
-                    handleVoiceRecording();
+                    void handleVoiceRecording();
                   } else if (status === "submitted" || status === "streaming") {
                     onStop();
                   } else {

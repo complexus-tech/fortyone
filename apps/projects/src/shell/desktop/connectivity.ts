@@ -1,24 +1,20 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
 import { getApiUrl } from "@/lib/api-url";
+import {
+  DESKTOP_CONNECTIVITY_EVENT,
+  getNetworkOnline as getDesktopOnline,
+} from "@/shared/network/status";
 import { getDesktopBridge } from "./bridge";
 
-export const DESKTOP_CONNECTIVITY_EVENT = "fortyone:desktop-connectivity";
+export {
+  DESKTOP_CONNECTIVITY_EVENT,
+  getNetworkOnline as getDesktopOnline,
+  useNetworkOnline as useDesktopOnline,
+} from "@/shared/network/status";
 const RETRY_INTERVAL = 20_000;
 const PROBE_TIMEOUT = 5_000;
 let probe: Promise<boolean> | null = null;
-
-declare global {
-  interface Window {
-    __FORTYONE_OFFLINE_PAGE__?: boolean;
-  }
-}
-
-export function getDesktopOnline() {
-  if (typeof window === "undefined") return true;
-  return navigator.onLine && !window.__FORTYONE_OFFLINE_PAGE__;
-}
 
 function publish(online: boolean) {
   const previous = getDesktopOnline();
@@ -102,14 +98,3 @@ export function monitorDesktopConnectivity() {
     window.removeEventListener(DESKTOP_CONNECTIVITY_EVENT, schedule);
   };
 }
-
-const subscribe = (callback: () => void) => {
-  window.addEventListener(DESKTOP_CONNECTIVITY_EVENT, callback);
-  window.addEventListener("offline", callback);
-  return () => {
-    window.removeEventListener(DESKTOP_CONNECTIVITY_EVENT, callback);
-    window.removeEventListener("offline", callback);
-  };
-};
-export const useDesktopOnline = () =>
-  useSyncExternalStore(subscribe, getDesktopOnline, () => true);

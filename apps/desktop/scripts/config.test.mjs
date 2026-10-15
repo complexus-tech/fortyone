@@ -234,6 +234,47 @@ test("a configured release creates signed updater artifacts without placing secr
   );
 });
 
+test("macOS local and release packages retain microphone access without unrelated entitlements", () => {
+  const base = JSON.parse(
+    readFileSync(new URL("../src-tauri/tauri.conf.json", import.meta.url), "utf8"),
+  );
+  const args = getProductionPackageArguments("darwin");
+  const production = JSON.parse(
+    readFileSync(args[args.indexOf("--config") + 1], "utf8"),
+  );
+  const release = getReleaseConfiguration(releaseEnvironment, "darwin");
+
+  for (const signing of [production.bundle.macOS, release.bundle.macOS]) {
+    const macOS = {
+      ...base.bundle.macOS,
+      ...production.bundle.macOS,
+      ...signing,
+    };
+    assert.equal(macOS.entitlements, "Entitlements.plist");
+  }
+
+  const entitlements = readFileSync(
+    new URL(`../src-tauri/${base.bundle.macOS.entitlements}`, import.meta.url),
+    "utf8",
+  );
+  assert.deepEqual(
+    [...entitlements.matchAll(/<key>([^<]+)<\/key>/g)].map((match) => match[1]),
+    ["com.apple.security.device.audio-input"],
+  );
+  assert.match(
+    entitlements,
+    /<key>com\.apple\.security\.device\.audio-input<\/key>\s*<true\s*\/>/,
+  );
+  const infoPlist = readFileSync(
+    new URL(`../src-tauri/${base.bundle.macOS.infoPlist}`, import.meta.url),
+    "utf8",
+  );
+  assert.match(
+    infoPlist,
+    /<key>NSMicrophoneUsageDescription<\/key>\s*<string>[^<]+<\/string>/,
+  );
+});
+
 test("Windows release requires a valid installed signing certificate and timestamp service", () => {
   assert.throws(
     () => getReleaseConfiguration(releaseEnvironment, "win32"),
