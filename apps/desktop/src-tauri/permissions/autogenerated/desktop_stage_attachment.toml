@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-desktop-stage-attachment"
+description = "Enables the desktop_stage_attachment command without any pre-configured scope."
+commands.allow = ["desktop_stage_attachment"]
+
+[[permission]]
+identifier = "deny-desktop-stage-attachment"
+description = "Denies the desktop_stage_attachment command without any pre-configured scope."
+commands.deny = ["desktop_stage_attachment"]

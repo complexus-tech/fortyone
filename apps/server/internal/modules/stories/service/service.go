@@ -160,6 +160,7 @@ type updateOptions struct {
 	recordDescriptionUpdates bool
 	activityReason           string
 	reconcileMedia           bool
+	deferMediaDeletion       bool
 	referencedMediaIDs       []uuid.UUID
 	orphanedMediaIDs         *[]uuid.UUID
 	expectedUpdatedAt        *time.Time

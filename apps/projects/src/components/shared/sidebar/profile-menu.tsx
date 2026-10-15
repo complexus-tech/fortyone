@@ -1,4 +1,5 @@
 /* eslint-disable no-nested-ternary -- ok for the theme icons */
+import { toast } from "sonner";
 import { Avatar, Badge, Box, Flex, Menu, Button, Text } from "ui";
 import {
   LogoutIcon,
@@ -56,9 +57,12 @@ export const ProfileMenu = ({
       analytics.logout(true);
       clearAllStorage();
       window.location.href = `${mainDomain}?signedOut=true`;
-    } catch {
-      clearAllStorage();
-      window.location.href = `${mainDomain}?signedOut=true`;
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Save your local drafts before signing out.",
+      );
     }
   };
 

@@ -2416,6 +2416,41 @@
         "Checklist conversion creates one related standalone story atomically and retains its completed source item.",
         "Checklist updates do not complete the owning story or change its sub-stories."
       ]
+    },
+    {
+      "version": 218,
+      "slug": "desktop_operation_receipts",
+      "classification": "forward-only",
+      "files": {
+        "up": "000218_desktop_operation_receipts.up.sql",
+        "down": "000218_desktop_operation_receipts.down.sql"
+      },
+      "compatibility": {
+        "schema": "Adds durable account/workspace-scoped desktop operation receipts with request hashes and immutable committed resource versions. Domain changes and receipts commit in one PostgreSQL transaction.",
+        "api": "Desktop mutation endpoints require schema 218. Browser, mobile and existing domain endpoints retain their current contracts.",
+        "worker": "No receipt reader is required in the worker. Domain mutation events continue through the existing transactional outbox.",
+        "mixed_versions": "Apply the additive table before replacement APIs and desktop clients. Older APIs ignore the table; do not expose desktop sync writes until all serving APIs support the operation contract."
+      },
+      "rollout": {
+        "sequence": 67,
+        "mode": "schema-first",
+        "steps": [
+          "Apply migration 000218 after 000217 before enabling desktop mutation requests.",
+          "Deploy the API, then the desktop client; verify replay after a lost response returns the original resource version without repeating the mutation, and stale revisions return a conflict."
+        ]
+      },
+      "recovery": {
+        "strategy": "forward-fix",
+        "procedure": [
+          "Preserve receipts and repair the API or desktop client forward. Disabling desktop writes must retain receipts for queued operations on offline devices.",
+          "The down migration only removes an empty receipt table and refuses to discard committed operation identities."
+        ]
+      },
+      "operational_notes": [
+        "Receipts have no expiry. Retain operation identity at least as long as any device can replay its outbox; the current protocol has no finite maximum offline replay age.",
+        "Account or workspace deletion cascades its receipts. Membership changes do not remove receipts; every replay still requires current workspace and resource access.",
+        "Only a request hash, resource ID and committed version are retained, not the mutation payload or session credentials. Object storage uploads cannot share the PostgreSQL transaction; ambiguous commit outcomes preserve the uploaded object for safe retry."
+      ]
     }
   ]
 }

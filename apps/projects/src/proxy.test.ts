@@ -27,7 +27,7 @@ jest.mock("next/server", () => {
     readonly status: number;
     readonly body: string;
 
-    static next = jest.fn(() => ({ status: 200 }));
+    static next = jest.fn(() => ({ status: 200, headers: new Headers() }));
     static redirect = jest.fn();
     static rewrite = jest.fn();
 
@@ -172,6 +172,23 @@ describe("workspace public portal routes", () => {
 });
 
 describe("authentication availability", () => {
+  it("keeps desktop authorization on the auth host with its complete transaction", async () => {
+    mockedGetSessionFromRequest.mockResolvedValue(null);
+    const search = `?state=${"s".repeat(43)}&code_challenge=${"c".repeat(43)}`;
+    await proxy({
+      headers: { get: () => null },
+      nextUrl: {
+        hostname: "acme.fortyone.app",
+        pathname: "/auth/desktop",
+        search,
+      },
+      url: `https://acme.fortyone.app/auth/desktop${search}`,
+    } as unknown as NextRequest);
+    expect(mockedResponse.redirect).toHaveBeenCalledWith(
+      new URL(`https://cloud.fortyone.app/auth/desktop${search}`),
+    );
+    expect(mockedResponse.rewrite).not.toHaveBeenCalled();
+  });
   it("lets the standalone deletion page own its email-only unauthenticated redirect", async () => {
     mockedGetSessionFromRequest.mockResolvedValue(null);
     const response = await proxy({
@@ -256,4 +273,22 @@ describe("workspace home routing", () => {
       new URL("https://acme.fortyone.app/acme/my-work?view=board"),
     );
   });
+});
+
+describe("desktop offline assets", () => {
+  it.each(["/desktop-worker.js", "/desktop-offline.js"])(
+    "serves %s without authentication or workspace rewriting",
+    async (pathname) => {
+      const response = await proxy({
+        headers: { get: () => null },
+        nextUrl: { hostname: "acme.fortyone.app", pathname, search: "" },
+        url: `https://acme.fortyone.app${pathname}`,
+      } as unknown as NextRequest);
+      expect(response.status).toBe(200);
+      expect(response.headers.get("Cache-Control")).toBe("no-cache");
+      expect(response.headers.get("Service-Worker-Allowed")).toBe("/");
+      expect(mockedGetSessionFromRequest).not.toHaveBeenCalled();
+      expect(mockedResponse.rewrite).not.toHaveBeenCalled();
+    },
+  );
 });

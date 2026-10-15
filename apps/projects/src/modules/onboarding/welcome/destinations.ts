@@ -1,5 +1,6 @@
 import type { Workspace } from "@/types/workspace";
 import { isMobileAuthPath } from "@/lib/mobile-auth";
+import { isDesktopAuthPath } from "@/lib/desktop-auth";
 import {
   getOnboardingWorkspaceUrl,
   withOnboardingCallbackUrl,
@@ -30,9 +31,11 @@ export const getWelcomeDestinations = (
     };
   }
 
-  // Mobile onboarding must finish the browser handoff, not enter optional web
+  // Native onboarding must finish the browser handoff, not enter optional web
   // setup pages with their own navigation, billing, or upgrade surfaces.
-  if (isMobileAuthPath(callbackUrl)) return { redirectUrl: callbackUrl! };
+  if (isMobileAuthPath(callbackUrl) || isDesktopAuthPath(callbackUrl)) {
+    return { redirectUrl: callbackUrl! };
+  }
 
   return {
     redirectUrl: getOnboardingWorkspaceUrl(activeWorkspace.slug, callbackUrl),

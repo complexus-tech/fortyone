@@ -1,6 +1,7 @@
 import type { Editor } from "@tiptap/core";
 import { useState } from "react";
 import { toast } from "sonner";
+import { isMayaAssigneeSelection } from "@/lib/auto-scheduling";
 import {
   clearRichTextContent,
   getPersistableRichTextContent,
@@ -80,7 +81,10 @@ export const useNewStoryDialogCreation = <
   const [isCreating, setIsCreating] = useState(false);
 
   const handleCreateStory = async () => {
-    if (!titleEditor || !editor || isMayaAssigneeLoading) return;
+    const preparingAssignedMaya =
+      isMayaAssigneeLoading &&
+      isMayaAssigneeSelection(storyForm.assigneeId, mayaAssigneeId);
+    if (!titleEditor || !editor || preparingAssignedMaya) return;
 
     const title = titleEditor.getText();
     if (!title) {

@@ -1,126 +1,120 @@
 # FortyOne Desktop
 
-A Tauri 2 desktop app for FortyOne. Package the production app for this Mac, or use the development window with your existing local web server.
+The default Tauri 2 app runs the **full Projects application**. It preserves the existing stories, documents, boards, settings, navigation, and account flows. Desktop capabilities extend that interface; the separate bundled React client is experimental and must be selected explicitly with a `:native` script.
 
-## Package the production app on macOS
+## Commands
 
-With stable Rust, Apple's command line tools, and workspace dependencies installed as described below, run this from the repository root:
+Run these from the repository root after `pnpm install`, stable Rust, and the platform Tauri prerequisites. On macOS, install Apple's command-line tools with `xcode-select --install`.
 
-```sh
-pnpm package:desktop
-```
+| Command                                      | Result                                                                             |
+| -------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `pnpm dev:desktop`                           | Full Projects app in Tauri, using the already running local web app.               |
+| `pnpm dev:desktop:hosted`                    | Compatibility alias for the full Projects development shell.                       |
+| `pnpm build:desktop`                         | Debug executable for the full Projects shell; no installer.                        |
+| `pnpm package:desktop`                       | Production Projects shell packaged as a local macOS DMG or Windows NSIS installer. |
+| `pnpm release:desktop`                       | Distribution packaging with required signing and updater configuration.            |
+| `pnpm check:desktop`                         | Launcher/bridge tests, Rust checks/tests, and experimental renderer checks.        |
+| `pnpm --filter desktop desktop:dev:native`   | Explicit experimental bundled client, Vite on port 5178.                           |
+| `pnpm --filter desktop desktop:build:native` | Debug build of the experimental bundled client.                                    |
 
-This creates a release-mode `FortyOne.app` and a DMG using the `production` Cargo feature and `src-tauri/tauri.production.conf.json`. The app is named **FortyOne**, uses the separate bundle identifier `app.fortyone.desktop`, and always opens [cloud.fortyone.app](https://cloud.fortyone.app). Local `FORTYONE_DESKTOP_URL` and inherited Tauri configuration overrides are removed from the packaging environment. No local web server or Go API is needed to run this version.
-
-With the default Cargo target directory, find the DMG in `apps/desktop/src-tauri/target/release/bundle/dmg/`; the app is inside it. The build targets the Mac running the command: Apple silicon on this machine. Open the DMG, drag **FortyOne** into **Applications**, eject the image, and launch FortyOne from Applications. Sign in separately from FortyOne Development or your browser.
-
-The local package uses [ad-hoc signing](https://v2.tauri.app/distribute/sign/macos/#ad-hoc-signing) (`-`), with no Apple credentials or notarization. macOS may require allowing the app in **System Settings → Privacy & Security**. This is a local installation build, not a notarized public release.
-
-The DMG contains the native shell and loads the production web frontend over HTTPS; it does not bundle your local Next.js files. Internet access and the production services are required. Frontend changes appear only after they are deployed to the production site. To pick up native changes, run `pnpm package:desktop` again, quit the installed app, and replace it in Applications using the new DMG.
-
-## Run on macOS
-
-Install [stable Rust](https://rustup.rs/) and Apple's command line tools if they are not installed:
-
-```sh
-xcode-select --install
-```
-
-From the repository root, install workspace dependencies once:
-
-```sh
-pnpm install
-```
-
-The Go API must run separately with your existing local configuration and approved PostgreSQL and Redis endpoints. If it is not already running, start it from the repository root in its own terminal:
+Start the existing local services separately:
 
 ```sh
 make -C apps/server develop
-```
-
-Start the web app in your usual terminal. If it is already running, keep using that process:
-
-```sh
 pnpm dev:projects
-```
-
-In another terminal, open the desktop app:
-
-```sh
 pnpm dev:desktop
 ```
 
-The first launch compiles the Rust dependencies and takes longer. Later launches reuse the build cache. Web changes hot reload through the existing Next.js development server. Quit the desktop app or press Control-C in its terminal to stop the desktop development process.
+The launcher finds Rust in `~/.cargo/bin` without modifying shell configuration. Normal monorepo `pnpm dev` and `pnpm build` do not launch or package the desktop app. Only the approved local PostgreSQL/Redis configuration is supported; the launcher does not provision a backend.
 
-The launcher checks that the web app is reachable before compiling. It also finds Rust in `~/.cargo/bin` when that directory is missing from the current shell's PATH; it does not change your shell configuration.
+The full development app defaults to `http://localhost:3000`; native API verification uses `http://localhost:8000`. A different web port can be selected with `FORTYONE_DESKTOP_URL=http://localhost:3001 pnpm dev:desktop`. Only loopback HTTP(S) URLs are accepted. Match the local API's cookie and exact CORS-origin configuration. Production uses the fixed `https://cloud.fortyone.app` entry point and approved workspace subdomains, ignoring the development override.
 
-## A different local URL
+## Full Projects app: native capabilities
 
-The default is `http://localhost:3000`. To use the port where your web app is already running:
+The hosted bridge adds native window chrome, window-state restoration, history controls, native New Story/Search menu actions, and workspace-switch feedback to the existing UI. Workspace switching immediately shows the target and a spinner, prevents duplicate clicks, and retains progress through document navigation. A timeout offers Retry and Return. Saving the last workspace is a bounded preference write, not an authentication check.
 
-```sh
-FORTYONE_DESKTOP_URL=http://localhost:3001 pnpm dev:desktop
-```
+Desktop controls appear in the existing **Settings → Preferences** and **Settings → Notifications** pages. They manage launch at login, whether closing the window keeps the process running, and system notifications on this computer. Saves show pending and failure states. Older desktop builds without these optional methods retain their existing behavior; ordinary browser settings do not gain native controls.
 
-Only HTTP or HTTPS URLs on `localhost`, `127.0.0.1`, or `[::1]` are accepted. Credentials and URL fragments are rejected. Use the same hostname your API uses for session cookies (normally `localhost` for both). A different app port must also be allowed by the API's existing CORS configuration. HTTPS requires a certificate trusted by both Node.js and macOS.
+The menu-bar/tray menu opens FortyOne, New Story, Search, or Quit. On macOS, the tray uses a thin outline of the existing logo with a transparent, padded canvas, about 10% smaller than the previous solid mark. It is a template icon so the system chooses its color; the Dock/app icon keeps its artwork. Regenerate the 36×36 template PNG with `swift apps/desktop/scripts/prepare-tray-icon.swift` after editing its SVG. Closing the window with background operation enabled hides it. Disabling that option makes closing quit. Dock reopening restores the macOS window.
 
-## Sign in and local scope
+Window close, tray Quit, and app Quit wait for the main app's local draft writes. Failure or a 12-second timeout keeps the window open and surfaces the save error. A later explicit close offers Retry saving, Stay open, or Close without saving. The sanitized workspace URL is persisted before hide, quit, or an approved updater restart, rather than relying on a second native exit callback. Network synchronization is not required to close after local writes succeed; saved outbox work remains on disk.
 
-The desktop webview has its own cookie store. Signing in to the web app in Safari or Chrome does not sign in to the desktop app. Enter your email, then type the emailed six-digit code inside the desktop window. Clicking the email's link signs in to your browser instead. The desktop session uses the existing persistent HttpOnly cookie.
+## Authentication and local storage
 
-On macOS, native traffic lights share one header with Back, Forward, search, and the app's existing invite, help, notifications, profile, and contextual create controls. The header and sidebar form a continuous translucent surface over the native macOS Sidebar material, with a subtle theme tint and an opaque main content canvas. The material follows the web app's light, dark, or system theme, window focus, and macOS accessibility preferences. Drag empty header space to move the window, or double-click it to maximize and restore. Back and Forward are disabled when the webview has no history in that direction. Use the existing sidebar edge handle to expand or collapse the sidebar.
+The default app uses its ordinary authenticated webview session. Native code privately reads only the configured API's HttpOnly session cookie, verifies the account and workspace, and stores a cookie fingerprint with the native binding. Cookie values are never returned through IPC. This flow does not require the experimental client's Keychain session or custom callback scheme.
 
-Translucency requires both the updated native shell and the matching web frontend. The bridge advertises support so older desktop builds and ordinary browser pages retain their opaque surfaces. Rebuild the desktop app after native changes; production also requires deploying the frontend changes. Tauri's transparent macOS webview uses its `macos-private-api` feature because WebKit's public background-color API does not clear the page canvas. This is compatible with the current locally distributed DMG, but a future Mac App Store release would require revisiting that implementation.
+Native query caches, drafts, pending operations, and private page HTML are scoped by the exact origin, account, and workspace. Commands verify the current window, cookie binding, and workspace lease again before access. Bindings expire after seven days without online verification. Confirmed denial and account/logout transitions clear the relevant binding and server-owned cached material; draft/outbox handling must preserve work until the user completes the recovery or discard flow. The renderer does not receive general filesystem, arbitrary URL, or arbitrary cookie access.
 
-Login, sign-up, and onboarding extend to the top of the desktop window with only the native traffic lights visible. Their transparent top drag region retains the same move and double-click behavior; it adds no toolbar spacing or Back/Forward buttons. This scoped presentation is included in the native bridge, so rebuilding the DMG updates it without deploying the web app. Browser pages, workspace headers, and settings keep their existing layout.
+The main app persists an allowlist of existing query families, retaining at most 250 query entries and 8 MiB per saved workspace snapshot. Startup warms dependencies such as workspace/settings metadata before useful work collections. When already offline, cache restoration uses the native cookie-bound account/workspace lease without waiting for another HTTP verification; reconnect still verifies the session online. Cached views keep their normal components. Routine downloads and synchronization stay in the background. A compact Offline badge replaces the trial/subscription footer while offline; saved-change review and cache recovery are available in Desktop App settings. Data that has never been downloaded remains online-only. Story/document draft recovery is integrated with the existing editors.
 
-File → New Story (`Cmd+N`) opens the existing creation dialog, and View → Search (`Cmd+K`) opens app search. The creation label follows the workspace's terminology, and actions remain disabled until the app is ready and the relevant permissions are available.
+Offline cold startup uses native-owned private HTML and a desktop-only service worker for public Next assets. Private HTML is not stored in browser CacheStorage. Each page is limited to 4 MiB, with at most 24 pages per workspace and 64 MiB per origin/account, including saved security policies. Pages expire after seven days. Only approved workspace routes are eligible; authentication routes and secret-bearing query parameters are rejected. Settings HTML is limited to the settings root, account profile, preferences, notifications, and workspace members. Security, developer/API-key, billing, integrations, and unknown settings pages are excluded. The saved Content-Security-Policy is preserved. An offline restart first revalidates the native session before a short-lived, one-use worker response returns the HTML.
 
-The native Navigate menu provides Back, Forward, Reload (`Cmd+R`), Open Start Page, Open in Browser, and Developer Tools (`Cmd+Option+I`, development builds only). Window size and position are saved between launches. Local development stays on its configured app origin. Production keeps the sign-in host and workspace subdomains inside the same window, using the existing hosted routing and session cookies. Links to other sites open in your system browser.
+Service-worker updates wait until all windows controlled by the previous worker are closed before activating. This preserves in-flight Next responses and one-use offline handoffs. Hiding a window to the tray does not close it; fully quit and reopen to activate a waiting update. The first worker installation activates normally, and updates retain the existing public asset cache for downloaded pages.
 
-The production app also restores the last approved workspace page after a normal close or quit. It saves the current webview location at shutdown, including pages reached through client-side navigation, without writing to disk during ordinary navigation. Only known app routes on validated workspace origins are eligible; authentication callbacks, public/shared links, query strings, and URL fragments are excluded. Sign-out or returning to cloud sign-in clears the saved location. Missing, invalid, or unreadable state falls back to cloud sign-in, and local development retains its configured start URL. This restores the page, not open dialogs, unsaved edits, or crash state.
+Local QA has exercised downloaded My Work reload, full quit/reopen, offline story creation, and subsequent operation replay in the actual full Projects app. The queued creation survived restart and produced exactly one server story and matching receipt after reconnect, with an empty local queue. Neither that evidence nor the unit tests proves that all dynamically loaded Next chunks, fonts, or route transitions are available in a packaged offline WKWebView. Do not describe downloaded query data alone as a complete offline application, or assume all web mutations work offline. The hosted outbox targets story creation/updates, comments, and staged story attachments; unsupported mutations still require connectivity. Pending work and conflicts can be reviewed in Desktop App settings. Active-workspace replay runs on reconnect, foreground activation, and every 30 seconds while pending work exists. Conflicts show server and local values and require explicit review before retrying. A write with an unknown server outcome keeps its original operation ID and cannot be discarded. Updates without a saved server comparison cannot be discarded until that comparison is available.
 
-The configured app origin and validated production workspace origins in the main webview can call four narrowly scoped native commands to synchronize appearance and menu availability, read navigation availability, go back or forward, and drag or maximize the window. Production permissions are registered for each exact HTTPS origin as it is visited; infrastructure hosts and unrelated sites receive none. These commands have no file, network, or record-writing access. Header and native menu actions open the existing web app interfaces, which retain their existing validation and permissions.
+Offline links and the story context menu, related-document menu, and settings back action verify a downloaded destination and flush active editors before a full navigation. A failed write or missing page keeps the current page open with a message. Other programmatic router flows still require route-specific runtime validation; cached query data does not by itself provide a saved page for a new route.
 
-System-browser OAuth/SSO sign-in and callback handoff are not implemented yet. Native notifications, deep links, automatic updates, and offline support are also outside this prototype. Local development still requires the existing web app, API configuration, and network connection. Keep both the web server and Go API running while using FortyOne Development; the packaged production app uses the hosted services instead.
+Story attachments can be staged locally before upload, up to 10 MiB per file and 128 MiB of retained bytes per origin/account. Pending file bytes survive restart and upload through the existing story attachment flow with stable operation IDs. Locally retained files can be previewed or exported through native, account-scoped commands. This does not download every historical server attachment or provide general offline document/media parity.
 
-## Sign-in troubleshooting
+Collaborative documents retain Yjs state and permissions in account/workspace-scoped drafts; reopening a downloaded document resumes its collaboration session. A restored document epoch or revoked editing access preserves unsynced work and blocks unsafe merging. Recovery export uses the native save dialog and requires a confirmed file write, with no newer local edits, before replacing the active recovery draft. Closed documents are not synchronized by a separate background collaboration worker.
 
-If sign-in reports "Failed to send magic link" with "Load failed", first check that the Go API is running. The desktop launcher checks the web server; loading the sign-in page does not prove the API is available. With the default local API port, check readiness:
+## Notifications
+
+The full Projects app reuses its **existing active-workspace SSE connection**. It does not create a polling loop or an account-wide native subscription. Live notification payloads are normalized, checked against the current account/workspace, and sent through the native bridge. Historical inbox loads and SSE reconnects do not produce old system alerts. Rust deduplicates each account/workspace/notification/version durably, while a newly coalesced notification version can alert again. Foreground windows are not unconditionally suppressed.
+
+The native badge mirrors the active workspace's unread query. Notification clicks validate the current account/workspace and route through the existing notification detail page or inbox; arbitrary URLs are not accepted. A notification from another no-longer-active workspace is not silently authorized from its old payload.
+
+Notifications require the preference to be enabled and the process to remain running. A hidden window can keep the existing stream connected; fully quitting stops delivery. Focus/Do Not Disturb and OS notification settings still apply. The locked plugin's desktop permission API reports Granted without inspecting the actual OS setting, so it is not proof that delivery is enabled. Windows requires an installed app for the correct notification identity; its notification-center click behavior requires platform QA. macOS uses a numeric Dock badge; Windows uses an overlay indication.
+
+## Packaging and distribution
+
+Default packaging uses the `production` feature and the full hosted app. It does **not** enable `native-client`. A local macOS package is ad-hoc signed and not notarized; a local Windows package is not a signed public release. Packaging removes inherited signing/updater credentials and arbitrary Tauri overrides. With the default target directory, installers are under `apps/desktop/src-tauri/target/release/bundle/`.
+
+Release packaging requires:
+
+- `FORTYONE_UPDATER_PUBLIC_KEY`, HTTPS `FORTYONE_UPDATER_URL`, and `TAURI_SIGNING_PRIVATE_KEY` (plus its password when required).
+- macOS: Developer ID `APPLE_SIGNING_IDENTITY` and either `APPLE_API_ISSUER`/`APPLE_API_KEY`/`APPLE_API_KEY_PATH` or `APPLE_ID`/`APPLE_PASSWORD`/`APPLE_TEAM_ID` for notarization.
+- Windows: `FORTYONE_WINDOWS_CERTIFICATE_THUMBPRINT` and `FORTYONE_WINDOWS_TIMESTAMP_URL`.
+
+Updater signatures and OS installer signing are separate requirements. Publish the matching signed update metadata/artifacts and validate installed upgrade behavior. The main app's desktop preferences include an explicit update check and reviewed install/restart action. Development or unconfigured packages show that updates are unavailable. The empty `plugins.updater.pubkey` in the base/local package configuration only allows the Tauri plugin to initialize; it does not enable update checks or installation. Release packaging rejects a blank key, and native update controls require the production feature, a nonempty compiled public key, and a compiled HTTPS endpoint. Native code rechecks the requested version, verifies the downloaded signature, and flushes local drafts before installation. A failed flush prevents installation; close/quit is blocked while an update is in progress. Local tests do not execute an installer or prove installed upgrade behavior. Rebuild the installed app for Rust/bridge changes; the main UI is served by the deployed Projects app. macOS transparency uses `macos-private-api`; Mac App Store distribution requires revisiting that implementation.
+
+## Experimental bundled client
+
+The opt-in `native-client` path has a separate React renderer and native SQLite/synchronization model. Its bundled startup, broad native downloads, rich editor collaboration, native media/export, account-wide SSE, recovery export, and updater UI belong to that experimental path. They are not evidence that equivalent flows have shipped in the default full Projects app.
+
+It authorizes through the system browser at `/auth/desktop`, exchanges a single-use code with S256 PKCE, and retains its token in the OS credential store. Production callbacks use `fortyone-desktop://login`; development uses `fortyone-desktop-dev://login`, accepted only by development Projects/API configuration. On macOS, register a dedicated development `.app` declaring that scheme before callback QA; a raw executable does not register it.
+
+Rebuilding an ad-hoc macOS app changes its signing identity and may cause a fresh Keychain authorization prompt. Use a consistent signing identity and bundle identifier for repeatable signed QA. The native credential cache serializes reads and latches denied/unavailable results so background work does not repeatedly reopen a canceled prompt; an explicit retry or browser reconnect is required. This credential-store behavior belongs to the experimental client. See Apple's [code-signing requirements](https://developer.apple.com/documentation/technotes/tn3127-inside-code-signing-requirements).
+
+Experimental collaboration uses `FORTYONE_COLLABORATION_URL` and exact service `COLLABORATION_ALLOWED_ORIGINS`: `tauri://localhost`, the installed Windows `http://tauri.localhost` or `https://tauri.localhost` mapping, and development `http://localhost:5178`. Keep these alongside approved web origins. An unavailable collaboration service does not make live collaboration available offline.
+
+## Validation and deployment
+
+Deploy the required Projects/native/API contracts together. Operation replay requires migration `000218_desktop_operation_receipts.up.sql` through the normal deployment process; editing source or running tests does not apply it. Existing API sessions, database, Redis/SSE, storage, and collaboration services retain their normal operational requirements.
+
+For the local QA environment, migration 218 was applied on 2026-10-15 and its clean version, receipt table, constraints, and API readiness were verified. This records the local database change only; production migration and deployment are separate steps.
+
+On 2026-10-15, the rebuilt production hosted shell replaced the local `/Applications/FortyOne.app`, preserving the `app.fortyone.desktop` identifier and existing user storage. The updated app reopened the authenticated live workspace successfully. The previous bundle was retained in a local installer backup. This installation does not deploy the Projects frontend, API, worker, or database migration to production; those contracts must ship separately before the installed app can use their new behavior.
+
+Focused Projects tests cover native notification filtering, SSE lifecycle, settings interactions, cache scope, and draft behavior. Rust tests cover native scope checks, cached pages, preferences, notification receipts, and operation handling. The service-worker tests are server-independent contract tests. Keep experimental renderer tests separate from default full-app evidence.
+
+Before release, test an installed signed build on macOS and Windows: ordinary main-app login/SSO, workspace switching, denied/expired sessions, offline cold launch and route changes, queued work across quit/relaunch, conflicts and uncertain outcomes, close-to-tray/reopen, real notification delivery/click activation, and signed updates. Unit tests or a successful compilation do not establish deployed or OS-level behavior. Record PostgreSQL integration-test gaps separately when `TEST_DATABASE_URL` is unavailable.
+
+Validation checklist:
+
+- Implemented in the main app: native preferences, active-workspace SSE notifications/badge, scoped query/page/draft persistence, reviewed outbox replay, staged story files, collaboration recovery export, durable close/quit, and explicit signed updater controls.
+- Observed in local macOS full-app QA on 2026-10-15 using a production Next build: native launch, My Work reload and quit/reopen while web/API services were stopped, a durable offline creation replayed exactly once, cached Profile/Preferences/Notifications navigation, cached task custom-field definitions, the Working offline indicator, and visible Switching to FortyOne feedback during a deliberately delayed API response. Native notification preferences were enabled through the actual main app. This is narrower than a signed production or Windows validation.
+- Still requires installed runtime evidence: all dynamic chunks/fonts and remaining offline routes, attachment recovery/upload after restart, macOS/Windows notification delivery/activation and lifecycle, permission denial, and a real signed upgrade. Automated tests do not send live notifications, execute an installer, or apply migrations.
+
+For local sign-in failures, check the API before changing WebView configuration:
 
 ```sh
 curl --fail http://localhost:8000/readiness
-```
-
-The response should report `"status":"ok"` and `"phase":"ready"`. If the connection fails, start the API with `make -C apps/server develop`; if readiness fails, check its terminal for configuration or dependency errors. Use your configured API port if it differs. Once the API is ready, retry sign-in. If the request still fails, check the API logs and ensure its CORS configuration allows the exact web app origin, including the port.
-
-If your local API is configured to send email through `localhost:1025`, run a local SMTP inbox such as [Mailpit](https://mailpit.axllent.org/docs/install/) in a separate terminal:
-
-```sh
-brew install mailpit
-mailpit --listen 127.0.0.1:8025 --smtp 127.0.0.1:1025
-```
-
-Open [the local inbox](http://localhost:8025), request a new sign-in email, and enter its six-digit code in the desktop window. These messages stay in the local inbox rather than reaching your email provider. Use the code instead of the email link, which signs in to your browser. This step is only needed for an API configuration using local SMTP; keep your existing email setup otherwise.
-
-## Check and build
-
-```sh
-pnpm check:desktop
-pnpm build:desktop
-```
-
-The check command runs launcher validation tests, Rust formatting, compilation checks, and Rust tests. The build command creates a debug executable for local use without signing or generating an installer. It captures `FORTYONE_DESKTOP_URL` at build time, so set that variable for a custom port when building too. The output remains dependent on the running local web app.
-
-For production-only native changes, also run `cargo test --locked --features production` and `cargo check --locked --features production` from `apps/desktop/src-tauri`. Route restoration tests use isolated temporary directories and cover safe URL normalization, auth/public-route exclusions, missing or corrupt state, logout clearing policy, and preserving the previous file when replacement fails. They do not launch the installed app; close/quit/relaunch behavior still needs a packaged-app smoke test before distribution.
-
-Direct Tauri CLI access is available for diagnostics:
-
-```sh
 pnpm --filter desktop tauri info
 ```
 
-The workspace uses dedicated desktop script names so the repository's ordinary `pnpm dev` and `pnpm build` commands do not unexpectedly launch a native window or build native applications. Windows packaging and native behavior still need validation on Windows.
+A login page loading does not prove API readiness or local email delivery. Keep the web app's existing SMTP/Mailpit setup.
 
 ## Desktop icon
 

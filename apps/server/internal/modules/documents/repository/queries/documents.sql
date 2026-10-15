@@ -98,7 +98,7 @@ WHERE document.workspace_id = sqlc.arg(workspace_id)
       )
   )
 ORDER BY document.updated_at DESC, document.document_id
-LIMIT CAST(sqlc.narg(row_limit) AS integer);
+LIMIT CAST(sqlc.narg(row_limit) AS integer) OFFSET CAST(sqlc.arg(row_offset) AS integer);
 
 -- name: GetAccessibleDocument :one
 SELECT

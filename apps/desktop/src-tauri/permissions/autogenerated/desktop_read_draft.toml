@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-desktop-read-draft"
+description = "Enables the desktop_read_draft command without any pre-configured scope."
+commands.allow = ["desktop_read_draft"]
+
+[[permission]]
+identifier = "deny-desktop-read-draft"
+description = "Denies the desktop_read_draft command without any pre-configured scope."
+commands.deny = ["desktop_read_draft"]

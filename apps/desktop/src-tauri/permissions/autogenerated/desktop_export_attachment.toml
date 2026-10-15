@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-desktop-export-attachment"
+description = "Enables the desktop_export_attachment command without any pre-configured scope."
+commands.allow = ["desktop_export_attachment"]
+
+[[permission]]
+identifier = "deny-desktop-export-attachment"
+description = "Denies the desktop_export_attachment command without any pre-configured scope."
+commands.deny = ["desktop_export_attachment"]

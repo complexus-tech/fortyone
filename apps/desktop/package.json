@@ -7,9 +7,41 @@
     "desktop:check": "node scripts/desktop.mjs check",
     "desktop:build": "node scripts/desktop.mjs build",
     "desktop:package": "node scripts/desktop.mjs package",
-    "tauri": "node scripts/desktop.mjs tauri"
+    "tauri": "node scripts/desktop.mjs tauri",
+    "desktop:dev:hosted": "node scripts/desktop.mjs dev-hosted",
+    "desktop:dev:native": "node scripts/desktop.mjs dev-native",
+    "desktop:build:native": "node scripts/desktop.mjs build-native",
+    "desktop:build:hosted": "node scripts/desktop.mjs build-hosted",
+    "desktop:release": "node scripts/desktop.mjs release",
+    "frontend:dev": "vite --host 127.0.0.1",
+    "frontend:build": "tsc --noEmit && vite build",
+    "frontend:test": "vitest run",
+    "frontend:type-check": "tsc --noEmit"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "2.12.2"
+    "@tauri-apps/cli": "2.12.2",
+    "@testing-library/jest-dom": "6",
+    "@testing-library/react": "16",
+    "@types/node": "22",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "5",
+    "jsdom": "26",
+    "typescript": "7.0.2",
+    "vite": "7",
+    "vitest": "3"
+  },
+  "dependencies": {
+    "@fortyone/document-editor": "workspace:^",
+    "@hocuspocus/provider": "4.7.0",
+    "@tauri-apps/api": "2",
+    "@tiptap/core": "3.20.4",
+    "@tiptap/extension-collaboration": "3.20.4",
+    "@tiptap/react": "3.20.4",
+    "icons": "workspace:^",
+    "lib": "workspace:^",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "yjs": "13.6.27"
   }
 }

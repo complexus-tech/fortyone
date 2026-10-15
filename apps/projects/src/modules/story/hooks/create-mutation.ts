@@ -19,6 +19,13 @@ import type {
   Story,
   GroupStoriesResponse,
 } from "@/modules/stories/types";
+import { getDesktopBridge } from "@/shell/desktop/bridge";
+import { useDesktopWorkspaceScope } from "@/shell/desktop/workspace-scope";
+import {
+  createDesktopStory,
+  isDesktopPending,
+} from "@/shell/desktop/story-offline";
+import { retainDesktopCreatedStory } from "@/shell/desktop/outbox-projection";
 import { createStoryAction } from "../actions/create-story";
 import type { NewStory, DetailedStory } from "../types";
 
@@ -311,8 +318,11 @@ const removeOptimisticStory = (
   }
 };
 
-export const useCreateStoryMutation = () => {
+export const useCreateStoryMutation = (
+  options: { desktopDraftKey?: string } = {},
+) => {
   const queryClient = useQueryClient();
+  const desktopScope = useDesktopWorkspaceScope();
   const router = useRouter();
   const { workspaceSlug, withWorkspace } = useWorkspacePath();
   const { analytics } = useAnalytics();
@@ -323,7 +333,13 @@ export const useCreateStoryMutation = () => {
   });
 
   const mutation = useMutation({
+    networkMode: getDesktopBridge()?.enqueueOperation ? "always" : "online",
     mutationFn: async (story: NewStory) => {
+      if (getDesktopBridge()?.enqueueOperation) {
+        if (!desktopScope)
+          throw new Error("The desktop workspace is not ready yet.");
+        return createDesktopStory(desktopScope, story, options.desktopDraftKey);
+      }
       const response = await createStoryAction(story, workspaceSlug);
       if (response.error?.message) {
         throw new Error(response.error.message);
@@ -337,6 +353,8 @@ export const useCreateStoryMutation = () => {
     },
 
     onMutate: (story) => {
+      if (getDesktopBridge()?.enqueueOperation)
+        return { usesWebOptimism: false };
       const queryCache = queryClient.getQueryCache();
       const queries = queryCache.getAll();
 
@@ -350,21 +368,26 @@ export const useCreateStoryMutation = () => {
           }
         }
       });
+      return { usesWebOptimism: true };
     },
 
-    onError: (error, story) => {
-      const queryCache = queryClient.getQueryCache();
-      const queries = queryCache.getAll();
+    onError: (error, story, context) => {
+      // Native creates enter the cache only after SQLite accepts the operation.
+      // Their failures have no temporary web row or counts to roll back.
+      if (context?.usesWebOptimism !== false) {
+        const queryCache = queryClient.getQueryCache();
+        const queries = queryCache.getAll();
 
-      queries.forEach((query) => {
-        const queryKey = JSON.stringify(query.queryKey);
-        if (
-          queryKey.toLowerCase().includes("stories") &&
-          !queryKey.toLowerCase().includes("detail")
-        ) {
-          removeOptimisticStory(queryClient, query.queryKey);
-        }
-      });
+        queries.forEach((query) => {
+          const queryKey = JSON.stringify(query.queryKey);
+          if (
+            queryKey.toLowerCase().includes("stories") &&
+            !queryKey.toLowerCase().includes("detail")
+          ) {
+            removeOptimisticStory(queryClient, query.queryKey);
+          }
+        });
+      }
 
       toast.error(`Failed to create ${storyTerm}: ${story.title}`, {
         description:
@@ -379,6 +402,10 @@ export const useCreateStoryMutation = () => {
     },
 
     onSuccess: (createdStory) => {
+      if (isDesktopPending(createdStory) && desktopScope) {
+        retainDesktopCreatedStory(queryClient, desktopScope, createdStory);
+        return;
+      }
       analytics.track("story_created", {
         storyId: createdStory.id,
         title: createdStory.title,

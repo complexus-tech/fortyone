@@ -38,6 +38,7 @@ type RelatedWork struct {
 
 type Document struct {
 	Revision           int64
+	CollaborationState []byte `json:"-"`
 	CollaborationEpoch int64
 	Collaborative      bool
 	PublicToken        *string
@@ -72,6 +73,7 @@ type Summary struct {
 }
 
 type ListInput struct {
+	Offset      int
 	WorkspaceID uuid.UUID
 	UserID      uuid.UUID
 	Search      string

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	attachmentdomain "github.com/complexus-tech/projects-api/internal/modules/attachments/domain"
+	platformdatabase "github.com/complexus-tech/projects-api/internal/platform/database"
 	"github.com/complexus-tech/projects-api/internal/platform/safehttp"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/storage"
@@ -211,6 +212,14 @@ func (s *Service) uploadAttachment(
 		return FileInfo{}, fmt.Errorf("failed to upload to storage: %w", err)
 	}
 
+	platformdatabase.AfterRollback(ctx, func() {
+		cleanupCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
+		defer cancel()
+		if err := s.storage.DeleteFile(cleanupCtx, s.config.AttachmentsBucket, blobName); err != nil {
+			s.log.Error(cleanupCtx, "failed to clean up rolled back attachment object", "error", err)
+		}
+	})
+
 	// Create attachment record in database
 	attachmentInput := CoreAttachment{
 		Filename:          fileHeader.Filename,
@@ -255,7 +264,7 @@ func (s *Service) uploadAttachment(
 		return FileInfo{}, fmt.Errorf("failed to generate access URL: %w", err)
 	}
 
-	s.maybeEnqueueImageOptimization(ctx, attachment)
+	platformdatabase.AfterCommit(ctx, func() { s.maybeEnqueueImageOptimization(ctx, attachment) })
 
 	span.AddEvent("attachment created", trace.WithAttributes(
 		attribute.String("attachment_id", attachment.ID.String()),

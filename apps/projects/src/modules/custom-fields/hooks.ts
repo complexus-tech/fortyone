@@ -9,6 +9,8 @@ import {
 import { useSession } from "@/lib/auth/client";
 import { useWorkspacePath } from "@/hooks/use-workspace-path";
 import { analyticsKeys } from "@/constants/keys";
+import { getDesktopBridge } from "@/shell/desktop/bridge";
+import { useDesktopOnline } from "@/shell/desktop/connectivity";
 import { createStoryValueBatches } from "./value-utils";
 import {
   archiveCustomField,
@@ -46,10 +48,12 @@ const useCustomFieldContext = () => {
 
 export const useTeamCustomFields = (teamId?: string) => {
   const ctx = useCustomFieldContext();
+  const online = useDesktopOnline();
+  const offline = Boolean(getDesktopBridge()) && !online;
   return useQuery({
     queryKey: customFieldKeys.team(ctx.workspaceSlug, teamId ?? ""),
     queryFn: () => getTeamCustomFields(teamId!, ctx),
-    enabled: Boolean(ctx.session && ctx.workspaceSlug && teamId),
+    enabled: Boolean(ctx.session && ctx.workspaceSlug && teamId && !offline),
     staleTime: 60_000,
   });
 };

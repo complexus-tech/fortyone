@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-hosted-page-write"
+description = "Enables the hosted_page_write command without any pre-configured scope."
+commands.allow = ["hosted_page_write"]
+
+[[permission]]
+identifier = "deny-hosted-page-write"
+description = "Denies the hosted_page_write command without any pre-configured scope."
+commands.deny = ["hosted_page_write"]

@@ -293,7 +293,9 @@ export const AuthLayout = ({
               </>
             ) : null}
           </form>
-          {!isMobileApp && page === "login" ? <WorkspaceSSOSignIn /> : null}
+          {!isMobileApp && page === "login" ? (
+            <WorkspaceSSOSignIn callbackUrl={safeCallbackUrl} />
+          ) : null}
           <Text className="mt-3 pl-px text-[90%]" color="muted">
             {COPYRIGHT_NOTICE}
           </Text>

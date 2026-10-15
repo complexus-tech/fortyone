@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-desktop-install-update"
+description = "Enables the desktop_install_update command without any pre-configured scope."
+commands.allow = ["desktop_install_update"]
+
+[[permission]]
+identifier = "deny-desktop-install-update"
+description = "Denies the desktop_install_update command without any pre-configured scope."
+commands.deny = ["desktop_install_update"]

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-desktop-mark-notification-read"
+description = "Enables the desktop_mark_notification_read command without any pre-configured scope."
+commands.allow = ["desktop_mark_notification_read"]
+
+[[permission]]
+identifier = "deny-desktop-mark-notification-read"
+description = "Denies the desktop_mark_notification_read command without any pre-configured scope."
+commands.deny = ["desktop_mark_notification_read"]

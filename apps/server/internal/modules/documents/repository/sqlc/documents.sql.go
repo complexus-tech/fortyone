@@ -461,7 +461,7 @@ WHERE document.workspace_id = $2
       )
   )
 ORDER BY document.updated_at DESC, document.document_id
-LIMIT CAST($5 AS integer)
+LIMIT CAST($6 AS integer) OFFSET CAST($5 AS integer)
 `
 
 type ListAccessibleDocumentsParams struct {
@@ -469,6 +469,7 @@ type ListAccessibleDocumentsParams struct {
 	WorkspaceID uuid.UUID
 	SearchText  string
 	ListScope   string
+	RowOffset   int32
 	RowLimit    *int32
 }
 
@@ -491,6 +492,7 @@ func (q *Queries) ListAccessibleDocuments(ctx context.Context, arg ListAccessibl
 		arg.WorkspaceID,
 		arg.SearchText,
 		arg.ListScope,
+		arg.RowOffset,
 		arg.RowLimit,
 	)
 	if err != nil {

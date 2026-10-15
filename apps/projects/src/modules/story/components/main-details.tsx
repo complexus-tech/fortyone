@@ -7,7 +7,7 @@ import Paragraph from "@tiptap/extension-paragraph";
 import TextExtension from "@tiptap/extension-text";
 import { cn } from "lib";
 import type { ClipboardEvent, ReactNode } from "react";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useLocalStorage, useUserRole } from "@/hooks";
 import { useDebouncedCallback } from "@/hooks/debounce";
 import { BodyContainer } from "@/components/shared";
@@ -30,6 +30,8 @@ import { useIsAdminOrOwner } from "@/hooks/owner";
 import { RelatedDocuments } from "@/modules/documents/related-documents";
 import { GoogleDriveFileSection } from "@/modules/google-drive/public/files";
 import { useGoogleDriveDescriptionPaste } from "@/modules/google-drive/public/editor";
+import { useDesktopDraft } from "@/shell/desktop/use-desktop-draft";
+import { DesktopDraftNotice } from "@/shell/desktop/desktop-draft-notice";
 import { useStoryById } from "../hooks/story";
 import type { StoryUpdate } from "../types";
 import { Activities } from "./activities";
@@ -47,6 +49,13 @@ import { useFigmaDescriptionPaste } from "./use-figma-description-paste";
 import { StoryDescription } from "./story-description";
 
 const DEBOUNCE_DELAY = 1000; // 1000ms delay
+
+type StoryEditorDraft = {
+  title: string;
+  description: string;
+  descriptionHTML: string;
+  baseVersion: string;
+};
 
 type QueuedStoryUpdate = {
   payload: StoryUpdate;
@@ -100,6 +109,39 @@ export const MainDetails = ({
     associations = [],
   } = data!;
   const isDeleted = Boolean(deletedAt);
+  const desktopDraft = useDesktopDraft<StoryEditorDraft>(`story:${storyId}`);
+  const latestDraft = useRef<{
+    storyId: string;
+    payload: StoryEditorDraft;
+  } | null>(null);
+  const saveEditorDraft = useCallback(
+    (patch: Partial<StoryEditorDraft>) => {
+      if (
+        !desktopDraft.supported ||
+        !desktopDraft.ready ||
+        desktopDraft.recovered
+      )
+        return Promise.resolve();
+      const previous =
+        latestDraft.current?.storyId === storyId
+          ? latestDraft.current.payload
+          : {
+              title,
+              description,
+              descriptionHTML,
+              baseVersion: data!.updatedAt,
+            };
+      const payload = { ...previous, ...patch };
+      latestDraft.current = { storyId, payload };
+      return desktopDraft.save(payload);
+    },
+    [data, description, descriptionHTML, desktopDraft, storyId, title],
+  );
+  const editorEnabled =
+    !isDeleted &&
+    userRole !== "guest" &&
+    desktopDraft.ready &&
+    !desktopDraft.recovered;
   const { isAdminOrOwner } = useIsAdminOrOwner(reporterId);
   const handleUpdate = useCallback(
     ({ payload, storyId: targetStoryId }: QueuedStoryUpdate) => {
@@ -142,12 +184,14 @@ export const MainDetails = ({
     }),
     content: descriptionHTML || description,
     contentType: getRichTextContentType(description, descriptionHTML),
-    editable: !isDeleted && userRole !== "guest",
+    editable: editorEnabled,
     onCreate: ({ editor }) => {
       if (
         getRichTextContentType(description, descriptionHTML) !== "markdown" ||
         isDeleted ||
-        userRole === "guest"
+        userRole === "guest" ||
+        !desktopDraft.ready ||
+        desktopDraft.recovered
       ) {
         return;
       }
@@ -163,6 +207,13 @@ export const MainDetails = ({
       });
     },
     onUpdate: ({ editor }) => {
+      if (desktopDraft.supported) {
+        const content = getPersistableRichTextContent(editor);
+        void saveEditorDraft({
+          description: content.contentText,
+          descriptionHTML: content.contentHtml,
+        });
+      }
       debouncedDescriptionUpdate({
         snapshot: createRichTextSnapshot(editor),
         storyId,
@@ -182,8 +233,9 @@ export const MainDetails = ({
       Placeholder.configure({ placeholder: "Enter title..." }),
     ],
     content: title,
-    editable: !isDeleted && userRole !== "guest",
+    editable: editorEnabled,
     onUpdate: ({ editor }) => {
+      void saveEditorDraft({ title: editor.getText() });
       debouncedTitleUpdate({
         payload: { title: editor.getText() },
         storyId,
@@ -194,6 +246,78 @@ export const MainDetails = ({
     },
     immediatelyRender: false,
   });
+  useEffect(() => {
+    if (!desktopDraft.supported) return;
+    titleEditor?.setEditable(editorEnabled, false);
+    descriptionEditor?.setEditable(editorEnabled, false);
+  }, [descriptionEditor, desktopDraft.supported, editorEnabled, titleEditor]);
+
+  useEffect(() => {
+    const beforeClose = (event: Event) => {
+      flushTitleUpdate();
+      flushDescriptionUpdate();
+      if (
+        latestDraft.current?.storyId !== storyId ||
+        !titleEditor ||
+        !descriptionEditor ||
+        !desktopDraft.ready ||
+        desktopDraft.recovered
+      )
+        return;
+      const content = getPersistableRichTextContent(descriptionEditor);
+      const save = saveEditorDraft({
+        title: titleEditor.getText(),
+        description: content.contentText,
+        descriptionHTML: content.contentHtml,
+      });
+      (
+        event as CustomEvent<{ waitUntil: (write: Promise<void>) => void }>
+      ).detail.waitUntil(save);
+    };
+    window.addEventListener("fortyone:desktop-before-close", beforeClose);
+    return () => {
+      window.removeEventListener("fortyone:desktop-before-close", beforeClose);
+    };
+  }, [
+    descriptionEditor,
+    desktopDraft.ready,
+    desktopDraft.recovered,
+    flushDescriptionUpdate,
+    flushTitleUpdate,
+    saveEditorDraft,
+    storyId,
+    titleEditor,
+  ]);
+
+  const restoreEditorDraft = () => {
+    const recovered = desktopDraft.recovered;
+    if (
+      !recovered ||
+      typeof recovered.title !== "string" ||
+      typeof recovered.description !== "string" ||
+      typeof recovered.descriptionHTML !== "string" ||
+      typeof recovered.baseVersion !== "string"
+    )
+      return;
+    titleEditor?.commands.setContent(recovered.title, { emitUpdate: false });
+    descriptionEditor?.commands.setContent(
+      recovered.descriptionHTML || recovered.description,
+      { emitUpdate: false },
+    );
+    latestDraft.current = { storyId, payload: recovered };
+    desktopDraft.acceptRecovered();
+    updateStory({
+      storyId,
+      desktopBaseVersion: recovered.baseVersion,
+      payload: {
+        title: recovered.title,
+        description: recovered.description,
+        descriptionHTML: recovered.descriptionHTML,
+        reconcileDescriptionMedia: true,
+      },
+    });
+  };
+
   const handleFigmaDescriptionPaste = useFigmaDescriptionPaste({
     editor: descriptionEditor,
     storyId,
@@ -263,6 +387,18 @@ export const MainDetails = ({
           </Box>
         ) : null}
         <StoryBanners story={data!} />
+        <DesktopDraftNotice
+          error={desktopDraft.error}
+          onDiscard={() => {
+            void desktopDraft.discard();
+          }}
+          onRestore={restoreEditorDraft}
+          onRetry={() => {
+            void desktopDraft.retry();
+          }}
+          recovered={Boolean(desktopDraft.recovered)}
+          status={desktopDraft.status}
+        />
         <TextEditor
           asTitle
           className="text-foreground relative -left-px mb-4 text-3xl font-semibold md:text-4xl"

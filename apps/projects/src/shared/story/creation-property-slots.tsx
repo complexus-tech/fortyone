@@ -17,6 +17,7 @@ export type CreationPropertiesProps = {
   controllerRef: Ref<CreationPropertiesController>;
   teamId?: string;
   disabled?: boolean;
+  onValuesChange?: (values: Record<string, string | null>) => void;
 };
 
 export type CreationTemplatePickerProps = {

@@ -16,7 +16,11 @@ export const getStoryReference = ({
 }: StoryRouteIdentity) => {
   const normalizedTeamCode = teamCode?.trim().toUpperCase();
 
-  if (normalizedTeamCode && Number.isInteger(sequenceId)) {
+  if (
+    normalizedTeamCode &&
+    Number.isInteger(sequenceId) &&
+    Number(sequenceId) > 0
+  ) {
     return `${normalizedTeamCode}-${sequenceId}`;
   }
 

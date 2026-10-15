@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-desktop-bootstrap"
+description = "Enables the desktop_bootstrap command without any pre-configured scope."
+commands.allow = ["desktop_bootstrap"]
+
+[[permission]]
+identifier = "deny-desktop-bootstrap"
+description = "Denies the desktop_bootstrap command without any pre-configured scope."
+commands.deny = ["desktop_bootstrap"]

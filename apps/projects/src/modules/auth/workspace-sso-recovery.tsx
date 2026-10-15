@@ -4,17 +4,20 @@ import { useState } from "react";
 import { Box, Button, Text } from "ui";
 import { Logo } from "@/components/ui/logo";
 import { getApiUrl } from "@/lib/api-url";
+import { isDesktopAuthPath } from "@/lib/desktop-auth";
 
 export const WorkspaceSSORecovery = ({
   workspaceSlug,
   workspaceName,
   email,
   required,
+  callbackUrl,
 }: {
   workspaceSlug: string;
   workspaceName: string;
   email: string;
   required: boolean;
+  callbackUrl?: string;
 }) => {
   const [pending, setPending] = useState(false);
   return (
@@ -42,10 +45,14 @@ export const WorkspaceSSORecovery = ({
         fullWidth
         loading={pending}
         onClick={() => {
+          if (pending) return;
           setPending(true);
-          window.location.assign(
+          const destination = new URL(
             `${getApiUrl()}/auth/sso/${encodeURIComponent(workspaceSlug)}`,
           );
+          if (isDesktopAuthPath(callbackUrl))
+            destination.searchParams.set("returnTo", callbackUrl!);
+          window.location.assign(destination.toString());
         }}
         size="lg"
       >

@@ -1,3 +1,6 @@
+import { toast } from "sonner";
+import { useId } from "react";
+import { createPortal } from "react-dom";
 import { Avatar, Badge, Button, Menu } from "ui";
 import {
   CheckIcon,
@@ -8,17 +11,18 @@ import {
   WorkspaceIcon,
   ArrowDown2Icon,
   ChevronRightIcon,
+  LoadingIcon,
 } from "icons";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn, getReadableTextColor } from "lib";
 import { useAnalytics, useLocalStorage, useWorkspacePath } from "@/hooks";
-import { buildWorkspaceUrl } from "@/utils/workspace-url";
 import { useUserRole } from "@/hooks/role";
 import { useCurrentWorkspace, useWorkspaces } from "@/lib/hooks/workspaces";
 import { walkthroughTargets } from "@/shared/walkthrough/targets";
-import { changeWorkspace, logOut } from "@/components/shared/sidebar/actions";
+import { logOut } from "@/components/shared/sidebar/actions";
 import { clearAllStorage } from "@/components/shared/sidebar/utils";
+import { useWorkspaceSwitch } from "./use-workspace-switch";
 
 const isFortyOneApp = process.env.NEXT_PUBLIC_DOMAIN === "fortyone.app";
 
@@ -32,9 +36,20 @@ export const WorkspacesMenu = ({
   const { userRole } = useUserRole();
   const { data: workspaces = [] } = useWorkspaces();
   const { workspace } = useCurrentWorkspace();
+  const {
+    state: workspaceSwitch,
+    switchWorkspace,
+    retry,
+    cancel,
+  } = useWorkspaceSwitch(workspace?.id);
+  const switchStatusId = useId();
   const { analytics } = useAnalytics();
   const { withWorkspace } = useWorkspacePath();
   const workspaceName = workspace?.name ?? "Loading workspace";
+  const switchLabel = workspaceSwitch
+    ? `Switching to ${workspaceSwitch.destination.name}…`
+    : workspaceName;
+  const isSwitching = workspaceSwitch?.status === "pending";
 
   const handleLogout = async () => {
     const mainDomain = isFortyOneApp ? "https://fortyone.app" : "/";
@@ -43,19 +58,12 @@ export const WorkspacesMenu = ({
       analytics.logout(true);
       clearAllStorage();
       window.location.href = `${mainDomain}?signedOut=true`;
-    } catch {
-      clearAllStorage();
-      window.location.href = `${mainDomain}?signedOut=true`;
-    }
-  };
-
-  const handleChangeWorkspace = async (workspaceId: string, slug: string) => {
-    const nextPath = buildWorkspaceUrl(slug);
-    try {
-      await changeWorkspace(workspaceId);
-      window.location.href = nextPath;
     } catch (error) {
-      window.location.href = nextPath;
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Save your local drafts before signing out.",
+      );
     }
   };
 
@@ -68,26 +76,36 @@ export const WorkspacesMenu = ({
       <Menu>
         <Menu.Button>
           <Button
-            aria-label={isCollapsed ? workspaceName : undefined}
+            aria-busy={isSwitching}
+            aria-describedby={workspaceSwitch ? switchStatusId : undefined}
+            aria-label={isCollapsed ? switchLabel : undefined}
             className={cn(
               "h-11 max-w-full min-w-0 gap-1.5 pl-1",
               isCollapsed && "bg-state-hover h-12 w-12 justify-center px-0",
             )}
             color="tertiary"
             data-walkthrough-target={walkthroughTargets.workspaceSwitcher}
+            data-workspace-switch-progress={
+              workspaceSwitch ? "true" : undefined
+            }
             data-workspace-switcher
+            disabled={Boolean(workspaceSwitch)}
             leftIcon={
-              <Avatar
-                className={cn("h-8 text-sm", isCollapsed && "h-9")}
-                name={workspace?.name}
-                rounded="md"
-                src={workspace?.avatarUrl}
-                style={{
-                  backgroundColor: workspace?.color,
-                  color: getReadableTextColor(workspace?.color),
-                }}
-                suppressHydrationWarning
-              />
+              isSwitching ? (
+                <LoadingIcon aria-hidden className="mx-1 h-6 shrink-0" />
+              ) : (
+                <Avatar
+                  className={cn("h-8 text-sm", isCollapsed && "h-9")}
+                  name={workspace?.name}
+                  rounded="md"
+                  src={workspace?.avatarUrl}
+                  style={{
+                    backgroundColor: workspace?.color,
+                    color: getReadableTextColor(workspace?.color),
+                  }}
+                  suppressHydrationWarning
+                />
+              )
             }
             rightIcon={
               isCollapsed ? null : (
@@ -96,7 +114,7 @@ export const WorkspacesMenu = ({
             }
             size="sm"
             suppressHydrationWarning
-            title={isCollapsed ? workspaceName : undefined}
+            title={isCollapsed ? switchLabel : undefined}
             variant="naked"
           >
             <span
@@ -106,7 +124,7 @@ export const WorkspacesMenu = ({
                   : "min-w-0 flex-1 truncate text-left font-semibold"
               }
             >
-              {workspaceName}
+              {switchLabel}
             </span>
           </Button>
         </Menu.Button>
@@ -114,13 +132,13 @@ export const WorkspacesMenu = ({
           <Menu.Group className="space-y-1 pt-1.5">
             <Menu.Item
               className="justify-between gap-6"
-              disabled={!workspace}
+              disabled={!workspace || Boolean(workspaceSwitch)}
               onSelect={() => {
                 if (!workspace) {
                   return;
                 }
 
-                handleChangeWorkspace(workspace.id, workspace.slug);
+                switchWorkspace(workspace);
               }}
             >
               <span className="flex items-center gap-2">
@@ -168,8 +186,11 @@ export const WorkspacesMenu = ({
                       .map(({ id, name, color, slug, userRole, avatarUrl }) => (
                         <Menu.Item
                           className="justify-between gap-6"
+                          disabled={Boolean(workspaceSwitch)}
                           key={id}
-                          onSelect={() => handleChangeWorkspace(id, slug)}
+                          onSelect={() => {
+                            switchWorkspace({ id, name, slug });
+                          }}
                         >
                           <span className="flex items-center gap-2">
                             <Avatar
@@ -249,6 +270,43 @@ export const WorkspacesMenu = ({
           </Menu.Group>
         </Menu.Items>
       </Menu>
+      {workspaceSwitch ? (
+        <span className="sr-only" id={switchStatusId} role="status">
+          {isSwitching
+            ? switchLabel
+            : `${workspaceSwitch.destination.name} is taking longer to open.`}
+        </span>
+      ) : null}
+      {workspaceSwitch?.status === "failed" && typeof document !== "undefined"
+        ? createPortal(
+            <div
+              className="border-border bg-surface-elevated fixed bottom-6 left-1/2 z-[60] w-[min(28rem,calc(100vw-3rem))] -translate-x-1/2 rounded-xl border p-4 shadow-lg"
+              role="alert"
+            >
+              <p className="font-medium">
+                {workspaceSwitch.destination.name} is taking longer to open.
+              </p>
+              <p className="text-text-muted mt-1">
+                {workspaceSwitch.error ??
+                  `Check your connection, then try again or return to ${workspaceName}.`}
+              </p>
+              <div className="mt-3 flex gap-2">
+                <Button color="invert" onClick={retry} size="sm">
+                  Retry
+                </Button>
+                <Button
+                  color="tertiary"
+                  onClick={cancel}
+                  size="sm"
+                  variant="naked"
+                >
+                  Return to {workspaceName}
+                </Button>
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 };

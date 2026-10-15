@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-hosted-restore-session"
+description = "Enables the hosted_restore_session command without any pre-configured scope."
+commands.allow = ["hosted_restore_session"]
+
+[[permission]]
+identifier = "deny-hosted-restore-session"
+description = "Denies the hosted_restore_session command without any pre-configured scope."
+commands.deny = ["hosted_restore_session"]

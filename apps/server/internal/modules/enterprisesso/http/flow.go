@@ -10,11 +10,13 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 	"time"
 
 	domain "github.com/complexus-tech/projects-api/internal/modules/enterprisesso/domain"
 	"github.com/complexus-tech/projects-api/internal/platform/auth"
+	"github.com/complexus-tech/projects-api/internal/platform/deployment"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 	"golang.org/x/oauth2"
@@ -41,11 +43,12 @@ func (h *Handlers) setStateCookie(w http.ResponseWriter, r *http.Request, state 
 		age = -1
 		expires = time.Unix(0, 0)
 	}
-	http.SetCookie(w, &http.Cookie{Name: stateCookie, Value: state, Path: "/auth/sso", Domain: h.cookieDomain, HttpOnly: true, Secure: h.production || r.TLS != nil || strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https"), SameSite: http.SameSiteLaxMode, MaxAge: age, Expires: expires})
+	http.SetCookie(w, &http.Cookie{Name: stateCookie, Value: state, Path: "/auth/sso", Domain: h.cookieDomain, HttpOnly: true, Secure: h.deploymentMode.IsProduction() || r.TLS != nil || strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https"), SameSite: http.SameSiteLaxMode, MaxAge: age, Expires: expires})
 }
 func (h *Handlers) Start(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	query := r.URL.Query()
-	if len(query) > 1 || (len(query) == 1 && (len(query["returnTo"]) != 1 || query.Get("returnTo") != "security")) {
+	desktopReturn, validDesktopReturn := desktopReturnPath(query.Get("returnTo"), h.deploymentMode)
+	if len(query) > 1 || (len(query) == 1 && (len(query["returnTo"]) != 1 || (query.Get("returnTo") != "security" && !validDesktopReturn))) {
 		return respond(ctx, w, nil, domain.ErrInvalid)
 	}
 	connection, err := h.service.Public(ctx, web.Params(r, "workspaceSlug"))
@@ -66,6 +69,7 @@ func (h *Handlers) Start(ctx context.Context, w http.ResponseWriter, r *http.Req
 	}
 	attempt := domain.Attempt{WorkspaceID: connection.WorkspaceID, ConnectionID: connection.ID, Generation: connection.Generation, LinkUserID: actorID, Slug: web.Params(r, "workspaceSlug"), Nonce: nonce, Verifier: oauth2.GenerateVerifier(), CreatedAt: time.Now().UTC()}
 	attempt.ReturnToSettings = query.Get("returnTo") == "security"
+	attempt.DesktopReturnPath = desktopReturn
 	authorize, err := h.service.AuthorizationURL(ctx, connection, attempt, state)
 	if err != nil {
 		return respond(ctx, w, nil, domain.ErrProvider)
@@ -120,9 +124,42 @@ func (h *Handlers) Callback(ctx context.Context, w http.ResponseWriter, r *http.
 	h.setStateCookie(w, r, "", true)
 	w.Header().Set("Cache-Control", "no-store")
 	target := h.websiteURL + "/" + url.PathEscape(attempt.Slug)
-	if attempt.ReturnToSettings {
+	if desktopReturn, valid := desktopReturnPath(attempt.DesktopReturnPath, h.deploymentMode); valid {
+		target = h.websiteURL + desktopReturn
+	} else if attempt.ReturnToSettings {
 		target += "/settings/workspace/security?tab=sso"
 	}
 	http.Redirect(w, r, target, http.StatusSeeOther)
 	return nil
+}
+
+var desktopProofPattern = regexp.MustCompile(`^[A-Za-z0-9_-]{43}$`)
+
+// SSO may return only to the hosted desktop handoff, never an arbitrary URL or
+// a custom scheme. Its PKCE proof remains bound to the native login attempt.
+func desktopReturnPath(value string, mode deployment.Mode) (string, bool) {
+	if !strings.HasPrefix(value, "/auth/desktop?") || strings.ContainsAny(value, "\\#") {
+		return "", false
+	}
+	target, err := url.ParseRequestURI(value)
+	if err != nil || target.IsAbs() || target.Host != "" || target.Path != "/auth/desktop" || target.EscapedPath() != "/auth/desktop" {
+		return "", false
+	}
+	query, err := url.ParseQuery(target.RawQuery)
+	if err != nil || (len(query) != 2 && len(query) != 3) {
+		return "", false
+	}
+	if redirects, exists := query["redirect_uri"]; exists {
+		if len(redirects) != 1 || !auth.IsAllowedDesktopRedirect(redirects[0], mode) {
+			return "", false
+		}
+	} else if len(query) != 2 {
+		return "", false
+	}
+	for _, key := range []string{"state", "code_challenge"} {
+		if len(query[key]) != 1 || !desktopProofPattern.MatchString(query.Get(key)) {
+			return "", false
+		}
+	}
+	return "/auth/desktop?" + query.Encode(), true
 }

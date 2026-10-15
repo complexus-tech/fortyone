@@ -4,6 +4,17 @@ import {
 } from "./workspace-realtime-contract";
 
 describe("workspace realtime contract", () => {
+  it("decodes the server's snake-case notification stream", () => {
+    expect(
+      parseWorkspaceRealtimeEvent(
+        '{"entity_id":"story-1","entity_type":"story"}',
+      ),
+    ).toEqual({
+      entityId: "story-1",
+      entityType: "story",
+      kind: "notification",
+    });
+  });
   it("decodes supported event shapes", () => {
     expect(parseWorkspaceRealtimeEvent('{"type":"calendar.updated"}')).toEqual({
       kind: "calendar-updated",

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-desktop-read-media"
+description = "Enables the desktop_read_media command without any pre-configured scope."
+commands.allow = ["desktop_read_media"]
+
+[[permission]]
+identifier = "deny-desktop-read-media"
+description = "Denies the desktop_read_media command without any pre-configured scope."
+commands.deny = ["desktop_read_media"]

@@ -26,9 +26,13 @@ func (repository *Repository) List(
 		}
 		rowLimit = &converted
 	}
+	offset, err := safecast.Int32(input.Offset)
+	if err != nil || offset < 0 {
+		return nil, documentdomain.ErrInvalidInput
+	}
 	rows, err := repository.queries.ListAccessibleDocuments(ctx, documentssql.ListAccessibleDocumentsParams{
 		ActorID: input.UserID, WorkspaceID: input.WorkspaceID, SearchText: input.Search,
-		ListScope: input.Scope, RowLimit: rowLimit,
+		ListScope: input.Scope, RowLimit: rowLimit, RowOffset: offset,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("list accessible documents: %w", err)
@@ -61,6 +65,24 @@ func (repository *Repository) Get(
 		return documentdomain.Document{}, err
 	}
 	return document, nil
+}
+
+func (repository *Repository) GetForOffline(ctx context.Context, workspaceID, userID, documentID uuid.UUID) (documentdomain.Document, error) {
+	if err := repository.configured(); err != nil {
+		return documentdomain.Document{}, err
+	}
+	var document documentdomain.Document
+	err := repository.transactor.WithinTransaction(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly}, func(tx pgx.Tx) error {
+		queries := documentssql.New(tx)
+		var err error
+		document, err = getDocument(ctx, queries, workspaceID, userID, documentID)
+		if err != nil || !document.Collaborative {
+			return err
+		}
+		document.CollaborationState, err = queries.GetDocumentOfflineState(ctx, documentssql.GetDocumentOfflineStateParams{DocumentID: documentID})
+		return err
+	})
+	return document, err
 }
 
 func getDocument(
@@ -126,14 +148,19 @@ func (repository *Repository) Create(
 	if err := repository.configured(); err != nil {
 		return documentdomain.Document{}, err
 	}
-	row, err := repository.queries.CreateDocument(ctx, documentssql.CreateDocumentParams{
-		Title: input.Title, ContentHtml: input.ContentHTML, ContentText: input.ContentText,
-		Visibility: string(input.Visibility), WorkspaceID: input.WorkspaceID, ActorID: input.UserID,
+	var document documentdomain.Document
+	err := repository.withinSerializable(ctx, func(queries *documentssql.Queries) error {
+		row, err := queries.CreateDocument(ctx, documentssql.CreateDocumentParams{
+			Title: input.Title, ContentHtml: input.ContentHTML, ContentText: input.ContentText,
+			Visibility: string(input.Visibility), WorkspaceID: input.WorkspaceID, ActorID: input.UserID,
+		})
+		if err != nil {
+			return mapCreateError(err)
+		}
+		document = documentFromCreate(row)
+		return hydrateDocument(ctx, queries, &document, input.UserID)
 	})
-	if err != nil {
-		return documentdomain.Document{}, mapCreateError(err)
-	}
-	return documentFromCreate(row), nil
+	return document, err
 }
 
 func (repository *Repository) Update(

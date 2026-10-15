@@ -69,9 +69,11 @@ func Routes(cfg Config, app *web.App) {
 	app.Post("/users/verify/email", h.SendEmailVerification)
 	app.Post("/users/verify/email/confirm", h.VerifyEmail)
 	app.Post("/auth/mobile/exchange", h.ExchangeMobile)
+	app.Post("/auth/desktop/exchange", h.ExchangeDesktop)
 
 	// Protected endpoints
 	app.Post("/auth/mobile/authorize", h.AuthorizeMobile, auth)
+	app.Post("/auth/desktop/authorize", h.AuthorizeDesktop, auth)
 	app.Post("/users/session", h.CreateSession, auth)
 	app.Delete("/users/session", h.ClearSession)
 	app.Get("/workspaces/{workspaceSlug}/members/maya", h.GetMayaAssignee, auth, workspace, gzip)

@@ -23,6 +23,8 @@ export const NewStoryDialogContent = <TTeam extends HeaderTeam>({
   activeTeamId,
   canUseBackgroundMaya,
   createMore,
+  createDisabled = false,
+  draftNotice,
   currentTeam,
   currentTeamId,
   customFields,
@@ -68,6 +70,8 @@ export const NewStoryDialogContent = <TTeam extends HeaderTeam>({
   activeTeamId?: string;
   canUseBackgroundMaya: DialogFieldsProps["canUseBackgroundMaya"];
   createMore: boolean;
+  createDisabled?: boolean;
+  draftNotice?: ReactNode;
   currentTeam: TTeam | null;
   currentTeamId: DialogFieldsProps["currentTeamId"];
   customFields?: ReactNode;
@@ -130,6 +134,7 @@ export const NewStoryDialogContent = <TTeam extends HeaderTeam>({
         templatePicker={templatePicker}
       />
       <Dialog.Body className="max-h-[60dvh] min-h-0 flex-1 overflow-y-auto pt-0 pb-6">
+        {draftNotice}
         <TextEditor
           asTitle
           className="text-2xl font-medium"
@@ -202,10 +207,15 @@ export const NewStoryDialogContent = <TTeam extends HeaderTeam>({
           </label>
         </Text>
         <Button
+          disabled={
+            createDisabled ||
+            isCreating ||
+            (isMayaAssigned && isMayaAssigneeLoading)
+          }
           leftIcon={<PlusIcon className="text-current" />}
-          loading={isCreating || isMayaAssigneeLoading}
+          loading={isCreating || (isMayaAssigned && isMayaAssigneeLoading)}
           loadingText={
-            isMayaAssigneeLoading
+            isMayaAssigned && isMayaAssigneeLoading
               ? "Preparing Maya..."
               : `Creating ${storyTerm}...`
           }

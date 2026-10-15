@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-hosted-bind-session"
+description = "Enables the hosted_bind_session command without any pre-configured scope."
+commands.allow = ["hosted_bind_session"]
+
+[[permission]]
+identifier = "deny-hosted-bind-session"
+description = "Denies the hosted_bind_session command without any pre-configured scope."
+commands.deny = ["hosted_bind_session"]

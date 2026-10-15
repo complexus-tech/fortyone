@@ -82,6 +82,7 @@ The machine-readable source of truth is [`internal/migrations/manifest.json`](..
 | `000215` | `maya_skills` | `forward-only` | `schema-first` | The new skill CRUD endpoints require schema 215. Existing Maya and user-memory APIs remain compatible. | Unaffected; skills are selected and edited by users in the web composer. |
 | `000216` | `browser_session_metadata` | `forward-only` | `schema-first` | The session list adds username and nullable browserName fields. New session issuance captures recognized browser request metadata; cookie renewal retains the original value. The replacement API requires schema 216. | Unaffected; browser metadata is captured and tracked by the first-party API only. |
 | `000217` | `story_checklists` | `forward-only` | `schema-first` | Checklist endpoints require schema 217. Existing story endpoints remain compatible. | Deploy the updated worker to broadcast checklist changes through the existing story event stream. Durable creation and change events use the existing outbox. |
+| `000218` | `desktop_operation_receipts` | `forward-only` | `schema-first` | Desktop mutation endpoints require schema 218. Browser, mobile and existing domain endpoints retain their current contracts. | No receipt reader is required in the worker. Domain mutation events continue through the existing transactional outbox. |
 
 ## `000152_harden_verification_tokens`
 
@@ -1892,6 +1893,32 @@ Operational notes:
 
 - Checklist conversion creates one related standalone story atomically and retains its completed source item.
 - Checklist updates do not complete the owning story or change its sub-stories.
+
+## `000218_desktop_operation_receipts`
+
+- **Classification:** `forward-only`
+- **Files:** `000218_desktop_operation_receipts.up.sql`, `000218_desktop_operation_receipts.down.sql`
+- **Schema:** Adds durable account/workspace-scoped desktop operation receipts with request hashes and immutable committed resource versions. Domain changes and receipts commit in one PostgreSQL transaction.
+- **API:** Desktop mutation endpoints require schema 218. Browser, mobile and existing domain endpoints retain their current contracts.
+- **Worker:** No receipt reader is required in the worker. Domain mutation events continue through the existing transactional outbox.
+- **Mixed versions:** Apply the additive table before replacement APIs and desktop clients. Older APIs ignore the table; do not expose desktop sync writes until all serving APIs support the operation contract.
+- **Rollout mode:** `schema-first`
+
+Rollout:
+
+1. Apply migration 000218 after 000217 before enabling desktop mutation requests.
+2. Deploy the API, then the desktop client; verify replay after a lost response returns the original resource version without repeating the mutation, and stale revisions return a conflict.
+
+Recovery (`forward-fix`):
+
+1. Preserve receipts and repair the API or desktop client forward. Disabling desktop writes must retain receipts for queued operations on offline devices.
+2. The down migration only removes an empty receipt table and refuses to discard committed operation identities.
+
+Operational notes:
+
+- Receipts have no expiry. Retain operation identity at least as long as any device can replay its outbox; the current protocol has no finite maximum offline replay age.
+- Account or workspace deletion cascades its receipts. Membership changes do not remove receipts; every replay still requires current workspace and resource access.
+- Only a request hash, resource ID and committed version are retained, not the mutation payload or session credentials. Object storage uploads cannot share the PostgreSQL transaction; ambiguous commit outcomes preserve the uploaded object for safe retry.
 
 ## Adding the next migration
 

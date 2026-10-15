@@ -1,12 +1,19 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod chrome;
+mod hosted;
 #[cfg(target_os = "macos")]
 mod macos_chrome;
 mod navigation;
-#[cfg(any(feature = "production", test))]
+#[cfg(feature = "native-client")]
+mod offline;
+#[cfg(feature = "native-client")]
+mod offline_app;
+mod operations;
 mod session;
+mod tray_icon;
 mod window_controls;
+mod workspace_transition;
 
 use std::sync::Arc;
 
@@ -59,15 +66,71 @@ fn navigate_main_window(app: &AppHandle, url: Url) {
     });
 }
 
+fn desktop_context() -> tauri::Context<tauri::Wry> {
+    tauri::generate_context!()
+}
+
+fn bridge_script() -> String {
+    let platform = if cfg!(target_os = "macos") {
+        "macos"
+    } else if cfg!(target_os = "windows") {
+        "windows"
+    } else {
+        "linux"
+    };
+    include_str!("bridge.js").replace("__FORTYONE_DESKTOP_PLATFORM__", platform)
+}
+
 fn main() {
+    #[cfg(feature = "native-client")]
+    offline_app::run();
+    #[cfg(not(feature = "native-client"))]
+    hosted_main();
+}
+
+#[allow(dead_code)]
+fn hosted_main() {
     tauri::Builder::default()
         .manage(chrome::ChromeController::default())
         .manage(chrome::ChromeCapabilities::default())
+        .manage(workspace_transition::WorkspaceTransitions::default())
         .invoke_handler(tauri::generate_handler![
+            hosted::export::hosted_export_recovery,
+            hosted::attachments::hosted_stage_attachment,
+            hosted::attachments::hosted_read_attachment,
+            hosted::attachments::hosted_export_attachment,
+            hosted::update::hosted_get_update_status,
+            hosted::update::hosted_check_update,
+            hosted::update::hosted_install_update,
+            hosted::pages::hosted_page_read,
+            hosted::pages::hosted_page_write,
+            hosted::outbox::hosted_enqueue_operation,
+            hosted::outbox::hosted_read_outbox,
+            hosted::outbox::hosted_sync_outbox,
+            hosted::outbox::hosted_resolve_operation,
+            hosted::close::hosted_confirm_close,
+            hosted::hosted_bind_session,
+            hosted::hosted_restore_session,
+            hosted::cache::hosted_cache_read,
+            hosted::cache::hosted_cache_write,
+            hosted::cache::hosted_cache_clear,
+            hosted::drafts::hosted_draft_read,
+            hosted::drafts::hosted_draft_write,
+            hosted::drafts::hosted_draft_delete,
+            hosted::preferences::hosted_get_preferences,
+            hosted::preferences::hosted_update_preferences,
+            hosted::preferences::hosted_request_notification_permission,
+            hosted::notifications::hosted_deliver_notification,
+            hosted::notifications::hosted_set_notification_badge,
             chrome::sync_desktop_chrome,
             window_controls::desktop_navigation_state,
             window_controls::desktop_navigate,
             window_controls::desktop_window_action,
+            workspace_transition::begin_workspace_switch,
+            workspace_transition::get_workspace_switch,
+            workspace_transition::workspace_ready,
+            workspace_transition::retry_workspace_switch,
+            workspace_transition::cancel_workspace_switch,
         ])
         .plugin(
             tauri_plugin_opener::Builder::new()
@@ -76,6 +139,10 @@ fn main() {
                 .build(),
         )
         .plugin(tauri_plugin_window_state::Builder::default().build())
+        .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_autostart::Builder::new().build())
         .setup(|app| {
             #[cfg(feature = "production")]
             let policy = Arc::new(NavigationPolicy::production());
@@ -86,10 +153,16 @@ fn main() {
                 Arc::new(NavigationPolicy::new(Url::parse(&configured_url)?)?)
             };
             app.manage(Arc::clone(&policy));
-            #[cfg(feature = "production")]
+            let data_dir = app.path().app_local_data_dir()?;
+            std::fs::create_dir_all(&data_dir)?;
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                std::fs::set_permissions(&data_dir, std::fs::Permissions::from_mode(0o700))?;
+            }
+            app.manage(Arc::new(hosted::open(&data_dir.join("hosted.sqlite3"))?));
+            hosted::notifications::install(app.handle())?;
             let start_url = session::start_url(app.handle(), &policy);
-            #[cfg(not(feature = "production"))]
-            let start_url = policy.app_url().clone();
             app.state::<chrome::ChromeCapabilities>().ensure(
                 app.handle(),
                 &policy,
@@ -112,7 +185,6 @@ fn main() {
                     // Keep the browser's file drag-and-drop behavior used by the web app.
                     .disable_drag_drop_handler()
                     .on_navigation(move |url| {
-                        #[cfg(feature = "production")]
                         session::clear_after_logout(&navigation_app, &navigation_policy, url);
                         match prepare_app_destination(&navigation_app, &navigation_policy, url) {
                             Ok(Some(destination)) if destination == *url => return true,
@@ -134,6 +206,8 @@ fn main() {
                         }
                         NewWindowResponse::Deny
                     })
+                    .initialization_script(include_str!("workspace-transition.js"))
+                    .initialization_script(bridge_script())
                     .on_page_load(|window, payload| {
                         if payload.event() == PageLoadEvent::Started {
                             if let Err(error) = chrome::reset(&window) {
@@ -156,15 +230,16 @@ fn main() {
                         .effect(tauri::window::Effect::Sidebar)
                         .state(tauri::window::EffectState::FollowsWindowActiveState)
                         .build(),
-                )
-                .initialization_script(include_str!("bridge.js"));
+                );
             let window = builder.build()?;
-            #[cfg(feature = "production")]
+            hosted::preferences::install(app.handle(), &window)?;
             {
                 let session_window = window.clone();
                 window.on_window_event(move |event| {
                     if matches!(event, tauri::WindowEvent::CloseRequested { .. }) {
-                        session::save_window(&session_window);
+                        if let Err(error) = session::save_window(&session_window) {
+                            eprintln!("Could not save the last workspace: {error}");
+                        }
                     }
                 });
             }
@@ -284,13 +359,22 @@ fn main() {
             });
             Ok(())
         })
-        .build(tauri::generate_context!())
+        .build(desktop_context())
         .expect("Could not start FortyOne desktop")
         .run(|_app, _event| {
-            #[cfg(feature = "production")]
-            if matches!(_event, tauri::RunEvent::ExitRequested { .. }) {
+            #[cfg(target_os = "macos")]
+            if matches!(_event, tauri::RunEvent::Reopen { .. }) {
+                hosted::preferences::show(_app);
+            }
+            if let tauri::RunEvent::ExitRequested { api, .. } = _event {
+                if hosted::preferences::prevent_exit(_app) {
+                    api.prevent_exit();
+                    return;
+                }
                 if let Some(window) = _app.get_webview_window(WINDOW_LABEL) {
-                    session::save_window(&window);
+                    if let Err(error) = session::save_window(&window) {
+                        eprintln!("Could not save the last workspace: {error}");
+                    }
                 }
             }
         });

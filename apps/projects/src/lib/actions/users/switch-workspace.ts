@@ -7,16 +7,22 @@ import { getCookieHeader } from "@/lib/http/header";
 
 const apiUrl = getApiUrl();
 
-export async function switchWorkspace(workspaceId: string) {
+export async function switchWorkspace(
+  workspaceId: string,
+  signal?: AbortSignal,
+) {
   const session = await auth();
   const cookieHeader = await getCookieHeader();
   const headers = buildAuthHeaders({ token: session?.token, cookieHeader });
+  signal?.throwIfAborted();
   const res = await ky.post(`${apiUrl}/workspaces/switch`, {
     json: {
       workspaceId,
     },
     credentials: "include",
     headers,
+    signal,
+    retry: 0,
   });
   const user = await res.json<ApiResponse<User>>();
 

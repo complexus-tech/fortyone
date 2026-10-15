@@ -23,6 +23,7 @@ import "./fallback.css";
 import { DESKTOP_DRAG_HANDLERS, EMPTY_DRAG_HANDLERS } from "./drag-region";
 import { DesktopHistoryControls } from "./desktop-history-controls";
 import { useNativeNavigation } from "./use-native-navigation";
+import { monitorDesktopConnectivity } from "./connectivity";
 
 type DesktopContextValue = {
   isDesktop: boolean;
@@ -49,8 +50,11 @@ export const DesktopProvider = ({ children }: { children: ReactNode }) => {
   const [shellMounted, setShellMounted] = useState(false);
   const resynchronizeChrome = useRef<(() => void) | null>(null);
   const { resolvedTheme, theme } = useTheme();
-  const navigation = useNativeNavigation(isDesktop);
-  const showFallback = isDesktop && !shellMounted;
+  const isMacDesktop = isDesktop && getDesktopBridge()?.platform === "macos";
+  const navigation = useNativeNavigation(isMacDesktop);
+  const showFallback = isMacDesktop && !shellMounted;
+
+  useEffect(() => monitorDesktopConnectivity(), []);
 
   useEffect(() => {
     const bridge = getDesktopBridge();
@@ -105,8 +109,9 @@ export const DesktopProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (!isDesktop) return;
-    document.documentElement.dataset.desktopPlatform = "macos";
-    if (getDesktopBridge()?.vibrancy === true) {
+    const bridge = getDesktopBridge();
+    document.documentElement.dataset.desktopPlatform = bridge?.platform;
+    if (bridge?.platform === "macos" && bridge.vibrancy === true) {
       document.documentElement.dataset.desktopVibrancy = "true";
     }
     return () => {
@@ -182,7 +187,7 @@ export const useDesktopShell = ({
     };
   }, [isDesktop, setShellState]);
 
-  return isDesktop;
+  return isDesktop && getDesktopBridge()?.platform === "macos";
 };
 
 export const useDesktopAction = (

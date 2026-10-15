@@ -8,6 +8,7 @@ import (
 
 	storydomain "github.com/complexus-tech/projects-api/internal/modules/stories/domain"
 	storyreadsql "github.com/complexus-tech/projects-api/internal/modules/stories/repository/sqlc"
+	platformdatabase "github.com/complexus-tech/projects-api/internal/platform/database"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
@@ -27,7 +28,11 @@ func (r *repo) GetVisibleStory(
 		return storydomain.Story{}, fmt.Errorf("%w: story id is required", errInvalidReadQuery)
 	}
 
-	row, err := r.reads.GetVisibleStory(ctx, storyreadsql.GetVisibleStoryParams{
+	queries := r.reads
+	if tx, ok := platformdatabase.UnitTransaction(ctx); ok {
+		queries = storyreadsql.New(tx)
+	}
+	row, err := queries.GetVisibleStory(ctx, storyreadsql.GetVisibleStoryParams{
 		ActorID:                scope.ActorID,
 		StoryID:                storyID,
 		WorkspaceID:            scope.WorkspaceID,

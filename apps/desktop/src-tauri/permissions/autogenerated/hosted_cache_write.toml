@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-hosted-cache-write"
+description = "Enables the hosted_cache_write command without any pre-configured scope."
+commands.allow = ["hosted_cache_write"]
+
+[[permission]]
+identifier = "deny-hosted-cache-write"
+description = "Denies the hosted_cache_write command without any pre-configured scope."
+commands.deny = ["hosted_cache_write"]

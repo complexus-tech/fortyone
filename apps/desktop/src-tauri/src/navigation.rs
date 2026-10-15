@@ -73,15 +73,31 @@ impl NavigationPolicy {
 
     /// Restore only authenticated app pages, never authentication callbacks,
     /// public links, or URL-carried credentials and transient filter state.
-    #[cfg(any(feature = "production", test))]
     pub fn restorable_location(&self, url: &Url) -> Option<Url> {
-        if !self.production
-            || !self.allows_navigation(url)
-            || url.host_str() == self.app_url.host_str()
+        if !self.allows_navigation(url)
+            || (self.production && url.host_str() == self.app_url.host_str())
         {
             return None;
         }
-        let route = url.path().split('/').nth(1)?;
+        let mut segments = url.path().split('/').skip(1);
+        if !self.production {
+            let workspace = segments.next()?;
+            if workspace.is_empty()
+                || workspace.len() > 63
+                || workspace.starts_with('-')
+                || workspace.ends_with('-')
+                || !workspace
+                    .bytes()
+                    .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'-')
+                || matches!(
+                    workspace,
+                    "auth" | "onboarding" | "shared" | "verify" | "api"
+                )
+            {
+                return None;
+            }
+        }
+        let route = segments.next()?;
         if !matches!(
             route,
             "my-work"
@@ -111,13 +127,11 @@ impl NavigationPolicy {
         Some(location)
     }
 
-    #[cfg(any(feature = "production", test))]
     pub fn clears_restored_location(&self, url: &Url) -> bool {
-        self.production
-            && (url.as_str() == "https://fortyone.app/?signedOut=true"
-                || (self.allows_navigation(url)
-                    && url.origin() == self.app_url.origin()
-                    && url.path() == "/"))
+        (self.production && url.as_str() == "https://fortyone.app/?signedOut=true")
+            || (self.allows_navigation(url)
+                && url.origin() == self.app_url.origin()
+                && url.path() == "/")
     }
 
     pub fn allows_navigation(&self, url: &Url) -> bool {
@@ -200,9 +214,31 @@ mod tests {
                 .is_none());
         }
         let local = NavigationPolicy::new(Url::parse("http://localhost:3000/").unwrap()).unwrap();
-        assert!(local
-            .restorable_location(&Url::parse("http://localhost:3000/acme/my-work").unwrap())
-            .is_none());
+        assert_eq!(
+            local
+                .restorable_location(
+                    &Url::parse("http://localhost:3000/acme/my-work?filter=mine#private").unwrap()
+                )
+                .unwrap()
+                .as_str(),
+            "http://localhost:3000/acme/my-work"
+        );
+        for target in [
+            "http://localhost:3000/auth/desktop",
+            "http://localhost:3000/auth/my-work",
+            "http://localhost:3000/shared/docs/private-token",
+            "http://localhost:3000/acme/verify/private-token",
+            "http://localhost:4000/acme/my-work",
+            "http://127.0.0.1:3000/acme/my-work",
+            "http://localhost:3000/",
+        ] {
+            assert!(local
+                .restorable_location(&Url::parse(target).unwrap())
+                .is_none());
+        }
+        assert!(local.clears_restored_location(
+            &Url::parse("http://localhost:3000/?signedOut=true").unwrap()
+        ));
     }
 
     #[test]

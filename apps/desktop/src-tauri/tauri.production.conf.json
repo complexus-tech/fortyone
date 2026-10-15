@@ -6,9 +6,23 @@
     "devUrl": null,
     "frontendDist": "https://cloud.fortyone.app"
   },
+  "plugins": {
+    "deep-link": {
+      "desktop": {
+        "schemes": [
+          "fortyone-desktop"
+        ]
+      }
+    },
+    "updater": {
+      "pubkey": ""
+    }
+  },
   "bundle": {
     "active": true,
-    "targets": ["dmg"],
+    "targets": [
+      "dmg"
+    ],
     "macOS": {
       "signingIdentity": "-"
     }

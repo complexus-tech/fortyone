@@ -3,6 +3,9 @@ import { toast } from "sonner";
 import { useSession } from "@/lib/auth/client";
 import { useWorkspacePath } from "@/hooks";
 import { storyKeys } from "@/modules/stories/constants";
+import { getDesktopBridge } from "@/shell/desktop/bridge";
+import { useDesktopWorkspaceScope } from "@/shell/desktop/workspace-scope";
+import { stageDesktopAttachment } from "@/shell/desktop/attachments";
 import { addAttachmentAction } from "../actions/add-attachment";
 import type { StoryAttachment } from "../types";
 
@@ -20,9 +23,17 @@ export const useUploadAttachmentMutation = (storyId: string) => {
   const queryClient = useQueryClient();
   const { data: session } = useSession();
   const { workspaceSlug } = useWorkspacePath();
+  const scope = useDesktopWorkspaceScope();
+  const canStage = Boolean(getDesktopBridge()?.stageAttachment);
 
   const mutation = useMutation({
+    networkMode: canStage ? "always" : "online",
     mutationFn: async (file: File) => {
+      if (canStage) {
+        if (!scope)
+          throw new Error("Wait for this workspace to finish loading.");
+        return stageDesktopAttachment(scope, storyId, file);
+      }
       const response = await addAttachmentAction(storyId, file, workspaceSlug);
       if (response.error?.message) {
         throw new Error(response.error.message);
@@ -37,7 +48,11 @@ export const useUploadAttachmentMutation = (storyId: string) => {
       const preview = createObjectUrlHandle(file);
       const toastId = `upload-attachment-${optimisticId}`;
 
-      toast.loading("Uploading...", { id: toastId, description: file.name });
+      if (!canStage)
+        toast.loading("Uploading...", {
+          id: toastId,
+          description: file.name,
+        });
       await queryClient.cancelQueries({
         queryKey: storyKeys.attachments(workspaceSlug, storyId),
       });
@@ -84,12 +99,20 @@ export const useUploadAttachmentMutation = (storyId: string) => {
     onSuccess: (attachment, _, context) => {
       queryClient.setQueryData<StoryAttachment[]>(
         storyKeys.attachments(workspaceSlug, storyId),
-        (current = []) =>
-          current.map((item) =>
-            item.id === context.optimisticId ? attachment : item,
+        (current = []) => [
+          ...current.filter(
+            (item) =>
+              item.id !== attachment.id && item.id !== context.optimisticId,
           ),
+          current.find((item) => item.id === attachment.id && !item.pending) ??
+            attachment,
+        ],
       );
 
+      if (attachment.pending) {
+        toast.dismiss(context.toastId);
+        return;
+      }
       toast.success("File uploaded", {
         id: context.toastId,
         description: `${attachment.filename} uploaded`,

@@ -1,5 +1,6 @@
 import type { Workspace } from "@/types/workspace";
 import { isMobileAuthFlow } from "@/lib/mobile-auth";
+import { isDesktopAuthPath } from "@/lib/desktop-auth";
 import { isPublicPath } from "@/public-portal-routes";
 import { DEFAULT_WORKSPACE_PATH } from "@/shared/routing/workspace";
 import { getSafeCallbackUrl } from "./callback-url";
@@ -20,7 +21,8 @@ const WORKSPACE_INDEPENDENT_PATHS = new Set([
 ]);
 
 const canContinueWithoutWorkspace = (callbackUrl: string) => {
-  if (isMobileAuthFlow(callbackUrl)) return true;
+  if (isMobileAuthFlow(callbackUrl) || isDesktopAuthPath(callbackUrl))
+    return true;
 
   const { pathname } = new URL(callbackUrl, "https://cloud.fortyone.app");
   return WORKSPACE_INDEPENDENT_PATHS.has(pathname) || isPublicPath(pathname);

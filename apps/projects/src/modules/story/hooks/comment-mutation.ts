@@ -4,6 +4,13 @@ import { useTerminology, useWorkspacePath } from "@/hooks";
 import { useSession } from "@/lib/auth/client";
 import { storyKeys } from "@/modules/stories/constants";
 import type { Comment } from "@/types";
+import { getDesktopBridge } from "@/shell/desktop/bridge";
+import { useDesktopWorkspaceScope } from "@/shell/desktop/workspace-scope";
+import {
+  commentDesktopStory,
+  isDesktopPending,
+} from "@/shell/desktop/story-offline";
+import { retainDesktopComment } from "@/shell/desktop/outbox-projection";
 import { commentStoryAction } from "../actions/comment-story";
 
 type InfiniteCommentsData = {
@@ -21,12 +28,27 @@ type InfiniteCommentsData = {
 
 export const useCommentStoryMutation = () => {
   const queryClient = useQueryClient();
+  const desktopScope = useDesktopWorkspaceScope();
   const { workspaceSlug } = useWorkspacePath();
   const { getTermDisplay } = useTerminology();
   const { data: session } = useSession();
 
-  const mutation = useMutation({
-    mutationFn: ({
+  const mutation = useMutation<
+    | Awaited<ReturnType<typeof commentStoryAction>>
+    | Awaited<ReturnType<typeof commentDesktopStory>>,
+    Error,
+    {
+      storyId: string;
+      payload: {
+        comment: string;
+        parentId?: string | null;
+        mentions: string[];
+      };
+    },
+    { previousData: InfiniteCommentsData | undefined }
+  >({
+    networkMode: getDesktopBridge()?.enqueueOperation ? "always" : "online",
+    mutationFn: async ({
       storyId,
       payload,
     }: {
@@ -36,17 +58,27 @@ export const useCommentStoryMutation = () => {
         parentId?: string | null;
         mentions: string[];
       };
-    }) =>
-      commentStoryAction(
+    }) => {
+      if (getDesktopBridge()?.enqueueOperation) {
+        if (!desktopScope)
+          throw new Error("The desktop workspace is not ready yet.");
+        return commentDesktopStory(desktopScope, session, storyId, payload);
+      }
+      const response = await commentStoryAction(
         storyId,
-        {
-          comment: payload.comment,
-          mentions: payload.mentions,
-          parentId: payload.parentId,
-        },
+        payload,
         workspaceSlug,
-      ),
-    onError: (error, variables) => {
+      );
+      if (response.error?.message) throw new Error(response.error.message);
+      return response;
+    },
+    onError: (error, variables, context) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(
+          storyKeys.commentsInfinite(workspaceSlug, variables.storyId),
+          context.previousData,
+        );
+      }
       toast.error(`Failed to comment on ${getTermDisplay("storyTerm")}`, {
         description: error.message || "Your comment was not saved",
         action: {
@@ -58,6 +90,8 @@ export const useCommentStoryMutation = () => {
       });
     },
     onMutate: ({ storyId, payload }) => {
+      if (getDesktopBridge()?.enqueueOperation)
+        return { previousData: undefined };
       const previousData = queryClient.getQueryData<InfiniteCommentsData>(
         storyKeys.commentsInfinite(workspaceSlug, storyId),
       );
@@ -118,8 +152,9 @@ export const useCommentStoryMutation = () => {
       return { previousData };
     },
     onSuccess: (res, { storyId }) => {
-      if (res.error?.message) {
-        throw new Error(res.error.message);
+      if (isDesktopPending(res) && res.data && desktopScope) {
+        retainDesktopComment(queryClient, desktopScope, res.data);
+        return;
       }
 
       queryClient.invalidateQueries({

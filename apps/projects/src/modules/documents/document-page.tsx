@@ -51,6 +51,7 @@ import {
 } from "@/components/ui";
 import { useDebouncedCallback } from "@/hooks/debounce";
 import { useSession } from "@/lib/auth/client";
+import { useDesktop } from "@/shell/desktop/desktop-provider";
 import { createRichTextExtensions } from "@/lib/tiptap/rich-text-extensions";
 import {
   getPersistableRichTextContent,
@@ -157,14 +158,16 @@ const DocumentPageContent = ({ documentId }: { documentId: string }) => {
     document?.id ?? "",
     workspaceSlug,
     session?.user,
+    document,
   );
+  const [recoveryOpen, setRecoveryOpen] = useState(false);
+  const [openingRestored, setOpeningRestored] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const canEditContent = Boolean(
     document?.canEdit &&
       (collaboration.configured
         ? collaboration.ready &&
           collaboration.writable &&
-          collaboration.status !== "offline" &&
           collaboration.status !== "blocked"
         : !document.collaborative && !updateDocument.isError),
   );
@@ -187,6 +190,7 @@ const DocumentPageContent = ({ documentId }: { documentId: string }) => {
   const [commentDraft, setCommentDraft] =
     useState<DocumentCommentSelection | null>(null);
   const isDesktop = useMediaQuery("(min-width: 768px)");
+  const { isDesktop: isDesktopApp } = useDesktop();
   const [scrollContainer, setScrollContainer] = useState<HTMLDivElement | null>(
     null,
   );
@@ -306,14 +310,18 @@ const DocumentPageContent = ({ documentId }: { documentId: string }) => {
               Collaboration.configure({
                 document: collaboration.connection.document,
               }),
-              CollaborationCaret.configure({
-                provider: collaboration.connection.provider,
-                user: {
-                  id: session?.user.id,
-                  name: session?.user.name || "Teammate",
-                  color: collaborationColor(session?.user.id ?? ""),
-                },
-              }),
+              ...(collaboration.connection.provider
+                ? [
+                    CollaborationCaret.configure({
+                      provider: collaboration.connection.provider,
+                      user: {
+                        id: session?.user.id,
+                        name: session?.user.name || "Teammate",
+                        color: collaborationColor(session?.user.id ?? ""),
+                      },
+                    }),
+                  ]
+                : []),
             ]
           : []),
       ],
@@ -401,6 +409,7 @@ const DocumentPageContent = ({ documentId }: { documentId: string }) => {
       offline: "Reconnecting…",
       blocked: "Connection needs attention",
     }[collaboration.status];
+  if (collaboration.localStatus) saveStatus = collaboration.localStatus;
   const canManageDocument =
     session?.user.id === document.createdBy && document.canEdit;
   const accessLabel = documentAccessLabels[document.visibility];
@@ -589,9 +598,14 @@ const DocumentPageContent = ({ documentId }: { documentId: string }) => {
           </Menu>
         </Flex>
         <Flex align="center" gap={2}>
-          <span aria-live="polite" className="text-text-muted hidden md:inline">
-            {saveStatus}
-          </span>
+          {!isDesktopApp ? (
+            <span
+              aria-live="polite"
+              className="text-text-muted hidden md:inline"
+            >
+              {saveStatus}
+            </span>
+          ) : null}
           <Flex className="-space-x-2">
             {collaboration.peers.slice(0, 3).map((peer) => (
               <span key={peer.id} title={peer.name}>
@@ -666,8 +680,13 @@ const DocumentPageContent = ({ documentId }: { documentId: string }) => {
                 <div className={indexStyles.contentPadding}>
                   <Box className="mx-auto w-full max-w-5xl px-8 pt-30 pb-32 sm:px-10 lg:px-12 lg:pt-34">
                     {(collaboration.configured &&
+                      (!isDesktopApp ||
+                        !collaboration.writable ||
+                        Boolean(collaboration.storageError)) &&
                       (collaboration.status === "blocked" ||
-                        collaboration.status === "offline")) ||
+                        collaboration.status === "offline" ||
+                        Boolean(collaboration.error) ||
+                        Boolean(collaboration.storageError))) ||
                     updateDocument.isError ||
                     (!collaboration.configured && document.collaborative) ? (
                       <Box
@@ -675,19 +694,70 @@ const DocumentPageContent = ({ documentId }: { documentId: string }) => {
                         role="status"
                       >
                         <Text>
-                          Editing is paused. Your connection or document access
-                          changed. Copy any unsaved text before reloading.
+                          {collaboration.storageError ??
+                            collaboration.error ??
+                            (collaboration.writable
+                              ? "You can keep editing offline. Changes are saved on this device and merge when you reconnect."
+                              : "Editing is paused. Your connection or document access changed. Preserve any unsaved work before reloading.")}
                         </Text>
-                        <Button
-                          className="mt-3"
-                          color="tertiary"
-                          onClick={() => {
-                            window.location.reload();
-                          }}
-                          size="sm"
-                        >
-                          Reload document
-                        </Button>
+                        <Flex className="mt-3 gap-2">
+                          {collaboration.retry ? (
+                            <Button
+                              color="tertiary"
+                              onClick={() => {
+                                void collaboration
+                                  .retry()
+                                  .catch((reason: unknown) =>
+                                    toast.error(String(reason)),
+                                  );
+                              }}
+                              size="sm"
+                            >
+                              Retry connection and save
+                            </Button>
+                          ) : (
+                            <Button
+                              color="tertiary"
+                              onClick={() => {
+                                window.location.reload();
+                              }}
+                              size="sm"
+                            >
+                              Reload document
+                            </Button>
+                          )}
+                          {collaboration.exported &&
+                          collaboration.status === "blocked" &&
+                          collaboration.openRestored ? (
+                            <Button
+                              color="tertiary"
+                              onClick={() => {
+                                setRecoveryOpen(true);
+                              }}
+                              size="sm"
+                            >
+                              Open restored version
+                            </Button>
+                          ) : null}
+                          {collaboration.exportRecovery ? (
+                            <Button
+                              color="tertiary"
+                              onClick={() => {
+                                void collaboration
+                                  .exportRecovery({
+                                    contentHtml: editor?.getHTML() ?? "",
+                                    contentText: editor?.getText() ?? "",
+                                  })
+                                  .catch((reason: unknown) =>
+                                    toast.error(String(reason)),
+                                  );
+                              }}
+                              size="sm"
+                            >
+                              Export recovery file
+                            </Button>
+                          ) : null}
+                        </Flex>
                       </Box>
                     ) : null}
                     <DocumentRelationshipControl
@@ -788,6 +858,28 @@ const DocumentPageContent = ({ documentId }: { documentId: string }) => {
           onClose={() => {
             setHistoryOpen(false);
           }}
+        />
+      ) : null}
+      {recoveryOpen ? (
+        <ConfirmDialog
+          confirmText="Open restored version"
+          description="This removes the local editing copy. Your unsynced changes remain in the recovery file you exported."
+          isLoading={openingRestored}
+          isOpen
+          loadingText="Opening…"
+          onClose={() => {
+            setRecoveryOpen(false);
+          }}
+          onConfirm={() => {
+            setOpeningRestored(true);
+            void collaboration
+              .openRestored?.()
+              .catch((reason: unknown) => toast.error(String(reason)))
+              .finally(() => {
+                setOpeningRestored(false);
+              });
+          }}
+          title="Open the restored document?"
         />
       ) : null}
       {isDeleteDialogOpen ? (

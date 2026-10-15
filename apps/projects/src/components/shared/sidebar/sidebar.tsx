@@ -1,9 +1,10 @@
 "use client";
-import { Box, Button, Text, Tooltip } from "ui";
+import { Badge, Box, Button, Text, Tooltip } from "ui";
 import { PlusIcon } from "icons";
 import { cn } from "lib";
 import { useState } from "react";
 import { addHours, differenceInHours } from "date-fns";
+import { useDesktopOnline } from "@/shell/desktop/connectivity";
 import { InviteMembersDialog } from "@/components/ui";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { useUserRole, useWorkspacePath } from "@/hooks";
@@ -81,6 +82,8 @@ export const Sidebar = () => {
   const { withWorkspace } = useWorkspacePath();
   const { isCollapsed } = useSidebar();
   const { isDesktop } = useDesktop();
+  const online = useDesktopOnline();
+  const isOffline = isDesktop && !online;
 
   const { tier, trialDaysRemaining } = useSubscriptionFeatures();
   const { userRole } = useUserRole();
@@ -199,7 +202,22 @@ export const Sidebar = () => {
             />
           )}
         </Box>
-        {isOnTrial && !workspace?.deletedAt ? (
+        {isOffline ? (
+          <Box
+            className={cn("px-3.5", isCollapsed && "px-0")}
+            data-sidebar-offline
+          >
+            <Badge
+              className={cn("px-2", isCollapsed && "w-full px-1")}
+              color="tertiary"
+              role="status"
+              size="sm"
+            >
+              Offline
+            </Badge>
+          </Box>
+        ) : null}
+        {!isOffline && isOnTrial && !workspace?.deletedAt ? (
           <Box
             className={cn("px-3.5", isCollapsed && "px-0")}
             data-sidebar-trial

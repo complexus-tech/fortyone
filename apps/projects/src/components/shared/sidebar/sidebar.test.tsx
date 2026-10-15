@@ -12,9 +12,13 @@ let mockWorkspaceDeletedAt: string | null = null;
 let mockSidebarCollapsed = false;
 let mockAssistantCollapsed = false;
 let mockIsDesktop = false;
+let mockDesktopOnline = true;
 
 jest.mock("@/shell/desktop/desktop-provider", () => ({
   useDesktop: () => ({ isDesktop: mockIsDesktop }),
+}));
+jest.mock("@/shell/desktop/connectivity", () => ({
+  useDesktopOnline: () => mockDesktopOnline,
 }));
 jest.mock("./workspaces-menu", () => ({
   WorkspacesMenu: ({ isCollapsed }: { isCollapsed: boolean }) => (
@@ -71,6 +75,7 @@ jest.mock("ui", () => {
   }) => <div title={title}>{children}</div>;
 
   return {
+    Badge: MockBox,
     Box: MockBox,
     Button: MockButton,
     Flex: MockFlex,
@@ -141,6 +146,7 @@ describe("Sidebar", () => {
     mockSidebarCollapsed = false;
     mockAssistantCollapsed = false;
     mockIsDesktop = false;
+    mockDesktopOnline = true;
   });
 
   it("keeps the browser workspace switcher in the existing top bar", () => {
@@ -352,5 +358,40 @@ describe("Sidebar", () => {
     expect(
       screen.queryByRole("link", { name: "14 days left in trial" }),
     ).toBeNull();
+  });
+
+  it.each([false, true])(
+    "replaces trial days with one compact Offline badge when desktop is offline, collapsed=%s",
+    (collapsed) => {
+      mockIsDesktop = true;
+      mockDesktopOnline = false;
+      mockTier = "trial";
+      mockSidebarCollapsed = collapsed;
+      const view = render(<Sidebar />);
+      expect(screen.getByRole("status")).toHaveTextContent("Offline");
+      expect(screen.queryByText(/days left in trial/)).not.toBeInTheDocument();
+      expect(
+        screen.queryByText(/download|sync|saved on/i),
+      ).not.toBeInTheDocument();
+      expect(screen.getByText("Workspace switcher")).toBeInTheDocument();
+
+      mockDesktopOnline = true;
+      view.rerender(<Sidebar />);
+      expect(screen.queryByText("Offline")).not.toBeInTheDocument();
+      expect(
+        screen.getByRole("link", { name: "14 days left in trial" }),
+      ).toBeInTheDocument();
+    },
+  );
+
+  it("shows Offline for paid desktop accounts without adding a browser badge", () => {
+    mockIsDesktop = true;
+    mockDesktopOnline = false;
+    mockTier = "pro";
+    const view = render(<Sidebar />);
+    expect(screen.getByText("Offline")).toBeInTheDocument();
+    mockIsDesktop = false;
+    view.rerender(<Sidebar />);
+    expect(screen.queryByText("Offline")).not.toBeInTheDocument();
   });
 });

@@ -4,47 +4,26 @@ import { useEffect, useState } from "react";
 import { HocuspocusProvider, WebSocketStatus } from "@hocuspocus/provider";
 import * as Y from "yjs";
 import { getPublicEnv } from "@/public-env";
+import { useDesktopWorkspaceScope } from "@/shell/desktop/workspace-scope";
+import { getDesktopBridge } from "@/shell/desktop/bridge";
 import { createCollaborationSessionAction } from "./actions";
+import type { Connection, Peer, Status } from "./collaboration-model";
+import {
+  collaborationColor,
+  replaceCollaborativeTitle,
+} from "./collaboration-model";
+import { useDesktopDocumentCollaboration } from "./use-desktop-document-collaboration";
 
-type Connection = { document: Y.Doc; provider: HocuspocusProvider };
-type Peer = { id: string; name: string; color: string };
-type Status = "connecting" | "saved" | "saving" | "offline" | "blocked";
-const COLORS = ["#2563eb", "#9333ea", "#db2777", "#0891b2", "#16a34a"];
+export {
+  collaborationColor,
+  replaceCollaborativeTitle,
+} from "./collaboration-model";
 
-export function collaborationColor(id: string) {
-  return COLORS[
-    [...id].reduce((hash, char) => hash + char.charCodeAt(0), 0) % COLORS.length
-  ];
-}
-
-export function replaceCollaborativeTitle(text: Y.Text, value: string) {
-  const previous = text.toJSON();
-  let start = 0;
-  while (
-    start < previous.length &&
-    start < value.length &&
-    previous[start] === value[start]
-  )
-    start++;
-  let end = 0;
-  while (
-    end < previous.length - start &&
-    end < value.length - start &&
-    previous[previous.length - end - 1] === value[value.length - end - 1]
-  )
-    end++;
-  text.doc?.transact(() => {
-    if (previous.length - start - end > 0)
-      text.delete(start, previous.length - start - end);
-    if (value.length - start - end > 0)
-      text.insert(start, value.slice(start, value.length - end));
-  });
-}
-
-export function useDocumentCollaboration(
+function useWebDocumentCollaboration(
   documentId: string,
   workspaceSlug: string,
   user?: { id: string; name: string },
+  enabled = true,
 ) {
   // An unset URL keeps this optional service completely dormant.
   const url = getPublicEnv().COLLABORATION_URL.trim();
@@ -58,7 +37,7 @@ export function useDocumentCollaboration(
   const userName = user?.name;
 
   useEffect(() => {
-    if (!url || !userId || !documentId) return;
+    if (!enabled || !url || !userId || !documentId) return;
     let disposed = false;
     let active: Connection | null = null;
     setStatus("connecting");
@@ -147,7 +126,7 @@ export function useDocumentCollaboration(
       if (!disposed) setStatus("blocked");
     });
     const protectUnsaved = (event: BeforeUnloadEvent) => {
-      if (active?.provider.hasUnsyncedChanges) {
+      if (active?.provider?.hasUnsyncedChanges) {
         event.preventDefault();
         event.returnValue = "";
       }
@@ -156,10 +135,10 @@ export function useDocumentCollaboration(
     return () => {
       disposed = true;
       window.removeEventListener("beforeunload", protectUnsaved);
-      active?.provider.destroy();
+      active?.provider?.destroy();
       active?.document.destroy();
     };
-  }, [documentId, workspaceSlug, url, userId, userName]);
+  }, [documentId, workspaceSlug, url, userId, userName, enabled]);
 
   return {
     connection,
@@ -174,4 +153,40 @@ export function useDocumentCollaboration(
         replaceCollaborativeTitle(connection.document.getText("title"), value);
     },
   };
+}
+
+export function useDocumentCollaboration(
+  documentId: string,
+  workspaceSlug: string,
+  user?: { id: string; name: string },
+  snapshot?: { collaborationEpoch: number; canEdit: boolean },
+) {
+  const scope = useDesktopWorkspaceScope();
+  const desktop = Boolean(
+    scope && getDesktopBridge()?.draftRead && getDesktopBridge()?.draftWrite,
+  );
+  const web = useWebDocumentCollaboration(
+    documentId,
+    workspaceSlug,
+    user,
+    !desktop,
+  );
+  const local = useDesktopDocumentCollaboration(
+    documentId,
+    desktop ? scope : null,
+    user,
+    snapshot,
+  );
+  return desktop
+    ? local
+    : {
+        ...web,
+        localStatus: null,
+        error: null,
+        storageError: null,
+        retry: undefined,
+        exportRecovery: undefined,
+        exported: false,
+        openRestored: undefined,
+      };
 }

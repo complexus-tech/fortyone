@@ -177,4 +177,6 @@ export type StoryAttachment = {
   url: string;
   createdAt: string;
   uploadedBy: string;
+  /** A durable local attachment awaiting the desktop upload receipt. */
+  pending?: boolean;
 };

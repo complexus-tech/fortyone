@@ -5,6 +5,11 @@ import { AttachmentIcon, PlusIcon } from "icons";
 import { toast } from "sonner";
 import { cn } from "lib";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
+import { getDesktopBridge } from "@/shell/desktop/bridge";
+import { useDesktopWorkspaceScope } from "@/shell/desktop/workspace-scope";
+import { useDesktopAttachments } from "@/shell/desktop/use-desktop-attachments";
+import { DESKTOP_ATTACHMENT_LIMIT } from "@/shell/desktop/attachments";
+import type { StoryAttachment } from "../types";
 import { useStoryAttachments } from "../hooks/story-attachments";
 import { useUploadAttachmentMutation } from "../hooks/upload-attachment-mutation";
 import { useDeleteAttachmentMutation } from "../hooks/delete-attachment-mutation";
@@ -54,14 +59,20 @@ export const Attachments = ({
   storyId: string;
 }) => {
   const { getLimit } = useSubscriptionFeatures();
-  const { data: attachments = [], isPending } = useStoryAttachments(storyId);
+  const { data: storedAttachments = [], isPending } =
+    useStoryAttachments(storyId);
+  const attachments = useDesktopAttachments(storyId, storedAttachments);
+  const scope = useDesktopWorkspaceScope();
   const uploadMutation = useUploadAttachmentMutation(storyId);
   const deleteMutation = useDeleteAttachmentMutation(storyId);
   const maxFileUploads = getLimit("maxFileUploads");
-  const maxFileSize =
+  const planFileSize =
     maxFileUploads === "10MB"
       ? FREE_ATTACHMENT_SIZE_LIMIT
       : PAID_ATTACHMENT_SIZE_LIMIT;
+  const maxFileSize = getDesktopBridge()?.stageAttachment
+    ? Math.min(planFileSize, DESKTOP_ATTACHMENT_LIMIT)
+    : planFileSize;
 
   const onDrop = (acceptedFiles: File[], rejectedFiles: FileRejection[]) => {
     const hasTooManyFiles = rejectedFiles.some((rejection) =>
@@ -115,7 +126,7 @@ export const Attachments = ({
       !file.mimeType.startsWith("video/"),
   );
   const previewableAttachments = imagesAndVideos.filter(
-    (file) => !file.id.startsWith("temp-"),
+    (file) => !file.id.startsWith("temp-") && Boolean(file.url),
   );
 
   if (isPending) {
@@ -126,6 +137,34 @@ export const Attachments = ({
 
   const handleDelete = (attachmentId: string) => {
     deleteMutation.mutate(attachmentId);
+  };
+  const handleDownload = async (file: StoryAttachment) => {
+    const exportFile = getDesktopBridge()?.exportAttachment;
+    if (file.pending && (!exportFile || !scope)) {
+      toast.error("Could not save attachment", {
+        description:
+          "Open this workspace in the desktop app to save the local attachment.",
+      });
+      return;
+    }
+    try {
+      if (
+        exportFile &&
+        scope &&
+        (file.pending || file.url.startsWith("blob:"))
+      ) {
+        await exportFile({ ...scope, storyId, attachmentId: file.id });
+        return;
+      }
+      await downloadAttachment(file.url, file.filename);
+    } catch (error) {
+      toast.error("Could not save attachment", {
+        description:
+          error instanceof Error
+            ? error.message
+            : "Try again while this workspace is open.",
+      });
+    }
   };
 
   return (
@@ -191,7 +230,7 @@ export const Attachments = ({
                 handleDelete(attachment.id);
               }}
               onDownload={(attachment) => {
-                void downloadAttachment(attachment.url, attachment.filename);
+                void handleDownload(attachment);
               }}
             />
           ))}
@@ -211,7 +250,7 @@ export const Attachments = ({
                 handleDelete(attachment.id);
               }}
               onDownload={(attachment) => {
-                void downloadAttachment(attachment.url, attachment.filename);
+                void handleDownload(attachment);
               }}
             />
           ))}

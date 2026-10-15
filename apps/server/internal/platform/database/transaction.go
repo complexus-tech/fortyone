@@ -40,5 +40,10 @@ func (t Transactor) WithinTransaction(
 		return ErrNilTransactionOperation
 	}
 
+	if tx, ok := UnitTransaction(ctx); ok {
+		// A savepoint retains each repository's rollback boundary. The outer
+		// unit always uses serializable isolation.
+		return pgx.BeginFunc(ctx, tx, operation)
+	}
 	return pgx.BeginTxFunc(ctx, t.beginner, options, operation)
 }

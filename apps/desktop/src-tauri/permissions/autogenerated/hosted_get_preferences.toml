@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-hosted-get-preferences"
+description = "Enables the hosted_get_preferences command without any pre-configured scope."
+commands.allow = ["hosted_get_preferences"]
+
+[[permission]]
+identifier = "deny-hosted-get-preferences"
+description = "Denies the hosted_get_preferences command without any pre-configured scope."
+commands.deny = ["hosted_get_preferences"]

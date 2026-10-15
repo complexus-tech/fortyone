@@ -28,12 +28,19 @@ import {
   isWipCapacityQuery,
   refreshWipCapacity,
 } from "@/shared/story/wip-capacity";
+import { getDesktopBridge } from "@/shell/desktop/bridge";
+import { useDesktopWorkspaceScope } from "@/shell/desktop/workspace-scope";
+import {
+  updateDesktopStory,
+  isDesktopPending,
+} from "@/shell/desktop/story-offline";
 import type { DetailedStory, StoryUpdate } from "../types";
 import { updateStoryAction } from "../actions/update-story";
 
 type UpdateStoryVariables = {
   storyId: string;
   payload: StoryUpdate;
+  desktopBaseVersion?: string;
 };
 
 type UpdateStoryContext = {
@@ -44,6 +51,7 @@ type UpdateStoryContext = {
 
 export const useUpdateStoryMutation = () => {
   const queryClient = useQueryClient();
+  const desktopScope = useDesktopWorkspaceScope();
   const { workspaceSlug } = useWorkspacePath();
   const { analytics } = useAnalytics();
   const { getTermDisplay } = useTerminology();
@@ -54,7 +62,19 @@ export const useUpdateStoryMutation = () => {
     UpdateStoryVariables,
     UpdateStoryContext
   >({
-    mutationFn: async ({ storyId, payload }) => {
+    networkMode: getDesktopBridge()?.enqueueOperation ? "always" : "online",
+    mutationFn: async ({ storyId, payload, desktopBaseVersion }) => {
+      if (getDesktopBridge()?.enqueueOperation) {
+        if (!desktopScope)
+          throw new Error("The desktop workspace is not ready yet.");
+        return updateDesktopStory(
+          desktopScope,
+          queryClient,
+          storyId,
+          payload,
+          desktopBaseVersion,
+        );
+      }
       const response = await updateStoryAction(storyId, payload, workspaceSlug);
       if (response.error?.message) {
         throw new Error(response.error.message);
@@ -71,6 +91,7 @@ export const useUpdateStoryMutation = () => {
       );
       const storyPayload = { ...payload };
       delete storyPayload.reconcileDescriptionMedia;
+      delete storyPayload.id;
 
       await queryClient.cancelQueries({
         queryKey: storyKeys.all(workspaceSlug),
@@ -153,8 +174,10 @@ export const useUpdateStoryMutation = () => {
     },
 
     onSuccess: (_res, { storyId, payload }, context) => {
+      if (isDesktopPending(_res)) return;
       const storyPayload = { ...payload };
       delete storyPayload.reconcileDescriptionMedia;
+      delete storyPayload.id;
       analytics.track("story_updated", {
         storyId,
         ...storyPayload,

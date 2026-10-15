@@ -7,7 +7,6 @@ use std::{
     path::Path,
 };
 
-#[cfg(feature = "production")]
 use tauri::Manager;
 use tauri::Url;
 
@@ -60,7 +59,13 @@ fn write_location(path: &Path, policy: &NavigationPolicy, url: &Url) -> io::Resu
         file.write_all(location.as_str().as_bytes())?;
         file.sync_all()?;
         drop(file);
-        fs::rename(&temporary, path)
+        fs::rename(&temporary, path)?;
+        #[cfg(unix)]
+        if let Some(parent) = path.parent() {
+            // Persist the directory entry as well as the file before native exit.
+            File::open(parent)?.sync_all()?;
+        }
+        Ok(())
     })();
     if result.is_err() {
         let _ = fs::remove_file(&temporary);
@@ -75,7 +80,6 @@ fn clear_location(path: &Path) -> io::Result<()> {
     }
 }
 
-#[cfg(feature = "production")]
 pub fn start_url(app: &tauri::AppHandle, policy: &NavigationPolicy) -> Url {
     match app.path().app_config_dir() {
         Ok(directory) => match read_location(&directory.join(FILE_NAME), policy) {
@@ -88,25 +92,26 @@ pub fn start_url(app: &tauri::AppHandle, policy: &NavigationPolicy) -> Url {
     policy.app_url().clone()
 }
 
-#[cfg(feature = "production")]
-pub fn save_window(window: &tauri::WebviewWindow) {
-    let policy = window.state::<std::sync::Arc<NavigationPolicy>>();
-    let result = (|| -> Result<(), Box<dyn std::error::Error>> {
-        let url = window.url()?;
-        let path = window.app_handle().path().app_config_dir()?.join(FILE_NAME);
-        if policy.clears_restored_location(&url) {
-            clear_location(&path)?;
-        } else {
-            write_location(&path, &policy, &url)?;
-        }
-        Ok(())
-    })();
-    if let Err(error) = result {
-        eprintln!("Could not save the last workspace: {error}");
+fn save_location(path: &Path, policy: &NavigationPolicy, url: &Url) -> io::Result<()> {
+    if policy.clears_restored_location(url) {
+        clear_location(path)
+    } else {
+        write_location(path, policy, url)
     }
 }
 
-#[cfg(feature = "production")]
+pub fn save_window(window: &tauri::WebviewWindow) -> Result<(), String> {
+    let policy = window.state::<std::sync::Arc<NavigationPolicy>>();
+    let url = window.url().map_err(|error| error.to_string())?;
+    let path = window
+        .app_handle()
+        .path()
+        .app_config_dir()
+        .map_err(|error| error.to_string())?
+        .join(FILE_NAME);
+    save_location(&path, &policy, &url).map_err(|error| error.to_string())
+}
+
 pub fn clear_after_logout(app: &tauri::AppHandle, policy: &NavigationPolicy, url: &Url) {
     if !policy.clears_restored_location(url) {
         return;
@@ -211,6 +216,25 @@ mod tests {
         )
         .unwrap();
         assert_eq!(read_location(&path, &policy).unwrap(), Some(workspace));
+    }
+
+    #[test]
+    fn shutdown_location_restores_local_workspace_and_logout_clears_it() {
+        let directory = TestDirectory::new();
+        let path = directory.location();
+        let policy = NavigationPolicy::new(Url::parse("http://localhost:3000/").unwrap()).unwrap();
+        save_location(
+            &path,
+            &policy,
+            &Url::parse("http://localhost:3000/first/my-work?__fortyone_offline=1#panel").unwrap(),
+        )
+        .unwrap();
+        assert_eq!(
+            read_location(&path, &policy).unwrap().unwrap().as_str(),
+            "http://localhost:3000/first/my-work"
+        );
+        save_location(&path, &policy, policy.app_url()).unwrap();
+        assert!(!path.exists());
     }
 
     #[test]

@@ -8,13 +8,25 @@ export const CustomFieldsCreationSlot = ({
   controllerRef,
   teamId,
   disabled,
+  onValuesChange,
 }: CreationPropertiesProps) => {
   const fields = useCreateCustomFields(teamId);
-  useImperativeHandle(controllerRef, () => fields, [fields]);
+  const setValues = (values: Record<string, string | null>) => {
+    fields.setValues(values);
+    onValuesChange?.(values);
+  };
+  useImperativeHandle(controllerRef, () => ({
+    ...fields,
+    setValues,
+    reset: () => {
+      fields.reset();
+      onValuesChange?.({});
+    },
+  }));
   return (
     <CreateCustomFields
       disabled={disabled}
-      onChange={fields.setValues}
+      onChange={setValues}
       teamId={teamId}
       values={fields.values}
     />

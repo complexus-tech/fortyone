@@ -180,17 +180,21 @@ type CreateStoryResult struct {
 }
 
 type UpdateStoryCommand struct {
-	Scope             MutationScope
-	StoryID           uuid.UUID
-	ExpectedUpdatedAt time.Time
-	Patch             StoryPatch
-	Event             MutationEvent
-	Activities        []MutationActivity
-	ReferencedMedia   []uuid.UUID
-	ReconcileMedia    bool
+	Scope              MutationScope
+	StoryID            uuid.UUID
+	ExpectedUpdatedAt  time.Time
+	Patch              StoryPatch
+	Event              MutationEvent
+	Activities         []MutationActivity
+	ReferencedMedia    []uuid.UUID
+	ReconcileMedia     bool
+	DeferMediaDeletion bool
 }
 
 func (command UpdateStoryCommand) Validate() error {
+	if command.DeferMediaDeletion && !command.ReconcileMedia {
+		return fmt.Errorf("%w: deferred media deletion requires reconciliation", ErrInvalidMutation)
+	}
 	if err := command.Scope.Validate(); err != nil {
 		return err
 	}

@@ -3,8 +3,13 @@
 import { useState } from "react";
 import { Button, Input, Text } from "ui";
 import { getApiUrl } from "@/lib/api-url";
+import { isDesktopAuthPath } from "@/lib/desktop-auth";
 
-export const WorkspaceSSOSignIn = () => {
+export const WorkspaceSSOSignIn = ({
+  callbackUrl,
+}: {
+  callbackUrl?: string;
+}) => {
   const [workspace, setWorkspace] = useState("");
   const [pending, setPending] = useState(false);
   const valid = /^[a-zA-Z0-9][a-zA-Z0-9-]{0,119}$/.test(workspace.trim());
@@ -17,11 +22,14 @@ export const WorkspaceSSOSignIn = () => {
         className="mt-4 space-y-4"
         onSubmit={(event) => {
           event.preventDefault();
-          if (valid) {
+          if (valid && !pending) {
             setPending(true);
-            window.location.assign(
+            const destination = new URL(
               `${getApiUrl()}/auth/sso/${encodeURIComponent(workspace.trim())}`,
             );
+            if (isDesktopAuthPath(callbackUrl))
+              destination.searchParams.set("returnTo", callbackUrl!);
+            window.location.assign(destination.toString());
           }
         }}
       >

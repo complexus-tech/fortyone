@@ -104,7 +104,7 @@ export const StoryAttachmentPreview = ({
   const isImage = file.mimeType.startsWith("image/");
   const isVideo = file.mimeType.startsWith("video");
   const isPdf = file.mimeType.includes("pdf");
-  const canPreview = isImage || isVideo || isPdf;
+  const canPreview = Boolean(file.url) && (isImage || isVideo || isPdf);
   const isActiveImage = activeFile.mimeType.startsWith("image/");
   const isActiveVideo = activeFile.mimeType.startsWith("video");
   const isActivePdf = activeFile.mimeType.includes("pdf");
@@ -155,22 +155,28 @@ export const StoryAttachmentPreview = ({
       thumbnail = (
         <Box
           className="group border-border bg-surface-muted ring-accent relative h-24 overflow-hidden rounded-xl border hover:ring-2 md:h-28 2xl:h-36 dark:shadow-none"
-          onClick={canPreview ? openPreview : undefined}
+          onClick={openOrDownload}
         >
-          {isImage ? (
+          {!file.url ? (
+            <Flex align="center" className="h-full" justify="center">
+              <DocsIcon aria-label={file.filename} className="h-6" />
+            </Flex>
+          ) : null}
+          {file.url && isImage ? (
             <BlurImage
               alt={file.filename}
               className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
               src={file.url}
             />
-          ) : (
+          ) : null}
+          {file.url && isVideo ? (
             <video
               className="h-full w-full object-cover"
               controls={false}
               muted
               src={file.url}
             />
-          )}
+          ) : null}
           {isUploading ? (
             <Box className="bg-dark/50 absolute inset-0 flex items-center justify-center">
               <LoadingIcon className="h-6 animate-spin" />
@@ -250,7 +256,7 @@ export const StoryAttachmentPreview = ({
                   <Button
                     asIcon
                     color="tertiary"
-                    disabled={isUploading}
+                    disabled={isUploading || !canPreview}
                     onClick={() => {
                       openPreview();
                     }}
@@ -391,16 +397,19 @@ export const StoryAttachmentPreview = ({
                 ) : null}
                 {!isInChat ? (
                   <>
-                    <Button
-                      asIcon
-                      color="tertiary"
-                      href={activeFile.url}
-                      leftIcon={<NewTabIcon className="h-4.5" />}
-                      size="sm"
-                      target="_blank"
-                    >
-                      <span className="sr-only">Open in new tab</span>
-                    </Button>
+                    {!activeFile.pending &&
+                    !activeFile.url.startsWith("blob:") ? (
+                      <Button
+                        asIcon
+                        color="tertiary"
+                        href={activeFile.url}
+                        leftIcon={<NewTabIcon className="h-4.5" />}
+                        size="sm"
+                        target="_blank"
+                      >
+                        <span className="sr-only">Open in new tab</span>
+                      </Button>
+                    ) : null}
                     <Button
                       asIcon
                       color="tertiary"

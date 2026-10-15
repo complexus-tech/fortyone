@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-begin-workspace-switch"
+description = "Enables the begin_workspace_switch command without any pre-configured scope."
+commands.allow = ["begin_workspace_switch"]
+
+[[permission]]
+identifier = "deny-begin-workspace-switch"
+description = "Denies the begin_workspace_switch command without any pre-configured scope."
+commands.deny = ["begin_workspace_switch"]

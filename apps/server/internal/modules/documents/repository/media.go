@@ -5,13 +5,18 @@ import (
 
 	documentdomain "github.com/complexus-tech/projects-api/internal/modules/documents/domain"
 	documentssql "github.com/complexus-tech/projects-api/internal/modules/documents/repository/sqlc"
+	platformdatabase "github.com/complexus-tech/projects-api/internal/platform/database"
 )
 
 func (repository *Repository) LinkMedia(ctx context.Context, input documentdomain.MediaInput) error {
 	if err := repository.configured(); err != nil {
 		return err
 	}
-	_, err := repository.queries.LinkEditableDocumentMedia(ctx, documentssql.LinkEditableDocumentMediaParams{
+	queries := repository.queries
+	if tx, ok := platformdatabase.UnitTransaction(ctx); ok {
+		queries = queries.WithTx(tx)
+	}
+	_, err := queries.LinkEditableDocumentMedia(ctx, documentssql.LinkEditableDocumentMediaParams{
 		ActorID: input.UserID, AttachmentID: input.AttachmentID,
 		DocumentID: input.DocumentID, WorkspaceID: input.WorkspaceID,
 	})

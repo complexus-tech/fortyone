@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-desktop-collaboration-session"
+description = "Enables the desktop_collaboration_session command without any pre-configured scope."
+commands.allow = ["desktop_collaboration_session"]
+
+[[permission]]
+identifier = "deny-desktop-collaboration-session"
+description = "Denies the desktop_collaboration_session command without any pre-configured scope."
+commands.deny = ["desktop_collaboration_session"]

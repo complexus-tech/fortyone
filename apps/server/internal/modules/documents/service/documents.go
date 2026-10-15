@@ -2,6 +2,7 @@ package documents
 
 import (
 	"context"
+	"errors"
 	"strings"
 
 	documentdomain "github.com/complexus-tech/projects-api/internal/modules/documents/domain"
@@ -61,7 +62,7 @@ func New(repo Repository) *Service {
 func (s *Service) List(ctx context.Context, input CoreListInput) ([]CoreDocumentSummary, error) {
 	ctx, span := documentTracer.Start(ctx, "core.documents.List")
 	defer span.End()
-	if input.WorkspaceID == uuid.Nil || input.UserID == uuid.Nil {
+	if input.WorkspaceID == uuid.Nil || input.UserID == uuid.Nil || input.Offset < 0 {
 		return nil, ErrInvalidInput
 	}
 	input.Search = strings.TrimSpace(input.Search)
@@ -83,6 +84,21 @@ func (s *Service) Get(ctx context.Context, workspaceID, userID, documentID uuid.
 		return CoreDocument{}, ErrInvalidInput
 	}
 	return s.repo.Get(ctx, workspaceID, userID, documentID)
+}
+
+// GetForOffline includes the CRDT snapshot only for the native download path.
+// Its repository reads permission, epoch and state within one consistent view.
+func (s *Service) GetForOffline(ctx context.Context, workspaceID, userID, documentID uuid.UUID) (CoreDocument, error) {
+	if workspaceID == uuid.Nil || userID == uuid.Nil || documentID == uuid.Nil {
+		return CoreDocument{}, ErrInvalidInput
+	}
+	repository, ok := s.repo.(interface {
+		GetForOffline(context.Context, uuid.UUID, uuid.UUID, uuid.UUID) (CoreDocument, error)
+	})
+	if !ok {
+		return CoreDocument{}, errors.New("offline document reads are unavailable")
+	}
+	return repository.GetForOffline(ctx, workspaceID, userID, documentID)
 }
 
 func (s *Service) Create(ctx context.Context, input CoreCreateInput) (CoreDocument, error) {

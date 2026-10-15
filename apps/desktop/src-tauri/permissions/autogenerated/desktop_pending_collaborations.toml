@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-desktop-pending-collaborations"
+description = "Enables the desktop_pending_collaborations command without any pre-configured scope."
+commands.allow = ["desktop_pending_collaborations"]
+
+[[permission]]
+identifier = "deny-desktop-pending-collaborations"
+description = "Denies the desktop_pending_collaborations command without any pre-configured scope."
+commands.deny = ["desktop_pending_collaborations"]

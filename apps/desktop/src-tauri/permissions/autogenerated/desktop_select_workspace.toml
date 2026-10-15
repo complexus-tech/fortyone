@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-desktop-select-workspace"
+description = "Enables the desktop_select_workspace command without any pre-configured scope."
+commands.allow = ["desktop_select_workspace"]
+
+[[permission]]
+identifier = "deny-desktop-select-workspace"
+description = "Denies the desktop_select_workspace command without any pre-configured scope."
+commands.deny = ["desktop_select_workspace"]

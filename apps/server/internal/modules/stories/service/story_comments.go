@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/complexus-tech/projects-api/internal/platform/auth"
+	platformdatabase "github.com/complexus-tech/projects-api/internal/platform/database"
 	"github.com/complexus-tech/projects-api/pkg/events"
 	apptracing "github.com/complexus-tech/projects-api/pkg/tracing"
 	"github.com/google/uuid"
@@ -138,18 +139,21 @@ func (s *Service) createCommentWithOptions(
 	if options.imported {
 		return created, nil
 	}
-	audienceIDs, audienceErr := s.GetNotificationAudience(ctx, commentInput.StoryID, workspaceID)
-	audienceResolved := audienceErr == nil
-	if audienceErr != nil {
-		s.log.Error(ctx, "failed to load story notification audience", "error", audienceErr, "story_id", commentInput.StoryID)
-	}
+	platformdatabase.AfterCommit(ctx, func() {
+		audienceIDs, audienceErr := s.GetNotificationAudience(ctx, commentInput.StoryID, workspaceID)
+		audienceResolved := audienceErr == nil
+		if audienceErr != nil {
+			s.log.Error(ctx, "failed to load story notification audience", "error", audienceErr, "story_id", commentInput.StoryID)
+		}
 
-	if s.publisher != nil {
-		s.publishCommentNotifications(
-			ctx, story, created, parentComment, commentInput, options.actorID,
-			audienceIDs, audienceResolved,
-		)
-	}
+		if s.publisher != nil {
+			s.publishCommentNotifications(
+				ctx, story, created, parentComment, commentInput, options.actorID,
+				audienceIDs, audienceResolved,
+			)
+		}
+
+	})
 
 	span.AddEvent("comment created.", trace.WithAttributes(
 		attribute.String("comment.id", created.ID.String()),

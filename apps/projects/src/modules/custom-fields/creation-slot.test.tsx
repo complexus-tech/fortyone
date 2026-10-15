@@ -36,9 +36,11 @@ describe("creation property capability", () => {
 
   it("prepares the latest exact draft and resets without duplicating creation state", () => {
     const controller = createRef<CreationPropertiesController>();
+    const onValuesChange = jest.fn();
     render(
       <CustomFieldsCreationSlot
         controllerRef={controller}
+        onValuesChange={onValuesChange}
         teamId={amount.teamId}
       />,
     );
@@ -48,6 +50,9 @@ describe("creation property capability", () => {
     expect(controller.current!.prepareValues()).toEqual([
       { fieldId: amount.id, value: "9007199254740993.29" },
     ]);
+    expect(onValuesChange).toHaveBeenLastCalledWith({
+      [amount.id]: "9007199254740993.29",
+    });
     const chip = screen.getByRole("button", {
       name: "Contract value: USD 9,007,199,254,740,993.29",
     });
@@ -61,6 +66,7 @@ describe("creation property capability", () => {
       controller.current!.reset();
     });
     expect(controller.current!.prepareValues()).toEqual([]);
+    expect(onValuesChange).toHaveBeenLastCalledWith({});
     expect(
       screen.getByRole("button", { name: "Contract value: Not set" }),
     ).toHaveTextContent("Not set");

@@ -3,9 +3,10 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { OnboardingLayout } from "@/components/layouts/onboarding-layout";
 import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
+import { isDesktopAuthPath } from "@/lib/desktop-auth";
 import { WorkspaceSSORecovery } from "@/modules/auth/workspace-sso-recovery";
 import { getWorkspaceSSOStatus } from "@/modules/auth/workspace-sso-status";
-import { getLoginUrl } from "@/utils/callback-url";
+import { getLoginUrl, withCallbackUrl } from "@/utils/callback-url";
 
 export const metadata: Metadata = {
   title: "Workspace sign-in - FortyOne",
@@ -14,11 +15,23 @@ export const metadata: Metadata = {
 
 export default async function WorkspaceSSOPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ workspaceSlug: string }>;
+  searchParams?: Promise<{ callbackUrl?: string }>;
 }) {
-  const [{ workspaceSlug }, session] = await Promise.all([params, auth()]);
-  const path = `/auth/sso/${encodeURIComponent(workspaceSlug)}`;
+  const [{ workspaceSlug }, session, query] = await Promise.all([
+    params,
+    auth(),
+    searchParams,
+  ]);
+  const callbackUrl = isDesktopAuthPath(query?.callbackUrl)
+    ? query?.callbackUrl
+    : undefined;
+  const path = withCallbackUrl(
+    `/auth/sso/${encodeURIComponent(workspaceSlug)}`,
+    callbackUrl,
+  );
   if (!session) redirect(getLoginUrl(path));
 
   const [workspaces, status] = await Promise.all([
@@ -29,11 +42,13 @@ export default async function WorkspaceSSOPage({
     (candidate) => candidate.slug.toLowerCase() === workspaceSlug.toLowerCase(),
   );
   if (!workspace) redirect("/unauthorized");
-  if (!status.enabled) redirect(`/${encodeURIComponent(workspace.slug)}`);
+  if (!status.enabled)
+    redirect(callbackUrl ?? `/${encodeURIComponent(workspace.slug)}`);
 
   return (
     <OnboardingLayout>
       <WorkspaceSSORecovery
+        callbackUrl={callbackUrl}
         email={session.user.email}
         required={status.requireSSO}
         workspaceName={workspace.name}

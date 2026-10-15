@@ -1,0 +1,27 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "build": {
+    "devUrl": "http://localhost:5178",
+    "frontendDist": "../dist",
+    "beforeDevCommand": "pnpm frontend:dev",
+    "beforeBuildCommand": "pnpm frontend:build"
+  },
+  "app": {
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src ipc: http://ipc.localhost; font-src 'self' data:; object-src 'none'; base-uri 'none'; frame-src 'none'",
+      "devCsp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src ipc: http://ipc.localhost http://localhost:5178 ws://localhost:5178; font-src 'self' data:; object-src 'none'"
+    }
+  },
+  "plugins": {
+    "deep-link": {
+      "desktop": {
+        "schemes": [
+          "fortyone-desktop-dev"
+        ]
+      }
+    },
+    "updater": {
+      "pubkey": ""
+    }
+  }
+}

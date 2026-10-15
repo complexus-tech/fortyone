@@ -33,6 +33,21 @@ func (s *Service) mutationRepository() (storyMutationRepository, bool) {
 	return repository, ok
 }
 
+// AuthorizeMutation applies the same current actor/team policy used by story
+// edits to associated native uploads before any object storage write.
+func (s *Service) AuthorizeMutation(ctx context.Context, storyID, workspaceID uuid.UUID) error {
+	repository, ok := s.mutationRepository()
+	if !ok {
+		return ErrStoryMutationForbidden
+	}
+	scope, err := mutationScope(ctx, workspaceID, uuid.Nil, platformauth.PrincipalHumanUser)
+	if err != nil {
+		return err
+	}
+	_, err = repository.GetStoryForMutation(ctx, scope, storyID)
+	return mapStoryMutationError(err)
+}
+
 func mutationScope(
 	ctx context.Context,
 	workspaceID, suppliedActorID uuid.UUID,

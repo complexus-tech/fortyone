@@ -7,6 +7,11 @@
     "devUrl": "http://localhost:3000",
     "frontendDist": "http://localhost:3000"
   },
+  "plugins": {
+    "updater": {
+      "pubkey": ""
+    }
+  },
   "app": {
     "macOSPrivateApi": true,
     "windows": [],

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-hosted-export-attachment"
+description = "Enables the hosted_export_attachment command without any pre-configured scope."
+commands.allow = ["hosted_export_attachment"]
+
+[[permission]]
+identifier = "deny-hosted-export-attachment"
+description = "Denies the hosted_export_attachment command without any pre-configured scope."
+commands.deny = ["hosted_export_attachment"]

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-hosted-check-update"
+description = "Enables the hosted_check_update command without any pre-configured scope."
+commands.allow = ["hosted_check_update"]
+
+[[permission]]
+identifier = "deny-hosted-check-update"
+description = "Denies the hosted_check_update command without any pre-configured scope."
+commands.deny = ["hosted_check_update"]

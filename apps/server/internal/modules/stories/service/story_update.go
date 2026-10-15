@@ -9,6 +9,7 @@ import (
 
 	storydomain "github.com/complexus-tech/projects-api/internal/modules/stories/domain"
 	"github.com/complexus-tech/projects-api/internal/platform/auth"
+	platformdatabase "github.com/complexus-tech/projects-api/internal/platform/database"
 	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
@@ -231,6 +232,7 @@ func (s *Service) updatePatchWithOptions(ctx context.Context, storyID, workspace
 			Scope: scope, StoryID: storyID, ExpectedUpdatedAt: story.UpdatedAt.UTC(),
 			Patch: normalizedPatch, Event: event, Activities: durableActivities,
 			ReferencedMedia: options.referencedMediaIDs, ReconcileMedia: options.reconcileMedia,
+			DeferMediaDeletion: options.deferMediaDeletion,
 		})
 		updateErr = mapStoryMutationError(mutationErr)
 		if updateErr == nil && options.orphanedMediaIDs != nil {
@@ -307,51 +309,53 @@ func (s *Service) updatePatchWithOptions(ctx context.Context, storyID, workspace
 		attribute.String("story.id", storyID.String()),
 	))
 
-	_, statusChanged := updates["status_id"]
-	if (options.publishEvents || (options.publishStatusEvents && statusChanged)) && s.publisher != nil {
-		audienceIDs, audienceErr := s.GetNotificationAudience(ctx, storyID, workspaceID)
-		audienceResolved := audienceErr == nil
-		if audienceErr != nil {
-			s.log.Error(ctx, "failed to load story notification audience", "error", audienceErr, "story_id", storyID)
+	platformdatabase.AfterCommit(ctx, func() {
+		_, statusChanged := updates["status_id"]
+		if (options.publishEvents || (options.publishStatusEvents && statusChanged)) && s.publisher != nil {
+			audienceIDs, audienceErr := s.GetNotificationAudience(ctx, storyID, workspaceID)
+			audienceResolved := audienceErr == nil
+			if audienceErr != nil {
+				s.log.Error(ctx, "failed to load story notification audience", "error", audienceErr, "story_id", storyID)
+			}
+			payload := events.StoryUpdatedPayload{
+				StoryID:          storyID,
+				WorkspaceID:      workspaceID,
+				Updates:          updates,
+				AssigneeID:       story.Assignee, // Current assignee before update
+				AudienceIDs:      audienceIDs,
+				AudienceResolved: audienceResolved,
+				Source:           options.eventSource,
+				Reason:           options.eventReason,
+				Schedule:         options.eventSchedule,
+			}
+			if statusChanged {
+				payload.PreviousStatusID = story.Status
+			}
+
+			event := events.Event{
+				Type:      events.StoryUpdated,
+				Payload:   payload,
+				Timestamp: time.Now(),
+				ActorID:   actorID,
+			}
+
+			if err := s.publisher.Publish(context.Background(), event); err != nil {
+				s.log.Error(ctx, "failed to publish story updated event", "error", err)
+				// Don't return error as this is not critical
+			}
 		}
-		payload := events.StoryUpdatedPayload{
-			StoryID:          storyID,
-			WorkspaceID:      workspaceID,
-			Updates:          updates,
-			AssigneeID:       story.Assignee, // Current assignee before update
-			AudienceIDs:      audienceIDs,
-			AudienceResolved: audienceResolved,
-			Source:           options.eventSource,
-			Reason:           options.eventReason,
-			Schedule:         options.eventSchedule,
+		if options.enqueueGitHubSync {
+			s.enqueueGitHubStorySync(ctx, storyID, workspaceID)
 		}
-		if statusChanged {
-			payload.PreviousStatusID = story.Status
+		if reconcileAutoScheduling {
+			if scheduleReconcileMustRunImmediately(updates) {
+				s.enqueueStoryScheduleReconcile(ctx, storyID, workspaceID)
+			} else {
+				s.enqueueWorkspaceScheduleBatch(ctx, workspaceID)
+			}
 		}
 
-		event := events.Event{
-			Type:      events.StoryUpdated,
-			Payload:   payload,
-			Timestamp: time.Now(),
-			ActorID:   actorID,
-		}
-
-		if err := s.publisher.Publish(context.Background(), event); err != nil {
-			s.log.Error(ctx, "failed to publish story updated event", "error", err)
-			// Don't return error as this is not critical
-		}
-	}
-	if options.enqueueGitHubSync {
-		s.enqueueGitHubStorySync(ctx, storyID, workspaceID)
-	}
-	if reconcileAutoScheduling {
-		if scheduleReconcileMustRunImmediately(updates) {
-			s.enqueueStoryScheduleReconcile(ctx, storyID, workspaceID)
-		} else {
-			s.enqueueWorkspaceScheduleBatch(ctx, workspaceID)
-		}
-	}
-
+	})
 	return nil
 }
 

@@ -64,3 +64,7 @@ DELETE FROM public.document_collaboration_sessions WHERE expires_at < CURRENT_TI
 SELECT EXISTS (SELECT 1 FROM public.document_revisions
     WHERE document_id = sqlc.arg(document_id)
       AND position(CAST(sqlc.arg(attachment_id) AS text) in content_html) > 0) AS retained;
+
+-- Access and editing epoch are read in the same repeatable-read transaction.
+-- name: GetDocumentOfflineState :one
+SELECT collaboration_state FROM public.documents WHERE document_id = sqlc.arg(document_id);

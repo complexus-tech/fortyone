@@ -15,6 +15,7 @@ import (
 	commentshttp "github.com/complexus-tech/projects-api/internal/modules/comments/http"
 	customfieldshttp "github.com/complexus-tech/projects-api/internal/modules/customfields/http"
 	dataexporthttp "github.com/complexus-tech/projects-api/internal/modules/dataexport/http"
+	desktophttp "github.com/complexus-tech/projects-api/internal/modules/desktop/http"
 	developercredentialshttp "github.com/complexus-tech/projects-api/internal/modules/developercredentials/http"
 	developeroauthhttp "github.com/complexus-tech/projects-api/internal/modules/developeroauth/http"
 	documentshttp "github.com/complexus-tech/projects-api/internal/modules/documents/http"
@@ -160,7 +161,7 @@ func (r routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 	}
 	browserSessions := mid.NewBrowserSessionResolver(cfg.Cache, svcs.users)
 	scimhttp.Routes(scimhttp.Config{Service: svcs.scim, PublicURL: cfg.APIPublicURL, SecretKey: cfg.SecretKey, Log: cfg.Log, BrowserSessions: browserSessions, WorkspaceResolver: r.workspaceResolver}, app)
-	ssohttp.Routes(ssohttp.Config{Service: svcs.enterpriseSSO, States: cfg.Cache, Issuer: usershttp.NewWorkspaceSSOSessionWriter(svcs.users, cfg.Cache, cfg.CookieDomain, cfg.DeploymentMode), CallbackURL: strings.TrimRight(cfg.APIPublicURL, "/") + "/auth/sso/callback", WebsiteURL: cfg.WebsiteURL, CookieDomain: cfg.CookieDomain, Production: cfg.DeploymentMode.IsProduction(), SecretKey: cfg.SecretKey, Log: cfg.Log, BrowserSessions: browserSessions, WorkspaceResolver: r.workspaceResolver}, app)
+	ssohttp.Routes(ssohttp.Config{Service: svcs.enterpriseSSO, States: cfg.Cache, Issuer: usershttp.NewWorkspaceSSOSessionWriter(svcs.users, cfg.Cache, cfg.CookieDomain, cfg.DeploymentMode), CallbackURL: strings.TrimRight(cfg.APIPublicURL, "/") + "/auth/sso/callback", WebsiteURL: cfg.WebsiteURL, CookieDomain: cfg.CookieDomain, DeploymentMode: cfg.DeploymentMode, SecretKey: cfg.SecretKey, Log: cfg.Log, BrowserSessions: browserSessions, WorkspaceResolver: r.workspaceResolver}, app)
 	dataexporthttp.Routes(dataexporthttp.Config{Log: cfg.Log, SecretKey: cfg.SecretKey, BrowserSessions: browserSessions, WorkspaceResolver: r.workspaceResolver, Service: svcs.dataExport}, app)
 	securityhttp.Routes(securityhttp.Config{Log: cfg.Log, SecretKey: cfg.SecretKey, BrowserSessions: browserSessions, WorkspaceResolver: r.workspaceResolver, Service: svcs.workspaceSecurity}, app)
 	workautomationshttp.Routes(workautomationshttp.Config{
@@ -422,6 +423,12 @@ func (r routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Cache:             cfg.Cache,
 		BrowserSessions:   browserSessions,
 		Service:           svcs.epics,
+	}, app)
+
+	desktophttp.Routes(desktophttp.Config{
+		Log: cfg.Log, SecretKey: cfg.SecretKey, BrowserSessions: browserSessions,
+		WorkspaceResolver: r.workspaceResolver, Stories: svcs.stories, Documents: svcs.documents,
+		Teams: svcs.teams, Statuses: svcs.states, Operations: svcs.desktopOperations, Cache: cfg.Cache, Attachments: svcs.attachments, Users: svcs.users, Workspaces: svcs.workspaces,
 	}, app)
 
 	documentshttp.Routes(documentshttp.Config{

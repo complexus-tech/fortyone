@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-hosted-draft-delete"
+description = "Enables the hosted_draft_delete command without any pre-configured scope."
+commands.allow = ["hosted_draft_delete"]
+
+[[permission]]
+identifier = "deny-hosted-draft-delete"
+description = "Denies the hosted_draft_delete command without any pre-configured scope."
+commands.deny = ["hosted_draft_delete"]

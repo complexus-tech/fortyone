@@ -22,6 +22,7 @@ import { useMyInvitations } from "@/modules/invitations/hooks/my-invitations";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { DEFAULT_WORKSPACE_PATH } from "@/shared/routing/workspace";
 import { Commands } from "@/shell/commands/commands";
+import { navigateWithDesktopOffline } from "@/shell/desktop/offline-navigation";
 import { MobileMenuButton } from "../shared/mobile-menu";
 import { NavLink } from "../ui";
 import {
@@ -49,7 +50,10 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
   const { withWorkspace } = useWorkspacePath();
 
   const goBack = () => {
-    router.push(prevPage || withWorkspace(DEFAULT_WORKSPACE_PATH));
+    const destination = prevPage || withWorkspace(DEFAULT_WORKSPACE_PATH);
+    void navigateWithDesktopOffline(destination, () => {
+      router.push(destination);
+    });
     setPrevPage("");
   };
 

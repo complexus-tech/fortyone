@@ -99,10 +99,45 @@ fn capability(policy: &NavigationPolicy, url: &Url, identifier: &str) -> Capabil
         .local(url.origin() == policy.app_url().origin())
         .webview(WINDOW_LABEL)
         .remote(format!("{}/*", url.origin().ascii_serialization()))
+        // The notification plugin's injected bootstrap reads permission on load.
+        // Sending and requesting permission remain behind our checked commands.
+        .permission("notification:allow-is-permission-granted")
         .permission("allow-sync-desktop-chrome")
         .permission("allow-desktop-navigation-state")
         .permission("allow-desktop-navigate")
         .permission("allow-desktop-window-action")
+        .permission("allow-begin-workspace-switch")
+        .permission("allow-get-workspace-switch")
+        .permission("allow-workspace-ready")
+        .permission("allow-retry-workspace-switch")
+        .permission("allow-cancel-workspace-switch")
+        .permission("allow-hosted-bind-session")
+        .permission("allow-hosted-restore-session")
+        .permission("allow-hosted-cache-read")
+        .permission("allow-hosted-cache-write")
+        .permission("allow-hosted-cache-clear")
+        .permission("allow-hosted-draft-read")
+        .permission("allow-hosted-draft-write")
+        .permission("allow-hosted-draft-delete")
+        .permission("allow-hosted-get-preferences")
+        .permission("allow-hosted-update-preferences")
+        .permission("allow-hosted-request-notification-permission")
+        .permission("allow-hosted-deliver-notification")
+        .permission("allow-hosted-set-notification-badge")
+        .permission("allow-hosted-page-read")
+        .permission("allow-hosted-page-write")
+        .permission("allow-hosted-enqueue-operation")
+        .permission("allow-hosted-read-outbox")
+        .permission("allow-hosted-sync-outbox")
+        .permission("allow-hosted-resolve-operation")
+        .permission("allow-hosted-confirm-close")
+        .permission("allow-hosted-stage-attachment")
+        .permission("allow-hosted-read-attachment")
+        .permission("allow-hosted-export-attachment")
+        .permission("allow-hosted-get-update-status")
+        .permission("allow-hosted-check-update")
+        .permission("allow-hosted-install-update")
+        .permission("allow-hosted-export-recovery")
 }
 
 pub fn authorize_window(window: &WebviewWindow, policy: &NavigationPolicy) -> Result<(), String> {
@@ -194,7 +229,7 @@ mod tests {
             capability.remote.unwrap().urls,
             vec!["https://cloud.fortyone.app/*"]
         );
-        assert_eq!(capability.permissions.len(), 4);
+        assert_eq!(capability.permissions.len(), 37);
     }
 
     #[test]
@@ -214,7 +249,7 @@ mod tests {
             capability.remote.unwrap().urls,
             vec!["http://localhost:3456/*"]
         );
-        assert_eq!(capability.permissions.len(), 4);
+        assert_eq!(capability.permissions.len(), 37);
         assert_eq!(
             capability
                 .permissions
@@ -222,10 +257,43 @@ mod tests {
                 .map(|permission| permission.identifier().as_ref())
                 .collect::<Vec<_>>(),
             vec![
+                "notification:allow-is-permission-granted",
                 "allow-sync-desktop-chrome",
                 "allow-desktop-navigation-state",
                 "allow-desktop-navigate",
-                "allow-desktop-window-action"
+                "allow-desktop-window-action",
+                "allow-begin-workspace-switch",
+                "allow-get-workspace-switch",
+                "allow-workspace-ready",
+                "allow-retry-workspace-switch",
+                "allow-cancel-workspace-switch",
+                "allow-hosted-bind-session",
+                "allow-hosted-restore-session",
+                "allow-hosted-cache-read",
+                "allow-hosted-cache-write",
+                "allow-hosted-cache-clear",
+                "allow-hosted-draft-read",
+                "allow-hosted-draft-write",
+                "allow-hosted-draft-delete",
+                "allow-hosted-get-preferences",
+                "allow-hosted-update-preferences",
+                "allow-hosted-request-notification-permission",
+                "allow-hosted-deliver-notification",
+                "allow-hosted-set-notification-badge",
+                "allow-hosted-page-read",
+                "allow-hosted-page-write",
+                "allow-hosted-enqueue-operation",
+                "allow-hosted-read-outbox",
+                "allow-hosted-sync-outbox",
+                "allow-hosted-resolve-operation",
+                "allow-hosted-confirm-close",
+                "allow-hosted-stage-attachment",
+                "allow-hosted-read-attachment",
+                "allow-hosted-export-attachment",
+                "allow-hosted-get-update-status",
+                "allow-hosted-check-update",
+                "allow-hosted-install-update",
+                "allow-hosted-export-recovery",
             ]
         );
     }
@@ -248,7 +316,16 @@ mod tests {
                         panic!("Expected one capability");
                     };
                     assert_eq!(capability.webviews, vec![WINDOW_LABEL]);
-                    assert_eq!(capability.permissions.len(), 4);
+                    assert_eq!(capability.permissions.len(), 37);
+                    assert_eq!(
+                        capability
+                            .permissions
+                            .iter()
+                            .map(|permission| permission.identifier().as_ref())
+                            .filter(|permission| permission.starts_with("notification:"))
+                            .collect::<Vec<_>>(),
+                        vec!["notification:allow-is-permission-granted"]
+                    );
                     grants.push((
                         capability.identifier,
                         capability.local,

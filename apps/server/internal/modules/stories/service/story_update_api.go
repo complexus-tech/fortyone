@@ -51,6 +51,37 @@ func (s *Service) UpdatePatchIfUnchanged(ctx context.Context, storyID, workspace
 	})
 }
 
+// UpdatePatchWithMediaReconciliationIfUnchanged uses the inspected story version
+// and transfers orphan object cleanup to the repository's transactional outbox.
+// This keeps a replayable desktop receipt atomic with all database side effects.
+func (s *Service) UpdatePatchWithMediaReconciliationIfUnchanged(ctx context.Context, storyID, workspaceID uuid.UUID, expected time.Time, patch StoryPatch, references []uuid.UUID) error {
+	if expected.IsZero() {
+		return ErrInvalidStoryMutation
+	}
+	if _, typed := s.mutationRepository(); !typed {
+		return ErrInvalidStoryMutation
+	}
+	html, present := patch.DescriptionHTML.Value()
+	if !present || html == nil {
+		return ErrInvalidStoryMediaReference
+	}
+	for _, id := range references {
+		if id == uuid.Nil {
+			return ErrInvalidStoryMediaReference
+		}
+	}
+	actor, err := auth.GetActor(ctx)
+	if err != nil {
+		return ErrStoryMutationForbidden
+	}
+	expected = expected.UTC()
+	return s.updatePatchWithOptions(ctx, storyID, workspaceID, actor.PrincipalID, patch, updateOptions{
+		publishEvents: true, enqueueGitHubSync: true, recordDescriptionUpdates: true,
+		expectedUpdatedAt: &expected, actorKind: actor.Kind,
+		reconcileMedia: true, deferMediaDeletion: true, referencedMediaIDs: references,
+	})
+}
+
 // UpdateWithMediaReconciliation applies an authoritative description snapshot.
 // The caller must only use this after all editor uploads have settled. Ordinary
 // updates intentionally do not reconcile media so an older autosave that omits

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-desktop-ack-collaboration"
+description = "Enables the desktop_ack_collaboration command without any pre-configured scope."
+commands.allow = ["desktop_ack_collaboration"]
+
+[[permission]]
+identifier = "deny-desktop-ack-collaboration"
+description = "Denies the desktop_ack_collaboration command without any pre-configured scope."
+commands.deny = ["desktop_ack_collaboration"]

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-hosted-confirm-close"
+description = "Enables the hosted_confirm_close command without any pre-configured scope."
+commands.allow = ["hosted_confirm_close"]
+
+[[permission]]
+identifier = "deny-hosted-confirm-close"
+description = "Denies the hosted_confirm_close command without any pre-configured scope."
+commands.deny = ["hosted_confirm_close"]

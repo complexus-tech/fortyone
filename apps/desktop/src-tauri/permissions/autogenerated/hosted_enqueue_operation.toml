@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-hosted-enqueue-operation"
+description = "Enables the hosted_enqueue_operation command without any pre-configured scope."
+commands.allow = ["hosted_enqueue_operation"]
+
+[[permission]]
+identifier = "deny-hosted-enqueue-operation"
+description = "Denies the hosted_enqueue_operation command without any pre-configured scope."
+commands.deny = ["hosted_enqueue_operation"]

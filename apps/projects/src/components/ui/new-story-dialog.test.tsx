@@ -1,10 +1,30 @@
 /* global beforeEach, describe, expect, it, jest -- Jest globals are provided by the projects test runner. */
 
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { useImperativeHandle, useState } from "react";
 import type { ReactNode } from "react";
+import { CreationPropertySlotsProvider } from "@/shared/story/creation-property-slots";
+import type { CreationPropertiesProps } from "@/shared/story/creation-property-slots";
 import { NewStoryDialog } from "./new-story-dialog";
 
 const mockSetIsOpen = jest.fn();
+const mockSaveDraft = jest.fn().mockResolvedValue(undefined);
+const mockDraft = {
+  supported: false,
+  ready: true,
+  recovered: null as { version: number; form: Record<string, unknown> } | null,
+  status: "",
+  error: null,
+  save: mockSaveDraft,
+  discard: jest.fn().mockResolvedValue(undefined),
+  retry: jest.fn(),
+  acceptRecovered: () => {
+    mockDraft.recovered = null;
+  },
+};
+jest.mock("@/shell/desktop/use-desktop-draft", () => ({
+  useDesktopDraft: () => mockDraft,
+}));
 
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ push: jest.fn() }),
@@ -160,7 +180,11 @@ jest.mock("./new-story-dialog-content", () => ({
   NewStoryDialogContent: ({
     onOpenChange,
     storyForm,
+    customFields,
+    draftNotice,
   }: {
+    customFields: ReactNode;
+    draftNotice: ReactNode;
     onOpenChange: (open: boolean) => void;
     storyForm: unknown;
   }) => (
@@ -173,6 +197,8 @@ jest.mock("./new-story-dialog-content", () => ({
       >
         Close dialog
       </button>
+      {draftNotice}
+      {customFields}
       <output data-testid="story-form">{JSON.stringify(storyForm)}</output>
     </>
   ),
@@ -188,6 +214,9 @@ const readStoryForm = () =>
 describe("NewStoryDialog", () => {
   beforeEach(() => {
     mockSetIsOpen.mockReset();
+    mockSaveDraft.mockClear();
+    mockDraft.supported = false;
+    mockDraft.recovered = null;
   });
 
   it("reinitializes the mounted draft when the caller changes creation context", async () => {
@@ -232,4 +261,86 @@ describe("NewStoryDialog", () => {
 
     expect(mockSetIsOpen).toHaveBeenCalledWith(false);
   });
+});
+
+const DraftProperties = ({
+  controllerRef,
+  onValuesChange,
+  disabled,
+}: CreationPropertiesProps) => {
+  const [values, setValues] = useState<Record<string, string | null>>({});
+  const update = (next: Record<string, string | null>) => {
+    setValues(next);
+    onValuesChange?.(next);
+  };
+  useImperativeHandle(controllerRef, () => ({
+    isPending: false,
+    isError: false,
+    prepareValues: () => [],
+    reset: () => {
+      update({});
+    },
+    setValues: update,
+  }));
+  return (
+    <>
+      <button
+        disabled={disabled}
+        onClick={() => {
+          update({
+            amount: "9007199254740993.29",
+            note: "  unfinished text  ",
+            cleared: null,
+          });
+        }}
+        type="button"
+      >
+        Edit custom fields
+      </button>
+      <output data-testid="custom-values">{JSON.stringify(values)}</output>
+    </>
+  );
+};
+const draftSlots = { Properties: DraftProperties, TemplatePicker: () => null };
+it("durably captures and restores custom fields even before a task title is entered", async () => {
+  mockSaveDraft.mockClear();
+  mockDraft.supported = true;
+  mockDraft.recovered = null;
+  const content = (
+    <CreationPropertySlotsProvider slots={draftSlots}>
+      <NewStoryDialog isOpen setIsOpen={mockSetIsOpen} />
+    </CreationPropertySlotsProvider>
+  );
+  const first = render(content);
+  fireEvent.click(screen.getByRole("button", { name: "Edit custom fields" }));
+  await waitFor(() => {
+    expect(mockSaveDraft).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        form: expect.objectContaining({
+          title: "",
+          customFieldValues: [
+            { fieldId: "amount", value: "9007199254740993.29" },
+            { fieldId: "note", value: "  unfinished text  " },
+            { fieldId: "cleared", value: null },
+          ],
+        }),
+      }),
+    );
+  });
+  const saved = mockSaveDraft.mock.calls.at(-1)[0];
+  first.unmount();
+  mockDraft.recovered = saved;
+  render(content);
+  expect(
+    screen.getByRole("button", { name: "Edit custom fields" }),
+  ).toBeDisabled();
+  fireEvent.click(screen.getByRole("button", { name: "Restore draft" }));
+  expect(JSON.parse(screen.getByTestId("custom-values").textContent)).toEqual({
+    amount: "9007199254740993.29",
+    note: "  unfinished text  ",
+    cleared: null,
+  });
+  expect(
+    screen.getByRole("button", { name: "Edit custom fields" }),
+  ).toBeEnabled();
 });

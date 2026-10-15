@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-hosted-sync-outbox"
+description = "Enables the hosted_sync_outbox command without any pre-configured scope."
+commands.allow = ["hosted_sync_outbox"]
+
+[[permission]]
+identifier = "deny-hosted-sync-outbox"
+description = "Denies the hosted_sync_outbox command without any pre-configured scope."
+commands.deny = ["hosted_sync_outbox"]

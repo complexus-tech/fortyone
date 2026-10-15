@@ -15,6 +15,44 @@ let mockEditorsReady = false;
 let mockContentType = "html";
 let mockUserRole = "member";
 const mockUpdateStory = jest.fn();
+let mockNativeEditors: Editor[] | null = null;
+let mockDraftSupported = false;
+let mockDraftReady = true;
+let mockRecoveredDraft: {
+  title: string;
+  description: string;
+  descriptionHTML: string;
+  baseVersion: string;
+} | null = null;
+const mockSaveDraft = jest.fn<Promise<void>, [unknown]>().mockResolvedValue();
+const mockAcceptRecovered = jest.fn();
+jest.mock("@/shell/desktop/use-desktop-draft", () => ({
+  useDesktopDraft: () => ({
+    supported: mockDraftSupported,
+    ready: mockDraftReady,
+    recovered: mockRecoveredDraft,
+    status: "",
+    error: null,
+    save: mockSaveDraft,
+    discard: jest.fn(),
+    retry: jest.fn(),
+    acceptRecovered: mockAcceptRecovered,
+  }),
+}));
+jest.mock("@/shell/desktop/desktop-draft-notice", () => ({
+  DesktopDraftNotice: ({
+    recovered,
+    onRestore,
+  }: {
+    recovered: boolean;
+    onRestore: () => void;
+  }) =>
+    recovered ? (
+      <button onClick={onRestore} type="button">
+        Restore draft
+      </button>
+    ) : null,
+}));
 type EditorCallbacks = {
   content: string;
   onCreate?: (event: { editor: Editor }) => void;
@@ -44,6 +82,8 @@ jest.mock("@tiptap/react", () => ({
     if (options.onCreate) mockDescriptionCallbacks = options;
     else mockTitleCallbacks = options;
     const { content } = options;
+    if (mockNativeEditors)
+      return options.onCreate ? mockNativeEditors[0] : mockNativeEditors[1];
     return mockEditorsReady
       ? {
           content,
@@ -105,6 +145,7 @@ jest.mock("../hooks/story", () => ({
       description: `Description ${id}`,
       teamId: "team",
       reporterId: "viewer",
+      updatedAt: "2026-10-15T10:00:00Z",
     },
   }),
 }));
@@ -256,13 +297,86 @@ describe("description autosave", () => {
     mockEditorsReady = false;
     mockContentType = "html";
     mockUserRole = "member";
+    mockDraftSupported = false;
+    mockDraftReady = true;
+    mockRecoveredDraft = null;
+    mockNativeEditors = null;
+    mockSaveDraft.mockResolvedValue();
   });
 
   afterEach(() => {
     editors.splice(0).forEach((editor) => {
       if (!editor.isDestroyed) editor.destroy();
     });
+    mockNativeEditors = null;
+    mockDraftSupported = false;
+    mockRecoveredDraft = null;
     jest.useRealTimers();
+  });
+
+  it("persists desktop editor changes before the network debounce and waits for them on close", async () => {
+    mockDraftSupported = true;
+    const description = createEditor("Description first");
+    const title = createEditor("Title first");
+    mockNativeEditors = [description, title];
+    render(<MainDetails isNotifications={false} storyId="first" />);
+    act(() => {
+      editDescription(description, "Offline change");
+    });
+    expect(mockSaveDraft).toHaveBeenCalledWith(
+      expect.objectContaining({
+        description: "Offline change",
+        baseVersion: "2026-10-15T10:00:00Z",
+      }),
+    );
+    expect(mockUpdateStory).not.toHaveBeenCalled();
+    let finish: (() => void) | undefined;
+    mockSaveDraft.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const writes: Promise<void>[] = [];
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent("fortyone:desktop-before-close", {
+          detail: { waitUntil: (write: Promise<void>) => writes.push(write) },
+        }),
+      );
+    });
+    expect(writes).toHaveLength(1);
+    expect(mockUpdateStory).toHaveBeenCalledTimes(1);
+    finish!();
+    await Promise.all(writes);
+  });
+
+  it("restores a desktop draft with its original revision outside the update body", () => {
+    mockDraftSupported = true;
+    mockRecoveredDraft = {
+      title: "Recovered",
+      description: "Saved offline",
+      descriptionHTML: "<p>Saved offline</p>",
+      baseVersion: "2026-10-14T10:00:00Z",
+    };
+    mockNativeEditors = [
+      createEditor("Description first"),
+      createEditor("Title first"),
+    ];
+    render(<MainDetails isNotifications={false} storyId="first" />);
+    expect(mockNativeEditors[0].isEditable).toBe(false);
+    fireEvent.click(screen.getByRole("button", { name: "Restore draft" }));
+    expect(mockUpdateStory).toHaveBeenCalledWith({
+      storyId: "first",
+      desktopBaseVersion: "2026-10-14T10:00:00Z",
+      payload: {
+        title: "Recovered",
+        description: "Saved offline",
+        descriptionHTML: "<p>Saved offline</p>",
+        reconcileDescriptionMedia: true,
+      },
+    });
+    expect(mockAcceptRecovered).toHaveBeenCalled();
   });
 
   it("serializes only the latest description after the debounce while keeping title saves independent", () => {

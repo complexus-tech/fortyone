@@ -4,6 +4,8 @@ import { usePostHog } from "posthog-js/react";
 import { ServerSentEvents } from "@/app/server-sent-events";
 import { calendarKeys, notificationKeys } from "@/constants/keys";
 import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
+import { useSession } from "@/lib/auth/client";
+import { deliverDesktopNotification } from "@/shell/desktop/notification";
 import { storyKeys } from "@/modules/stories/constants";
 import { WorkspaceRealtimeConnection } from "./workspace-realtime-connection";
 
@@ -21,6 +23,11 @@ jest.mock("@/lib/api-url", () => ({
 
 jest.mock("@/lib/hooks/workspaces", () => ({
   useCurrentWorkspace: jest.fn(),
+}));
+
+jest.mock("@/lib/auth/client", () => ({ useSession: jest.fn() }));
+jest.mock("@/shell/desktop/notification", () => ({
+  deliverDesktopNotification: jest.fn(),
 }));
 
 class MockEventSource {
@@ -82,7 +89,7 @@ beforeEach(() => {
     () =>
       ({
         workspace: connectionWorkspaceSlug
-          ? { slug: connectionWorkspaceSlug }
+          ? { id: "workspace-id", slug: connectionWorkspaceSlug }
           : undefined,
       }) as ReturnType<typeof useCurrentWorkspace>,
   );
@@ -92,6 +99,10 @@ beforeEach(() => {
   mockedUseQueryClient.mockReturnValue(
     queryClient as unknown as ReturnType<typeof useQueryClient>,
   );
+  jest
+    .mocked(useSession)
+    .mockReturnValue({ data: null, status: "unauthenticated" });
+  jest.mocked(deliverDesktopNotification).mockResolvedValue(undefined);
 });
 
 afterAll(() => {
@@ -104,6 +115,52 @@ afterAll(() => {
 });
 
 describe("WorkspaceRealtimeConnection", () => {
+  it("forwards live notifications to native delivery without replaying on reconnect", () => {
+    jest
+      .mocked(useSession)
+      .mockReturnValue({
+        data: { user: { id: "account-id" } },
+        status: "authenticated",
+      } as ReturnType<typeof useSession>);
+    render(<WorkspaceRealtimeConnection />);
+    const data = JSON.stringify({ entity_id: "story-1", entity_type: "story" });
+    connection().onmessage?.({ data } as MessageEvent);
+    expect(deliverDesktopNotification).toHaveBeenCalledWith(
+      data,
+      {
+        accountId: "account-id",
+        workspaceId: "workspace-id",
+        workspaceSlug: "engineering",
+      },
+      expect.any(Function),
+    );
+    connection().onerror?.(new Event("error"));
+    connection().onopen?.(new Event("open"));
+    expect(deliverDesktopNotification).toHaveBeenCalledTimes(1);
+  });
+
+  it("closes the previous account subscription and rejects its late events", () => {
+    jest
+      .mocked(useSession)
+      .mockReturnValue({
+        data: { user: { id: "account-id" } },
+        status: "authenticated",
+      } as ReturnType<typeof useSession>);
+    const view = render(<WorkspaceRealtimeConnection />);
+    const previous = connection();
+    jest
+      .mocked(useSession)
+      .mockReturnValue({
+        data: { user: { id: "other-account" } },
+        status: "authenticated",
+      } as ReturnType<typeof useSession>);
+    view.rerender(<WorkspaceRealtimeConnection />);
+    previous.onmessage?.({
+      data: JSON.stringify({ entity_id: "story-1", entity_type: "story" }),
+    } as MessageEvent);
+    expect(previous.close).toHaveBeenCalledTimes(1);
+    expect(deliverDesktopNotification).not.toHaveBeenCalled();
+  });
   it("keeps the existing route entrypoint as a compatibility export", () => {
     expect(ServerSentEvents).toBe(WorkspaceRealtimeConnection);
   });
@@ -150,9 +207,7 @@ describe("WorkspaceRealtimeConnection", () => {
     firstConnection.onmessage?.({
       data: JSON.stringify({ entityId: "story-1", entityType: "story" }),
     } as MessageEvent);
-    expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
-      queryKey: notificationKeys.all("engineering"),
-    });
+    expect(queryClient.invalidateQueries).not.toHaveBeenCalled();
     expect(queryClient.invalidateQueries).not.toHaveBeenCalledWith({
       queryKey: notificationKeys.all("product"),
     });

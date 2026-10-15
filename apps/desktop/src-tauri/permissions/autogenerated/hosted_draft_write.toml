@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-hosted-draft-write"
+description = "Enables the hosted_draft_write command without any pre-configured scope."
+commands.allow = ["hosted_draft_write"]
+
+[[permission]]
+identifier = "deny-hosted-draft-write"
+description = "Denies the hosted_draft_write command without any pre-configured scope."
+commands.deny = ["hosted_draft_write"]

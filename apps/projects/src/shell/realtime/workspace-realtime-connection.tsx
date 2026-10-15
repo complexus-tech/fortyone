@@ -5,9 +5,12 @@ import { usePostHog } from "posthog-js/react";
 import { useEffect, useEffectEvent } from "react";
 import { calendarKeys, notificationKeys } from "@/constants/keys";
 import { getApiUrl } from "@/lib/api-url";
+import { useSession } from "@/lib/auth/client";
 import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
 import type { DetailedStory } from "@/modules/story/types";
 import { storyKeys } from "@/modules/stories/constants";
+import { deliverDesktopNotification } from "@/shell/desktop/notification";
+import { DesktopNotificationBadge } from "@/shell/desktop/desktop-notification-badge";
 import { parseWorkspaceRealtimeEvent } from "./workspace-realtime-contract";
 
 const apiURL = getApiUrl();
@@ -23,6 +26,9 @@ export const WorkspaceRealtimeConnection = () => {
   const posthog = usePostHog();
   const { workspace } = useCurrentWorkspace();
   const queryClient = useQueryClient();
+  const { data: session } = useSession();
+  const connectionAccountId = session?.user.id;
+  const connectionWorkspaceId = workspace?.id;
   const connectionWorkspaceSlug = workspace?.slug;
 
   const invalidateRealtimeCaches = useEffectEvent((workspaceSlug: string) => {
@@ -38,7 +44,7 @@ export const WorkspaceRealtimeConnection = () => {
   });
 
   const handleMessage = useEffectEvent(
-    (event: MessageEvent, workspaceSlug: string) => {
+    (event: MessageEvent, workspaceSlug: string, isCurrent: () => boolean) => {
       try {
         const realtimeEvent = parseWorkspaceRealtimeEvent(event.data);
 
@@ -102,6 +108,18 @@ export const WorkspaceRealtimeConnection = () => {
           queryKey: notificationKeys.all(workspaceSlug),
         });
 
+        if (connectionAccountId && connectionWorkspaceId) {
+          void deliverDesktopNotification(
+            event.data,
+            {
+              accountId: connectionAccountId,
+              workspaceId: connectionWorkspaceId,
+              workspaceSlug,
+            },
+            isCurrent,
+          ).catch((error: unknown) => posthog.captureException(error));
+        }
+
         if (realtimeEvent.entityType === "story") {
           void queryClient.invalidateQueries({
             queryKey: storyKeys.detail(workspaceSlug, realtimeEvent.entityId),
@@ -127,9 +145,10 @@ export const WorkspaceRealtimeConnection = () => {
     );
     const cacheWorkspaceSlug = connectionWorkspaceSlug.toLowerCase();
     let shouldReconcileOnOpen = false;
+    let active = true;
 
     eventSource.onmessage = (event) => {
-      handleMessage(event, cacheWorkspaceSlug);
+      if (active) handleMessage(event, cacheWorkspaceSlug, () => active);
     };
     eventSource.onerror = (error) => {
       shouldReconcileOnOpen = true;
@@ -143,9 +162,18 @@ export const WorkspaceRealtimeConnection = () => {
     };
 
     return () => {
+      active = false;
       eventSource.close();
     };
-  }, [connectionWorkspaceSlug]); // eslint-disable-line react-hooks/exhaustive-deps -- Effect Events are stable and must not become reconnection dependencies.
+  }, [connectionAccountId, connectionWorkspaceId, connectionWorkspaceSlug]); // eslint-disable-line react-hooks/exhaustive-deps -- Effect Events are stable and must not become reconnection dependencies.
 
-  return null;
+  return connectionAccountId &&
+    connectionWorkspaceId &&
+    connectionWorkspaceSlug ? (
+    <DesktopNotificationBadge
+      accountId={connectionAccountId}
+      workspaceId={connectionWorkspaceId}
+      workspaceSlug={connectionWorkspaceSlug.toLowerCase()}
+    />
+  ) : null;
 };

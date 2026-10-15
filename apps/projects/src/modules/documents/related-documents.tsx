@@ -6,6 +6,7 @@ import { Box, Button, Flex, Menu, Skeleton, Text, TimeAgo } from "ui";
 import { DeleteIcon, DocsIcon, MoreHorizontalIcon } from "icons";
 import { RowWrapper } from "@/components/ui";
 import { useWorkspacePath } from "@/hooks";
+import { navigateWithDesktopOffline } from "@/shell/desktop/offline-navigation";
 import { useDocumentRelationshipMutations, useRelatedDocuments } from "./hooks";
 import type { DocumentRelationType, WorkspaceDocument } from "./types";
 
@@ -55,7 +56,9 @@ const RelatedDocumentRow = ({
             <Menu.Group>
               <Menu.Item
                 onSelect={() => {
-                  router.push(documentPath);
+                  void navigateWithDesktopOffline(documentPath, () => {
+                    router.push(documentPath);
+                  });
                 }}
               >
                 <DocsIcon className="h-[1.15rem]" />

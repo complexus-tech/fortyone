@@ -19,6 +19,7 @@ const AUTH_ONLY_PREFIXES = new Set([
   "/signup",
   "/auth-callback",
   "/auth/mobile",
+  "/auth/desktop",
   "/auth/account-deletion",
   "/verify",
   "/onboarding",
@@ -109,6 +110,12 @@ const protectFeedbackWidgetEmbed = (req: NextRequest) => {
 
 export default async function proxy(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
+  if (pathname === "/desktop-worker.js" || pathname === "/desktop-offline.js") {
+    const response = NextResponse.next();
+    response.headers.set("Cache-Control", "no-cache");
+    response.headers.set("Service-Worker-Allowed", "/");
+    return response;
+  }
   const searchParams = req.nextUrl.search;
   const hostname = getHostname(req);
   const userAgent = req.headers.get("user-agent");

@@ -52,6 +52,7 @@ type Attempt struct {
 	Slug, Nonce, Verifier                 string
 	CreatedAt                             time.Time
 	ReturnToSettings                      bool
+	DesktopReturnPath                     string
 }
 type Identity struct {
 	Subject, Email  string

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-desktop-refresh-resource"
+description = "Enables the desktop_refresh_resource command without any pre-configured scope."
+commands.allow = ["desktop_refresh_resource"]
+
+[[permission]]
+identifier = "deny-desktop-refresh-resource"
+description = "Denies the desktop_refresh_resource command without any pre-configured scope."
+commands.deny = ["desktop_refresh_resource"]

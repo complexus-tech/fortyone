@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-hosted-draft-read"
+description = "Enables the hosted_draft_read command without any pre-configured scope."
+commands.allow = ["hosted_draft_read"]
+
+[[permission]]
+identifier = "deny-hosted-draft-read"
+description = "Denies the hosted_draft_read command without any pre-configured scope."
+commands.deny = ["hosted_draft_read"]

@@ -8,12 +8,13 @@ const bridgeSource = readFileSync(
   "utf8",
 );
 
-function createPage({ readyState = "loading", frame = false } = {}) {
+function createPage({ readyState = "loading", frame = false, platform = "macos" } = {}) {
   const styles = [];
   const historyCalls = [];
   const nativeCalls = [];
   const document = Object.assign(new EventTarget(), {
     readyState,
+    body: { inert: false },
     createElement(tag) {
       assert.equal(tag, "style");
       return { textContent: "" };
@@ -52,7 +53,10 @@ function createPage({ readyState = "loading", frame = false } = {}) {
     historyCalls,
     nativeCalls,
     initialize: () =>
-      runInNewContext(bridgeSource, { window, document, Event }),
+      runInNewContext(
+        bridgeSource.replaceAll("__FORTYONE_DESKTOP_PLATFORM__", platform),
+        { window, document, Event, CustomEvent },
+      ),
   };
 }
 
@@ -171,4 +175,31 @@ test("the immutable version-two bridge retains its four native command contracts
   assert.equal(page.nativeCalls[1].args, undefined);
   assert.equal(page.nativeCalls[2].args.direction, "back");
   assert.equal(page.nativeCalls[3].args.action, "drag");
+});
+
+test("Windows and Linux retain native capabilities and await draft saving before hiding", async () => {
+  for (const platform of ["windows", "linux"]) {
+    const page = createPage({ platform });
+    let saved;
+    const save = new Promise((resolve) => { saved = resolve; });
+    page.window.addEventListener("fortyone:desktop-before-close", (event) => {
+      event.detail.waitUntil(save);
+    });
+    page.initialize();
+    assert.equal(page.window.__FORTYONE_DESKTOP__.platform, platform);
+    assert.equal(page.window.__FORTYONE_DESKTOP__.vibrancy, false);
+    assert.equal(await page.window.__FORTYONE_DESKTOP__.getPreferences(), "hosted_get_preferences");
+
+    page.window.dispatchEvent(new CustomEvent("fortyone:native-before-close", {
+      detail: { nonce: "close-request", action: "hide" },
+    }));
+    assert.equal(page.document.body.inert, true);
+    assert.equal(page.nativeCalls.some(({ command }) => command === "hosted_confirm_close"), false);
+    saved();
+    await new Promise(setImmediate);
+    const confirmation = page.nativeCalls.find(({ command }) => command === "hosted_confirm_close");
+    assert.equal(confirmation.args.nonce, "close-request");
+    assert.equal(confirmation.args.allow, true);
+    assert.equal(page.document.body.inert, false);
+  }
 });

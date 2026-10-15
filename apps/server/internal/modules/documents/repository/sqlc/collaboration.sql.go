@@ -113,6 +113,22 @@ func (q *Queries) GetDocumentEditingMetadata(ctx context.Context, arg GetDocumen
 	return i, err
 }
 
+const getDocumentOfflineState = `-- name: GetDocumentOfflineState :one
+SELECT collaboration_state FROM public.documents WHERE document_id = $1
+`
+
+type GetDocumentOfflineStateParams struct {
+	DocumentID uuid.UUID
+}
+
+// Access and editing epoch are read in the same repeatable-read transaction.
+func (q *Queries) GetDocumentOfflineState(ctx context.Context, arg GetDocumentOfflineStateParams) ([]byte, error) {
+	row := q.db.QueryRow(ctx, getDocumentOfflineState, arg.DocumentID)
+	var collaboration_state []byte
+	err := row.Scan(&collaboration_state)
+	return collaboration_state, err
+}
+
 const getDocumentRevision = `-- name: GetDocumentRevision :one
 SELECT revision, title, content_html, content_text, edited_by, created_at
 FROM public.document_revisions

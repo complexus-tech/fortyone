@@ -2,6 +2,7 @@ package enterprisessohttp
 
 import (
 	sso "github.com/complexus-tech/projects-api/internal/modules/enterprisesso/service"
+	"github.com/complexus-tech/projects-api/internal/platform/deployment"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -12,14 +13,14 @@ type Config struct {
 	States                                           StateStore
 	Issuer                                           SessionIssuer
 	CallbackURL, WebsiteURL, CookieDomain, SecretKey string
-	Production                                       bool
+	DeploymentMode                                   deployment.Mode
 	Log                                              *logger.Logger
 	BrowserSessions                                  mid.SessionResolver
 	WorkspaceResolver                                mid.WorkspaceResolver
 }
 
 func Routes(cfg Config, app *web.App) {
-	h := New(cfg.Service, cfg.States, cfg.Issuer, cfg.CallbackURL, cfg.WebsiteURL, cfg.CookieDomain, cfg.Production)
+	h := New(cfg.Service, cfg.States, cfg.Issuer, cfg.CallbackURL, cfg.WebsiteURL, cfg.CookieDomain, cfg.DeploymentMode)
 	auth := mid.Auth(cfg.Log, cfg.SecretKey, cfg.BrowserSessions)
 	optional := mid.OptionalAuth(cfg.Log, cfg.SecretKey, cfg.BrowserSessions)
 	workspace := mid.Workspace(cfg.Log, cfg.WorkspaceResolver)

@@ -134,6 +134,27 @@ describe("DesktopProvider", () => {
     expect(document.documentElement.dataset.desktopPlatform).toBeUndefined();
   });
 
+  it.each(["windows", "linux"] as const)(
+    "connects %s without macOS titlebar treatment or native history polling",
+    async (platform) => {
+      installBridge();
+      window.__FORTYONE_DESKTOP__!.platform = platform;
+      window.__FORTYONE_DESKTOP__!.vibrancy = true;
+      render(
+        <DesktopProvider>
+          <Status />
+        </DesktopProvider>,
+      );
+      await screen.findByText("Connected");
+      expect(document.documentElement.dataset.desktopPlatform).toBe(platform);
+      expect(document.documentElement.dataset.desktopVibrancy).toBeUndefined();
+      expect(
+        screen.queryByRole("banner", { name: "Desktop title bar" }),
+      ).not.toBeInTheDocument();
+      expect(mockNavigationState).not.toHaveBeenCalled();
+    },
+  );
+
   it("publishes shell capabilities, synchronizes theme, and clears actions on unmount", async () => {
     window.__FORTYONE_DESKTOP__ = {
       version: 2,

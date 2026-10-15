@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-desktop-cache-media"
+description = "Enables the desktop_cache_media command without any pre-configured scope."
+commands.allow = ["desktop_cache_media"]
+
+[[permission]]
+identifier = "deny-desktop-cache-media"
+description = "Denies the desktop_cache_media command without any pre-configured scope."
+commands.deny = ["desktop_cache_media"]

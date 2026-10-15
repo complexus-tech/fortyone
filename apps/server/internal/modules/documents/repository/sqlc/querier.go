@@ -29,6 +29,8 @@ type Querier interface {
 	GetAccessibleDocumentForDuplicate(ctx context.Context, arg GetAccessibleDocumentForDuplicateParams) (GetAccessibleDocumentForDuplicateRow, error)
 	// Access is checked with GetAccessibleDocument in the same serializable transaction.
 	GetDocumentEditingMetadata(ctx context.Context, arg GetDocumentEditingMetadataParams) (GetDocumentEditingMetadataRow, error)
+	// Access and editing epoch are read in the same repeatable-read transaction.
+	GetDocumentOfflineState(ctx context.Context, arg GetDocumentOfflineStateParams) ([]byte, error)
 	GetDocumentRevision(ctx context.Context, arg GetDocumentRevisionParams) (GetDocumentRevisionRow, error)
 	GetPublicDocument(ctx context.Context, arg GetPublicDocumentParams) (GetPublicDocumentRow, error)
 	GetVisibleObjectiveRelationshipTarget(ctx context.Context, arg GetVisibleObjectiveRelationshipTargetParams) (GetVisibleObjectiveRelationshipTargetRow, error)

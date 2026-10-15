@@ -1,13 +1,17 @@
 "use client";
 import {
+  useEffect,
   useReducer,
   useRef,
   useState,
   type Dispatch,
   type SetStateAction,
 } from "react";
+import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
+import { useDesktopDraft } from "@/shell/desktop/use-desktop-draft";
+import { DesktopDraftNotice } from "@/shell/desktop/desktop-draft-notice";
 import { useSession } from "@/lib/auth/client";
 import {
   useFeatures,
@@ -19,7 +23,7 @@ import {
 } from "@/hooks";
 import { useDebouncedCallback } from "@/hooks/debounce";
 import type { Team } from "@/modules/teams/types";
-import type { DetailedStory } from "@/modules/story/types";
+import type { DetailedStory, NewStory } from "@/modules/story/types";
 import type { StoryPriority } from "@/modules/stories/types";
 import { useCreateStoryMutation } from "@/modules/story/hooks/create-mutation";
 import { useStoryDescriptionMedia } from "@/modules/story/hooks/use-story-description-media";
@@ -174,11 +178,49 @@ export const NewStoryDialog = ({
 
   const [storyForm, dispatch] = useReducer(storyFormReducer, initialForm);
   const deadlineSourceRef = useRef<DeadlineSource>(initialDeadlineSource);
+  const draft = useDesktopDraft<{ version: 1; form: NewStory }>(
+    `new-story:${currentTeamId ?? ""}`,
+    isOpen && Boolean(currentTeamId),
+  );
+  const {
+    supported: draftSupported,
+    ready: draftReady,
+    recovered: recoveredDraft,
+    save: saveDraft,
+  } = draft;
+  const drafted = useRef(false);
   const [createMore, setCreateMore] = useState(false);
   const [storyTitle, setStoryTitle] = useState("");
   const [storySearchQuery, setStorySearchQuery] = useState("");
+  useEffect(() => {
+    if (!isOpen || !draftSupported || !draftReady || recoveredDraft) return;
+    if (
+      storyTitle.trim() ||
+      storyForm.description?.trim() ||
+      storyForm.customFieldValues?.length
+    )
+      drafted.current = true;
+    if (!drafted.current) return;
+    void saveDraft({
+      version: 1,
+      form: { ...storyForm, title: storyTitle },
+    }).catch(() => {
+      // The durable draft hook keeps the payload and displays the storage error.
+    });
+  }, [
+    draftReady,
+    recoveredDraft,
+    saveDraft,
+    draftSupported,
+    isOpen,
+    storyForm,
+    storyTitle,
+  ]);
+
   const [figmaArtifacts, setFigmaArtifacts] = useState<FigmaArtifact[]>([]);
-  const mutation = useCreateStoryMutation();
+  const mutation = useCreateStoryMutation({
+    desktopDraftKey: draft.supported ? `new-story:${currentTeamId}` : undefined,
+  });
   const linkFigmaStory = useLinkFigmaStory();
   const {
     cancelStagedUploads,
@@ -226,6 +268,10 @@ export const NewStoryDialog = ({
   const storyTermPlural = getTermDisplay("storyTerm", { variant: "plural" });
   const { descriptionEditor: editor, titleEditor } = useNewStoryDialogEditors({
     description,
+    editable: !draft.supported || (draft.ready && !draft.recovered),
+    onDescriptionChange: (value) => {
+      dispatch({ type: "PATCH_FORM", payload: value });
+    },
     onMediaFiles: handleMediaFiles,
     onMediaRequest: openMediaPicker,
     onStoryTitleChange: setStoryTitle,
@@ -240,7 +286,7 @@ export const NewStoryDialog = ({
     isMayaAssigneeLoading,
     linkFigmaStory: linkFigmaStory.mutateAsync,
     mayaAssigneeId: mayaAssignee?.id,
-    mutateStory: (payload) => {
+    mutateStory: async (payload) => {
       const customFields = getCustomFields();
       if (customFields.isError)
         throw new Error(
@@ -248,10 +294,19 @@ export const NewStoryDialog = ({
         );
       if (customFields.isPending)
         throw new Error("Custom fields are still loading. Try again shortly.");
-      return mutation.mutateAsync({
+      const created = await mutation.mutateAsync({
         ...payload,
         customFieldValues: customFields.prepareValues(),
       });
+      try {
+        await draft.discard();
+        drafted.current = false;
+      } catch {
+        toast.error(
+          "Story created, but the saved draft could not be removed. Discard it before creating another copy.",
+        );
+      }
+      return created;
     },
     onCreated,
     onDialogClose: () => {
@@ -338,19 +393,69 @@ export const NewStoryDialog = ({
       <NewStoryDialogContent
         activeTeamId={activeTeam?.id}
         canUseBackgroundMaya={canUseBackgroundMaya}
+        createDisabled={
+          draft.supported ? !draft.ready || Boolean(draft.recovered) : false
+        }
         createMore={createMore}
         currentTeam={currentTeam}
         currentTeamId={currentTeamId}
         customFields={
           <Properties
             controllerRef={customFieldController}
-            disabled={isCreating}
+            disabled={
+              isCreating ||
+              (draft.supported && (!draft.ready || Boolean(draft.recovered)))
+            }
+            onValuesChange={(values) => {
+              dispatch({
+                type: "PATCH_FORM",
+                payload: {
+                  customFieldValues: Object.entries(values).map(
+                    ([fieldId, value]) => ({ fieldId, value }),
+                  ),
+                },
+              });
+            }}
             teamId={currentTeamId}
           />
         }
         deadlineSourceRef={deadlineSourceRef}
         descriptionEditor={editor}
         dispatch={dispatch}
+        draftNotice={
+          <DesktopDraftNotice
+            error={draft.error}
+            onDiscard={() => {
+              void draft.discard().catch(() => {
+                toast.error("Could not discard the saved draft.");
+              });
+            }}
+            onRestore={() => {
+              const saved = draft.recovered;
+              if (!saved || typeof saved.form.title !== "string") return;
+              dispatch({ type: "PATCH_FORM", payload: saved.form });
+              titleEditor?.commands.setContent(saved.form.title);
+              editor?.commands.setContent(
+                saved.form.descriptionHTML || saved.form.description || "",
+              );
+              setStoryTitle(saved.form.title);
+              getCustomFields().setValues(
+                Object.fromEntries(
+                  (saved.form.customFieldValues ?? []).map(
+                    ({ fieldId, value }) => [fieldId, value],
+                  ),
+                ),
+              );
+              drafted.current = true;
+              draft.acceptRecovered();
+            }}
+            onRetry={() => {
+              void draft.retry();
+            }}
+            recovered={Boolean(draft.recovered)}
+            status={draft.status}
+          />
+        }
         estimateScheme={estimateScheme}
         figmaArtifacts={figmaArtifacts}
         isCreating={isCreating}

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-desktop-resolve-operation"
+description = "Enables the desktop_resolve_operation command without any pre-configured scope."
+commands.allow = ["desktop_resolve_operation"]
+
+[[permission]]
+identifier = "deny-desktop-resolve-operation"
+description = "Denies the desktop_resolve_operation command without any pre-configured scope."
+commands.deny = ["desktop_resolve_operation"]

@@ -94,7 +94,11 @@ func (r *repo) GetStoryForMutation(
 	}
 	params := mutationQueryScope(scope, time.Now())
 	params.StoryID = storyID
-	row, err := r.reads.GetStoryMutationSnapshot(ctx, params)
+	queries := r.reads
+	if tx, ok := platformdatabase.UnitTransaction(ctx); ok {
+		queries = storyreadsql.New(tx)
+	}
+	row, err := queries.GetStoryMutationSnapshot(ctx, params)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return storydomain.Story{}, storydomain.ErrNotFound
 	}
@@ -276,7 +280,17 @@ func (r *repo) ApplyStoryMutation(
 			if reconcileErr != nil {
 				return reconcileErr
 			}
-			result.OrphanedAttachmentIDs = orphaned
+			if command.DeferMediaDeletion && len(orphaned) > 0 {
+				route, routeErr := r.interactiveHardDeleteStorageRoute()
+				if routeErr != nil {
+					return routeErr
+				}
+				if err := retireReconciledStoryMedia(ctx, queries, route, command.Scope.WorkspaceID, orphaned, now); err != nil {
+					return err
+				}
+			} else {
+				result.OrphanedAttachmentIDs = orphaned
+			}
 		}
 		for _, activity := range command.Activities {
 			if err := upsertMutationActivity(ctx, queries, activity, true); err != nil {

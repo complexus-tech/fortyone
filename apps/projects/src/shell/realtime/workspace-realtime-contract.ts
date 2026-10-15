@@ -229,11 +229,13 @@ export const parseWorkspaceRealtimeEvent = (
     };
   }
 
-  if (isNonEmptyString(value.entityId) && isNonEmptyString(value.entityType)) {
+  const entityId = value.entityId ?? value.entity_id;
+  const entityType = value.entityType ?? value.entity_type;
+  if (isNonEmptyString(entityId) && isNonEmptyString(entityType)) {
     return {
       kind: "notification",
-      entityId: value.entityId,
-      entityType: value.entityType,
+      entityId,
+      entityType,
     };
   }
 

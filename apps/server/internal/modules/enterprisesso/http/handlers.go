@@ -10,6 +10,7 @@ import (
 
 	domain "github.com/complexus-tech/projects-api/internal/modules/enterprisesso/domain"
 	"github.com/complexus-tech/projects-api/internal/platform/auth"
+	"github.com/complexus-tech/projects-api/internal/platform/deployment"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
@@ -36,11 +37,11 @@ type Handlers struct {
 	states                                StateStore
 	issuer                                SessionIssuer
 	callbackURL, websiteURL, cookieDomain string
-	production                            bool
+	deploymentMode                        deployment.Mode
 }
 
-func New(service Service, states StateStore, issuer SessionIssuer, callbackURL, websiteURL, cookieDomain string, production bool) *Handlers {
-	return &Handlers{service: service, states: states, issuer: issuer, callbackURL: callbackURL, websiteURL: strings.TrimRight(websiteURL, "/"), cookieDomain: cookieDomain, production: production}
+func New(service Service, states StateStore, issuer SessionIssuer, callbackURL, websiteURL, cookieDomain string, mode deployment.Mode) *Handlers {
+	return &Handlers{service: service, states: states, issuer: issuer, callbackURL: callbackURL, websiteURL: strings.TrimRight(websiteURL, "/"), cookieDomain: cookieDomain, deploymentMode: mode}
 }
 func scope(ctx context.Context) (domain.Scope, error) {
 	workspace, err := mid.GetWorkspace(ctx)

@@ -1,4 +1,5 @@
 "use client";
+import { toast } from "sonner";
 import { useState } from "react";
 import { Badge, Box, Button, Flex, Tooltip } from "ui";
 import { Notification02Icon, PlusIcon, SearchIcon } from "icons";
@@ -58,9 +59,12 @@ export const Header = ({ isCollapsed = false }: { isCollapsed?: boolean }) => {
       analytics.logout(true);
       clearAllStorage();
       window.location.href = `${mainDomain}?signedOut=true`;
-    } catch {
-      clearAllStorage();
-      window.location.href = `${mainDomain}?signedOut=true`;
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Save your local drafts before signing out.",
+      );
     }
   };
 

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-desktop-delete-draft"
+description = "Enables the desktop_delete_draft command without any pre-configured scope."
+commands.allow = ["desktop_delete_draft"]
+
+[[permission]]
+identifier = "deny-desktop-delete-draft"
+description = "Denies the desktop_delete_draft command without any pre-configured scope."
+commands.deny = ["desktop_delete_draft"]

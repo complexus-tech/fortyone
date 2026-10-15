@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-hosted-update-preferences"
+description = "Enables the hosted_update_preferences command without any pre-configured scope."
+commands.allow = ["hosted_update_preferences"]
+
+[[permission]]
+identifier = "deny-hosted-update-preferences"
+description = "Denies the hosted_update_preferences command without any pre-configured scope."
+commands.deny = ["hosted_update_preferences"]

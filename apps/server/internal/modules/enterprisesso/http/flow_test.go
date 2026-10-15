@@ -7,11 +7,13 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
 
 	domain "github.com/complexus-tech/projects-api/internal/modules/enterprisesso/domain"
 	"github.com/complexus-tech/projects-api/internal/platform/auth"
+	"github.com/complexus-tech/projects-api/internal/platform/deployment"
 	"github.com/google/uuid"
 )
 
@@ -67,7 +69,7 @@ func setup() (*Handlers, *flowService, *stateStore, *issuer) {
 	service := &flowService{connection: domain.Connection{ID: uuid.New(), WorkspaceID: uuid.New(), Generation: 1, Enabled: true}}
 	states := &stateStore{values: map[string][]byte{}}
 	writer := &issuer{}
-	return New(service, states, writer, "https://api.example.com/auth/sso/callback", "https://app.example.com", "", true), service, states, writer
+	return New(service, states, writer, "https://api.example.com/auth/sso/callback", "https://app.example.com", "", deployment.Production), service, states, writer
 }
 func begin(t *testing.T, h *Handlers, ctx context.Context) (string, *http.Cookie) {
 	t.Helper()
@@ -146,5 +148,96 @@ func TestSSORecoveryRetainsExistingAccountProof(t *testing.T) {
 	response := callback(t, h, ctx, state, cookie)
 	if response.Header().Get("Location") != "https://app.example.com/acme" || service.completed != 1 || writer.calls != 1 {
 		t.Fatal("an authenticated unlinked account cannot complete SSO recovery")
+	}
+}
+
+func TestDesktopSSOReturnIsBoundedAndSurvivesSuccessfulCallback(t *testing.T) {
+	h, _, _, writer := setup()
+	proof := strings.Repeat("s", 43)
+	target := "/auth/desktop?state=" + proof + "&code_challenge=" + proof
+	r := httptest.NewRequest(http.MethodGet, "https://api.example.com/auth/sso/acme?returnTo="+url.QueryEscape(target), nil)
+	r.SetPathValue("workspaceSlug", "acme")
+	w := httptest.NewRecorder()
+	if err := h.Start(t.Context(), w, r); err != nil || w.Code != http.StatusTemporaryRedirect {
+		t.Fatalf("start: %v %s", err, w.Body.String())
+	}
+	location, _ := url.Parse(w.Header().Get("Location"))
+	result := callback(t, h, t.Context(), location.Query().Get("state"), w.Result().Cookies()[0])
+	canonical, valid := desktopReturnPath(target, deployment.Production)
+	if !valid || result.Header().Get("Location") != "https://app.example.com"+canonical || writer.calls != 1 {
+		t.Fatalf("desktop callback: %s", result.Header().Get("Location"))
+	}
+}
+
+func TestDesktopSSOReturnRejectsOpenRedirectsAndExtraProofFields(t *testing.T) {
+	proof := strings.Repeat("s", 43)
+	valid := "/auth/desktop?state=" + proof + "&code_challenge=" + proof
+	for _, target := range []string{"https://evil.example" + valid, "//evil.example" + valid, valid + "#fragment", valid + "&redirect=evil", valid + "&state=" + proof, "/auth/desktop?state=short&code_challenge=" + proof, "/auth/desktop%3F?state=" + proof + "&code_challenge=" + proof, "/auth/desktop\\?state=" + proof + "&code_challenge=" + proof} {
+		if _, allowed := desktopReturnPath(target, deployment.Production); allowed {
+			t.Fatalf("allowed unsafe target %q", target)
+		}
+	}
+}
+
+func TestDesktopDevelopmentSSOReturnPreservesItsCallback(t *testing.T) {
+	h, _, _, writer := setup()
+	h.deploymentMode = deployment.Development
+	proof := strings.Repeat("s", 43)
+	target := "/auth/desktop?state=" + proof + "&code_challenge=" + proof + "&redirect_uri=" + url.QueryEscape(auth.DesktopDevelopmentRedirectURI)
+	r := httptest.NewRequest(http.MethodGet, "https://api.example.com/auth/sso/acme?returnTo="+url.QueryEscape(target), nil)
+	r.SetPathValue("workspaceSlug", "acme")
+	w := httptest.NewRecorder()
+	if err := h.Start(t.Context(), w, r); err != nil || w.Code != http.StatusTemporaryRedirect {
+		t.Fatalf("start: %v %s", err, w.Body.String())
+	}
+	location, _ := url.Parse(w.Header().Get("Location"))
+	result := callback(t, h, t.Context(), location.Query().Get("state"), w.Result().Cookies()[0])
+	canonical, valid := desktopReturnPath(target, deployment.Development)
+	if !valid || result.Header().Get("Location") != "https://app.example.com"+canonical || writer.calls != 1 {
+		t.Fatalf("development callback: %s", result.Header().Get("Location"))
+	}
+}
+
+func TestDesktopSSOReturnRedirectAllowlistUsesDeploymentMode(t *testing.T) {
+	proof := strings.Repeat("s", 43)
+	base := "/auth/desktop?state=" + proof + "&code_challenge=" + proof
+	for _, mode := range []deployment.Mode{deployment.Development, deployment.Test, deployment.Staging, deployment.Production, ""} {
+		t.Run(string(mode), func(t *testing.T) {
+			valid := []string{base, base + "&redirect_uri=" + url.QueryEscape(auth.DesktopRedirectURI)}
+			invalid := []string{
+				base + "&redirect_uri=",
+				base + "&redirect_uri=" + url.QueryEscape(auth.DesktopDevelopmentRedirectURI+"/"),
+				base + "&redirect_uri=" + url.QueryEscape("https://evil.example/login"),
+				base + "&redirect_uri=" + url.QueryEscape(auth.DesktopRedirectURI) + "&redirect_uri=" + url.QueryEscape(auth.DesktopRedirectURI),
+				base + "&redirect_uri=" + url.QueryEscape(auth.DesktopRedirectURI) + "&extra=field",
+			}
+			dev := base + "&redirect_uri=" + url.QueryEscape(auth.DesktopDevelopmentRedirectURI)
+			if mode == deployment.Development {
+				valid = append(valid, dev)
+			} else {
+				invalid = append(invalid, dev)
+			}
+			for _, target := range valid {
+				if _, allowed := desktopReturnPath(target, mode); !allowed {
+					t.Errorf("rejected allowed target %q", target)
+				}
+			}
+			for _, target := range invalid {
+				if _, allowed := desktopReturnPath(target, mode); allowed {
+					t.Errorf("allowed invalid target %q", target)
+				}
+			}
+			h, _, states, _ := setup()
+			h.deploymentMode = mode
+			r := httptest.NewRequest(http.MethodGet, "https://api.example.com/auth/sso/acme?returnTo="+url.QueryEscape(dev), nil)
+			r.SetPathValue("workspaceSlug", "acme")
+			w := httptest.NewRecorder()
+			if err := h.Start(t.Context(), w, r); err != nil {
+				t.Fatal(err)
+			}
+			if mode != deployment.Development && (w.Code != http.StatusBadRequest || len(states.values) != 0) {
+				t.Fatal("non-development SSO persisted a development handoff")
+			}
+		})
 	}
 }

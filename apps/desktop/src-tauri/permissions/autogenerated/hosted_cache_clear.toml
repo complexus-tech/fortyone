@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-hosted-cache-clear"
+description = "Enables the hosted_cache_clear command without any pre-configured scope."
+commands.allow = ["hosted_cache_clear"]
+
+[[permission]]
+identifier = "deny-hosted-cache-clear"
+description = "Denies the hosted_cache_clear command without any pre-configured scope."
+commands.deny = ["hosted_cache_clear"]

@@ -32,6 +32,13 @@ func New(pool *pgxpool.Pool) *Repository {
 	}
 }
 
+func (repository *Repository) queriesFor(ctx context.Context) *attachmentssql.Queries {
+	if tx, ok := platformdatabase.UnitTransaction(ctx); ok {
+		return repository.queries.WithTx(tx)
+	}
+	return repository.queries
+}
+
 func (repository *Repository) CreateAttachment(
 	ctx context.Context,
 	attachment attachmentdomain.Attachment,
@@ -43,7 +50,7 @@ func (repository *Repository) CreateAttachment(
 	if attachment.UploadedBy != uuid.Nil {
 		uploaderID = &attachment.UploadedBy
 	}
-	row, err := repository.queries.CreateAttachment(ctx, attachmentssql.CreateAttachmentParams{
+	row, err := repository.queriesFor(ctx).CreateAttachment(ctx, attachmentssql.CreateAttachmentParams{
 		Filename:           attachment.Filename,
 		BlobName:           attachment.BlobName,
 		Size:               attachment.Size,
@@ -73,7 +80,7 @@ func (repository *Repository) CreateSlackImportAttachment(
 	if attachment.UploadedBy != uuid.Nil {
 		uploaderID = &attachment.UploadedBy
 	}
-	row, err := repository.queries.CreateSlackImportAttachment(ctx, attachmentssql.CreateSlackImportAttachmentParams{
+	row, err := repository.queriesFor(ctx).CreateSlackImportAttachment(ctx, attachmentssql.CreateSlackImportAttachmentParams{
 		Filename:           attachment.Filename,
 		BlobName:           attachment.BlobName,
 		Size:               attachment.Size,
@@ -97,7 +104,7 @@ func (repository *Repository) GetAttachmentBySlackImportID(
 	if err := repository.configured(); err != nil {
 		return attachmentdomain.Attachment{}, err
 	}
-	row, err := repository.queries.GetWorkspaceSlackImportAttachment(ctx, attachmentssql.GetWorkspaceSlackImportAttachmentParams{
+	row, err := repository.queriesFor(ctx).GetWorkspaceSlackImportAttachment(ctx, attachmentssql.GetWorkspaceSlackImportAttachmentParams{
 		SlackFileImportID: &importID,
 		WorkspaceID:       workspaceID,
 	})
@@ -114,7 +121,7 @@ func (repository *Repository) GetAttachmentByID(
 	if err := repository.configured(); err != nil {
 		return attachmentdomain.Attachment{}, err
 	}
-	row, err := repository.queries.GetWorkspaceAttachment(ctx, attachmentssql.GetWorkspaceAttachmentParams{
+	row, err := repository.queriesFor(ctx).GetWorkspaceAttachment(ctx, attachmentssql.GetWorkspaceAttachmentParams{
 		AttachmentID: attachmentID,
 		WorkspaceID:  workspaceID,
 	})
@@ -131,7 +138,7 @@ func (repository *Repository) GetAttachmentsByStoryID(
 	if err := repository.configured(); err != nil {
 		return nil, err
 	}
-	rows, err := repository.queries.ListStoryAttachments(ctx, attachmentssql.ListStoryAttachmentsParams{
+	rows, err := repository.queriesFor(ctx).ListStoryAttachments(ctx, attachmentssql.ListStoryAttachmentsParams{
 		StoryID: storyID, WorkspaceID: workspaceID,
 	})
 	if err != nil {
@@ -151,7 +158,7 @@ func (repository *Repository) StoryExistsInWorkspace(
 	if err := repository.configured(); err != nil {
 		return false, err
 	}
-	exists, err := repository.queries.StoryExistsInWorkspace(ctx, attachmentssql.StoryExistsInWorkspaceParams{
+	exists, err := repository.queriesFor(ctx).StoryExistsInWorkspace(ctx, attachmentssql.StoryExistsInWorkspaceParams{
 		StoryID: storyID, WorkspaceID: workspaceID,
 	})
 	if err != nil {
@@ -167,7 +174,7 @@ func (repository *Repository) AuthorizeStoryAttachment(
 	if err := repository.configured(); err != nil {
 		return attachmentdomain.Attachment{}, err
 	}
-	row, err := repository.queries.AuthorizeWorkspaceStoryAttachment(ctx, attachmentssql.AuthorizeWorkspaceStoryAttachmentParams{
+	row, err := repository.queriesFor(ctx).AuthorizeWorkspaceStoryAttachment(ctx, attachmentssql.AuthorizeWorkspaceStoryAttachmentParams{
 		StoryID: storyID, AttachmentID: attachmentID, WorkspaceID: workspaceID,
 	})
 	if err != nil {
@@ -183,7 +190,7 @@ func (repository *Repository) LinkAttachmentToStory(
 	if err := repository.configured(); err != nil {
 		return err
 	}
-	_, err := repository.queries.LinkWorkspaceStoryAttachment(ctx, attachmentssql.LinkWorkspaceStoryAttachmentParams{
+	_, err := repository.queriesFor(ctx).LinkWorkspaceStoryAttachment(ctx, attachmentssql.LinkWorkspaceStoryAttachmentParams{
 		StoryID: storyID, AttachmentID: attachmentID, WorkspaceID: workspaceID,
 	})
 	return mapNotFound("link story attachment", err)
@@ -196,7 +203,7 @@ func (repository *Repository) LinkStoryMedia(
 	if err := repository.configured(); err != nil {
 		return err
 	}
-	_, err := repository.queries.LinkWorkspaceStoryMedia(ctx, attachmentssql.LinkWorkspaceStoryMediaParams{
+	_, err := repository.queriesFor(ctx).LinkWorkspaceStoryMedia(ctx, attachmentssql.LinkWorkspaceStoryMediaParams{
 		StoryID: storyID, AttachmentID: attachmentID, CreatedBy: createdBy, WorkspaceID: workspaceID,
 	})
 	return mapNotFound("link story media", err)
@@ -209,7 +216,7 @@ func (repository *Repository) AuthorizeStoryMedia(
 	if err := repository.configured(); err != nil {
 		return attachmentdomain.Attachment{}, err
 	}
-	row, err := repository.queries.AuthorizeWorkspaceStoryMedia(ctx, attachmentssql.AuthorizeWorkspaceStoryMediaParams{
+	row, err := repository.queriesFor(ctx).AuthorizeWorkspaceStoryMedia(ctx, attachmentssql.AuthorizeWorkspaceStoryMediaParams{
 		StoryID: storyID, AttachmentID: attachmentID, WorkspaceID: workspaceID,
 	})
 	if err != nil {
@@ -260,7 +267,7 @@ func (repository *Repository) DeleteAttachment(
 	if err := repository.configured(); err != nil {
 		return err
 	}
-	count, err := repository.queries.DeleteWorkspaceAttachment(ctx, attachmentssql.DeleteWorkspaceAttachmentParams{
+	count, err := repository.queriesFor(ctx).DeleteWorkspaceAttachment(ctx, attachmentssql.DeleteWorkspaceAttachmentParams{
 		AttachmentID: attachmentID, WorkspaceID: workspaceID,
 	})
 	if err != nil {
@@ -279,7 +286,7 @@ func (repository *Repository) DeleteAttachmentIfUnreferenced(
 	if err := repository.configured(); err != nil {
 		return false, err
 	}
-	_, err := repository.queries.DeleteUnreferencedWorkspaceAttachment(ctx, attachmentssql.DeleteUnreferencedWorkspaceAttachmentParams{
+	_, err := repository.queriesFor(ctx).DeleteUnreferencedWorkspaceAttachment(ctx, attachmentssql.DeleteUnreferencedWorkspaceAttachmentParams{
 		AttachmentID: attachmentID, WorkspaceID: workspaceID,
 	})
 	if err == nil {
@@ -306,7 +313,7 @@ func (repository *Repository) StartAttachmentOptimization(
 	if leaseSeconds < 1 || leaseSeconds > math.MaxInt32 {
 		return attachmentdomain.Attachment{}, fmt.Errorf("invalid attachment optimization lease")
 	}
-	row, err := repository.queries.StartWorkspaceAttachmentOptimization(ctx, attachmentssql.StartWorkspaceAttachmentOptimizationParams{
+	row, err := repository.queriesFor(ctx).StartWorkspaceAttachmentOptimization(ctx, attachmentssql.StartWorkspaceAttachmentOptimizationParams{
 		AttachmentID: attachmentID, WorkspaceID: workspaceID, LeaseSeconds: int32(leaseSeconds),
 	})
 	if err != nil {
@@ -331,7 +338,7 @@ func (repository *Repository) CompleteAttachmentOptimization(
 	if status != attachmentdomain.OptimizationSucceeded && status != attachmentdomain.OptimizationSkipped {
 		return fmt.Errorf("invalid terminal attachment optimization status %q", status)
 	}
-	count, err := repository.queries.CompleteWorkspaceAttachmentOptimization(ctx, attachmentssql.CompleteWorkspaceAttachmentOptimizationParams{
+	count, err := repository.queriesFor(ctx).CompleteWorkspaceAttachmentOptimization(ctx, attachmentssql.CompleteWorkspaceAttachmentOptimizationParams{
 		AttachmentID: attachmentID, WorkspaceID: workspaceID, Size: size, MimeType: mimeType,
 		OptimizationStatus: string(status),
 	})
@@ -362,9 +369,9 @@ func (repository *Repository) FailAttachmentOptimization(
 		err   error
 	)
 	if queued {
-		count, err = repository.queries.FailQueuedWorkspaceAttachmentOptimization(ctx, attachmentssql.FailQueuedWorkspaceAttachmentOptimizationParams(params))
+		count, err = repository.queriesFor(ctx).FailQueuedWorkspaceAttachmentOptimization(ctx, attachmentssql.FailQueuedWorkspaceAttachmentOptimizationParams(params))
 	} else {
-		count, err = repository.queries.FailWorkspaceAttachmentOptimization(ctx, params)
+		count, err = repository.queriesFor(ctx).FailWorkspaceAttachmentOptimization(ctx, params)
 	}
 	if err != nil {
 		return fmt.Errorf("fail attachment optimization: %w", err)

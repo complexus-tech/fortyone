@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-desktop-take-navigation"
+description = "Enables the desktop_take_navigation command without any pre-configured scope."
+commands.allow = ["desktop_take_navigation"]
+
+[[permission]]
+identifier = "deny-desktop-take-navigation"
+description = "Denies the desktop_take_navigation command without any pre-configured scope."
+commands.deny = ["desktop_take_navigation"]

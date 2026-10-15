@@ -8,6 +8,7 @@ import (
 
 	storydomain "github.com/complexus-tech/projects-api/internal/modules/stories/domain"
 	"github.com/complexus-tech/projects-api/internal/platform/auth"
+	platformdatabase "github.com/complexus-tech/projects-api/internal/platform/database"
 	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
@@ -249,37 +250,39 @@ func (s *Service) createWithOptions(ctx context.Context, ns CoreNewStory, worksp
 		}
 	}
 
-	if options.publishEvents && s.publisher != nil {
-		reporterID := uuid.Nil
-		if ns.Reporter != nil {
-			reporterID = *ns.Reporter
-		}
-		payload := events.StoryCreatedPayload{
-			StoryID:     cs.ID,
-			WorkspaceID: workspaceId,
-			Title:       cs.Title,
-			AssigneeID:  cs.Assignee,
-			ReporterID:  reporterID,
-		}
+	platformdatabase.AfterCommit(ctx, func() {
+		if options.publishEvents && s.publisher != nil {
+			reporterID := uuid.Nil
+			if ns.Reporter != nil {
+				reporterID = *ns.Reporter
+			}
+			payload := events.StoryCreatedPayload{
+				StoryID:     cs.ID,
+				WorkspaceID: workspaceId,
+				Title:       cs.Title,
+				AssigneeID:  cs.Assignee,
+				ReporterID:  reporterID,
+			}
 
-		event := events.Event{
-			Type:      events.StoryCreated,
-			Payload:   payload,
-			Timestamp: time.Now(),
-			ActorID:   actorID,
-		}
+			event := events.Event{
+				Type:      events.StoryCreated,
+				Payload:   payload,
+				Timestamp: time.Now(),
+				ActorID:   actorID,
+			}
 
-		if err := s.publisher.Publish(context.Background(), event); err != nil {
-			s.log.Error(ctx, "failed to publish story created event", "error", err)
-			// Don't return error as this is not critical
+			if err := s.publisher.Publish(context.Background(), event); err != nil {
+				s.log.Error(ctx, "failed to publish story created event", "error", err)
+				// Don't return error as this is not critical
+			}
 		}
-	}
-	if options.enqueueGitHubSync {
-		s.enqueueGitHubStorySync(ctx, cs.ID, workspaceId)
-	}
-	if cs.AutoSchedulingEnabled {
-		s.enqueueWorkspaceScheduleBatch(ctx, workspaceId)
-	}
+		if options.enqueueGitHubSync {
+			s.enqueueGitHubStorySync(ctx, cs.ID, workspaceId)
+		}
+		if cs.AutoSchedulingEnabled {
+			s.enqueueWorkspaceScheduleBatch(ctx, workspaceId)
+		}
+	})
 	if options.traceStoryTitle {
 		span.AddEvent("story created.", trace.WithAttributes(
 			attribute.String("story.title", cs.Title),

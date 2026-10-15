@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-desktop-sync"
+description = "Enables the desktop_sync command without any pre-configured scope."
+commands.allow = ["desktop_sync"]
+
+[[permission]]
+identifier = "deny-desktop-sync"
+description = "Denies the desktop_sync command without any pre-configured scope."
+commands.deny = ["desktop_sync"]

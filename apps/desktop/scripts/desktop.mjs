@@ -6,6 +6,9 @@ import { delimiter, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   getDesktopUrl,
+  getNativeArguments,
+  getReleaseConfiguration,
+  getReleaseEnvironment,
   getProductionEnvironment,
   getProductionPackageArguments,
   getTauriArguments,
@@ -103,15 +106,28 @@ function run(command, args, env, cwd = DESKTOP_DIR) {
 async function main() {
   const [command, ...args] = process.argv.slice(2);
 
-  if (!["dev", "build", "package", "check", "tauri"].includes(command)) {
+  if (
+    ![
+      "dev",
+      "dev-hosted",
+      "dev-native",
+      "build",
+      "build-hosted",
+      "build-native",
+      "package",
+      "release",
+      "check",
+      "tauri",
+    ].includes(command)
+  ) {
     throw new Error(
-      "Use pnpm dev:desktop, pnpm check:desktop, pnpm build:desktop, or pnpm package:desktop.",
+      "Use pnpm dev:desktop, pnpm dev:desktop:hosted, pnpm check:desktop, pnpm build:desktop, pnpm package:desktop, or pnpm release:desktop.",
     );
   }
 
   if (command !== "tauri" && args.length) {
     throw new Error(
-      "Desktop commands do not accept extra flags. Set FORTYONE_DESKTOP_URL for local dev/build only; package:desktop always uses the fixed production configuration. Use pnpm --filter desktop tauri for direct CLI access.",
+      "Desktop commands do not accept extra flags. Set FORTYONE_DESKTOP_URL for hosted development only; package:desktop and release:desktop use the fixed production configuration. Use pnpm --filter desktop tauri for direct CLI access.",
     );
   }
 
@@ -123,12 +139,28 @@ async function main() {
     for (const [executable, commandArgs, cwd] of [
       [
         process.execPath,
-        ["--test", "scripts/config.test.mjs", "scripts/bridge.test.mjs"],
+        [
+          "--test",
+          "scripts/config.test.mjs",
+          "scripts/bridge.test.mjs",
+          "scripts/workspace-transition.test.mjs",
+        ],
+        DESKTOP_DIR,
+      ],
+      [
+        process.execPath,
+        [require.resolve("typescript/bin/tsc"), "--noEmit"],
+        DESKTOP_DIR,
+      ],
+      [
+        process.execPath,
+        [require.resolve("vitest/vitest.mjs"), "run"],
         DESKTOP_DIR,
       ],
       ["cargo", ["fmt", "--check"], RUST_DIR],
       ["cargo", ["check", "--locked"], RUST_DIR],
       ["cargo", ["test", "--locked"], RUST_DIR],
+      ["cargo", ["test", "--locked", "--features", "native-client"], RUST_DIR],
     ]) {
       if (!(await run(executable, commandArgs, env, cwd))) return;
     }
@@ -151,25 +183,56 @@ async function main() {
     return;
   }
 
-  if (command === "package") {
-    const packageArgs = getProductionPackageArguments();
-    const productionEnv = getProductionEnvironment(env);
+  if (command === "package" || command === "release") {
+    const releaseConfig =
+      command === "release" ? getReleaseConfiguration(env) : undefined;
+    const packageArgs = getProductionPackageArguments(
+      process.platform,
+      releaseConfig,
+    );
+    const productionEnv =
+      command === "release"
+        ? getReleaseEnvironment(env)
+        : getProductionEnvironment(env);
     verifyPrerequisites(productionEnv);
-    console.log("Packaging FortyOne for macOS at https://cloud.fortyone.app");
+    console.log(
+      command === "release"
+        ? "Building a signed FortyOne release with updater artifacts."
+        : "Building a local FortyOne installer. This is not a signed public release.",
+    );
     await run(process.execPath, [cli, ...packageArgs], productionEnv);
     return;
   }
 
+  if (command === "dev-native" || command === "build-native") {
+    verifyPrerequisites(env);
+    delete env.FORTYONE_DESKTOP_URL;
+    delete env.TAURI_CONFIG;
+    env.FORTYONE_COLLABORATION_URL ??= "ws://localhost:1234";
+    console.log("Opening the bundled FortyOne desktop client.");
+    await run(
+      process.execPath,
+      [cli, ...getNativeArguments(command === "dev-native" ? "dev" : "build", env)],
+      env,
+    );
+    return;
+  }
+
+  const hostedCommand = ["dev", "dev-hosted"].includes(command) ? "dev" : "build";
   const url = getDesktopUrl(env.FORTYONE_DESKTOP_URL);
   env.FORTYONE_DESKTOP_URL = url;
   verifyPrerequisites(env);
 
-  if (command === "dev") {
+  if (hostedCommand === "dev") {
     await verifyWebApp(url);
     console.log(`Opening FortyOne Desktop at ${url}`);
   }
 
-  await run(process.execPath, [cli, ...getTauriArguments(command, url)], env);
+  await run(
+    process.execPath,
+    [cli, ...getTauriArguments(hostedCommand, url)],
+    env,
+  );
 }
 
 main().catch((error) => {

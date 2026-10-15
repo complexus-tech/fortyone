@@ -22,6 +22,7 @@ import {
   useWorkspacePath,
 } from "@/hooks";
 import { getStoryPath } from "@/shared/routing/story";
+import { navigateWithDesktopOffline } from "@/shell/desktop/offline-navigation";
 import { useBulkDeleteStoryMutation } from "@/modules/stories/hooks/delete-mutation";
 import { useBulkArchiveStoryMutation } from "@/modules/stories/hooks/archive-mutation";
 import { useBulkUnarchiveStoryMutation } from "@/modules/stories/hooks/unarchive-mutation";
@@ -133,7 +134,9 @@ export const StoryContextMenu = ({
           label: userRole === "guest" ? "View" : "Edit",
           icon: userRole === "guest" ? <StoryIcon /> : <EditIcon />,
           onSelect: () => {
-            router.push(storyUrl);
+            void navigateWithDesktopOffline(storyUrl, () => {
+              router.push(storyUrl);
+            });
           },
         },
         {

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-desktop-open-workspace-page"
+description = "Enables the desktop_open_workspace_page command without any pre-configured scope."
+commands.allow = ["desktop_open_workspace_page"]
+
+[[permission]]
+identifier = "deny-desktop-open-workspace-page"
+description = "Denies the desktop_open_workspace_page command without any pre-configured scope."
+commands.deny = ["desktop_open_workspace_page"]

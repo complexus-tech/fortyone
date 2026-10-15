@@ -23,6 +23,11 @@ import { getProfile } from "@/lib/queries/users/profile";
 import { getCookieHeader } from "@/lib/http/header";
 import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
 import { getWorkspaceAccess } from "@/modules/auth/workspace-access";
+import { DesktopWorkspaceScope } from "@/shell/desktop/workspace-scope";
+import { DesktopQueryPersistence } from "@/shell/desktop/desktop-query-persistence";
+import { DesktopStartupWarmup } from "@/shell/desktop/desktop-startup-warmup";
+import { DesktopOfflineShell } from "@/shell/desktop/desktop-offline-shell";
+import { DesktopOutboxCoordinator } from "@/shell/desktop/desktop-outbox-coordinator";
 import { ServerSentEvents } from "../server-sent-events";
 import { fetchNonCriticalImportantQueries } from "./non-critical-important-queries";
 import { IdentifyUser } from "./identify";
@@ -112,12 +117,31 @@ export default async function RootLayout({
         autoStart
         version={WORKSPACE_GETTING_STARTED_TOUR_VERSION}
       >
-        <ChatProvider key={workspaceSlug}>
-          {children}
-          <ServerSentEvents />
-          <IdentifyUser />
-          <Chat />
-        </ChatProvider>
+        <DesktopWorkspaceScope
+          scope={
+            session?.user.id
+              ? {
+                  accountId: session.user.id,
+                  workspaceId: workspace.id,
+                  workspaceSlug,
+                }
+              : null
+          }
+        >
+          <ChatProvider key={workspaceSlug}>
+            {children}
+            <ServerSentEvents />
+            <DesktopQueryPersistence
+              workspaceId={workspace.id}
+              workspaceSlug={workspaceSlug}
+            />
+            <DesktopStartupWarmup workspaceId={workspace.id} />
+            <DesktopOfflineShell workspaceId={workspace.id} />
+            <DesktopOutboxCoordinator />
+            <IdentifyUser />
+            <Chat />
+          </ChatProvider>
+        </DesktopWorkspaceScope>
       </WalkthroughProvider>
     </HydrationBoundary>
   );

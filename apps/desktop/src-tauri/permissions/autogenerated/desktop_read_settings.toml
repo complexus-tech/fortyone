@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-desktop-read-settings"
+description = "Enables the desktop_read_settings command without any pre-configured scope."
+commands.allow = ["desktop_read_settings"]
+
+[[permission]]
+identifier = "deny-desktop-read-settings"
+description = "Denies the desktop_read_settings command without any pre-configured scope."
+commands.deny = ["desktop_read_settings"]
