@@ -18,6 +18,138 @@ fn database() -> Connection {
     db
 }
 
+fn browser_cookie(attributes: &str) -> tauri::webview::Cookie<'static> {
+    tauri::webview::Cookie::parse(format!("fortyone_session=test-session; {attributes}"))
+        .unwrap()
+        .into_owned()
+}
+
+#[test]
+fn session_cookie_accepts_production_parent_domain_and_exact_api_host() {
+    for domain in [
+        ".fortyone.app",
+        "fortyone.app",
+        "api.fortyone.app",
+        ".API.FORTYONE.APP",
+    ] {
+        let cookie = browser_cookie(&format!("Domain={domain}; Path=/; Secure; HttpOnly"));
+        assert_eq!(
+            select_session_cookie(vec![cookie], "https://api.fortyone.app", 1_800_000_000_000),
+            Ok("test-session".into())
+        );
+    }
+}
+
+#[test]
+fn session_cookie_rejects_sibling_suffix_confusion_and_development_domains() {
+    for domain in [
+        "art-circles.fortyone.app",
+        ".cloud.fortyone.app",
+        "evilfortyone.app",
+        "fortyone.app.evil.test",
+        "api.fortyone.app.evil.test",
+        "app",
+        "..fortyone.app",
+        "localhost",
+        "127.0.0.1",
+    ] {
+        let cookie = browser_cookie(&format!("Domain={domain}; Path=/; Secure; HttpOnly"));
+        assert!(select_session_cookie(vec![cookie], "https://api.fortyone.app", 1000).is_err());
+    }
+    assert!(select_session_cookie(
+        vec![browser_cookie("Path=/; Secure; HttpOnly")],
+        "https://api.fortyone.app",
+        1000
+    )
+    .is_err());
+}
+
+#[test]
+fn session_cookie_requires_root_path_http_only_and_production_secure() {
+    for attributes in [
+        "Domain=.fortyone.app; Path=/auth; Secure; HttpOnly",
+        "Domain=.fortyone.app; Secure; HttpOnly",
+        "Domain=.fortyone.app; Path=/; Secure",
+        "Domain=.fortyone.app; Path=/; HttpOnly",
+    ] {
+        assert!(select_session_cookie(
+            vec![browser_cookie(attributes)],
+            "https://api.fortyone.app",
+            1000
+        )
+        .is_err());
+    }
+    let mut wrong_name = browser_cookie("Domain=.fortyone.app; Path=/; Secure; HttpOnly");
+    wrong_name.set_name("other_session");
+    assert!(select_session_cookie(vec![wrong_name], "https://api.fortyone.app", 1000).is_err());
+}
+
+#[test]
+fn session_cookie_rejects_expiry_at_boundary_and_deleted_cookies() {
+    let expired = browser_cookie(
+        "Domain=.fortyone.app; Path=/; Secure; HttpOnly; Expires=Thu, 01 Jan 1970 00:00:01 GMT",
+    );
+    assert_eq!(
+        select_session_cookie(vec![expired.clone()], "https://api.fortyone.app", 999),
+        Ok("test-session".into())
+    );
+    for time in [1000, 1001] {
+        assert!(
+            select_session_cookie(vec![expired.clone()], "https://api.fortyone.app", time).is_err()
+        );
+    }
+    for age in [0, -1] {
+        let deleted = browser_cookie(&format!(
+            "Domain=.fortyone.app; Path=/; Secure; HttpOnly; Max-Age={age}"
+        ));
+        assert!(select_session_cookie(vec![deleted], "https://api.fortyone.app", 1000).is_err());
+    }
+}
+
+#[test]
+fn session_cookie_rejects_ambiguous_sessions_and_invalid_values() {
+    let parent = browser_cookie("Domain=.fortyone.app; Path=/; Secure; HttpOnly");
+    let host = browser_cookie("Domain=api.fortyone.app; Path=/; Secure; HttpOnly");
+    assert_eq!(
+        select_session_cookie(vec![parent.clone(), host], "https://api.fortyone.app", 1000),
+        Err("The current browser session is invalid".into())
+    );
+    for value in ["", "bad\rvalue", "bad\nvalue", "bad;value"] {
+        let mut invalid = parent.clone();
+        invalid.set_value(value);
+        assert_eq!(
+            select_session_cookie(vec![invalid], "https://api.fortyone.app", 1000),
+            Err("The current browser session is invalid".into())
+        );
+    }
+    let unrelated = browser_cookie("Domain=unrelated.test; Path=/; Secure; HttpOnly");
+    assert_eq!(
+        select_session_cookie(vec![unrelated, parent], "https://api.fortyone.app", 1000),
+        Ok("test-session".into())
+    );
+}
+
+#[test]
+fn session_cookie_keeps_loopback_development_separate_from_production() {
+    let local = browser_cookie("Domain=localhost; Path=/; HttpOnly");
+    assert_eq!(
+        select_session_cookie(vec![local.clone()], "http://localhost:8000", 1000),
+        Ok("test-session".into())
+    );
+    assert!(select_session_cookie(vec![local], "https://api.fortyone.app", 1000).is_err());
+    let production = browser_cookie("Domain=.fortyone.app; Path=/; Secure; HttpOnly");
+    assert!(
+        select_session_cookie(vec![production.clone()], "http://localhost:8000", 1000).is_err()
+    );
+    for api in [
+        "https://evil.test",
+        "http://api.fortyone.app",
+        "http://localhost:9000",
+    ] {
+        assert!(select_session_cookie(vec![production.clone()], api, 1000).is_err());
+    }
+}
+
 fn seed(db: &Connection, value: &BoundScope, verified: u64) {
     db.execute(
         "INSERT INTO hosted_active VALUES(?,?,?)",

@@ -175,23 +175,62 @@ async fn browser_token(window: &WebviewWindow) -> Result<String, String> {
     // A fixed API URL prevents hosted content from requesting arbitrary cookies.
     // Wry cookie access may block and must not execute on the WebView UI thread.
     tauri::async_runtime::spawn_blocking(move || {
+        // Wry 0.57 on macOS matches cookie domains by equality, incorrectly
+        // excluding our .fortyone.app cookie from api.fortyone.app. Enumerate
+        // natively there, then apply the fixed API's narrow policy below.
+        #[cfg(target_os = "macos")]
+        let cookies = window.cookies();
+        #[cfg(not(target_os = "macos"))]
         let cookies = window
-            .cookies_for_url(Url::parse(api_origin()).map_err(|_| "Invalid native API address")?)
-            .map_err(|_| "Could not access the current browser session")?;
-        let mut sessions = cookies.into_iter().filter(|cookie| {
-            cookie.name() == "fortyone_session" && cookie.http_only() == Some(true)
-        });
-        let token = sessions
-            .next()
-            .map(|cookie| cookie.value().to_owned())
-            .ok_or("Sign in to restore your downloaded workspace")?;
-        if sessions.next().is_some() || token.is_empty() || token.contains(['\r', '\n', ';']) {
-            return Err("The current browser session is invalid".to_owned());
-        }
-        Ok(token)
+            .cookies_for_url(Url::parse(api_origin()).map_err(|_| "Invalid native API address")?);
+        let cookies = cookies.map_err(|_| "Could not access the current browser session")?;
+        select_session_cookie(cookies, api_origin(), now())
     })
     .await
     .map_err(|_| "Could not access the current browser session".to_owned())?
+}
+
+fn select_session_cookie(
+    cookies: Vec<tauri::webview::Cookie<'static>>,
+    api: &str,
+    time: u64,
+) -> Result<String, String> {
+    let production = match api {
+        "https://api.fortyone.app" => true,
+        "http://localhost:8000" => false,
+        _ => return Err("Invalid native API address".into()),
+    };
+    let mut sessions = cookies.into_iter().filter(|cookie| {
+        // Cookie::domain() normalizes a leading dot. Accept only the API host
+        // and our one trusted parent domain, never arbitrary suffix matches.
+        let allowed_domain = cookie.domain().is_some_and(|domain| {
+            if production {
+                domain.eq_ignore_ascii_case("api.fortyone.app")
+                    || domain.eq_ignore_ascii_case("fortyone.app")
+            } else {
+                domain.eq_ignore_ascii_case("localhost")
+            }
+        });
+        cookie.name() == "fortyone_session"
+            && cookie.http_only() == Some(true)
+            && allowed_domain
+            // The session covers every API endpoint; a path-limited cookie
+            // must not be promoted to a root-scoped native credential.
+            && cookie.path() == Some("/")
+            && (!production || cookie.secure() == Some(true))
+            && !cookie.max_age().is_some_and(|age| age.whole_seconds() <= 0)
+            && !cookie.expires_datetime().is_some_and(|expires| {
+                i128::from(expires.unix_timestamp()) * 1000 <= i128::from(time)
+            })
+    });
+    let token = sessions
+        .next()
+        .map(|cookie| cookie.value().to_owned())
+        .ok_or("Sign in to restore your downloaded workspace")?;
+    if sessions.next().is_some() || token.is_empty() || token.contains(['\r', '\n', ';']) {
+        return Err("The current browser session is invalid".into());
+    }
+    Ok(token)
 }
 
 fn fingerprint(token: &str) -> String {
