@@ -6,7 +6,6 @@ use tauri::{
     AppHandle, Manager, WebviewWindow,
 };
 use tauri_plugin_autostart::ManagerExt;
-use tauri_plugin_notification::{NotificationExt, PermissionState};
 
 use super::{authorize_window, State};
 
@@ -111,20 +110,13 @@ pub fn hosted_update_preferences(
 }
 
 #[tauri::command]
-pub fn hosted_request_notification_permission(window: WebviewWindow) -> Result<String, String> {
+pub async fn hosted_request_notification_permission(
+    window: WebviewWindow,
+) -> Result<String, String> {
     authorize_window(&window)?;
-    // The locked desktop plugin reports Granted; the operating system still
-    // controls delivery. Do not interpret this as a system-settings inspection.
-    let state = window
-        .notification()
-        .request_permission()
-        .map_err(|error| error.to_string())?;
-    Ok(match state {
-        PermissionState::Granted => "granted",
-        PermissionState::Denied => "denied",
-        _ => "prompt",
-    }
-    .into())
+    let permission = super::notifications::request_permission(&window).await?;
+    authorize_window(&window)?;
+    Ok(permission)
 }
 
 pub fn show(app: &AppHandle) {

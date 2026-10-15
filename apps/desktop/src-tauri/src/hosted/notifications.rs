@@ -4,7 +4,11 @@ use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use tauri::{AppHandle, Emitter, Manager, Url, WebviewWindow};
+#[cfg(not(target_os = "macos"))]
 use tauri_plugin_notification::{NotificationExt, PermissionState};
+
+#[cfg(target_os = "macos")]
+mod macos;
 
 use super::{authorize_scope, authorize_window, ensure_scope_current};
 
@@ -62,6 +66,50 @@ fn claim(db: &Connection, notification: &Notification) -> Result<bool, String> {
     .map_err(|error| error.to_string())
 }
 
+fn release_claim(db: &Connection, notification: &Notification) -> Result<(), String> {
+    db.execute(
+        "DELETE FROM hosted_notifications WHERE account=? AND workspace=? AND id=? AND version=?",
+        params![
+            notification.account_id,
+            notification.workspace_id,
+            notification.notification_id,
+            notification.created_at
+        ],
+    )
+    .map(|_| ())
+    .map_err(|error| error.to_string())
+}
+
+fn activation_payload(notification: &Notification) -> Value {
+    json!({
+        "accountId":notification.account_id,"workspaceId":notification.workspace_id,
+        "workspaceSlug":notification.workspace_slug,"notificationId":notification.notification_id,
+        "createdAt":notification.created_at,"entityType":notification.entity_type,"entityId":notification.entity_id,
+        "title":"FortyOne","body":""
+    })
+}
+
+pub(super) async fn request_permission(window: &WebviewWindow) -> Result<String, String> {
+    #[cfg(target_os = "macos")]
+    {
+        let _ = window;
+        macos::request_permission().await
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        let state = window
+            .notification()
+            .request_permission()
+            .map_err(|error| error.to_string())?;
+        Ok(match state {
+            PermissionState::Granted => "granted",
+            PermissionState::Denied => "denied",
+            _ => "prompt",
+        }
+        .into())
+    }
+}
+
 fn clean_text(value: &str, limit: usize) -> String {
     value
         .chars()
@@ -84,41 +132,76 @@ pub async fn hosted_deliver_notification(
         Some(&notification.workspace_slug),
     )
     .await?;
-    let db = state.db.lock().map_err(|error| error.to_string())?;
-    ensure_scope_current(&db, &scope)?;
-    if !claim(&db, &notification)? {
-        return Ok(());
-    }
-    let enabled = super::preferences::read(&db)?.notifications;
-    if !enabled
-        || window
-            .notification()
-            .permission_state()
-            .map_err(|error| error.to_string())?
-            != PermissionState::Granted
     {
-        return Ok(());
+        let db = state.db.lock().map_err(|error| error.to_string())?;
+        ensure_scope_current(&db, &scope)?;
+        if !claim(&db, &notification)? || !super::preferences::read(&db)?.notifications {
+            return Ok(());
+        }
     }
-    let id = (uuid::Uuid::parse_str(&notification.notification_id)
-        .map_err(|_| "Invalid notification identity")?
-        .as_u128() as u32
-        & 0x7fff_ffff) as i32;
-    let result = window.notification().builder()
-        .id(id)
-        .title(clean_text(&notification.title, 256))
-        .body(clean_text(&notification.body, 1024))
-        .extra("fortyoneHostedTarget", json!({
-            "accountId":notification.account_id,"workspaceId":notification.workspace_id,
-            "workspaceSlug":notification.workspace_slug,"notificationId":notification.notification_id,
-            "createdAt":notification.created_at,"entityType":notification.entity_type,"entityId":notification.entity_id,
-            "title":"FortyOne","body":""
-        }))
-        .show();
+    let result = deliver(&window, &notification, &scope).await;
     if let Err(error) = result {
-        db.execute("DELETE FROM hosted_notifications WHERE account=? AND workspace=? AND id=? AND version=?",params![notification.account_id,notification.workspace_id,notification.notification_id,notification.created_at]).map_err(|error| error.to_string())?;
+        let db = state.db.lock().map_err(|error| error.to_string())?;
+        release_claim(&db, &notification)?;
         return Err(format!("Could not show the system notification: {error}"));
     }
     Ok(())
+}
+
+async fn deliver(
+    window: &WebviewWindow,
+    notification: &Notification,
+    original: &super::BoundScope,
+) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    let granted = macos::permission().await? == "granted";
+    #[cfg(not(target_os = "macos"))]
+    let granted = window
+        .notification()
+        .permission_state()
+        .map_err(|error| error.to_string())?
+        == PermissionState::Granted;
+    if !granted {
+        return Ok(());
+    }
+    // Permission callbacks can outlive navigation, logout, or a preference change.
+    // Revalidate before submitting, without holding SQLite across either await.
+    let current = authorize_scope(
+        window,
+        &notification.account_id,
+        &notification.workspace_id,
+        Some(&notification.workspace_slug),
+    )
+    .await?;
+    if current.origin != original.origin || current.cookie_hash != original.cookie_hash {
+        return Err("Your session changed before notification delivery".into());
+    }
+    {
+        let state = authorize_window(window)?;
+        let db = state.db.lock().map_err(|error| error.to_string())?;
+        ensure_scope_current(&db, original)?;
+        if !super::preferences::read(&db)?.notifications {
+            return Ok(());
+        }
+    }
+    #[cfg(target_os = "macos")]
+    return macos::show(notification).await;
+    #[cfg(not(target_os = "macos"))]
+    {
+        let id = (uuid::Uuid::parse_str(&notification.notification_id)
+            .map_err(|_| "Invalid notification identity")?
+            .as_u128() as u32
+            & 0x7fff_ffff) as i32;
+        window
+            .notification()
+            .builder()
+            .id(id)
+            .title(clean_text(&notification.title, 256))
+            .body(clean_text(&notification.body, 1024))
+            .extra("fortyoneHostedTarget", activation_payload(notification))
+            .show()
+            .map_err(|error| error.to_string())
+    }
 }
 
 #[derive(Deserialize)]
@@ -225,34 +308,39 @@ async fn activate(app: AppHandle, payload: Value) -> Result<(), String> {
 }
 
 pub fn install(app: &AppHandle) -> Result<(), String> {
-    let app = app.clone();
-    app.clone()
-        .notification()
-        .on_action(move |action| {
-            if action.action_id() != "tap" {
-                return;
-            }
-            let Some(payload) = action
-                .notification()
-                .and_then(|notification| notification.extra().get("fortyoneHostedTarget"))
-                .cloned()
-            else {
-                return;
-            };
-            let app = app.clone();
-            tauri::async_runtime::spawn(async move {
-                if let Err(error) = activate(app.clone(), payload).await {
-                    let _ = app.emit("desktop-notification-error", error);
+    #[cfg(target_os = "macos")]
+    return macos::install(app);
+    #[cfg(not(target_os = "macos"))]
+    {
+        let app = app.clone();
+        app.clone()
+            .notification()
+            .on_action(move |action| {
+                if action.action_id() != "tap" {
+                    return;
                 }
-            });
-        })
-        .map_err(|error| error.to_string())
+                let Some(payload) = action
+                    .notification()
+                    .and_then(|notification| notification.extra().get("fortyoneHostedTarget"))
+                    .cloned()
+                else {
+                    return;
+                };
+                let app = app.clone();
+                tauri::async_runtime::spawn(async move {
+                    if let Err(error) = activate(app.clone(), payload).await {
+                        let _ = app.emit("desktop-notification-error", error);
+                    }
+                });
+            })
+            .map_err(|error| error.to_string())
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    fn notification() -> Notification {
+    pub(super) fn notification() -> Notification {
         Notification {
             account_id: uuid::Uuid::new_v4().to_string(),
             workspace_id: uuid::Uuid::new_v4().to_string(),
@@ -276,6 +364,23 @@ mod tests {
         assert!(claim(&db, &event).unwrap());
         event.account_id = uuid::Uuid::new_v4().to_string();
         assert!(claim(&db, &event).unwrap());
+    }
+    #[test]
+    fn failed_submission_releases_only_the_claimed_scope_and_version() {
+        let db = Connection::open_in_memory().unwrap();
+        db.execute_batch("CREATE TABLE hosted_notifications(account TEXT,workspace TEXT,id TEXT,version TEXT,PRIMARY KEY(account,workspace,id,version));").unwrap();
+        let event = notification();
+        let mut later = event.clone();
+        later.created_at = "2026-10-15T12:02:00Z".into();
+        let mut other_account = event.clone();
+        other_account.account_id = uuid::Uuid::new_v4().to_string();
+        assert!(claim(&db, &event).unwrap());
+        assert!(claim(&db, &later).unwrap());
+        assert!(claim(&db, &other_account).unwrap());
+        release_claim(&db, &event).unwrap();
+        assert!(claim(&db, &event).unwrap());
+        assert!(!claim(&db, &later).unwrap());
+        assert!(!claim(&db, &other_account).unwrap());
     }
     #[test]
     fn activation_uses_only_the_current_validated_origin_and_identifiers() {

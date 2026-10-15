@@ -1,6 +1,7 @@
 "use client";
 
 import { useId } from "react";
+import { cn } from "lib";
 import { Box, Button, Flex, Switch, Text } from "ui";
 import { SectionHeader } from "@/modules/settings/components";
 import { useDesktopPreferences } from "./use-desktop-preferences";
@@ -10,8 +11,10 @@ import { DesktopOutboxStatus } from "./desktop-outbox-status";
 
 export const DesktopSettings = ({
   section,
+  className,
 }: {
   section: "behavior" | "notifications";
+  className?: string;
 }) => {
   const id = useId();
   const { supported, preferences, update } = useDesktopPreferences();
@@ -45,7 +48,12 @@ export const DesktopSettings = ({
         ];
 
   return (
-    <Box className="border-border bg-surface mt-6 rounded-2xl border">
+    <Box
+      className={cn(
+        "border-border bg-surface mt-6 rounded-2xl border",
+        className,
+      )}
+    >
       <SectionHeader
         description={
           section === "notifications"

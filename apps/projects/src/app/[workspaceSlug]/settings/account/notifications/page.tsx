@@ -1,16 +1,10 @@
 import type { Metadata } from "next";
-import { NotificationsSettings } from "@/modules/settings/account/notifications";
-import { DesktopSettings } from "@/shell/desktop/desktop-settings";
+import { NotificationSettingsPage } from "@/shell/desktop/notification-settings-page";
 
 export const metadata: Metadata = {
   title: "Settings › Notifications",
 };
 
 export default function Page() {
-  return (
-    <>
-      <NotificationsSettings />
-      <DesktopSettings section="notifications" />
-    </>
-  );
+  return <NotificationSettingsPage />;
 }
