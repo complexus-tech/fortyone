@@ -47,8 +47,12 @@ html:has(.onboarding-layout) :is(input, textarea, select) {
 
 /* Soften rounded-up hairlines on low-density displays; retain Retina styling. */
 @media screen and (max-resolution: 1.5dppx) {
+  :root {
+    --color-border: oklch(0.19 0.028 40 / 4%);
+  }
+
   .dark {
-    --color-border: oklch(0.94 0 0 / 6%);
+    --color-border: oklch(0.94 0 0 / 4%);
   }
 }
 
