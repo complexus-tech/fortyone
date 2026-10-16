@@ -7,13 +7,16 @@ import (
 
 	commentsdomain "github.com/complexus-tech/projects-api/internal/modules/comments/domain"
 	platformauth "github.com/complexus-tech/projects-api/internal/platform/auth"
+	platformdatabase "github.com/complexus-tech/projects-api/internal/platform/database"
+	"github.com/complexus-tech/projects-api/pkg/events"
+	"github.com/complexus-tech/projects-api/pkg/logger"
 	apptracing "github.com/complexus-tech/projects-api/pkg/tracing"
 	"github.com/google/uuid"
 )
 
 type Store interface {
 	CreateComment(context.Context, commentsdomain.CreateCommand, uuid.UUID) (commentsdomain.Comment, error)
-	UpdateComment(context.Context, commentsdomain.UpdateCommand, uuid.UUID) error
+	UpdateComment(context.Context, commentsdomain.UpdateCommand, uuid.UUID) (commentsdomain.UpdateResult, error)
 	DeleteComment(context.Context, commentsdomain.ActorScope, uuid.UUID) error
 	GetComment(context.Context, commentsdomain.GetQuery) (commentsdomain.Comment, error)
 }
@@ -31,12 +34,31 @@ type randomEventIDGenerator struct{}
 func (randomEventIDGenerator) New() uuid.UUID { return uuid.New() }
 
 type Service struct {
-	repo     Repository
-	eventIDs eventIDGenerator
+	repo      Repository
+	eventIDs  eventIDGenerator
+	log       *logger.Logger
+	publisher EventPublisher
 }
 
-func New(repo Repository) *Service {
-	return newService(repo, randomEventIDGenerator{})
+type EventPublisher interface {
+	Publish(context.Context, events.Event) error
+}
+
+type Option func(*Service)
+
+func WithEventPublisher(log *logger.Logger, publisher EventPublisher) Option {
+	return func(service *Service) {
+		service.log = log
+		service.publisher = publisher
+	}
+}
+
+func New(repo Repository, options ...Option) *Service {
+	service := newService(repo, randomEventIDGenerator{})
+	for _, option := range options {
+		option(service)
+	}
+	return service
 }
 
 func newService(repo Repository, eventIDs eventIDGenerator) *Service {
@@ -78,7 +100,36 @@ func (s *Service) UpdateComment(
 	if s.repo == nil || s.eventIDs == nil {
 		return fmt.Errorf("%w: comment service is unavailable", ErrInvalidComment)
 	}
-	return s.repo.UpdateComment(ctx, command, s.eventIDs.New())
+	result, err := s.repo.UpdateComment(ctx, command, s.eventIDs.New())
+	if err != nil {
+		return err
+	}
+	if s.publisher != nil && len(result.AddedMentionIDs) > 0 {
+		platformdatabase.AfterCommit(ctx, func() {
+			s.publishAddedMentions(context.WithoutCancel(ctx), command.Scope, result)
+		})
+	}
+	return nil
+}
+
+func (s *Service) publishAddedMentions(ctx context.Context, scope AuthorScope, result commentsdomain.UpdateResult) {
+	for _, userID := range uniqueIDs(result.AddedMentionIDs) {
+		if userID == scope.Actor.PrincipalID {
+			continue
+		}
+		event := events.Event{
+			Type: events.UserMentioned,
+			Payload: events.UserMentionedPayload{
+				CommentID: result.Comment.ID, StoryID: result.Comment.StoryID,
+				StoryTitle: result.StoryTitle, WorkspaceID: scope.WorkspaceID,
+				MentionedUser: userID, Content: result.Comment.Comment,
+			},
+			Timestamp: result.Comment.UpdatedAt, ActorID: scope.Actor.PrincipalID,
+		}
+		if err := s.publisher.Publish(ctx, event); err != nil && s.log != nil {
+			s.log.Error(ctx, "failed to publish edited comment mention", "error", err, "comment_id", result.Comment.ID, "mentioned_user", userID)
+		}
+	}
 }
 
 func (s *Service) DeleteComment(ctx context.Context, scope AuthorScope) error {

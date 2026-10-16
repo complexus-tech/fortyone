@@ -44,6 +44,7 @@ const MainComment = ({
   const [isReplying, setIsReplying] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const isOwner = userId === session?.user.id;
+  const isPending = id.startsWith("pending-comment:");
 
   const handleCancel = () => {
     setIsReplying(false);
@@ -141,6 +142,7 @@ const MainComment = ({
         >
           {isOwner ? (
             <button
+              disabled={isPending}
               onClick={() => {
                 setIsEditing(true);
               }}
@@ -153,6 +155,7 @@ const MainComment = ({
           ) : null}
           {isOwner ? (
             <button
+              disabled={isPending}
               onClick={() => {
                 setIsOpen(true);
               }}
@@ -190,6 +193,7 @@ const MainComment = ({
         <Button
           className="mt-3 ml-10 px-2"
           color="tertiary"
+          disabled={isPending}
           leftIcon={<ReplyIcon className="h-4" />}
           onClick={() => {
             setIsReplying(true);

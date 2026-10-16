@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"log/slog"
+	"slices"
 	"testing"
 	"time"
 
@@ -166,12 +167,57 @@ func TestUpdateRollsBackIntentWhenMentionReplacementFails(t *testing.T) {
 		return operation(queries)
 	}
 
-	err := repository.UpdateComment(t.Context(), commentsdomain.UpdateCommand{
+	_, err := repository.UpdateComment(t.Context(), commentsdomain.UpdateCommand{
 		Scope:   commentsdomain.ActorScope{CommentID: commentID, WorkspaceID: workspaceID, Actor: repositoryTestActor(t, userID, workspaceID)},
 		Content: "updated", MentionedUserIDs: []uuid.UUID{uuid.New()},
 	}, uuid.New())
 	if !errors.Is(err, wantErr) {
 		t.Fatalf("update error = %v, want %v", err, wantErr)
+	}
+}
+
+func TestUpdateCapturesOnlyAddedMentionsInTransaction(t *testing.T) {
+	t.Parallel()
+
+	workspaceID, authorID, commentID := uuid.New(), uuid.New(), uuid.New()
+	unchangedID, removedID, addedID := uuid.New(), uuid.New(), uuid.New()
+	now := time.Now().UTC()
+	for _, test := range []struct {
+		name      string
+		mentions  []uuid.UUID
+		wantAdded []uuid.UUID
+	}{
+		{name: "add and remove", mentions: []uuid.UUID{unchangedID, addedID}, wantAdded: []uuid.UUID{addedID}},
+		{name: "unchanged", mentions: []uuid.UUID{unchangedID, removedID}},
+		{name: "remove all"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			queries := fakeCommentQueries{
+				update: func(context.Context, commentsql.UpdateCommentForAuthorParams) (commentsql.UpdateCommentForAuthorRow, error) {
+					return commentsql.UpdateCommentForAuthorRow{CommentID: commentID, StoryID: uuid.New(), CommenterID: authorID,
+						Content: "Edited", StoryTitle: "Story title", CreatedAt: now, UpdatedAt: now}, nil
+				},
+				deleteMentions: func(context.Context, commentsql.DeleteCommentMentionsForAuthorParams) (commentsql.DeleteCommentMentionsForAuthorRow, error) {
+					return commentsql.DeleteCommentMentionsForAuthorRow{CommentFound: true, MentionedUserIds: []uuid.UUID{unchangedID, removedID}}, nil
+				},
+				insertMentions: func(_ context.Context, params commentsql.InsertCommentMentionsForAuthorParams) (int64, error) {
+					return int64(len(params.MentionedUserIds)), nil
+				},
+				appendEvent: func(context.Context, commentsql.AppendCommentMutationEventParams) ([]uuid.UUID, error) {
+					return nil, nil
+				},
+			}
+			result, err := newCommentTestRepository(queries).UpdateComment(t.Context(), commentsdomain.UpdateCommand{
+				Scope:   commentsdomain.ActorScope{CommentID: commentID, WorkspaceID: workspaceID, Actor: repositoryTestActor(t, authorID, workspaceID)},
+				Content: "Edited", MentionedUserIDs: test.mentions,
+			}, uuid.New())
+			if err != nil {
+				t.Fatalf("update comment: %v", err)
+			}
+			if result.Comment.ID != commentID || result.StoryTitle != "Story title" || !slices.Equal(result.AddedMentionIDs, test.wantAdded) {
+				t.Fatalf("update result = %#v, want added mentions %v", result, test.wantAdded)
+			}
+		})
 	}
 }
 

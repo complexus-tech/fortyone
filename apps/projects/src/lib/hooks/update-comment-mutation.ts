@@ -2,67 +2,65 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useWorkspacePath } from "@/hooks";
 import { storyKeys } from "@/modules/stories/constants";
-import type { Comment } from "@/types";
+import {
+  commentMutationKey,
+  findCachedComment,
+  invalidateCommentQueries,
+  updateCachedComment,
+  type InfiniteCommentsData,
+} from "@/shared/story/comment-cache";
 import type { UpdateComment } from "../actions/comments/update-comment";
 import { updateCommentAction } from "../actions/comments/update-comment";
-
-type InfiniteCommentsData = {
-  pages: {
-    comments: Comment[];
-    pagination: {
-      page: number;
-      pageSize: number;
-      hasMore: boolean;
-      nextPage: number;
-    };
-  }[];
-  pageParams: number[];
-};
 
 export const useUpdateCommentMutation = () => {
   const queryClient = useQueryClient();
   const { workspaceSlug } = useWorkspacePath();
 
   const mutation = useMutation({
-    mutationFn: ({
+    mutationKey: commentMutationKey(workspaceSlug),
+    mutationFn: async ({
       commentId,
       payload,
     }: {
       commentId: string;
       payload: UpdateComment;
       storyId: string;
-    }) => updateCommentAction(commentId, payload, workspaceSlug),
-
-    onMutate: (newComment) => {
-      const previousData = queryClient.getQueryData<InfiniteCommentsData>(
-        storyKeys.commentsInfinite(workspaceSlug, newComment.storyId),
+    }) => {
+      const response = await updateCommentAction(
+        commentId,
+        payload,
+        workspaceSlug,
       );
+      if (response.error?.message) throw new Error(response.error.message);
+      return response;
+    },
 
-      if (previousData) {
-        const updatedData = {
-          ...previousData,
-          pages: previousData.pages.map((page) => ({
-            ...page,
-            comments: page.comments.map((comment) =>
-              comment.id === newComment.commentId
-                ? { ...comment, comment: newComment.payload.content }
-                : comment,
-            ),
-          })),
-        };
-
-        queryClient.setQueryData<InfiniteCommentsData>(
-          storyKeys.commentsInfinite(workspaceSlug, newComment.storyId),
-          updatedData,
-        );
-      }
-      return { previousData };
+    onMutate: async ({ commentId, payload, storyId }) => {
+      const queryKey = storyKeys.commentsInfinite(workspaceSlug, storyId);
+      await queryClient.cancelQueries({ queryKey, exact: true });
+      const previous = findCachedComment(
+        queryClient.getQueryData<InfiniteCommentsData>(queryKey),
+        commentId,
+      );
+      queryClient.setQueryData<InfiniteCommentsData>(queryKey, (current) =>
+        updateCachedComment(current, commentId, (comment) => ({
+          ...comment,
+          comment: payload.content,
+        })),
+      );
+      return { previousContent: previous?.comment.comment };
     },
     onError: (error, variables, context) => {
-      if (context?.previousData) {
-        queryClient.setQueryData(
+      const previousContent = context?.previousContent;
+      if (previousContent !== undefined) {
+        queryClient.setQueryData<InfiniteCommentsData>(
           storyKeys.commentsInfinite(workspaceSlug, variables.storyId),
-          context.previousData,
+          (current) =>
+            updateCachedComment(current, variables.commentId, (comment) =>
+              comment.comment === variables.payload.content
+                ? { ...comment, comment: previousContent }
+                : comment,
+            ),
         );
       }
       toast.error("Failed to update comment", {
@@ -74,19 +72,9 @@ export const useUpdateCommentMutation = () => {
           },
         },
       });
-      queryClient.invalidateQueries({
-        queryKey: storyKeys.commentsInfinite(workspaceSlug, variables.storyId),
-      });
     },
-    onSuccess: (res, { storyId }) => {
-      if (res.error?.message) {
-        throw new Error(res.error.message);
-      }
-
-      queryClient.invalidateQueries({
-        queryKey: storyKeys.commentsInfinite(workspaceSlug, storyId),
-      });
-    },
+    onSettled: (_response, _error, { storyId }) =>
+      invalidateCommentQueries(queryClient, workspaceSlug, storyId),
   });
 
   return mutation;

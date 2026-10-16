@@ -8,6 +8,7 @@ import (
 	"errors"
 	"io"
 	"log/slog"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -136,6 +137,48 @@ func TestCommentLifecycleIsTenantSafeAndTransactional(t *testing.T) {
 	}
 }
 
+func TestEditedCommentMentionDeltaMatchesCommittedReplacement(t *testing.T) {
+	postgres := testkit.NewPostgres(t)
+	ctx, cancel := context.WithTimeout(t.Context(), 45*time.Second)
+	defer cancel()
+
+	workspaceID, _, storyID := insertCommentTestWorkspace(t, ctx, postgres.Pool, "mention-delta")
+	authorID := insertCommentTestUser(t, ctx, postgres.Pool, workspaceID, "mention-author")
+	unchangedID := insertCommentTestUser(t, ctx, postgres.Pool, workspaceID, "mention-unchanged")
+	addedID := insertCommentTestUser(t, ctx, postgres.Pool, workspaceID, "mention-added")
+	repository := New(logger.NewWithText(io.Discard, slog.LevelError, "comment-mentions"), postgres.Pool)
+	actor := commentIntegrationActor(t, authorID, workspaceID)
+	created, err := comments.New(repository).CreateComment(ctx, comments.CreateCommentCommand{
+		WorkspaceID: workspaceID, StoryID: storyID, Actor: actor,
+		Content: "Before edit", MentionedUserIDs: []uuid.UUID{unchangedID},
+	})
+	if err != nil {
+		t.Fatalf("create comment: %v", err)
+	}
+	command := commentsdomain.UpdateCommand{
+		Scope:   commentsdomain.ActorScope{CommentID: created.ID, WorkspaceID: workspaceID, Actor: actor},
+		Content: "After edit", MentionedUserIDs: []uuid.UUID{unchangedID, addedID, authorID},
+	}
+	result, err := repository.UpdateComment(ctx, command, uuid.New())
+	if err != nil {
+		t.Fatalf("update mentions: %v", err)
+	}
+	if !slices.Equal(result.AddedMentionIDs, []uuid.UUID{addedID, authorID}) || result.Comment.ID != created.ID || result.StoryTitle == "" {
+		t.Fatalf("updated mention context = %#v", result)
+	}
+	assertCommentState(t, ctx, postgres.Pool, created.ID, command.Content, command.MentionedUserIDs)
+	result, err = repository.UpdateComment(ctx, command, uuid.New())
+	if err != nil || len(result.AddedMentionIDs) != 0 {
+		t.Fatalf("unchanged mentions must not notify again: result=%#v error=%v", result, err)
+	}
+	command.MentionedUserIDs = nil
+	result, err = repository.UpdateComment(ctx, command, uuid.New())
+	if err != nil || len(result.AddedMentionIDs) != 0 {
+		t.Fatalf("removed mentions must not notify: result=%#v error=%v", result, err)
+	}
+	assertCommentState(t, ctx, postgres.Pool, created.ID, command.Content, nil)
+}
+
 func TestCommentOutboxConflictRollsBackMutation(t *testing.T) {
 	postgres := testkit.NewPostgres(t)
 	ctx, cancel := context.WithTimeout(t.Context(), 45*time.Second)
@@ -152,12 +195,12 @@ func TestCommentOutboxConflictRollsBackMutation(t *testing.T) {
 		Scope:   commentsdomain.ActorScope{CommentID: commentID, WorkspaceID: workspaceID, Actor: actor},
 		Content: "first committed",
 	}
-	if err := repository.UpdateComment(ctx, first, eventID); err != nil {
+	if _, err := repository.UpdateComment(ctx, first, eventID); err != nil {
 		t.Fatalf("first update: %v", err)
 	}
 	second := first
 	second.Content = "must roll back"
-	if err := repository.UpdateComment(ctx, second, eventID); err == nil {
+	if _, err := repository.UpdateComment(ctx, second, eventID); err == nil {
 		t.Fatal("duplicate event id update error = nil")
 	}
 	assertCommentState(t, ctx, postgres.Pool, commentID, "first committed", nil)

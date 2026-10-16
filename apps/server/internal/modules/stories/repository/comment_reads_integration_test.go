@@ -27,6 +27,7 @@ func TestStoryCommentReadsPreserveTreeShapeAndLiveTenantVisibility(t *testing.T)
 	otherStoryID := createSecondaryMutationStory(t, ctx, repository, fixture, baseTime.Add(time.Minute))
 
 	olderRootID, newestRootID, replyID := uuid.New(), uuid.New(), uuid.New()
+	nestedReplyID, laterReplyID := uuid.New(), uuid.New()
 	mustMutationExec(
 		t,
 		ctx,
@@ -47,6 +48,13 @@ func TestStoryCommentReadsPreserveTreeShapeAndLiveTenantVisibility(t *testing.T)
 		fixture.assigneeID,
 		baseTime.Add(4*time.Minute),
 	)
+	mustMutationExec(t, ctx, postgres.Pool,
+		`INSERT INTO story_comments (comment_id, content, story_id, commenter_id, created_at, updated_at, parent_id)
+		 VALUES ($1, 'Reply to a reply', $2, $3, $4, $4, $5),
+		        ($6, 'Later direct reply', $2, $3, $7, $7, $8)`,
+		nestedReplyID, storyID, fixture.actorID, baseTime.Add(5*time.Minute), replyID,
+		laterReplyID, baseTime.Add(6*time.Minute), newestRootID,
+	)
 	assertStoryCommentTreeIndexPlans(t, ctx, postgres.Pool, storyID, newestRootID)
 
 	scope := storydomain.ReadScope{
@@ -59,9 +67,13 @@ func TestStoryCommentReadsPreserveTreeShapeAndLiveTenantVisibility(t *testing.T)
 	if !hasMore || len(comments) != 1 || comments[0].ID != newestRootID {
 		t.Fatalf("first comment page = %#v hasMore=%v", comments, hasMore)
 	}
-	if len(comments[0].SubComments) != 1 || comments[0].SubComments[0].ID != replyID ||
+	if len(comments[0].SubComments) != 3 || comments[0].SubComments[0].ID != replyID ||
 		comments[0].SubComments[0].Parent == nil || *comments[0].SubComments[0].Parent != newestRootID {
 		t.Fatalf("comment reply tree = %#v", comments[0].SubComments)
+	}
+	if comments[0].SubComments[1].ID != nestedReplyID || comments[0].SubComments[1].Parent == nil ||
+		*comments[0].SubComments[1].Parent != replyID || comments[0].SubComments[2].ID != laterReplyID {
+		t.Fatalf("descendants must retain their parents and chronological order: %#v", comments[0].SubComments)
 	}
 
 	secondPage, hasMore, err := repository.ListVisibleComments(ctx, scope, storyID, 2, 1)

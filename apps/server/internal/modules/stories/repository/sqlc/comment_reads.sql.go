@@ -85,35 +85,58 @@ func (q *Queries) GetVisibleStoryComment(ctx context.Context, arg GetVisibleStor
 }
 
 const listVisibleStoryCommentReplies = `-- name: ListVisibleStoryCommentReplies :many
-SELECT
-    reply.comment_id,
-    reply.story_id,
-    reply.parent_id,
-    reply.commenter_id,
-    reply.content,
-    reply.created_at,
-    reply.updated_at
-FROM public.story_comments AS reply
-INNER JOIN public.stories AS story
-    ON story.id = reply.story_id
-INNER JOIN public.users AS actor
-    ON actor.user_id = $1
-   AND actor.is_active = TRUE
-INNER JOIN public.workspace_members AS workspace_member
-    ON workspace_member.workspace_id = story.workspace_id
-   AND workspace_member.user_id = actor.user_id
-INNER JOIN public.team_members AS team_member
-    ON team_member.team_id = story.team_id
-   AND team_member.user_id = actor.user_id
-WHERE reply.story_id = $2
-  AND reply.parent_id = ANY(CAST($3 AS uuid[]))
-  AND story.workspace_id = $4
-  AND story.deleted_at IS NULL
-  AND (
-      CAST($5 AS boolean)
-      OR story.team_id = ANY(CAST($6 AS uuid[]))
-  )
-ORDER BY reply.parent_id, reply.created_at, reply.comment_id
+WITH RECURSIVE thread_replies AS (
+    SELECT
+        reply.comment_id,
+        reply.story_id,
+        reply.parent_id,
+        reply.commenter_id,
+        reply.content,
+        reply.created_at,
+        reply.updated_at,
+        root.comment_id AS root_id
+    FROM public.story_comments AS reply
+    INNER JOIN public.story_comments AS root
+        ON root.comment_id = reply.parent_id
+       AND root.story_id = reply.story_id
+       AND root.parent_id IS NULL
+    INNER JOIN public.stories AS story
+        ON story.id = reply.story_id
+    INNER JOIN public.users AS actor
+        ON actor.user_id = $1
+       AND actor.is_active = TRUE
+    INNER JOIN public.workspace_members AS workspace_member
+        ON workspace_member.workspace_id = story.workspace_id
+       AND workspace_member.user_id = actor.user_id
+    INNER JOIN public.team_members AS team_member
+        ON team_member.team_id = story.team_id
+       AND team_member.user_id = actor.user_id
+    WHERE reply.story_id = $2
+      AND reply.parent_id = ANY(CAST($3 AS uuid[]))
+      AND story.workspace_id = $4
+      AND story.deleted_at IS NULL
+      AND (
+          CAST($5 AS boolean)
+          OR story.team_id = ANY(CAST($6 AS uuid[]))
+      )
+    UNION ALL
+    SELECT
+        child.comment_id,
+        child.story_id,
+        child.parent_id,
+        child.commenter_id,
+        child.content,
+        child.created_at,
+        child.updated_at,
+        ancestor.root_id
+    FROM public.story_comments AS child
+    INNER JOIN thread_replies AS ancestor
+        ON child.parent_id = ancestor.comment_id
+       AND child.story_id = ancestor.story_id
+)
+SELECT comment_id, story_id, parent_id, commenter_id, content, created_at, updated_at, root_id
+FROM thread_replies
+ORDER BY root_id, created_at, comment_id
 `
 
 type ListVisibleStoryCommentRepliesParams struct {
@@ -133,6 +156,7 @@ type ListVisibleStoryCommentRepliesRow struct {
 	Content     string
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
+	RootID      uuid.UUID
 }
 
 func (q *Queries) ListVisibleStoryCommentReplies(ctx context.Context, arg ListVisibleStoryCommentRepliesParams) ([]ListVisibleStoryCommentRepliesRow, error) {
@@ -159,6 +183,7 @@ func (q *Queries) ListVisibleStoryCommentReplies(ctx context.Context, arg ListVi
 			&i.Content,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.RootID,
 		); err != nil {
 			return nil, err
 		}

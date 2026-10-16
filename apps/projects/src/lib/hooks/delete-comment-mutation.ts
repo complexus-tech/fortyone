@@ -1,59 +1,52 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useWorkspacePath } from "@/hooks";
-import type { Comment } from "@/types";
 import { storyKeys } from "@/modules/stories/constants";
+import {
+  commentMutationKey,
+  getCachedCommentBranch,
+  invalidateCommentQueries,
+  removeCachedComment,
+  restoreCachedComments,
+  type InfiniteCommentsData,
+} from "@/shared/story/comment-cache";
 import { deleteCommentAction } from "../actions/comments/delete-comment";
-
-type InfiniteCommentsData = {
-  pages: {
-    comments: Comment[];
-    pagination: {
-      page: number;
-      pageSize: number;
-      hasMore: boolean;
-      nextPage: number;
-    };
-  }[];
-  pageParams: number[];
-};
 
 export const useDeleteCommentMutation = () => {
   const queryClient = useQueryClient();
   const { workspaceSlug } = useWorkspacePath();
 
   const mutation = useMutation({
-    mutationFn: ({ commentId }: { commentId: string; storyId: string }) =>
-      deleteCommentAction(commentId, workspaceSlug),
+    mutationKey: commentMutationKey(workspaceSlug),
+    mutationFn: async ({
+      commentId,
+    }: {
+      commentId: string;
+      storyId: string;
+    }) => {
+      const response = await deleteCommentAction(commentId, workspaceSlug);
+      if (response.error?.message) throw new Error(response.error.message);
+      return response;
+    },
 
-    onMutate: ({ commentId, storyId }) => {
-      const previousData = queryClient.getQueryData<InfiniteCommentsData>(
-        storyKeys.commentsInfinite(workspaceSlug, storyId),
+    onMutate: async ({ commentId, storyId }) => {
+      const queryKey = storyKeys.commentsInfinite(workspaceSlug, storyId);
+      await queryClient.cancelQueries({ queryKey, exact: true });
+      const removed = getCachedCommentBranch(
+        queryClient.getQueryData<InfiniteCommentsData>(queryKey),
+        commentId,
       );
-
-      if (previousData) {
-        const updatedData = {
-          ...previousData,
-          pages: previousData.pages.map((page) => ({
-            ...page,
-            comments: page.comments.filter(
-              (comment) => comment.id !== commentId,
-            ),
-          })),
-        };
-
-        queryClient.setQueryData<InfiniteCommentsData>(
-          storyKeys.commentsInfinite(workspaceSlug, storyId),
-          updatedData,
-        );
-      }
-      return { previousData };
+      queryClient.setQueryData<InfiniteCommentsData>(queryKey, (current) =>
+        removeCachedComment(current, commentId),
+      );
+      return { removed };
     },
     onError: (error, variables, context) => {
-      if (context?.previousData) {
-        queryClient.setQueryData(
+      const removed = context?.removed;
+      if (removed) {
+        queryClient.setQueryData<InfiniteCommentsData>(
           storyKeys.commentsInfinite(workspaceSlug, variables.storyId),
-          context.previousData,
+          (current) => restoreCachedComments(current, removed),
         );
       }
       toast.error("Failed to delete comment", {
@@ -65,19 +58,9 @@ export const useDeleteCommentMutation = () => {
           },
         },
       });
-      queryClient.invalidateQueries({
-        queryKey: storyKeys.commentsInfinite(workspaceSlug, variables.storyId),
-      });
     },
-    onSuccess: (res, { storyId }) => {
-      if (res.error?.message) {
-        throw new Error(res.error.message);
-      }
-
-      queryClient.invalidateQueries({
-        queryKey: storyKeys.commentsInfinite(workspaceSlug, storyId),
-      });
-    },
+    onSettled: (_response, _error, { storyId }) =>
+      invalidateCommentQueries(queryClient, workspaceSlug, storyId),
   });
 
   return mutation;

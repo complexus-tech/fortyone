@@ -1,6 +1,5 @@
-import type { UserSummary } from "./user-summary";
-
 export type { ApiResponse } from "./api-response";
+export type { Comment } from "./comment";
 export type { User } from "./user";
 export type { UserSummary } from "./user-summary";
 export type { UserRole } from "./user-role";
@@ -13,18 +12,6 @@ export type {
   OnboardingTourProgress,
   UpdateOnboardingTourProgress,
 } from "@/shared/walkthrough/progress/types";
-
-export type Comment = {
-  id: string;
-  storyId: string;
-  parentId: string | null;
-  userId: string;
-  user: UserSummary;
-  comment: string;
-  createdAt: string;
-  updatedAt: string;
-  subComments: Comment[];
-};
 
 export type StoriesSummary = {
   closed: number;

@@ -130,7 +130,8 @@ RETURNING
     comment.commenter_id,
     comment.content,
     comment.created_at,
-    comment.updated_at;
+    comment.updated_at,
+    story.title AS story_title;
 
 -- name: DeleteCommentForAuthor :one
 DELETE FROM public.story_comments AS comment
@@ -195,11 +196,12 @@ deleted_mention AS (
     DELETE FROM public.comment_mentions AS mention
     USING scoped_comment
     WHERE mention.comment_id = scoped_comment.comment_id
-    RETURNING mention.comment_id
+    RETURNING mention.mentioned_user_id
 )
 SELECT
     EXISTS(SELECT 1 FROM scoped_comment) AS comment_found,
-    CAST((SELECT COUNT(*) FROM deleted_mention) AS bigint) AS deleted_count;
+    CAST((SELECT COUNT(*) FROM deleted_mention) AS bigint) AS deleted_count,
+    CAST(ARRAY(SELECT mentioned_user_id FROM deleted_mention) AS uuid[]) AS mentioned_user_ids;
 
 -- name: InsertCommentMentionsForAuthor :execrows
 WITH requested_user AS (

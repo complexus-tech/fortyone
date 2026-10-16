@@ -32,6 +32,14 @@ type UpdateCommand struct {
 	MentionedUserIDs []uuid.UUID
 }
 
+// UpdateResult contains the updated state and mention delta captured while
+// holding the comment row lock. Notification delivery waits for the outer commit.
+type UpdateResult struct {
+	Comment         Comment
+	StoryTitle      string
+	AddedMentionIDs []uuid.UUID
+}
+
 type GetQuery struct {
 	CommentID   uuid.UUID
 	WorkspaceID uuid.UUID

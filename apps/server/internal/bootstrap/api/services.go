@@ -222,7 +222,11 @@ func buildServices(cfg mux.Config, dependencies Dependencies) services {
 		cfg.TasksService,
 		subscriptions.WithRedirectOrigin(cfg.WebsiteURL),
 	)
-	commentsService := comments.New(commentsrepository.New(cfg.Log, dependencies.DatabasePool))
+	var commentOptions []comments.Option
+	if cfg.Publisher != nil {
+		commentOptions = append(commentOptions, comments.WithEventPublisher(cfg.Log, cfg.Publisher))
+	}
+	commentsService := comments.New(commentsrepository.New(cfg.Log, dependencies.DatabasePool), commentOptions...)
 	mayaRepository := mayarepository.New(dependencies.DatabasePool)
 	storiesRepo := storiesrepository.New(cfg.Log, dependencies.DatabasePool,
 		storiesrepository.WithCustomFieldCreation(customfieldsadapter.CreationBinder),

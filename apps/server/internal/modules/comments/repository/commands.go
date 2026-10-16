@@ -50,7 +50,7 @@ func (r *Repository) CreateComment(
 		// A newly inserted comment has no mentions to clear. In particular, a
 		// provider comment must not enter the human-author mention mutation path.
 		if len(command.MentionedUserIDs) > 0 {
-			if err := replaceMentions(ctx, queries, scope, command.MentionedUserIDs); err != nil {
+			if _, err := replaceMentions(ctx, queries, scope, command.MentionedUserIDs); err != nil {
 				return err
 			}
 		}
@@ -97,10 +97,11 @@ func (r *Repository) UpdateComment(
 	ctx context.Context,
 	command commentsdomain.UpdateCommand,
 	eventID uuid.UUID,
-) error {
+) (commentsdomain.UpdateResult, error) {
 	ctx, span := apptracing.AddSpanFromContext(ctx, "business.repository.comments.UpdateComment")
 	defer span.End()
 
+	var result commentsdomain.UpdateResult
 	err := r.withinTransaction(ctx, func(queries commentsql.Querier) error {
 		row, err := queries.UpdateCommentForAuthor(ctx, commentsql.UpdateCommentForAuthorParams{
 			Content: command.Content, CommentID: command.Scope.CommentID,
@@ -115,9 +116,11 @@ func (r *Repository) UpdateComment(
 			row.CommentID, row.StoryID, row.ParentID, row.CommenterID,
 			row.Content, row.CreatedAt, row.UpdatedAt,
 		)
-		if err := replaceMentions(ctx, queries, command.Scope, command.MentionedUserIDs); err != nil {
+		addedMentions, err := replaceMentions(ctx, queries, command.Scope, command.MentionedUserIDs)
+		if err != nil {
 			return err
 		}
+		result = commentsdomain.UpdateResult{Comment: updated, StoryTitle: row.StoryTitle, AddedMentionIDs: addedMentions}
 		return appendMutationEvent(
 			ctx, queries, eventID, commentsdomain.EventUpdated,
 			command.Scope.WorkspaceID, command.Scope.Actor, updated,
@@ -125,11 +128,11 @@ func (r *Repository) UpdateComment(
 	})
 	if err != nil {
 		r.log.Error(ctx, "error updating comment", "error", err, "comment_id", command.Scope.CommentID)
-		return err
+		return commentsdomain.UpdateResult{}, err
 	}
 
 	r.log.Info(ctx, "comment updated successfully", "comment_id", command.Scope.CommentID)
-	return nil
+	return result, nil
 }
 
 func (r *Repository) DeleteComment(
@@ -173,7 +176,7 @@ func replaceMentions(
 	queries commentsql.Querier,
 	scope commentsdomain.ActorScope,
 	mentionedUserIDs []uuid.UUID,
-) error {
+) ([]uuid.UUID, error) {
 	params := commentsql.DeleteCommentMentionsForAuthorParams{
 		CommentID: scope.CommentID, ActorID: scope.Actor.PrincipalID, WorkspaceID: scope.WorkspaceID,
 		TeamAccessUnrestricted: scope.Actor.TeamAccess.IsUnrestricted(),
@@ -181,13 +184,13 @@ func replaceMentions(
 	}
 	cleared, err := queries.DeleteCommentMentionsForAuthor(ctx, params)
 	if err != nil {
-		return fmt.Errorf("delete comment mentions: %w", err)
+		return nil, fmt.Errorf("delete comment mentions: %w", err)
 	}
 	if !cleared.CommentFound {
-		return commentsdomain.ErrNotFound
+		return nil, commentsdomain.ErrNotFound
 	}
 	if len(mentionedUserIDs) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	inserted, err := queries.InsertCommentMentionsForAuthor(ctx, commentsql.InsertCommentMentionsForAuthorParams{
@@ -197,12 +200,23 @@ func replaceMentions(
 		MentionedUserIds:       mentionedUserIDs,
 	})
 	if err != nil {
-		return fmt.Errorf("insert comment mentions: %w", err)
+		return nil, fmt.Errorf("insert comment mentions: %w", err)
 	}
 	if inserted != int64(len(mentionedUserIDs)) {
-		return commentsdomain.ErrInvalidMention
+		return nil, commentsdomain.ErrInvalidMention
 	}
-	return nil
+	previous := make(map[uuid.UUID]struct{}, len(cleared.MentionedUserIds))
+	for _, userID := range cleared.MentionedUserIds {
+		previous[userID] = struct{}{}
+	}
+	added := make([]uuid.UUID, 0, len(mentionedUserIDs))
+	for _, userID := range mentionedUserIDs {
+		if _, exists := previous[userID]; !exists {
+			added = append(added, userID)
+			previous[userID] = struct{}{}
+		}
+	}
+	return added, nil
 }
 
 func appendMutationEvent(

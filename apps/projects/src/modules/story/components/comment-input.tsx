@@ -1,11 +1,13 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useEditor } from "@tiptap/react";
 import { toast } from "sonner";
 import { Button, Flex, TextEditor } from "ui";
 import { cn } from "lib";
 import { DesktopDraftNotice } from "@/shell/desktop/desktop-draft-notice";
 import { useDesktopDraft } from "@/shell/desktop/use-desktop-draft";
+import { useDesktopWorkspaceScope } from "@/shell/desktop/workspace-scope";
 import { useCommentStoryMutation } from "@/modules/story/hooks/comment-mutation";
+import { useBrowserCommentDraft } from "@/modules/story/hooks/use-browser-comment-draft";
 import { useUpdateCommentMutation } from "@/lib/hooks/update-comment-mutation";
 import { useTeamMembers } from "@/lib/hooks/team-members";
 import { extractMentionsFromHTML } from "@/lib/utils/mentions";
@@ -15,15 +17,7 @@ import {
   setStoryCommentMentionUsers,
 } from "./story-comment-editor";
 
-export const CommentInput = ({
-  storyId,
-  parentId,
-  commentId,
-  className,
-  initialComment,
-  onCancel,
-  teamId,
-}: {
+type CommentInputProps = {
   storyId: string;
   parentId?: string;
   commentId?: string;
@@ -31,14 +25,32 @@ export const CommentInput = ({
   initialComment?: string;
   teamId: string;
   onCancel?: () => void;
-}) => {
+};
+
+const CommentComposer = ({
+  storyId,
+  parentId,
+  commentId,
+  className,
+  initialComment,
+  onCancel,
+  teamId,
+}: CommentInputProps) => {
   const { data: members } = useTeamMembers(teamId);
   let draftKey = `comment:${storyId}`;
   if (parentId) draftKey += `:reply:${parentId}`;
   if (commentId) draftKey = `comment:${storyId}:edit:${commentId}`;
   const draft = useDesktopDraft<{ version: 1; html: string }>(draftKey);
-  const { mutate } = useCommentStoryMutation();
-  const { mutate: updateComment } = useUpdateCommentMutation();
+  const browserDraft = useBrowserCommentDraft(draftKey, !draft.supported);
+  const { mutateAsync: createComment, isPending: isCreating } =
+    useCommentStoryMutation();
+  const { mutateAsync: updateComment, isPending: isUpdating } =
+    useUpdateCommentMutation();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const submissionInFlight = useRef(false);
+  const isPending = isSubmitting || isCreating || isUpdating;
+  const activeDraft = draft.supported ? draft : browserDraft;
+  const canEdit = activeDraft.ready && !activeDraft.recovered && !isPending;
 
   const getPlaceHolder = () => {
     if (commentId) {
@@ -66,22 +78,28 @@ export const CommentInput = ({
       placeholder: getPlaceHolder(),
     }),
     content: initialComment ?? "",
-    editable: !draft.supported || (draft.ready && !draft.recovered),
+    editable: canEdit,
     onUpdate: ({ editor: current }) => {
-      if (!draft.supported || !draft.ready || draft.recovered) return;
-      void draft.save({ version: 1, html: current.getHTML() }).catch(() => {
-        // The draft notice keeps the local storage failure visible.
-      });
+      if (!activeDraft.ready || activeDraft.recovered) return;
+      void activeDraft
+        .save({ version: 1, html: current.getHTML() })
+        .catch(() => {
+          // Desktop notices and browser toasts expose storage failures.
+        });
     },
     immediatelyRender: false,
   });
 
   useEffect(() => {
-    editor?.setEditable(
-      !draft.supported || (draft.ready && !draft.recovered),
-      false,
-    );
-  }, [draft.ready, draft.recovered, draft.supported, editor]);
+    editor?.setEditable(canEdit, false);
+  }, [canEdit, editor]);
+
+  const { recovered: browserRecovered, acceptRecovered } = browserDraft;
+  useEffect(() => {
+    if (!editor || draft.supported || !browserRecovered) return;
+    editor.commands.setContent(browserRecovered.html, { emitUpdate: false });
+    acceptRecovered();
+  }, [acceptRecovered, browserRecovered, draft.supported, editor]);
 
   useEffect(() => {
     if (!editor) {
@@ -97,68 +115,75 @@ export const CommentInput = ({
     setStoryCommentMentionUsers(editor, mentionUsers);
   }, [editor, members]);
 
-  const handleComment = () => {
-    const comment = editor?.getHTML() ?? "";
-    if (editor?.isEmpty) {
+  const handleComment = async () => {
+    if (!editor || !canEdit || submissionInFlight.current) return;
+    if (editor.isEmpty) {
       toast.error("Comment is required", {
         description: "Please enter a comment before submitting",
       });
       return;
     }
 
+    const comment = editor.getHTML();
     const mentions = extractMentionsFromHTML(comment).map((m) => m.id);
+    submissionInFlight.current = true;
+    setIsSubmitting(true);
+    editor.setEditable(false, false);
 
-    if (commentId) {
-      // update comment
-      updateComment(
-        {
+    try {
+      if (commentId) {
+        await updateComment({
           commentId,
           payload: { content: comment, mentions },
           storyId,
-        },
-        {
-          onSuccess: async () => {
-            editor?.commands.clearContent();
-            try {
-              await draft.discard();
-            } catch {
-              toast.error(
-                "Comment saved, but the local draft could not be removed.",
-              );
-            }
-            onCancel?.();
-          },
-        },
-      );
-    } else {
-      mutate(
-        {
+        });
+      } else {
+        await createComment({
           storyId,
           payload: {
             comment,
             parentId: parentId ?? null,
             mentions,
           },
-        },
-        {
-          onSuccess: async () => {
-            editor?.commands.clearContent();
-            try {
-              await draft.discard();
-            } catch {
-              toast.error(
-                "Comment saved, but the local draft could not be removed.",
-              );
-            }
-            onCancel?.();
-          },
-        },
-      );
+        });
+      }
+    } catch {
+      // Mutation hooks report the failure and retain the editor for retry.
+      submissionInFlight.current = false;
+      setIsSubmitting(false);
+      if (!editor.isDestroyed) editor.setEditable(true, false);
+      return;
     }
+
+    try {
+      if (draft.supported) {
+        await draft.discard(
+          (payload) =>
+            typeof payload === "object" &&
+            payload !== null &&
+            "html" in payload &&
+            payload.html === comment,
+        );
+      } else {
+        await browserDraft.discard(comment);
+      }
+    } catch {
+      toast.error("Comment saved, but the local draft could not be removed.");
+    }
+    // Do not erase a newer draft if this composer was reopened or its content
+    // changed while the request was in flight.
+    if (!editor.isDestroyed && editor.getHTML() === comment) {
+      editor.commands.clearContent(false);
+      onCancel?.();
+    }
+    submissionInFlight.current = false;
+    setIsSubmitting(false);
+    if (!editor.isDestroyed) editor.setEditable(true, false);
   };
 
   return (
     <Flex
+      aria-busy={isPending}
       className={cn(
         "border-border/40 bg-surface-muted/40 ml-1 min-h-24 w-full rounded-xl border px-4 pb-4",
         className,
@@ -198,6 +223,7 @@ export const CommentInput = ({
           <Button
             className="px-3"
             color="tertiary"
+            disabled={isPending}
             onClick={onCancel}
             size="sm"
             variant="outline"
@@ -208,9 +234,7 @@ export const CommentInput = ({
         <Button
           className="px-3"
           color="tertiary"
-          disabled={
-            draft.supported ? !draft.ready || Boolean(draft.recovered) : null
-          }
+          disabled={!canEdit || !editor}
           onClick={handleComment}
           size="sm"
           variant="outline"
@@ -219,5 +243,21 @@ export const CommentInput = ({
         </Button>
       </Flex>
     </Flex>
+  );
+};
+
+export const CommentInput = (props: CommentInputProps) => {
+  const scope = useDesktopWorkspaceScope();
+  return (
+    <CommentComposer
+      {...props}
+      key={JSON.stringify([
+        scope?.accountId,
+        scope?.workspaceId,
+        props.storyId,
+        props.parentId,
+        props.commentId,
+      ])}
+    />
   );
 };

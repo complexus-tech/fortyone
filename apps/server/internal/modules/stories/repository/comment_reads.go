@@ -65,10 +65,7 @@ func (r *repo) ListVisibleComments(
 		return nil, false, fmt.Errorf("list visible story comment replies: %w", err)
 	}
 	for _, row := range replies {
-		if row.ParentID == nil {
-			continue
-		}
-		parentIndex, exists := byParent[*row.ParentID]
+		parentIndex, exists := byParent[row.RootID]
 		if !exists {
 			continue
 		}

@@ -4,6 +4,13 @@ import { useTerminology, useWorkspacePath } from "@/hooks";
 import { useSession } from "@/lib/auth/client";
 import { storyKeys } from "@/modules/stories/constants";
 import type { Comment } from "@/types";
+import {
+  commentMutationKey,
+  insertCachedComment,
+  invalidateCommentQueries,
+  removeCachedComment,
+  type InfiniteCommentsData,
+} from "@/shared/story/comment-cache";
 import { getDesktopBridge } from "@/shell/desktop/bridge";
 import { useDesktopWorkspaceScope } from "@/shell/desktop/workspace-scope";
 import {
@@ -12,19 +19,6 @@ import {
 } from "@/shell/desktop/story-offline";
 import { retainDesktopComment } from "@/shell/desktop/outbox-projection";
 import { commentStoryAction } from "../actions/comment-story";
-
-type InfiniteCommentsData = {
-  pages: {
-    comments: Comment[];
-    pagination: {
-      page: number;
-      pageSize: number;
-      hasMore: boolean;
-      nextPage: number;
-    };
-  }[];
-  pageParams: number[];
-};
 
 export const useCommentStoryMutation = () => {
   const queryClient = useQueryClient();
@@ -45,8 +39,11 @@ export const useCommentStoryMutation = () => {
         mentions: string[];
       };
     },
-    { previousData: InfiniteCommentsData | undefined }
+    { optimisticId?: string }
   >({
+    mutationKey: getDesktopBridge()?.enqueueOperation
+      ? ["desktop-comment", workspaceSlug]
+      : commentMutationKey(workspaceSlug),
     networkMode: getDesktopBridge()?.enqueueOperation ? "always" : "online",
     mutationFn: async ({
       storyId,
@@ -73,10 +70,11 @@ export const useCommentStoryMutation = () => {
       return response;
     },
     onError: (error, variables, context) => {
-      if (context?.previousData) {
-        queryClient.setQueryData(
+      const optimisticId = context?.optimisticId;
+      if (optimisticId) {
+        queryClient.setQueryData<InfiniteCommentsData>(
           storyKeys.commentsInfinite(workspaceSlug, variables.storyId),
-          context.previousData,
+          (current) => removeCachedComment(current, optimisticId),
         );
       }
       toast.error(`Failed to comment on ${getTermDisplay("storyTerm")}`, {
@@ -89,77 +87,58 @@ export const useCommentStoryMutation = () => {
         },
       });
     },
-    onMutate: ({ storyId, payload }) => {
-      if (getDesktopBridge()?.enqueueOperation)
-        return { previousData: undefined };
-      const previousData = queryClient.getQueryData<InfiniteCommentsData>(
-        storyKeys.commentsInfinite(workspaceSlug, storyId),
+    onMutate: async ({ storyId, payload }) => {
+      if (getDesktopBridge()?.enqueueOperation) return {};
+      const queryKey = storyKeys.commentsInfinite(workspaceSlug, storyId);
+      await queryClient.cancelQueries({ queryKey, exact: true });
+      const optimisticId = `pending-comment:${crypto.randomUUID()}`;
+      const createdAt = new Date().toISOString();
+      const newComment: Comment = {
+        id: optimisticId,
+        userId: session?.user.id ?? "",
+        user: {
+          id: session?.user.id ?? "",
+          username: session?.user.username ?? "",
+          fullName: session?.user.name ?? "",
+          avatarUrl: session?.user.image ?? null,
+          isActive: true,
+          isSystem: false,
+        },
+        comment: payload.comment,
+        storyId,
+        createdAt,
+        updatedAt: createdAt,
+        parentId: payload.parentId ?? null,
+        subComments: [],
+      };
+      queryClient.setQueryData<InfiniteCommentsData>(queryKey, (current) =>
+        insertCachedComment(current, newComment),
       );
-
-      if (previousData) {
-        const newComment = {
-          id: "new comment",
-          userId: session?.user.id ?? "",
-          user: {
-            id: session?.user.id ?? "",
-            username: session?.user.username ?? "",
-            fullName: session?.user.name ?? "",
-            avatarUrl: session?.user.image ?? null,
-            isActive: true,
-            isSystem: false,
-          },
-          comment: payload.comment,
-          storyId,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          parentId: payload.parentId ?? null,
-          subComments: [],
-        };
-
-        const updatedData = {
-          ...previousData,
-          pages: previousData.pages.map((page, pageIndex) => {
-            if (pageIndex === 0) {
-              // Add to first page
-              if (payload.parentId) {
-                // Add as reply to parent comment
-                const updatedComments = page.comments.map((comment) => {
-                  if (comment.id === payload.parentId) {
-                    return {
-                      ...comment,
-                      subComments: [newComment, ...comment.subComments],
-                    };
-                  }
-                  return comment;
-                });
-                return { ...page, comments: updatedComments };
-              }
-              // Add as new top-level comment
-              return {
-                ...page,
-                comments: [newComment, ...page.comments],
-              };
-            }
-            return page;
-          }),
-        };
-
-        queryClient.setQueryData<InfiniteCommentsData>(
-          storyKeys.commentsInfinite(workspaceSlug, storyId),
-          updatedData,
-        );
-      }
-      return { previousData };
+      return { optimisticId };
     },
-    onSuccess: (res, { storyId }) => {
+    onSuccess: (res, { storyId }, context) => {
       if (isDesktopPending(res) && res.data && desktopScope) {
         retainDesktopComment(queryClient, desktopScope, res.data);
         return;
       }
 
-      queryClient.invalidateQueries({
-        queryKey: storyKeys.commentsInfinite(workspaceSlug, storyId),
-      });
+      if (res.data) {
+        const comment = res.data;
+        queryClient.setQueryData<InfiniteCommentsData>(
+          storyKeys.commentsInfinite(workspaceSlug, storyId),
+          (current) =>
+            insertCachedComment(
+              context.optimisticId
+                ? removeCachedComment(current, context.optimisticId)
+                : current,
+              comment,
+            ),
+        );
+      }
+    },
+    onSettled: (res, _error, { storyId }) => {
+      if (isDesktopPending(res)) return;
+      return invalidateCommentQueries(queryClient, workspaceSlug, storyId);
     },
   });
 

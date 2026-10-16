@@ -1,6 +1,7 @@
 import { getDesktopBridge } from "./bridge";
 import {
   flushDesktopDrafts,
+  removeDesktopDraft,
   retryDesktopDrafts,
   writeDesktopDraft,
 } from "./drafts";
@@ -84,4 +85,92 @@ it("retries failed collaboration snapshots as dirty recovery content after lease
       payload: { kind: "collaboration", state: "saved-yjs", dirty: true },
     }),
   );
+});
+
+it("preserves a newer native draft when an earlier submitted comment completes", async () => {
+  const remove = jest.fn();
+  jest.mocked(getDesktopBridge).mockReturnValue({
+    draftWrite: write,
+    draftRead: jest.fn().mockResolvedValue({ html: "Newer draft" }),
+    draftDelete: remove,
+  } as unknown as NonNullable<ReturnType<typeof getDesktopBridge>>);
+
+  const removed = await removeDesktopDraft(
+    scope,
+    "comment:story",
+    (payload) => (payload as { html: string }).html === "Submitted comment",
+  );
+
+  expect(removed).toBe(false);
+  expect(remove).not.toHaveBeenCalled();
+});
+
+it("serializes a new draft write after an in-flight deletion", async () => {
+  let finishDelete!: () => void;
+  const remove = jest.fn(
+    () =>
+      new Promise<void>((resolve) => {
+        finishDelete = resolve;
+      }),
+  );
+  jest.mocked(getDesktopBridge).mockReturnValue({
+    draftWrite: write,
+    draftRead: jest.fn().mockResolvedValue({ html: "Submitted" }),
+    draftDelete: remove,
+  } as unknown as NonNullable<ReturnType<typeof getDesktopBridge>>);
+
+  const removal = removeDesktopDraft(scope, "comment:queued");
+  await new Promise((resolve) => {
+    setTimeout(resolve, 0);
+  });
+  const save = writeDesktopDraft(scope, "comment:queued", { html: "Newer" });
+  expect(write).not.toHaveBeenCalled();
+
+  finishDelete();
+  await Promise.all([removal, save]);
+
+  expect(write).toHaveBeenCalledWith(
+    expect.objectContaining({ payload: { html: "Newer" } }),
+  );
+  await expect(flushDesktopDrafts()).resolves.toBeUndefined();
+});
+
+it("retains a failing newer write when an older submission queues conditional deletion", async () => {
+  let rejectWrite!: (error: Error) => void;
+  write.mockImplementationOnce(
+    () =>
+      new Promise<void>((_, reject) => {
+        rejectWrite = reject;
+      }),
+  );
+  const remove = jest.fn();
+  jest.mocked(getDesktopBridge).mockReturnValue({
+    draftWrite: write,
+    draftRead: jest.fn().mockResolvedValue({ html: "Submitted" }),
+    draftDelete: remove,
+  } as unknown as NonNullable<ReturnType<typeof getDesktopBridge>>);
+
+  const save = writeDesktopDraft(scope, "comment:failed-newer", {
+    html: "Newer unsaved",
+  });
+  const removal = removeDesktopDraft(
+    scope,
+    "comment:failed-newer",
+    (payload) => (payload as { html: string }).html === "Submitted",
+  );
+  const rejected = expect(save).rejects.toThrow("Disk unavailable");
+  await new Promise((resolve) => {
+    setTimeout(resolve, 0);
+  });
+  rejectWrite(new Error("Disk unavailable"));
+  await rejected;
+  await expect(removal).resolves.toBe(false);
+
+  expect(remove).not.toHaveBeenCalled();
+  await expect(flushDesktopDrafts()).rejects.toThrow("could not be saved");
+  await retryDesktopDrafts(scope);
+  expect(write).toHaveBeenLastCalledWith(
+    expect.objectContaining({ payload: { html: "Newer unsaved" } }),
+  );
+  await expect(flushDesktopDrafts()).resolves.toBeUndefined();
 });

@@ -346,11 +346,12 @@ deleted_mention AS (
     DELETE FROM public.comment_mentions AS mention
     USING scoped_comment
     WHERE mention.comment_id = scoped_comment.comment_id
-    RETURNING mention.comment_id
+    RETURNING mention.mentioned_user_id
 )
 SELECT
     EXISTS(SELECT 1 FROM scoped_comment) AS comment_found,
-    CAST((SELECT COUNT(*) FROM deleted_mention) AS bigint) AS deleted_count
+    CAST((SELECT COUNT(*) FROM deleted_mention) AS bigint) AS deleted_count,
+    CAST(ARRAY(SELECT mentioned_user_id FROM deleted_mention) AS uuid[]) AS mentioned_user_ids
 `
 
 type DeleteCommentMentionsForAuthorParams struct {
@@ -362,8 +363,9 @@ type DeleteCommentMentionsForAuthorParams struct {
 }
 
 type DeleteCommentMentionsForAuthorRow struct {
-	CommentFound bool
-	DeletedCount int64
+	CommentFound     bool
+	DeletedCount     int64
+	MentionedUserIds []uuid.UUID
 }
 
 func (q *Queries) DeleteCommentMentionsForAuthor(ctx context.Context, arg DeleteCommentMentionsForAuthorParams) (DeleteCommentMentionsForAuthorRow, error) {
@@ -375,7 +377,7 @@ func (q *Queries) DeleteCommentMentionsForAuthor(ctx context.Context, arg Delete
 		arg.AllowedTeamIds,
 	)
 	var i DeleteCommentMentionsForAuthorRow
-	err := row.Scan(&i.CommentFound, &i.DeletedCount)
+	err := row.Scan(&i.CommentFound, &i.DeletedCount, &i.MentionedUserIds)
 	return i, err
 }
 
@@ -593,7 +595,8 @@ RETURNING
     comment.commenter_id,
     comment.content,
     comment.created_at,
-    comment.updated_at
+    comment.updated_at,
+    story.title AS story_title
 `
 
 type UpdateCommentForAuthorParams struct {
@@ -613,6 +616,7 @@ type UpdateCommentForAuthorRow struct {
 	Content     string
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
+	StoryTitle  string
 }
 
 func (q *Queries) UpdateCommentForAuthor(ctx context.Context, arg UpdateCommentForAuthorParams) (UpdateCommentForAuthorRow, error) {
@@ -633,6 +637,7 @@ func (q *Queries) UpdateCommentForAuthor(ctx context.Context, arg UpdateCommentF
 		&i.Content,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.StoryTitle,
 	)
 	return i, err
 }

@@ -26,8 +26,8 @@ func (store *storyCommentStoreStub) CreateComment(
 	return store.result, nil
 }
 
-func (*storyCommentStoreStub) UpdateComment(context.Context, commentsdomain.UpdateCommand, uuid.UUID) error {
-	return nil
+func (*storyCommentStoreStub) UpdateComment(context.Context, commentsdomain.UpdateCommand, uuid.UUID) (commentsdomain.UpdateResult, error) {
+	return commentsdomain.UpdateResult{}, nil
 }
 
 func (*storyCommentStoreStub) DeleteComment(context.Context, commentsdomain.ActorScope, uuid.UUID) error {

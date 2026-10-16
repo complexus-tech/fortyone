@@ -2,8 +2,15 @@
 
 import type { Editor } from "@tiptap/core";
 import type { ComponentProps, ReactNode } from "react";
-import { act, render, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import type { Member } from "@/types";
+import { DesktopWorkspaceScope } from "@/shell/desktop/workspace-scope";
 import { CommentInput } from "./comment-input";
 import type { MentionItem } from "./mentions/list";
 
@@ -23,14 +30,16 @@ const MEMBER: Member = {
 
 let mockEditor: Editor | null = null;
 let mockMembers: Member[] = [];
+const mockCreateComment = jest.fn();
+const mockUpdateComment = jest.fn();
 type MentionItems = (input: { editor: Editor; query: string }) => MentionItem[];
 type MentionExtensionOptions = {
   suggestion: { items: MentionItems };
 };
 
 jest.mock("ui", () => ({
-  Button: ({ children, onClick }: ComponentProps<"button">) => (
-    <button onClick={onClick} type="button">
+  Button: ({ children, onClick, disabled }: ComponentProps<"button">) => (
+    <button disabled={disabled} onClick={onClick} type="button">
       {children}
     </button>
   ),
@@ -52,11 +61,60 @@ jest.mock("@/lib/hooks/team-members", () => ({
   useTeamMembers: () => ({ data: mockMembers }),
 }));
 jest.mock("@/lib/hooks/update-comment-mutation", () => ({
-  useUpdateCommentMutation: () => ({ mutate: jest.fn() }),
+  useUpdateCommentMutation: () => ({
+    mutateAsync: mockUpdateComment,
+    isPending: false,
+  }),
 }));
 jest.mock("@/modules/story/hooks/comment-mutation", () => ({
-  useCommentStoryMutation: () => ({ mutate: jest.fn() }),
+  useCommentStoryMutation: () => ({
+    mutateAsync: mockCreateComment,
+    isPending: false,
+  }),
 }));
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  mockCreateComment.mockReset();
+  mockUpdateComment.mockReset();
+  mockEditor = null;
+  mockMembers = [];
+  window.localStorage.clear();
+});
+
+const createDeferred = () => {
+  let resolve!: () => void;
+  let reject!: (error: Error) => void;
+  const promise = new Promise<void>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve, reject };
+};
+
+const renderComposer = (
+  props: Partial<ComponentProps<typeof CommentInput>> = {},
+) =>
+  render(
+    <DesktopWorkspaceScope
+      scope={{
+        accountId: "account",
+        workspaceId: "workspace",
+        workspaceSlug: "acme",
+      }}
+    >
+      <CommentInput storyId="story" teamId="team" {...props} />
+    </DesktopWorkspaceScope>,
+  );
+
+const writeComment = async (html: string) => {
+  await waitFor(() => {
+    expect(mockEditor?.isEditable).toBe(true);
+  });
+  act(() => {
+    mockEditor!.commands.setContent(html);
+  });
+};
 
 const getMentionItems = (editor: Editor) => {
   const mentionExtension = editor.extensionManager.extensions.find(
@@ -116,5 +174,163 @@ describe("comment input mentions", () => {
 
     expect(mockEditor).toBe(initialEditor);
     expect(initialEditor.getHTML()).toBe(draft);
+  });
+});
+
+describe("comment submission and drafts", () => {
+  it("blocks duplicate submissions and editing until the request settles", async () => {
+    const request = createDeferred();
+    mockCreateComment.mockReturnValue(request.promise);
+    const onCancel = jest.fn();
+    renderComposer({ parentId: "parent", onCancel });
+    await writeComment("<p>A reply</p>");
+
+    const button = screen.getByRole("button", { name: "Reply" });
+    act(() => {
+      fireEvent.click(button);
+      fireEvent.click(button);
+    });
+
+    expect(mockCreateComment).toHaveBeenCalledTimes(1);
+    expect(mockCreateComment).toHaveBeenCalledWith({
+      storyId: "story",
+      payload: { comment: "<p>A reply</p>", parentId: "parent", mentions: [] },
+    });
+    expect(button).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeDisabled();
+    expect(mockEditor?.isEditable).toBe(false);
+
+    await act(async () => {
+      request.resolve();
+    });
+    expect(mockEditor?.isEmpty).toBe(true);
+    expect(button).toBeEnabled();
+    expect(onCancel).toHaveBeenCalledTimes(1);
+    expect(window.localStorage.length).toBe(0);
+  });
+
+  it("retains a failed edit and makes it available for retry", async () => {
+    const request = createDeferred();
+    mockUpdateComment.mockReturnValue(request.promise);
+    const onCancel = jest.fn();
+    renderComposer({
+      commentId: "comment",
+      initialComment: "<p>Original</p>",
+      onCancel,
+    });
+    await writeComment("<p>Revised</p>");
+
+    fireEvent.click(screen.getByRole("button", { name: "Update" }));
+    expect(mockUpdateComment).toHaveBeenCalledWith({
+      commentId: "comment",
+      storyId: "story",
+      payload: { content: "<p>Revised</p>", mentions: [] },
+    });
+    await act(async () => {
+      request.reject(new Error("Offline"));
+    });
+
+    expect(mockEditor?.getHTML()).toBe("<p>Revised</p>");
+    expect(mockEditor?.isEditable).toBe(true);
+    expect(screen.getByRole("button", { name: "Update" })).toBeEnabled();
+    expect(onCancel).not.toHaveBeenCalled();
+    expect(window.localStorage.length).toBe(1);
+  });
+
+  it("does not clear newer content when a pending request succeeds", async () => {
+    const request = createDeferred();
+    mockCreateComment.mockReturnValue(request.promise);
+    renderComposer();
+    await writeComment("<p>Submitted</p>");
+    fireEvent.click(screen.getByRole("button", { name: "Comment" }));
+
+    act(() => {
+      mockEditor!.commands.setContent("<p>Newer draft</p>");
+    });
+    await act(async () => {
+      request.resolve();
+    });
+
+    expect(mockEditor?.getHTML()).toBe("<p>Newer draft</p>");
+    expect(mockEditor?.isEditable).toBe(true);
+    expect(window.localStorage.getItem(window.localStorage.key(0)!)).toContain(
+      "Newer draft",
+    );
+  });
+
+  it("restores a browser draft after the comment panel unmounts", async () => {
+    const first = renderComposer();
+    await writeComment("<p>Unsent browser draft</p>");
+    first.unmount();
+
+    renderComposer();
+    await waitFor(() => {
+      expect(mockEditor?.getHTML()).toBe("<p>Unsent browser draft</p>");
+      expect(mockEditor?.isEditable).toBe(true);
+    });
+  });
+
+  it("keeps a reopened composer's newer draft when the old submission finishes", async () => {
+    const request = createDeferred();
+    mockCreateComment.mockReturnValue(request.promise);
+    const first = renderComposer();
+    await writeComment("<p>Submitted</p>");
+    fireEvent.click(screen.getByRole("button", { name: "Comment" }));
+    first.unmount();
+
+    renderComposer();
+    await writeComment("<p>Written after reopening</p>");
+    await act(async () => {
+      request.resolve();
+    });
+
+    expect(mockEditor?.getHTML()).toBe("<p>Written after reopening</p>");
+    expect(window.localStorage.getItem(window.localStorage.key(0)!)).toContain(
+      "Written after reopening",
+    );
+  });
+
+  it("removes the submitted browser draft even when the composer unmounts", async () => {
+    const request = createDeferred();
+    mockCreateComment.mockReturnValue(request.promise);
+    const first = renderComposer();
+    await writeComment("<p>Submitted</p>");
+    fireEvent.click(screen.getByRole("button", { name: "Comment" }));
+    first.unmount();
+    await act(async () => {
+      request.resolve();
+    });
+
+    expect(window.localStorage.length).toBe(0);
+  });
+
+  it("keeps drafts isolated when a mounted story view switches stories", async () => {
+    const scope = {
+      accountId: "account",
+      workspaceId: "workspace",
+      workspaceSlug: "acme",
+    };
+    const composer = (storyId: string) => (
+      <DesktopWorkspaceScope scope={scope}>
+        <CommentInput storyId={storyId} teamId="team" />
+      </DesktopWorkspaceScope>
+    );
+    const { rerender } = render(composer("first-story"));
+    await writeComment("<p>First story draft</p>");
+    const firstEditor = mockEditor;
+
+    rerender(composer("second-story"));
+    await waitFor(() => {
+      expect(mockEditor).not.toBe(firstEditor);
+      expect(mockEditor?.isEditable).toBe(true);
+      expect(mockEditor?.isEmpty).toBe(true);
+    });
+    await writeComment("<p>Second story draft</p>");
+
+    rerender(composer("first-story"));
+    await waitFor(() => {
+      expect(mockEditor?.getHTML()).toBe("<p>First story draft</p>");
+      expect(mockEditor?.isEditable).toBe(true);
+    });
   });
 });

@@ -73,14 +73,17 @@ export function useDesktopDraft<T extends object>(key: string, enabled = true) {
     },
     [enabled, key, scope, supported],
   );
-  const discard = useCallback(async () => {
-    if (!supported || !scope) return;
-    const version = sequence.current;
-    await removeDesktopDraft(scope, key);
-    if (!mounted.current || sequence.current !== version) return;
-    setRecovered(null);
-    setStatus("");
-  }, [key, scope, supported]);
+  const discard = useCallback(
+    async (matches?: (payload: unknown) => boolean) => {
+      if (!supported || !scope) return;
+      const version = sequence.current;
+      const removed = await removeDesktopDraft(scope, key, matches);
+      if (!removed || !mounted.current || sequence.current !== version) return;
+      setRecovered(null);
+      setStatus("");
+    },
+    [key, scope, supported],
+  );
   const retry = async () => {
     setError(null);
     try {

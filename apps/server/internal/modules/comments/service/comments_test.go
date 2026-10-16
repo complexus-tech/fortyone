@@ -17,7 +17,7 @@ func (generator fixedEventIDs) New() uuid.UUID { return generator.id }
 
 type serviceRepositoryFake struct {
 	create func(context.Context, commentsdomain.CreateCommand, uuid.UUID) (commentsdomain.Comment, error)
-	update func(context.Context, commentsdomain.UpdateCommand, uuid.UUID) error
+	update func(context.Context, commentsdomain.UpdateCommand, uuid.UUID) (commentsdomain.UpdateResult, error)
 	delete func(context.Context, commentsdomain.ActorScope, uuid.UUID) error
 	get    func(context.Context, commentsdomain.GetQuery) (commentsdomain.Comment, error)
 }
@@ -29,7 +29,7 @@ func (fake serviceRepositoryFake) CreateComment(ctx context.Context, command com
 	return fake.create(ctx, command, eventID)
 }
 
-func (fake serviceRepositoryFake) UpdateComment(ctx context.Context, command commentsdomain.UpdateCommand, eventID uuid.UUID) error {
+func (fake serviceRepositoryFake) UpdateComment(ctx context.Context, command commentsdomain.UpdateCommand, eventID uuid.UUID) (commentsdomain.UpdateResult, error) {
 	if fake.update == nil {
 		panic("unexpected UpdateComment call")
 	}
@@ -95,14 +95,14 @@ func TestUpdateAndDeleteUseStableCallerGeneratedEventIDs(t *testing.T) {
 	eventID := uuid.New()
 	actor := commentTestActor(t, authorID, workspaceID)
 	repository := serviceRepositoryFake{
-		update: func(_ context.Context, command commentsdomain.UpdateCommand, gotEventID uuid.UUID) error {
+		update: func(_ context.Context, command commentsdomain.UpdateCommand, gotEventID uuid.UUID) (commentsdomain.UpdateResult, error) {
 			if gotEventID != eventID || command.Scope.CommentID != commentID || command.Scope.Actor.PrincipalID != authorID {
 				t.Fatalf("update intent = %#v, event=%s", command, gotEventID)
 			}
 			if len(command.MentionedUserIDs) != 1 || command.MentionedUserIDs[0] != mentionID {
 				t.Fatalf("deduplicated mentions = %v", command.MentionedUserIDs)
 			}
-			return nil
+			return commentsdomain.UpdateResult{}, nil
 		},
 		delete: func(_ context.Context, scope commentsdomain.ActorScope, gotEventID uuid.UUID) error {
 			if gotEventID != eventID || scope.CommentID != commentID || scope.WorkspaceID != workspaceID || scope.Actor.PrincipalID != authorID {
