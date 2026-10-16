@@ -45,6 +45,13 @@ html:has(.onboarding-layout) :is(input, textarea, select) {
   font-size: 14.5px;
 }
 
+/* Soften rounded-up hairlines on low-density displays; retain Retina styling. */
+@media screen and (max-resolution: 1.5dppx) {
+  .dark {
+    --color-border: oklch(0.94 0 0 / 6%);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

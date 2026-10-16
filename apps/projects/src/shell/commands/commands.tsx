@@ -20,6 +20,9 @@ import { useDesktop, useDesktopAction } from "@/shell/desktop/desktop-provider";
 import { CommandBar } from "./command-bar";
 import { useDesktopCommandActions } from "./use-desktop-command-actions";
 
+const DESKTOP_SEARCH_SURFACE =
+  "border-border-strong bg-surface-elevated text-text-secondary hover:bg-surface-muted dark:bg-accent dark:hover:bg-accent/90 border shadow-xs";
+
 export const Commands = ({
   className,
   showTrigger = false,
@@ -145,21 +148,25 @@ export const Commands = ({
             className={cn(
               "bg-accent/60 focus-within:ring-ring flex w-full max-w-xl min-w-0 items-center gap-2 rounded-lg px-3 focus-within:ring-2",
               isDesktop
-                ? "border-border/70 h-[30px] rounded-md border-[0.5px] px-2.5"
+                ? "h-[30px] rounded-md px-2.5 transition-colors"
                 : "h-11",
+              isDesktop && DESKTOP_SEARCH_SURFACE,
             )}
             key={query}
           >
             <SearchIcon
               className={cn(
                 "text-text-muted h-4 shrink-0",
-                isDesktop && "h-[16px] w-[16px]",
+                isDesktop && "h-[16px] w-[16px] text-current",
               )}
               strokeWidth={isDesktop ? 2 : undefined}
             />
             <input
               aria-label={`Search ${storyTerm} and ${objectiveTerm}`}
-              className="placeholder:text-text-muted min-w-0 flex-1 bg-transparent outline-none"
+              className={cn(
+                "placeholder:text-text-muted min-w-0 flex-1 bg-transparent outline-none",
+                isDesktop && "text-foreground placeholder:text-text-secondary",
+              )}
               defaultValue={query}
               onKeyDown={(event) => {
                 if (event.key === "Enter") {
@@ -175,6 +182,7 @@ export const Commands = ({
             className={cn(
               "border-border bg-surface-muted text-text-muted hover:bg-state-hover focus-visible:ring-ring ml-auto flex h-[2rem] shrink-0 items-center rounded-lg border-[0.5px] px-2.5 transition-colors outline-none focus-visible:ring-2",
               isDesktop && "h-[30px] rounded-md",
+              isDesktop && DESKTOP_SEARCH_SURFACE,
             )}
             onClick={() => {
               setOpen(true);
@@ -210,7 +218,8 @@ export const Commands = ({
         <button
           aria-label={searchLabel}
           className={cn(
-            "border-border/70 bg-accent/60 text-text-muted hover:bg-accent/80 focus-visible:ring-ring flex h-[30px] min-w-0 items-center gap-2 rounded-md border-[0.5px] px-2.5 text-left transition-colors outline-none focus-visible:ring-2",
+            "focus-visible:ring-ring flex h-[30px] min-w-0 items-center gap-2 rounded-md px-2.5 text-left transition-colors outline-none focus-visible:ring-2",
+            DESKTOP_SEARCH_SURFACE,
             className,
           )}
           onClick={() => {
@@ -220,13 +229,16 @@ export const Commands = ({
         >
           <SearchIcon
             aria-hidden="true"
-            className="h-[16px] w-[16px] shrink-0"
+            className="h-[16px] w-[16px] shrink-0 text-current"
             strokeWidth={2}
           />
           <span className="min-w-0 flex-1 truncate">
             Search {workspace?.name || "workspace"}
           </span>
-          <span aria-hidden="true" className="shrink-0 text-[11px] opacity-70">
+          <span
+            aria-hidden="true"
+            className="text-text-muted shrink-0 text-[11px]"
+          >
             ⌘ K
           </span>
         </button>
