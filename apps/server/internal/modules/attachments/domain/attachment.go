@@ -8,9 +8,10 @@ import (
 )
 
 var (
-	ErrNotFound      = errors.New("attachment not found")
-	ErrNotConfigured = errors.New("attachment repository is not configured")
-	ErrStateConflict = errors.New("attachment processing state changed")
+	ErrNotFound         = errors.New("attachment not found")
+	ErrNotConfigured    = errors.New("attachment repository is not configured")
+	ErrStateConflict    = errors.New("attachment processing state changed")
+	ErrCommentReference = errors.New("attachment is used in a comment; remove it from the comment before deleting the file")
 )
 
 type ScanStatus string

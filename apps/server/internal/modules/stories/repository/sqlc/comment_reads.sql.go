@@ -84,6 +84,88 @@ func (q *Queries) GetVisibleStoryComment(ctx context.Context, arg GetVisibleStor
 	return i, err
 }
 
+const getVisibleStoryCommentRoot = `-- name: GetVisibleStoryCommentRoot :one
+WITH RECURSIVE ancestors AS (
+    SELECT
+        comment.comment_id,
+        comment.story_id,
+        comment.parent_id,
+        comment.commenter_id,
+        comment.content,
+        comment.created_at,
+        comment.updated_at
+    FROM public.story_comments AS comment
+    INNER JOIN public.stories AS story
+        ON story.id = comment.story_id
+    INNER JOIN public.users AS actor
+        ON actor.user_id = $1
+       AND actor.is_active = TRUE
+    INNER JOIN public.workspace_members AS workspace_member
+        ON workspace_member.workspace_id = story.workspace_id
+       AND workspace_member.user_id = actor.user_id
+    INNER JOIN public.team_members AS team_member
+        ON team_member.team_id = story.team_id
+       AND team_member.user_id = actor.user_id
+    WHERE comment.comment_id = $2
+      AND comment.story_id = $3
+      AND story.workspace_id = $4
+      AND story.deleted_at IS NULL
+      AND (
+          CAST($5 AS boolean)
+          OR story.team_id = ANY(CAST($6 AS uuid[]))
+      )
+    UNION
+    SELECT parent.comment_id, parent.story_id, parent.parent_id, parent.commenter_id,
+           parent.content, parent.created_at, parent.updated_at
+    FROM public.story_comments AS parent
+    INNER JOIN ancestors AS child
+        ON parent.comment_id = child.parent_id AND parent.story_id = child.story_id
+)
+SELECT comment_id, story_id, parent_id, commenter_id, content, created_at, updated_at
+FROM ancestors WHERE parent_id IS NULL
+`
+
+type GetVisibleStoryCommentRootParams struct {
+	ActorID                uuid.UUID
+	CommentID              uuid.UUID
+	StoryID                uuid.UUID
+	WorkspaceID            uuid.UUID
+	UnrestrictedTeamAccess bool
+	AllowedTeamIds         []uuid.UUID
+}
+
+type GetVisibleStoryCommentRootRow struct {
+	CommentID   uuid.UUID
+	StoryID     uuid.UUID
+	ParentID    *uuid.UUID
+	CommenterID uuid.UUID
+	Content     string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
+func (q *Queries) GetVisibleStoryCommentRoot(ctx context.Context, arg GetVisibleStoryCommentRootParams) (GetVisibleStoryCommentRootRow, error) {
+	row := q.db.QueryRow(ctx, getVisibleStoryCommentRoot,
+		arg.ActorID,
+		arg.CommentID,
+		arg.StoryID,
+		arg.WorkspaceID,
+		arg.UnrestrictedTeamAccess,
+		arg.AllowedTeamIds,
+	)
+	var i GetVisibleStoryCommentRootRow
+	err := row.Scan(
+		&i.CommentID,
+		&i.StoryID,
+		&i.ParentID,
+		&i.CommenterID,
+		&i.Content,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const listVisibleStoryCommentReplies = `-- name: ListVisibleStoryCommentReplies :many
 WITH RECURSIVE thread_replies AS (
     SELECT

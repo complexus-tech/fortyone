@@ -204,8 +204,17 @@ export const invalidateCommentQueries = (
   // The settling mutation is still pending here. A later mutation will refetch
   // after its own optimistic change settles, without replacing work in flight.
   if (pending > 1) return;
-  return queryClient.invalidateQueries({
-    queryKey: storyKeys.commentsInfinite(workspaceSlug, storyId),
-    exact: true,
-  });
+  return Promise.all([
+    queryClient.invalidateQueries({
+      queryKey: storyKeys.commentsInfinite(workspaceSlug, storyId),
+      exact: true,
+    }),
+    queryClient.invalidateQueries({
+      queryKey: storyKeys.commentThreads(workspaceSlug, storyId),
+    }),
+    queryClient.invalidateQueries({
+      queryKey: storyKeys.commentState(workspaceSlug, storyId),
+      exact: true,
+    }),
+  ]);
 };

@@ -19,6 +19,7 @@ import (
 )
 
 type fakeCommentQueries struct {
+	commentsql.Querier
 	replay         func(context.Context, commentsql.GetCommentCreationForActorParams) (commentsql.GetCommentCreationForActorRow, error)
 	appendEvent    func(context.Context, commentsql.AppendCommentMutationEventParams) ([]uuid.UUID, error)
 	create         func(context.Context, commentsql.CreateCommentForActorParams) (commentsql.CreateCommentForActorRow, error)
@@ -27,6 +28,13 @@ type fakeCommentQueries struct {
 	get            func(context.Context, commentsql.GetCommentForWorkspaceParams) (commentsql.GetCommentForWorkspaceRow, error)
 	insertMentions func(context.Context, commentsql.InsertCommentMentionsForAuthorParams) (int64, error)
 	update         func(context.Context, commentsql.UpdateCommentForAuthorParams) (commentsql.UpdateCommentForAuthorRow, error)
+}
+
+func (fake fakeCommentQueries) ReplaceCommentAttachmentReferences(_ context.Context, params commentsql.ReplaceCommentAttachmentReferencesParams) (int64, error) {
+	if len(params.AttachmentIds) != 0 {
+		panic("unexpected comment attachment references")
+	}
+	return 0, nil
 }
 
 func (fake fakeCommentQueries) GetCommentCreationForActor(ctx context.Context, params commentsql.GetCommentCreationForActorParams) (commentsql.GetCommentCreationForActorRow, error) {

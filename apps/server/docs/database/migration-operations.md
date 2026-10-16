@@ -83,6 +83,8 @@ The machine-readable source of truth is [`internal/migrations/manifest.json`](..
 | `000216` | `browser_session_metadata` | `forward-only` | `schema-first` | The session list adds username and nullable browserName fields. New session issuance captures recognized browser request metadata; cookie renewal retains the original value. The replacement API requires schema 216. | Unaffected; browser metadata is captured and tracked by the first-party API only. |
 | `000217` | `story_checklists` | `forward-only` | `schema-first` | Checklist endpoints require schema 217. Existing story endpoints remain compatible. | Deploy the updated worker to broadcast checklist changes through the existing story event stream. Durable creation and change events use the existing outbox. |
 | `000218` | `desktop_operation_receipts` | `forward-only` | `schema-first` | Desktop mutation endpoints require schema 218. Browser, mobile and existing domain endpoints retain their current contracts. | No receipt reader is required in the worker. Domain mutation events continue through the existing transactional outbox. |
+| `000219` | `story_comment_collaboration` | `forward-only` | `schema-first` | Comment collaboration endpoints require schema 219. Existing comment CRUD and pagination contracts remain compatible. | No worker schema dependency; existing mention and comment notification events remain unchanged. |
+| `000220` | `story_comment_attachments` | `forward-only` | `schema-first` | Comment attachment saves require schema 220; plain comment behavior remains compatible. | Existing story attachment retention remains in effect. Comment links prevent deletion while referenced. |
 
 ## `000152_harden_verification_tokens`
 
@@ -1919,6 +1921,56 @@ Operational notes:
 - Receipts have no expiry. Retain operation identity at least as long as any device can replay its outbox; the current protocol has no finite maximum offline replay age.
 - Account or workspace deletion cascades its receipts. Membership changes do not remove receipts; every replay still requires current workspace and resource access.
 - Only a request hash, resource ID and committed version are retained, not the mutation payload or session credentials. Object storage uploads cannot share the PostgreSQL transaction; ambiguous commit outcomes preserve the uploaded object for safe retry.
+
+## `000219_story_comment_collaboration`
+
+- **Classification:** `forward-only`
+- **Files:** `000219_story_comment_collaboration.up.sql`, `000219_story_comment_collaboration.down.sql`
+- **Schema:** Adds comment reactions, root thread resolution, per-user story comment read markers and an unread lookup index. Existing comments remain unchanged.
+- **API:** Comment collaboration endpoints require schema 219. Existing comment CRUD and pagination contracts remain compatible.
+- **Worker:** No worker schema dependency; existing mention and comment notification events remain unchanged.
+- **Mixed versions:** Apply schema first, then deploy the API and web client. Older clients ignore collaboration state.
+- **Rollout mode:** `schema-first`
+
+Rollout:
+
+1. Apply migration 000219 after 000218 before deploying collaboration endpoints.
+2. Deploy the API and web app; verify scoped reactions, thread resolution, unread markers and off-page comment links.
+
+Recovery (`forward-fix`):
+
+1. Preserve comment collaboration data and repair forward.
+2. The down migration refuses to remove populated collaboration tables.
+
+Operational notes:
+
+- Read markers advance monotonically to the observed server cutoff, never into the future. They do not mark notification inbox entries as read.
+- Deleting a comment cascades its reactions and resolution; deleting a story cascades read markers. Thread resolution is metadata and does not prevent further replies.
+
+## `000220_story_comment_attachments`
+
+- **Classification:** `forward-only`
+- **Files:** `000220_story_comment_attachments.up.sql`, `000220_story_comment_attachments.down.sql`
+- **Schema:** Adds durable comment attachment references with foreign key protection against independent attachment deletion.
+- **API:** Comment attachment saves require schema 220; plain comment behavior remains compatible.
+- **Worker:** Existing story attachment retention remains in effect. Comment links prevent deletion while referenced.
+- **Mixed versions:** Apply schema first, then deploy the API and web client together for comment file uploads.
+- **Rollout mode:** `schema-first`
+
+Rollout:
+
+1. Apply migration 000220 after 000219 before deploying comment attachments.
+2. Deploy the API and web app; verify authenticated attachment URLs and deletion conflicts for files referenced by comments.
+
+Recovery (`forward-fix`):
+
+1. Preserve comment attachment references and repair forward.
+2. The down migration refuses to remove populated attachment references.
+
+Operational notes:
+
+- Comment attachment references are synchronized in the comment write transaction. Only attachments linked to the exact story and workspace may be referenced.
+- Deleting a comment removes its references. The uploaded file remains available as a story attachment and can then be explicitly deleted if no other comment references it.
 
 ## Adding the next migration
 

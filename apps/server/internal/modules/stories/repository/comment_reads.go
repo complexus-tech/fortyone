@@ -74,6 +74,42 @@ func (r *repo) ListVisibleComments(
 	return comments, hasMore, nil
 }
 
+// GetVisibleCommentThread loads the complete thread for a linked comment,
+// independently of the root's current pagination position.
+func (r *repo) GetVisibleCommentThread(ctx context.Context, scope storydomain.ReadScope, commentID, storyID uuid.UUID) (storydomain.Comment, error) {
+	if err := r.mutationConfigured(); err != nil {
+		return storydomain.Comment{}, err
+	}
+	if err := scope.Validate(); err != nil {
+		return storydomain.Comment{}, err
+	}
+	root, err := r.reads.GetVisibleStoryCommentRoot(ctx, storyreadsql.GetVisibleStoryCommentRootParams{
+		ActorID: scope.ActorID, CommentID: commentID, StoryID: storyID, WorkspaceID: scope.WorkspaceID,
+		UnrestrictedTeamAccess: scope.UnrestrictedTeamAccess, AllowedTeamIds: scope.AllowedTeamIDs,
+	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return storydomain.Comment{}, storydomain.ErrNotFound
+	}
+	if err != nil {
+		return storydomain.Comment{}, fmt.Errorf("get visible comment thread root: %w", err)
+	}
+	comment := storydomain.Comment{
+		ID: root.CommentID, StoryID: root.StoryID, Parent: root.ParentID, UserID: root.CommenterID,
+		Comment: root.Content, CreatedAt: root.CreatedAt, UpdatedAt: root.UpdatedAt, SubComments: []storydomain.Comment{},
+	}
+	replies, err := r.reads.ListVisibleStoryCommentReplies(ctx, storyreadsql.ListVisibleStoryCommentRepliesParams{
+		ActorID: scope.ActorID, StoryID: storyID, WorkspaceID: scope.WorkspaceID, ParentIds: []uuid.UUID{root.CommentID},
+		UnrestrictedTeamAccess: scope.UnrestrictedTeamAccess, AllowedTeamIds: scope.AllowedTeamIDs,
+	})
+	if err != nil {
+		return storydomain.Comment{}, fmt.Errorf("get visible comment thread replies: %w", err)
+	}
+	for _, reply := range replies {
+		comment.SubComments = append(comment.SubComments, commentReplyToDomain(reply))
+	}
+	return comment, nil
+}
+
 func (r *repo) GetVisibleComment(
 	ctx context.Context,
 	scope storydomain.ReadScope,

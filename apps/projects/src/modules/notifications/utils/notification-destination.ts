@@ -9,6 +9,20 @@ const NOTIFICATION_ENTITY_TYPES = new Set<NotificationEntityType>([
   "strategy",
 ]);
 
+const COMMENT_ID_PATTERN =
+  /^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i;
+
+export const getNotificationCommentId = (
+  message: AppNotification["message"] | undefined,
+) => {
+  const value = message?.variables.commentId?.value;
+  return value &&
+    COMMENT_ID_PATTERN.test(value) &&
+    value !== "00000000-0000-0000-0000-000000000000"
+    ? value
+    : undefined;
+};
+
 export const isNotificationEntityType = (
   value: string | undefined,
 ): value is NotificationEntityType =>
@@ -24,13 +38,18 @@ export const getNotificationDetailsPath = ({
   entityType,
   notificationId,
   observedCreatedAt,
+  message,
 }: Pick<AppNotification, "entityId" | "entityType"> & {
   notificationId: string;
   observedCreatedAt?: string;
+  message?: AppNotification["message"];
 }) => {
   const searchParams = new URLSearchParams({ entityId, entityType });
   if (observedCreatedAt)
     searchParams.set("observedCreatedAt", observedCreatedAt);
+  const commentId = getNotificationCommentId(message);
+  if (entityType === "story" && commentId)
+    searchParams.set("comment", commentId);
 
   return `/notifications/${encodeURIComponent(notificationId)}?${searchParams.toString()}`;
 };

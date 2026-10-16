@@ -12,6 +12,7 @@ import (
 	platformdatabase "github.com/complexus-tech/projects-api/internal/platform/database"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -271,6 +272,10 @@ func (repository *Repository) DeleteAttachment(
 		AttachmentID: attachmentID, WorkspaceID: workspaceID,
 	})
 	if err != nil {
+		var constraintError *pgconn.PgError
+		if errors.As(err, &constraintError) && constraintError.ConstraintName == "story_comment_attachments_attachment_fk" {
+			return attachmentdomain.ErrCommentReference
+		}
 		return fmt.Errorf("delete workspace attachment: %w", err)
 	}
 	if count == 0 {

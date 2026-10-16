@@ -21,6 +21,20 @@ type legacyCommentReadRepository interface {
 	GetComment(context.Context, uuid.UUID, uuid.UUID, uuid.UUID) (CoreComment, error)
 }
 
+func (s *Service) GetCommentThread(ctx context.Context, commentID, storyID, workspaceID uuid.UUID) (CoreComment, error) {
+	scope, err := readScopeFromContext(ctx, workspaceID)
+	if err != nil {
+		return CoreComment{}, err
+	}
+	repository, ok := s.repo.(interface {
+		GetVisibleCommentThread(context.Context, StoryReadScope, uuid.UUID, uuid.UUID) (CoreComment, error)
+	})
+	if !ok {
+		return CoreComment{}, errors.New("story repository does not support comment threads")
+	}
+	return repository.GetVisibleCommentThread(ctx, scope, commentID, storyID)
+}
+
 func (s *Service) listVisibleComments(
 	ctx context.Context,
 	storyID, workspaceID uuid.UUID,

@@ -8,6 +8,7 @@ import (
 
 var (
 	ErrNotFound                       = attachmentdomain.ErrNotFound
+	ErrCommentReference               = attachmentdomain.ErrCommentReference
 	ErrInvalidFile                    = errors.New("invalid file")
 	ErrFileTooLarge                   = errors.New("file too large")
 	ErrInvalidFileType                = errors.New("invalid file type")

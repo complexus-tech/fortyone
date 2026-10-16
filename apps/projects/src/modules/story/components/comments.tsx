@@ -1,276 +1,12 @@
-import Link from "next/link";
-import { useState } from "react";
-import {
-  Avatar,
-  Box,
-  Button,
-  Dialog,
-  Flex,
-  Skeleton,
-  Text,
-  TimeAgo,
-  Tooltip,
-} from "ui";
-import { DeleteIcon, EditIcon, ReplyIcon } from "icons";
-import { cn } from "lib";
-import type { Comment } from "@/types";
-import { isFormerUser } from "@/lib/former-user";
-import { FormerUser } from "@/components/ui/former-user";
+import { Box, Button, Flex, Skeleton, Text } from "ui";
+import { ArrowUpIcon } from "icons";
 import { useSession } from "@/lib/auth/client";
-import { useStoryCommentsInfinite } from "@/modules/story/hooks/story-comments";
-import { CommentInput } from "@/modules/story/components/comment-input";
-import { useDeleteCommentMutation } from "@/lib/hooks/delete-comment-mutation";
-import { useWorkspacePath } from "@/hooks";
+import { useWorkspacePath } from "@/hooks/use-workspace-path";
+import { useCommentFeed } from "../hooks/use-comment-feed";
+import { isUnreadComment } from "../lib/comment-navigation";
+import { CommentRow } from "./comment-row";
 
-const MainComment = ({
-  storyId,
-  comment: { id, userId, user, createdAt, comment, subComments },
-  isSubComment = false,
-  isDialog,
-  className,
-  teamId,
-}: {
-  comment: Comment;
-  isDialog?: boolean;
-  isSubComment?: boolean;
-  className?: string;
-  storyId: string;
-  teamId: string;
-}) => {
-  const { data: session } = useSession();
-  const { mutate: deleteComment } = useDeleteCommentMutation();
-  const { withWorkspace } = useWorkspacePath();
-  const [isOpen, setIsOpen] = useState(false);
-  const [isReplying, setIsReplying] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const isOwner = userId === session?.user.id;
-  const isPending = id.startsWith("pending-comment:");
-
-  const handleCancel = () => {
-    setIsReplying(false);
-    setIsEditing(false);
-  };
-
-  const handleDelete = () => {
-    setIsOpen(false);
-    deleteComment({ commentId: id, storyId });
-  };
-
-  return (
-    <Box
-      className={cn(
-        "relative pb-3",
-        {
-          "border-border ml-10 border-l-2 pt-1 pb-0 pl-1.5": isSubComment,
-        },
-        className,
-      )}
-    >
-      <Flex align="center" className="group" gap={1}>
-        {isFormerUser(userId) ? (
-          <FormerUser
-            avatarSurfaceClassName={
-              isDialog ? "dark:bg-surface-elevated/95" : undefined
-            }
-          />
-        ) : (
-          <Tooltip
-            className="py-2.5"
-            title={
-              <Box>
-                <Flex align="center" gap={2}>
-                  <Avatar
-                    className="mt-0.5"
-                    name={user.fullName}
-                    src={user.avatarUrl}
-                  />
-                  <Box>
-                    <Link
-                      className="mb-2 flex gap-1"
-                      href={
-                        user.isSystem
-                          ? ""
-                          : withWorkspace(`/profile/${user.id}`)
-                      }
-                    >
-                      <Text fontSize="md">{user.fullName}</Text>
-                      <Text color="muted">({user.username})</Text>
-                    </Link>
-                    {!user.isSystem ? (
-                      <Button
-                        className="mb-0.5 ml-px px-2"
-                        color="tertiary"
-                        href={withWorkspace(`/profile/${user.id}`)}
-                        size="xs"
-                      >
-                        Go to profile
-                      </Button>
-                    ) : (
-                      <Text color="muted" fontSize="md">
-                        (System Account)
-                      </Text>
-                    )}
-                  </Box>
-                </Flex>
-              </Box>
-            }
-          >
-            <Flex className="cursor-pointer" gap={1}>
-              <Box
-                className={cn(
-                  "bg-surface relative top-px flex aspect-square items-center rounded-full p-[0.3rem]",
-                  { "dark:bg-surface-elevated/95": isDialog },
-                )}
-              >
-                <Avatar name={user.fullName} size="xs" src={user.avatarUrl} />
-              </Box>
-              <Text className="relative top-0.5 ml-1 text-black dark:text-white">
-                {user.username}
-              </Text>
-            </Flex>
-          </Tooltip>
-        )}
-        <Text className="mx-0.5 text-[0.95rem]" color="muted">
-          ·
-        </Text>
-        <Text className="text-[0.95rem]" color="muted">
-          <TimeAgo timestamp={createdAt} />
-        </Text>
-        <Flex
-          align="center"
-          className="pointer-events-none ml-2 gap-2.5 opacity-0 transition duration-200 ease-linear group-hover:pointer-events-auto group-hover:opacity-100"
-        >
-          {isOwner ? (
-            <button
-              disabled={isPending}
-              onClick={() => {
-                setIsEditing(true);
-              }}
-              title="Edit"
-              type="button"
-            >
-              <EditIcon className="hover:text-foreground h-[1.2rem] transition" />
-              <span className="sr-only">Edit</span>
-            </button>
-          ) : null}
-          {isOwner ? (
-            <button
-              disabled={isPending}
-              onClick={() => {
-                setIsOpen(true);
-              }}
-              title="Delete"
-              type="button"
-            >
-              <DeleteIcon className="hover:text-foreground h-[1.1rem] transition" />
-              <span className="sr-only">Delete</span>
-            </button>
-          ) : null}
-        </Flex>
-      </Flex>
-      {!isEditing && (
-        <Box
-          className="prose prose-stone dark:prose-invert prose-headings:font-semibold prose-a:text-primary prose-pre:bg-surface-muted prose-pre:text-foreground mt-0.5 ml-9 max-w-full leading-6"
-          html={comment}
-        />
-      )}
-
-      {subComments.length > 0 && (
-        <Box className="mt-2">
-          {subComments.map((subComment) => (
-            <MainComment
-              comment={subComment}
-              isDialog={isDialog}
-              isSubComment
-              key={subComment.id}
-              storyId={storyId}
-              teamId={teamId}
-            />
-          ))}
-        </Box>
-      )}
-      {!isSubComment && !isReplying && !isEditing && (
-        <Button
-          className="mt-3 ml-10 px-2"
-          color="tertiary"
-          disabled={isPending}
-          leftIcon={<ReplyIcon className="h-4" />}
-          onClick={() => {
-            setIsReplying(true);
-          }}
-          size="sm"
-        >
-          Reply
-        </Button>
-      )}
-      {isReplying ? (
-        <Box className="mt-3 pr-1 pl-[2.4rem]">
-          <CommentInput
-            className={cn("mb-2 min-h-12 focus-within:shadow-none", {
-              "dark:bg-background/40": isDialog,
-            })}
-            onCancel={handleCancel}
-            parentId={id}
-            storyId={storyId}
-            teamId={teamId}
-          />
-        </Box>
-      ) : null}
-
-      {isEditing ? (
-        <Box className="mt-3 pr-1 pl-8">
-          <CommentInput
-            className={cn("mb-2 min-h-12 focus-within:shadow-none", {
-              "dark:bg-background/40": isDialog,
-            })}
-            commentId={id}
-            initialComment={comment}
-            onCancel={handleCancel}
-            storyId={storyId}
-            teamId={teamId}
-          />
-        </Box>
-      ) : null}
-
-      <Dialog onOpenChange={setIsOpen} open={isOpen}>
-        <Dialog.Content>
-          <Dialog.Header className="px-6 pt-6">
-            <Dialog.Title className="text-lg">
-              Are you sure you want to delete this comment?
-            </Dialog.Title>
-          </Dialog.Header>
-          <Dialog.Body className="pt-0">
-            <Text color="muted">
-              {isSubComment
-                ? "This comment will be permanently deleted."
-                : "This comment will be permanently deleted and all replies will be deleted."}
-            </Text>
-            <Flex align="center" className="mt-4" gap={2} justify="end">
-              <Button
-                color="tertiary"
-                onClick={() => {
-                  setIsOpen(false);
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                leftIcon={
-                  <DeleteIcon className="h-[1.15rem] text-white dark:text-gray-200" />
-                }
-                onClick={handleDelete}
-              >
-                Delete
-              </Button>
-            </Flex>
-          </Dialog.Body>
-        </Dialog.Content>
-      </Dialog>
-    </Box>
-  );
-};
-
-export const Comments = ({
+const CommentList = ({
   isDialog,
   storyId,
   teamId,
@@ -280,37 +16,104 @@ export const Comments = ({
   teamId: string;
 }) => {
   const {
-    data: infiniteData,
-    hasNextPage,
-    fetchNextPage,
-    isFetchingNextPage,
-  } = useStoryCommentsInfinite(storyId);
-
-  const allComments =
-    infiniteData?.pages
-      .flatMap((page) => page.comments)
-      .filter((c) => !c.comment.includes("commented on GitHub issue #")) ?? [];
-
-  const handleLoadMore = () => {
-    fetchNextPage();
-  };
+    commentsQuery,
+    stateQuery,
+    threadQuery,
+    targetId,
+    revealKey,
+    loadedTarget,
+    comments,
+    containerRef,
+    lastReadAt,
+    stateById,
+    hasUnread,
+    jumpToLatest,
+    currentUserId,
+  } = useCommentFeed(storyId);
 
   return (
-    <Box>
-      {allComments.map((comment) => (
-        <MainComment
+    <Box ref={containerRef}>
+      {hasUnread ? (
+        <Flex align="center" className="mb-3 ml-10" justify="end">
+          <Button
+            className="px-2 text-xs"
+            color="tertiary"
+            leftIcon={<ArrowUpIcon className="size-3.5" />}
+            onClick={jumpToLatest}
+            size="sm"
+            variant="naked"
+          >
+            Jump to latest
+          </Button>
+        </Flex>
+      ) : null}
+      {targetId && !loadedTarget && threadQuery.isPending ? (
+        <Text className="mb-3 ml-10 text-sm" color="muted">
+          Finding comment…
+        </Text>
+      ) : null}
+      {targetId && !loadedTarget && threadQuery.isError ? (
+        <Text className="mb-3 ml-10 text-sm" color="muted">
+          This comment is no longer available or you do not have access.
+        </Text>
+      ) : null}
+      {stateQuery.isError ? (
+        <Flex align="center" className="mb-3 ml-10" gap={2}>
+          <Text className="text-sm" color="muted">
+            Some comment details could not load.
+          </Text>
+          <Button
+            color="tertiary"
+            onClick={() => {
+              void stateQuery.refetch();
+            }}
+            size="sm"
+            variant="naked"
+          >
+            Retry
+          </Button>
+        </Flex>
+      ) : null}
+      {commentsQuery.isError ? (
+        <Flex align="center" className="mb-3 ml-10" gap={2}>
+          <Text className="text-sm" color="muted">
+            Could not load comments.
+          </Text>
+          <Button
+            color="tertiary"
+            onClick={() => {
+              void commentsQuery.refetch();
+            }}
+            size="sm"
+            variant="naked"
+          >
+            Retry
+          </Button>
+        </Flex>
+      ) : null}
+      {comments.map((comment, index) => (
+        <CommentRow
           comment={comment}
+          currentUserId={currentUserId}
           isDialog={isDialog}
           key={comment.id}
+          lastReadAt={lastReadAt}
+          revealKey={revealKey}
+          showUnreadDivider={
+            isUnreadComment(comment, lastReadAt, currentUserId) &&
+            (index === 0 ||
+              !isUnreadComment(comments[index - 1], lastReadAt, currentUserId))
+          }
+          stateById={stateById}
           storyId={storyId}
+          targetId={targetId}
           teamId={teamId}
         />
       ))}
-
-      {isFetchingNextPage ? (
+      {commentsQuery.isPending || commentsQuery.isFetchingNextPage ? (
         <Box className="mt-4 space-y-3">
-          {Array.from({ length: 2 }).map((_, i) => (
-            <Box className="flex gap-3" key={i}>
+          {[0, 1].map((index) => (
+            <Box className="flex gap-3" key={index}>
               <Skeleton className="h-8 w-8 rounded-full" />
               <Box className="flex-1 space-y-2">
                 <Skeleton className="h-4 w-32" />
@@ -320,19 +123,37 @@ export const Comments = ({
           ))}
         </Box>
       ) : null}
-
-      {hasNextPage ? (
+      {commentsQuery.hasNextPage ? (
         <Button
           className="ml-6 px-3 text-[0.95rem]"
           color="tertiary"
-          disabled={isFetchingNextPage}
-          onClick={handleLoadMore}
+          disabled={commentsQuery.isFetchingNextPage}
+          onClick={() => {
+            void commentsQuery.fetchNextPage();
+          }}
           size="sm"
           variant="naked"
         >
-          {isFetchingNextPage ? "Loading..." : "Load more comments"}
+          {commentsQuery.isFetchingNextPage
+            ? "Loading..."
+            : "Load more comments"}
         </Button>
       ) : null}
     </Box>
+  );
+};
+
+export const Comments = (props: {
+  isDialog?: boolean;
+  storyId: string;
+  teamId: string;
+}) => {
+  const { workspaceSlug } = useWorkspacePath();
+  const { data: session } = useSession();
+  return (
+    <CommentList
+      key={`${workspaceSlug}:${session?.user.id}:${props.storyId}`}
+      {...props}
+    />
   );
 };

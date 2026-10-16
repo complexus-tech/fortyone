@@ -30,6 +30,12 @@ export const storyKeys = {
     [...storyKeys.sprints(workspaceSlug), sprintId] as const,
   commentsInfinite: (workspaceSlug: string, id: string) =>
     [...storyKeys.detail(workspaceSlug, id), "comments", "infinite"] as const,
+  commentState: (workspaceSlug: string, id: string) =>
+    [...storyKeys.detail(workspaceSlug, id), "comments", "state"] as const,
+  commentThreads: (workspaceSlug: string, id: string) =>
+    [...storyKeys.detail(workspaceSlug, id), "comments", "thread"] as const,
+  commentThread: (workspaceSlug: string, id: string, commentId: string) =>
+    [...storyKeys.commentThreads(workspaceSlug, id), commentId] as const,
   attachments: (workspaceSlug: string, id: string) =>
     [...storyKeys.detail(workspaceSlug, id), "attachments"] as const,
   checklist: (workspaceSlug: string, id: string) =>

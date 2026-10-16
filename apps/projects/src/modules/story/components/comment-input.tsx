@@ -2,16 +2,23 @@ import { useEffect, useRef, useState } from "react";
 import { useEditor } from "@tiptap/react";
 import { toast } from "sonner";
 import { Button, Flex, TextEditor } from "ui";
+import { AttachmentIcon } from "icons";
 import { cn } from "lib";
 import { DesktopDraftNotice } from "@/shell/desktop/desktop-draft-notice";
 import { useDesktopDraft } from "@/shell/desktop/use-desktop-draft";
 import { useDesktopWorkspaceScope } from "@/shell/desktop/workspace-scope";
 import { useCommentStoryMutation } from "@/modules/story/hooks/comment-mutation";
 import { useBrowserCommentDraft } from "@/modules/story/hooks/use-browser-comment-draft";
+import {
+  COMMENT_ATTACHMENT_ACCEPT,
+  useCommentAttachments,
+} from "@/modules/story/hooks/use-comment-attachments";
 import { useUpdateCommentMutation } from "@/lib/hooks/update-comment-mutation";
 import { useTeamMembers } from "@/lib/hooks/team-members";
 import { extractMentionsFromHTML } from "@/lib/utils/mentions";
 import { type MentionItem } from "./mentions/list";
+import { setCommentAttachmentHandler } from "./comment-attachment-extension";
+import { CommentUploadStatus } from "./comment-upload-status";
 import {
   getStoryCommentEditorExtensions,
   setStoryCommentMentionUsers,
@@ -37,6 +44,8 @@ const CommentComposer = ({
   teamId,
 }: CommentInputProps) => {
   const { data: members } = useTeamMembers(teamId);
+  const attachmentInput = useRef<HTMLInputElement>(null);
+  const attachments = useCommentAttachments(storyId);
   let draftKey = `comment:${storyId}`;
   if (parentId) draftKey += `:reply:${parentId}`;
   if (commentId) draftKey = `comment:${storyId}:edit:${commentId}`;
@@ -75,6 +84,7 @@ const CommentComposer = ({
   const editor = useEditor({
     extensions: getStoryCommentEditorExtensions({
       enableMentions: true,
+      enableAttachments: true,
       placeholder: getPlaceHolder(),
     }),
     content: initialComment ?? "",
@@ -93,6 +103,10 @@ const CommentComposer = ({
   useEffect(() => {
     editor?.setEditable(canEdit, false);
   }, [canEdit, editor]);
+
+  useEffect(() => {
+    if (editor) setCommentAttachmentHandler(editor, attachments.addFiles);
+  }, [attachments.addFiles, editor]);
 
   const { recovered: browserRecovered, acceptRecovered } = browserDraft;
   useEffect(() => {
@@ -116,7 +130,13 @@ const CommentComposer = ({
   }, [editor, members]);
 
   const handleComment = async () => {
-    if (!editor || !canEdit || submissionInFlight.current) return;
+    if (
+      !editor ||
+      !canEdit ||
+      attachments.hasPendingUploads() ||
+      submissionInFlight.current
+    )
+      return;
     if (editor.isEmpty) {
       toast.error("Comment is required", {
         description: "Please enter a comment before submitting",
@@ -193,7 +213,7 @@ const CommentComposer = ({
       justify="between"
     >
       <TextEditor
-        className="prose-base prose-a:text-foreground leading-6 antialiased"
+        className="prose-base prose-a:text-foreground @container/comment-composer leading-6 antialiased"
         editor={editor}
       />
       <DesktopDraftNotice
@@ -218,29 +238,65 @@ const CommentComposer = ({
         recovered={Boolean(draft.recovered)}
         status={draft.status}
       />
-      <Flex gap={2} justify="end">
-        {onCancel ? (
+      <CommentUploadStatus
+        onRemove={attachments.remove}
+        onRetry={(id) => {
+          if (editor) attachments.retry(editor, id);
+        }}
+        uploads={attachments.uploads}
+      />
+      <Flex align="center" gap={2} justify="between">
+        <input
+          accept={COMMENT_ATTACHMENT_ACCEPT}
+          aria-label="Attach files to comment"
+          className="hidden"
+          multiple
+          onChange={(event) => {
+            if (editor)
+              attachments.addFiles(
+                editor,
+                Array.from(event.target.files ?? []),
+              );
+            event.target.value = "";
+          }}
+          ref={attachmentInput}
+          type="file"
+        />
+        <Button
+          aria-label="Attach files"
+          asIcon
+          color="tertiary"
+          disabled={!canEdit || !editor}
+          onClick={() => attachmentInput.current?.click()}
+          size="sm"
+          variant="naked"
+        >
+          <AttachmentIcon className="size-4" />
+        </Button>
+        <Flex gap={2} justify="end">
+          {onCancel ? (
+            <Button
+              className="px-3"
+              color="tertiary"
+              disabled={isPending || attachments.isUploading}
+              onClick={onCancel}
+              size="sm"
+              variant="outline"
+            >
+              Cancel
+            </Button>
+          ) : null}
           <Button
             className="px-3"
             color="tertiary"
-            disabled={isPending}
-            onClick={onCancel}
+            disabled={!canEdit || !editor || attachments.hasBlockingUploads}
+            onClick={handleComment}
             size="sm"
             variant="outline"
           >
-            Cancel
+            {getButtonLabel()}
           </Button>
-        ) : null}
-        <Button
-          className="px-3"
-          color="tertiary"
-          disabled={!canEdit || !editor}
-          onClick={handleComment}
-          size="sm"
-          variant="outline"
-        >
-          {getButtonLabel()}
-        </Button>
+        </Flex>
       </Flex>
     </Flex>
   );

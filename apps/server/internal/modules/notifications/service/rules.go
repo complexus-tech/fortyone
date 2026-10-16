@@ -170,8 +170,9 @@ func (r *Rules) ProcessCommentCreated(ctx context.Context, payload events.Commen
 		message := NotificationMessage{
 			Template: "{actor} left a comment: {content}",
 			Variables: map[string]Variable{
-				"actor":   {Value: actorUsername, Type: "actor"},
-				"content": {Value: content, Type: "plain_text"},
+				"actor":     {Value: actorUsername, Type: "actor"},
+				"content":   {Value: content, Type: "plain_text"},
+				"commentId": {Value: payload.CommentID.String(), Type: "comment"},
 			},
 		}
 
@@ -222,8 +223,9 @@ func (r *Rules) ProcessCommentReplied(ctx context.Context, payload events.Commen
 		message := NotificationMessage{
 			Template: "{actor} replied: {content}",
 			Variables: map[string]Variable{
-				"actor":   {Value: actorUsername, Type: "actor"},
-				"content": {Value: content, Type: "plain_text"},
+				"actor":     {Value: actorUsername, Type: "actor"},
+				"content":   {Value: content, Type: "plain_text"},
+				"commentId": {Value: payload.CommentID.String(), Type: "comment"},
 			},
 		}
 
@@ -390,8 +392,9 @@ func (r *Rules) ProcessUserMentioned(ctx context.Context, payload events.UserMen
 		message := NotificationMessage{
 			Template: "{actor} mentioned you: {content}",
 			Variables: map[string]Variable{
-				"actor":   {Value: actorUsername, Type: "actor"},
-				"content": {Value: commentPreview(payload.Content), Type: "plain_text"},
+				"actor":     {Value: actorUsername, Type: "actor"},
+				"content":   {Value: commentPreview(payload.Content), Type: "plain_text"},
+				"commentId": {Value: payload.CommentID.String(), Type: "comment"},
 			},
 		}
 

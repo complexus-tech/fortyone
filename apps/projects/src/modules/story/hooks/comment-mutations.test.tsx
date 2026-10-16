@@ -240,7 +240,15 @@ it("rolls back only a failed create while another comment is still being sent", 
   await waitFor(() => {
     expect(result.current.second.isSuccess).toBe(true);
   });
-  expect(invalidate).toHaveBeenCalledTimes(1);
+  expect(invalidate).toHaveBeenCalledTimes(3);
+  expect(invalidate).toHaveBeenCalledWith({ queryKey: QUERY_KEY, exact: true });
+  expect(invalidate).toHaveBeenCalledWith({
+    queryKey: storyKeys.commentThreads("acme", STORY_ID),
+  });
+  expect(invalidate).toHaveBeenCalledWith({
+    queryKey: storyKeys.commentState("acme", STORY_ID),
+    exact: true,
+  });
   expect(cached()!.pages[0].comments.map((comment) => comment.id)).toEqual([
     "second-saved",
     "existing",
@@ -503,7 +511,15 @@ it("does not defer an online edit's refresh behind a desktop enqueue", async () 
   await waitFor(() => {
     expect(result.current.edit.isSuccess).toBe(true);
   });
-  expect(invalidate).toHaveBeenCalledTimes(1);
+  expect(invalidate).toHaveBeenCalledTimes(3);
+  expect(invalidate).toHaveBeenCalledWith({ queryKey: QUERY_KEY, exact: true });
+  expect(invalidate).toHaveBeenCalledWith({
+    queryKey: storyKeys.commentThreads("acme", STORY_ID),
+  });
+  expect(invalidate).toHaveBeenCalledWith({
+    queryKey: storyKeys.commentState("acme", STORY_ID),
+    exact: true,
+  });
   act(() => {
     enqueue.resolve({
       data: makeComment("desktop-comment"),
@@ -513,6 +529,14 @@ it("does not defer an online edit's refresh behind a desktop enqueue", async () 
   await waitFor(() => {
     expect(result.current.create.isSuccess).toBe(true);
   });
-  expect(invalidate).toHaveBeenCalledTimes(1);
+  expect(invalidate).toHaveBeenCalledTimes(3);
+  expect(invalidate).toHaveBeenCalledWith({ queryKey: QUERY_KEY, exact: true });
+  expect(invalidate).toHaveBeenCalledWith({
+    queryKey: storyKeys.commentThreads("acme", STORY_ID),
+  });
+  expect(invalidate).toHaveBeenCalledWith({
+    queryKey: storyKeys.commentState("acme", STORY_ID),
+    exact: true,
+  });
   client.clear();
 });

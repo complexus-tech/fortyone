@@ -2451,6 +2451,74 @@
         "Account or workspace deletion cascades its receipts. Membership changes do not remove receipts; every replay still requires current workspace and resource access.",
         "Only a request hash, resource ID and committed version are retained, not the mutation payload or session credentials. Object storage uploads cannot share the PostgreSQL transaction; ambiguous commit outcomes preserve the uploaded object for safe retry."
       ]
+    },
+    {
+      "version": 219,
+      "slug": "story_comment_collaboration",
+      "classification": "forward-only",
+      "files": {
+        "up": "000219_story_comment_collaboration.up.sql",
+        "down": "000219_story_comment_collaboration.down.sql"
+      },
+      "compatibility": {
+        "schema": "Adds comment reactions, root thread resolution, per-user story comment read markers and an unread lookup index. Existing comments remain unchanged.",
+        "api": "Comment collaboration endpoints require schema 219. Existing comment CRUD and pagination contracts remain compatible.",
+        "worker": "No worker schema dependency; existing mention and comment notification events remain unchanged.",
+        "mixed_versions": "Apply schema first, then deploy the API and web client. Older clients ignore collaboration state."
+      },
+      "rollout": {
+        "sequence": 68,
+        "mode": "schema-first",
+        "steps": [
+          "Apply migration 000219 after 000218 before deploying collaboration endpoints.",
+          "Deploy the API and web app; verify scoped reactions, thread resolution, unread markers and off-page comment links."
+        ]
+      },
+      "recovery": {
+        "strategy": "forward-fix",
+        "procedure": [
+          "Preserve comment collaboration data and repair forward.",
+          "The down migration refuses to remove populated collaboration tables."
+        ]
+      },
+      "operational_notes": [
+        "Read markers advance monotonically to the observed server cutoff, never into the future. They do not mark notification inbox entries as read.",
+        "Deleting a comment cascades its reactions and resolution; deleting a story cascades read markers. Thread resolution is metadata and does not prevent further replies."
+      ]
+    },
+    {
+      "version": 220,
+      "slug": "story_comment_attachments",
+      "classification": "forward-only",
+      "files": {
+        "up": "000220_story_comment_attachments.up.sql",
+        "down": "000220_story_comment_attachments.down.sql"
+      },
+      "compatibility": {
+        "schema": "Adds durable comment attachment references with foreign key protection against independent attachment deletion.",
+        "api": "Comment attachment saves require schema 220; plain comment behavior remains compatible.",
+        "worker": "Existing story attachment retention remains in effect. Comment links prevent deletion while referenced.",
+        "mixed_versions": "Apply schema first, then deploy the API and web client together for comment file uploads."
+      },
+      "rollout": {
+        "sequence": 69,
+        "mode": "schema-first",
+        "steps": [
+          "Apply migration 000220 after 000219 before deploying comment attachments.",
+          "Deploy the API and web app; verify authenticated attachment URLs and deletion conflicts for files referenced by comments."
+        ]
+      },
+      "recovery": {
+        "strategy": "forward-fix",
+        "procedure": [
+          "Preserve comment attachment references and repair forward.",
+          "The down migration refuses to remove populated attachment references."
+        ]
+      },
+      "operational_notes": [
+        "Comment attachment references are synchronized in the comment write transaction. Only attachments linked to the exact story and workspace may be referenced.",
+        "Deleting a comment removes its references. The uploaded file remains available as a story attachment and can then be explicitly deleted if no other comment references it."
+      ]
     }
   ]
 }

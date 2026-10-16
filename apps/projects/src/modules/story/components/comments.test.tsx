@@ -1,7 +1,32 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { FORMER_USER_ID } from "@/lib/former-user";
 import { useStoryCommentsInfinite } from "@/modules/story/hooks/story-comments";
 import { Comments } from "./comments";
+
+jest.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(),
+}));
+jest.mock("@/hooks/use-workspace-path", () => ({
+  useWorkspacePath: () => ({
+    workspaceSlug: "acme",
+    withWorkspace: (path: string) => `/acme${path}`,
+  }),
+}));
+jest.mock("../hooks/comment-collaboration", () => ({
+  useStoryCommentState: () => ({ data: { comments: [], unreadCount: 0 } }),
+  useCommentThread: () => ({}),
+  useCommentCollaboration: () => ({
+    reaction: { mutate: jest.fn() },
+    resolution: { mutate: jest.fn() },
+  }),
+}));
+jest.mock("../hooks/comment-read-tracking", () => ({
+  useCommentReadTracking: () => ({
+    containerRef: { current: null },
+    lastReadAt: undefined,
+    hadUnread: false,
+  }),
+}));
 
 jest.mock("ui", () => ({ ...jest.requireActual("ui"), TimeAgo: () => null }));
 
@@ -17,6 +42,9 @@ jest.mock("@/hooks", () => ({
 }));
 jest.mock("@/modules/story/components/comment-input", () => ({
   CommentInput: () => null,
+}));
+jest.mock("./comment-attachment-list", () => ({
+  CommentAttachmentList: () => null,
 }));
 
 it("keeps retained comments and reply threads visible without a former-user profile or stale identity", () => {
@@ -58,6 +86,9 @@ it("keeps retained comments and reply threads visible without a former-user prof
   } as unknown as ReturnType<typeof useStoryCommentsInfinite>);
   const { container } = render(<Comments storyId="story-1" teamId="team-1" />);
   expect(screen.getByText("Shared decision remains.")).toBeInTheDocument();
+  fireEvent.click(
+    screen.getByRole("button", { name: "1 reply. Show replies" }),
+  );
   expect(screen.getByText("Shared reply remains.")).toBeInTheDocument();
   expect(screen.getAllByText("Former user").length).toBeGreaterThan(0);
   expect(screen.queryByRole("link")).not.toBeInTheDocument();

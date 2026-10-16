@@ -6,6 +6,7 @@ package commentsql
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -17,7 +18,13 @@ type Querier interface {
 	DeleteCommentMentionsForAuthor(ctx context.Context, arg DeleteCommentMentionsForAuthorParams) (DeleteCommentMentionsForAuthorRow, error)
 	GetCommentCreationForActor(ctx context.Context, arg GetCommentCreationForActorParams) (GetCommentCreationForActorRow, error)
 	GetCommentForWorkspace(ctx context.Context, arg GetCommentForWorkspaceParams) (GetCommentForWorkspaceRow, error)
+	GetStoryCommentReadState(ctx context.Context, arg GetStoryCommentReadStateParams) (GetStoryCommentReadStateRow, error)
 	InsertCommentMentionsForAuthor(ctx context.Context, arg InsertCommentMentionsForAuthorParams) (int64, error)
+	ListCommentCollaboration(ctx context.Context, arg ListCommentCollaborationParams) ([]ListCommentCollaborationRow, error)
+	MarkStoryCommentsRead(ctx context.Context, arg MarkStoryCommentsReadParams) (time.Time, error)
+	ReplaceCommentAttachmentReferences(ctx context.Context, arg ReplaceCommentAttachmentReferencesParams) (int64, error)
+	SetCommentReaction(ctx context.Context, arg SetCommentReactionParams) (uuid.UUID, error)
+	SetCommentResolution(ctx context.Context, arg SetCommentResolutionParams) (uuid.UUID, error)
 	UpdateCommentForAuthor(ctx context.Context, arg UpdateCommentForAuthorParams) (UpdateCommentForAuthorRow, error)
 }
 

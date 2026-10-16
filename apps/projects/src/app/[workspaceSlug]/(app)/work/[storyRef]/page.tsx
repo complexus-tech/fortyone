@@ -24,8 +24,10 @@ export async function generateMetadata({
 
 export default async function Page({
   params,
+  searchParams,
 }: {
   params: Promise<{ storyRef: string; workspaceSlug: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { storyRef, workspaceSlug } = await params;
   const story = await getStoryRouteData(storyRef, workspaceSlug);
@@ -36,7 +38,17 @@ export default async function Page({
 
   const canonicalReference = getStoryReference(story);
   if (storyRef !== canonicalReference) {
-    redirect(withWorkspacePath(getStoryPath(story), workspaceSlug));
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries(await searchParams)) {
+      if (Array.isArray(value)) {
+        value.forEach((item) => {
+          query.append(key, item);
+        });
+      } else if (value !== undefined) query.set(key, value);
+    }
+    const path = withWorkspacePath(getStoryPath(story), workspaceSlug);
+    const suffix = query.toString();
+    redirect(suffix ? `${path}?${suffix}` : path);
   }
 
   const queryClient = getQueryClient();

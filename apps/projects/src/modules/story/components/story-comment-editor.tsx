@@ -7,6 +7,10 @@ import { getCommentEditorBaseExtensions } from "@/lib/tiptap/comment-editor";
 import { serializeCommentToGitHubMarkdown } from "@/lib/tiptap/comment-markdown";
 import type { MentionItem, MentionListRef } from "./mentions/list";
 import { MentionList } from "./mentions/list";
+import {
+  CommentAttachment,
+  CommentAttachmentDrop,
+} from "./comment-attachment-extension";
 
 const EMPTY_MARKDOWN = "";
 const MENTION_TRIGGER = "@";
@@ -82,9 +86,13 @@ const renderMentionSuggestion = () => {
 
 export const getStoryCommentEditorExtensions = ({
   enableMentions = false,
+  enableAttachments = false,
+  onFiles,
   placeholder,
 }: {
   enableMentions?: boolean;
+  enableAttachments?: boolean;
+  onFiles?: (editor: Editor, files: File[]) => void;
   placeholder: string;
 }) => {
   const mentionExtensions = enableMentions
@@ -128,6 +136,9 @@ export const getStoryCommentEditorExtensions = ({
 
   return [
     ...getCommentEditorBaseExtensions(),
+    ...(enableAttachments
+      ? [CommentAttachment, CommentAttachmentDrop.configure({ onFiles })]
+      : []),
     ...mentionExtensions,
     Placeholder.configure({ placeholder }),
   ];

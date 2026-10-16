@@ -57,6 +57,15 @@ func TestInteractiveHardDeleteAtomicallyDefersOnlySameWorkspaceOrphanedMedia(t *
 		"INSERT INTO story_inline_attachments (story_id, attachment_id, created_by) VALUES ($1, $2, $3)",
 		liveStoryID, sharedInlineID, fixture.actorID,
 	)
+	commentID := uuid.New()
+	mustMutationExec(t, ctx, postgres.Pool,
+		"INSERT INTO story_comments (comment_id, story_id, commenter_id, content) VALUES ($1, $2, $3, 'Attached file')",
+		commentID, deletedStoryID, fixture.actorID,
+	)
+	mustMutationExec(t, ctx, postgres.Pool,
+		"INSERT INTO story_comment_attachments (comment_id, attachment_id) VALUES ($1, $2)",
+		commentID, orphanGenericID,
+	)
 
 	command := secondaryLifecycleCommand(
 		t,
@@ -80,6 +89,8 @@ func TestInteractiveHardDeleteAtomicallyDefersOnlySameWorkspaceOrphanedMedia(t *
 		t.Fatalf("retired attachments = %v, want %v", result.OrphanedAttachmentIDs, wantRetired)
 	}
 	assertRetentionRowExists(t, ctx, postgres, "stories", "id", deletedStoryID, false)
+	assertRetentionRowExists(t, ctx, postgres, "story_comments", "comment_id", commentID, false)
+	assertRetentionRowExists(t, ctx, postgres, "story_comment_attachments", "comment_id", commentID, false)
 	assertRetentionRowExists(t, ctx, postgres, "stories", "id", liveStoryID, true)
 	assertRetentionRowExists(t, ctx, postgres, "attachments", "attachment_id", orphanGenericID, false)
 	assertRetentionRowExists(t, ctx, postgres, "attachments", "attachment_id", orphanInlineID, false)

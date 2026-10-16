@@ -92,6 +92,7 @@ export const NotificationCard = ({
                 entityType,
                 notificationId: id,
                 observedCreatedAt: createdAt,
+                message,
               }),
             )}
             prefetch={false}

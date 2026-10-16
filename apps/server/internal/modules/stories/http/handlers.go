@@ -43,6 +43,8 @@ func storyReadStatus(err error) int {
 
 func storyAttachmentStatus(err error) int {
 	switch {
+	case errors.Is(err, attachments.ErrCommentReference):
+		return http.StatusConflict
 	case errors.Is(err, attachments.ErrNotFound):
 		return http.StatusNotFound
 	case errors.Is(err, attachments.ErrUnauthorized):

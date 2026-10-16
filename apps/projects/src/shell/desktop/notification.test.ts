@@ -106,3 +106,65 @@ it("does nothing in browsers and older desktop builds", async () => {
   await deliverDesktopNotification(JSON.stringify(event), scope, () => true);
   expect(bindDesktopSession).not.toHaveBeenCalled();
 });
+
+it("retains a validated comment target in an incoming notification", () => {
+  const commentId = "55555555-5555-4555-8555-555555555555";
+  const notification = parseDesktopNotification(
+    JSON.stringify({
+      ...event,
+      message: {
+        ...event.message,
+        variables: {
+          ...event.message.variables,
+          commentId: { value: commentId, type: "comment" },
+        },
+      },
+    }),
+    scope,
+  );
+  expect(notification?.commentId).toBe(commentId);
+  expect(notification?.body).toBe("Ada: Please review");
+});
+
+it.each(["not-a-uuid", "00000000-0000-0000-0000-000000000000"])(
+  "ignores invalid comment targets without dropping the notification (%s)",
+  (commentId) => {
+    const notification = parseDesktopNotification(
+      JSON.stringify({
+        ...event,
+        message: {
+          ...event.message,
+          variables: { commentId: { value: commentId } },
+        },
+      }),
+      scope,
+    );
+    expect(notification).not.toBeNull();
+    expect(notification).not.toHaveProperty("commentId");
+  },
+);
+
+it.each([false, true])(
+  "only forwards comment metadata to capable native builds (%s)",
+  async (supported) => {
+    const commentId = "55555555-5555-4555-8555-555555555555";
+    jest.mocked(getDesktopBridge).mockReturnValue({
+      deliverNotification,
+      ...(supported ? { commentNotificationLinks: true } : {}),
+    } as unknown as NonNullable<ReturnType<typeof getDesktopBridge>>);
+    await deliverDesktopNotification(
+      JSON.stringify({
+        ...event,
+        message: {
+          ...event.message,
+          variables: { commentId: { value: commentId } },
+        },
+      }),
+      scope,
+      () => true,
+    );
+    expect(deliverNotification).toHaveBeenCalledTimes(1);
+    const notification = deliverNotification.mock.calls[0][0];
+    expect(notification.commentId).toBe(supported ? commentId : undefined);
+  },
+);

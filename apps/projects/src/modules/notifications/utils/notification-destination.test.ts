@@ -55,4 +55,58 @@ describe("notification destinations", () => {
     expect(isNotificationEntityType("key_result")).toBe(true);
     expect(isNotificationEntityType("feedback")).toBe(false);
   });
+
+  it("targets the specific comment while retaining the story and notification version", () => {
+    const commentId = "55555555-5555-4555-8555-555555555555";
+    const path = getNotificationDetailsPath({
+      entityId: "story-1",
+      entityType: "story",
+      notificationId: "notification-1",
+      observedCreatedAt: "2026-10-16T09:00:00Z",
+      message: {
+        template: "{actor} replied: {content}",
+        variables: { commentId: { value: commentId, type: "comment" } },
+      },
+    });
+    const query = new URL(path, "https://fortyone.app").searchParams;
+    expect(query.get("comment")).toBe(commentId);
+    expect(query.get("entityId")).toBe("story-1");
+    expect(query.get("observedCreatedAt")).toBe("2026-10-16T09:00:00Z");
+  });
+
+  it.each([
+    undefined,
+    "",
+    "not-a-uuid",
+    "00000000-0000-0000-0000-000000000000",
+  ])("keeps older or invalid comment targets on the story (%s)", (value) => {
+    const path = getNotificationDetailsPath({
+      entityId: "story-1",
+      entityType: "story",
+      notificationId: "notification-1",
+      message: value
+        ? { template: "A comment", variables: { commentId: { value } } }
+        : undefined,
+    });
+    expect(
+      new URL(path, "https://fortyone.app").searchParams.has("comment"),
+    ).toBe(false);
+  });
+
+  it("does not apply comment metadata to other resource types", () => {
+    const path = getNotificationDetailsPath({
+      entityId: "objective-1",
+      entityType: "objective",
+      notificationId: "notification-1",
+      message: {
+        template: "Updated objective",
+        variables: {
+          commentId: { value: "55555555-5555-4555-8555-555555555555" },
+        },
+      },
+    });
+    expect(
+      new URL(path, "https://fortyone.app").searchParams.has("comment"),
+    ).toBe(false);
+  });
 });

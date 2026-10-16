@@ -87,6 +87,8 @@ export const parseDesktopNotification = (
       { value: string; type?: string }
     > | null,
   });
+  const commentVariable = isRecord(variables) ? variables.commentId : null;
+  const commentId = isRecord(commentVariable) ? commentVariable.value : null;
   return {
     ...scope,
     notificationId: value.id as string,
@@ -95,6 +97,12 @@ export const parseDesktopNotification = (
     createdAt,
     title: value.title.trim().slice(0, 256),
     body: text.slice(0, 1024),
+    ...(entityType === "story" &&
+    typeof commentId === "string" &&
+    UUID.test(commentId) &&
+    commentId !== "00000000-0000-0000-0000-000000000000"
+      ? { commentId }
+      : {}),
   };
 };
 
@@ -108,6 +116,12 @@ export const deliverDesktopNotification = async (
   const notification = parseDesktopNotification(serialized, scope);
   if (!notification) return;
   if ((await bindDesktopSession(scope)) && isCurrent()) {
-    await bridge.deliverNotification(notification);
+    // Older native builds reject unknown fields in the notification payload.
+    const { commentId, ...legacyNotification } = notification;
+    await bridge.deliverNotification(
+      bridge.commentNotificationLinks && commentId
+        ? notification
+        : legacyNotification,
+    );
   }
 };

@@ -116,6 +116,11 @@ func buildNotificationDigestCopyInput(data NotificationEmailDigestData, workspac
 		factReferenceID := fmt.Sprintf("notification_%d", index+1)
 		actionReferenceID := fmt.Sprintf("notification_action_%d", index+1)
 		destination, _ := notificationEmailDestination(item.EntityType, item.EntityID, item.FeedbackSlug, item.NotificationID, workspaceURL)
+		if item.EntityType == "story" {
+			if commentID, err := uuid.Parse(message.Variables["commentId"].Value); err == nil && commentID != uuid.Nil {
+				destination += "&comment=" + commentID.String()
+			}
+		}
 		factText := strings.TrimSpace(fmt.Sprintf("%s: %s", notificationPlainText(item.Title, 180), parsed.Text))
 		facts = append(facts, emailcopy.Fact{
 			ReferenceID:     factReferenceID,

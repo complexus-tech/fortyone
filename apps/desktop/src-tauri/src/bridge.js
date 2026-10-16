@@ -75,6 +75,7 @@
   Object.defineProperty(window, "__FORTYONE_DESKTOP__", {
     value: Object.freeze({
       version: 2,
+      commentNotificationLinks: true,
       platform,
       vibrancy: platform === "macos",
       exportRecovery: (request) => window.__TAURI_INTERNALS__.invoke("hosted_export_recovery", { request }),

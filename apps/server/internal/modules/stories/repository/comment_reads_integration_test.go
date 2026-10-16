@@ -83,6 +83,17 @@ func TestStoryCommentReadsPreserveTreeShapeAndLiveTenantVisibility(t *testing.T)
 	if hasMore || len(secondPage) != 1 || secondPage[0].ID != olderRootID || len(secondPage[0].SubComments) != 0 {
 		t.Fatalf("second comment page = %#v hasMore=%v", secondPage, hasMore)
 	}
+	linkedThread, err := repository.GetVisibleCommentThread(ctx, scope, nestedReplyID, storyID)
+	if err != nil || linkedThread.ID != newestRootID || len(linkedThread.SubComments) != 3 {
+		t.Fatalf("nested deep link must resolve the complete root thread: %#v error=%v", linkedThread, err)
+	}
+	offPageThread, err := repository.GetVisibleCommentThread(ctx, scope, olderRootID, storyID)
+	if err != nil || offPageThread.ID != olderRootID {
+		t.Fatalf("off-page root must resolve independently of pagination: %#v error=%v", offPageThread, err)
+	}
+	if _, err := repository.GetVisibleCommentThread(ctx, scope, nestedReplyID, otherStoryID); !errors.Is(err, storydomain.ErrNotFound) {
+		t.Fatalf("cross-story thread lookup = %v", err)
+	}
 
 	parentNotificationComment, err := repository.GetVisibleComment(ctx, scope, newestRootID, storyID)
 	if err != nil || parentNotificationComment.UserID != fixture.actorID {
@@ -104,6 +115,9 @@ func TestStoryCommentReadsPreserveTreeShapeAndLiveTenantVisibility(t *testing.T)
 	}
 	if hidden, _, err := repository.ListVisibleComments(ctx, restrictedScope, storyID, 1, 10); err != nil || len(hidden) != 0 {
 		t.Fatalf("credential-restricted comment list = %#v error=%v", hidden, err)
+	}
+	if _, err := repository.GetVisibleCommentThread(ctx, restrictedScope, nestedReplyID, storyID); !errors.Is(err, storydomain.ErrNotFound) {
+		t.Fatalf("credential-restricted thread lookup = %v", err)
 	}
 
 	foreignActorScope := scope

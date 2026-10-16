@@ -39,6 +39,9 @@ jest.mock("ui", () => ({
   Box: "div",
   Text: "span",
 }));
+jest.mock("./comment-attachment-list", () => ({
+  CommentAttachmentList: () => null,
+}));
 jest.mock("@/lib/auth/client", () => ({
   useSession: () => ({ data: null }),
 }));

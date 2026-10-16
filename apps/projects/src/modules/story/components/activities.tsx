@@ -1,3 +1,4 @@
+import { useSearchParams } from "next/navigation";
 import { Avatar, Box, Flex, Tabs, Text, Button, Skeleton } from "ui";
 import { ClockIcon, CommentIcon, GitHubIcon } from "icons";
 import { cn } from "lib";
@@ -21,6 +22,7 @@ export const Activities = ({
   teamId: string;
 }) => {
   const { data: session } = useSession();
+  const commentTarget = useSearchParams().get("comment");
   const { data: githubLinks = [] } = useStoryGitHubLinks(storyId);
   const hasGitHubLinks = githubLinks.length > 0;
   const {
@@ -48,7 +50,7 @@ export const Activities = ({
         Activity feed
       </Text>
 
-      <Tabs defaultValue="comments">
+      <Tabs defaultValue="comments" key={`${storyId}:${commentTarget ?? ""}`}>
         <Tabs.List
           className={cn("mx-0 mb-5 md:mx-0", {
             "dark:bg-surface-elevated": isDialog,

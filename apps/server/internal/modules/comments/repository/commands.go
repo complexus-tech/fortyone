@@ -44,6 +44,9 @@ func (r *Repository) CreateComment(
 			row.CommentID, row.StoryID, row.ParentID, row.CommenterID,
 			row.Content, row.CreatedAt, row.UpdatedAt,
 		)
+		if err := syncCommentAttachments(ctx, queries, created, command.WorkspaceID); err != nil {
+			return err
+		}
 		scope := commentsdomain.ActorScope{
 			CommentID: created.ID, WorkspaceID: command.WorkspaceID, Actor: command.Actor,
 		}
@@ -116,6 +119,9 @@ func (r *Repository) UpdateComment(
 			row.CommentID, row.StoryID, row.ParentID, row.CommenterID,
 			row.Content, row.CreatedAt, row.UpdatedAt,
 		)
+		if err := syncCommentAttachments(ctx, queries, updated, command.Scope.WorkspaceID); err != nil {
+			return err
+		}
 		addedMentions, err := replaceMentions(ctx, queries, command.Scope, command.MentionedUserIDs)
 		if err != nil {
 			return err

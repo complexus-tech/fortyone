@@ -76,6 +76,7 @@ func Routes(cfg Config, app *web.App) {
 	// Comments
 	app.Post("/workspaces/{workspaceSlug}/stories/{id}/comments", h.CreateComment, auth, workspace, memberAndAdmin)
 	app.Get("/workspaces/{workspaceSlug}/stories/{id}/comments", h.GetComments, auth, workspace, gzip)
+	app.Get("/workspaces/{workspaceSlug}/stories/{id}/comments/{commentId}/thread", h.GetCommentThread, auth, workspace, gzip)
 	app.Put("/workspaces/{workspaceSlug}/stories/{id}/labels", h.UpdateLabels, auth, workspace)
 	app.Put("/workspaces/{workspaceSlug}/stories/{id}/collaborators", h.UpdateCollaborators, auth, workspace)
 	app.Put("/workspaces/{workspaceSlug}/stories/{id}/watch", h.SetWatching, auth, workspace)
@@ -85,6 +86,7 @@ func Routes(cfg Config, app *web.App) {
 	// Attachments
 	app.Post("/workspaces/{workspaceSlug}/stories/{id}/attachments", h.UploadStoryAttachment, auth, workspace)
 	app.Get("/workspaces/{workspaceSlug}/stories/{id}/attachments", h.GetAttachmentsForStory, auth, workspace)
+	app.Get("/workspaces/{workspaceSlug}/stories/{id}/attachments/{attachmentId}", h.ResolveStoryAttachment, auth, workspace)
 	app.Delete("/workspaces/{workspaceSlug}/stories/{id}/attachments/{attachmentId}", h.DeleteAttachment, auth, workspace)
 
 	// Inline media

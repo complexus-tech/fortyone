@@ -19,6 +19,15 @@ import { ConfirmDialog } from "@/components/ui";
 import { useIsAdminOrOwner } from "@/hooks/owner";
 import type { StoryAttachment } from "../types";
 import { getAdjacentAttachmentIndex } from "./attachment-preview-navigation";
+import { CommentAttachmentCard } from "./comment-attachment-card";
+import { CommentFileIcon } from "./comment-file-icon";
+import { AttachmentTextPreview } from "./attachment-text-preview";
+import {
+  formatAttachmentSize,
+  getAttachmentTypeLabel,
+  getDocumentTypeLabel,
+  isTextAttachment,
+} from "./attachment-file-info";
 
 export const ObjectViewer = ({
   data,
@@ -39,34 +48,6 @@ export const ObjectViewer = ({
   );
 };
 
-const getDocumentTypeLabel = (mimeType: string) => {
-  if (mimeType === "application/pdf") return "PDF file";
-  if (
-    mimeType === "application/msword" ||
-    mimeType ===
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-  ) {
-    return "Word document";
-  }
-  if (
-    mimeType === "application/vnd.ms-excel" ||
-    mimeType ===
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-  ) {
-    return "Excel spreadsheet";
-  }
-  if (
-    mimeType === "application/vnd.ms-powerpoint" ||
-    mimeType ===
-      "application/vnd.openxmlformats-officedocument.presentationml.presentation"
-  ) {
-    return "PowerPoint presentation";
-  }
-  if (mimeType === "text/csv") return "CSV file";
-  if (mimeType === "text/plain") return "Text file";
-  return "Document";
-};
-
 interface StoryAttachmentPreviewProps {
   file: StoryAttachment;
   files?: StoryAttachment[];
@@ -76,6 +57,8 @@ interface StoryAttachmentPreviewProps {
   onDelete?: () => void;
   onDeleteFile?: (file: StoryAttachment) => void;
   isInChat?: boolean;
+  unoptimizedImages?: boolean;
+  variant?: "default" | "comment";
 }
 
 export const StoryAttachmentPreview = ({
@@ -87,6 +70,8 @@ export const StoryAttachmentPreview = ({
   onDelete,
   onDeleteFile,
   isInChat,
+  unoptimizedImages = false,
+  variant = "default",
 }: StoryAttachmentPreviewProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [fileToDelete, setFileToDelete] = useState<StoryAttachment | null>(
@@ -104,10 +89,16 @@ export const StoryAttachmentPreview = ({
   const isImage = file.mimeType.startsWith("image/");
   const isVideo = file.mimeType.startsWith("video");
   const isPdf = file.mimeType.includes("pdf");
-  const canPreview = Boolean(file.url) && (isImage || isVideo || isPdf);
+  const canPreview =
+    Boolean(file.url) &&
+    (isImage ||
+      isVideo ||
+      isPdf ||
+      (variant === "comment" && isTextAttachment(file)));
   const isActiveImage = activeFile.mimeType.startsWith("image/");
   const isActiveVideo = activeFile.mimeType.startsWith("video");
   const isActivePdf = activeFile.mimeType.includes("pdf");
+  const isActiveText = variant === "comment" && isTextAttachment(activeFile);
   const isUploading = file.id.includes("temp-");
   const { isAdminOrOwner } = useIsAdminOrOwner(file.uploadedBy);
   const { isAdminOrOwner: canManageActiveFile } = useIsAdminOrOwner(
@@ -142,20 +133,34 @@ export const StoryAttachmentPreview = ({
     );
   };
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(2)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
-  };
-
   let thumbnail: ReactNode = children;
 
   if (!thumbnail) {
-    if (isImage || isVideo) {
+    if (variant === "comment") {
+      thumbnail = (
+        <CommentAttachmentCard
+          canPreview={canPreview}
+          file={file}
+          isUploading={isUploading}
+          onOpen={openOrDownload}
+          onRemove={onDelete}
+        />
+      );
+    } else if (isImage || isVideo) {
       thumbnail = (
         <Box
+          aria-label={`Preview ${file.filename}`}
           className="group border-border bg-surface-muted ring-accent relative h-24 overflow-hidden rounded-xl border hover:ring-2 md:h-28 2xl:h-36 dark:shadow-none"
           onClick={openOrDownload}
+          onKeyDown={(event) => {
+            if (event.target !== event.currentTarget) return;
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              openOrDownload();
+            }
+          }}
+          role="button"
+          tabIndex={isUploading ? -1 : 0}
         >
           {!file.url ? (
             <Flex align="center" className="h-full" justify="center">
@@ -167,6 +172,7 @@ export const StoryAttachmentPreview = ({
               alt={file.filename}
               className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
               src={file.url}
+              unoptimized={unoptimizedImages}
             />
           ) : null}
           {file.url && isVideo ? (
@@ -233,7 +239,7 @@ export const StoryAttachmentPreview = ({
                 </Text>
                 <Text className="text-[0.95rem]" color="muted">
                   {file.size > 0
-                    ? formatFileSize(file.size)
+                    ? formatAttachmentSize(file.size)
                     : getDocumentTypeLabel(file.mimeType)}
                 </Text>
               </Box>
@@ -395,7 +401,7 @@ export const StoryAttachmentPreview = ({
                     <span className="sr-only">Delete</span>
                   </Button>
                 ) : null}
-                {!isInChat ? (
+                {!isInChat || variant === "comment" ? (
                   <>
                     {!activeFile.pending &&
                     !activeFile.url.startsWith("blob:") ? (
@@ -445,6 +451,7 @@ export const StoryAttachmentPreview = ({
                 className="h-full w-full"
                 imageClassName="object-contain"
                 src={activeFile.url}
+                unoptimized={unoptimizedImages}
               />
             </Box>
           ) : null}
@@ -467,6 +474,47 @@ export const StoryAttachmentPreview = ({
             </MediaThemeSutro>
           ) : null}
 
+          {isActiveText && isOpen ? (
+            <AttachmentTextPreview file={activeFile} key={activeFile.id} />
+          ) : null}
+          {!isActiveImage && !isActiveVideo && !isActivePdf && !isActiveText ? (
+            <Flex
+              align="center"
+              className="h-[50dvh] px-6 text-center"
+              direction="column"
+              gap={3}
+              justify="center"
+            >
+              <CommentFileIcon
+                className="size-16"
+                filename={activeFile.filename}
+                mimeType={activeFile.mimeType}
+              />
+              <Box className="max-w-full min-w-0">
+                <Text className="truncate" fontWeight="medium">
+                  {activeFile.filename}
+                </Text>
+                <Text className="mt-1 text-sm" color="muted">
+                  {getAttachmentTypeLabel(activeFile)} ·{" "}
+                  {formatAttachmentSize(activeFile.size)}
+                </Text>
+              </Box>
+              <Text color="muted" fontSize="sm">
+                Download this file to open it in its app.
+              </Text>
+              <Button
+                color="tertiary"
+                leftIcon={<DownloadIcon className="size-4" />}
+                onClick={() => {
+                  onDownload?.(activeFile);
+                }}
+                size="sm"
+                variant="outline"
+              >
+                Download file
+              </Button>
+            </Flex>
+          ) : null}
           {isActivePdf ? (
             <ObjectViewer
               className="min-h-[80dvh] overflow-hidden rounded-lg"

@@ -73,6 +73,7 @@ type Querier interface {
 	// credential team scope; it never permits unrestricted credential reads.
 	GetVisibleStory(ctx context.Context, arg GetVisibleStoryParams) (GetVisibleStoryRow, error)
 	GetVisibleStoryComment(ctx context.Context, arg GetVisibleStoryCommentParams) (GetVisibleStoryCommentRow, error)
+	GetVisibleStoryCommentRoot(ctx context.Context, arg GetVisibleStoryCommentRootParams) (GetVisibleStoryCommentRootRow, error)
 	GetVisibleStoryIDByRef(ctx context.Context, arg GetVisibleStoryIDByRefParams) (uuid.UUID, error)
 	GetVisibleStoryStatusCategory(ctx context.Context, arg GetVisibleStoryStatusCategoryParams) (string, error)
 	// Small story support reads stay explicit and tenant-scoped. The service has

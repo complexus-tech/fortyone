@@ -32,6 +32,7 @@ let mockEditor: Editor | null = null;
 let mockMembers: Member[] = [];
 const mockCreateComment = jest.fn();
 const mockUpdateComment = jest.fn();
+let mockBlockingUploads = false;
 type MentionItems = (input: { editor: Editor; query: string }) => MentionItem[];
 type MentionExtensionOptions = {
   suggestion: { items: MentionItems };
@@ -44,10 +45,30 @@ jest.mock("ui", () => ({
     </button>
   ),
   Flex: ({ children }: { children?: ReactNode }) => <div>{children}</div>,
+  Box: ({ children }: { children?: ReactNode }) => <div>{children}</div>,
+  Text: ({ children }: { children?: ReactNode }) => <span>{children}</span>,
   TextEditor: ({ editor }: { editor: Editor | null }) => {
     mockEditor = editor;
     return <div data-testid="comment-editor" />;
   },
+}));
+jest.mock("./comment-attachment-list", () => ({
+  CommentAttachmentList: () => null,
+}));
+jest.mock("@/lib/api-url", () => ({
+  getApiUrl: () => "https://api.example.test",
+}));
+jest.mock("@/modules/story/hooks/use-comment-attachments", () => ({
+  COMMENT_ATTACHMENT_ACCEPT: "image/png,application/pdf",
+  useCommentAttachments: () => ({
+    addFiles: jest.fn(),
+    hasBlockingUploads: mockBlockingUploads,
+    hasPendingUploads: () => mockBlockingUploads,
+    isUploading: mockBlockingUploads,
+    remove: jest.fn(),
+    retry: jest.fn(),
+    uploads: [],
+  }),
 }));
 jest.mock("lib", () => ({
   cn: (...values: unknown[]) =>
@@ -79,6 +100,7 @@ beforeEach(() => {
   mockUpdateComment.mockReset();
   mockEditor = null;
   mockMembers = [];
+  mockBlockingUploads = false;
   window.localStorage.clear();
 });
 
@@ -178,6 +200,50 @@ describe("comment input mentions", () => {
 });
 
 describe("comment submission and drafts", () => {
+  it("blocks sending while an attachment is pending or waiting for retry", async () => {
+    mockBlockingUploads = true;
+    renderComposer();
+    await writeComment("<p>With a file</p>");
+    const button = screen.getByRole("button", { name: "Comment" });
+    expect(button).toBeDisabled();
+    fireEvent.click(button);
+    expect(mockCreateComment).not.toHaveBeenCalled();
+    expect(mockEditor?.getHTML()).toBe("<p>With a file</p>");
+  });
+
+  it("restores and submits an attachment-only draft without losing file metadata", async () => {
+    const first = renderComposer();
+    await writeComment("");
+    act(() => {
+      mockEditor!.commands.insertContent({
+        type: "commentAttachment",
+        attrs: {
+          id: "7d3a62e4-a7cc-4489-99b6-a986195525c5",
+          filename: "review.pdf",
+          mimeType: "application/pdf",
+          size: 128,
+          url: "https://api.example.test/workspaces/acme/stories/story/attachments/7d3a62e4-a7cc-4489-99b6-a986195525c5",
+          createdAt: "2026-10-16T12:00:00Z",
+          uploadedBy: "author",
+        },
+      });
+    });
+    const html = mockEditor!.getHTML();
+    first.unmount();
+    renderComposer();
+    await waitFor(() => {
+      expect(mockEditor?.getHTML()).toBe(html);
+      expect(mockEditor?.isEditable).toBe(true);
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Comment" }));
+    await waitFor(() => {
+      expect(mockCreateComment).toHaveBeenCalledWith({
+        storyId: "story",
+        payload: { comment: html, parentId: null, mentions: [] },
+      });
+    });
+  });
+
   it("blocks duplicate submissions and editing until the request settles", async () => {
     const request = createDeferred();
     mockCreateComment.mockReturnValue(request.promise);

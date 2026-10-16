@@ -24,6 +24,8 @@ pub struct Notification {
     body: String,
     entity_type: String,
     entity_id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    comment_id: Option<String>,
 }
 
 impl Notification {
@@ -35,6 +37,13 @@ impl Notification {
             &self.entity_id,
         ] {
             uuid::Uuid::parse_str(id).map_err(|_| "Invalid notification identity")?;
+        }
+        if let Some(comment_id) = &self.comment_id {
+            let id = uuid::Uuid::parse_str(comment_id)
+                .map_err(|_| "Invalid comment notification identity")?;
+            if id.is_nil() || self.entity_type != "story" {
+                return Err("Invalid comment notification target".into());
+            }
         }
         if self.title.trim().is_empty()
             || self.title.len() > 2048
@@ -85,6 +94,7 @@ fn activation_payload(notification: &Notification) -> Value {
         "accountId":notification.account_id,"workspaceId":notification.workspace_id,
         "workspaceSlug":notification.workspace_slug,"notificationId":notification.notification_id,
         "createdAt":notification.created_at,"entityType":notification.entity_type,"entityId":notification.entity_id,
+        "commentId":notification.comment_id,
         "title":"FortyOne","body":""
     })
 }
@@ -274,6 +284,11 @@ fn destination(mut current: Url, notification: &Notification, production: bool) 
             .append_pair("entityId", &notification.entity_id)
             .append_pair("entityType", &notification.entity_type)
             .append_pair("observedCreatedAt", &notification.created_at);
+        if notification.entity_type == "story" {
+            if let Some(comment_id) = &notification.comment_id {
+                current.query_pairs_mut().append_pair("comment", comment_id);
+            }
+        }
     } else {
         current.set_path(&format!("{prefix}/notifications"));
     }
@@ -351,6 +366,7 @@ mod tests {
             body: "Please review".into(),
             entity_type: "story".into(),
             entity_id: uuid::Uuid::new_v4().to_string(),
+            comment_id: None,
         }
     }
     #[test]
@@ -414,6 +430,48 @@ mod tests {
         assert!(event.validate().is_err());
         event.entity_type = "story".into();
         event.body = "x".repeat(8193);
+        assert!(event.validate().is_err());
+    }
+
+    #[test]
+    fn comment_activation_preserves_the_comment_across_system_delivery() {
+        let mut event = notification();
+        let comment_id = uuid::Uuid::new_v4().to_string();
+        event.comment_id = Some(comment_id.clone());
+        assert!(event.validate().is_ok());
+        let restored: Notification = serde_json::from_value(activation_payload(&event)).unwrap();
+        assert_eq!(restored.comment_id.as_deref(), Some(comment_id.as_str()));
+        for (origin, production) in [
+            ("https://engineering.fortyone.app/my-work", true),
+            ("http://localhost:3000/engineering/my-work", false),
+        ] {
+            let url = destination(Url::parse(origin).unwrap(), &restored, production);
+            assert!(url
+                .query_pairs()
+                .any(|(key, value)| key == "comment" && value == comment_id));
+        }
+    }
+
+    #[test]
+    fn older_notification_payloads_remain_valid_without_comment_metadata() {
+        let event = notification();
+        let serialized = serde_json::to_value(&event).unwrap();
+        assert!(serialized.get("commentId").is_none());
+        let restored: Notification = serde_json::from_value(serialized).unwrap();
+        assert!(restored.validate().is_ok());
+        assert!(restored.comment_id.is_none());
+    }
+
+    #[test]
+    fn invalid_comment_targets_are_rejected() {
+        for value in ["not-a-uuid", "00000000-0000-0000-0000-000000000000"] {
+            let mut event = notification();
+            event.comment_id = Some(value.into());
+            assert!(event.validate().is_err());
+        }
+        let mut event = notification();
+        event.entity_type = "objective".into();
+        event.comment_id = Some(uuid::Uuid::new_v4().to_string());
         assert!(event.validate().is_err());
     }
 }
