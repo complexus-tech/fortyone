@@ -61,7 +61,7 @@ func registerAgentInvocationWorker(mux *asynq.ServeMux, scheduler scheduleRegist
 		return err
 	}
 	var assistant messaging.Assistant = messaging.NewUnavailableAssistant("Maya is not configured")
-	configured := cfg.MayaCommentsEnabled && strings.TrimSpace(cfg.AIAPIKey) != ""
+	configured := strings.TrimSpace(cfg.AIAPIKey) != ""
 	if configured {
 		assistant, err = messaging.NewOpenAIAssistant(messaging.OpenAIConfig{APIKey: strings.TrimSpace(cfg.AIAPIKey), Model: strings.TrimSpace(cfg.AIModel)}, tools)
 		if err != nil {

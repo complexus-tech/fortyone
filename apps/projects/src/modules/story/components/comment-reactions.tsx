@@ -102,7 +102,7 @@ export const CommentReactions = ({
         <Popover.Content
           align="start"
           aria-label="Choose a reaction"
-          className="w-64 p-2"
+          className="w-80 max-w-[calc(100vw-2rem)] p-2"
         >
           <Input
             aria-label="Search reactions"
@@ -127,13 +127,13 @@ export const CommentReactions = ({
                   role="group"
                 >
                   <p className="text-text-muted px-1 py-1 text-sm">{group}</p>
-                  <div className="grid grid-cols-6 gap-1">
+                  <div className="grid grid-cols-8 gap-0.5">
                     {groupChoices.map(({ emoji, label }) => (
                       <button
                         aria-label={label}
                         aria-pressed={counts.get(emoji)?.reacted ?? false}
                         className={cn(
-                          "hover:bg-state-hover focus-visible:ring-primary flex size-8 items-center justify-center rounded-md text-lg outline-none focus-visible:ring-2",
+                          "hover:bg-state-hover focus-visible:ring-primary flex h-9 w-full items-center justify-center rounded-md text-xl outline-none focus-visible:ring-2",
                           counts.get(emoji)?.reacted && "bg-state-selected",
                         )}
                         disabled={disabled}

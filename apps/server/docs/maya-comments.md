@@ -61,7 +61,7 @@ This change does not create channels, native messages, or a second chat system.
 
 Apply migrations 221–226 before deploying the API and worker. These add durable invocations, native stored update proposals, native usage-event linkage, per-thread read cutoffs, and expanded reaction catalogs. Preserve populated receipts and repair schema forward.
 
-`APP_MAYA_COMMENTS_ENABLED` controls availability and defaults to true. The existing OpenAI configuration, workspace Maya entitlement, messaging mutation key, rate limits, and `OPENAI_ASSISTANT_WORKSPACE_TOKENS_PER_DAY` remain required. Both API and worker must use compatible configuration. The worker must run for replies to be processed after comments are saved.
+Maya in comments is always enabled; there is no feature flag to configure. The existing OpenAI configuration, workspace Maya entitlement, messaging mutation key, rate limits, and `OPENAI_ASSISTANT_WORKSPACE_TOKENS_PER_DAY` remain required. Set `OPENAI_API_KEY` in both the API and worker environments: the API uses its presence to determine availability in the mention picker, and the worker uses it to generate replies. Both processes must use compatible configuration, and the worker must run for replies to be processed after comments are saved.
 
 The current bounds are a two-minute lease, a ninety-second processing attempt, a sixty-second model preparation budget, three automatic attempts, a ten-minute proposal expiry, and bounded thread/description context. User controls use version checks; they do not replace current permission checks.
 

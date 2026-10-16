@@ -559,7 +559,7 @@ func buildServices(cfg mux.Config, dependencies Dependencies) services {
 		states:               statesService,
 		stories:              storiesService,
 		agentRuns:            agentRuns,
-		agentCommentsAccess:  agentadapter.CommentAccess{Stories: storiesService, Workspace: mayaRepository, Configured: cfg.MayaCommentsEnabled && strings.TrimSpace(cfg.AIAPIKey) != ""},
+		agentCommentsAccess:  agentadapter.CommentAccess{Stories: storiesService, Workspace: mayaRepository, Configured: strings.TrimSpace(cfg.AIAPIKey) != ""},
 		subscriptions:        subscriptionsService,
 		teams:                teamsService,
 		teamSettings:         teamSettingsService,

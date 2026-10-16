@@ -430,7 +430,6 @@ func run(ctx context.Context, log *logger.Logger) error {
 		GoogleDrivePickerAPIKey:     cfg.GoogleDrive.PickerAPIKey,
 		GoogleDriveAppID:            cfg.GoogleDrive.AppID,
 		AIAPIKey:                    strings.TrimSpace(os.Getenv("OPENAI_API_KEY")),
-		MayaCommentsEnabled:         cfg.MayaCommentsEnabled,
 		SSEHub:                      sseHub,
 		AllowedOrigins:              originPolicy,
 	}
