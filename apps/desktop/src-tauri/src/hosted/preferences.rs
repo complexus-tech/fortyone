@@ -25,7 +25,7 @@ impl Default for Preferences {
         Self {
             notifications: false,
             keep_running: true,
-            autostart: false,
+            autostart: true,
         }
     }
 }
@@ -44,6 +44,10 @@ pub fn read_preferences(state: &State) -> Result<Preferences, String> {
 }
 
 pub(super) fn read(db: &rusqlite::Connection) -> Result<Preferences, String> {
+    Ok(read_stored(db)?.unwrap_or_default())
+}
+
+pub(super) fn read_stored(db: &rusqlite::Connection) -> Result<Option<Preferences>, String> {
     let stored: Option<String> = db
         .query_row(
             "SELECT value FROM hosted_preferences WHERE key='preferences'",
@@ -55,7 +59,6 @@ pub(super) fn read(db: &rusqlite::Connection) -> Result<Preferences, String> {
     stored
         .map(|encoded| serde_json::from_str(&encoded).map_err(|error| error.to_string()))
         .transpose()
-        .map(|value| value.unwrap_or_default())
 }
 
 #[tauri::command]
@@ -128,6 +131,9 @@ pub fn show(app: &AppHandle) {
 }
 
 pub fn install(app: &AppHandle, window: &WebviewWindow) -> tauri::Result<()> {
+    if let Err(error) = super::autostart::initialize(app) {
+        eprintln!("Could not enable launch at login by default: {error}. Change Launch at login in Settings to retry.");
+    }
     app.manage(close::CloseState::default());
     let app_handle = app.clone();
     let clone = window.clone();
@@ -188,10 +194,10 @@ pub fn install(app: &AppHandle, window: &WebviewWindow) -> tauri::Result<()> {
 mod tests {
     use super::*;
     #[test]
-    fn defaults_are_opt_in_for_notifications_and_login_launch() {
+    fn defaults_enable_login_launch_but_keep_notifications_opt_in() {
         let value = Preferences::default();
         assert!(!value.notifications);
-        assert!(!value.autostart);
+        assert!(value.autostart);
         assert!(value.keep_running);
     }
     #[test]

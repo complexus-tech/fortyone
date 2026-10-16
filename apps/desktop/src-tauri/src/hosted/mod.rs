@@ -1,6 +1,7 @@
 //! Narrow native capabilities for the full hosted Projects application.
 //! Browser session cookies never cross IPC; persisted bindings contain hashes.
 pub mod attachments;
+mod autostart;
 pub mod cache;
 pub mod close;
 pub mod drafts;

@@ -58,13 +58,13 @@ const NotificationTabs = ({
             leftIcon={<EmailIcon className="h-[1.1rem]" />}
             value="email"
           >
-            Email notifications
+            Email
           </Tabs.Tab>
           <Tabs.Tab
             leftIcon={<NotificationsUnreadIcon className="h-[1.1rem]" />}
             value="desktop"
           >
-            Desktop notifications
+            Desktop
           </Tabs.Tab>
         </Tabs.List>
       </Box>
