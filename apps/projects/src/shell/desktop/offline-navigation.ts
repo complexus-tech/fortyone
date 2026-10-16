@@ -1,6 +1,7 @@
 import { toast } from "sonner";
 import { getDesktopBridge } from "./bridge";
 import { getDesktopOnline } from "./connectivity";
+import { flushDesktopEditors } from "./flush-editors";
 
 let navigation: Promise<void> | null = null;
 
@@ -13,37 +14,6 @@ export function isDesktopOfflineNavigation(href: string): boolean {
     return url.origin === location.origin && url.pathname !== location.pathname;
   } catch {
     return false;
-  }
-}
-
-/** All active editors participate in the same durable boundary as native close. */
-async function flushEditors() {
-  const writes: Promise<unknown>[] = [];
-  window.dispatchEvent(
-    new CustomEvent("fortyone:desktop-before-close", {
-      detail: {
-        waitUntil: (write: Promise<unknown>) => {
-          writes.push(Promise.resolve(write));
-        },
-      },
-    }),
-  );
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  try {
-    await Promise.race([
-      Promise.all(writes),
-      new Promise<never>((_, reject) => {
-        timer = setTimeout(() => {
-          reject(
-            new Error(
-              "Saving took too long. Your current page stayed open; retry saving before opening another page.",
-            ),
-          );
-        }, 12_000);
-      }),
-    ]);
-  } finally {
-    clearTimeout(timer);
   }
 }
 
@@ -109,7 +79,7 @@ export function navigateWithDesktopOffline(
       throw new Error(
         "This page has not been downloaded yet. Reconnect to open it; your current page stayed open.",
       );
-    await flushEditors();
+    await flushDesktopEditors();
     const current = await bridge.restoreSession!({ workspaceSlug });
     if (
       source !== location.href ||

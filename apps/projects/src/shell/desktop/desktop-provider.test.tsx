@@ -12,6 +12,7 @@ import {
   DESKTOP_ACTION_EVENT,
   DESKTOP_HISTORY_EVENT,
   EMPTY_DESKTOP_SHELL,
+  EMPTY_DESKTOP_MENU,
 } from "./bridge";
 import {
   DesktopProvider,
@@ -19,6 +20,7 @@ import {
   useDesktopAction,
   useDesktopShell,
 } from "./desktop-provider";
+import { useDesktopMenu } from "./use-desktop-menu";
 
 const mockSyncChrome = jest.fn().mockResolvedValue(undefined);
 const mockNavigationState = jest.fn();
@@ -56,6 +58,23 @@ const SHELL_STATE: DesktopShellState = {
   storyLabel: "task",
 };
 
+const MenuOwner = ({
+  state,
+}: {
+  state: DesktopBridgeModule.DesktopMenuState;
+}) => {
+  useDesktopMenu(state);
+  return null;
+};
+
+const MENU_STATE: DesktopBridgeModule.DesktopMenuState = {
+  ...SHELL_STATE,
+  canCreateObjective: true,
+  canToggleSidebar: true,
+  sidebarCollapsed: true,
+  objectiveLabel: "goal",
+};
+
 const installBridge = () => {
   window.__FORTYONE_DESKTOP__ = {
     version: 2,
@@ -85,6 +104,72 @@ describe("DesktopProvider", () => {
   afterEach(() => {
     delete window.__FORTYONE_DESKTOP__;
     jest.restoreAllMocks();
+  });
+
+  it("keeps the next layout's menu registration when the outgoing owner unmounts", async () => {
+    installBridge();
+    const syncMenu = jest.fn().mockResolvedValue(undefined);
+    window.__FORTYONE_DESKTOP__!.syncMenu = syncMenu;
+    const { rerender } = render(
+      <DesktopProvider>
+        <MenuOwner key="app" state={MENU_STATE} />
+      </DesktopProvider>,
+    );
+    await waitFor(() => {
+      expect(syncMenu).toHaveBeenLastCalledWith(MENU_STATE);
+    });
+    const settingsState = { ...MENU_STATE, canToggleSidebar: false };
+    rerender(
+      <DesktopProvider>
+        <MenuOwner key="settings" state={settingsState} />
+      </DesktopProvider>,
+    );
+    await waitFor(() => {
+      expect(syncMenu).toHaveBeenLastCalledWith(settingsState);
+    });
+    fireEvent(window, new Event("pageshow"));
+    await waitFor(() => {
+      expect(syncMenu).toHaveBeenLastCalledWith(settingsState);
+    });
+    rerender(<DesktopProvider>{null}</DesktopProvider>);
+    await waitFor(() => {
+      expect(syncMenu).toHaveBeenLastCalledWith(EMPTY_DESKTOP_MENU);
+    });
+  });
+
+  it("serializes pending native menu updates so the latest layout state wins", async () => {
+    installBridge();
+    let releaseInitialSync: () => void = () => {};
+    const syncMenu = jest
+      .fn()
+      .mockImplementationOnce(
+        () =>
+          new Promise<void>((resolve) => {
+            releaseInitialSync = resolve;
+          }),
+      )
+      .mockResolvedValue(undefined);
+    window.__FORTYONE_DESKTOP__!.syncMenu = syncMenu;
+    const { rerender } = render(
+      <DesktopProvider>
+        <MenuOwner key="app" state={MENU_STATE} />
+      </DesktopProvider>,
+    );
+    await waitFor(() => {
+      expect(syncMenu).toHaveBeenCalledTimes(1);
+    });
+    const settingsState = { ...MENU_STATE, canToggleSidebar: false };
+    rerender(
+      <DesktopProvider>
+        <MenuOwner key="settings" state={settingsState} />
+      </DesktopProvider>,
+    );
+    await act(async () => {
+      releaseInitialSync();
+    });
+    await waitFor(() => {
+      expect(syncMenu).toHaveBeenLastCalledWith(settingsState);
+    });
   });
 
   it("keeps ordinary browser controls and ignores desktop events", () => {

@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -10,10 +11,15 @@ import {
   useState,
 } from "react";
 import { useTheme } from "next-themes";
-import type { DesktopAction, DesktopShellState } from "./bridge";
+import type {
+  DesktopAction,
+  DesktopMenuState,
+  DesktopShellState,
+} from "./bridge";
 import {
   DESKTOP_ACTION_EVENT,
   EMPTY_DESKTOP_SHELL,
+  EMPTY_DESKTOP_MENU,
   getDesktopAction,
   getDesktopBridge,
   readDesktopBackground,
@@ -29,6 +35,8 @@ type DesktopContextValue = {
   isDesktop: boolean;
   setShellState: (state: DesktopShellState) => void;
   setShellMounted: (mounted: boolean) => void;
+  registerMenu: (owner: string, state: DesktopMenuState) => void;
+  unregisterMenu: (owner: string) => void;
   navigation: ReturnType<typeof useNativeNavigation>;
 };
 
@@ -36,6 +44,8 @@ const DesktopContext = createContext<DesktopContextValue>({
   isDesktop: false,
   setShellState: () => {},
   setShellMounted: () => {},
+  registerMenu: () => {},
+  unregisterMenu: () => {},
   navigation: {
     canGoBack: false,
     canGoForward: false,
@@ -48,6 +58,17 @@ export const DesktopProvider = ({ children }: { children: ReactNode }) => {
   const [isDesktop, setIsDesktop] = useState(false);
   const [shellState, setShellState] = useState(EMPTY_DESKTOP_SHELL);
   const [shellMounted, setShellMounted] = useState(false);
+  const [menu, setMenu] = useState<{
+    owner: string;
+    state: DesktopMenuState;
+  } | null>(null);
+  const registerMenu = useCallback((owner: string, state: DesktopMenuState) => {
+    setMenu({ owner, state });
+  }, []);
+  const unregisterMenu = useCallback((owner: string) => {
+    setMenu((current) => (current?.owner === owner ? null : current));
+  }, []);
+  const menuSync = useRef<Promise<void> | null>(null);
   const resynchronizeChrome = useRef<(() => void) | null>(null);
   const { resolvedTheme, theme } = useTheme();
   const isMacDesktop = isDesktop && getDesktopBridge()?.platform === "macos";
@@ -55,6 +76,26 @@ export const DesktopProvider = ({ children }: { children: ReactNode }) => {
   const showFallback = isMacDesktop && !shellMounted;
 
   useEffect(() => monitorDesktopConnectivity(), []);
+
+  useEffect(() => {
+    const bridge = getDesktopBridge();
+    if (!bridge?.syncMenu) return;
+    const synchronize = () => {
+      // Serialize native writes so an outgoing layout cannot overwrite the
+      // capabilities registered by the next layout while IPC is in flight.
+      menuSync.current = (menuSync.current ?? Promise.resolve())
+        .then(() => bridge.syncMenu!(menu?.state ?? EMPTY_DESKTOP_MENU))
+        .catch((error: unknown) => {
+          // eslint-disable-next-line no-console -- Keep native bridge failures visible in desktop diagnostics.
+          console.error("Could not synchronize desktop menus", error);
+        });
+    };
+    synchronize();
+    window.addEventListener("pageshow", synchronize);
+    return () => {
+      window.removeEventListener("pageshow", synchronize);
+    };
+  }, [menu]);
 
   useEffect(() => {
     const bridge = getDesktopBridge();
@@ -129,8 +170,15 @@ export const DesktopProvider = ({ children }: { children: ReactNode }) => {
   }, [showFallback]);
 
   const value = useMemo(
-    () => ({ isDesktop, setShellState, setShellMounted, navigation }),
-    [isDesktop, navigation],
+    () => ({
+      isDesktop,
+      setShellState,
+      setShellMounted,
+      registerMenu,
+      unregisterMenu,
+      navigation,
+    }),
+    [isDesktop, navigation, registerMenu, unregisterMenu],
   );
 
   return (

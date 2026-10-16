@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-sync-desktop-menu"
+description = "Enables the sync_desktop_menu command without any pre-configured scope."
+commands.allow = ["sync_desktop_menu"]
+
+[[permission]]
+identifier = "deny-sync-desktop-menu"
+description = "Denies the sync_desktop_menu command without any pre-configured scope."
+commands.deny = ["sync_desktop_menu"]

@@ -62,8 +62,15 @@ pub async fn desktop_navigate(
     direction: NavigationDirection,
 ) -> Result<(), String> {
     authorize_window(&window, &policy)?;
+    navigate(&window, direction).await
+}
+
+pub async fn navigate(
+    window: &WebviewWindow,
+    direction: NavigationDirection,
+) -> Result<(), String> {
     #[cfg(target_os = "macos")]
-    return crate::macos_chrome::navigate(&window, matches!(direction, NavigationDirection::Back))
+    return crate::macos_chrome::navigate(window, matches!(direction, NavigationDirection::Back))
         .await;
     #[cfg(not(target_os = "macos"))]
     window

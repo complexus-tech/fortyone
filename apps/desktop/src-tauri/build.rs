@@ -43,6 +43,7 @@ fn main() {
             "retry_workspace_switch",
             "cancel_workspace_switch",
             "sync_desktop_chrome",
+            "sync_desktop_menu",
             "desktop_navigation_state",
             "desktop_navigate",
             "desktop_window_action",

@@ -5,7 +5,6 @@ import type { ReactNode } from "react";
 import { toast } from "sonner";
 import type * as DesktopBridgeModule from "@/shell/desktop/bridge";
 import { walkthroughTargets } from "@/shared/walkthrough/targets";
-import { DESKTOP_ACTION_EVENT } from "@/shell/desktop/bridge";
 import { DesktopProvider } from "@/shell/desktop/desktop-provider";
 import { AppCommandBar } from "./app-command-bar";
 
@@ -252,7 +251,11 @@ jest.mock("@/components/shared/keyboard-shortcuts", () => ({
 }));
 
 jest.mock("./commands", () => ({
-  Commands: () => <div>Search</div>,
+  Commands: ({ onCreateStory }: { onCreateStory: () => void }) => (
+    <button onClick={onCreateStory} type="button">
+      Search
+    </button>
+  ),
 }));
 
 jest.mock("@/components/shared/sidebar/profile-menu", () => ({
@@ -312,7 +315,7 @@ describe("AppCommandBar", () => {
     delete window.__FORTYONE_DESKTOP__;
   });
 
-  it("opens the existing story dialog from native create with the current route context", async () => {
+  it("shares the existing story dialog with command actions using the current route context", async () => {
     installDesktopBridge();
     mockPathname = "/acme/roadmap";
     mockParams = {
@@ -335,12 +338,7 @@ describe("AppCommandBar", () => {
         }),
       );
     });
-    fireEvent(
-      window,
-      new CustomEvent(DESKTOP_ACTION_EVENT, {
-        detail: { action: "create-story" },
-      }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Search" }));
     const dialog = screen.getByTestId("new-story-dialog");
     expect(dialog).toHaveAttribute("data-objective-id", "objective-1");
     expect(dialog).toHaveAttribute("data-sprint-id", "sprint-1");
@@ -348,46 +346,6 @@ describe("AppCommandBar", () => {
     expect(screen.queryByText("New objective dialog")).not.toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Create objective" }),
-    ).toBeInTheDocument();
-  });
-
-  it.each(["guest", undefined] as const)(
-    "does not open native story creation for role %s",
-    async (role) => {
-      installDesktopBridge();
-      mockUserRole = role;
-      render(
-        <DesktopProvider>
-          <AppCommandBar />
-        </DesktopProvider>,
-      );
-      await waitFor(() => {
-        expect(document.documentElement.dataset.desktopPlatform).toBe("macos");
-      });
-      fireEvent(
-        window,
-        new CustomEvent(DESKTOP_ACTION_EVENT, {
-          detail: { action: "create-story" },
-        }),
-      );
-      expect(screen.queryByTestId("new-story-dialog")).not.toBeInTheDocument();
-      expect(mockSyncChrome).toHaveBeenLastCalledWith(
-        expect.objectContaining({ canCreateStory: false }),
-      );
-    },
-  );
-
-  it("ignores desktop create events in an ordinary browser", () => {
-    render(<AppCommandBar />);
-    fireEvent(
-      window,
-      new CustomEvent(DESKTOP_ACTION_EVENT, {
-        detail: { action: "create-story" },
-      }),
-    );
-    expect(screen.queryByTestId("new-story-dialog")).not.toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Create story" }),
     ).toBeInTheDocument();
   });
 

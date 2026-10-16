@@ -1,9 +1,7 @@
 use std::{collections::HashSet, sync::Mutex};
 
 use serde::Deserialize;
-use tauri::{
-    ipc::CapabilityBuilder, menu::MenuItemKind, AppHandle, Manager, State, Url, WebviewWindow,
-};
+use tauri::{ipc::CapabilityBuilder, AppHandle, Manager, State, Url, WebviewWindow};
 
 use crate::{navigation::NavigationPolicy, WINDOW_LABEL};
 
@@ -103,6 +101,7 @@ fn capability(policy: &NavigationPolicy, url: &Url, identifier: &str) -> Capabil
         // Sending and requesting permission remain behind our checked commands.
         .permission("notification:allow-is-permission-granted")
         .permission("allow-sync-desktop-chrome")
+        .permission("allow-sync-desktop-menu")
         .permission("allow-desktop-navigation-state")
         .permission("allow-desktop-navigate")
         .permission("allow-desktop-window-action")
@@ -163,51 +162,29 @@ pub fn sync_desktop_chrome(
 }
 
 pub fn apply(window: &WebviewWindow, state: ChromeState) -> tauri::Result<()> {
-    if let Some(menu) = window.app_handle().menu() {
-        for entry in menu.items()? {
-            if let MenuItemKind::Submenu(submenu) = entry {
-                if let Some(MenuItemKind::MenuItem(item)) = submenu.get("create-story") {
-                    item.set_text(format!("New {}…", state.story_label))?;
-                    item.set_enabled(state.can_create_story && state.ready)?;
-                }
-                if let Some(MenuItemKind::MenuItem(item)) = submenu.get("search") {
-                    item.set_enabled(state.ready)?;
-                }
-            }
-        }
-    }
+    crate::menus::refresh(window)?;
     #[cfg(target_os = "macos")]
     crate::macos_chrome::update(window, state)?;
     Ok(())
 }
 
 pub fn reset(window: &WebviewWindow) -> tauri::Result<()> {
-    let controller = window.state::<ChromeController>();
-    let mut state = controller
-        .0
-        .lock()
-        .unwrap_or_else(|error| error.into_inner());
-    state.ready = false;
-    state.can_create_story = false;
-    apply(window, state.clone())
+    let state = {
+        let controller = window.state::<ChromeController>();
+        let mut state = controller
+            .0
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        state.ready = false;
+        state.can_create_story = false;
+        state.clone()
+    };
+    crate::menus::reset(window);
+    apply(window, state)
 }
 
 pub fn dispatch(window: &WebviewWindow, action: &str) -> tauri::Result<()> {
-    let controller = window.state::<ChromeController>();
-    let state = controller
-        .0
-        .lock()
-        .unwrap_or_else(|error| error.into_inner());
-    if !state.ready || (action == "create-story" && !state.can_create_story) {
-        return Ok(());
-    }
-    // These fixed scripts only notify React; existing dialogs retain all mutation logic.
-    let script = match action {
-        "create-story" => "window.dispatchEvent(new CustomEvent('fortyone:desktop-action', {detail: {action: 'create-story'}}))",
-        "search" => "window.dispatchEvent(new CustomEvent('fortyone:desktop-action', {detail: {action: 'search'}}))",
-        _ => return Ok(()),
-    };
-    window.eval(script)
+    crate::menus::dispatch(window, action)
 }
 
 #[cfg(test)]
@@ -229,7 +206,7 @@ mod tests {
             capability.remote.unwrap().urls,
             vec!["https://cloud.fortyone.app/*"]
         );
-        assert_eq!(capability.permissions.len(), 37);
+        assert_eq!(capability.permissions.len(), 38);
     }
 
     #[test]
@@ -249,7 +226,7 @@ mod tests {
             capability.remote.unwrap().urls,
             vec!["http://localhost:3456/*"]
         );
-        assert_eq!(capability.permissions.len(), 37);
+        assert_eq!(capability.permissions.len(), 38);
         assert_eq!(
             capability
                 .permissions
@@ -259,6 +236,7 @@ mod tests {
             vec![
                 "notification:allow-is-permission-granted",
                 "allow-sync-desktop-chrome",
+                "allow-sync-desktop-menu",
                 "allow-desktop-navigation-state",
                 "allow-desktop-navigate",
                 "allow-desktop-window-action",
@@ -316,7 +294,7 @@ mod tests {
                         panic!("Expected one capability");
                     };
                     assert_eq!(capability.webviews, vec![WINDOW_LABEL]);
-                    assert_eq!(capability.permissions.len(), 37);
+                    assert_eq!(capability.permissions.len(), 38);
                     assert_eq!(
                         capability
                             .permissions

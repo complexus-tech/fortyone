@@ -5,7 +5,7 @@ import { SearchIcon } from "icons";
 import { Kbd } from "ui";
 import { cn } from "lib";
 import { useHotkeys } from "react-hotkeys-hook";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useParams } from "next/navigation";
 import { useQueryState } from "nuqs";
 import { useTerminology } from "@/hooks/use-terminology-display";
 import { KeyboardShortcuts } from "@/components/shared/keyboard-shortcuts";
@@ -18,13 +18,20 @@ import { useWorkspacePath } from "@/hooks/use-workspace-path";
 import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
 import { useDesktop, useDesktopAction } from "@/shell/desktop/desktop-provider";
 import { CommandBar } from "./command-bar";
+import { useDesktopCommandActions } from "./use-desktop-command-actions";
 
 export const Commands = ({
   className,
   showTrigger = false,
+  onCreateStory,
+  onCreateObjective,
+  onShowKeyboardShortcuts,
 }: {
   className?: string;
   showTrigger?: boolean;
+  onCreateStory?: () => void;
+  onCreateObjective?: () => void;
+  onShowKeyboardShortcuts?: () => void;
 }) => {
   const { getTermDisplay } = useTerminology();
   const storyTerm = getTermDisplay("storyTerm", { variant: "plural" });
@@ -44,14 +51,41 @@ export const Commands = ({
   const [query, setQuery] = useQueryState("query", { defaultValue: "" });
   const isSearchPage = pathname === withWorkspace("/search");
   const { isDesktop } = useDesktop();
+  const params = useParams<{
+    objectiveId?: string;
+    sprintId?: string;
+    teamId?: string;
+  }>();
+  const showKeyboardShortcuts = () => {
+    if (onShowKeyboardShortcuts) onShowKeyboardShortcuts();
+    else setIsKeyboardShortcutsOpen(true);
+  };
+  const { ready, ownsNativeShortcuts } = useDesktopCommandActions({
+    createStory:
+      onCreateStory ??
+      (() => {
+        setIsStoryOpen(true);
+      }),
+    createObjective:
+      onCreateObjective ??
+      (() => {
+        setIsObjectivesOpen(true);
+      }),
+    showKeyboardShortcuts,
+  });
   useDesktopAction("search", () => {
+    if (!ready) return;
     setOpen((prev) => !prev);
   });
 
-  useHotkeys("mod+k", (e) => {
-    e.preventDefault();
-    setOpen((prev) => !prev);
-  });
+  useHotkeys(
+    "mod+k",
+    (e) => {
+      e.preventDefault();
+      setOpen((prev) => !prev);
+    },
+    { enabled: !ownsNativeShortcuts },
+  );
 
   useHotkeys("g+i", () => {
     if (pathname !== withWorkspace("/notifications")) {
@@ -83,9 +117,7 @@ export const Commands = ({
 
   useHotkeys("alt+shift+t", () => {});
 
-  useHotkeys("mod+/", () => {
-    setIsKeyboardShortcutsOpen((prev) => !prev);
-  });
+  useHotkeys("mod+/", showKeyboardShortcuts, { enabled: !ownsNativeShortcuts });
   useHotkeys("mod+i", () => {
     if (userRole === "admin") {
       setIsInviteMembersOpen((prev) => !prev);
@@ -204,11 +236,18 @@ export const Commands = ({
         isOpen={isKeyboardShortcutsOpen}
         setIsOpen={setIsKeyboardShortcutsOpen}
       />
-      <NewStoryDialog isOpen={isStoryOpen} setIsOpen={setIsStoryOpen} />
+      <NewStoryDialog
+        isOpen={isStoryOpen}
+        objectiveId={params.objectiveId}
+        setIsOpen={setIsStoryOpen}
+        sprintId={params.sprintId}
+        teamId={params.teamId}
+      />
       <NewSprintDialog isOpen={isSprintsOpen} setIsOpen={setIsSprintsOpen} />
       <NewObjectiveDialog
         isOpen={isObjectivesOpen}
         setIsOpen={setIsObjectivesOpen}
+        teamId={params.teamId}
       />
       {userRole === "admin" && (
         <InviteMembersDialog

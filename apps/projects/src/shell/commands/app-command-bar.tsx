@@ -28,7 +28,6 @@ import { useTerminology } from "@/hooks/use-terminology-display";
 import { useWorkspacePath } from "@/hooks/use-workspace-path";
 import { walkthroughTargets } from "@/shared/walkthrough/targets";
 import {
-  useDesktopAction,
   useDesktopDragRegion,
   useDesktopNavigation,
   useDesktopShell,
@@ -80,9 +79,6 @@ export const AppCommandBar = () => {
     storyLabel: getTermDisplay("storyTerm"),
   });
   const desktopHeaderRef = useDesktopHeaderLayout(isDesktop);
-  useDesktopAction("create-story", () => {
-    if (canCreateStory) setStoryDialogOpen(true);
-  });
 
   const handleCreate = () => {
     if (isDisabled) return;
@@ -139,6 +135,15 @@ export const AppCommandBar = () => {
                 ? "desktop-app-header-search w-full min-w-0"
                 : "max-w-xl flex-1"
             }
+            onCreateObjective={() => {
+              setIsObjectiveOpen(true);
+            }}
+            onCreateStory={() => {
+              setStoryDialogOpen(true);
+            }}
+            onShowKeyboardShortcuts={() => {
+              setIsKeyboardShortcutsOpen(true);
+            }}
             showTrigger
           />
           <Flex

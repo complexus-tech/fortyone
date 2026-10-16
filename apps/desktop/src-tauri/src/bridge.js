@@ -127,6 +127,8 @@
         await window.__TAURI_INTERNALS__.invoke("cancel_workspace_switch");
         window.dispatchEvent(new Event("fortyone:workspace-switch-change"));
       },
+      syncMenu: (state) =>
+        window.__TAURI_INTERNALS__.invoke("sync_desktop_menu", { state }),
       syncChrome: (state) =>
         window.__TAURI_INTERNALS__.invoke("sync_desktop_chrome", { state }),
       navigationState: () =>

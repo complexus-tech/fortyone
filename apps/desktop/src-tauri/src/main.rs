@@ -4,6 +4,7 @@ mod chrome;
 mod hosted;
 #[cfg(target_os = "macos")]
 mod macos_chrome;
+mod menus;
 mod navigation;
 #[cfg(feature = "native-client")]
 mod offline;
@@ -19,7 +20,6 @@ use std::sync::Arc;
 
 use navigation::{can_open_externally, NavigationPolicy};
 use tauri::{
-    menu::{Menu, MenuItem, MenuItemKind, PredefinedMenuItem, Submenu},
     webview::{NewWindowResponse, PageLoadEvent},
     AppHandle, Manager, Url, WebviewUrl, WebviewWindowBuilder,
 };
@@ -92,6 +92,7 @@ fn main() {
 fn hosted_main() {
     tauri::Builder::default()
         .manage(chrome::ChromeController::default())
+        .manage(menus::MenuController::default())
         .manage(chrome::ChromeCapabilities::default())
         .manage(workspace_transition::WorkspaceTransitions::default())
         .invoke_handler(tauri::generate_handler![
@@ -123,6 +124,7 @@ fn hosted_main() {
             hosted::notifications::hosted_deliver_notification,
             hosted::notifications::hosted_set_notification_badge,
             chrome::sync_desktop_chrome,
+            menus::sync_desktop_menu,
             window_controls::desktop_navigation_state,
             window_controls::desktop_navigate,
             window_controls::desktop_window_action,
@@ -265,98 +267,7 @@ fn hosted_main() {
                 });
             }
 
-            let menu = Menu::default(app.handle())?;
-            #[cfg(target_os = "macos")]
-            for item in menu.items()? {
-                if let MenuItemKind::Submenu(submenu) = item {
-                    match submenu.text()?.as_str() {
-                        "File" => submenu.insert_items(
-                            &[
-                                &MenuItem::with_id(
-                                    app,
-                                    "create-story",
-                                    "New Story…",
-                                    false,
-                                    Some("CmdOrCtrl+N"),
-                                )?,
-                                &PredefinedMenuItem::separator(app)?,
-                            ],
-                            0,
-                        )?,
-                        "View" => submenu.insert_items(
-                            &[
-                                &MenuItem::with_id(
-                                    app,
-                                    "search",
-                                    "Search…",
-                                    false,
-                                    Some("CmdOrCtrl+K"),
-                                )?,
-                                &PredefinedMenuItem::separator(app)?,
-                            ],
-                            0,
-                        )?,
-                        _ => {}
-                    }
-                }
-            }
-            let navigate_menu = Submenu::with_items(
-                app.handle(),
-                "Navigate",
-                true,
-                &[
-                    &MenuItem::with_id(
-                        app,
-                        "back",
-                        "Back",
-                        !cfg!(target_os = "macos"),
-                        Some("CmdOrCtrl+["),
-                    )?,
-                    &MenuItem::with_id(
-                        app,
-                        "forward",
-                        "Forward",
-                        !cfg!(target_os = "macos"),
-                        Some("CmdOrCtrl+]"),
-                    )?,
-                    &MenuItem::with_id(app, "reload", "Reload", true, Some("CmdOrCtrl+R"))?,
-                    &MenuItem::with_id(app, "home", "Open Start Page", true, None::<&str>)?,
-                    &MenuItem::with_id(app, "browser", "Open in Browser", true, None::<&str>)?,
-                ],
-            )?;
-            #[cfg(debug_assertions)]
-            navigate_menu.append(&MenuItem::with_id(
-                app,
-                "devtools",
-                "Developer Tools",
-                true,
-                Some("CmdOrCtrl+Alt+I"),
-            )?)?;
-            menu.append(&navigate_menu)?;
-            app.set_menu(menu)?;
-
-            app.on_menu_event(move |app, event| {
-                let Some(window) = app.get_webview_window(WINDOW_LABEL) else {
-                    return;
-                };
-                let result = match event.id().as_ref() {
-                    "create-story" | "search" => chrome::dispatch(&window, event.id().as_ref()),
-                    "back" => window.eval("window.history.back()"),
-                    "forward" => window.eval("window.history.forward()"),
-                    "reload" => window.eval("window.location.reload()"),
-                    "home" => window.navigate(policy.app_url().clone()),
-                    "browser" => window.url().map(|url| open_in_browser(app, &url)),
-                    "devtools" => {
-                        #[cfg(debug_assertions)]
-                        window.open_devtools();
-                        Ok(())
-                    }
-                    _ => Ok(()),
-                };
-                if let Err(error) = result {
-                    eprintln!("The desktop navigation action failed: {error}");
-                }
-            });
+            menus::install(app.handle(), Arc::clone(&policy))?;
             Ok(())
         })
         .build(desktop_context())

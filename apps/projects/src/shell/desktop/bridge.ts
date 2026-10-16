@@ -10,7 +10,15 @@ import type {
 export const DESKTOP_ACTION_EVENT = "fortyone:desktop-action";
 export const DESKTOP_HISTORY_EVENT = "fortyone:desktop-history-change";
 
-export type DesktopAction = "create-story" | "search";
+export type DesktopAction =
+  | "create-story"
+  | "create-objective"
+  | "search"
+  | "settings"
+  | "logout"
+  | "toggle-sidebar"
+  | "keyboard-shortcuts"
+  | "product-tour";
 
 export type DesktopShellState = {
   ready: boolean;
@@ -22,6 +30,13 @@ export type DesktopChromeState = DesktopShellState & {
   background: [number, number, number];
   dark: boolean;
   systemTheme: boolean;
+};
+
+export type DesktopMenuState = DesktopShellState & {
+  canCreateObjective: boolean;
+  canToggleSidebar: boolean;
+  sidebarCollapsed: boolean;
+  objectiveLabel: string;
 };
 
 export type DesktopNavigationState = {
@@ -78,6 +93,7 @@ type DesktopBridge = {
   navigate: (direction: DesktopNavigationDirection) => Promise<void>;
   windowAction: (action: DesktopWindowAction) => Promise<void>;
   // Optional capabilities keep the hosted app compatible with installed v2 builds.
+  syncMenu?: (state: DesktopMenuState) => Promise<void>;
   beginWorkspaceSwitch?: (
     destination: DesktopWorkspaceDestination,
   ) => Promise<void>;
@@ -193,6 +209,14 @@ export const EMPTY_DESKTOP_SHELL: DesktopShellState = {
   storyLabel: "story",
 };
 
+export const EMPTY_DESKTOP_MENU: DesktopMenuState = {
+  ...EMPTY_DESKTOP_SHELL,
+  canCreateObjective: false,
+  canToggleSidebar: false,
+  sidebarCollapsed: false,
+  objectiveLabel: "objective",
+};
+
 export const getDesktopBridge = () => {
   if (typeof window === "undefined") return null;
 
@@ -218,7 +242,19 @@ export const getDesktopAction = (event: Event): DesktopAction | null => {
   }
 
   const { action } = detail;
-  return action === "create-story" || action === "search" ? action : null;
+  switch (action) {
+    case "create-story":
+    case "create-objective":
+    case "search":
+    case "settings":
+    case "logout":
+    case "toggle-sidebar":
+    case "keyboard-shortcuts":
+    case "product-tour":
+      return action;
+    default:
+      return null;
+  }
 };
 
 export const readDesktopBackground = (): [number, number, number] | null => {

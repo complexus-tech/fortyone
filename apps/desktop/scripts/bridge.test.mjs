@@ -177,6 +177,27 @@ test("the immutable version-two bridge retains its four native command contracts
   assert.equal(page.nativeCalls[3].args.action, "drag");
 });
 
+test("the optional menu contract syncs presentation separately from window chrome", async () => {
+  const page = createPage();
+  page.initialize();
+  const state = {
+    ready: true,
+    canCreateStory: true,
+    canCreateObjective: false,
+    canToggleSidebar: false,
+    sidebarCollapsed: true,
+    storyLabel: "Ticket",
+    objectiveLabel: "Goal",
+  };
+
+  assert.equal(
+    await page.window.__FORTYONE_DESKTOP__.syncMenu(state),
+    "sync_desktop_menu",
+  );
+  assert.equal(page.nativeCalls.length, 1);
+  assert.equal(page.nativeCalls[0].args.state, state);
+});
+
 test("Windows and Linux retain native capabilities and await draft saving before hiding", async () => {
   for (const platform of ["windows", "linux"]) {
     const page = createPage({ platform });
