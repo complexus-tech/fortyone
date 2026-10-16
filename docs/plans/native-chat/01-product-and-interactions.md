@@ -44,6 +44,12 @@ One-to-one human DMs have exactly two human participants in one workspace. Maya 
 - Pending, accepted, failed, and retrying are distinct. “Sent” means server-committed; it does not mean every device received it.
 - Pasting images creates real upload items with progress, cancel, failure, and scan/processing states. Do not embed raw base64 images in message content.
 
+### Realtime delivery
+
+The selected transport is HTTP for commands and the existing shared SSE connection for incoming updates. A person viewing a conversation receives the authorised, versioned message content immediately, without waiting for a periodic refresh or an HTTP fetch per new message. Inactive conversations receive grouped activity/unread hints; opening one loads its canonical history. Typing signals are throttled and temporary. They must not compete with durable message delivery.
+
+On reconnect, the client restores missing events through durable cursor sync and deduplicates live arrivals, acknowledgements and replay. Receiving a later message may update the visible timeline, but cannot mark an unseen gap as synchronised or read. A quiet connection-status indicator explains recovery without losing drafts or moving a person away from history. Mobile background updates use notifications; returning to the app resynchronises before claiming the conversation is current.
+
 ### Threads
 
 Use one reply level with a stable root message. Replies can reference another reply, but remain in the same thread. The root shows a reply count, recent participant avatars, and unread reply state. Opening the thread fetches its own cursor-paginated feed. Root and thread composers have separate drafts and mention scopes.
@@ -70,6 +76,14 @@ Typing `@` opens the existing mention pattern, containing Maya and authorised hu
 
 First use can offer a small number of relevant suggestions in an empty composer or help surface: “Summarise this thread,” “What did we decide?” and “Create tasks from these messages.” These do not appear as extra cards on every conversation.
 
+### Natural follow-up and review
+
+Reuse the conversational behaviour already present in Maya comments. A person can reply directly to a specific pending Maya clarification or review without another mention. The server resolves that exact pending interaction; ordinary conversation and replies to completed Maya messages do not silently start new agent work. Agent-authored messages never invoke Maya recursively.
+
+The answering human owns the new invocation and supplies its current permissions. Another authorised teammate can answer a clarification or say “Yes, go ahead” to an eligible review, but does not inherit the original requester's authority. Exact assent creates a replacement proposal for that person, preserving the reviewed values, resource versions and original expiry, and revalidating access, destination audience and source freshness. “Yes, but change the deadline” is a new instruction that must be evaluated again. Keep the resulting human/Maya audit attribution visible.
+
+The explicit approval button remains restricted to the original requester and the exact proposal version. Reviews expire after ten minutes, matching the shared comments engine; expiration requires a fresh review instead of silently extending permission. This is separate from the 24-hour lifetime of the server-issued pre-visit catch-up checkpoint.
+
 ### Questions and summaries
 
 Useful answers distinguish decisions, proposed ideas, owners, due dates, open questions, and disagreements. Never turn an uncertain suggestion into a firm commitment. A summary should say what it covers and link to specific messages or work items. “View 10 source messages” opens the exact selection's source identities under current access checks. Edited sources show an indicator; deleted sources show tombstones. The view cannot reveal forbidden old plaintext from retained AI evidence.
@@ -89,6 +103,8 @@ Inline previews contain the real identifier, title, current status, relevant ass
 ### Progress and recovery
 
 Show a brief status within 500 ms of accepted invocation when conditions permit: Reading conversation, Checking related work, Creating 3 tickets. These labels describe observable work, not hidden model reasoning. Replace the status with the result rather than appending multiple status messages.
+
+Reuse the existing comment pending-state distinction: progress is not a stored human-visible message that increments reply counts, refreshing status does not restart a run, and delayed work has a truthful recovery state. Live chat progress and safe answer blocks arrive over SSE; the existing comments polling loop is not the primary chat delivery mechanism. Answer streaming is a new chat capability and releases only content that has passed the destination's access checks.
 
 For an uncertain result, show “Checking whether the ticket was created” while recovering the receipt. Do not show a generic Retry that could repeat the action. If only some items completed, show each outcome and offer Retry remaining with stable item IDs.
 
@@ -147,3 +163,6 @@ Virtualisation must preserve meaningful DOM order, focus, and screen-reader navi
 8. A desktop recipient reading the exact thread receives no redundant alert; a mobile recipient sees one actionable notification and lands at the correct message.
 9. Once the durable outbox gate is enabled, a pending message survives app restart, then sends once after reconnect; switching accounts cannot expose the draft. The earlier draft-only pilot must not display a queued-send promise.
 10. Disabling Maya leaves human chat, search, attachments, and history functioning.
+11. An active conversation renders incoming messages directly from SSE; an inactive one updates attention without receiving every full message body. Reconnect repairs a deliberately dropped event without duplication or an unread/read gap.
+12. A teammate answers a specific pending Maya question without another mention. The resulting work uses that teammate's authority and attribution. An unrelated reply does not invoke Maya.
+13. Another teammate's exact conversational assent preserves the reviewed values and original expiry under a new authorised invocation; changing a field requires a new instruction. They cannot use the original requester's approval button, and an expired or stale proposal does not execute.

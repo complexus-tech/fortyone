@@ -4,21 +4,30 @@
 
 Maya should turn a conversation into understanding and useful work while preserving the participants' intent. The first release should do four things particularly well: answer a scoped question, summarise a bounded discussion, identify decisions and unresolved issues, and create well-formed tickets from an explicit request. A reliable three-ticket result, with sources and working ownership controls, is more valuable than a large tool catalogue.
 
-The existing Maya identity, avatar, work tools, permission checks and usage policy provide a foundation. The new work is a durable, shared-conversation adapter with precise context selection, audience checks, action receipts and native presentation. Human chat continues independently when Maya is disabled, queued, out of allowance or unavailable.
+The existing Maya identity, avatar, work tools and newly implemented story-comment agent provide the foundation. Extend the shared `agentinvocations` lifecycle with a native team-chat adapter, precise context selection, audience checks, task-creation receipts and native presentation. Human chat continues independently when Maya is disabled, queued, out of allowance or unavailable.
 
 ## 2. Reuse and adaptation boundaries
 
-| Existing capability                              | Reuse                                                                                 | Required adaptation                                                                                      |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| System actor resolver and workspace Maya profile | Resolve the actual existing Maya account and avatar.                                  | Include her as a projected team participant; do not insert a human membership or hardcode a seeded UUID. |
-| Go messaging runtime                             | Scoped requests, Responses tool loop, tool registry, typed results and budget checks. | A trusted `native_team_chat` adapter, shared-audience context and durable orchestration.                 |
-| Personal Next.js Maya route                      | Proven presentation and tool-output concepts.                                         | Do not make a browser-bound request the lifecycle owner of a shared run.                                 |
-| Mutation confirmation/executor                   | Proposal signatures, scope checks, authorisation and recovery concepts.               | Native explicit-command policy plus stable action/item identities independent of provider tool-call IDs. |
-| Story services                                   | Workflow, assignees, events, history, integrations and normal user authorisation.     | Domain creation keys, source backlinks, Maya provenance and conditional assignment where missing.        |
-| Personal chat sessions                           | Private Maya history under existing ownership.                                        | Keep separate from multi-user chat messages; expose a navigation adapter if desired.                     |
-| Existing usage limits                            | Entitlements, product usage and plan checks.                                          | Reserve/settle durable runs once; account for actual provider retry costs separately.                    |
+| Existing capability                              | Reuse                                                                                                                                                                                                              | Required adaptation                                                                                                               |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| System actor resolver and workspace Maya profile | Resolve the actual existing Maya account and avatar.                                                                                                                                                               | Include her as a projected team participant; do not insert a human membership or hardcode a seeded UUID.                          |
+| `agentinvocations` service and repository        | Atomic acceptance, source identity/revision, fenced leases, durable proposals/outcomes, requester controls, approval, continuation, separate publication/delivery and recovery.                                    | Add `native_team_chat` source bindings and adapter; extend shared records/contracts where necessary. Keep one run authority.      |
+| Story-comment `agentadapter`                     | Structured-mention validation, human authority/Maya publication split, live permission and entitlement checks, exact-proposal conversational continuation, deterministic reply identity and deduplicated delivery. | Bind the same interfaces to conversations/messages and the room's durable audience rather than copying story-comment assumptions. |
+| Go messaging runtime                             | Scoped requests, Responses tool loop, tool registry, typed results and bounded provider calls.                                                                                                                     | Add a closed team-chat source scope, revision manifests, publishable answer blocks and the proposed task-creation policy.         |
+| Mutation confirmation/executor                   | Durable opaque proposals, exact scope/value checks, human attribution, atomic update receipts and replay recovery.                                                                                                 | Add bounded creation actions and stable item identities; the existing comment adapter only updates its source story.              |
+| Story services                                   | Workflow, assignees, events, history, integrations and normal user authorisation.                                                                                                                                  | Domain creation keys, source backlinks, Maya provenance and conditional assignment where missing.                                 |
+| Personal Next.js route and chat sessions         | Presentation/tool-output concepts and privately owned history.                                                                                                                                                     | Preserve that surface separately; it is not the shared-run lifecycle owner or an eligible source of team-chat context.            |
+| Existing admission and usage accounting          | Workspace entitlements, Redis rate limits and invocation/attempt-linked provider usage records.                                                                                                                    | Add fair concurrency admission and reserve/settle product allowance without replacing actual provider-attempt accounting.         |
 
-The current personal route has request/time/step limits and persists the result after streaming; it is not a recoverable shared job system. Existing scheduled Maya run tables also carry story-specific assumptions. Neither should be renamed into the new run ledger without a deliberate migration and compatibility design.
+### Current implementation and remaining work
+
+The current repository already has executable implementation, not just a proposed design. `apps/server/internal/modules/agentinvocations` owns the surface-neutral lifecycle. `apps/server/internal/bootstrap/agentadapter` binds it to comments, and `apps/server/internal/bootstrap/worker/agent_invocations.go` composes the real worker. Comment acceptance commits its source and invocation together; execution commits a story update and its receipt atomically; final reply publication and notification delivery recover separately without repeating the update. Reuse these guarantees.
+
+The [Maya comments implementation notes](../../../apps/server/docs/maya-comments.md) report focused test coverage and local validation against the configured model and worker, including clarification, exact-proposal acceptance, audit attribution and single notifications. That is local evidence, not deployment verification or proof of native chat capacity. This plan update inspected the implementation; it did not rerun those tests.
+
+The comment adapter currently reads up to 16 preceding comments and truncates each to 1,200 runes. It binds the triggering comment's revision/hash, but does not freeze every context message revision into the exact-selection manifest specified below. Its assistant returns a completed response before ordinary comment publication; it is not shared-room token streaming. Exact last-10 evidence, destination-audience disclosure checks, creation batches, per-item receipts, typed chat cards and validated streaming remain new work.
+
+The personal route remains request-bound, and scheduled Maya runs retain their own story-scheduling purpose. Do not repurpose either, and do not create a parallel `chat_ai_runs` engine. Extend `agent_invocations` and its contracts through compatible changes; keep story-comment, personal and Slack behaviour covered by regression checks.
 
 The repository currently uses its configured Luna model in relevant paths. Keep model IDs configurable and benchmark the actual available deployment. Do not make a speculative product-wide model migration part of chat delivery.
 
@@ -36,9 +45,11 @@ For created work, retain the normal human authorising principal and reporter. Ad
 
 ### Trigger rules
 
-Invoke on a newly committed human message containing a structured mention of the existing Maya principal, or an explicit native composer action. Text inside a quote/code block, a human whose display name is Maya, a model-generated mention, a replayed event or a system message cannot trigger a run. Store a unique trigger identity so an outbox replay cannot invoke it twice.
+Invoke on a newly committed human message containing a structured mention of the existing Maya principal, an explicit native composer action, or an exact reply to a still-pending Maya clarification/review. Text inside a quote/code block, a human whose display name is Maya, a model-generated mention, a replayed event or a system message cannot trigger a run. Store a unique source identity through `agentinvocations.Accept` so an outbox replay cannot invoke it twice.
 
-An edited message does not silently trigger another run. Offer an explicit Ask Maya action on the edited version. A follow-up in Maya's thread can use a clear reply affordance, but ordinary human thread replies must not cause Maya to answer indefinitely. The first policy should require a mention or explicit Ask Maya for each new request.
+Adopt the existing comment continuation behaviour: a current authorised member can answer the specific persisted Maya question without mentioning her again. The server resolves the reply ID to one pending invocation in the same workspace, team and conversation, atomically consumes that continuation and creates a linked invocation owned by the answering human. It must not infer the target from the most recent Maya message or wake Maya for unrelated replies in the thread. The answering member supplies fresh authority and must be allowed to read the relevant sources; no original requester authority is inherited.
+
+An unqualified affirmative answer to a review can rebind the exact persisted proposal as described in section 9. A changed instruction such as “yes, but assign them to me” is a new request/proposal, not approval of old values. An edited message does not silently trigger another run; offer an explicit Ask Maya action on its new version. Ordinary conversation, replies to completed Maya answers and Maya-authored messages do not keep the agent running indefinitely.
 
 ### Last 10 messages
 
@@ -80,60 +91,68 @@ Derived output needs a disclosure rule too. Store source dependencies so a permi
 
 ## 6. Durable execution lifecycle
 
+`agentinvocations` remains the authoritative state machine. Its existing durable statuses are `queued`, `running`, `needs_input`, `awaiting_approval`, `succeeded`, `failed` and `cancelled`. Reading, generating, executing and publishing are progress phases within that lifecycle, not another set of run states owned by chat.
+
 ```mermaid
 stateDiagram-v2
   [*] --> queued
-  queued --> preparing
-  preparing --> generating
-  generating --> awaiting_input
-  awaiting_input --> preparing
-  generating --> awaiting_approval
-  awaiting_approval --> executing
-  generating --> executing
-  generating --> completed
-  executing --> completed
-  executing --> execution_uncertain
-  execution_uncertain --> executing: reconcile receipts
-  execution_uncertain --> completed: result recovered
+  queued --> running: fenced claim
+  running --> queued: retryable failure
+  running --> needs_input: persisted question delivered
+  running --> awaiting_approval: persisted review delivered
+  awaiting_approval --> queued: requester approves current version
+  needs_input --> succeeded: linked continuation accepted
+  awaiting_approval --> succeeded: linked continuation accepted
+  running --> succeeded: outcome and delivery acknowledged
+  running --> failed
   queued --> cancelled
-  preparing --> cancelled
-  generating --> cancelled
-  executing --> cancelled: preserve committed results
-  preparing --> permission_revoked
-  generating --> permission_revoked
-  executing --> permission_revoked
-  preparing --> failed
-  generating --> failed
-  executing --> failed
+  running --> cancelled: cancellable work only
+  awaiting_approval --> cancelled
+  failed --> queued: authorised retry
+  cancelled --> queued: authorised retry
 ```
 
-The implementation should define legal transitions centrally, including `superseded` for replaced proposals/runs and expiry for unattended clarification/review. Terminal states may retain partial committed results; `failed` never means “nothing happened” unless the action ledger proves that.
+This is an abridged view of the existing lifecycle, not a replacement transition specification. A conversational continuation creates a new `queued` invocation; completing the parent means its question was consumed, not that the child action succeeded. Keep parent/child status and result links explicit. Existing version guards, lease fencing and requester controls remain authoritative. Recovery of committed outcomes/publication must not be exhausted by the bounded model-preparation retry count.
+
+Represent proposal expiry, replacement, permission loss and action recovery using reason codes, proposal versions and item/receipt status where possible. If a new durable status or control is necessary, extend the shared domain/service/repository contracts and their compatibility tests. Do not introduce an independent chat state machine. Terminal runs may retain committed item results; `failed` or `cancelled` never means “nothing happened” unless receipts prove that.
+
+### Native team-chat adapter
+
+Implement a trusted `native_team_chat` adapter alongside the comment adapter using the existing `Runtime` methods: `Authorize`, `Prepare`, `Apply` and `Publish`, plus `Delivery`, `ProposalPublisher` and `FailurePublisher`. Keep provider I/O in bounded `Prepare` work outside database transactions. `Apply` and `Publish` execute inside fenced database units and must not perform network I/O. External integration and transport work follows normal transactional outbox/deduplicated delivery paths.
+
+Extend worker composition to dispatch persisted, server-created surface bindings through a closed runtime registry or equivalent typed dispatcher. The current worker composes the comment runtime; accepting chat jobs without this dispatch would send them to the wrong authorisation/context adapter. Both adapters share the same store, queue/recovery mechanism and state transitions. Unknown surfaces fail closed.
+
+Bind `SourceID` to the committed human chat message, `ConversationID` to the selected root/thread identity, and `EntityID` to the owning chat conversation under an explicit adapter contract; retain the separate team binding. Reuse source revision/hash and continuation identity. Map these into safe surface DTOs rather than exposing raw run structs, proposal tokens, leases or private receipts. Names such as the existing `ReplyCommentID` Go field need a compatible surface-neutral presentation; chat must not create fake story comments to satisfy that field.
+
+Start from the current two-minute lease, ninety-second processing attempt, sixty-second preparation budget and three automatic preparation attempts. The current worker deliberately bounds attempts below lease expiry; it does not implement an unbounded renewable lease. Longer summarisation or multi-step creation must either fit those limits or add bounded checkpoint/lease support to the shared lifecycle after failure testing. Worker concurrency and fairness require load validation, not an assumption that these timeouts establish capacity.
 
 ### Persistent records
 
-| Record                       | Required content                                                                                                                                                                                                                 |
-| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `chat_ai_runs`               | Workspace/conversation/root, trigger ID/revision, human initiator, Maya actor, surface, state/version, lease generation/expiry, cancellation flag, policy/model configuration, queue/start/end timestamps and result message ID. |
-| Context manifest             | Selector and revision/access fingerprints, eligible source handles, coverage, freshness and expiry.                                                                                                                              |
-| Run steps                    | Step kind, attempt, safe status, tool name/version, input hash, result reference, provider request ID, timings and failure class. Raw private content is restricted and optional.                                                |
-| `chat_ai_actions`            | Stable action ID, immutable proposal version/hash, authorisation mode, source manifest, team scope, review/execute state and policy reason codes.                                                                                |
-| Action items and receipts    | Stable item IDs, normalized fields, domain idempotency keys, created resource IDs, timestamps, item status and error class.                                                                                                      |
-| Publication record           | Final message identity/version, canonical presentation blocks and publication status.                                                                                                                                            |
-| Usage reservation/settlement | Product charge key, actor/workspace entitlement, provider-attempt accounting and final settlement.                                                                                                                               |
+| Record                                         | Existing foundation and chat extension                                                                                                                                                                                                                                                               |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `agent_invocations`                            | Reuse workspace/team/source/conversation/entity bindings, requester, source revision/hash, parent run, state/version, lease generation/expiry, attempts, proposal, outcome and publication receipts. Add only needed policy/model/configuration and safe phase metadata through the shared contract. |
+| Context manifest linked to invocation/proposal | New exact selectors and message revision/access fingerprints, eligible source handles, coverage, freshness and expiry. The existing bounded payload is not an authority grant or an unlimited evidence store.                                                                                        |
+| Run-step metadata linked to invocation         | Bounded step kind/attempt, safe phase, tool/prompt/policy versions, input hash, result reference, provider request ID, timings and failure class. Raw private content is restricted and optional.                                                                                                    |
+| Immutable action proposal                      | Extend the existing durable proposal/confirmation mechanism with stable action identity, version/hash, authorisation mode, source manifest, target-team scope and policy reasons. A supplementary action record is a child of this lifecycle, not a second run owner.                                |
+| Action items and receipts                      | New bounded batch detail: stable item IDs, normalized fields, domain creation keys, actual resource IDs, timestamps, item status and error class. Preserve action lineage across exact-proposal rebinding.                                                                                           |
+| Publication and delivery                       | Reuse separate durable proposal/final/failure identities and delivery acknowledgement; add typed chat blocks and chat-message versions. Do not replace receipts with model-written success text.                                                                                                     |
+| Usage accounting and reservation               | Retain existing invocation/attempt-linked provider usage. Add product charge/reservation identity and settlement where absent; avoid billing both the original proposal and an inference-free acceptance as new model work.                                                                          |
 
 ### Worker sequence
 
-1. The send transaction inserts the message, unique run intent and outbox entry together. No provider call occurs before commit.
-2. A worker claims the run using a renewable lease and fencing generation. Queue admission checks workspace/user concurrency and allowance.
-3. Reauthorise the human and destination, freeze/revalidate evidence and reserve the required usage allowance.
-4. Build a bounded provider request with the allowed tool set and stable instructions. Record model/prompt/tool versions for evaluation and support.
-5. Execute a bounded reasoning/tool loop. Record useful checkpoints and tool results without writing every token to PostgreSQL.
-6. For actions, normalize the proposal, apply the server policy, and persist any required review state. Awaiting input/review releases the worker lease, compute slots and active-run allowance, closes provider work and settles completed inference usage. Track a separately bounded pending-action quota. Resume obtains a fresh lease, rechecks entitlement and reserves any additional computation; an unanswered card cannot monopolise AI capacity for 24 hours.
-7. Recheck sources, authority, cancellation and fencing immediately before a mutation. Execute through existing domain services with stable keys.
-8. Persist receipts and the final typed answer. Publish one canonical Maya message through the normal chat event/outbox path.
-9. Settle product usage once and release concurrency. Separately retain actual provider cost for each attempt, including retries.
+1. In the chat send transaction, save the human message, call the shared acceptance/continuation mechanism and commit the durable chat event/outbox entry. Dispatch the existing invocation job after commit; database recovery covers missed queue wakeups. No provider call occurs before commit.
+2. Claim through the shared fenced lease. Add global/workspace/user admission and allowance checks without bypassing existing entitlements and rate limits.
+3. `Authorize` rechecks the current human, conversation and durable audience. Freeze/revalidate the exact evidence manifest and reserve required computation allowance.
+4. `Prepare` builds the bounded scoped request, or rebinds a valid exact proposal for an affirmative continuation without another model call. Record model/prompt/tool/policy versions and actual provider usage for each attempted inference.
+5. Persist the normalized immutable proposal through the shared service. Surface only validated preview blocks; do not write every token to PostgreSQL.
+6. For clarification/review, publish the stable question or proposal identity and enter the existing pending status. Release the lease, compute slots and active-run allowance, close provider work and settle completed inference usage. Bound pending questions separately. Review expiry defaults to ten minutes; it is independent of the proposed twenty-four-hour catch-up checkpoint. A continuation obtains its own lease and fresh authority; inference-free exact acceptance needs no new model reservation.
+7. Recheck sources, authority, cancellation and fencing at each domain mutation boundary. Execute through normal story services with stable action/item keys and atomic item receipts; extend shared execution for checkpoints as described below.
+8. Persist the aggregate outcome and typed answer, then use the existing separate publication/delivery stages to commit the canonical chat reply and deliver normal chat events/notifications. A transport outage retries delivery, not task creation.
+9. Settle the product charge once under its stable charge key and release admission. Retain actual provider cost per attempt, including failed/retried inference, using the existing usage accounting.
 
 A restarted worker resumes from durable state. It may regenerate an uncommitted prose answer if necessary, but it may not regenerate an already executing action batch with new identities. A stale worker must fail the fencing check at state publication and at the domain mutation boundary. Lease expiry alone is not sufficient if the old worker can still write.
+
+The current `Store.Execute` commits one `Apply` result and run outcome atomically, which already fits a comment's single-story update. Independent per-item commits and partial completion need an explicit extension within `agentinvocations`: fence and lock the run/action for each item, atomically commit its domain write and item receipt, then finalize the aggregate outcome only after the batch is complete or stopped. Do not loop independent transactions inside the current atomic callback or claim per-item resumability already exists. Extend cancellation/retry/failure publication to preserve committed item receipts even before an aggregate outcome exists. Keep the existing comment adapter's single-unit transaction unchanged.
 
 Provider background execution is optional for unusually long requests; it does not replace this ledger, authorisation, cancellation or domain receipts. Verify the chosen provider's current storage and retention terms before enabling it. The current OpenAI background guide describes temporary response storage, including special zero-data-retention considerations. [OpenAI background mode](https://developers.openai.com/api/docs/guides/background)
 
@@ -141,9 +160,11 @@ Provider background execution is optional for unusually long requests; it does n
 
 Use one reply entry whose status changes, rather than a new message per tool call. Show observable phases such as Reading conversation, Checking related work and Creating tickets. Do not expose hidden reasoning, raw provider JSON or tool implementation details.
 
+Use SSE for server-to-client events and ordinary authenticated HTTP for sends, replies, approvals, cancellation and other client commands. Active, authorised conversation subscriptions receive complete safe message/card updates and validated preview blocks; inactive conversations receive bounded ID/version/unread hints and hydrate through authorised HTTP reads when opened. A worker never owns a browser connection, and reconnecting does not create a new invocation. Persisted run/message snapshots are authoritative after a stream gap; SSE preview offsets are not the durable chat replay cursor.
+
 For shared output, validate source handles, links and structured blocks before broadcasting them. Immediate progress can be ephemeral; do not stream unvalidated private retrieval content and hope to redact it at the end. A summary can appear in validated paragraph/list blocks. Task cards appear only as explicit drafts or actual domain receipts.
 
-Batch ephemeral preview frames, for example every 100–250 ms when useful, using run ID and monotonic preview offset/version. This is a tuning assumption. A reconnect fetches the current run snapshot or final message; it does not need every historical token. Periodic bounded checkpoints help resume long output. Final content is durable and versioned.
+The comment assistant currently returns a completed response. A streaming preparation callback/event interface and bounded, audience-checked preview delivery are additions to the shared runtime, not properties already supplied by that adapter. Batch validated ephemeral frames, for example every 100–250 ms when useful, using invocation ID and monotonic preview offset/version. This is a tuning assumption. A reconnect fetches the current run snapshot or final message; it does not need every historical token. Periodic bounded checkpoints help resume long output. Final content is durable and versioned.
 
 If the model times out, preserve the scope and clear result status. If task execution is uncertain, show recovery status and inspect receipts before offering a retry. Closing a tab has no effect on execution. Stop writes a durable cancellation request; the worker checks it between steps and before each side effect. Stop cannot undo a task committed milliseconds earlier.
 
@@ -170,7 +191,9 @@ Suggested task fields are title, description, acceptance criteria, team, default
 
 ## 9. Native action policy
 
-The current personal Maya and Slack paths require confirmation for material mutations. Introduce a closed native policy without changing those surfaces. A server evaluator such as `EvaluateNativeChatAction` returns `execute`, `review_required`, `clarification_required` or `denied` with safe reason codes.
+The current personal Maya and Slack paths require confirmation for material mutations. Story comments already have a separate restricted direct-update policy for their source story. Introduce a closed `native_team_chat` creation policy without changing any of those surface defaults. A server evaluator such as `EvaluateNativeChatAction` returns `execute`, `review_required`, `clarification_required` or `denied` with safe reason codes. Its selection comes from trusted adapter configuration, not a client/model-supplied surface string.
+
+Reuse the existing durable proposal/confirmation store and live executor checks. The comment path's direct eligibility ultimately uses its persisted model-supplied `command_intent` inside a validated same-story proposal; it is not evidence that a general task-creation intent classifier already exists. The following limits and command interpretation are proposed new team-chat controls. Keep current comment behaviour unchanged and test both surfaces independently.
 
 ### Explicit command fast path
 
@@ -194,9 +217,13 @@ A model confidence score cannot grant authority. Conservatively interpret only t
 
 Cross-team requests require an additional disclosure policy: the requester belonging to both teams does not authorise copying source-room information into the destination team's task fields. Keep cross-team execution disabled for launch. A later explicit sharing/redaction flow must establish destination-resource audience compatibility for descriptions, citations, attachments and notifications as well as normal create permission.
 
-For the initial implementation, the initiating human reviews their own proposal and must still have all required permissions. Another user can request their own action; they cannot click someone else's approval as an implicit delegation. A later shared-approval feature needs an explicit actor/audit policy.
+Approval buttons remain restricted to the initiating requester, with the existing expected-version check and current permission validation. Another member cannot click that approval as an implicit delegation.
 
-Approval binds the exact normalized proposal hash/version, source and scope fingerprints, human identity and expiry. Proposed expiry is 24 hours, with source/access revalidation on every attempt. Any material edit creates a new proposal version. Concurrent approval clicks return the same result. A review click authorises the displayed operation, not additional tools the model invents afterward.
+Conversational acceptance follows the existing comment pattern. Any current authorised member can reply directly to that specific pending review with an unqualified affirmative answer such as “yes, please.” This creates a linked invocation under the answering member and rebinds the exact stored proposal to that member's authority. Preserve the original normalized values, source manifest, destination, action/item lineage, resource-version preconditions and expiry; do not reinterpret an already-resolved “me” as the new answerer or refresh an expired proposal. Recheck that member's source access, destination disclosure boundary and operation permissions. A valid rebinding needs no model call. Record both the original proposer/requester and the current authorising human; execute and audit the action under the latter.
+
+A reply to clarification supplies fresh instructions under the answering human's authority. A modified review answer such as “yes, but change the deadline” likewise creates a newly evaluated request/proposal rather than approving the old values. New instructions still pass the native action policy; a reply link is not blanket approval. A reply without an unambiguous pending-question binding requires a fresh mention/Ask Maya. Concurrent answers and button approvals serialize against the pending version/continuation and stable action identity so only one acceptance can take effect.
+
+Approval binds the exact normalized proposal hash/version, source and scope fingerprints, authorising human and expiry. Default proposal expiry is **ten minutes**, matching the existing mutation proposal policy, with source/access revalidation on every attempt. The proposed twenty-four-hour catch-up checkpoint is a different record and grants no mutation authority. Any material edit creates a new proposal version and invalidates obsolete acceptance controls. Concurrent approval retries return the existing result. Neither a review click nor an affirmative reply authorises additional tools or altered fields after acceptance.
 
 ### Existing integration consequences
 
@@ -204,27 +231,28 @@ Normal user-authorised story creation can enqueue GitHub sync and other downstre
 
 An explicit internal-only user creation policy could be designed later. Do not reuse a privileged system-ingestion path or change the actor to Maya to suppress ordinary rules.
 
-Persist `authorization_mode = explicit_command | reviewed_proposal`, policy version, trigger/revision, initiator, reviewer if applicable, proposal hash, source/access fingerprints and decision reason. Unknown surfaces default to review. Personal Maya and Slack retain their current confirmation policy and regression tests.
+Persist `authorization_mode = explicit_command | reviewed_proposal`, acceptance method (`button` or `conversation` for reviewed proposals), policy version, trigger/revision, original requester, current authorising human, parent invocation, proposal hash, source/access fingerprints and decision reason. Unknown or unregistered surfaces cannot execute; recognized surfaces retain their own explicit policy. Personal Maya and Slack retain their current confirmation policy, and comment direct updates/continuations retain their current scope and regression tests.
 
 ## 10. Exactly-once effects through durable identities
 
 There is no general exactly-once network delivery guarantee. Make each logical action idempotent and make uncertain outcomes recoverable.
 
-Before any write, persist an immutable normalized action with stable item IDs. Use a domain key such as `native-chat:{action_id}:{item_id}`. It must survive worker/provider retries and must not derive solely from a transient tool-call ID or the item's array position.
+Before any write, persist an immutable normalized action with stable item IDs linked to `agent_invocations`. Use a domain key such as `native-chat:{action_id}:{item_id}`. It must survive worker/provider retries and exact-proposal conversational rebinding; do not replace the action identity simply because acceptance creates a child invocation. It must not derive solely from a transient tool-call ID, invocation attempt or the item's array position. Rebinding changes the human authority after validation, not the identity of the operation being accepted.
 
 Prefer a transaction that atomically creates the story, records its domain creation key and receipt, and writes ordinary domain events. If module boundaries prevent a combined receipt transaction, the story creation key must still be transactionally unique with the created story so a crash before the orchestration receipt can be reconciled. A generic expiring HTTP idempotency cache is insufficient.
 
 Prevalidate the batch, then execute items with per-item receipts and explicit partial completion. Do not imply all-or-nothing success across separate domain transactions. Stop on permission/policy changes. Retry remaining uses the original immutable items and keys; completed items stay completed. External integrations are independent durable effects with their existing retry rules.
 
-| Interruption                                              | Required recovery                                                                                               |
-| --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Before provider call                                      | Reclaim the run after lease expiry; recheck authority and budget.                                               |
-| After proposal generation                                 | Resume stored proposal or regenerate only if no action execution has begun.                                     |
-| After story commit, before run receipt                    | Find the story by domain creation key; record the existing result.                                              |
-| After final message commit, before worker acknowledgement | Return the unique publication result; do not append another Maya message.                                       |
-| After one of three tasks commits                          | Display one created and two pending/failed; retry original remaining items only.                                |
-| User cancels during execution                             | Preserve committed tasks and receipts, stop future items where possible, explain the result.                    |
-| User repeats request as a new message                     | Compare source-linked receipts and scoped duplicate candidates; transport idempotency alone cannot detect this. |
+| Interruption                                                  | Required recovery                                                                                                       |
+| ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Before provider call                                          | Reclaim the run after lease expiry; recheck authority and budget.                                                       |
+| After proposal generation                                     | Resume stored proposal or regenerate only if no action execution has begun.                                             |
+| After story commit, before run receipt                        | Find the story by domain creation key; record the existing result.                                                      |
+| After final message commit, before worker acknowledgement     | Return the unique publication result; do not append another Maya message.                                               |
+| After one of three tasks commits                              | Display one created and two pending/failed; retry original remaining items only.                                        |
+| Two affirmative replies, or a reply racing an approval button | Serialize acceptance and preserve action/item identity; return the same committed resources, never execute both copies. |
+| User cancels during execution                                 | Preserve committed tasks and receipts, stop future items where possible, explain the result.                            |
+| User repeats request as a new message                         | Compare source-linked receipts and scoped duplicate candidates; transport idempotency alone cannot detect this.         |
 
 Never automatically delete committed work as compensation. Teammates or integrations may already have modified it. Any undo is a new authorised domain operation with its own audit and conflict handling.
 
@@ -256,7 +284,9 @@ Use one bounded orchestrator initially. Route simple summaries/extraction to the
 
 Concurrency and cost are separate from 1,000 connected people. Maintain global, workspace and user run limits with fair queue scheduling. A workspace burst must not starve every other tenant. Show a useful queued state and permit cancellation before provider work starts. Human messages, viewing results, claim actions and transport retries do not consume another AI invocation.
 
-Reserve product allowance before costly work, then settle once using the run identity. Refund/release unused reservation under a defined policy. Keep provider-attempt spend separately so retries and failures do not disappear from cost reporting. Never bill every reader of a shared answer. Decide whether the workspace or requester pays using the existing product entitlement model, and show that consistently in usage settings.
+Retain the existing comment implementation's entitlement checks, Redis admission and daily provider usage keyed to invocation/attempt. These are implemented; fair concurrent-run scheduling and product-allowance reservation/settlement remain extensions, not demonstrated capacity guarantees.
+
+Reserve product allowance before costly work, then settle once using the stable charge identity linked to the invocation. Refund/release unused reservation under a defined policy. Keep provider-attempt spend separately so retries and failures do not disappear from cost reporting. A clarification requiring new inference records the new answering human's invocation; exact stored-proposal acceptance without inference does not create another model charge. Never bill every reader of a shared answer. Decide whether the workspace or requester pays using the existing product entitlement model, and show that consistently in usage settings.
 
 Track input, cached input, output, retrieval/tool cost, queue time, successful useful answers and accepted tasks. Calculate cost per completed run and per accepted useful action, not just tokens. Use current contracted prices when estimating; no fixed model price is assumed by this plan.
 
@@ -282,7 +312,7 @@ Proposed initial evaluation set: at least 200 representative product cases plus 
 
 These thresholds are proposed acceptance criteria, not measured results or guarantees of zero future failure. Track sample sizes and confidence intervals, review failures by severity, and rerun on model/prompt/tool/policy changes.
 
-Required adversarial cases include private document knowledge in a shared room; membership removal mid-stream; source edits just before execution; a human named Maya; commands embedded in quotes/files; bot-to-bot loops; stale approvals; duplicate source extraction; sixth-item fast-path rejection; GitHub-sync review; two simultaneous claims; and provider success with a lost acknowledgement. Keep personal Maya and Slack confirmation regression cases in the same release gate.
+Required adversarial cases include private document knowledge in a shared room; membership removal mid-stream; source edits just before execution; a human named Maya; commands embedded in quotes/files; bot-to-bot loops; stale approvals; duplicate source extraction; sixth-item fast-path rejection; GitHub-sync review; two simultaneous claims; and provider success with a lost acknowledgement. Add a different member answering a clarification, exact acceptance by a less-privileged member, unauthorized button approval, expired-proposal rebinding, preserved original “me” resolution, a modified affirmative instruction, an unrelated thread reply, two simultaneous conversational acceptances, a reply racing a button, and a crash after one item commits but before aggregate outcome publication. Keep personal Maya, Slack and current comment direct-update/continuation regression cases in the same release gate.
 
 ## 15. Intelligence after the foundation
 

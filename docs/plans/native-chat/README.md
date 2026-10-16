@@ -1,8 +1,8 @@
 # Native team chat and Maya implementation plan
 
-Status: Proposed architecture and delivery plan. No feature implementation is authorised by this document.
+Status: Updated architecture and delivery plan. **SSE plus HTTP is the selected transport.** Remaining proposed policies and release gates are identified below. No feature implementation is authorised by this document.
 
-Research date: 16 October 2026. Initial capacity target: **1,000 concurrent users**, confirmed by the product owner. Repository reference: `68c1fe28f128455c9bc78c0d22574fe43f135c6f`, plus the working-tree changes described in the research register. Repository inspection establishes implementation context, not production deployment or load capacity.
+Research and revision date: 16 October 2026. Initial capacity target: **1,000 concurrent users**, confirmed by the product owner. This revision refreshes the original research against repository reference `0ee7c80448b722eeca817e60b76c630cfdf957f1`, including the committed Maya comments implementation. Repository inspection establishes implementation context, not production deployment or load capacity.
 
 ## Intended outcome
 
@@ -30,11 +30,15 @@ The following product corrections supersede the generated screenshots:
 | [Delivery quality and operations](05-delivery-quality-and-operations.md)  | Dependency-ordered work packages, capacity assumptions, launch gates, testing, observability, rollout, recovery, and ownership.             |
 | [Research and decision register](06-research-and-decisions.md)            | Current repository evidence, external primary sources, rejected alternatives, assumptions, and decisions to settle before implementation.   |
 
-## Recommended architecture
+## Architecture direction
 
-Keep the modular Go monolith. Add a first-class `chat` domain for native multi-user communication, use PostgreSQL as the authority, and use a transactional outbox for asynchronous effects. Adapt the existing scoped messaging/Maya capabilities rather than building a second independent agent system. Run Maya in durable background jobs that continue when a browser closes.
+Keep the modular Go monolith. Add a first-class `chat` domain for native multi-user communication, use PostgreSQL as the authority, and use a transactional outbox for asynchronous effects. Extend the existing surface-neutral `agentinvocations` engine used by Maya in comments, with a trusted native-chat adapter and scoped messaging capabilities. Its durable background jobs continue when a browser closes. Chat adds its own context, audience and work-creation contracts; it does not introduce a second run lifecycle or approval store.
 
-Use authenticated HTTP for durable commands and an upgraded shared SSE connection for server updates at the initial target. Replay is an application protocol backed by persisted conversation events and explicit cursors; Redis Pub/Sub is a low-latency wake-up path. Do not treat an open socket, a Redis publish, or a push-provider acceptance as proof that a user received or read a message.
+Use authenticated HTTP for sends, edits, reactions, read acknowledgements and other commands. Extend the existing shared **server-sent events (SSE)** connection for immediate server updates: actively viewed conversations receive full, authorised, versioned message projections; inactive conversations receive lightweight, coalesced activity and attention hints. This avoids a separate fetch for every visible message while limiting background fan-out. Reuse the connection across features rather than opening one stream per conversation. Mobile background delivery uses push and resynchronises on resume.
+
+Durable HTTP sync recovers gaps and reconnects from persisted conversation events and explicit cursors. A live projection may render immediately, but must not advance a contiguous sync cursor past missing events. Redis Pub/Sub accelerates dispatch; it is not the replay store. Do not treat an open connection, a Redis publish, or a push-provider acceptance as proof that a user received or read a message.
+
+SSE is selected because it fits the interaction and reuses infrastructure the team already understands. WebSockets are not inherently more expensive, and reaching 5,000, 10,000 or 50,000 concurrent users does not automatically require switching transports. Reconsider them only for a measured bidirectional, latency or client constraint. Connection count, message fan-out, database work, media and Maya usage determine capacity and cost more directly than the transport name.
 
 The existing realtime feed, personal AI transcript storage, and document CRDT service each solve different problems. They provide reusable pieces, but none is the complete storage or delivery contract for native chat.
 
@@ -43,13 +47,13 @@ flowchart LR
   C[Web desktop and mobile] -->|Authenticated commands| API[Go chat application service]
   API -->|Atomic commit| DB[(PostgreSQL chat state events and outbox)]
   DB --> D[Outbox dispatcher]
-  D --> R[Redis wake-up hints]
+  D --> R[Redis dispatch signals]
   R --> G[Authenticated SSE gateway]
-  G --> C
+  G -->|Active message updates and inactive hints| C
   C -->|Cursor replay and canonical reads| API
   D --> N[Notification projections and delivery]
-  D --> A[Durable Maya worker]
-  A --> M[Scoped messaging and tool capabilities]
+  D --> A[Shared agentinvocations worker]
+  A --> M[Native chat adapter and scoped capabilities]
   M --> S[Existing story and document services]
   A -->|Persist response and receipts| API
   A --> P[Model provider]
@@ -58,7 +62,7 @@ flowchart LR
 ## The complete Maya experience
 
 1. Joseph posts “@Maya create tasks from the last 10 messages.” The structured mention identifies the existing Maya principal.
-2. The message, its trigger, and the durable run intent commit together. Joseph sees his accepted message and a brief Maya status.
+2. The message, its trigger, and the shared engine's durable invocation commit together. Joseph sees his accepted message and a brief Maya status.
 3. The server freezes the exact preceding message IDs and revisions in the current channel or thread. “Last 10” does not drift as new messages arrive.
 4. The context builder excludes unavailable, deleted, private, or audience-incompatible material. Maya gets the current team's permitted workflow metadata and a small, task-specific tool set.
 5. Maya identifies useful work, checks for previously created or matching tickets, and returns a typed action plan. The server validates scope, fields, limits, and the requester's current authority.
@@ -67,22 +71,28 @@ flowchart LR
 8. Maya's answer displays actual ticket IDs and live, permission-checked previews. Users can assign an unassigned ticket to themselves through a conditional mutation, or open its details beside the chat.
 9. The ticket preserves Joseph as the authorising human and records Maya's role separately, with links to the source conversation. Notification aggregation presents one coherent result instead of a burst of overlapping alerts.
 
-The detailed policy, including cancellation and partial failure, is in [Maya orchestration](03-maya-orchestration.md). This fast path is an explicit change for native chat; it must not silently alter personal Maya or Slack behaviour.
+The existing comments implementation already supplies durable invocation, fenced execution, approval, conversational continuation and recovery primitives. Chat extends that foundation with frozen message selections, shared-audience checks, citations, typed ticket cards and safe streaming. Independently committed batch items need an explicit extension to the shared execution/checkpoint contract; they are not an existing capability to assume.
+
+People can also reply naturally to a specific pending Maya clarification or review without mentioning her again. A different person's reply becomes a new invocation under that person's current authority. Exact conversational approval preserves the reviewed values, resource versions and expiry; a changed instruction starts a new request. The approval button remains available only to the original requester. Reviews use the existing ten-minute expiry; the separate pre-visit catch-up checkpoint lasts 24 hours.
+
+The detailed policy, including cancellation and partial failure, is in [Maya orchestration](03-maya-orchestration.md). The bounded creation fast path is an explicit native-chat extension; it must not silently alter comments, personal Maya or Slack behaviour.
 
 ## Scope and delivery sequence
 
 The destination includes team conversations, threads, reactions, attachments, mentions, search, saved/read state, direct messages, useful notifications, and Maya. Deliver these as testable vertical slices.
 
-| Stage                                       | Usable result                                                                                              | Entry to next stage                                                              |
-| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| Foundation                                  | Stable contracts, authorisation model, identity, event ledger, replay, and measured transport prototype.   | Concurrency and failure tests demonstrate durable ordering and tenant isolation. |
-| Human team chat                             | Internal teams can exchange messages, reply, react, attach files, reconnect, search, and manage attention. | Cross-device consistency and notification policy pass the pilot matrix.          |
-| Maya read capabilities                      | Mention Maya for grounded questions, thread summaries, and catch-up.                                       | Source and shared-audience evaluations meet launch thresholds.                   |
-| Maya work creation                          | Explicit conversation-to-ticket flow, real previews, conditional assignment, audit, and recovery.          | Crash/retry, ambiguity, authorisation, and action-quality gates pass.            |
-| Private communication and client completion | One-to-one human DMs, a private Maya entry point, mobile/desktop parity, notification tuning.              | Privacy and lifecycle matrix passes across all clients.                          |
-| Controlled general availability             | Tested 1,000-user operating target, runbooks, budgets, retention, support, and staged rollout.             | Production canary evidence meets the stated release gates.                       |
+| Stage                                       | Usable result                                                                                                   | Entry to next stage                                                              |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Foundation                                  | Stable contracts, authorisation model, identity, event ledger, replay, and measured transport prototype.        | Concurrency and failure tests demonstrate durable ordering and tenant isolation. |
+| Human team chat                             | Internal teams can exchange messages, reply, react, attach files, reconnect, search, and manage attention.      | Cross-device consistency and notification policy pass the pilot matrix.          |
+| Maya read capabilities                      | Adapt the existing engine for grounded questions, thread summaries, catch-up and natural clarification replies. | Source and shared-audience evaluations meet launch thresholds.                   |
+| Maya work creation                          | Explicit conversation-to-ticket flow, real previews, conditional assignment, audit, and recovery.               | Crash/retry, ambiguity, authorisation, and action-quality gates pass.            |
+| Private communication and client completion | One-to-one human DMs, a private Maya entry point, mobile/desktop parity, notification tuning.                   | Privacy and lifecycle matrix passes across all clients.                          |
+| Controlled general availability             | Tested 1,000-user operating target, runbooks, budgets, retention, support, and staged rollout.                  | Production canary evidence meets the stated release gates.                       |
 
 Human DMs are part of the overall plan because they appear in the selected direction. They are a separate release gate, not a reason to delay the first team pilot. Group DMs, arbitrary private channels, voice/video, federation, full Slack history import, and automatic monitoring of every conversation remain later work.
+
+The 1,000-user target defines the first load-test and operating envelope, not a product limit or a claim of measured capacity. [Delivery and operations](05-delivery-quality-and-operations.md) includes explicit 5,000-, 10,000- and 50,000-user checkpoints, connection assumptions, database/worker limits and hosting cost drivers. Growth requires measured scaling and budget review; a monthly hosting bill cannot be inferred from peak concurrent users alone.
 
 ## Non-negotiable contracts
 
@@ -99,7 +109,7 @@ Human DMs are part of the overall plan because they appear in the selected direc
 
 ## What must be decided before coding
 
-Adopt the proposed native-chat action policy and history/retention defaults; confirm team-chat availability for guests and machine credentials; choose the attachment scanning service; run the transport/native-client spike; and assign the work-package owners. These are implementation decisions, not reasons to pause research. The [decision register](06-research-and-decisions.md) supplies a recommended default and consequence for each.
+Adopt the proposed native-chat action policy and history/retention defaults; confirm team-chat availability for guests and machine credentials; choose the attachment scanning service; validate the selected SSE path on the actual hosting and native clients; and assign the work-package owners. The SSE transport decision is settled for this plan; the spike qualifies its implementation and capacity. The [decision register](06-research-and-decisions.md) supplies a recommended default and consequence for the remaining choices.
 
 ## Completion definition
 

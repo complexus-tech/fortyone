@@ -5,6 +5,17 @@ import type { Comment } from "@/types/comment";
 import { isFormerUser } from "@/lib/former-user";
 import { FormerUser } from "@/components/ui/former-user";
 import { useWorkspacePath } from "@/hooks/use-workspace-path";
+import { useMayaAssignee } from "@/lib/hooks/members";
+
+const SystemAccountLabel = ({ userId }: { userId: string }) => {
+  const { data: maya } = useMayaAssignee();
+
+  return (
+    <Text color="muted" fontSize="md">
+      {userId === maya?.id ? "AI Agent" : "(System Account)"}
+    </Text>
+  );
+};
 
 export const CommentAuthor = ({
   userId,
@@ -51,9 +62,7 @@ export const CommentAuthor = ({
                       Go to profile
                     </Button>
                   ) : (
-                    <Text color="muted" fontSize="md">
-                      (System Account)
-                    </Text>
+                    <SystemAccountLabel userId={user.id} />
                   )}
                 </Box>
               </Flex>

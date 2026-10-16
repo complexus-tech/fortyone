@@ -114,8 +114,12 @@ export const MentionList = forwardRef<MentionListRef, MentionListProps>(
               )}
             </Text>
             {item.mentionKind === "agent" ? (
-              <Text className="ml-auto text-xs" color="muted">
-                AI assistant
+              <Text
+                className="ml-auto text-xs"
+                color="muted"
+                fontWeight="medium"
+              >
+                Agent
               </Text>
             ) : null}
           </button>

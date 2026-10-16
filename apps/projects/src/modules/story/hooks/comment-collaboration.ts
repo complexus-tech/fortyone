@@ -21,14 +21,33 @@ import type {
   CommentState,
   StoryCommentState,
 } from "../types/comment-collaboration";
+import { setCachedCommentReaction } from "./comment-reaction-cache";
+
+const collaborationMutationKey = (workspaceSlug: string, storyId: string) =>
+  [...storyKeys.commentState(workspaceSlug, storyId), "mutation"] as const;
 
 export const useStoryCommentState = (storyId: string) => {
   const { workspaceSlug } = useWorkspacePath();
+  const queryClient = useQueryClient();
+  const queryKey = storyKeys.commentState(workspaceSlug, storyId);
+  const mutationKey = collaborationMutationKey(workspaceSlug, storyId);
+  const pendingChanges = useIsMutating({
+    mutationKey,
+    exact: true,
+  });
   return useQuery({
-    queryKey: storyKeys.commentState(workspaceSlug, storyId),
-    queryFn: () => getCommentState(storyId, { workspaceSlug }),
+    queryKey,
+    queryFn: () => {
+      // Explicit retries bypass `enabled`; retain pending reactions there too.
+      const cached = queryClient.getQueryData<StoryCommentState>(queryKey);
+      if (cached && queryClient.isMutating({ mutationKey, exact: true })) {
+        return cached;
+      }
+      return getCommentState(storyId, { workspaceSlug });
+    },
+    enabled: !pendingChanges,
     staleTime: 0,
-    refetchInterval: 30_000,
+    refetchInterval: pendingChanges ? false : 30_000,
   });
 };
 
@@ -53,10 +72,8 @@ export const useCommentCollaboration = (storyId: string, commentId: string) => {
   const queryClient = useQueryClient();
   const { workspaceSlug } = useWorkspacePath();
   const queryKey = storyKeys.commentState(workspaceSlug, storyId);
-  const mergeState = (
-    entry: CommentState,
-    field: "reactions" | "resolution",
-  ) => {
+  const mutationKey = collaborationMutationKey(workspaceSlug, storyId);
+  const mergeResolution = (entry: CommentState) => {
     queryClient.setQueryData<StoryCommentState>(queryKey, (current) => {
       if (!current) return current;
       const previous = current.comments.find(
@@ -65,9 +82,8 @@ export const useCommentCollaboration = (storyId: string, commentId: string) => {
       const next = previous
         ? {
             ...previous,
-            ...(field === "reactions"
-              ? { reactions: entry.reactions }
-              : { resolvedAt: entry.resolvedAt, resolvedBy: entry.resolvedBy }),
+            resolvedAt: entry.resolvedAt,
+            resolvedBy: entry.resolvedBy,
           }
         : entry;
       return {
@@ -80,8 +96,14 @@ export const useCommentCollaboration = (storyId: string, commentId: string) => {
       };
     });
   };
-  const invalidate = () => queryClient.invalidateQueries({ queryKey });
+  const invalidate = () => {
+    // The settling mutation still counts. The final one reconciles the story
+    // without replacing optimistic reactions that are still being saved.
+    if (queryClient.isMutating({ mutationKey, exact: true }) > 1) return;
+    return queryClient.invalidateQueries({ queryKey, exact: true });
+  };
   const reaction = useMutation({
+    mutationKey,
     mutationFn: ({
       emoji,
       reacted,
@@ -89,19 +111,59 @@ export const useCommentCollaboration = (storyId: string, commentId: string) => {
       emoji: CommentEmoji;
       reacted: boolean;
     }) => setCommentReaction(commentId, emoji, reacted, { workspaceSlug }),
-    onSuccess: (entry) => {
-      mergeState(entry, "reactions");
+    onMutate: async ({ emoji, reacted }) => {
+      await queryClient.cancelQueries({ queryKey, exact: true });
+      const previous = queryClient
+        .getQueryData<StoryCommentState>(queryKey)
+        ?.comments.find((comment) => comment.commentId === commentId);
+      const previousReaction = previous?.reactions.find(
+        (item) => item.emoji === emoji,
+      );
+      const delta =
+        Number(reacted) - Number(previousReaction?.reacted ?? false);
+      const count = Math.max(0, (previousReaction?.count ?? 0) + delta);
+      queryClient.setQueryData<StoryCommentState>(queryKey, (current) =>
+        setCachedCommentReaction(
+          current,
+          commentId,
+          emoji,
+          count ? { emoji, count, reacted } : undefined,
+        ),
+      );
+      return { previousReaction, hadComment: Boolean(previous) };
     },
-    onError: () => {
+    onSuccess: (entry, { emoji }) => {
+      queryClient.setQueryData<StoryCommentState>(queryKey, (current) =>
+        setCachedCommentReaction(
+          current,
+          commentId,
+          emoji,
+          entry.reactions.find((item) => item.emoji === emoji),
+        ),
+      );
+    },
+    onError: (_error, { emoji }, context) => {
+      if (context) {
+        queryClient.setQueryData<StoryCommentState>(queryKey, (current) =>
+          setCachedCommentReaction(
+            current,
+            commentId,
+            emoji,
+            context.previousReaction,
+            !context.hadComment,
+          ),
+        );
+      }
       toast.error("Could not update reaction. Please try again.");
     },
     onSettled: invalidate,
   });
   const resolution = useMutation({
+    mutationKey,
     mutationFn: (resolved: boolean) =>
       setCommentResolution(commentId, resolved, { workspaceSlug }),
     onSuccess: (entry) => {
-      mergeState(entry, "resolution");
+      mergeResolution(entry);
     },
     onError: () => {
       toast.error("Could not update thread. Please try again.");
@@ -169,7 +231,9 @@ export const useMarkCommentsRead = (storyId: string) => {
         if (!threadId)
           return { ...current, lastReadAt: context?.previousReadAt ?? null };
         const threadReads = Object.fromEntries(
-          Object.entries(current.threadReads ?? {}).filter(([id]) => id !== threadId),
+          Object.entries(current.threadReads ?? {}).filter(
+            ([id]) => id !== threadId,
+          ),
         );
         if (context?.previousReadAt)
           threadReads[threadId] = context.previousReadAt;
