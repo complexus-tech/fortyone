@@ -4,17 +4,27 @@ import type { ComponentProps } from "react";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import type { Comment } from "@/types/comment";
 import { FORMER_USER_ID } from "@/lib/former-user";
+import type { CommentMayaRun } from "../types/comment-maya";
 import { CommentRow } from "./comment-row";
 
 jest.mock("ui", () => ({ ...jest.requireActual("ui"), TimeAgo: () => null }));
 jest.mock("@/lib/hooks/delete-comment-mutation", () => ({
   useDeleteCommentMutation: () => ({ mutate: jest.fn(), isPending: false }),
 }));
+jest.mock("@/lib/hooks/members", () => ({
+  useMayaAssignee: () => ({ data: null }),
+}));
 jest.mock("../hooks/comment-collaboration", () => ({
   useCommentCollaboration: () => ({
     reaction: { mutate: jest.fn(), isPending: false },
     resolution: { mutate: jest.fn(), isPending: false },
   }),
+}));
+jest.mock("../hooks/comment-read-tracking", () => ({
+  useCommentThreadReadTracking: () => ({ current: null }),
+}));
+jest.mock("../hooks/comment-maya", () => ({
+  useCommentMayaAction: () => ({ mutate: jest.fn(), isPending: false }),
 }));
 jest.mock("@/hooks/use-workspace-path", () => ({
   useWorkspacePath: () => ({
@@ -85,7 +95,330 @@ const propsFor = (
   ...overrides,
 });
 
+const pendingRun: CommentMayaRun = {
+  id: "pending-maya",
+  sourceId: "root",
+  requesterId: "viewer",
+  status: "running",
+  summary: "Internal progress must stay private",
+  updatedAt: "2026-10-16T12:00:00Z",
+  version: 1,
+};
+
+describe("Maya pending replies", () => {
+  it("opens a temporary reply without adding to the real reply count and respects manual collapse", () => {
+    const props = propsFor({
+      comment: createComment("root", "Root"),
+      mayaPending: [{ run: pendingRun, status: "thinking" }],
+    });
+    const { rerender } = render(<CommentRow {...props} />);
+    expect(screen.getByRole("status")).toHaveTextContent("Maya is thinking");
+    expect(
+      screen.queryByText(/0 replies|1 reply|Internal progress/),
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Hide replies" }));
+    expect(
+      screen.getByRole("button", { name: "Show replies and Maya’s response" }),
+    ).toBeInTheDocument();
+    rerender(
+      <CommentRow
+        {...props}
+        mayaPending={[
+          { run: { ...pendingRun, version: 2 }, status: "working" },
+        ]}
+      />,
+    );
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Maya is still working on this",
+    );
+    expect(
+      screen.queryByRole("button", { name: "Hide replies" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("replaces pending feedback with the actual reply in the same expanded thread", () => {
+    const props = propsFor({
+      comment: createComment("root", "Root"),
+      mayaPending: [{ run: pendingRun, status: "thinking" }],
+    });
+    const { rerender } = render(<CommentRow {...props} />);
+    const reply = createComment("maya-reply", "Maya", {
+      user: { ...createComment("maya", "Maya").user, isSystem: true },
+      comment: "<p>Updated this story’s priority.</p>",
+    });
+    rerender(
+      <CommentRow
+        {...props}
+        comment={{ ...props.comment, subComments: [reply] }}
+        mayaPending={[]}
+      />,
+    );
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(
+      screen.getByText("Updated this story’s priority."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("1 reply")).not.toBeInTheDocument();
+  });
+
+  it("keeps another member's collapsed thread compact and puts pending feedback after its real replies when opened", () => {
+    const props = propsFor({
+      mayaPending: [
+        {
+          run: { ...pendingRun, requesterId: "another", sourceId: "first" },
+          status: "thinking",
+        },
+      ],
+    });
+    const { container } = render(<CommentRow {...props} />);
+    expect(screen.queryByText("first content")).not.toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Show replies and Maya’s response" }),
+    );
+    const replies = container.querySelector<HTMLElement>(
+      "#comment-replies-root",
+    )!;
+    expect(within(replies).getByText("third content")).toBeInTheDocument();
+    expect(within(replies).getAllByRole("status")).toHaveLength(1);
+    expect(within(replies).queryByText("4 replies")).not.toBeInTheDocument();
+  });
+
+  it("checks status without resubmitting and limits retry to the requester", () => {
+    const onCheckMaya = jest.fn();
+    const onRetryMaya = jest.fn();
+    const props = propsFor({
+      onCheckMaya,
+      onRetryMaya,
+      mayaPending: [{ run: pendingRun, status: "delayed" }],
+    });
+    const { rerender } = render(<CommentRow {...props} />);
+    fireEvent.click(screen.getByRole("button", { name: "Check again" }));
+    expect(onCheckMaya).toHaveBeenCalledTimes(1);
+    expect(onRetryMaya).not.toHaveBeenCalled();
+    rerender(
+      <CommentRow
+        {...props}
+        mayaPending={[
+          { run: { ...pendingRun, status: "failed" }, status: "failed" },
+        ]}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    expect(onRetryMaya).toHaveBeenCalledWith(
+      expect.objectContaining({ id: pendingRun.id }),
+    );
+    rerender(
+      <CommentRow
+        {...props}
+        mayaPending={[
+          {
+            run: { ...pendingRun, requesterId: "another", status: "failed" },
+            status: "failed",
+          },
+        ]}
+      />,
+    );
+    expect(
+      screen.queryByRole("button", { name: "Retry" }),
+    ).not.toBeInTheDocument();
+  });
+});
+
 describe("collapsed comment replies", () => {
+  it("keeps Reply before the reaction control without unused emoji buttons", () => {
+    const { container } = render(<CommentRow {...propsFor()} />);
+    const footer = container.querySelector(".comment-footer")!;
+    expect(
+      within(footer as HTMLElement)
+        .getAllByRole("button")
+        .map(
+          (button) => button.getAttribute("aria-label") ?? button.textContent,
+        ),
+    ).toEqual(["Reply", "Add reaction"]);
+  });
+
+  it("opens a single reply and a recently active thread without repeating the summary", () => {
+    const comment = thread();
+    const { rerender } = render(
+      <CommentRow
+        {...propsFor({
+          comment: { ...comment, subComments: comment.subComments.slice(0, 1) },
+        })}
+      />,
+    );
+    expect(screen.getByText("first content")).toBeInTheDocument();
+    expect(screen.queryByText("1 reply")).not.toBeInTheDocument();
+    rerender(<CommentRow {...propsFor({ comment, defaultExpanded: true })} />);
+    expect(screen.getByText("third content")).toBeInTheDocument();
+    rerender(<CommentRow {...propsFor({ comment, defaultExpanded: false })} />);
+    expect(screen.getByText("third content")).toBeInTheDocument();
+  });
+
+  it("keeps an explicit collapse through new replies and restores the dot for a later unread reply", () => {
+    const comment = thread();
+    const { rerender } = render(
+      <CommentRow
+        {...propsFor({ comment, lastReadAt: null, defaultExpanded: true })}
+      />,
+    );
+    rerender(
+      <CommentRow
+        {...propsFor({
+          comment,
+          lastReadAt: "2026-10-16T12:00:00Z",
+          defaultExpanded: true,
+        })}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Hide replies" }));
+    expect(
+      screen.getByRole("button", { name: "3 replies. Show replies" }),
+    ).not.toHaveAccessibleDescription();
+    const newReply = createComment("new-reply", "Alice", {
+      createdAt: "2026-10-16T13:00:00Z",
+    });
+    rerender(
+      <CommentRow
+        {...propsFor({
+          comment: {
+            ...comment,
+            subComments: [...comment.subComments, newReply],
+          },
+          lastReadAt: "2026-10-16T12:00:00Z",
+          defaultExpanded: true,
+        })}
+      />,
+    );
+    expect(screen.queryByText("new-reply content")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "4 replies. Show replies" }),
+    ).toHaveAccessibleDescription("New replies");
+  });
+  it("uses only the unread dot for new replies, with no heading or divider when expanded", () => {
+    const { rerender } = render(
+      <CommentRow {...propsFor({ lastReadAt: "2026-10-15T12:00:00Z" })} />,
+    );
+    const summary = screen.getByRole("button", {
+      name: "3 replies. Show replies",
+    });
+    expect(summary).toHaveAccessibleDescription("New replies");
+    expect(screen.queryByText("New comments")).not.toBeInTheDocument();
+    fireEvent.click(summary);
+    expect(screen.queryByText("New comments")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Hide replies" }));
+    rerender(
+      <CommentRow {...propsFor({ lastReadAt: "2026-10-16T12:00:00Z" })} />,
+    );
+    expect(
+      screen.getByRole("button", { name: "3 replies. Show replies" }),
+    ).not.toHaveAccessibleDescription();
+  });
+  it("keeps internal Maya states out of the conversation and offers the ordinary Reply on Maya's response", () => {
+    const comment = thread();
+    comment.subComments[1] = {
+      ...comment.subComments[1],
+      user: {
+        ...comment.subComments[1].user,
+        isSystem: true,
+        fullName: "Maya",
+        username: "maya",
+      },
+    };
+    const run: CommentMayaRun = {
+      id: "run",
+      sourceId: "first",
+      requesterId: "viewer",
+      status: "running",
+      summary: "Internal progress",
+      updatedAt: "2026-10-16T12:00:00Z",
+      version: 1,
+    };
+    const { rerender, container } = render(
+      <CommentRow {...propsFor({ comment, mayaRuns: [run] })} />,
+    );
+    expect(
+      screen.queryByText(/Maya is working|Internal progress/),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", {
+        name: /Cancel request|Reply to Maya|View reply/,
+      }),
+    ).not.toBeInTheDocument();
+    rerender(
+      <CommentRow
+        {...propsFor({
+          comment,
+          mayaRuns: [
+            {
+              ...run,
+              status: "succeeded",
+              replyCommentId: "second",
+              version: 2,
+            },
+          ],
+        })}
+      />,
+    );
+    expect(
+      screen.getByRole("button", { name: "3 replies. Show replies" }),
+    ).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(
+      screen.getByRole("button", { name: "3 replies. Show replies" }),
+    );
+    fireEvent.click(
+      within(
+        container.querySelector<HTMLElement>("#comment-second")!,
+      ).getByRole("button", {
+        name: /^Reply$/,
+      }),
+    );
+    expect(
+      screen.getByRole("region", { name: "Reply composer for second" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Maya finished")).not.toBeInTheDocument();
+  });
+
+  it("places approval only inside the actual Maya reply, never on its source or collapsed parent", () => {
+    const comment = thread();
+    comment.subComments[1] = {
+      ...comment.subComments[1],
+      user: { ...comment.subComments[1].user, isSystem: true },
+    };
+    const run: CommentMayaRun = {
+      id: "run",
+      sourceId: "first",
+      requesterId: "viewer",
+      status: "awaiting_approval",
+      summary: "Update the story?",
+      proposalReview: "Status\nBefore: In progress\nAfter: Done",
+      replyCommentId: "second",
+      updatedAt: "2026-10-16T12:00:00Z",
+      version: 2,
+    };
+    const { container } = render(
+      <CommentRow {...propsFor({ comment, mayaRuns: [run] })} />,
+    );
+    expect(
+      screen.queryByText("Review proposed changes"),
+    ).not.toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: "3 replies. Show replies" }),
+    );
+    const reply = container.querySelector<HTMLElement>("#comment-second")!;
+    expect(
+      within(reply).getByText("Review proposed changes"),
+    ).toBeInTheDocument();
+    expect(
+      within(reply).getByRole("button", { name: "Approve and apply" }),
+    ).toBeInTheDocument();
+    expect(
+      within(
+        container.querySelector<HTMLElement>("#comment-first")!,
+      ).queryByRole("button", {
+        name: "Approve and apply",
+      }),
+    ).not.toBeInTheDocument();
+  });
+
   it("starts collapsed, shows unique real reply authors and total reply count, and toggles on summary click", () => {
     render(<CommentRow {...propsFor()} />);
     expect(screen.getByText("root content")).toBeInTheDocument();
@@ -112,8 +445,12 @@ describe("collapsed comment replies", () => {
     expect(screen.getByText("first content")).toBeInTheDocument();
     expect(screen.getByText("second content")).toBeInTheDocument();
     expect(screen.getByText("third content")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "3 replies. Show replies" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("3 replies")).not.toBeInTheDocument();
     const expanded = screen.getByRole("button", {
-      name: "3 replies. Hide replies",
+      name: "Hide replies",
     });
     expect(expanded).toHaveAttribute("aria-expanded", "true");
     fireEvent.click(expanded);
@@ -123,12 +460,34 @@ describe("collapsed comment replies", () => {
     ).toHaveAttribute("aria-expanded", "false");
   });
 
+  it("caps a long thread at four distinct replying avatars without including the parent", () => {
+    const authors = ["Alice", "Bob", "Charlie", "Dana", "Evan"];
+    const comment = createComment("root", "Root", {
+      subComments: Array.from({ length: 20 }, (_, i) =>
+        createComment(`reply-${i}`, authors[i % authors.length]),
+      ),
+    });
+    render(<CommentRow {...propsFor({ comment })} />);
+    const summary = screen.getByRole("button", {
+      name: "20 replies. Show replies",
+    });
+    expect(within(summary).getAllByRole("img")).toHaveLength(4);
+    for (const author of authors.slice(0, 4))
+      expect(
+        within(summary).getByRole("img", { name: author }),
+      ).toBeInTheDocument();
+    expect(
+      within(summary).queryByRole("img", { name: "Evan" }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(summary).queryByRole("img", { name: "Root" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("opens the thread for a linked reply and permits explicit collapse afterwards", () => {
     render(<CommentRow {...propsFor({ targetId: "second" })} />);
     expect(screen.getByText("second content")).toBeInTheDocument();
-    fireEvent.click(
-      screen.getByRole("button", { name: "3 replies. Hide replies" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Hide replies" }));
     expect(screen.queryByText("second content")).not.toBeInTheDocument();
   });
 
@@ -138,16 +497,14 @@ describe("collapsed comment replies", () => {
     rerender(<CommentRow {...props} targetId="third" />);
     expect(screen.getByText("third content")).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "3 replies. Hide replies" }),
+      screen.getByRole("button", { name: "Hide replies" }),
     ).toHaveAttribute("aria-expanded", "true");
   });
 
   it("reveals the same latest reply again after its thread was manually collapsed", () => {
     const props = propsFor({ targetId: "second" });
     const { rerender } = render(<CommentRow {...props} revealKey="second:1" />);
-    fireEvent.click(
-      screen.getByRole("button", { name: "3 replies. Hide replies" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Hide replies" }));
     expect(screen.queryByText("second content")).not.toBeInTheDocument();
     rerender(<CommentRow {...props} revealKey="second:2" />);
     expect(screen.getByText("second content")).toBeInTheDocument();
@@ -161,7 +518,7 @@ describe("collapsed comment replies", () => {
       screen.getByRole("region", { name: "Reply composer for root" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "3 replies. Hide replies" }),
+      screen.getByRole("button", { name: "Hide replies" }),
     ).toHaveAttribute("aria-expanded", "true");
   });
 
@@ -183,6 +540,7 @@ describe("collapsed comment replies", () => {
         })}
       />,
     );
+    fireEvent.click(screen.getByRole("button", { name: "Hide replies" }));
     const summary = screen.getByRole("button", {
       name: "1 reply. Show replies",
     });

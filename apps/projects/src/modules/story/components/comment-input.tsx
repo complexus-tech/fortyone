@@ -1,28 +1,26 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useEditor } from "@tiptap/react";
 import { toast } from "sonner";
-import { Button, Flex, TextEditor } from "ui";
+import { Button, Flex, Text, TextEditor } from "ui";
 import { AttachmentIcon } from "icons";
 import { cn } from "lib";
 import { DesktopDraftNotice } from "@/shell/desktop/desktop-draft-notice";
 import { useDesktopDraft } from "@/shell/desktop/use-desktop-draft";
 import { useDesktopWorkspaceScope } from "@/shell/desktop/workspace-scope";
-import { useCommentStoryMutation } from "@/modules/story/hooks/comment-mutation";
 import { useBrowserCommentDraft } from "@/modules/story/hooks/use-browser-comment-draft";
+import type { CommentDraft } from "@/modules/story/hooks/use-browser-comment-draft";
 import {
   COMMENT_ATTACHMENT_ACCEPT,
   useCommentAttachments,
 } from "@/modules/story/hooks/use-comment-attachments";
-import { useUpdateCommentMutation } from "@/lib/hooks/update-comment-mutation";
-import { useTeamMembers } from "@/lib/hooks/team-members";
-import { extractMentionsFromHTML } from "@/lib/utils/mentions";
-import { type MentionItem } from "./mentions/list";
+import { useCommentMentions } from "../hooks/use-comment-mentions";
+import {
+  useCommentSubmission,
+  useCommentSubmissionIdentity,
+} from "../hooks/use-comment-submission";
 import { setCommentAttachmentHandler } from "./comment-attachment-extension";
 import { CommentUploadStatus } from "./comment-upload-status";
-import {
-  getStoryCommentEditorExtensions,
-  setStoryCommentMentionUsers,
-} from "./story-comment-editor";
+import { getStoryCommentEditorExtensions } from "./story-comment-editor";
 
 type CommentInputProps = {
   storyId: string;
@@ -43,23 +41,16 @@ const CommentComposer = ({
   onCancel,
   teamId,
 }: CommentInputProps) => {
-  const { data: members } = useTeamMembers(teamId);
   const attachmentInput = useRef<HTMLInputElement>(null);
   const attachments = useCommentAttachments(storyId);
   let draftKey = `comment:${storyId}`;
   if (parentId) draftKey += `:reply:${parentId}`;
   if (commentId) draftKey = `comment:${storyId}:edit:${commentId}`;
-  const draft = useDesktopDraft<{ version: 1; html: string }>(draftKey);
+  const draft = useDesktopDraft<CommentDraft>(draftKey);
   const browserDraft = useBrowserCommentDraft(draftKey, !draft.supported);
-  const { mutateAsync: createComment, isPending: isCreating } =
-    useCommentStoryMutation();
-  const { mutateAsync: updateComment, isPending: isUpdating } =
-    useUpdateCommentMutation();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const submissionInFlight = useRef(false);
-  const isPending = isSubmitting || isCreating || isUpdating;
+  const submission = useCommentSubmissionIdentity();
   const activeDraft = draft.supported ? draft : browserDraft;
-  const canEdit = activeDraft.ready && !activeDraft.recovered && !isPending;
+  const ready = activeDraft.ready && !activeDraft.recovered;
 
   const getPlaceHolder = () => {
     if (commentId) {
@@ -88,16 +79,44 @@ const CommentComposer = ({
       placeholder: getPlaceHolder(),
     }),
     content: initialComment ?? "",
-    editable: canEdit,
+    editable: ready,
     onUpdate: ({ editor: current }) => {
       if (!activeDraft.ready || activeDraft.recovered) return;
+      const html = current.getHTML();
+      if (submission.get()?.html !== html) submission.set(null);
+      const identity = submission.get();
       void activeDraft
-        .save({ version: 1, html: current.getHTML() })
+        .save({
+          version: 1,
+          html,
+          ...(identity ? { creationId: identity.creationId } : {}),
+        })
         .catch(() => {
           // Desktop notices and browser toasts expose storage failures.
         });
     },
     immediatelyRender: false,
+  });
+  const { enabled: mayaEnabled } = useCommentMentions(
+    editor,
+    storyId,
+    teamId,
+    !commentId,
+  );
+
+  const { handleComment, isPending, canEdit } = useCommentSubmission({
+    editor,
+    ready,
+    attachments,
+    mayaEnabled,
+    storyId,
+    parentId,
+    commentId,
+    onCancel,
+    submission,
+    activeDraft,
+    draft,
+    browserDraft,
   });
 
   useEffect(() => {
@@ -111,95 +130,20 @@ const CommentComposer = ({
   const { recovered: browserRecovered, acceptRecovered } = browserDraft;
   useEffect(() => {
     if (!editor || draft.supported || !browserRecovered) return;
-    editor.commands.setContent(browserRecovered.html, { emitUpdate: false });
+    submission.set(
+      browserRecovered.creationId
+        ? {
+            html: browserRecovered.html,
+            creationId: browserRecovered.creationId,
+          }
+        : null,
+    );
+    editor.commands.setContent(browserRecovered.html, {
+      emitUpdate: false,
+      parseOptions: { preserveWhitespace: "full" },
+    });
     acceptRecovered();
-  }, [acceptRecovered, browserRecovered, draft.supported, editor]);
-
-  useEffect(() => {
-    if (!editor) {
-      return;
-    }
-
-    const mentionUsers: MentionItem[] = (members ?? []).map((member) => ({
-      id: member.id,
-      label: member.fullName || member.username,
-      username: member.username,
-      avatar: member.avatarUrl,
-    }));
-    setStoryCommentMentionUsers(editor, mentionUsers);
-  }, [editor, members]);
-
-  const handleComment = async () => {
-    if (
-      !editor ||
-      !canEdit ||
-      attachments.hasPendingUploads() ||
-      submissionInFlight.current
-    )
-      return;
-    if (editor.isEmpty) {
-      toast.error("Comment is required", {
-        description: "Please enter a comment before submitting",
-      });
-      return;
-    }
-
-    const comment = editor.getHTML();
-    const mentions = extractMentionsFromHTML(comment).map((m) => m.id);
-    submissionInFlight.current = true;
-    setIsSubmitting(true);
-    editor.setEditable(false, false);
-
-    try {
-      if (commentId) {
-        await updateComment({
-          commentId,
-          payload: { content: comment, mentions },
-          storyId,
-        });
-      } else {
-        await createComment({
-          storyId,
-          payload: {
-            comment,
-            parentId: parentId ?? null,
-            mentions,
-          },
-        });
-      }
-    } catch {
-      // Mutation hooks report the failure and retain the editor for retry.
-      submissionInFlight.current = false;
-      setIsSubmitting(false);
-      if (!editor.isDestroyed) editor.setEditable(true, false);
-      return;
-    }
-
-    try {
-      if (draft.supported) {
-        await draft.discard(
-          (payload) =>
-            typeof payload === "object" &&
-            payload !== null &&
-            "html" in payload &&
-            payload.html === comment,
-        );
-      } else {
-        await browserDraft.discard(comment);
-      }
-    } catch {
-      toast.error("Comment saved, but the local draft could not be removed.");
-    }
-    // Do not erase a newer draft if this composer was reopened or its content
-    // changed while the request was in flight.
-    if (!editor.isDestroyed && editor.getHTML() === comment) {
-      editor.commands.clearContent(false);
-      onCancel?.();
-    }
-    submissionInFlight.current = false;
-    setIsSubmitting(false);
-    if (!editor.isDestroyed) editor.setEditable(true, false);
-  };
+  }, [acceptRecovered, browserRecovered, draft.supported, editor, submission]);
 
   return (
     <Flex
@@ -213,7 +157,7 @@ const CommentComposer = ({
       justify="between"
     >
       <TextEditor
-        className="prose-base prose-a:text-foreground @container/comment-composer leading-6 antialiased"
+        className="story-comment-content prose-base prose-a:text-foreground @container/comment-composer leading-6 antialiased"
         editor={editor}
       />
       <DesktopDraftNotice
@@ -229,7 +173,18 @@ const CommentComposer = ({
             typeof draft.recovered.html !== "string"
           )
             return;
-          editor?.commands.setContent(draft.recovered.html);
+          editor?.commands.setContent(draft.recovered.html, {
+            emitUpdate: false,
+            parseOptions: { preserveWhitespace: "full" },
+          });
+          submission.set(
+            draft.recovered.creationId
+              ? {
+                  html: draft.recovered.html,
+                  creationId: draft.recovered.creationId,
+                }
+              : null,
+          );
           draft.acceptRecovered();
         }}
         onRetry={() => {
@@ -245,6 +200,11 @@ const CommentComposer = ({
         }}
         uploads={attachments.uploads}
       />
+      {commentId && initialComment?.includes('data-mention-kind="agent"') ? (
+        <Text className="text-xs" color="muted">
+          Editing a comment does not send a new request to Maya.
+        </Text>
+      ) : null}
       <Flex align="center" gap={2} justify="between">
         <input
           accept={COMMENT_ATTACHMENT_ACCEPT}

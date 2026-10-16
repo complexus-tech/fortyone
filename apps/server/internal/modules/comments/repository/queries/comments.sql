@@ -96,6 +96,9 @@ WHERE comment.comment_id = sqlc.arg(creation_id)
            WHERE member.workspace_id = story.workspace_id AND member.user_id = actor_user.user_id
        )));
 
+-- name: GetCommentMentionIDs :many
+SELECT mentioned_user_id FROM public.comment_mentions WHERE comment_id = sqlc.arg(comment_id);
+
 -- name: UpdateCommentForAuthor :one
 UPDATE public.story_comments AS comment
 SET

@@ -8,6 +8,7 @@ import (
 
 	storydomain "github.com/complexus-tech/projects-api/internal/modules/stories/domain"
 	storyreadsql "github.com/complexus-tech/projects-api/internal/modules/stories/repository/sqlc"
+	platformdatabase "github.com/complexus-tech/projects-api/internal/platform/database"
 	"github.com/complexus-tech/projects-api/internal/platform/safecast"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -124,7 +125,11 @@ func (r *repo) GetVisibleComment(
 	if commentID == uuid.Nil || storyID == uuid.Nil {
 		return storydomain.Comment{}, storydomain.ErrNotFound
 	}
-	row, err := r.reads.GetVisibleStoryComment(ctx, storyreadsql.GetVisibleStoryCommentParams{
+	queries := r.reads
+	if tx, ok := platformdatabase.UnitTransaction(ctx); ok {
+		queries = storyreadsql.New(tx)
+	}
+	row, err := queries.GetVisibleStoryComment(ctx, storyreadsql.GetVisibleStoryCommentParams{
 		ActorID: scope.ActorID, CommentID: commentID, StoryID: storyID, WorkspaceID: scope.WorkspaceID,
 		UnrestrictedTeamAccess: scope.UnrestrictedTeamAccess,
 		AllowedTeamIds:         append([]uuid.UUID(nil), scope.AllowedTeamIDs...),

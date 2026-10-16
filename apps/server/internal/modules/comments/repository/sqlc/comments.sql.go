@@ -494,6 +494,34 @@ func (q *Queries) GetCommentForWorkspace(ctx context.Context, arg GetCommentForW
 	return i, err
 }
 
+const getCommentMentionIDs = `-- name: GetCommentMentionIDs :many
+SELECT mentioned_user_id FROM public.comment_mentions WHERE comment_id = $1
+`
+
+type GetCommentMentionIDsParams struct {
+	CommentID uuid.UUID
+}
+
+func (q *Queries) GetCommentMentionIDs(ctx context.Context, arg GetCommentMentionIDsParams) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, getCommentMentionIDs, arg.CommentID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []uuid.UUID{}
+	for rows.Next() {
+		var mentioned_user_id uuid.UUID
+		if err := rows.Scan(&mentioned_user_id); err != nil {
+			return nil, err
+		}
+		items = append(items, mentioned_user_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const insertCommentMentionsForAuthor = `-- name: InsertCommentMentionsForAuthor :execrows
 WITH requested_user AS (
     SELECT DISTINCT requested.user_id

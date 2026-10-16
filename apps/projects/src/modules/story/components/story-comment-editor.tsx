@@ -15,6 +15,39 @@ import {
 const EMPTY_MARKDOWN = "";
 const MENTION_TRIGGER = "@";
 
+const StoryCommentMention = Mention.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      mentionKind: {
+        default: "user",
+        parseHTML: (element) =>
+          element.getAttribute("data-mention-kind") === "agent"
+            ? "agent"
+            : "user",
+        renderHTML: (attributes) =>
+          attributes.mentionKind === "agent"
+            ? { "data-mention-kind": "agent" }
+            : {},
+      },
+      agentKey: {
+        default: null,
+        parseHTML: (element) => element.getAttribute("data-agent-key"),
+        renderHTML: (attributes) =>
+          attributes.mentionKind === "agent" && attributes.agentKey === "maya"
+            ? { "data-agent-key": "maya" }
+            : {},
+      },
+    };
+  },
+  parseHTML() {
+    return [
+      { tag: 'a[data-type="mention"]', priority: 1001 },
+      { tag: 'span[data-type="mention"]', priority: 1001 },
+    ];
+  },
+});
+
 type MentionStorage = {
   users?: MentionItem[];
 };
@@ -97,18 +130,20 @@ export const getStoryCommentEditorExtensions = ({
 }) => {
   const mentionExtensions = enableMentions
     ? [
-        Mention.configure({
+        StoryCommentMention.configure({
           HTMLAttributes: {
-            class: "mention bg-surface-muted hover:bg-state-hover transition",
+            class: "mention",
           },
           renderHTML({ node, options, suggestion }) {
             const label = node.attrs.label ?? node.attrs.id ?? EMPTY_MARKDOWN;
             const trigger = suggestion?.char ?? MENTION_TRIGGER;
 
             return [
-              "a",
+              node.attrs.mentionKind === "agent" ? "span" : "a",
               mergeAttributes(
-                { href: `/profile/${node.attrs.id}` },
+                node.attrs.mentionKind === "agent"
+                  ? { title: "Maya · AI assistant" }
+                  : { href: `/profile/${node.attrs.id}` },
                 options.HTMLAttributes,
               ),
               `${trigger}${label}`,

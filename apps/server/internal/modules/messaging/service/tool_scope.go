@@ -29,7 +29,7 @@ func (e *FortyOneToolExecutor) joinedTeams(ctx context.Context, scope ToolScope)
 		}
 	}
 	for _, team := range items {
-		if team.ID == uuid.Nil || team.Workspace != scope.WorkspaceID {
+		if team.ID == uuid.Nil || team.Workspace != scope.WorkspaceID || (scope.SourceScope != nil && team.ID != scope.SourceScope.TeamID) {
 			continue
 		}
 		if allowedTeamIDs != nil {

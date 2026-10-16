@@ -1,41 +1,51 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import type { StoryCommentState } from "../types/comment-collaboration";
 import { useMarkCommentsRead } from "./comment-collaboration";
 
-export const useCommentReadTracking = (
+const useVisibleCommentRead = (
   storyId: string,
-  state: StoryCommentState | undefined,
-  latestLoadedAt: string | undefined,
+  {
+    enabled = true,
+    latestLoadedAt,
+    observedAt,
+    lastReadAt,
+    threadId,
+  }: {
+    enabled?: boolean;
+    latestLoadedAt?: string;
+    observedAt?: string;
+    lastReadAt?: string | null;
+    threadId?: string;
+  },
 ) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [visit, setVisit] = useState<{
-    lastReadAt: string | null;
-    hasUnread: boolean;
-  }>();
-  const lastReadAt = visit?.lastReadAt;
-  const [visible, setVisible] = useState(false);
   const attemptedAt = useRef<string | undefined>(undefined);
   const { mutate } = useMarkCommentsRead(storyId);
-
-  // Capture once when the first snapshot arrives. The keyed feed resets this
-  // snapshot for another account/story; later durable markers cannot erase it.
-  if (!visit && state) {
-    setVisit({
-      lastReadAt: state.lastReadAt,
-      hasUnread: state.unreadCount > 0,
-    });
+  let cutoff: string | undefined;
+  if (latestLoadedAt && observedAt) {
+    cutoff = Date.parse(latestLoadedAt) < Date.parse(observedAt)
+      ? latestLoadedAt
+      : observedAt;
   }
 
   useEffect(() => {
     const container = containerRef.current;
-    if (!container) return;
+    if (!container || !enabled || !cutoff) return;
+    if (lastReadAt && Date.parse(lastReadAt) >= Date.parse(cutoff)) return;
     let intersects = false;
     const update = () => {
-      setVisible(
-        intersects &&
-          document.visibilityState === "visible" &&
-          document.hasFocus(),
-      );
+      if (
+        !intersects ||
+        document.visibilityState !== "visible" ||
+        !document.hasFocus()
+      )
+        return;
+      const attempt = `${cutoff}:${observedAt}`;
+      if (attemptedAt.current === attempt) return;
+      attemptedAt.current = attempt;
+      // A failed automatic receipt waits for the next server snapshot, rather
+      // than retrying immediately when its optimistic marker is rolled back.
+      mutate({ observedAt: cutoff, ...(threadId ? { threadId } : {}) });
     };
     const observer = new IntersectionObserver(([entry]) => {
       intersects = entry.isIntersecting;
@@ -51,26 +61,36 @@ export const useCommentReadTracking = (
       window.removeEventListener("focus", update);
       window.removeEventListener("blur", update);
     };
-  }, []);
+  }, [cutoff, enabled, lastReadAt, mutate, observedAt, threadId]);
 
-  useEffect(() => {
-    if (!visible || !state || !latestLoadedAt || lastReadAt === undefined)
-      return;
-    // Do not consume comments newer than the rendered list or server snapshot.
-    const cutoff =
-      Date.parse(latestLoadedAt) < Date.parse(state.observedAt)
-        ? latestLoadedAt
-        : state.observedAt;
-    if (state.lastReadAt && Date.parse(state.lastReadAt) >= Date.parse(cutoff))
-      return;
-    if (attemptedAt.current === cutoff) return;
-    attemptedAt.current = cutoff;
-    mutate(cutoff, {
-      onError: () => {
-        attemptedAt.current = undefined;
-      },
-    });
-  }, [lastReadAt, latestLoadedAt, mutate, state, visible]);
-
-  return { containerRef, lastReadAt, hadUnread: visit?.hasUnread ?? false };
+  return containerRef;
 };
+
+export const useCommentReadTracking = (
+  storyId: string,
+  state: StoryCommentState | undefined,
+  latestRootLoadedAt: string | undefined,
+) => {
+  const containerRef = useVisibleCommentRead(storyId, {
+    latestLoadedAt: latestRootLoadedAt,
+    observedAt: state?.observedAt,
+    lastReadAt: state?.lastReadAt,
+  });
+  return { containerRef, lastReadAt: state?.lastReadAt };
+};
+
+export const useCommentThreadReadTracking = (
+  storyId: string,
+  threadId: string,
+  expanded: boolean,
+  latestReplyAt: string | undefined,
+  observedAt: string | undefined,
+  lastReadAt: string | null | undefined,
+) =>
+  useVisibleCommentRead(storyId, {
+    enabled: expanded,
+    threadId,
+    latestLoadedAt: latestReplyAt,
+    observedAt,
+    lastReadAt,
+  });

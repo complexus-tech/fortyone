@@ -37,8 +37,9 @@ type migrationProcessConfig struct {
 // Config is the API process configuration schema. Keep environment bindings in
 // this capability-named file so process composition remains easy to navigate.
 type Config struct {
-	Environment string `default:"development" env:"APP_ENVIRONMENT"`
-	Auth        struct {
+	MayaCommentsEnabled bool   `default:"true" env:"APP_MAYA_COMMENTS_ENABLED"`
+	Environment         string `default:"development" env:"APP_ENVIRONMENT"`
+	Auth                struct {
 		SecretKey                    string `default:"secret" env:"APP_AUTH_SECRET_KEY"`
 		CookieDomain                 string `env:"APP_AUTH_COOKIE_DOMAIN"`
 		GoogleClientIDs              string `env:"APP_AUTH_GOOGLE_CLIENT_IDS"`

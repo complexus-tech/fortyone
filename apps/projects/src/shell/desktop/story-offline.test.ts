@@ -20,6 +20,26 @@ const scope = {
 };
 const version = "2026-10-15T10:00:00.000Z";
 const enqueue = jest.fn();
+it("retains typed Maya targets and the same creation identity in the native outbox", async () => {
+  const creationId = randomUUID();
+  const payload = {
+    comment:
+      '<p><span data-type="mention" data-mention-kind="agent" data-agent-key="maya" data-id="maya">@Maya</span> Close this</p>',
+    mentions: [],
+    agentMentions: ["maya"] as "maya"[],
+    creationId,
+  };
+  await commentDesktopStory(scope, null, "item", payload);
+  await commentDesktopStory(scope, null, "item", { ...payload });
+  expect(enqueue).toHaveBeenLastCalledWith(
+    expect.objectContaining({
+      id: creationId,
+      resourceId: creationId,
+      kind: "comment.create",
+      payload: { ...payload, storyId: "item" },
+    }),
+  );
+});
 beforeEach(() => {
   jest.clearAllMocks();
   Object.defineProperty(crypto, "randomUUID", {
@@ -124,7 +144,18 @@ it("reuses operation IDs after an ambiguous IPC failure without marking acknowle
   await expect(createDesktopStory(scope, payload)).rejects.toThrow();
   await createDesktopStory(scope, payload);
   expect(enqueue.mock.calls[0][0].id).toBe(enqueue.mock.calls[1][0].id);
-  enqueue.mockResolvedValue({ operationId: "comment-op", resourceId: "server-comment", pending: false, resource: { comment: "Saved on server" } });
-  const result = await commentDesktopStory(scope, null, "item", { comment: "Saved on server", mentions: [] });
-  expect(result).toMatchObject({ desktopPending: false, data: { id: "server-comment", comment: "Saved on server" } });
+  enqueue.mockResolvedValue({
+    operationId: "comment-op",
+    resourceId: "server-comment",
+    pending: false,
+    resource: { comment: "Saved on server" },
+  });
+  const result = await commentDesktopStory(scope, null, "item", {
+    comment: "Saved on server",
+    mentions: [],
+  });
+  expect(result).toMatchObject({
+    desktopPending: false,
+    data: { id: "server-comment", comment: "Saved on server" },
+  });
 });

@@ -17,6 +17,7 @@ import {
 } from "../queries/comment-collaboration";
 import type {
   CommentEmoji,
+  CommentReadInput,
   CommentState,
   StoryCommentState,
 } from "../types/comment-collaboration";
@@ -113,28 +114,77 @@ export const useCommentCollaboration = (storyId: string, commentId: string) => {
 export const useMarkCommentsRead = (storyId: string) => {
   const queryClient = useQueryClient();
   const { workspaceSlug } = useWorkspacePath();
+  const queryKey = storyKeys.commentState(workspaceSlug, storyId);
   return useMutation({
-    mutationFn: (observedAt: string) =>
-      markCommentsRead(storyId, observedAt, { workspaceSlug }),
+    mutationFn: (input: CommentReadInput) =>
+      markCommentsRead(storyId, input, { workspaceSlug }),
+    onMutate: async ({ observedAt, threadId }) => {
+      await queryClient.cancelQueries({ queryKey });
+      const previous = queryClient.getQueryData<StoryCommentState>(queryKey);
+      const previousReadAt = threadId
+        ? previous?.threadReads?.[threadId]
+        : previous?.lastReadAt;
+      queryClient.setQueryData<StoryCommentState>(queryKey, (current) => {
+        if (!current) return current;
+        if (
+          previousReadAt &&
+          Date.parse(previousReadAt) >= Date.parse(observedAt)
+        )
+          return current;
+        return threadId
+          ? {
+              ...current,
+              threadReads: { ...current.threadReads, [threadId]: observedAt },
+            }
+          : { ...current, lastReadAt: observedAt };
+      });
+      return { previousReadAt };
+    },
     onSuccess: (result) => {
-      queryClient.setQueryData<StoryCommentState>(
-        storyKeys.commentState(workspaceSlug, storyId),
-        (current) => {
-          if (!current) return result;
-          // An older tab or request must not move the read marker backwards.
-          if (
-            current.lastReadAt &&
-            result.lastReadAt &&
-            Date.parse(current.lastReadAt) > Date.parse(result.lastReadAt)
-          )
-            return current;
-          return {
-            ...current,
-            lastReadAt: result.lastReadAt,
-            unreadCount: result.unreadCount,
-          };
-        },
-      );
+      queryClient.setQueryData<StoryCommentState>(queryKey, (current) => {
+        if (!current) return result;
+        const threadReads = { ...current.threadReads };
+        for (const [threadId, readAt] of Object.entries(
+          result.threadReads ?? {},
+        )) {
+          threadReads[threadId] = laterReadAt(threadReads[threadId], readAt)!;
+        }
+        return {
+          ...current,
+          lastReadAt: laterReadAt(current.lastReadAt, result.lastReadAt),
+          threadReads,
+          ...(Date.parse(result.observedAt) >= Date.parse(current.observedAt)
+            ? { observedAt: result.observedAt, unreadCount: result.unreadCount }
+            : {}),
+        };
+      });
+    },
+    onError: (_error, { observedAt, threadId }, context) => {
+      queryClient.setQueryData<StoryCommentState>(queryKey, (current) => {
+        if (!current) return current;
+        const readAt = threadId
+          ? current.threadReads?.[threadId]
+          : current.lastReadAt;
+        if (readAt !== observedAt) return current;
+        if (!threadId)
+          return { ...current, lastReadAt: context?.previousReadAt ?? null };
+        const threadReads = Object.fromEntries(
+          Object.entries(current.threadReads ?? {}).filter(([id]) => id !== threadId),
+        );
+        if (context?.previousReadAt)
+          threadReads[threadId] = context.previousReadAt;
+        return { ...current, threadReads };
+      });
     },
   });
+};
+
+const laterReadAt = (
+  current: string | null | undefined,
+  incoming: string | null | undefined,
+) => {
+  if (!current) return incoming ?? null;
+  return incoming && Date.parse(incoming) > Date.parse(current)
+    ? incoming
+    : current;
 };

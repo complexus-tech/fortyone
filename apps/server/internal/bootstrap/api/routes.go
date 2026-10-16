@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"errors"
+	agentrunshttp "github.com/complexus-tech/projects-api/internal/modules/agentinvocations/http"
 	"net/http"
 	"strings"
 
@@ -353,6 +354,10 @@ func (r routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Users:             svcs.users,
 		Links:             svcs.links,
 		Attachments:       svcs.attachments,
+	}, app)
+	agentrunshttp.Routes(agentrunshttp.Config{
+		Log: cfg.Log, SecretKey: cfg.SecretKey, BrowserSessions: browserSessions, WorkspaceResolver: r.workspaceResolver,
+		Runs: svcs.agentRuns, Access: svcs.agentCommentsAccess, Tasks: cfg.TasksService,
 	}, app)
 
 	objectiveshttp.Routes(objectiveshttp.Config{

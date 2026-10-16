@@ -26,6 +26,7 @@ func (a *OpenAIAssistant) Respond(ctx context.Context, request Request) (Respons
 		return Response{}, err
 	}
 	scope := ToolScope{
+		SourceScope:    request.SourceScope,
 		WorkspaceID:    request.WorkspaceID,
 		UserID:         request.UserID,
 		AllowedTeamIDs: cloneOptionalUUIDs(request.AllowedTeamIDs),
@@ -42,7 +43,7 @@ func (a *OpenAIAssistant) Respond(ctx context.Context, request Request) (Respons
 	if err != nil {
 		return Response{}, fmt.Errorf("%w: render runtime context: %v", ErrInvalidRequest, err)
 	}
-	definitions := toolDefinitionsForRequest(a.definitions, request.AllowMutations, len(request.AvailableFiles) > 0)
+	definitions := sourceToolDefinitions(toolDefinitionsForRequest(a.definitions, request.AllowMutations, len(request.AvailableFiles) > 0), request.SourceScope)
 	usage := Usage{}
 	toolSteps := 0
 
@@ -68,7 +69,11 @@ func (a *OpenAIAssistant) Respond(ctx context.Context, request Request) (Respons
 			if text == "" {
 				return Response{Usage: usage}, fmt.Errorf("%w: completed response contained no text", ErrMalformedResponse)
 			}
-			return Response{Text: text, Usage: usage}, nil
+			text, needsInput := nativeResponseText(text, request.SourceScope)
+			if text == "" {
+				return Response{Usage: usage}, fmt.Errorf("%w: empty native response", ErrMalformedResponse)
+			}
+			return Response{Text: text, NeedsInput: needsInput, Usage: usage}, nil
 		}
 		if toolSteps >= maximumToolSteps {
 			return Response{Usage: usage}, ErrMaxToolSteps
@@ -81,7 +86,7 @@ func (a *OpenAIAssistant) Respond(ctx context.Context, request Request) (Respons
 		// heterogeneous item, including encrypted reasoning, before tool outputs.
 		input = append(input, cloneRawMessages(apiResponse.Output)...)
 		for _, call := range analysis.calls {
-			if _, ok := a.toolNames[call.Name]; !ok {
+			if _, ok := a.toolNames[call.Name]; !ok || !sourceAllowsTool(scope.SourceScope, call.Name) {
 				return Response{Usage: usage}, fmt.Errorf("%w: %s", ErrUnknownTool, call.Name)
 			}
 			if isStoryMutationTool(call.Name) && !request.AllowMutations {
@@ -98,6 +103,12 @@ func (a *OpenAIAssistant) Respond(ctx context.Context, request Request) (Respons
 				return Response{Usage: usage}, fmt.Errorf("%w: tool %s output exceeds %d bytes", ErrMalformedResponse, call.Name, maximumToolOutputBytes)
 			}
 			if isStoryMutationTool(call.Name) {
+				if scope.SourceScope != nil && call.Name == toolUpdateStory {
+					var unchanged nativeMutationUnchanged
+					if err := json.Unmarshal(result, &unchanged); err == nil && unchanged.Kind == nativeMutationUnchangedKind && strings.TrimSpace(unchanged.Text) != "" {
+						return Response{Text: unchanged.Text, Usage: usage}, nil
+					}
+				}
 				confirmation, proposed, err := mutationConfirmationFromToolResult(result)
 				if err != nil {
 					return Response{Usage: usage}, err

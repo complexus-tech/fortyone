@@ -25,6 +25,24 @@ INSERT INTO messaging_assistant_usage_events (
 ON CONFLICT (inbound_event_id, attempt_count) DO NOTHING
 RETURNING 1;
 
+-- name: ClaimNativeAssistantUsageEvent :one
+WITH scoped_invocation AS (
+    SELECT id FROM public.agent_invocations
+    WHERE id = sqlc.arg(invocation_id)
+      AND workspace_id = sqlc.arg(workspace_id)
+), claimed AS (
+    INSERT INTO public.agent_invocation_assistant_usage_events (
+        invocation_id, attempt_count, usage_date, input_tokens, output_tokens, total_tokens
+    )
+    SELECT id, sqlc.arg(attempt_count), CAST(NOW() AT TIME ZONE 'UTC' AS date),
+           sqlc.arg(input_tokens), sqlc.arg(output_tokens), sqlc.arg(total_tokens)
+    FROM scoped_invocation
+    ON CONFLICT (invocation_id, attempt_count) DO NOTHING
+    RETURNING 1
+)
+SELECT EXISTS (SELECT 1 FROM claimed) AS claimed
+FROM scoped_invocation;
+
 -- name: AddAssistantDailyUsage :one
 INSERT INTO messaging_assistant_daily_usage (
     workspace_id,

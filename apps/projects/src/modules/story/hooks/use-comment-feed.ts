@@ -15,6 +15,7 @@ import {
   useStoryCommentState,
 } from "./comment-collaboration";
 import { useCommentReadTracking } from "./comment-read-tracking";
+import { useMayaRunRefresh, useStoryMayaRuns } from "./comment-maya";
 
 export const useCommentFeed = (storyId: string) => {
   const { data: session } = useSession();
@@ -34,6 +35,8 @@ export const useCommentFeed = (storyId: string) => {
     : null;
   const commentsQuery = useStoryCommentsInfinite(storyId);
   const stateQuery = useStoryCommentState(storyId);
+  const mayaQuery = useStoryMayaRuns(storyId, { poll: true });
+  useMayaRunRefresh(storyId, mayaQuery.data?.runs);
   const loadedComments = useMemo(
     () =>
       commentsQuery.data?.pages
@@ -57,10 +60,28 @@ export const useCommentFeed = (storyId: string) => {
       : [linkedThread, ...loadedComments];
   }
   const newest = latestComment(comments);
-  const { containerRef, lastReadAt, hadUnread } = useCommentReadTracking(
+  const defaultExpandedThreadId = comments.reduce<
+    { id: string; at: string } | undefined
+  >((latest, comment) => {
+    const reply = latestComment(comment.subComments);
+    return reply &&
+      (!latest || Date.parse(reply.createdAt) > Date.parse(latest.at))
+      ? { id: comment.id, at: reply.createdAt }
+      : latest;
+  }, undefined)?.id;
+  const latestRootLoadedAt = comments.reduce<string | undefined>(
+    (latest, comment) => {
+      if (comment.id.startsWith("pending-comment:")) return latest;
+      return !latest || Date.parse(comment.createdAt) > Date.parse(latest)
+        ? comment.createdAt
+        : latest;
+    },
+    undefined,
+  );
+  const { containerRef, lastReadAt } = useCommentReadTracking(
     storyId,
     stateQuery.data,
-    newest?.createdAt,
+    latestRootLoadedAt,
   );
   const stateById = useMemo(
     () =>
@@ -70,11 +91,21 @@ export const useCommentFeed = (storyId: string) => {
       ),
     [stateQuery.data],
   );
-  const hasLoadedUnread = flattenComments(comments).some((comment) =>
-    isUnreadComment(comment, lastReadAt, session?.user.id),
+  const hasLoadedUnread = comments.some(
+    (comment) =>
+      isUnreadComment(comment, lastReadAt, session?.user.id) ||
+      flattenComments(comment.subComments).some((reply) =>
+        isUnreadComment(
+          reply,
+          stateQuery.data
+            ? stateQuery.data.threadReads?.[comment.id] ?? null
+            : undefined,
+          session?.user.id,
+        ),
+      ),
   );
-  const hasUnread =
-    hasLoadedUnread || hadUnread || (stateQuery.data?.unreadCount ?? 0) > 0;
+  const hasUnread = hasLoadedUnread || (stateQuery.data?.unreadCount ?? 0) > 0;
+  const latestCommentId = stateQuery.data?.latestCommentId ?? newest?.id;
   const focusedTarget = useRef<string | null>(null);
 
   useEffect(() => {
@@ -87,7 +118,7 @@ export const useCommentFeed = (storyId: string) => {
   }, [targetId, revealKey, commentsQuery.data, threadQuery.data]);
 
   const jumpToLatest = () => {
-    const commentId = stateQuery.data?.latestCommentId ?? newest?.id;
+    const commentId = latestCommentId;
     if (!commentId) return;
     setJump((current) => ({
       requestedId,
@@ -99,6 +130,7 @@ export const useCommentFeed = (storyId: string) => {
   return {
     commentsQuery,
     stateQuery,
+    mayaQuery,
     threadQuery,
     targetId,
     revealKey,
@@ -108,6 +140,8 @@ export const useCommentFeed = (storyId: string) => {
     lastReadAt,
     stateById,
     hasUnread,
+    defaultExpandedThreadId,
+    latestCommentId,
     jumpToLatest,
     currentUserId: session?.user.id,
   };

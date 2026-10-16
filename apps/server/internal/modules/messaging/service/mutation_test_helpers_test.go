@@ -102,10 +102,19 @@ type mutationCreateCall struct {
 }
 
 type mutationUpdateCall struct {
+	reason      string
 	actorID     uuid.UUID
 	storyID     uuid.UUID
 	workspaceID uuid.UUID
 	updates     map[string]any
+}
+
+func (s *mutationStoriesStub) UpdateExternalUserActionWithReasonIfUnchanged(ctx context.Context, actorID, storyID, workspaceID uuid.UUID, expectedUpdatedAt time.Time, updates map[string]any, reason string) error {
+	if err := s.UpdateExternalUserActionIfUnchanged(ctx, actorID, storyID, workspaceID, expectedUpdatedAt, updates); err != nil {
+		return err
+	}
+	s.updateCalls[len(s.updateCalls)-1].reason = reason
+	return nil
 }
 
 type mutationStoriesStub struct {

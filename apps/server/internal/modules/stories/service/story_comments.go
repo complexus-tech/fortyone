@@ -130,13 +130,14 @@ func (s *Service) createCommentWithOptions(
 		CreationID:  commentInput.CreationID,
 		WorkspaceID: workspaceID, StoryID: commentInput.StoryID, ParentID: commentInput.Parent,
 		Actor: actor, Content: commentInput.Comment, MentionedUserIDs: commentInput.Mentions,
+		AgentMentions: commentInput.AgentMentions,
 	})
 	if err != nil {
 		span.RecordError(err)
 		return CoreComment{}, err
 	}
 
-	if options.imported {
+	if options.imported || created.Replayed {
 		return created, nil
 	}
 	platformdatabase.AfterCommit(ctx, func() {

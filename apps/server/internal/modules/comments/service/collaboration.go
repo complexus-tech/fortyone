@@ -38,9 +38,7 @@ func (s *Service) SetReaction(ctx context.Context, command ReactionCommand) (Com
 	if err := validateActorScope(command.Scope); err != nil {
 		return CommentState{}, err
 	}
-	switch command.Emoji {
-	case "👍", "✅", "👀":
-	default:
+	if !commentsdomain.SupportsReaction(command.Emoji) {
 		return CommentState{}, fmt.Errorf("%w: unsupported reaction", ErrInvalidComment)
 	}
 	repository, err := s.collaborationStore()
@@ -67,6 +65,9 @@ func (s *Service) MarkRead(ctx context.Context, command ReadCommand) (StoryState
 	}
 	if command.ObservedAt.IsZero() {
 		return StoryState{}, fmt.Errorf("%w: observedAt is required", ErrInvalidComment)
+	}
+	if command.ThreadID != nil && *command.ThreadID == uuid.Nil {
+		return StoryState{}, fmt.Errorf("%w: threadId must identify a root comment", ErrInvalidComment)
 	}
 	repository, err := s.collaborationStore()
 	if err != nil {

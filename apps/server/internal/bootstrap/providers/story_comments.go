@@ -62,5 +62,6 @@ func storyCommentToStories(comment comments.CoreComment) stories.CoreComment {
 		ID: comment.ID, StoryID: comment.StoryID, Parent: copyCommentParentID(comment.Parent),
 		UserID: comment.UserID, Comment: comment.Comment,
 		CreatedAt: comment.CreatedAt, UpdatedAt: comment.UpdatedAt, SubComments: children,
+		Replayed: comment.Replayed,
 	}
 }

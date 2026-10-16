@@ -155,7 +155,12 @@ func (e *FortyOneToolExecutor) getStory(ctx context.Context, scope ToolScope, ra
 	if err != nil {
 		return nil, err
 	}
-	story, err := e.storyReader.QueryByRef(ctx, scope.WorkspaceID, storyReference)
+	var story messagingStory
+	if scope.SourceScope != nil {
+		story, err = e.sourceStory(ctx, scope, joinedByID, &args.StoryReference, nil)
+	} else {
+		story, err = e.storyReader.QueryByRef(ctx, scope.WorkspaceID, storyReference)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("get story: %w", err)
 	}
@@ -191,7 +196,11 @@ func (e *FortyOneToolExecutor) getStory(ctx context.Context, scope ToolScope, ra
 			assigneeUsername = strings.TrimSpace(member.Username)
 		}
 	}
-	description, descriptionTruncated := boundedOptionalString(story.Description, maxStoryDescriptionRunes)
+	descriptionLimit := maxStoryDescriptionRunes
+	if scope.SourceScope != nil {
+		descriptionLimit = maximumNativeDescriptionRunes
+	}
+	description, descriptionTruncated := boundedOptionalString(story.Description, descriptionLimit)
 	var sprintName *string
 	if story.SprintSummary != nil {
 		name := strings.TrimSpace(story.SprintSummary.Name)

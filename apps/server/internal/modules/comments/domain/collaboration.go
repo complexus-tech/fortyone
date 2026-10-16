@@ -27,11 +27,12 @@ type CommentState struct {
 }
 
 type StoryState struct {
-	LastReadAt      *time.Time     `json:"lastReadAt"`
-	ObservedAt      time.Time      `json:"observedAt"`
-	UnreadCount     int64          `json:"unreadCount"`
-	LatestCommentID *uuid.UUID     `json:"latestCommentId"`
-	Comments        []CommentState `json:"comments"`
+	LastReadAt      *time.Time              `json:"lastReadAt"`
+	ObservedAt      time.Time               `json:"observedAt"`
+	UnreadCount     int64                   `json:"unreadCount"`
+	LatestCommentID *uuid.UUID              `json:"latestCommentId"`
+	Comments        []CommentState          `json:"comments"`
+	ThreadReads     map[uuid.UUID]time.Time `json:"threadReads"`
 }
 
 type ReactionCommand struct {
@@ -48,4 +49,5 @@ type ResolutionCommand struct {
 type ReadCommand struct {
 	Scope      StoryScope
 	ObservedAt time.Time
+	ThreadID   *uuid.UUID
 }

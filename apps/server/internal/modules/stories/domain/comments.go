@@ -19,6 +19,8 @@ type Comment struct {
 	CreatedAt   time.Time  `json:"created_at"`
 	UpdatedAt   time.Time  `json:"updated_at"`
 	SubComments []Comment  `json:"sub_comments"`
+	// Replayed suppresses side effects when an idempotent create already exists.
+	Replayed bool `json:"-"`
 }
 
 // CreateCommentCommand is the narrow caller-owned port used by compatibility
@@ -32,4 +34,5 @@ type CreateCommentCommand struct {
 	Actor            platformauth.Actor
 	Content          string
 	MentionedUserIDs []uuid.UUID
+	AgentMentions    []string
 }

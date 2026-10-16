@@ -33,6 +33,10 @@ import { useGoogleDriveDescriptionPaste } from "@/modules/google-drive/public/ed
 import { useDesktopDraft } from "@/shell/desktop/use-desktop-draft";
 import { DesktopDraftNotice } from "@/shell/desktop/desktop-draft-notice";
 import { useStoryById } from "../hooks/story";
+import {
+  useStoryEditorSaving,
+  useStoryEditorSync,
+} from "../hooks/use-story-editor-sync";
 import type { StoryUpdate } from "../types";
 import { Activities } from "./activities";
 import { Associations } from "./associations";
@@ -83,6 +87,7 @@ export const MainDetails = ({
   const { data } = useStoryById(storyId);
   const { data: links = [], isLoading: isLinksLoading } = useLinks(storyId);
   const { mutate: updateStory } = useUpdateStoryMutation();
+  const isSaving = useStoryEditorSaving(storyId);
   const { userRole } = useUserRole();
   const {
     handleMediaFiles,
@@ -304,6 +309,8 @@ export const MainDetails = ({
       recovered.descriptionHTML || recovered.description,
       { emitUpdate: false },
     );
+    markTitleEdited();
+    markDescriptionEdited();
     latestDraft.current = { storyId, payload: recovered };
     desktopDraft.acceptRecovered();
     updateStory({
@@ -342,28 +349,19 @@ export const MainDetails = ({
     [flushDescriptionUpdate, flushTitleUpdate, storyId],
   );
 
-  // Only apply external updates while the field is idle. Replacing a focused
-  // Tiptap document resets its selection and can overwrite a newer local draft.
-  useEffect(() => {
-    if (
-      titleEditor &&
-      !titleEditor.isFocused &&
-      title &&
-      titleEditor.getText() !== title
-    ) {
-      titleEditor.commands.setContent(title, { emitUpdate: false });
-    }
-    if (
-      descriptionEditor &&
-      !descriptionEditor.isFocused &&
-      descriptionHTML &&
-      descriptionEditor.getHTML() !== descriptionHTML
-    ) {
-      descriptionEditor.commands.setContent(descriptionHTML, {
-        emitUpdate: false,
-      });
-    }
-  }, [title, titleEditor, descriptionEditor, descriptionHTML]);
+  const markTitleEdited = useStoryEditorSync({
+    editor: titleEditor,
+    storyId,
+    text: title,
+    saving: isSaving,
+  });
+  const markDescriptionEdited = useStoryEditorSync({
+    editor: descriptionEditor,
+    storyId,
+    text: description,
+    html: descriptionHTML,
+    saving: isSaving,
+  });
 
   return (
     <BodyContainer

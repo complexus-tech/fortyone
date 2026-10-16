@@ -1,0 +1,10 @@
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM public.story_comment_reactions WHERE emoji NOT IN ('👍', '✅', '👀', '❤️', '🎉', '😂', '🙏', '🚀', '💡', '🔥', '👏', '🙌', '🤔', '😊', '😢', '👎', '💯')) THEN
+        RAISE EXCEPTION 'Expanded comment reactions remain; preserve them and repair forward';
+    END IF;
+END $$;
+
+ALTER TABLE public.story_comment_reactions
+    DROP CONSTRAINT story_comment_reactions_emoji_check,
+    ADD CONSTRAINT story_comment_reactions_emoji_check CHECK (emoji IN ('👍', '✅', '👀', '❤️', '🎉', '😂', '🙏', '🚀', '💡', '🔥', '👏', '🙌', '🤔', '😊', '😢', '👎', '💯'));

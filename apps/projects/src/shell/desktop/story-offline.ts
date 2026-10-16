@@ -8,6 +8,7 @@ import type { Comment } from "@/types";
 import type { Session } from "@/auth";
 import { storyKeys } from "@/modules/stories/constants";
 import { DEFAULT_ESTIMATE_SCHEME } from "@/lib/estimate";
+import type { StoryCommentPayload } from "@/shared/story/comment-payload";
 import type { DesktopCacheScope } from "./cache-types";
 import type { DesktopEnqueueOperation } from "./outbox-types";
 import { DESKTOP_OUTBOX_CHANGED } from "./outbox-types";
@@ -212,9 +213,9 @@ export async function commentDesktopStory(
   scope: DesktopCacheScope,
   session: Session | null,
   storyId: string,
-  payload: { comment: string; parentId?: string | null; mentions: string[] },
+  payload: StoryCommentPayload,
 ) {
-  const id = submissionId(scope, payload);
+  const id = payload.creationId ?? submissionId(scope, payload);
   const result = await enqueue(scope, {
     id,
     kind: "comment.create",
@@ -240,5 +241,8 @@ export async function commentDesktopStory(
     updatedAt: now,
     subComments: [],
   };
-  return { data: { ...comment, ...result.resource, id: result.resourceId }, desktopPending: result.pending };
+  return {
+    data: { ...comment, ...result.resource, id: result.resourceId },
+    desktopPending: result.pending,
+  };
 }

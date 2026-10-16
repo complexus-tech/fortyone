@@ -4,6 +4,7 @@ import type { Comment } from "@/types/comment";
 import { get, put, remove } from "@/lib/http";
 import type {
   CommentEmoji,
+  CommentReadInput,
   CommentState,
   StoryCommentState,
 } from "../types/comment-collaboration";
@@ -36,13 +37,13 @@ export const getCommentThread = async (
 
 export const markCommentsRead = async (
   storyId: string,
-  observedAt: string,
+  input: CommentReadInput,
   ctx: WorkspaceCtx,
 ) =>
   responseData(
-    await put<{ observedAt: string }, ApiResponse<StoryCommentState>>(
+    await put<CommentReadInput, ApiResponse<StoryCommentState>>(
       `stories/${storyId}/comments/read`,
-      { observedAt },
+      input,
       ctx,
     ),
   );

@@ -48,6 +48,15 @@ func TestValidateStoryMutationConfirmationStateInputBindsBatchProposalShape(t *t
 	attachment := comment
 	attachment.Operation = messaging.StoryMutationAttachFile
 	require.NoError(t, validateStoryMutationConfirmationStateInput(attachment))
+
+	nativeUpdate := base
+	nativeUpdate.Operation = messaging.StoryMutationUpdate
+	nativeUpdate.Proposal = []byte(`{"v":1,"o":"update_story","ds":"New prose","dh":"<p>New prose</p>"}`)
+	require.NoError(t, validateStoryMutationConfirmationStateInput(nativeUpdate))
+	nativeUpdate.Proposal = bytes.Repeat([]byte(" "), maximumStoryMutationProposalBytes+1)
+	require.ErrorIs(t, validateStoryMutationConfirmationStateInput(nativeUpdate), messaging.ErrInvalidConfirmation)
+	nativeUpdate.Proposal = nil
+	require.NoError(t, validateStoryMutationConfirmationStateInput(nativeUpdate), "legacy signed updates still have no stored proposal")
 }
 
 func TestStartOutboundDeliveryRequiresExternalWorkspaceBinding(t *testing.T) {

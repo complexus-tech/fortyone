@@ -2,6 +2,7 @@ package comments
 
 import (
 	"testing"
+	"time"
 
 	platformauth "github.com/complexus-tech/projects-api/internal/platform/auth"
 	"github.com/google/uuid"
@@ -18,6 +19,9 @@ func TestCollaborationRejectsInvalidIntentBeforePersistence(t *testing.T) {
 	require.ErrorIs(t, err, ErrInvalidComment)
 	_, err = service.MarkRead(t.Context(), ReadCommand{Scope: StoryScope{StoryID: uuid.New(), WorkspaceID: workspaceID, Actor: actor}})
 	require.ErrorIs(t, err, ErrInvalidComment)
+	invalidThread := uuid.Nil
+	_, err = service.MarkRead(t.Context(), ReadCommand{Scope: StoryScope{StoryID: uuid.New(), WorkspaceID: workspaceID, Actor: actor}, ObservedAt: time.Now(), ThreadID: &invalidThread})
+	require.ErrorContains(t, err, "threadId")
 	readOnly, err := platformauth.NewActor(actorID, platformauth.PrincipalOAuthUser, uuid.New(),
 		platformauth.MustScopeSet(platformauth.ScopeCommentsRead), platformauth.UnrestrictedTeamAccess())
 	require.NoError(t, err)

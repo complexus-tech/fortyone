@@ -19,6 +19,7 @@ type Querier interface {
 	ClaimAssistantUsageEvent(ctx context.Context, arg ClaimAssistantUsageEventParams) (int32, error)
 	ClaimEmailActionProposalApply(ctx context.Context, arg ClaimEmailActionProposalApplyParams) (MessagingEmailActionProposal, error)
 	ClaimInboundEvent(ctx context.Context, arg ClaimInboundEventParams) (ClaimInboundEventRow, error)
+	ClaimNativeAssistantUsageEvent(ctx context.Context, arg ClaimNativeAssistantUsageEventParams) (bool, error)
 	ClaimOutboundDelivery(ctx context.Context, arg ClaimOutboundDeliveryParams) (ClaimOutboundDeliveryRow, error)
 	ClaimRecoverableInboundEvents(ctx context.Context, arg ClaimRecoverableInboundEventsParams) ([]ClaimRecoverableInboundEventsRow, error)
 	CompleteInboundEvent(ctx context.Context, arg CompleteInboundEventParams) error

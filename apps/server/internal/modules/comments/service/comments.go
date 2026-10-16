@@ -162,7 +162,7 @@ func validateCreateCommand(command commentsdomain.CreateCommand) error {
 	if command.CreationID != nil && *command.CreationID == uuid.Nil {
 		return fmt.Errorf("%w: creation id is invalid", ErrInvalidComment)
 	}
-	if command.CreationID != nil && len(command.MentionedUserIDs) > 0 {
+	if command.CreationID != nil && len(command.MentionedUserIDs) > 0 && command.Actor.Kind != platformauth.PrincipalHumanUser {
 		return fmt.Errorf("%w: external creation does not synthesize mentions", ErrInvalidMention)
 	}
 	if command.StoryID == uuid.Nil || command.WorkspaceID == uuid.Nil {

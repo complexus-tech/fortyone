@@ -51,6 +51,13 @@ type storyMutationExecutor struct {
 }
 
 type storyMutationClaims struct {
+	SourceScope              *SourceScope           `json:"ss,omitempty"`
+	CommandIntent            string                 `json:"ci,omitempty"`
+	Description              *string                `json:"ds,omitempty"`
+	DescriptionHTML          *string                `json:"dh,omitempty"`
+	AssigneeID               *uuid.UUID             `json:"ai,omitempty"`
+	ChangedFields            []string               `json:"cf,omitempty"`
+	Review                   string                 `json:"rv,omitempty"`
 	Version                  int                    `json:"v"`
 	ConfirmationID           uuid.UUID              `json:"i"`
 	Operation                StoryMutationOperation `json:"o"`

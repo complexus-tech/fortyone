@@ -10,8 +10,9 @@ import (
 	"github.com/google/uuid"
 )
 
-// ConfirmStoryMutation applies a signed proposal after an explicit provider
-// confirmation. It re-authorizes the actor, workspace, joined-team membership,
+// ConfirmStoryMutation applies a proposal after explicit provider confirmation
+// or the native adapter's validated direct-command policy. It re-authorizes
+// the actor, workspace, joined-team membership,
 // and the current channel audience before every write.
 func (e *FortyOneToolExecutor) ConfirmStoryMutation(ctx context.Context, scope ToolScope, token string) (StoryMutationResult, error) {
 	if e.mutations == nil {
@@ -27,10 +28,13 @@ func (e *FortyOneToolExecutor) ConfirmStoryMutation(ctx context.Context, scope T
 	if confirmationID, opaque, err := batchConfirmationID(token); err != nil {
 		return StoryMutationResult{}, err
 	} else if opaque {
-		return e.confirmStoryBatch(ctx, scope, confirmationID, token)
+		return e.confirmOpaqueMutation(ctx, scope, confirmationID, token)
 	}
 	claims, err := e.mutations.verifyClaims(token)
 	if err != nil {
+		return StoryMutationResult{}, err
+	}
+	if err := validateMutationSource(scope, claims); err != nil {
 		return StoryMutationResult{}, err
 	}
 	if claims.WorkspaceID != scope.WorkspaceID || claims.UserID != scope.UserID {
@@ -158,6 +162,15 @@ func (e *FortyOneToolExecutor) CancelStoryMutation(
 	if confirmationID, opaque, err := batchConfirmationID(token); err != nil {
 		return StoryMutationCancellationResult{}, err
 	} else if opaque {
+		record, binding, err := e.loadOpaqueConfirmation(ctx, scope, confirmationID, token)
+		if err != nil {
+			return StoryMutationCancellationResult{}, err
+		}
+		if record.Operation == StoryMutationUpdate || scope.SourceScope != nil {
+			if _, err := e.nativeProposalClaims(scope, binding, record); err != nil {
+				return StoryMutationCancellationResult{}, err
+			}
+		}
 		return e.mutations.store.CancelStoryMutationConfirmation(
 			ctx,
 			StoryMutationConfirmationBinding{
@@ -171,6 +184,9 @@ func (e *FortyOneToolExecutor) CancelStoryMutation(
 	}
 	claims, err := e.mutations.verifyClaims(token)
 	if err != nil {
+		return StoryMutationCancellationResult{}, err
+	}
+	if err := validateMutationSource(scope, claims); err != nil {
 		return StoryMutationCancellationResult{}, err
 	}
 	if claims.WorkspaceID != scope.WorkspaceID || claims.UserID != scope.UserID {
@@ -369,7 +385,7 @@ func (m *storyMutationExecutor) confirmUpdate(
 	if err != nil {
 		return StoryMutationResult{}, fmt.Errorf("load story for confirmed update: %w", err)
 	}
-	if story.Team != team.ID || story.Workspace != scope.WorkspaceID {
+	if story.Team != team.ID || story.Workspace != scope.WorkspaceID || (scope.SourceScope != nil && (story.DeletedAt != nil || story.ArchivedAt != nil)) {
 		return StoryMutationResult{}, fmt.Errorf("%w: story team does not match proposal", ErrInvalidConfirmation)
 	}
 
@@ -399,6 +415,7 @@ func (m *storyMutationExecutor) confirmUpdate(
 	if err != nil {
 		return StoryMutationResult{}, fmt.Errorf("%w: invalid confirmed story time update: %v", ErrInvalidConfirmation, err)
 	}
+	addNativeStoryUpdates(updates, story, claims)
 	labelsChanged := claims.LabelIDs != nil && !sameUUIDSet(story.Labels, claims.LabelIDs)
 	if len(updates) == 0 && !labelsChanged {
 		return storyMutationResult(storyMutationStatusAlreadyApplied, StoryMutationUpdate, story, team.Code), nil
@@ -407,7 +424,17 @@ func (m *storyMutationExecutor) confirmUpdate(
 		return StoryMutationResult{}, fmt.Errorf("%w: %s", ErrStaleMutation, storyReference(team.Code, story.SequenceID))
 	}
 	if len(updates) > 0 {
-		if err := m.stories.UpdateExternalUserActionIfUnchanged(ctx, scope.UserID, story.ID, scope.WorkspaceID, claims.ExpectedUpdatedAt.UTC(), updates); err != nil {
+		var updateErr error
+		if scope.SourceScope != nil {
+			native, ok := m.stories.(NativeStoryMutationService)
+			if !ok {
+				return StoryMutationResult{}, fmt.Errorf("%w: native audit attribution is unavailable", ErrMutationNotAllowed)
+			}
+			updateErr = native.UpdateExternalUserActionWithReasonIfUnchanged(ctx, scope.UserID, story.ID, scope.WorkspaceID, claims.ExpectedUpdatedAt.UTC(), updates, nativeStoryMutationReason)
+		} else {
+			updateErr = m.stories.UpdateExternalUserActionIfUnchanged(ctx, scope.UserID, story.ID, scope.WorkspaceID, claims.ExpectedUpdatedAt.UTC(), updates)
+		}
+		if err := updateErr; err != nil {
 			if errors.Is(err, storyChangedError()) {
 				return StoryMutationResult{}, fmt.Errorf("%w: %s", ErrStaleMutation, storyReference(team.Code, story.SequenceID))
 			}

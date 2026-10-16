@@ -1,6 +1,10 @@
 /* global describe, expect, it, jest -- Jest globals are provided by the projects test runner. */
 
 import { Editor, generateHTML } from "@tiptap/core";
+import {
+  extractAgentMentionsFromHTML,
+  extractMentionsFromHTML,
+} from "@/lib/utils/mentions";
 import type { MentionItem } from "./mentions/list";
 import {
   getStoryCommentEditorExtensions,
@@ -47,6 +51,66 @@ jest.mock("@/lib/auth/client", () => ({
 }));
 
 describe("story comment editor mentions", () => {
+  it("round-trips a typed Maya mention alongside a human mention without treating Maya as a person", () => {
+    const extensions = getStoryCommentEditorExtensions({
+      enableMentions: true,
+      placeholder: "Comment",
+    });
+    const editor = new Editor({
+      extensions,
+      content: {
+        type: "doc",
+        content: [
+          {
+            type: "paragraph",
+            content: [
+              {
+                type: "mention",
+                attrs: {
+                  ...MENTION,
+                  mentionKind: "agent",
+                  agentKey: "maya",
+                  label: "Maya",
+                },
+              },
+              { type: "text", text: " ask " },
+              { type: "mention", attrs: { id: "human", label: "Maya Smith" } },
+            ],
+          },
+        ],
+      },
+    });
+    const html = editor.getHTML();
+    expect(html).toContain('data-mention-kind="agent"');
+    expect(html).toContain('data-agent-key="maya"');
+    const restored = new Editor({ extensions, content: html });
+    expect(restored.getHTML()).toBe(html);
+    expect(extractAgentMentionsFromHTML(html)).toEqual(["maya"]);
+    expect(extractMentionsFromHTML(html)).toEqual([
+      { id: "human", fullName: "Maya Smith" },
+    ]);
+    const container = document.createElement("div");
+    container.innerHTML = html;
+    expect(
+      container.querySelector('[data-mention-kind="agent"]'),
+    ).not.toHaveAttribute("href");
+    editor.destroy();
+    restored.destroy();
+  });
+
+  it("does not invoke Maya from plain text, quoted mentions, or code", () => {
+    const mention = `<span data-type="mention" data-mention-kind="agent" data-agent-key="maya" data-id="${MENTION.id}">@Maya</span>`;
+    expect(
+      extractAgentMentionsFromHTML("<p>@Maya please close this</p>"),
+    ).toEqual([]);
+    expect(
+      extractAgentMentionsFromHTML(
+        `<blockquote>${mention}</blockquote><pre>${mention}</pre>`,
+      ),
+    ).toEqual([]);
+    expect(extractAgentMentionsFromHTML(mention + mention)).toEqual(["maya"]);
+  });
+
   it("renders a selected person with the mention trigger", () => {
     const html = generateHTML(
       COMMENT_DOCUMENT,

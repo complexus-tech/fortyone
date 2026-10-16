@@ -16,6 +16,7 @@ func (m *storyMutationExecutor) proposeUpdate(
 	raw json.RawMessage,
 ) (json.RawMessage, error) {
 	var args struct {
+		nativeStoryUpdateArguments
 		StoryID                  *string   `json:"story_id"`
 		StoryReference           *string   `json:"story_reference"`
 		Title                    *string   `json:"title"`
@@ -53,7 +54,10 @@ func (m *storyMutationExecutor) proposeUpdate(
 	if (args.StoryID == nil) == (args.StoryReference == nil) {
 		return nil, fmt.Errorf("%w: provide exactly one of story_id or story_reference", ErrInvalidToolArguments)
 	}
-	if args.Assignee != assigneeActionUnchanged && args.Assignee != assigneeActionMe && args.Assignee != assigneeActionUnassigned {
+	if scope.SourceScope != nil && (args.SprintID != nil || args.ObjectiveID != nil || args.KeyResultID != nil || args.LabelIDs != nil) {
+		return nil, fmt.Errorf("%w: sprint, objective, key-result and label updates are unavailable in story comments", ErrInvalidToolArguments)
+	}
+	if args.Assignee != assigneeActionUnchanged && args.Assignee != assigneeActionMe && args.Assignee != assigneeActionUnassigned && args.Assignee != assigneeActionNamed {
 		return nil, fmt.Errorf("%w: assignee must be unchanged, me, or unassigned", ErrInvalidToolArguments)
 	}
 
@@ -61,7 +65,12 @@ func (m *storyMutationExecutor) proposeUpdate(
 	if err != nil {
 		return nil, err
 	}
-	story, err := m.resolveUpdateStory(ctx, scope, joinedByID, args.StoryID, args.StoryReference)
+	var story messagingStory
+	if scope.SourceScope != nil {
+		story, err = executor.sourceStory(ctx, scope, joinedByID, args.StoryReference, args.StoryID)
+	} else {
+		story, err = m.resolveUpdateStory(ctx, scope, joinedByID, args.StoryID, args.StoryReference)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -117,6 +126,11 @@ func (m *storyMutationExecutor) proposeUpdate(
 	if err != nil {
 		return nil, err
 	}
+	nativeClaims, err := executor.prepareNativeUpdate(ctx, scope, story, args.Assignee, statusID, args.nativeStoryUpdateArguments)
+	if err != nil {
+		return nil, err
+	}
+	statusID = nativeClaims.StatusID
 	changedFields, err := proposedChangedFields(
 		story,
 		scope.UserID,
@@ -143,10 +157,14 @@ func (m *storyMutationExecutor) proposeUpdate(
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrInvalidToolArguments, err)
 	}
+	changedFields = append(changedFields, nativeClaims.ChangedFields...)
 	if args.LabelIDs != nil && !sameUUIDSet(story.Labels, labelIDs) {
 		changedFields = append(changedFields, "labels")
 	}
 	if len(changedFields) == 0 {
+		if scope.SourceScope != nil {
+			return marshalToolResult(nativeMutationUnchanged{Kind: nativeMutationUnchangedKind, Text: fmt.Sprintf("%s already matches the requested changes.", storyReference(team.Code, story.SequenceID))})
+		}
 		return nil, fmt.Errorf("%w: update_story must contain at least one effective change", ErrInvalidToolArguments)
 	}
 
@@ -157,6 +175,11 @@ func (m *storyMutationExecutor) proposeUpdate(
 	now := m.now().UTC()
 	expectedUpdatedAt := story.UpdatedAt.UTC()
 	claims := storyMutationClaims{
+		SourceScope:              nativeClaims.SourceScope,
+		CommandIntent:            nativeClaims.CommandIntent,
+		Description:              nativeClaims.Description,
+		DescriptionHTML:          nativeClaims.DescriptionHTML,
+		AssigneeID:               nativeClaims.AssigneeID,
 		Version:                  storyMutationTokenVersion,
 		ConfirmationID:           confirmationID,
 		Operation:                StoryMutationUpdate,
@@ -183,6 +206,13 @@ func (m *storyMutationExecutor) proposeUpdate(
 		AutoSchedulingLocked:     cloneBoolPointer(args.AutoSchedulingLocked),
 		ExpiresAt:                now.Add(storyMutationConfirmationTTL),
 	}
+	if scope.SourceScope != nil {
+		claims.ChangedFields = append([]string(nil), changedFields...)
+		claims.Review, err = executor.nativeMutationReview(ctx, scope, story, claims)
+		if err != nil {
+			return nil, err
+		}
+	}
 	previewTitle := story.Title
 	if title != nil {
 		previewTitle = *title
@@ -198,6 +228,7 @@ func (m *storyMutationExecutor) proposeUpdate(
 		Title:                    previewTitle,
 		Priority:                 priority,
 		AssigneeAction:           args.Assignee,
+		AssigneeID:               nativeClaims.AssigneeID,
 		ChangedFields:            changedFields,
 		EstimatedDurationMinutes: args.EstimatedDurationMinutes,
 		MinimumFocusBlockMinutes: args.MinimumFocusBlockMinutes,
@@ -335,7 +366,20 @@ func (m *storyMutationExecutor) marshalProposal(
 	preview StoryMutationPreview,
 	prompt string,
 ) (json.RawMessage, error) {
-	token, err := m.signClaims(claims)
+	var token string
+	var proposal json.RawMessage
+	var err error
+	if claims.SourceScope != nil {
+		proposal, err = json.Marshal(claims)
+		if err == nil && len(proposal) > 64<<10 {
+			return nil, fmt.Errorf("%w: native update proposal exceeds the safe storage limit", ErrInvalidToolArguments)
+		}
+		if err == nil {
+			token, err = m.newBatchToken(claims.ConfirmationID)
+		}
+	} else {
+		token, err = m.signClaims(claims)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -346,6 +390,7 @@ func (m *storyMutationExecutor) marshalProposal(
 		TeamID:         claims.TeamID,
 		Operation:      claims.Operation,
 		TokenHash:      storyMutationTokenHash(token),
+		Proposal:       proposal,
 		ExpiresAt:      claims.ExpiresAt,
 	}); err != nil {
 		return nil, fmt.Errorf("register story mutation confirmation: %w", err)

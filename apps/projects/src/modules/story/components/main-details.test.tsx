@@ -18,6 +18,13 @@ const mockUpdateStory = jest.fn();
 let mockNativeEditors: Editor[] | null = null;
 let mockDraftSupported = false;
 let mockDraftReady = true;
+let mockPendingMutations = 0;
+jest.mock("@tanstack/react-query", () => ({
+  useIsMutating: () => mockPendingMutations,
+}));
+jest.mock("@/shell/desktop/desktop-outbox-coordinator", () => ({
+  useDesktopOutbox: () => null,
+}));
 let mockRecoveredDraft: {
   title: string;
   description: string;
@@ -91,6 +98,8 @@ jest.mock("@tiptap/react", () => ({
           getText: () => content,
           getHTML: () => content,
           commands: { setContent: jest.fn() },
+          on: jest.fn(),
+          off: jest.fn(),
         }
       : null;
   },
@@ -300,6 +309,7 @@ describe("description autosave", () => {
     mockDraftSupported = false;
     mockDraftReady = true;
     mockRecoveredDraft = null;
+    mockPendingMutations = 0;
     mockNativeEditors = null;
     mockSaveDraft.mockResolvedValue();
   });
@@ -363,7 +373,9 @@ describe("description autosave", () => {
       createEditor("Description first"),
       createEditor("Title first"),
     ];
-    render(<MainDetails isNotifications={false} storyId="first" />);
+    const { rerender } = render(
+      <MainDetails isNotifications={false} storyId="first" />,
+    );
     expect(mockNativeEditors[0].isEditable).toBe(false);
     fireEvent.click(screen.getByRole("button", { name: "Restore draft" }));
     expect(mockUpdateStory).toHaveBeenCalledWith({
@@ -377,6 +389,14 @@ describe("description autosave", () => {
       },
     });
     expect(mockAcceptRecovered).toHaveBeenCalled();
+    mockRecoveredDraft = null;
+    mockPendingMutations = 1;
+    rerender(<MainDetails isNotifications={false} storyId="first" />);
+    // A failed restoration leaves the cached server content unchanged.
+    mockPendingMutations = 0;
+    rerender(<MainDetails isNotifications={false} storyId="first" />);
+    expect(mockNativeEditors[0].getText()).toBe("Saved offline");
+    expect(mockNativeEditors[1].getText()).toBe("Recovered");
   });
 
   it("serializes only the latest description after the debounce while keeping title saves independent", () => {

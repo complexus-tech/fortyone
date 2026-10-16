@@ -10,6 +10,7 @@ import (
 
 	messaging "github.com/complexus-tech/projects-api/internal/modules/messaging/domain"
 	messagingsql "github.com/complexus-tech/projects-api/internal/modules/messaging/repository/sqlc"
+	platformdatabase "github.com/complexus-tech/projects-api/internal/platform/database"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
@@ -27,6 +28,13 @@ type storyMutationConfirmationRow struct {
 	ExpiresAt   time.Time
 }
 
+func (repository *Repository) storyMutationQueries(ctx context.Context) messagingsql.Querier {
+	if tx, ok := platformdatabase.UnitTransaction(ctx); ok {
+		return messagingsql.New(tx)
+	}
+	return repository.queries
+}
+
 func (repository *Repository) RegisterStoryMutationConfirmation(
 	ctx context.Context,
 	input messaging.StoryMutationConfirmationStateInput,
@@ -37,7 +45,7 @@ func (repository *Repository) RegisterStoryMutationConfirmation(
 	if err := validateStoryMutationConfirmationStateInput(input); err != nil {
 		return err
 	}
-	if err := repository.queries.InsertStoryMutationConfirmation(ctx, messagingsql.InsertStoryMutationConfirmationParams{
+	if err := repository.storyMutationQueries(ctx).InsertStoryMutationConfirmation(ctx, messagingsql.InsertStoryMutationConfirmationParams{
 		ConfirmationID: input.ConfirmationID, WorkspaceID: input.WorkspaceID,
 		UserID: input.UserID, TeamID: input.TeamID, Operation: string(input.Operation),
 		TokenHash: input.TokenHash, Proposal: string(input.Proposal), ExpiresAt: input.ExpiresAt.UTC(),
@@ -57,7 +65,7 @@ func (repository *Repository) LoadStoryMutationConfirmation(
 	if err := validateStoryMutationConfirmationBinding(binding); err != nil {
 		return messaging.StoryMutationConfirmationRecord{}, err
 	}
-	row, err := repository.queries.LoadStoryMutationConfirmation(ctx, storyMutationBindingParams(binding))
+	row, err := repository.storyMutationQueries(ctx).LoadStoryMutationConfirmation(ctx, storyMutationBindingParams(binding))
 	if errors.Is(err, pgx.ErrNoRows) {
 		return messaging.StoryMutationConfirmationRecord{}, messaging.ErrInvalidConfirmation
 	}
@@ -335,12 +343,12 @@ func validateStoryMutationConfirmationStateInput(input messaging.StoryMutationCo
 	default:
 		return fmt.Errorf("%w: unsupported operation %q", messaging.ErrInvalidConfirmation, input.Operation)
 	}
-	if input.Operation == messaging.StoryMutationCreateBatch {
+	if input.Operation == messaging.StoryMutationCreateBatch || (input.Operation == messaging.StoryMutationUpdate && len(input.Proposal) != 0) {
 		if len(input.Proposal) == 0 || len(input.Proposal) > maximumStoryMutationProposalBytes || !json.Valid(input.Proposal) {
-			return fmt.Errorf("%w: batch proposal must contain valid bounded JSON", messaging.ErrInvalidConfirmation)
+			return fmt.Errorf("%w: stored proposal must contain valid bounded JSON", messaging.ErrInvalidConfirmation)
 		}
 	} else if len(input.Proposal) != 0 {
-		return fmt.Errorf("%w: server-side proposal is only supported for batch creation", messaging.ErrInvalidConfirmation)
+		return fmt.Errorf("%w: server-side proposal is only supported for batch creation or story update", messaging.ErrInvalidConfirmation)
 	}
 	if len(input.TokenHash) != sha256DigestSize {
 		return fmt.Errorf("%w: token hash must contain %d bytes", messaging.ErrInvalidConfirmation, sha256DigestSize)

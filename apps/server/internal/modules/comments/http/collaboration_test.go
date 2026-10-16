@@ -69,6 +69,7 @@ func TestReadHTTPPreservesObservedCutoff(t *testing.T) {
 			require.Equal(t, actorID, command.Scope.Actor.PrincipalID)
 			require.Equal(t, storyID, command.Scope.StoryID)
 			require.Equal(t, cutoff, command.ObservedAt)
+			require.Nil(t, command.ThreadID)
 			return comments.StoryState{ObservedAt: cutoff}, nil
 		},
 	})
@@ -81,6 +82,32 @@ func TestReadHTTPPreservesObservedCutoff(t *testing.T) {
 	response := httptest.NewRecorder()
 	app.ServeHTTP(response, request)
 	require.Equal(t, http.StatusOK, response.Code, response.Body.String())
+}
+
+func TestThreadReadHTTPPreservesRootAndObservedCutoff(t *testing.T) {
+	t.Parallel()
+	workspaceID, actorID, storyID, threadID := uuid.New(), uuid.New(), uuid.New(), uuid.New()
+	cutoff := time.Date(2026, time.October, 16, 12, 0, 0, 123000, time.UTC)
+	handler := newCollaborationHandlers(collaborationServiceStub{
+		read: func(_ context.Context, command comments.ReadCommand) (comments.StoryState, error) {
+			require.Equal(t, workspaceID, command.Scope.WorkspaceID)
+			require.Equal(t, actorID, command.Scope.Actor.PrincipalID)
+			require.Equal(t, storyID, command.Scope.StoryID)
+			require.Equal(t, &threadID, command.ThreadID)
+			require.Equal(t, cutoff, command.ObservedAt)
+			return comments.StoryState{ThreadReads: map[uuid.UUID]time.Time{threadID: cutoff}}, nil
+		},
+	})
+	setCollaborationHandlerScope(t, handler, workspaceID, actorID)
+	app := newCommentHTTPTestApp()
+	app.Put("/stories/{storyId}/comments/read", handler.MarkRead)
+	request := httptest.NewRequest(http.MethodPut, "/stories/"+storyID.String()+"/comments/read",
+		strings.NewReader(`{"observedAt":"`+cutoff.Format(time.RFC3339Nano)+`","threadId":"`+threadID.String()+`"}`))
+	request.Header.Set("Content-Type", "application/json")
+	response := httptest.NewRecorder()
+	app.ServeHTTP(response, request)
+	require.Equal(t, http.StatusOK, response.Code, response.Body.String())
+	require.Contains(t, response.Body.String(), `"threadReads":{"`+threadID.String()+`":"`+cutoff.Format(time.RFC3339Nano)+`"}`)
 }
 
 func TestResolutionHTTPRequiresExplicitResolvedFlag(t *testing.T) {

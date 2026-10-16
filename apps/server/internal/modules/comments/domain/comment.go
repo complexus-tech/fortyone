@@ -23,4 +23,5 @@ type Comment struct {
 	CreatedAt   time.Time  `json:"created_at"`
 	UpdatedAt   time.Time  `json:"updated_at"`
 	SubComments []Comment  `json:"sub_comments"`
+	Replayed    bool       `json:"-"`
 }

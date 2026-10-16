@@ -74,13 +74,15 @@ func (h *collaborationHandlers) MarkRead(ctx context.Context, w http.ResponseWri
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 	var input struct {
-		ObservedAt time.Time `json:"observedAt"`
+		ObservedAt time.Time  `json:"observedAt"`
+		ThreadID   *uuid.UUID `json:"threadId"`
 	}
 	if err := web.Decode(r, &input); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 	state, err := h.service.MarkRead(ctx, comments.ReadCommand{
 		Scope: comments.StoryScope{StoryID: storyID, WorkspaceID: scope.WorkspaceID, Actor: scope.Actor}, ObservedAt: input.ObservedAt,
+		ThreadID: input.ThreadID,
 	})
 	if err != nil {
 		return web.RespondError(ctx, w, err, commentMutationStatus(err))

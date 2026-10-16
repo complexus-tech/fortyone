@@ -16,7 +16,9 @@ export const extractMentionsFromHTML = (htmlContent: string): MentionData[] => {
   tempDiv.innerHTML = htmlContent;
 
   // Find all mention spans
-  const mentionElements = tempDiv.querySelectorAll('a[data-type="mention"]');
+  const mentionElements = tempDiv.querySelectorAll(
+    '[data-type="mention"]:not([data-mention-kind="agent"])',
+  );
 
   const mentions: MentionData[] = [];
 
@@ -31,4 +33,18 @@ export const extractMentionsFromHTML = (htmlContent: string): MentionData[] => {
   });
 
   return mentions;
+};
+
+/** Agent targets never enter the human mention notification list. */
+export const extractAgentMentionsFromHTML = (html: string): "maya"[] => {
+  const container = document.createElement("div");
+  container.innerHTML = html;
+  const mentions = container.querySelectorAll(
+    '[data-type="mention"][data-mention-kind="agent"][data-agent-key="maya"][data-id]',
+  );
+  return Array.from(mentions).some(
+    (mention) => !mention.closest("blockquote, pre, code"),
+  )
+    ? ["maya"]
+    : [];
 };

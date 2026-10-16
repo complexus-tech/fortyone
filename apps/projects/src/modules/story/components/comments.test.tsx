@@ -1,7 +1,13 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { FORMER_USER_ID } from "@/lib/former-user";
 import { useStoryCommentsInfinite } from "@/modules/story/hooks/story-comments";
 import { Comments } from "./comments";
+
+jest.mock("../hooks/comment-maya", () => ({
+  useStoryMayaRuns: () => ({ data: { enabled: false, runs: [] } }),
+  useMayaRunRefresh: () => undefined,
+  useCommentMayaAction: () => ({ mutate: jest.fn(), isPending: false }),
+}));
 
 jest.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
@@ -26,6 +32,7 @@ jest.mock("../hooks/comment-read-tracking", () => ({
     lastReadAt: undefined,
     hadUnread: false,
   }),
+  useCommentThreadReadTracking: () => ({ current: null }),
 }));
 
 jest.mock("ui", () => ({ ...jest.requireActual("ui"), TimeAgo: () => null }));
@@ -45,6 +52,9 @@ jest.mock("@/modules/story/components/comment-input", () => ({
 }));
 jest.mock("./comment-attachment-list", () => ({
   CommentAttachmentList: () => null,
+}));
+jest.mock("./comment-latest-control", () => ({
+  CommentLatestControl: () => null,
 }));
 
 it("keeps retained comments and reply threads visible without a former-user profile or stale identity", () => {
@@ -86,9 +96,6 @@ it("keeps retained comments and reply threads visible without a former-user prof
   } as unknown as ReturnType<typeof useStoryCommentsInfinite>);
   const { container } = render(<Comments storyId="story-1" teamId="team-1" />);
   expect(screen.getByText("Shared decision remains.")).toBeInTheDocument();
-  fireEvent.click(
-    screen.getByRole("button", { name: "1 reply. Show replies" }),
-  );
   expect(screen.getByText("Shared reply remains.")).toBeInTheDocument();
   expect(screen.getAllByText("Former user").length).toBeGreaterThan(0);
   expect(screen.queryByRole("link")).not.toBeInTheDocument();

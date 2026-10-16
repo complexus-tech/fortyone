@@ -84,6 +84,7 @@ type Config struct {
 	GoogleDrivePickerAPIKey     string
 	GoogleDriveAppID            string
 	AIAPIKey                    string
+	MayaCommentsEnabled         bool
 	SSEHub                      *sse.Hub
 	AllowedOrigins              web.OriginPolicy
 }

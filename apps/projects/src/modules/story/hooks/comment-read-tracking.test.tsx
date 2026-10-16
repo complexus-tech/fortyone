@@ -1,7 +1,10 @@
 /* global beforeEach, afterEach, describe, expect, it, jest -- Jest globals are provided by the projects test runner. */
 import { act, render } from "@testing-library/react";
 import type { StoryCommentState } from "../types/comment-collaboration";
-import { useCommentReadTracking } from "./comment-read-tracking";
+import {
+  useCommentReadTracking,
+  useCommentThreadReadTracking,
+} from "./comment-read-tracking";
 
 const mockMarkRead = jest.fn();
 jest.mock("./comment-collaboration", () => ({
@@ -24,18 +27,32 @@ const Tracking = ({
   state?: StoryCommentState;
   latestLoadedAt?: string;
 }) => {
-  const { containerRef, lastReadAt, hadUnread } = useCommentReadTracking(
+  const { containerRef, lastReadAt } = useCommentReadTracking(
     "story",
     state,
     latestLoadedAt,
   );
-  return (
-    <div
-      data-had-unread={hadUnread}
-      data-last-read={lastReadAt}
-      ref={containerRef}
-    />
+  return <div data-last-read={lastReadAt} ref={containerRef} />;
+};
+
+const ThreadTracking = ({
+  expanded = false,
+  latest = "2026-10-16T11:00:00Z",
+  readAt,
+}: {
+  expanded?: boolean;
+  latest?: string;
+  readAt?: string;
+}) => {
+  const ref = useCommentThreadReadTracking(
+    "story",
+    "root-thread",
+    expanded,
+    latest,
+    "2026-10-16T13:00:00Z",
+    readAt,
   );
+  return <div hidden={!expanded} ref={ref} />;
 };
 
 beforeEach(() => {
@@ -54,28 +71,73 @@ afterEach(() => {
 });
 
 describe("comment read tracking", () => {
+  it("reads only an opened visible thread, then preserves its receipt through collapse and revisit", () => {
+    const { rerender, unmount } = render(<ThreadTracking />);
+    expect(global.IntersectionObserver).not.toHaveBeenCalled();
+    expect(mockMarkRead).not.toHaveBeenCalled();
+    rerender(<ThreadTracking expanded />);
+    act(() => {
+      intersect([{ isIntersecting: false }]);
+    });
+    expect(mockMarkRead).not.toHaveBeenCalled();
+    act(() => {
+      intersect([{ isIntersecting: true }]);
+    });
+    expect(mockMarkRead).toHaveBeenCalledWith({
+      threadId: "root-thread",
+      observedAt: "2026-10-16T11:00:00Z",
+    });
+    rerender(<ThreadTracking readAt="2026-10-16T11:00:00Z" />);
+    rerender(<ThreadTracking expanded readAt="2026-10-16T11:00:00Z" />);
+    expect(mockMarkRead).toHaveBeenCalledTimes(1);
+    unmount();
+    render(<ThreadTracking expanded readAt="2026-10-16T11:00:00Z" />);
+    expect(mockMarkRead).toHaveBeenCalledTimes(1);
+  });
+
+  it("leaves a newly arriving reply unread while its thread is collapsed", () => {
+    const { rerender } = render(
+      <ThreadTracking
+        readAt="2026-10-16T11:00:00Z"
+        latest="2026-10-16T12:00:00Z"
+      />,
+    );
+    expect(mockMarkRead).not.toHaveBeenCalled();
+    rerender(
+      <ThreadTracking
+        expanded
+        readAt="2026-10-16T11:00:00Z"
+        latest="2026-10-16T12:00:00Z"
+      />,
+    );
+    act(() => {
+      intersect([{ isIntersecting: true }]);
+    });
+    expect(mockMarkRead).toHaveBeenCalledWith({
+      threadId: "root-thread",
+      observedAt: "2026-10-16T12:00:00Z",
+    });
+  });
   it("waits for the comments to be visible and never reads beyond the loaded list", () => {
     render(<Tracking />);
     expect(mockMarkRead).not.toHaveBeenCalled();
     act(() => {
       intersect([{ isIntersecting: true }]);
     });
-    expect(mockMarkRead).toHaveBeenCalledWith(
-      "2026-10-16T11:00:00Z",
-      expect.any(Object),
-    );
+    expect(mockMarkRead).toHaveBeenCalledWith({
+      observedAt: "2026-10-16T11:00:00Z",
+    });
   });
   it("caps a newer loaded comment at the server snapshot", () => {
     render(<Tracking latestLoadedAt="2026-10-16T13:00:00Z" />);
     act(() => {
       intersect([{ isIntersecting: true }]);
     });
-    expect(mockMarkRead).toHaveBeenCalledWith(
-      baseline.observedAt,
-      expect.any(Object),
-    );
+    expect(mockMarkRead).toHaveBeenCalledWith({
+      observedAt: baseline.observedAt,
+    });
   });
-  it("preserves the visit's unread boundary after the durable marker moves", () => {
+  it("uses the current durable marker as it moves", () => {
     const { container, rerender } = render(<Tracking />);
     act(() => {
       intersect([{ isIntersecting: true }]);
@@ -91,9 +153,34 @@ describe("comment read tracking", () => {
     );
     expect(container.firstChild).toHaveAttribute(
       "data-last-read",
-      baseline.lastReadAt,
+      "2026-10-16T11:00:00Z",
     );
-    expect(container.firstChild).toHaveAttribute("data-had-unread", "true");
+    expect(mockMarkRead).toHaveBeenCalledTimes(1);
+  });
+  it("uses the saved read marker on revisit instead of retaining the prior visit's unread state", () => {
+    const firstVisit = render(<Tracking />);
+    act(() => {
+      intersect([{ isIntersecting: true }]);
+    });
+    expect(mockMarkRead).toHaveBeenCalledTimes(1);
+    firstVisit.unmount();
+
+    const { container } = render(
+      <Tracking
+        state={{
+          ...baseline,
+          lastReadAt: "2026-10-16T11:00:00Z",
+          unreadCount: 0,
+        }}
+      />,
+    );
+    act(() => {
+      intersect([{ isIntersecting: true }]);
+    });
+    expect(container.firstChild).toHaveAttribute(
+      "data-last-read",
+      "2026-10-16T11:00:00Z",
+    );
     expect(mockMarkRead).toHaveBeenCalledTimes(1);
   });
   it("retries the same cutoff after a failure when the next snapshot arrives", () => {
@@ -101,11 +188,16 @@ describe("comment read tracking", () => {
     act(() => {
       intersect([{ isIntersecting: true }]);
     });
-    const callbacks = mockMarkRead.mock.calls[0][1] as { onError: () => void };
     act(() => {
-      callbacks.onError();
+      intersect([{ isIntersecting: true }]);
     });
-    rerender(<Tracking state={{ ...baseline }} />);
+    expect(mockMarkRead).toHaveBeenCalledTimes(1);
+    rerender(
+      <Tracking state={{ ...baseline, observedAt: "2026-10-16T13:00:00Z" }} />,
+    );
+    act(() => {
+      intersect([{ isIntersecting: true }]);
+    });
     expect(mockMarkRead).toHaveBeenCalledTimes(2);
   });
   it("does not mark an unfocused window as read", () => {

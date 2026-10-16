@@ -61,10 +61,11 @@ type CustomFieldValue struct {
 // compatibility comment port. The comments module remains responsible for the
 // authoritative mutation and authorization policy.
 type NewComment struct {
-	CreationID *uuid.UUID
-	StoryID    uuid.UUID
-	Parent     *uuid.UUID
-	UserID     uuid.UUID
-	Comment    string
-	Mentions   []uuid.UUID
+	CreationID    *uuid.UUID
+	StoryID       uuid.UUID
+	Parent        *uuid.UUID
+	UserID        uuid.UUID
+	Comment       string
+	Mentions      []uuid.UUID
+	AgentMentions []string
 }

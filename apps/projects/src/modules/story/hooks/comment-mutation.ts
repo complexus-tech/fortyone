@@ -18,6 +18,7 @@ import {
   isDesktopPending,
 } from "@/shell/desktop/story-offline";
 import { retainDesktopComment } from "@/shell/desktop/outbox-projection";
+import type { StoryCommentPayload } from "@/shared/story/comment-payload";
 import { commentStoryAction } from "../actions/comment-story";
 
 export const useCommentStoryMutation = () => {
@@ -33,11 +34,7 @@ export const useCommentStoryMutation = () => {
     Error,
     {
       storyId: string;
-      payload: {
-        comment: string;
-        parentId?: string | null;
-        mentions: string[];
-      };
+      payload: StoryCommentPayload;
     },
     { optimisticId?: string }
   >({
@@ -50,11 +47,7 @@ export const useCommentStoryMutation = () => {
       payload,
     }: {
       storyId: string;
-      payload: {
-        comment: string;
-        parentId?: string | null;
-        mentions: string[];
-      };
+      payload: StoryCommentPayload;
     }) => {
       if (getDesktopBridge()?.enqueueOperation) {
         if (!desktopScope)
@@ -138,7 +131,12 @@ export const useCommentStoryMutation = () => {
     },
     onSettled: (res, _error, { storyId }) => {
       if (isDesktopPending(res)) return;
-      return invalidateCommentQueries(queryClient, workspaceSlug, storyId);
+      return Promise.all([
+        invalidateCommentQueries(queryClient, workspaceSlug, storyId),
+        queryClient.invalidateQueries({
+          queryKey: storyKeys.mayaRuns(workspaceSlug, storyId),
+        }),
+      ]);
     },
   });
 

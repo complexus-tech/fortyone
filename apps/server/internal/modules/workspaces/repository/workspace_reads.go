@@ -7,6 +7,7 @@ import (
 
 	workspacedomain "github.com/complexus-tech/projects-api/internal/modules/workspaces/domain"
 	workspacesql "github.com/complexus-tech/projects-api/internal/modules/workspaces/repository/sqlc"
+	"github.com/complexus-tech/projects-api/internal/platform/database"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
@@ -29,7 +30,11 @@ func (r *repo) List(ctx context.Context, userID uuid.UUID) ([]workspacedomain.Wo
 }
 
 func (r *repo) Get(ctx context.Context, workspaceID, userID uuid.UUID) (workspacedomain.Workspace, error) {
-	row, err := r.queries.GetWorkspaceForMember(ctx, workspacesql.GetWorkspaceForMemberParams{
+	queries := r.queries
+	if tx, ok := database.UnitTransaction(ctx); ok && r.bindTransaction != nil {
+		queries = r.bindTransaction(tx)
+	}
+	row, err := queries.GetWorkspaceForMember(ctx, workspacesql.GetWorkspaceForMemberParams{
 		UserID:      userID,
 		WorkspaceID: workspaceID,
 	})

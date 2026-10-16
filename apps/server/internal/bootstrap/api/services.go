@@ -2,6 +2,9 @@ package api
 
 import (
 	"context"
+	"github.com/complexus-tech/projects-api/internal/bootstrap/agentadapter"
+	agentrunsrepository "github.com/complexus-tech/projects-api/internal/modules/agentinvocations/repository"
+	agentruns "github.com/complexus-tech/projects-api/internal/modules/agentinvocations/service"
 	"strings"
 
 	"github.com/complexus-tech/projects-api/internal/bootstrap/customfieldsadapter"
@@ -112,6 +115,8 @@ import (
 var _ messaging.StoryMutationService = (*stories.Service)(nil)
 
 type services struct {
+	agentRuns            *agentruns.Service
+	agentCommentsAccess  agentadapter.CommentAccess
 	desktopOperations    *desktoprepository.Store
 	activities           *activities.Service
 	admin                *admin.Service
@@ -404,6 +409,11 @@ func buildServices(cfg mux.Config, dependencies Dependencies) services {
 	if err != nil {
 		panic("failed to resolve maya actor: " + err.Error())
 	}
+	agentRuns := agentruns.New(agentrunsrepository.New(dependencies.DatabasePool), nil)
+	storiesService.ConfigureCommentCreator(&agentadapter.CommentCreator{
+		Pool: dependencies.DatabasePool, Base: storyCommentCreator, Stories: storiesService,
+		Runs: agentRuns, MayaID: mayaActorID, Tasks: cfg.TasksService, Log: cfg.Log,
+	})
 	reportsRepo := reportsrepository.New(cfg.Log, dependencies.DatabasePool)
 	reportsService := reports.New(cfg.Log, reportsRepo)
 	teamSettingsService := teamsettings.New(
@@ -548,6 +558,8 @@ func buildServices(cfg mux.Config, dependencies Dependencies) services {
 		sprints:              sprintsService,
 		states:               statesService,
 		stories:              storiesService,
+		agentRuns:            agentRuns,
+		agentCommentsAccess:  agentadapter.CommentAccess{Stories: storiesService, Workspace: mayaRepository, Configured: cfg.MayaCommentsEnabled && strings.TrimSpace(cfg.AIAPIKey) != ""},
 		subscriptions:        subscriptionsService,
 		teams:                teamsService,
 		teamSettings:         teamSettingsService,

@@ -64,6 +64,10 @@ func NormalizeRequest(request Request) (Request, error) {
 		return Request{}, err
 	}
 
+	request.SourceScope, err = normalizedSourceScope(request.SourceScope)
+	if err != nil {
+		return Request{}, err
+	}
 	request.AllowedTeamIDs = allowedTeamIDs
 	request.SharedTeamIDs = sharedTeamIDs
 	request.RuntimeContext = runtimeContext

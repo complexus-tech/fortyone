@@ -80,7 +80,10 @@ func TestCommentCollaborationIsScopedAndIdempotent(t *testing.T) {
 	require.NoError(t, err)
 	read, err := service.MarkRead(ctx, comments.ReadCommand{Scope: storyScope, ObservedAt: initial.ObservedAt})
 	require.NoError(t, err)
-	require.Equal(t, int64(1), read.UnreadCount, "read cutoff must preserve newly arrived comments")
+	require.Equal(t, int64(2), read.UnreadCount, "root cutoff must preserve newly arrived roots and unopened replies")
+	read, err = service.MarkRead(ctx, comments.ReadCommand{Scope: storyScope, ObservedAt: initial.ObservedAt, ThreadID: &root.ID})
+	require.NoError(t, err)
+	require.Equal(t, int64(1), read.UnreadCount, "opening the thread clears only replies observed before its cutoff")
 	require.Equal(t, &newest.ID, read.LatestCommentID)
 	require.WithinDuration(t, initial.ObservedAt, *read.LastReadAt, time.Microsecond)
 	read, err = service.MarkRead(ctx, comments.ReadCommand{Scope: storyScope, ObservedAt: initial.ObservedAt.Add(-time.Hour)})
@@ -130,6 +133,8 @@ func TestStoryCommentStateLatestHasStableTieBreakAndEmptyState(t *testing.T) {
 	require.NoError(t, err)
 	require.Nil(t, state.LatestCommentID)
 	require.NotNil(t, state.Comments)
+	require.NotNil(t, state.ThreadReads)
+	require.Empty(t, state.ThreadReads)
 
 	firstID, secondID := uuid.New(), uuid.New()
 	_, err = postgres.Pool.Exec(ctx, `

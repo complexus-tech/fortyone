@@ -53,6 +53,8 @@ type Assistant interface {
 // Request contains the authoritative FortyOne identity and the visible
 // conversation leading up to the current prompt.
 type Request struct {
+	// SourceScope is a trusted adapter boundary, never model-authored context.
+	SourceScope    *SourceScope
 	WorkspaceID    uuid.UUID
 	UserID         uuid.UUID
 	AllowedTeamIDs []uuid.UUID
@@ -167,6 +169,7 @@ type ConversationTurn struct {
 // Response is the assistant's provider-neutral text response and aggregate
 // model usage across every Responses API call needed to produce it.
 type Response struct {
+	NeedsInput   bool
 	Text         string
 	Usage        Usage
 	Confirmation *StoryMutationConfirmation
@@ -176,6 +179,7 @@ type Usage = messagingdomain.Usage
 
 // ToolScope is the complete authorization scope available to a tool call.
 type ToolScope struct {
+	SourceScope    *SourceScope
 	WorkspaceID    uuid.UUID
 	UserID         uuid.UUID
 	AllowedTeamIDs []uuid.UUID
@@ -205,8 +209,9 @@ const (
 )
 
 // StoryMutationConfirmation is a provider-neutral, non-mutating proposal.
-// Provider adapters must show this proposal to the user and call a
-// StoryMutationConfirmer only after an explicit affirmative action.
+// Provider adapters show it for explicit confirmation. A native story adapter
+// may instead apply a clear command only after InspectStoryMutation validates
+// its trusted source binding and reports DirectEligible.
 type StoryMutationConfirmation struct {
 	Operation StoryMutationOperation `json:"operation"`
 	Token     string                 `json:"token"`
@@ -285,6 +290,16 @@ type StoryMutationConfirmationStore interface {
 type StoryMutationConfirmer interface {
 	ConfirmStoryMutation(ctx context.Context, scope ToolScope, token string) (StoryMutationResult, error)
 	CancelStoryMutation(ctx context.Context, scope ToolScope, token string) (StoryMutationCancellationResult, error)
+}
+
+// NativeStoryMutationConfirmer exposes the extra review and exact acceptance
+// boundaries used only by trusted native story adapters. Rebinding requires a
+// server-selected pending proposal and explicit acceptance by the new actor.
+// Provider integrations continue to use StoryMutationConfirmer unchanged.
+type NativeStoryMutationConfirmer interface {
+	StoryMutationConfirmer
+	InspectStoryMutation(ctx context.Context, scope ToolScope, token string) (StoryMutationInspection, error)
+	RebindStoryMutation(ctx context.Context, previousScope, scope ToolScope, token string) (StoryMutationConfirmation, error)
 }
 
 // ToolDefinition is an OpenAI Responses function tool definition. Parameters

@@ -124,6 +124,48 @@ func (q *Queries) ClaimAssistantUsageEvent(ctx context.Context, arg ClaimAssista
 	return column_1, err
 }
 
+const claimNativeAssistantUsageEvent = `-- name: ClaimNativeAssistantUsageEvent :one
+WITH scoped_invocation AS (
+    SELECT id FROM public.agent_invocations
+    WHERE id = $1
+      AND workspace_id = $2
+), claimed AS (
+    INSERT INTO public.agent_invocation_assistant_usage_events (
+        invocation_id, attempt_count, usage_date, input_tokens, output_tokens, total_tokens
+    )
+    SELECT id, $3, CAST(NOW() AT TIME ZONE 'UTC' AS date),
+           $4, $5, $6
+    FROM scoped_invocation
+    ON CONFLICT (invocation_id, attempt_count) DO NOTHING
+    RETURNING 1
+)
+SELECT EXISTS (SELECT 1 FROM claimed) AS claimed
+FROM scoped_invocation
+`
+
+type ClaimNativeAssistantUsageEventParams struct {
+	InvocationID uuid.UUID
+	WorkspaceID  uuid.UUID
+	AttemptCount int32
+	InputTokens  int64
+	OutputTokens int64
+	TotalTokens  int64
+}
+
+func (q *Queries) ClaimNativeAssistantUsageEvent(ctx context.Context, arg ClaimNativeAssistantUsageEventParams) (bool, error) {
+	row := q.db.QueryRow(ctx, claimNativeAssistantUsageEvent,
+		arg.InvocationID,
+		arg.WorkspaceID,
+		arg.AttemptCount,
+		arg.InputTokens,
+		arg.OutputTokens,
+		arg.TotalTokens,
+	)
+	var claimed bool
+	err := row.Scan(&claimed)
+	return claimed, err
+}
+
 const getAssistantDailyUsage = `-- name: GetAssistantDailyUsage :one
 SELECT CAST(COALESCE(SUM(input_tokens), 0) AS bigint) AS input_tokens,
        CAST(COALESCE(SUM(output_tokens), 0) AS bigint) AS output_tokens,

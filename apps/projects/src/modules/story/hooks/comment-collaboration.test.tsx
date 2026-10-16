@@ -40,6 +40,7 @@ const state: StoryCommentState = {
   unreadCount: 1,
   latestCommentId: "comment",
   comments: [entry],
+  threadReads: {},
 };
 const queryKey = storyKeys.commentState("workspace", "story");
 const setup = () => {
@@ -58,6 +59,67 @@ beforeEach(() => {
 });
 
 describe("comment collaboration mutations", () => {
+  it("merges per-thread receipts without consuming another thread or replacing collaboration data", async () => {
+    const { client, wrapper } = setup();
+    client.setQueryData(queryKey, {
+      ...state,
+      threadReads: { other: "2026-10-16T12:00:00Z" },
+    });
+    jest
+      .mocked(markCommentsRead)
+      .mockResolvedValue({
+        ...state,
+        threadReads: {
+          root: "2026-10-16T11:00:00Z",
+          other: "2026-10-16T10:00:00Z",
+        },
+      });
+    const { result } = renderHook(() => useMarkCommentsRead("story"), {
+      wrapper,
+    });
+    await act(async () => {
+      await result.current.mutateAsync({
+        threadId: "root",
+        observedAt: "2026-10-16T11:00:00Z",
+      });
+    });
+    expect(client.getQueryData<StoryCommentState>(queryKey)).toMatchObject({
+      lastReadAt: state.lastReadAt,
+      threadReads: {
+        root: "2026-10-16T11:00:00Z",
+        other: "2026-10-16T12:00:00Z",
+      },
+      comments: state.comments,
+    });
+    expect(markCommentsRead).toHaveBeenCalledWith(
+      "story",
+      { threadId: "root", observedAt: "2026-10-16T11:00:00Z" },
+      { workspaceSlug: "workspace" },
+    );
+  });
+
+  it("rolls back only a failed thread receipt", async () => {
+    const { client, wrapper } = setup();
+    client.setQueryData(queryKey, {
+      ...state,
+      threadReads: { other: "2026-10-16T12:00:00Z" },
+    });
+    jest.mocked(markCommentsRead).mockRejectedValue(new Error("offline"));
+    const { result } = renderHook(() => useMarkCommentsRead("story"), {
+      wrapper,
+    });
+    await act(async () => {
+      await expect(
+        result.current.mutateAsync({
+          threadId: "root",
+          observedAt: "2026-10-16T11:00:00Z",
+        }),
+      ).rejects.toThrow("offline");
+    });
+    expect(
+      client.getQueryData<StoryCommentState>(queryKey)?.threadReads,
+    ).toEqual({ other: "2026-10-16T12:00:00Z" });
+  });
   it("merges reaction and resolution responses without overwriting unrelated fields or threads", async () => {
     const { client, wrapper } = setup();
     const other: CommentState = {
@@ -130,7 +192,7 @@ describe("comment collaboration mutations", () => {
       wrapper,
     });
     await act(async () => {
-      await result.current.mutateAsync("2026-10-16T11:00:00Z");
+      await result.current.mutateAsync({ observedAt: "2026-10-16T11:00:00Z" });
     });
     expect(client.getQueryData(queryKey)).toEqual(current);
     jest.mocked(markCommentsRead).mockResolvedValue({
@@ -139,7 +201,7 @@ describe("comment collaboration mutations", () => {
       unreadCount: 0,
     });
     await act(async () => {
-      await result.current.mutateAsync("2026-10-16T13:00:00Z");
+      await result.current.mutateAsync({ observedAt: "2026-10-16T13:00:00Z" });
     });
     expect(client.getQueryData<StoryCommentState>(queryKey)?.comments).toEqual(
       current.comments,

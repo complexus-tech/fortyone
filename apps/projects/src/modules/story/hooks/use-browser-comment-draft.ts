@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useDesktopWorkspaceScope } from "@/shell/desktop/workspace-scope";
 
-type CommentDraft = { version: 1; html: string };
+export type CommentDraft = { version: 1; html: string; creationId?: string };
 
 type DraftState = {
   key: string | null;
@@ -32,7 +32,13 @@ function readDraft(key: string): CommentDraft | null {
     "html" in payload &&
     typeof payload.html === "string"
   ) {
-    return { version: 1, html: payload.html };
+    return {
+      version: 1,
+      html: payload.html,
+      ...("creationId" in payload && typeof payload.creationId === "string"
+        ? { creationId: payload.creationId }
+        : {}),
+    };
   }
 
   return null;

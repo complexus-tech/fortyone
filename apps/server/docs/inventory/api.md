@@ -4,7 +4,7 @@
 
 This deterministic inventory shows where routes and persistence live in the API codebase. Run `make inventory-generate` after moving a route, test, or query, or changing a persistence dependency; `make inventory-check` rejects drift. Counts describe code shape, not test quality or security approval.
 
-Current snapshot: **543 routes across 53 modules**. Registered middleware classifies 436 routes with required user authentication, 11 with optional authentication, 96 without user-auth middleware, 388 with current workspace-membership resolution, 190 with an explicit role/scope guard, and 53 with a route-level rate limit. The no-user-auth set includes 6 webhook routes whose provider signature/replay policy must be verified in their handler contract. These are registration facts, not proof of complete service/resource authorization.
+Current snapshot: **545 routes across 54 modules**. Registered middleware classifies 438 routes with required user authentication, 11 with optional authentication, 96 without user-auth middleware, 390 with current workspace-membership resolution, 191 with an explicit role/scope guard, and 53 with a route-level rate limit. The no-user-auth set includes 6 webhook routes whose provider signature/replay policy must be verified in their handler contract. These are registration facts, not proof of complete service/resource authorization.
 
 Credential configuration is indexed in [`docs/configuration.md`](../configuration.md), migration compatibility in [`docs/database/migration-operations.md`](../database/migration-operations.md), and architectural exceptions in the enforced debt baseline.
 
@@ -14,15 +14,16 @@ Credential configuration is indexed in [`docs/configuration.md`](../configuratio
 | --- | ---: | ---: | ---: | --- | ---: | --- |
 | `activities` | 1 | 3 / 5 | 2 | yes | 0 | [repository.go](../../internal/modules/activities/repository/repository.go#L1) (126) |
 | `admin` | 18 | 15 / 44 | 29 | yes | 0 | [admin.go](../../internal/modules/admin/http/admin.go#L1) (430) |
+| `agentinvocations` | 2 | 10 / 25 | 23 | yes | 0 | [service.go](../../internal/modules/agentinvocations/service/service.go#L1) (360) |
 | `agentreadiness` | 13 | 5 / 33 | 0 | no | 0 | [oauth.go](../../internal/modules/agentreadiness/http/oauth.go#L1) (672) |
 | `apiv1` | 20 | 7 / 27 | 0 | no | 0 | [collaboration_resources.go](../../internal/modules/apiv1/http/collaboration_resources.go#L1) (328) |
 | `attachments` | 0 | 11 / 29 | 19 | yes | 0 | [attachments.go](../../internal/modules/attachments/service/attachments.go#L1) (687) |
 | `calendar` | 15 | 18 / 105 | 90 | yes | 0 | [microsoft.go](../../internal/modules/calendar/service/microsoft.go#L1) (583) |
 | `chatsessions` | 16 | 15 / 61 | 35 | yes | 0 | [chatsessions.go](../../internal/modules/chatsessions/http/chatsessions.go#L1) (661) |
-| `comments` | 7 | 12 / 31 | 14 | yes | 0 | [commands.go](../../internal/modules/comments/repository/commands.go#L1) (270) |
+| `comments` | 7 | 15 / 36 | 16 | yes | 0 | [commands.go](../../internal/modules/comments/repository/commands.go#L1) (298) |
 | `customfields` | 8 | 7 / 14 | 26 | yes | 0 | [validation.go](../../internal/modules/customfields/domain/validation.go#L1) (170) |
 | `dataexport` | 0 | 2 / 2 | 4 | yes | 0 | [export.go](../../internal/modules/dataexport/http/export.go#L1) (68) |
-| `desktop` | 4 | 6 / 17 | 0 | no | 0 | [operations.go](../../internal/modules/desktop/http/operations.go#L1) (352) |
+| `desktop` | 4 | 6 / 17 | 0 | no | 0 | [operations.go](../../internal/modules/desktop/http/operations.go#L1) (357) |
 | `developeraccess` | 0 | 1 / 5 | 0 | no | 0 | [resolver.go](../../internal/modules/developeraccess/resolver.go#L1) (137) |
 | `developercredentials` | 11 | 7 / 24 | 29 | yes | 0 | [service_accounts.go](../../internal/modules/developercredentials/service/service_accounts.go#L1) (284) |
 | `developeroauth` | 9 | 10 / 36 | 45 | yes | 0 | [application_management.go](../../internal/modules/developeroauth/service/application_management.go#L1) (517) |
@@ -43,7 +44,7 @@ Credential configuration is indexed in [`docs/configuration.md`](../configuratio
 | `labels` | 5 | 4 / 6 | 6 | yes | 0 | [repository.go](../../internal/modules/labels/repository/repository.go#L1) (203) |
 | `links` | 3 | 5 / 10 | 3 | yes | 0 | [links.go](../../internal/modules/links/http/links.go#L1) (115) |
 | `maya` | 11 | 26 / 130 | 35 | yes | 0 | [reconciliation_flow.go](../../internal/modules/maya/service/reconciliation_flow.go#L1) (645) |
-| `messaging` | 0 | 25 / 130 | 72 | yes | 0 | [team_work.go](../../internal/modules/messaging/service/team_work.go#L1) (654) |
+| `messaging` | 0 | 30 / 150 | 73 | yes | 0 | [team_work.go](../../internal/modules/messaging/service/team_work.go#L1) (654) |
 | `notifications` | 17 | 30 / 98 | 44 | yes | 0 | [rules_story_updates.go](../../internal/modules/notifications/service/rules_story_updates.go#L1) (420) |
 | `objectives` | 15 | 18 / 58 | 36 | yes | 0 | [strategy_communications.go](../../internal/modules/objectives/repository/strategy_communications.go#L1) (442) |
 | `objectivestatus` | 4 | 3 / 3 | 15 | yes | 0 | [repository.go](../../internal/modules/objectivestatus/repository/repository.go#L1) (318) |
@@ -95,6 +96,12 @@ Credential configuration is indexed in [`docs/configuration.md`](../configuratio
 | `GET` | `/admin/workspaces/{workspaceID}/integrations` | `auth=required` | `h.GetWorkspaceIntegrations` | `auth` | [routes.go](../../internal/modules/admin/http/routes.go#L28) |
 | `POST` | `/admin/workspaces/{workspaceID}/subscription-sync` | `auth=required` | `h.RequestWorkspaceSubscriptionSync` | `auth` | [routes.go](../../internal/modules/admin/http/routes.go#L31) |
 | `PATCH` | `/admin/workspaces/{workspaceID}/trial` | `auth=required` | `h.UpdateWorkspaceTrial` | `auth` | [routes.go](../../internal/modules/admin/http/routes.go#L29) |
+### agentinvocations
+
+| Method | Path | Registered guards | Handler | Registered middleware | Source |
+| --- | --- | --- | --- | --- | --- |
+| `GET` | `/workspaces/{workspaceSlug}/stories/{id}/maya-runs` | `auth=required; workspace=current` | `h.list` | `authenticate → workspace` | [routes.go](../../internal/modules/agentinvocations/http/routes.go#L63) |
+| `POST` | `/workspaces/{workspaceSlug}/stories/{id}/maya-runs/{runId}/{operation}` | `auth=required; workspace=current; role>=member` | `h.control` | `authenticate → workspace → member` | [routes.go](../../internal/modules/agentinvocations/http/routes.go#L64) |
 ### agentreadiness
 
 | Method | Path | Registered guards | Handler | Registered middleware | Source |

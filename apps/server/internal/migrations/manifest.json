@@ -2519,6 +2519,210 @@
         "Comment attachment references are synchronized in the comment write transaction. Only attachments linked to the exact story and workspace may be referenced.",
         "Deleting a comment removes its references. The uploaded file remains available as a story attachment and can then be explicitly deleted if no other comment references it."
       ]
+    },
+    {
+      "version": 221,
+      "slug": "agent_invocations",
+      "classification": "forward-only",
+      "files": {
+        "up": "000221_agent_invocations.up.sql",
+        "down": "000221_agent_invocations.down.sql"
+      },
+      "compatibility": {
+        "schema": "Adds surface-neutral durable agent invocation queue, proposals and atomic receipts.",
+        "api": "Invocation APIs require schema 221; ordinary comments remain compatible.",
+        "worker": "Workers claim queued runs with fenced expiring leases.",
+        "mixed_versions": "Apply schema first, then deploy API and worker adapters together."
+      },
+      "rollout": {
+        "sequence": 70,
+        "mode": "schema-first",
+        "steps": [
+          "Apply migration 000221 after 000220.",
+          "Deploy API and workers; verify queued invocation recovery."
+        ]
+      },
+      "recovery": {
+        "strategy": "forward-fix",
+        "procedure": [
+          "Preserve invocation receipts and repair forward.",
+          "The down migration refuses to remove populated invocation records."
+        ]
+      },
+      "operational_notes": [
+        "Queued records are the transactional dispatch outbox; expired running leases are recoverable.",
+        "Surface adapters authorize each source and keep model calls outside transactions."
+      ]
+    },
+    {
+      "version": 222,
+      "slug": "native_maya_update_proposals",
+      "classification": "forward-only",
+      "files": {
+        "up": "000222_native_maya_update_proposals.up.sql",
+        "down": "000222_native_maya_update_proposals.down.sql"
+      },
+      "compatibility": {
+        "schema": "Allows bounded durable native story update proposals alongside existing signed update confirmations.",
+        "api": "Native Maya story updates require schema 222; existing messaging confirmations remain compatible.",
+        "worker": "Native workers retain the proposed prose and media until application, cancellation or expiry.",
+        "mixed_versions": "Apply schema first, then deploy native story-comment workers. Older workers cannot process native invocation records."
+      },
+      "rollout": {
+        "sequence": 71,
+        "mode": "schema-first",
+        "steps": [
+          "Apply migration 000222 after 000221.",
+          "Deploy native comment workers and verify description proposal and receipt roundtrips."
+        ]
+      },
+      "recovery": {
+        "strategy": "forward-fix",
+        "procedure": [
+          "Preserve invocation and mutation receipts and repair forward.",
+          "Rollback refuses while native update proposals remain; finish or cancel them first."
+        ]
+      },
+      "operational_notes": [
+        "Model-authored HTML is not accepted. Stored update proposals contain server-generated markup and are bounded to 64 KiB.",
+        "Applied, cancelled and expired proposals are redacted using the existing confirmation lifecycle."
+      ]
+    },
+    {
+      "version": 223,
+      "slug": "native_maya_assistant_usage",
+      "classification": "forward-only",
+      "files": {
+        "up": "000223_native_maya_assistant_usage.up.sql",
+        "down": "000223_native_maya_assistant_usage.down.sql"
+      },
+      "compatibility": {
+        "schema": "Adds native invocation usage receipts without changing external messaging event foreign keys.",
+        "api": "Existing APIs remain compatible. Native workers require schema 223 to record assistant usage.",
+        "worker": "Native usage is deduplicated by invocation and execution attempt and shares the workspace daily token budget.",
+        "mixed_versions": "Apply schema first, then deploy native comment workers."
+      },
+      "rollout": {
+        "sequence": 72,
+        "mode": "schema-first",
+        "steps": [
+          "Apply migration 000223 after 000222.",
+          "Deploy native workers and verify invocation usage receipts and workspace totals."
+        ]
+      },
+      "recovery": {
+        "strategy": "forward-fix",
+        "procedure": [
+          "Preserve recorded model usage and repair forward.",
+          "Rollback refuses while native assistant usage receipts remain."
+        ]
+      },
+      "operational_notes": [
+        "Native invocation receipts reference agent_invocations, not external inbound messaging events.",
+        "Usage claims and workspace totals commit atomically. Retried attempts count separately; replaying the same attempt does not charge twice."
+      ]
+    },
+    {
+      "version": 224,
+      "slug": "story_comment_thread_reads",
+      "classification": "forward-only",
+      "files": {
+        "up": "000224_story_comment_thread_reads.up.sql",
+        "down": "000224_story_comment_thread_reads.down.sql"
+      },
+      "compatibility": {
+        "schema": "Adds per-user root-thread read cutoffs without modifying existing story-level markers.",
+        "api": "Comment state adds threadReads. Mark-read accepts optional threadId; omitted threadId advances only top-level comment reads.",
+        "worker": "No worker changes are required.",
+        "mixed_versions": "Apply schema before the API and frontend. Older clients remain accepted but cannot clear reply-thread unread indicators."
+      },
+      "rollout": {
+        "sequence": 73,
+        "mode": "schema-first",
+        "steps": [
+          "Apply migration 000224 after 000223.",
+          "Deploy comment state and read endpoints, then the frontend that records actually opened threads."
+        ]
+      },
+      "recovery": {
+        "strategy": "forward-fix",
+        "procedure": [
+          "Preserve per-user read state and repair forward.",
+          "Rollback refuses while thread read markers remain."
+        ]
+      },
+      "operational_notes": [
+        "Existing story-level read markers are not copied to threads because they may include replies the user never opened.",
+        "Thread markers are monotonic, bounded by server time, and cascade when their root comment or user is deleted."
+      ]
+    },
+    {
+      "version": 225,
+      "slug": "story_comment_reaction_catalog",
+      "classification": "forward-only",
+      "files": {
+        "up": "000225_story_comment_reaction_catalog.up.sql",
+        "down": "000225_story_comment_reaction_catalog.down.sql"
+      },
+      "compatibility": {
+        "schema": "Expands the finite reaction emoji constraint; existing reaction rows and per-user uniqueness remain unchanged.",
+        "api": "Existing reaction endpoints accept the expanded canonical emoji catalog. Arbitrary strings and aliases remain invalid.",
+        "worker": "No worker changes are required.",
+        "mixed_versions": "Apply schema first, then the API accepting the expanded catalog, then clients with the reaction picker."
+      },
+      "rollout": {
+        "sequence": 74,
+        "mode": "schema-first",
+        "steps": [
+          "Apply migration 000225 after 000224.",
+          "Deploy the expanded reaction validation and picker while retaining the three existing quick reactions."
+        ]
+      },
+      "recovery": {
+        "strategy": "forward-fix",
+        "procedure": [
+          "Preserve user reactions and repair forward.",
+          "Rollback refuses if reactions outside the original three-emoji catalog exist."
+        ]
+      },
+      "operational_notes": [
+        "A user can add each canonical emoji once per comment; replayed additions remain idempotent.",
+        "The catalog contains 17 exact emoji sequences, including the fully qualified red heart."
+      ]
+    },
+    {
+      "version": 226,
+      "slug": "story_comment_expanded_reactions",
+      "classification": "forward-only",
+      "files": {
+        "up": "000226_story_comment_expanded_reactions.up.sql",
+        "down": "000226_story_comment_expanded_reactions.down.sql"
+      },
+      "compatibility": {
+        "schema": "Expands the canonical comment reaction catalog to 80 while preserving all 17 previously supported emoji and their rows.",
+        "api": "Existing reaction endpoints accept the expanded finite catalog; arbitrary text and noncanonical variants remain invalid.",
+        "worker": "No worker changes are required.",
+        "mixed_versions": "Apply schema first, then the API validator, then clients with the expanded reaction picker."
+      },
+      "rollout": {
+        "sequence": 75,
+        "mode": "schema-first",
+        "steps": [
+          "Apply migration 000226 after 000225.",
+          "Deploy the expanded reaction validator and grouped searchable picker."
+        ]
+      },
+      "recovery": {
+        "strategy": "forward-fix",
+        "procedure": [
+          "Preserve reaction data and repair forward.",
+          "Rollback refuses while reactions outside the prior 17-emoji catalog remain."
+        ]
+      },
+      "operational_notes": [
+        "The catalog includes 80 canonical emoji across expressions, feedback, celebration, and work.",
+        "Existing per-user emoji uniqueness and count aggregation remain unchanged."
+      ]
     }
   ]
 }

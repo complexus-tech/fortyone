@@ -1,10 +1,12 @@
-import { Box, Button, Flex, Skeleton, Text } from "ui";
-import { ArrowUpIcon } from "icons";
+import { Box, Button, Skeleton } from "ui";
 import { useSession } from "@/lib/auth/client";
 import { useWorkspacePath } from "@/hooks/use-workspace-path";
 import { useCommentFeed } from "../hooks/use-comment-feed";
-import { isUnreadComment } from "../lib/comment-navigation";
+import { useCommentMayaAction } from "../hooks/comment-maya";
+import { useMayaPendingReplies } from "../hooks/use-maya-pending-replies";
 import { CommentRow } from "./comment-row";
+import { CommentLatestControl } from "./comment-latest-control";
+import { CommentFeedNotices } from "./comment-feed-notices";
 
 const CommentList = ({
   isDialog,
@@ -24,86 +26,62 @@ const CommentList = ({
     loadedTarget,
     comments,
     containerRef,
-    lastReadAt,
     stateById,
     hasUnread,
+    defaultExpandedThreadId,
+    latestCommentId,
     jumpToLatest,
     currentUserId,
+    mayaQuery,
   } = useCommentFeed(storyId);
+  const mayaAction = useCommentMayaAction(storyId);
+  const mayaPendingByThreadId = useMayaPendingReplies(
+    comments,
+    mayaQuery.data?.runs,
+    mayaQuery.isError || mayaQuery.fetchStatus === "paused",
+  );
 
   return (
     <Box ref={containerRef}>
-      {hasUnread ? (
-        <Flex align="center" className="mb-3 ml-10" justify="end">
-          <Button
-            className="px-2 text-xs"
-            color="tertiary"
-            leftIcon={<ArrowUpIcon className="size-3.5" />}
-            onClick={jumpToLatest}
-            size="sm"
-            variant="naked"
-          >
-            Jump to latest
-          </Button>
-        </Flex>
+      {hasUnread && latestCommentId ? (
+        <CommentLatestControl
+          commentId={latestCommentId}
+          containerRef={containerRef}
+          onJump={jumpToLatest}
+        />
       ) : null}
-      {targetId && !loadedTarget && threadQuery.isPending ? (
-        <Text className="mb-3 ml-10 text-sm" color="muted">
-          Finding comment…
-        </Text>
-      ) : null}
-      {targetId && !loadedTarget && threadQuery.isError ? (
-        <Text className="mb-3 ml-10 text-sm" color="muted">
-          This comment is no longer available or you do not have access.
-        </Text>
-      ) : null}
-      {stateQuery.isError ? (
-        <Flex align="center" className="mb-3 ml-10" gap={2}>
-          <Text className="text-sm" color="muted">
-            Some comment details could not load.
-          </Text>
-          <Button
-            color="tertiary"
-            onClick={() => {
-              void stateQuery.refetch();
-            }}
-            size="sm"
-            variant="naked"
-          >
-            Retry
-          </Button>
-        </Flex>
-      ) : null}
-      {commentsQuery.isError ? (
-        <Flex align="center" className="mb-3 ml-10" gap={2}>
-          <Text className="text-sm" color="muted">
-            Could not load comments.
-          </Text>
-          <Button
-            color="tertiary"
-            onClick={() => {
-              void commentsQuery.refetch();
-            }}
-            size="sm"
-            variant="naked"
-          >
-            Retry
-          </Button>
-        </Flex>
-      ) : null}
-      {comments.map((comment, index) => (
+      <CommentFeedNotices
+        commentsQuery={commentsQuery}
+        detailsQuery={stateQuery}
+        targetQuery={targetId && !loadedTarget ? threadQuery : undefined}
+      />
+      {comments.map((comment) => (
         <CommentRow
+          checkingMaya={mayaQuery.isFetching || commentsQuery.isRefetching}
           comment={comment}
           currentUserId={currentUserId}
+          defaultExpanded={comment.id === defaultExpandedThreadId}
           isDialog={isDialog}
           key={comment.id}
-          lastReadAt={lastReadAt}
-          revealKey={revealKey}
-          showUnreadDivider={
-            isUnreadComment(comment, lastReadAt, currentUserId) &&
-            (index === 0 ||
-              !isUnreadComment(comments[index - 1], lastReadAt, currentUserId))
+          lastReadAt={
+            stateQuery.data
+              ? stateQuery.data.threadReads?.[comment.id] ?? null
+              : undefined
           }
+          mayaPending={mayaPendingByThreadId.get(comment.id)}
+          mayaRuns={mayaQuery.data?.runs}
+          onCheckMaya={() => {
+            void mayaQuery.refetch();
+            void commentsQuery.refetch();
+          }}
+          onRetryMaya={(run) => {
+            mayaAction.mutate({ run, action: "retry" });
+          }}
+          readObservedAt={stateQuery.data?.observedAt}
+          retryingMayaRunId={
+            mayaAction.isPending ? mayaAction.variables.run.id : undefined
+          }
+          revealKey={revealKey}
           stateById={stateById}
           storyId={storyId}
           targetId={targetId}

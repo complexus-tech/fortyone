@@ -45,6 +45,7 @@ type DailyUsageSnapshot struct {
 
 type DailyUsageRecordInput struct {
 	InboundEventID      uuid.UUID
+	AgentInvocationID   uuid.UUID
 	WorkspaceID         uuid.UUID
 	Provider            string
 	ExternalWorkspaceID string
@@ -56,6 +57,7 @@ type DailyUsageRecordInput struct {
 type dailyUsageQueries interface {
 	AddAssistantDailyUsage(context.Context, messagingsql.AddAssistantDailyUsageParams) (messagingsql.AddAssistantDailyUsageRow, error)
 	ClaimAssistantUsageEvent(context.Context, messagingsql.ClaimAssistantUsageEventParams) (int32, error)
+	ClaimNativeAssistantUsageEvent(context.Context, messagingsql.ClaimNativeAssistantUsageEventParams) (bool, error)
 	GetAssistantDailyUsage(context.Context, messagingsql.GetAssistantDailyUsageParams) (messagingsql.GetAssistantDailyUsageRow, error)
 }
 
@@ -126,11 +128,17 @@ func (repository *DailyUsageRepository) Record(
 	if err := validateDailyUsageRepository(repository, input.WorkspaceID); err != nil {
 		return DailyUsageSnapshot{}, err
 	}
-	if input.Provider == "" || input.ExternalWorkspaceID == "" || input.ExternalEventID == "" {
-		return DailyUsageSnapshot{}, errors.New("messaging assistant usage provider, external workspace, and external event are required")
-	}
-	if input.InboundEventID == uuid.Nil {
-		return DailyUsageSnapshot{}, errors.New("messaging assistant usage inbound event is required")
+	if input.AgentInvocationID != uuid.Nil {
+		if input.InboundEventID != uuid.Nil || input.Provider != "native" {
+			return DailyUsageSnapshot{}, errors.New("native assistant usage requires only a native invocation source")
+		}
+	} else {
+		if input.Provider == "" || input.Provider == "native" || input.ExternalWorkspaceID == "" || input.ExternalEventID == "" {
+			return DailyUsageSnapshot{}, errors.New("messaging assistant usage provider, external workspace, and external event are required")
+		}
+		if input.InboundEventID == uuid.Nil {
+			return DailyUsageSnapshot{}, errors.New("messaging assistant usage inbound event is required")
+		}
 	}
 	if input.AttemptCount < 1 {
 		return DailyUsageSnapshot{}, errors.New("messaging assistant usage attempt count must be positive")
@@ -153,17 +161,11 @@ func (repository *DailyUsageRepository) Record(
 
 	var result dailyUsageRow
 	err = repository.runTransaction(ctx, func(queries dailyUsageQueries) error {
-		_, claimErr := queries.ClaimAssistantUsageEvent(ctx, messagingsql.ClaimAssistantUsageEventParams{
-			InboundEventID: input.InboundEventID, WorkspaceID: input.WorkspaceID,
-			Provider: input.Provider, ExternalWorkspaceID: input.ExternalWorkspaceID,
-			ExternalEventID: input.ExternalEventID, AttemptCount: databaseAttemptCount,
-			InputTokens: int64(input.Usage.InputTokens), OutputTokens: int64(input.Usage.OutputTokens),
-			TotalTokens: int64(input.Usage.TotalTokens),
-		})
-		if claimErr != nil && !errors.Is(claimErr, pgx.ErrNoRows) {
+		claimed, claimErr := claimDailyUsageEvent(ctx, queries, input, databaseAttemptCount)
+		if claimErr != nil {
 			return fmt.Errorf("claim messaging assistant usage event: %w", claimErr)
 		}
-		if errors.Is(claimErr, pgx.ErrNoRows) {
+		if !claimed {
 			loaded, loadErr := loadDailyUsage(ctx, queries, input.WorkspaceID)
 			result = loaded
 			return loadErr
@@ -182,6 +184,29 @@ func (repository *DailyUsageRepository) Record(
 		return DailyUsageSnapshot{}, fmt.Errorf("record messaging assistant usage: %w", err)
 	}
 	return dailyUsageSnapshot(result, limit), nil
+}
+
+func claimDailyUsageEvent(ctx context.Context, queries dailyUsageQueries, input DailyUsageRecordInput, attempt int32) (bool, error) {
+	if input.AgentInvocationID != uuid.Nil {
+		claimed, err := queries.ClaimNativeAssistantUsageEvent(ctx, messagingsql.ClaimNativeAssistantUsageEventParams{
+			InvocationID: input.AgentInvocationID, WorkspaceID: input.WorkspaceID, AttemptCount: attempt,
+			InputTokens: int64(input.Usage.InputTokens), OutputTokens: int64(input.Usage.OutputTokens), TotalTokens: int64(input.Usage.TotalTokens),
+		})
+		if errors.Is(err, pgx.ErrNoRows) {
+			return false, errors.New("native assistant invocation is missing or outside the workspace")
+		}
+		return claimed, err
+	}
+	_, err := queries.ClaimAssistantUsageEvent(ctx, messagingsql.ClaimAssistantUsageEventParams{
+		InboundEventID: input.InboundEventID, WorkspaceID: input.WorkspaceID,
+		Provider: input.Provider, ExternalWorkspaceID: input.ExternalWorkspaceID,
+		ExternalEventID: input.ExternalEventID, AttemptCount: attempt,
+		InputTokens: int64(input.Usage.InputTokens), OutputTokens: int64(input.Usage.OutputTokens), TotalTokens: int64(input.Usage.TotalTokens),
+	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, nil
+	}
+	return err == nil, err
 }
 
 func (repository *DailyUsageRepository) load(ctx context.Context, workspaceID uuid.UUID) (dailyUsageRow, error) {

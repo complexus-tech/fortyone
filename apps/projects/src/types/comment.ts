@@ -10,4 +10,5 @@ export type Comment = {
   createdAt: string;
   updatedAt: string;
   subComments: Comment[];
+  desktopPending?: boolean;
 };

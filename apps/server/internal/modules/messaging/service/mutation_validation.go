@@ -40,6 +40,9 @@ func validateStoryTimeMutationClaims(mutation storyTimeMutation) error {
 }
 
 func validateStoryMutationClaims(claims storyMutationClaims) error {
+	if err := validateNativeClaims(claims); err != nil {
+		return err
+	}
 	if claims.Attachment != nil {
 		attachment, err := normalizedAttachmentSource(*claims.Attachment)
 		if err != nil || attachment != *claims.Attachment {
@@ -83,7 +86,7 @@ func validateStoryMutationClaims(claims storyMutationClaims) error {
 		if claims.StoryID == nil || *claims.StoryID == uuid.Nil || claims.ExpectedUpdatedAt == nil || claims.ExpectedUpdatedAt.IsZero() {
 			return fmt.Errorf("%w: malformed update claims", ErrInvalidConfirmation)
 		}
-		if claims.AssigneeAction != assigneeActionUnchanged && claims.AssigneeAction != assigneeActionMe && claims.AssigneeAction != assigneeActionUnassigned {
+		if claims.AssigneeAction != assigneeActionUnchanged && claims.AssigneeAction != assigneeActionMe && claims.AssigneeAction != assigneeActionUnassigned && claims.AssigneeAction != assigneeActionNamed {
 			return fmt.Errorf("%w: invalid update assignee claim", ErrInvalidConfirmation)
 		}
 		if err := validateStoryTimeMutationClaims(storyTimeMutation{
@@ -94,7 +97,7 @@ func validateStoryMutationClaims(claims storyMutationClaims) error {
 		}); err != nil {
 			return fmt.Errorf("%w: invalid update time claim: %v", ErrInvalidConfirmation, err)
 		}
-		if claims.Title == nil && claims.Priority == nil && claims.AssigneeAction == assigneeActionUnchanged && claims.StatusID == nil && claims.SprintID == nil && claims.ObjectiveID == nil && claims.KeyResultID == nil && claims.StartDate == nil && claims.EndDate == nil && claims.LabelIDs == nil && claims.EstimatedDurationAction == storyTimeActionUnchanged && claims.MinimumFocusBlockAction == storyTimeActionUnchanged && claims.AutoSchedulingEnabled == nil && claims.AutoSchedulingLocked == nil {
+		if claims.Description == nil && claims.Title == nil && claims.Priority == nil && claims.AssigneeAction == assigneeActionUnchanged && claims.StatusID == nil && claims.SprintID == nil && claims.ObjectiveID == nil && claims.KeyResultID == nil && claims.StartDate == nil && claims.EndDate == nil && claims.LabelIDs == nil && claims.EstimatedDurationAction == storyTimeActionUnchanged && claims.MinimumFocusBlockAction == storyTimeActionUnchanged && claims.AutoSchedulingEnabled == nil && claims.AutoSchedulingLocked == nil {
 			return fmt.Errorf("%w: empty update claims", ErrInvalidConfirmation)
 		}
 	case StoryMutationComment:
@@ -174,6 +177,10 @@ func validateToolScope(scope *ToolScope) error {
 		return fmt.Errorf("%w: workspace and user are required", ErrInvalidRequest)
 	}
 	allowedTeamIDs, err := normalizedAllowedTeamIDs(scope.AllowedTeamIDs)
+	if err != nil {
+		return err
+	}
+	scope.SourceScope, err = normalizedSourceScope(scope.SourceScope)
 	if err != nil {
 		return err
 	}

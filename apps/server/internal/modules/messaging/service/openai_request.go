@@ -8,6 +8,9 @@ import (
 
 func instructionsForRequest(base string, request Request) (string, error) {
 	instructions := base
+	if request.SourceScope != nil {
+		instructions = storyCommentInstructions
+	}
 	runtimeInstructions, err := runtimeContextInstructions(request.RuntimeContext)
 	if err != nil {
 		return "", err

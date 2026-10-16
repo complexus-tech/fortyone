@@ -198,16 +198,21 @@ func (h *Handlers) prepareMutation(operation Operation, workspaceID, userID uuid
 		}, nil
 	case "comment.create":
 		var input struct {
-			StoryID  uuid.UUID   `json:"storyId"`
-			Comment  string      `json:"comment"`
-			Body     string      `json:"body"`
-			ParentID *uuid.UUID  `json:"parentId"`
-			Mentions []uuid.UUID `json:"mentions"`
+			StoryID       uuid.UUID   `json:"storyId"`
+			Comment       string      `json:"comment"`
+			Body          string      `json:"body"`
+			ParentID      *uuid.UUID  `json:"parentId"`
+			Mentions      []uuid.UUID `json:"mentions"`
+			AgentMentions []string    `json:"agentMentions"`
+			CreationID    *uuid.UUID  `json:"creationId"`
 		}
 		if err := decodePayload(operation.Payload, &input); err != nil {
 			return nil, err
 		}
 		if input.Comment != "" && input.Body != "" && input.Comment != input.Body {
+			return nil, errInvalidOperation
+		}
+		if input.CreationID != nil && *input.CreationID != operation.ResourceID {
 			return nil, errInvalidOperation
 		}
 		if input.Comment == "" {
@@ -217,7 +222,7 @@ func (h *Handlers) prepareMutation(operation Operation, workspaceID, userID uuid
 			return nil, errInvalidOperation
 		}
 		return func(ctx context.Context) (uuid.UUID, error) {
-			comment, err := h.Stories.CreateComment(ctx, workspaceID, stories.CoreNewComment{StoryID: input.StoryID, Comment: input.Comment, Parent: input.ParentID, Mentions: input.Mentions, CreationID: &operation.ResourceID})
+			comment, err := h.Stories.CreateComment(ctx, workspaceID, stories.CoreNewComment{StoryID: input.StoryID, Comment: input.Comment, Parent: input.ParentID, Mentions: input.Mentions, AgentMentions: input.AgentMentions, CreationID: &operation.ResourceID})
 			return comment.ID, err
 		}, nil
 	case "document.create":

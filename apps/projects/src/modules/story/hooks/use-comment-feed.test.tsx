@@ -4,6 +4,11 @@ import type { Comment } from "@/types/comment";
 import { useCommentThread } from "./comment-collaboration";
 import { useCommentFeed } from "./use-comment-feed";
 
+jest.mock("./comment-maya", () => ({
+  useStoryMayaRuns: () => ({ data: { enabled: false, runs: [] } }),
+  useMayaRunRefresh: () => undefined,
+}));
+
 const REPLY_ID = "20000000-0000-4000-8000-000000000001";
 let mockSearch = new URLSearchParams();
 let mockComments: Comment[] = [];

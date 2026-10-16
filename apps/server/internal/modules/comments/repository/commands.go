@@ -82,11 +82,39 @@ func replayCommentCreation(ctx context.Context, queries commentsql.Querier, comm
 	if err != nil {
 		return mapCommentWriteError("replay comment creation", err)
 	}
-	if row.Content != command.Content || !sameOptionalUUID(row.ParentID, command.ParentID) || len(command.MentionedUserIDs) > 0 {
+	if row.Content != command.Content || !sameOptionalUUID(row.ParentID, command.ParentID) {
+		return commentsdomain.ErrCreationConflict
+	}
+	mentions, err := queries.GetCommentMentionIDs(ctx, commentsql.GetCommentMentionIDsParams{CommentID: row.CommentID})
+	if err != nil {
+		return fmt.Errorf("read replayed comment mentions: %w", err)
+	}
+	if !sameMentionIDs(mentions, command.MentionedUserIDs) {
 		return commentsdomain.ErrCreationConflict
 	}
 	*created = commentFromValues(row.CommentID, row.StoryID, row.ParentID, row.CommenterID, row.Content, row.CreatedAt, row.UpdatedAt)
+	created.Replayed = true
 	return nil
+}
+
+func sameMentionIDs(left, right []uuid.UUID) bool {
+	leftSet := make(map[uuid.UUID]struct{}, len(left))
+	for _, id := range left {
+		leftSet[id] = struct{}{}
+	}
+	rightSet := make(map[uuid.UUID]struct{}, len(right))
+	for _, id := range right {
+		rightSet[id] = struct{}{}
+	}
+	if len(leftSet) != len(rightSet) {
+		return false
+	}
+	for id := range leftSet {
+		if _, found := rightSet[id]; !found {
+			return false
+		}
+	}
+	return true
 }
 
 func sameOptionalUUID(left, right *uuid.UUID) bool {

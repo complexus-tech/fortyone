@@ -227,6 +227,18 @@ func (s *Service) UpdateExternalUserActionIfUnchanged(
 	expectedUpdatedAt time.Time,
 	updates map[string]any,
 ) error {
+	return s.UpdateExternalUserActionWithReasonIfUnchanged(ctx, actorID, storyID, workspaceID, expectedUpdatedAt, updates, "")
+}
+
+// UpdateExternalUserActionWithReasonIfUnchanged retains the human requester as
+// the actor while recording trusted server attribution for an assisted edit.
+func (s *Service) UpdateExternalUserActionWithReasonIfUnchanged(
+	ctx context.Context,
+	actorID, storyID, workspaceID uuid.UUID,
+	expectedUpdatedAt time.Time,
+	updates map[string]any,
+	reason string,
+) error {
 	if expectedUpdatedAt.IsZero() {
 		return errors.New("expected story update time is required")
 	}
@@ -235,6 +247,8 @@ func (s *Service) UpdateExternalUserActionIfUnchanged(
 		publishEvents:            true,
 		enqueueGitHubSync:        true,
 		recordDescriptionUpdates: true,
+		activityReason:           reason,
+		eventReason:              reason,
 		expectedUpdatedAt:        &expectedUpdatedAt,
 		actorKind:                auth.PrincipalHumanUser,
 	})

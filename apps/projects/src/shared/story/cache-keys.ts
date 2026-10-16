@@ -32,6 +32,8 @@ export const storyKeys = {
     [...storyKeys.detail(workspaceSlug, id), "comments", "infinite"] as const,
   commentState: (workspaceSlug: string, id: string) =>
     [...storyKeys.detail(workspaceSlug, id), "comments", "state"] as const,
+  mayaRuns: (workspaceSlug: string, id: string) =>
+    [...storyKeys.detail(workspaceSlug, id), "maya-runs"] as const,
   commentThreads: (workspaceSlug: string, id: string) =>
     [...storyKeys.detail(workspaceSlug, id), "comments", "thread"] as const,
   commentThread: (workspaceSlug: string, id: string, commentId: string) =>

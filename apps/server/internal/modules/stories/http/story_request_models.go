@@ -32,9 +32,11 @@ type AppNewStory struct {
 }
 
 type AppNewComment struct {
-	Comment  string      `json:"comment" validate:"required"`
-	Parent   *uuid.UUID  `json:"parentId"`
-	Mentions []uuid.UUID `json:"mentions"`
+	CreationID    *uuid.UUID  `json:"creationId"`
+	Comment       string      `json:"comment" validate:"required"`
+	Parent        *uuid.UUID  `json:"parentId"`
+	Mentions      []uuid.UUID `json:"mentions"`
+	AgentMentions []string    `json:"agentMentions" validate:"max=1,dive,oneof=maya"`
 }
 
 type AppComment struct {

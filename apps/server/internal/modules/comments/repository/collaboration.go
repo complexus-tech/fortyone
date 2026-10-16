@@ -2,7 +2,9 @@ package commentsrepository
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"time"
 
 	commentsdomain "github.com/complexus-tech/projects-api/internal/modules/comments/domain"
 	commentsql "github.com/complexus-tech/projects-api/internal/modules/comments/repository/sqlc"
@@ -25,9 +27,14 @@ func readStoryState(ctx context.Context, queries commentsql.Querier, scope comme
 	if err != nil {
 		return commentsdomain.StoryState{}, err
 	}
+	threadReads := make(map[uuid.UUID]time.Time)
+	if err := json.Unmarshal(row.ThreadReads, &threadReads); err != nil {
+		return commentsdomain.StoryState{}, fmt.Errorf("decode comment thread read markers: %w", err)
+	}
 	return commentsdomain.StoryState{
 		LastReadAt: row.LastReadAt, ObservedAt: row.ObservedAt, UnreadCount: row.UnreadCount, Comments: comments,
 		LatestCommentID: row.LatestCommentID,
+		ThreadReads:     threadReads,
 	}, nil
 }
 
@@ -68,11 +75,20 @@ func (r *Repository) SetResolution(ctx context.Context, command commentsdomain.R
 func (r *Repository) MarkRead(ctx context.Context, command commentsdomain.ReadCommand) (commentsdomain.StoryState, error) {
 	var result commentsdomain.StoryState
 	err := r.withinTransaction(ctx, func(queries commentsql.Querier) error {
-		_, err := queries.MarkStoryCommentsRead(ctx, commentsql.MarkStoryCommentsReadParams{
-			ActorID: command.Scope.Actor.PrincipalID, WorkspaceID: command.Scope.WorkspaceID, StoryID: command.Scope.StoryID,
-			TeamAccessUnrestricted: command.Scope.Actor.TeamAccess.IsUnrestricted(), AllowedTeamIds: command.Scope.Actor.TeamAccess.RestrictedTeamIDs(),
-			ObservedAt: command.ObservedAt,
-		})
+		var err error
+		if command.ThreadID == nil {
+			_, err = queries.MarkStoryCommentsRead(ctx, commentsql.MarkStoryCommentsReadParams{
+				ActorID: command.Scope.Actor.PrincipalID, WorkspaceID: command.Scope.WorkspaceID, StoryID: command.Scope.StoryID,
+				TeamAccessUnrestricted: command.Scope.Actor.TeamAccess.IsUnrestricted(), AllowedTeamIds: command.Scope.Actor.TeamAccess.RestrictedTeamIDs(),
+				ObservedAt: command.ObservedAt,
+			})
+		} else {
+			_, err = queries.MarkStoryCommentThreadRead(ctx, commentsql.MarkStoryCommentThreadReadParams{
+				ActorID: command.Scope.Actor.PrincipalID, WorkspaceID: command.Scope.WorkspaceID, StoryID: command.Scope.StoryID,
+				TeamAccessUnrestricted: command.Scope.Actor.TeamAccess.IsUnrestricted(), AllowedTeamIds: command.Scope.Actor.TeamAccess.RestrictedTeamIDs(),
+				ThreadID: *command.ThreadID, ObservedAt: command.ObservedAt,
+			})
+		}
 		if err != nil {
 			return mapCommentWriteError("mark story comments read", err)
 		}

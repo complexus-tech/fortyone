@@ -1,5 +1,6 @@
 import { forwardRef, useImperativeHandle, useState } from "react";
 import { Avatar, Box, Text } from "ui";
+import { cn } from "lib";
 import { useSession } from "@/lib/auth/client";
 
 export type MentionItem = {
@@ -7,6 +8,8 @@ export type MentionItem = {
   label: string;
   username: string;
   avatar?: string | null;
+  mentionKind?: "user" | "agent";
+  agentKey?: "maya";
 };
 
 type MentionListProps = {
@@ -88,7 +91,10 @@ export const MentionList = forwardRef<MentionListRef, MentionListProps>(
       <Box className="border-border/70 bg-surface-elevated dark:shadow-dark/20 pointer-events-auto z-50 w-max min-w-64 space-y-1 rounded-xl border-[0.5px] p-2">
         {props.items.map((item, index) => (
           <button
-            className="hover:bg-state-hover focus:bg-state-active flex w-full cursor-pointer items-center gap-2 rounded-lg px-2 py-1 outline-none select-none"
+            className={cn(
+              "hover:bg-state-hover focus:bg-state-active flex w-full cursor-pointer items-center gap-2 rounded-lg px-2 py-1 outline-none select-none",
+              activeIndex === index && "bg-state-hover",
+            )}
             key={item.id}
             onClick={() => {
               selectItem(index);
@@ -107,6 +113,11 @@ export const MentionList = forwardRef<MentionListRef, MentionListProps>(
                 </Text>
               )}
             </Text>
+            {item.mentionKind === "agent" ? (
+              <Text className="ml-auto text-xs" color="muted">
+                AI assistant
+              </Text>
+            ) : null}
           </button>
         ))}
       </Box>

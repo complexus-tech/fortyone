@@ -1,5 +1,6 @@
 /* global describe, expect, it, jest -- Jest globals are provided by the projects test runner. */
 
+import { randomUUID } from "node:crypto";
 import type { Editor } from "@tiptap/core";
 import type { ComponentProps, ReactNode } from "react";
 import {
@@ -30,6 +31,8 @@ const MEMBER: Member = {
 
 let mockEditor: Editor | null = null;
 let mockMembers: Member[] = [];
+let mockMaya: Member | undefined;
+let mockMayaEnabled = false;
 const mockCreateComment = jest.fn();
 const mockUpdateComment = jest.fn();
 let mockBlockingUploads = false;
@@ -81,6 +84,12 @@ jest.mock("@/lib/auth/client", () => ({
 jest.mock("@/lib/hooks/team-members", () => ({
   useTeamMembers: () => ({ data: mockMembers }),
 }));
+jest.mock("@/lib/hooks/members", () => ({
+  useMayaAssignee: () => ({ data: mockMaya }),
+}));
+jest.mock("../hooks/comment-maya", () => ({
+  useStoryMayaRuns: () => ({ data: { enabled: mockMayaEnabled, runs: [] } }),
+}));
 jest.mock("@/lib/hooks/update-comment-mutation", () => ({
   useUpdateCommentMutation: () => ({
     mutateAsync: mockUpdateComment,
@@ -95,11 +104,17 @@ jest.mock("@/modules/story/hooks/comment-mutation", () => ({
 }));
 
 beforeEach(() => {
+  Object.defineProperty(window.crypto, "randomUUID", {
+    configurable: true,
+    value: randomUUID,
+  });
   jest.clearAllMocks();
   mockCreateComment.mockReset();
   mockUpdateComment.mockReset();
   mockEditor = null;
   mockMembers = [];
+  mockMaya = undefined;
+  mockMayaEnabled = false;
   mockBlockingUploads = false;
   window.localStorage.clear();
 });
@@ -153,6 +168,86 @@ const getMentionItems = (editor: Editor) => {
 };
 
 describe("comment input mentions", () => {
+  it("offers canonical Maya separately and preserves an agent request identity after failure and draft recovery", async () => {
+    mockMaya = {
+      ...MEMBER,
+      id: "maya-id",
+      isSystem: true,
+      username: "maya",
+      fullName: "Maya",
+    };
+    mockMayaEnabled = true;
+    mockMembers = [mockMaya, { ...MEMBER, fullName: "Maya Chen" }];
+    mockCreateComment.mockRejectedValueOnce(new Error("Lost response"));
+    const first = renderComposer();
+    await writeComment(
+      '<p><span data-type="mention" data-mention-kind="agent" data-agent-key="maya" data-id="maya-id" data-label="Maya">@Maya</span> update the description</p>',
+    );
+    const draft = mockEditor!.getHTML();
+    expect(
+      getMentionItems(mockEditor!)({ editor: mockEditor!, query: "maya" }),
+    ).toEqual([
+      expect.objectContaining({
+        id: "maya-id",
+        mentionKind: "agent",
+        agentKey: "maya",
+      }),
+      expect.objectContaining({ id: MEMBER.id, label: "Maya Chen" }),
+    ]);
+    fireEvent.click(screen.getByRole("button", { name: "Comment" }));
+    await waitFor(() => {
+      expect(mockCreateComment).toHaveBeenCalledTimes(1);
+    });
+    await waitFor(() => {
+      expect(mockEditor?.isEditable).toBe(true);
+    });
+    const payload = mockCreateComment.mock.calls[0][0].payload;
+    expect(payload).toEqual({
+      comment: draft,
+      parentId: null,
+      mentions: [],
+      agentMentions: ["maya"],
+      creationId: expect.any(String),
+    });
+    first.unmount();
+    renderComposer();
+    await waitFor(() => {
+      expect(mockEditor?.getHTML()).toBe(draft);
+    });
+    await waitFor(() => {
+      expect(mockEditor?.isEditable).toBe(true);
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Comment" }));
+    await waitFor(() => {
+      expect(mockCreateComment).toHaveBeenCalledTimes(2);
+    });
+    expect(mockCreateComment.mock.calls[1][0].payload).toEqual(payload);
+  });
+
+  it("restores an ordinary answer without inserting a mention and gives the reply a durable identity", async () => {
+    const first = renderComposer({ parentId: "maya-question" });
+    await writeComment("<p>Update only the empty-state copy.</p>");
+    first.unmount();
+    renderComposer({ parentId: "maya-question" });
+    await waitFor(() => {
+      expect(mockEditor?.getHTML()).toBe(
+        "<p>Update only the empty-state copy.</p>",
+      );
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Reply" }));
+    await waitFor(() => {
+      expect(mockCreateComment).toHaveBeenCalledWith({
+        storyId: "story",
+        payload: {
+          comment: "<p>Update only the empty-state copy.</p>",
+          parentId: "maya-question",
+          mentions: [],
+          creationId: expect.any(String),
+        },
+      });
+    });
+  });
+
   it("updates suggestions after members load without resetting the editor", async () => {
     mockMembers = [];
     const props = {
@@ -257,10 +352,17 @@ describe("comment submission and drafts", () => {
       fireEvent.click(button);
     });
 
-    expect(mockCreateComment).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(mockCreateComment).toHaveBeenCalledTimes(1);
+    });
     expect(mockCreateComment).toHaveBeenCalledWith({
       storyId: "story",
-      payload: { comment: "<p>A reply</p>", parentId: "parent", mentions: [] },
+      payload: {
+        comment: "<p>A reply</p>",
+        parentId: "parent",
+        mentions: [],
+        creationId: expect.any(String),
+      },
     });
     expect(button).toBeDisabled();
     expect(screen.getByRole("button", { name: "Cancel" })).toBeDisabled();

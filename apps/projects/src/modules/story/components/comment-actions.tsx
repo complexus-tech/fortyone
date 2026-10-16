@@ -8,11 +8,6 @@ import {
 import { Menu } from "ui";
 import { toast } from "sonner";
 import { useWorkspacePath } from "@/hooks/use-workspace-path";
-import { COMMENT_REACTIONS } from "../types/comment-collaboration";
-import type {
-  CommentEmoji,
-  CommentReaction,
-} from "../types/comment-collaboration";
 
 export const CommentActions = ({
   commentId,
@@ -21,11 +16,9 @@ export const CommentActions = ({
   isRoot,
   disabled,
   resolved,
-  reactions,
   onEdit,
   onDelete,
   onResolve,
-  onReact,
 }: {
   commentId: string;
   storyId: string;
@@ -33,11 +26,9 @@ export const CommentActions = ({
   isRoot: boolean;
   disabled: boolean;
   resolved: boolean;
-  reactions: CommentReaction[];
   onEdit: () => void;
   onDelete: () => void;
   onResolve: () => void;
-  onReact: (emoji: CommentEmoji, reacted: boolean) => void;
 }) => {
   const { withWorkspace } = useWorkspacePath();
   const copyLink = async () => {
@@ -74,29 +65,6 @@ export const CommentActions = ({
           >
             <LinkIcon className="size-4" /> Copy link
           </Menu.Item>
-          <Menu.SubMenu>
-            <Menu.SubTrigger>React</Menu.SubTrigger>
-            <Menu.SubItems>
-              <Menu.Group>
-                {COMMENT_REACTIONS.map(({ emoji, label }) => {
-                  const reacted = reactions.some(
-                    (item) => item.emoji === emoji && item.reacted,
-                  );
-                  return (
-                    <Menu.Item
-                      key={emoji}
-                      onSelect={() => {
-                        onReact(emoji, !reacted);
-                      }}
-                    >
-                      <span aria-hidden>{emoji}</span> {label}
-                      {reacted ? <CheckIcon className="ml-2 size-4" /> : null}
-                    </Menu.Item>
-                  );
-                })}
-              </Menu.Group>
-            </Menu.SubItems>
-          </Menu.SubMenu>
           {isRoot ? (
             <Menu.Item onSelect={onResolve}>
               <CheckIcon className="size-4" />{" "}

@@ -37,6 +37,7 @@ require (
 	github.com/oapi-codegen/runtime v1.6.0
 	github.com/stretchr/testify v1.11.1
 	github.com/stripe/stripe-go/v82 v82.0.0
+	github.com/yuin/goldmark v1.8.6
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.45.0
 	golang.org/x/image v0.45.0
 	golang.org/x/net v0.60.0

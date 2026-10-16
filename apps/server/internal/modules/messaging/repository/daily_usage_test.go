@@ -16,15 +16,21 @@ import (
 )
 
 type dailyUsageQueriesStub struct {
-	claimResult int32
-	claimErr    error
-	addResult   messagingsql.AddAssistantDailyUsageRow
-	addErr      error
-	getResults  []messagingsql.GetAssistantDailyUsageRow
-	getErr      error
-	claims      []messagingsql.ClaimAssistantUsageEventParams
-	adds        []messagingsql.AddAssistantDailyUsageParams
-	gets        []messagingsql.GetAssistantDailyUsageParams
+	claimResult  int32
+	claimErr     error
+	addResult    messagingsql.AddAssistantDailyUsageRow
+	addErr       error
+	getResults   []messagingsql.GetAssistantDailyUsageRow
+	getErr       error
+	claims       []messagingsql.ClaimAssistantUsageEventParams
+	nativeClaims []messagingsql.ClaimNativeAssistantUsageEventParams
+	adds         []messagingsql.AddAssistantDailyUsageParams
+	gets         []messagingsql.GetAssistantDailyUsageParams
+}
+
+func (stub *dailyUsageQueriesStub) ClaimNativeAssistantUsageEvent(_ context.Context, params messagingsql.ClaimNativeAssistantUsageEventParams) (bool, error) {
+	stub.nativeClaims = append(stub.nativeClaims, params)
+	return stub.claimResult != 0, stub.claimErr
 }
 
 func (stub *dailyUsageQueriesStub) ClaimAssistantUsageEvent(
@@ -113,6 +119,23 @@ func TestDailyUsageRepositoryRecordPersistsTypedUsage(t *testing.T) {
 	require.Equal(t, int32(4), queries.claims[0].AttemptCount)
 	require.Equal(t, int64(300), queries.claims[0].InputTokens)
 	require.Equal(t, int64(400), queries.adds[0].TotalTokens)
+}
+
+func TestDailyUsageRepositoryNativeSourceUsesInvocationReceipt(t *testing.T) {
+	t.Parallel()
+	queries := &dailyUsageQueriesStub{claimResult: 1}
+	repository := newDailyUsageRepositoryWithQueries(queries)
+	input := DailyUsageRecordInput{AgentInvocationID: uuid.New(), WorkspaceID: dailyUsageWorkspaceID(), Provider: "native", AttemptCount: 1, Usage: messaging.Usage{InputTokens: 10, OutputTokens: 5, TotalTokens: 15}}
+	_, err := repository.Record(t.Context(), input, 0)
+	require.NoError(t, err)
+	require.Empty(t, queries.claims)
+	require.Len(t, queries.nativeClaims, 1)
+	require.Equal(t, input.AgentInvocationID, queries.nativeClaims[0].InvocationID)
+	require.Len(t, queries.adds, 1)
+	input.InboundEventID = uuid.New()
+	_, err = repository.Record(t.Context(), input, 0)
+	require.ErrorContains(t, err, "only a native invocation source")
+	require.Len(t, queries.nativeClaims, 1)
 }
 
 func TestDailyUsageRepositoryDuplicateExecutionReturnsCurrentSnapshot(t *testing.T) {

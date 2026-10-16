@@ -93,6 +93,12 @@ type StoryMutationService interface {
 	FindFirstStatusByCategory(ctx context.Context, teamID, workspaceID uuid.UUID, category string) (*uuid.UUID, error)
 }
 
+// NativeStoryMutationService preserves human attribution plus a trusted audit
+// reason. Existing messaging integrations keep the original mutation contract.
+type NativeStoryMutationService interface {
+	UpdateExternalUserActionWithReasonIfUnchanged(ctx context.Context, actorID, storyID, workspaceID uuid.UUID, expectedUpdatedAt time.Time, updates map[string]any, reason string) error
+}
+
 // SearchService is the subset of the search domain used by assistant tools.
 type SearchService interface {
 	Search(ctx context.Context, workspaceID uuid.UUID, userID uuid.UUID, params searchdomain.SearchParams) (searchdomain.CoreSearchResult, error)
@@ -344,6 +350,9 @@ func (e *FortyOneToolExecutor) Execute(ctx context.Context, scope ToolScope, cal
 		return nil, err
 	}
 
+	if !sourceAllowsTool(scope.SourceScope, call.Name) {
+		return nil, fmt.Errorf("%w: tool is unavailable on this source", ErrMutationNotAllowed)
+	}
 	ctx = platformauth.SetUserID(ctx, scope.UserID)
 	switch call.Name {
 	case toolListTeams:
