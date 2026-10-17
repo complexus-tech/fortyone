@@ -106,11 +106,10 @@ export const useMayaPendingReplies = (
       const threadId = threadByCommentId.get(run.sourceId);
       if (
         !threadId ||
-        run.status === "cancelled" ||
-        (run.replyCommentId && threadByCommentId.has(run.replyCommentId)) ||
-        (!isMayaRunActive(run) &&
-          !run.replyCommentId &&
-          run.status !== "failed")
+        // A reply ID is committed with the comment. Notification delivery may
+        // still be running, and the feed may be stale, but Maya has replied.
+        run.replyCommentId ||
+        (!isMayaRunActive(run) && run.status !== "failed")
       )
         return [];
       return [{ run, threadId }];
@@ -118,7 +117,7 @@ export const useMayaPendingReplies = (
   }, [comments, runs]);
   const timedRuns = candidates
     .map(({ run }) => run)
-    .filter((run) => run.status !== "failed" || run.replyCommentId);
+    .filter((run) => run.status !== "failed");
   const clock = usePendingRunClock(timedRuns);
 
   const pendingByThreadId = new Map<string, MayaPendingReply[]>();
@@ -126,10 +125,9 @@ export const useMayaPendingReplies = (
     const startedAt = clock.starts.get(run.id)?.startedAt;
     const elapsed = clock.now - (startedAt ?? clock.now);
     let status: CommentMayaPendingStatus;
-    if (run.status === "failed" && !run.replyCommentId) status = "failed";
+    if (run.status === "failed") status = "failed";
     else if (unavailable) status = "offline";
     else if (elapsed >= DELAYED_AFTER_MS) status = "delayed";
-    else if (run.replyCommentId) status = "replying";
     else if (elapsed >= WORKING_AFTER_MS) status = "working";
     else status = "thinking";
     const pending = pendingByThreadId.get(threadId) ?? [];

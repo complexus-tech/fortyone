@@ -59,7 +59,6 @@ describe("Maya pending reply", () => {
   it.each<CommentMayaPendingStatus>([
     "thinking",
     "working",
-    "replying",
     "delayed",
     "offline",
     "failed",
@@ -73,7 +72,7 @@ describe("Maya pending reply", () => {
         .getByRole("status")
         .querySelector("[aria-hidden=true]")!;
       expect(visible).toHaveTextContent(/Maya/);
-      const active = ["thinking", "working", "replying"].includes(status);
+      const active = ["thinking", "working"].includes(status);
       expect(
         container.querySelectorAll(".comment-maya-dots > span"),
       ).toHaveLength(active ? 3 : 0);

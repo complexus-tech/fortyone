@@ -55,7 +55,7 @@ describe("Maya pending reply presentation", () => {
     expect(comments[0].subComments).toHaveLength(1);
   });
 
-  it("keeps the row while a published response is loading and removes it exactly when that reply arrives", () => {
+  it("stops showing activity as soon as a reply is published, before the comment cache catches up", () => {
     const { result, rerender } = renderHook(
       ({ comments, runs }) => useMayaPendingReplies(comments, runs),
       { initialProps: { comments: [comment("root")], runs: [run] } },
@@ -66,12 +66,64 @@ describe("Maya pending reply presentation", () => {
       replyCommentId: "reply",
     };
     rerender({ comments: [comment("root")], runs: [published] });
-    expect(result.current.get("root")?.[0].status).toBe("replying");
+    expect(result.current.size).toBe(0);
+    expect(jest.getTimerCount()).toBe(0);
     rerender({
       comments: [comment("root", [comment("reply")])],
       runs: [published],
     });
     expect(result.current.size).toBe(0);
+  });
+
+  it.each<CommentMayaRun["status"]>([
+    "queued",
+    "running",
+    "succeeded",
+    "needs_input",
+    "awaiting_approval",
+    "failed",
+    "cancelled",
+  ])(
+    "never treats a published %s response as pending even if its thread is stale or unavailable",
+    (status) => {
+      const { result, rerender } = renderHook(
+        ({ unavailable }) =>
+          useMayaPendingReplies(
+            [comment("root")],
+            [{ ...run, status, replyCommentId: "off-page-or-deleted-reply" }],
+            unavailable,
+          ),
+        { initialProps: { unavailable: false } },
+      );
+      expect(result.current.size).toBe(0);
+      rerender({ unavailable: true });
+      act(() => {
+        jest.advanceTimersByTime(180_000);
+      });
+      expect(result.current.size).toBe(0);
+      expect(jest.getTimerCount()).toBe(0);
+    },
+  );
+
+  it("keeps an unrelated request pending when another run publishes its reply", () => {
+    const { result } = renderHook(() =>
+      useMayaPendingReplies(
+        [comment("root")],
+        [
+          {
+            ...run,
+            id: "published",
+            status: "running",
+            replyCommentId: "reply",
+          },
+          { ...run, id: "still-working" },
+        ],
+      ),
+    );
+    expect(
+      result.current.get("root")?.map(({ run: pending }) => pending.id),
+    ).toEqual(["still-working"]);
+    expect(result.current.get("root")?.[0].status).toBe("thinking");
   });
 
   it("does not restart the waiting clock on retries or new versions and eventually stops animating", () => {

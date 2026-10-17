@@ -9,7 +9,6 @@ const LABELS: Record<
   { body: string; compact: string }
 > = {
   thinking: { body: "Thinking", compact: "Maya is thinking" },
-  replying: { body: "Replying", compact: "Maya is replying" },
   working: {
     body: "Still working on this",
     compact: "Maya is still working on this",
@@ -37,8 +36,7 @@ export const CommentMayaPendingLabel = ({
   compact?: boolean;
   className?: string;
 }) => {
-  const active =
-    status === "thinking" || status === "working" || status === "replying";
+  const active = status === "thinking" || status === "working";
   return (
     <span
       aria-atomic

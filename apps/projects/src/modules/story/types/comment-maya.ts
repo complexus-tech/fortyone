@@ -29,7 +29,6 @@ export type CommentMayaAction = "cancel" | "retry" | "approve";
 export type CommentMayaPendingStatus =
   | "thinking"
   | "working"
-  | "replying"
   | "delayed"
   | "offline"
   | "failed";
