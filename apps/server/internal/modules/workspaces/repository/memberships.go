@@ -111,15 +111,25 @@ func (r *repo) ResolveCurrentMembership(
 		Name:        row.Name,
 		Slug:        row.Slug,
 		Role:        row.UserRole,
+		ChatEnabled: row.ChatEnabled,
 	}, nil
 }
 
 func (r *repo) RecordAccess(ctx context.Context, workspaceID, userID uuid.UUID) error {
+	// Keep these independent, autocommitted telemetry writes in workspace-first
+	// order. Holding a user update while waiting on the workspace conflicts with
+	// the workspace/member/user lock order used by authoritative policy checks.
 	if err := r.queries.RecordWorkspaceAccess(ctx, workspacesql.RecordWorkspaceAccessParams{
 		WorkspaceID: workspaceID,
 		UserID:      userID,
 	}); err != nil {
 		return fmt.Errorf("record workspace access: %w", err)
+	}
+	if err := r.queries.RecordWorkspaceUserAccess(ctx, workspacesql.RecordWorkspaceUserAccessParams{
+		WorkspaceID: workspaceID,
+		UserID:      userID,
+	}); err != nil {
+		return fmt.Errorf("record workspace user access: %w", err)
 	}
 	return nil
 }

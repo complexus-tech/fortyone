@@ -1,4 +1,4 @@
-import type { Editor } from "@tiptap/core";
+import type { Node, Editor } from "@tiptap/core";
 import { createDocumentExtensions } from "@fortyone/document-editor";
 import Placeholder from "@tiptap/extension-placeholder";
 import { SlashCommand } from "./slash-command";
@@ -14,6 +14,8 @@ type CreateRichTextExtensionsOptions = {
   onMediaRequest?: (editor: Editor) => void;
   placeholder: string;
   collaborative?: boolean;
+  mention?: Node;
+  reference?: Node;
 };
 
 export const createRichTextExtensions = ({
@@ -21,11 +23,15 @@ export const createRichTextExtensions = ({
   onMediaRequest,
   placeholder,
   collaborative = false,
+  mention,
+  reference,
 }: CreateRichTextExtensionsOptions) => [
   ...createDocumentExtensions({
     collaborative,
     image: RichTextImage,
     video: RichTextVideo,
+    ...(mention ? { mention } : {}),
+    ...(reference ? { reference } : {}),
   }),
   RichTextMarkdown,
   RichTextMarkdownPaste,

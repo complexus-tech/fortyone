@@ -71,7 +71,7 @@ func (h *Handlers) Settings(ctx context.Context, w http.ResponseWriter, r *http.
 		"profile": settingsUser(profile),
 		"workspace": map[string]any{"id": workspace.ID, "name": workspace.Name, "slug": workspace.Slug, "color": workspace.Color, "userRole": identity.UserRole,
 			"storyTerm": settings.StoryTerm, "sprintTerm": settings.SprintTerm, "objectiveTerm": settings.ObjectiveTerm, "keyResultTerm": settings.KeyResultTerm,
-			"objectiveEnabled": settings.ObjectiveEnabled, "keyResultEnabled": settings.KeyResultEnabled, "workingDays": settings.WorkingDays, "workingStartMinute": settings.WorkingStartMinute, "workingEndMinute": settings.WorkingEndMinute},
+			"chatEnabled": settings.ChatEnabled, "objectiveEnabled": settings.ObjectiveEnabled, "keyResultEnabled": settings.KeyResultEnabled, "workingDays": settings.WorkingDays, "workingStartMinute": settings.WorkingStartMinute, "workingEndMinute": settings.WorkingEndMinute},
 		"teams": mappedTeams, "members": mappedMembers,
 		"preferences":  map[string]bool{"autoAssignSelf": preferences.AutoAssignSelf, "autoScheduling": preferences.AutoScheduling, "assignSelfOnBranchCopy": preferences.AssignSelfOnBranchCopy, "moveStoryToStartedOnBranch": preferences.MoveStoryToStartedOnBranch, "openStoryInDialog": preferences.OpenStoryInDialog},
 		"downloadedAt": time.Now().UTC(),

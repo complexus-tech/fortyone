@@ -83,6 +83,7 @@ export const createDocumentCommentAction = async (
   documentId: string,
   payload: {
     body: string;
+    creationId?: string;
     quote: string;
     anchorStart: number;
     anchorEnd: number;
@@ -105,11 +106,15 @@ export const replyToDocumentCommentAction = async (
   threadId: string,
   body: string,
   workspaceSlug: string,
+  metadata: { creationId?: string; replyToCommentId?: string } = {},
 ) => {
   try {
-    return await post<{ body: string }, ApiResponse<DocumentComment>>(
+    return await post<
+      { body: string; creationId?: string; replyToCommentId?: string },
+      ApiResponse<DocumentComment>
+    >(
       `documents/${documentId}/comments/${threadId}/replies`,
-      { body },
+      { body, ...metadata },
       await workspaceContext(workspaceSlug),
     );
   } catch (error) {
@@ -157,6 +162,21 @@ export const archiveDocumentAction = async (
   try {
     return await remove<ApiResponse<null>>(
       `documents/${documentId}`,
+      await workspaceContext(workspaceSlug),
+    );
+  } catch (error) {
+    return getApiError(error);
+  }
+};
+
+export const restoreArchivedDocumentAction = async (
+  documentId: string,
+  workspaceSlug: string,
+) => {
+  try {
+    return await post<Record<string, never>, ApiResponse<WorkspaceDocument>>(
+      `documents/${documentId}/unarchive`,
+      {},
       await workspaceContext(workspaceSlug),
     );
   } catch (error) {

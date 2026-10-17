@@ -8,7 +8,14 @@ export function publicDocumentHTML(
   apiUrl: string,
 ) {
   const sanitizedHTML = sanitizeHtml(html, {
-    allowedTags: [...defaults.allowedTags, "img", "video", "input", "mark"],
+    allowedTags: [
+      ...defaults.allowedTags,
+      "img",
+      "video",
+      "input",
+      "label",
+      "mark",
+    ],
     allowedAttributes: {
       a: ["href", "title", "rel", "target"],
       img: [
@@ -53,6 +60,14 @@ export function publicDocumentHTML(
     allowedSchemes: ["https", "http", "mailto"],
     allowProtocolRelative: false,
     transformTags: {
+      span: (tagName, attribs) => ({
+        tagName,
+        attribs,
+        ...(attribs["data-type"] === "document-reference" &&
+        attribs["data-label"]
+          ? { text: attribs["data-label"] }
+          : {}),
+      }),
       a: simpleTransform("a", {
         rel: "noopener noreferrer",
         target: "_blank",

@@ -24,9 +24,14 @@ type Querier interface {
 	DeleteExpiredDocumentCollaborationSessions(ctx context.Context) error
 	DeleteOwnedDocument(ctx context.Context, arg DeleteOwnedDocumentParams) (uuid.UUID, error)
 	DeleteOwnedDocumentMembers(ctx context.Context, arg DeleteOwnedDocumentMembersParams) error
+	DocumentAgentEditsAvailable(ctx context.Context) (bool, error)
 	DocumentMediaHasHistory(ctx context.Context, arg DocumentMediaHasHistoryParams) (bool, error)
+	EnqueueDocumentAgentEdit(ctx context.Context, arg EnqueueDocumentAgentEditParams) (DocumentAgentEdit, error)
+	ExpireDocumentAgentEdit(ctx context.Context, arg ExpireDocumentAgentEditParams) error
 	GetAccessibleDocument(ctx context.Context, arg GetAccessibleDocumentParams) (GetAccessibleDocumentRow, error)
 	GetAccessibleDocumentForDuplicate(ctx context.Context, arg GetAccessibleDocumentForDuplicateParams) (GetAccessibleDocumentForDuplicateRow, error)
+	GetDocumentAgentEdit(ctx context.Context, arg GetDocumentAgentEditParams) (DocumentAgentEdit, error)
+	GetDocumentCommentCreation(ctx context.Context, arg GetDocumentCommentCreationParams) (GetDocumentCommentCreationRow, error)
 	// Access is checked with GetAccessibleDocument in the same serializable transaction.
 	GetDocumentEditingMetadata(ctx context.Context, arg GetDocumentEditingMetadataParams) (GetDocumentEditingMetadataRow, error)
 	// Access and editing epoch are read in the same repeatable-read transaction.
@@ -35,6 +40,7 @@ type Querier interface {
 	GetPublicDocument(ctx context.Context, arg GetPublicDocumentParams) (GetPublicDocumentRow, error)
 	GetVisibleObjectiveRelationshipTarget(ctx context.Context, arg GetVisibleObjectiveRelationshipTargetParams) (GetVisibleObjectiveRelationshipTargetRow, error)
 	GetVisibleStoryRelationshipTarget(ctx context.Context, arg GetVisibleStoryRelationshipTargetParams) (GetVisibleStoryRelationshipTargetRow, error)
+	HasDocumentBodyReference(ctx context.Context, arg HasDocumentBodyReferenceParams) (bool, error)
 	InsertActiveWorkspaceDocumentMembers(ctx context.Context, arg InsertActiveWorkspaceDocumentMembersParams) (int64, error)
 	// Polymorphic entity IDs have no foreign key. Hold a key lock on the target
 	// through commit so deletion cannot race its relationship cleanup.
@@ -44,15 +50,22 @@ type Querier interface {
 	ListAccessibleDocumentMembers(ctx context.Context, arg ListAccessibleDocumentMembersParams) ([]ListAccessibleDocumentMembersRow, error)
 	ListAccessibleDocuments(ctx context.Context, arg ListAccessibleDocumentsParams) ([]ListAccessibleDocumentsRow, error)
 	ListAccessibleDocumentsForRelationship(ctx context.Context, arg ListAccessibleDocumentsForRelationshipParams) ([]ListAccessibleDocumentsForRelationshipRow, error)
+	ListDocumentCommentMentionIDs(ctx context.Context, arg ListDocumentCommentMentionIDsParams) ([]uuid.UUID, error)
+	ListDocumentCommentMentions(ctx context.Context, arg ListDocumentCommentMentionsParams) ([]ListDocumentCommentMentionsRow, error)
 	ListDocumentComments(ctx context.Context, arg ListDocumentCommentsParams) ([]ListDocumentCommentsRow, error)
 	ListDocumentRevisions(ctx context.Context, arg ListDocumentRevisionsParams) ([]ListDocumentRevisionsRow, error)
 	ListOrphanedDocumentMediaCandidates(ctx context.Context, arg ListOrphanedDocumentMediaCandidatesParams) ([]uuid.UUID, error)
 	ListVisibleDocumentRelationships(ctx context.Context, arg ListVisibleDocumentRelationshipsParams) ([]ListVisibleDocumentRelationshipsRow, error)
-	LockOwnedDocumentForDelete(ctx context.Context, arg LockOwnedDocumentForDeleteParams) (uuid.UUID, error)
+	LockOwnedDocumentForLifecycle(ctx context.Context, arg LockOwnedDocumentForLifecycleParams) (uuid.UUID, error)
+	NotifyDocumentComment(ctx context.Context, arg NotifyDocumentCommentParams) error
+	RecordDocumentCommentMentions(ctx context.Context, arg RecordDocumentCommentMentionsParams) error
 	RestoreDocumentRevision(ctx context.Context, arg RestoreDocumentRevisionParams) (uuid.UUID, error)
 	SetDocumentCommentResolved(ctx context.Context, arg SetDocumentCommentResolvedParams) (uuid.UUID, error)
 	SetDocumentPublicToken(ctx context.Context, arg SetDocumentPublicTokenParams) error
 	SetOwnedDocumentVisibility(ctx context.Context, arg SetOwnedDocumentVisibilityParams) (uuid.UUID, error)
+	SyncDocumentBodyMentions(ctx context.Context, arg SyncDocumentBodyMentionsParams) error
+	SyncDocumentBodyReferences(ctx context.Context, arg SyncDocumentBodyReferencesParams) error
+	UnarchiveOwnedDocument(ctx context.Context, arg UnarchiveOwnedDocumentParams) (uuid.UUID, error)
 	UnlinkEditableDocumentMedia(ctx context.Context, arg UnlinkEditableDocumentMediaParams) (uuid.UUID, error)
 	UpdateEditableDocument(ctx context.Context, arg UpdateEditableDocumentParams) (UpdateEditableDocumentRow, error)
 }

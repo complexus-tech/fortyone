@@ -1,0 +1,157 @@
+{
+  "achieved_history_requests_per_second": 20,
+  "active_at_end": 1000,
+  "all_user_probe_deliveries": 1000,
+  "cpus": 11,
+  "delivery_lag_ms": {
+    "max": 8376.984,
+    "p50": 319.538,
+    "p95": 821.77,
+    "p99": 1050.892
+  },
+  "distinct_users": 1000,
+  "errors": null,
+  "go_version": "go1.26.9",
+  "held_history_requests": 6000,
+  "hold_seconds": 300,
+  "limits": "Loopback laptop; no TLS/proxy, browser rendering, object storage, AI, voice, email/push delivery or network partition. API replicas share process/Redis client; process memory includes generator. Not a production capacity guarantee.",
+  "message_creates": 1573,
+  "observed_created_deliveries": 157298,
+  "outbox_recovery_ms": 7401,
+  "passed": true,
+  "peak_go_heap_bytes": 168427784,
+  "peak_goroutines": 8266,
+  "peak_oldest_outbox_age_ms": 999,
+  "peak_pending_outbox_events": 6,
+  "peak_redis_clients": 1073,
+  "peak_redis_memory_bytes": 27378256,
+  "peak_sse_connections": 1000,
+  "pending_during_worker_pause": 1,
+  "redis_clients": 1073,
+  "redis_memory_bytes": 27167552,
+  "requests": {
+    "catchup_cursor": {
+      "count": 1,
+      "errors": 0,
+      "max_ms": 4.977,
+      "p50_ms": 4.977,
+      "p95_ms": 4.977,
+      "p99_ms": 4.977
+    },
+    "catchup_history": {
+      "count": 1,
+      "errors": 0,
+      "max_ms": 4.237,
+      "p50_ms": 4.237,
+      "p95_ms": 4.237,
+      "p99_ms": 4.237
+    },
+    "create": {
+      "count": 1573,
+      "errors": 0,
+      "max_ms": 463.029,
+      "p50_ms": 18.37,
+      "p95_ms": 39.313,
+      "p99_ms": 84.836
+    },
+    "cursor": {
+      "count": 2,
+      "errors": 0,
+      "max_ms": 25.227,
+      "p50_ms": 5.857,
+      "p95_ms": 5.857,
+      "p99_ms": 5.857
+    },
+    "delete": {
+      "count": 1,
+      "errors": 0,
+      "max_ms": 1.91,
+      "p50_ms": 1.91,
+      "p95_ms": 1.91,
+      "p99_ms": 1.91
+    },
+    "edit": {
+      "count": 1,
+      "errors": 0,
+      "max_ms": 2.443,
+      "p50_ms": 2.443,
+      "p95_ms": 2.443,
+      "p99_ms": 2.443
+    },
+    "history": {
+      "count": 6100,
+      "errors": 0,
+      "max_ms": 415.21,
+      "p50_ms": 5.1,
+      "p95_ms": 13.846,
+      "p99_ms": 40.912
+    },
+    "idempotent_create": {
+      "count": 1,
+      "errors": 0,
+      "max_ms": 11.91,
+      "p50_ms": 11.91,
+      "p95_ms": 11.91,
+      "p99_ms": 11.91
+    },
+    "idempotent_replay": {
+      "count": 1,
+      "errors": 0,
+      "max_ms": 1.679,
+      "p50_ms": 1.679,
+      "p95_ms": 1.679,
+      "p99_ms": 1.679
+    },
+    "mark_read": {
+      "count": 1,
+      "errors": 0,
+      "max_ms": 2.356,
+      "p50_ms": 2.356,
+      "p95_ms": 2.356,
+      "p99_ms": 2.356
+    },
+    "reaction": {
+      "count": 300,
+      "errors": 0,
+      "max_ms": 199.584,
+      "p50_ms": 5.845,
+      "p95_ms": 26.487,
+      "p99_ms": 46.534
+    },
+    "read_message": {
+      "count": 1,
+      "errors": 0,
+      "max_ms": 0.874,
+      "p50_ms": 0.874,
+      "p95_ms": 0.874,
+      "p99_ms": 0.874
+    },
+    "sse_connect": {
+      "count": 1101,
+      "errors": 0,
+      "max_ms": 91.9,
+      "p50_ms": 4.692,
+      "p95_ms": 44.875,
+      "p99_ms": 68.011
+    },
+    "thread": {
+      "count": 1,
+      "errors": 0,
+      "max_ms": 2.07,
+      "p50_ms": 2.07,
+      "p95_ms": 2.07,
+      "p99_ms": 2.07
+    }
+  },
+  "retried_outbox_events": 1,
+  "run_at": "2026-10-17T10:25:23Z",
+  "scenario": "10 teams, 2 real HTTP API/hub replicas in one process, 20 history reads/s + 5 message creates/s + 1 reaction/s + 0.2 replies/s; 10% cross-replica reconnect; real Asynq wakeups and 5s sweep, durable outbox pause/retry/recovery",
+  "steady_delivery_lag_ms": {
+    "max": 1316,
+    "p50": 320.701,
+    "p95": 818.497,
+    "p99": 1033.903
+  },
+  "target_history_requests_per_second": 20,
+  "total_seconds": 343.021506125
+}

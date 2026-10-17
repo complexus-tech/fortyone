@@ -31,6 +31,7 @@ var ErrWorkspaceSSORequired = workspaceSSORequiredError{}
 // WorkspaceInfo is the current authoritative workspace membership bound to a
 // request after authentication.
 type WorkspaceInfo struct {
+ ChatEnabled bool
 	ID       uuid.UUID
 	Name     string
 	Slug     string

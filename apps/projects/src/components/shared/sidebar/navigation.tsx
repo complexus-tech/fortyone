@@ -6,6 +6,7 @@ import {
   ActiveSprintIcon,
   AiIcon,
   CalendarIcon,
+  ChatIcon,
   ChevronRightIcon,
   DashboardIcon,
   DocsIcon,
@@ -24,6 +25,7 @@ import {
   useWorkspacePath,
 } from "@/hooks";
 import { useRunningSprints } from "@/modules/sprints/hooks/running-sprints";
+import { useChatCapabilities } from "@/lib/hooks/workspace/chat-capabilities";
 import { useViewsPresence } from "@/shared/views/presence-context";
 import {
   walkthroughTargets,
@@ -52,6 +54,7 @@ export const Navigation = ({
   const { hasViews } = useViewsPresence();
 
   const features = useFeatures();
+  const chat = useChatCapabilities();
   const [isWorkspaceOpen, setIsWorkspaceOpen] = useLocalStorage(
     `sidebar:${workspaceSlug}:workspace-expanded`,
     true,
@@ -83,6 +86,12 @@ export const Navigation = ({
       name: "My work",
       icon: <UserIcon className={isCollapsed ? "h-5.5" : undefined} />,
       href: withWorkspace("/my-work"),
+    },
+    {
+      name: "Chat",
+      icon: <ChatIcon className={isCollapsed ? "h-5.5" : undefined} />,
+      href: withWorkspace("/chat"),
+      disabled: !chat.enabled,
     },
     {
       name: "AI Agent",

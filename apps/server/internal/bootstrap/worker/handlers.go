@@ -1,6 +1,7 @@
 package workerbootstrap
 
 import (
+	attachmentsrepository "github.com/complexus-tech/projects-api/internal/modules/attachments/repository"
 	attachments "github.com/complexus-tech/projects-api/internal/modules/attachments/service"
 	chatsessionsrepository "github.com/complexus-tech/projects-api/internal/modules/chatsessions/repository"
 	feedbackrepository "github.com/complexus-tech/projects-api/internal/modules/feedback/repository"
@@ -112,9 +113,10 @@ func buildTaskMux(dependencies taskMuxDependencies) *asynq.ServeMux {
 	)
 	storyRetentionHandlers := taskhandlers.NewStoryRetentionHandlers(
 		taskhandlers.StoryRetentionHandlerDependencies{
-			Log:     dependencies.Log,
-			Store:   storyStore,
-			Objects: dependencies.Attachments,
+			Log:                dependencies.Log,
+			Store:              storyStore,
+			Objects:            dependencies.Attachments,
+			PendingChatUploads: attachmentsrepository.New(dependencies.DatabasePool),
 		},
 	)
 	mayaMaintenanceHandlers := taskhandlers.NewMayaMaintenanceHandlers(
@@ -178,6 +180,7 @@ func buildTaskMux(dependencies taskMuxDependencies) *asynq.ServeMux {
 	mux.HandleFunc(tasks.TypeMayaBatchAssignment, workerTaskService.HandleMayaBatchAssignment)
 	mux.HandleFunc(tasks.TypeMayaScheduleRecovery, workerTaskService.HandleMayaScheduleRecovery)
 	mux.HandleFunc(tasks.TypeAttachmentImageOptimization, workerTaskService.HandleAttachmentImageOptimization)
+	mux.HandleFunc(tasks.TypeAttachmentThumbnail, workerTaskService.HandleAttachmentThumbnail)
 	mux.HandleFunc(tasks.TypeSlackEvent, workerTaskService.HandleSlackEvent)
 	mux.HandleFunc(tasks.TypeSlackFileImport, workerTaskService.HandleSlackFileImport)
 	mux.HandleFunc(tasks.TypeSlackCredentialBackfill, workerTaskService.HandleSlackCredentialBackfill)

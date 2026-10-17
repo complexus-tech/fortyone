@@ -305,7 +305,7 @@ export const RelatedWorkPanel = ({
                         {work.title}
                       </Text>
                     </Link>
-                    {document.canEdit ? (
+                    {document.canEdit && !work.referencedInContent ? (
                       <button
                         aria-label={`Remove ${work.title}`}
                         className="text-text-muted hover:text-foreground opacity-0 group-hover:opacity-100 focus-visible:opacity-100"

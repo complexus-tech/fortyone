@@ -83,6 +83,7 @@ type Run struct {
 	LeaseExpiresAt      *time.Time      `json:"-"`
 	AttemptCount        int32           `json:"-"`
 	RetryAttemptCount   int32           `json:"-"`
+	ActionStartedAt     *time.Time      `json:"-"`
 	ApprovedAt          *time.Time      `json:"-"`
 	CreatedAt           time.Time       `json:"createdAt"`
 	UpdatedAt           time.Time       `json:"updatedAt"`
@@ -106,7 +107,7 @@ type Outcome struct {
 // already committed work. Transient publication/delivery outages must not strand
 // an action receipt or an approval question after the model retry limit.
 func (run Run) HasDurableResponse() bool {
-	return run.Outcome != nil || run.ProposalReplyID != nil
+	return run.Outcome != nil || run.ProposalReplyID != nil || run.ActionStartedAt != nil
 }
 
 type Control struct {
@@ -141,7 +142,10 @@ func (e *Failure) Error() string { return fmt.Sprintf("agent invocation %s: %v",
 func (e *Failure) Unwrap() error { return e.Cause }
 
 func (input Input) Validate() error {
-	if input.WorkspaceID == uuid.Nil || input.RequesterID == uuid.Nil || input.TeamID == uuid.Nil || input.SourceID == uuid.Nil || input.ConversationID == uuid.Nil || input.EntityID == uuid.Nil {
+	if input.WorkspaceID == uuid.Nil || input.RequesterID == uuid.Nil || input.SourceID == uuid.Nil || input.ConversationID == uuid.Nil || input.EntityID == uuid.Nil {
+		return ErrInvalidInput
+	}
+	if (input.Surface == "document_comment") != (input.TeamID == uuid.Nil) {
 		return ErrInvalidInput
 	}
 	if input.ContinuationID != nil && *input.ContinuationID == uuid.Nil {

@@ -24,6 +24,9 @@ export function DocumentPublicLink({
         documentKeys.detail(workspaceSlug, document.id),
         saved,
       );
+      void queryClient.invalidateQueries({
+        queryKey: documentKeys.lists(workspaceSlug),
+      });
       toast.success(
         saved.publicToken ? "Public link enabled" : "Public link revoked",
       );
@@ -49,7 +52,7 @@ export function DocumentPublicLink({
     : "Off · Enable view-only access";
   if (update.isPending) accessLabel = "Updating public access…";
   return (
-    <Box className="border-border border-t px-5 py-4">
+    <Box className="border-border border-t px-5 py-5 text-base">
       <Flex align="center" gap={3}>
         <LinkIcon className="size-5 shrink-0" />
         <Box className="min-w-0 flex-1">
@@ -74,27 +77,28 @@ export function DocumentPublicLink({
         />
       </Flex>
       {path ? (
-        <Flex className="border-border -mx-5 mt-4 border-t px-5 pt-4" gap={2}>
+        <Flex className="mt-4 flex-wrap" gap={2}>
           <Button
             align="center"
-            className="flex-1"
-            color="tertiary"
+            className="flex-1 text-base whitespace-nowrap"
             disabled={update.isPending}
             leftIcon={<CopyIcon className="size-4" />}
             onClick={() => void copy()}
-            variant="outline"
           >
             Copy public link
           </Button>
-          <a
-            aria-label="Open public document in a new tab"
-            className="border-border hover:bg-state-hover focus-visible:ring-ring flex size-10 items-center justify-center rounded-xl border outline-none focus-visible:ring-2"
+          <Button
+            align="center"
+            className="flex-1 text-base whitespace-nowrap"
+            color="tertiary"
             href={path}
-            rel="noreferrer"
+            leftIcon={<ArrowUpRightIcon className="size-4" />}
             target="_blank"
+            variant="outline"
           >
-            <ArrowUpRightIcon className="size-4" />
-          </a>
+            Open preview
+            <span className="sr-only"> in a new tab</span>
+          </Button>
         </Flex>
       ) : null}
     </Box>

@@ -26,7 +26,7 @@ WITH accessible_thread AS (
        AND membership.role <> CAST('guest' AS public.user_role)
     INNER JOIN public.users AS actor
         ON actor.user_id = membership.user_id
-       AND actor.is_active = TRUE
+       AND actor.is_active = TRUE AND actor.is_system = FALSE
     WHERE thread.thread_id = $2
       AND document.document_id = $3
       AND document.workspace_id = $4
@@ -36,18 +36,26 @@ WITH accessible_thread AS (
           OR EXISTS (
               SELECT 1
               FROM public.document_members AS reader
-              WHERE reader.document_id = document.document_id
+              WHERE document.visibility = 'restricted' AND reader.document_id = document.document_id
                 AND reader.user_id = $1
           )
       )
 ), inserted_comment AS (
-    INSERT INTO public.document_comments (thread_id, body, created_by)
-    SELECT thread_id, $5, $1
+    INSERT INTO public.document_comments (thread_id, body, created_by, creation_id, creation_hash, reply_to_comment_id)
+    SELECT thread_id, $5, $6, $7, $8, CAST($9 AS uuid)
     FROM accessible_thread
-    RETURNING comment_id, thread_id, body, created_by, created_at, updated_at
+    WHERE (CAST($9 AS uuid) IS NULL OR EXISTS (
+        SELECT 1 FROM public.document_comments AS parent
+        WHERE parent.comment_id = CAST($9 AS uuid) AND parent.thread_id = accessible_thread.thread_id
+    )) AND EXISTS (
+        SELECT 1 FROM public.users AS author WHERE author.user_id = $6 AND author.is_active = TRUE
+            AND (author.user_id = $1 OR (author.is_system = TRUE AND author.username = 'maya'))
+    )
+    RETURNING comment_id, thread_id, body, created_by, created_at, updated_at, creation_id, creation_hash, reply_to_comment_id
 )
 SELECT
     comment.comment_id,
+    comment.reply_to_comment_id,
     comment.thread_id,
     comment.body,
     comment.created_by,
@@ -60,22 +68,27 @@ INNER JOIN public.users AS author ON author.user_id = comment.created_by
 `
 
 type AddDocumentCommentReplyParams struct {
-	ActorID     uuid.UUID
-	ThreadID    uuid.UUID
-	DocumentID  uuid.UUID
-	WorkspaceID uuid.UUID
-	Body        string
+	ActorID          uuid.UUID
+	ThreadID         uuid.UUID
+	DocumentID       uuid.UUID
+	WorkspaceID      uuid.UUID
+	Body             string
+	AuthorID         uuid.UUID
+	CreationID       *uuid.UUID
+	CreationHash     []byte
+	ReplyToCommentID *uuid.UUID
 }
 
 type AddDocumentCommentReplyRow struct {
-	CommentID    uuid.UUID
-	ThreadID     uuid.UUID
-	Body         string
-	CreatedBy    uuid.UUID
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
-	AuthorName   string
-	AuthorAvatar *string
+	CommentID        uuid.UUID
+	ReplyToCommentID *uuid.UUID
+	ThreadID         uuid.UUID
+	Body             string
+	CreatedBy        uuid.UUID
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+	AuthorName       string
+	AuthorAvatar     *string
 }
 
 func (q *Queries) AddDocumentCommentReply(ctx context.Context, arg AddDocumentCommentReplyParams) (AddDocumentCommentReplyRow, error) {
@@ -85,10 +98,15 @@ func (q *Queries) AddDocumentCommentReply(ctx context.Context, arg AddDocumentCo
 		arg.DocumentID,
 		arg.WorkspaceID,
 		arg.Body,
+		arg.AuthorID,
+		arg.CreationID,
+		arg.CreationHash,
+		arg.ReplyToCommentID,
 	)
 	var i AddDocumentCommentReplyRow
 	err := row.Scan(
 		&i.CommentID,
+		&i.ReplyToCommentID,
 		&i.ThreadID,
 		&i.Body,
 		&i.CreatedBy,
@@ -110,7 +128,7 @@ WITH accessible_document AS (
        AND membership.role <> CAST('guest' AS public.user_role)
     INNER JOIN public.users AS actor
         ON actor.user_id = membership.user_id
-       AND actor.is_active = TRUE
+       AND actor.is_active = TRUE AND actor.is_system = FALSE
     WHERE document.document_id = $2
       AND document.workspace_id = $3
       AND document.archived_at IS NULL
@@ -120,7 +138,7 @@ WITH accessible_document AS (
           OR EXISTS (
               SELECT 1
               FROM public.document_members AS reader
-              WHERE reader.document_id = document.document_id
+              WHERE document.visibility = 'restricted' AND reader.document_id = document.document_id
                 AND reader.user_id = $1
           )
       )
@@ -138,10 +156,10 @@ WITH accessible_document AS (
     FROM accessible_document
     RETURNING thread_id, document_id, workspace_id, quote, anchor_start, anchor_end, created_by, resolved_at, resolved_by, created_at, updated_at
 ), inserted_comment AS (
-    INSERT INTO public.document_comments (thread_id, body, created_by)
-    SELECT thread_id, $7, $1
+    INSERT INTO public.document_comments (thread_id, body, created_by, creation_id, creation_hash)
+    SELECT thread_id, $7, $1, $8, $9
     FROM inserted_thread
-    RETURNING comment_id, thread_id, body, created_by, created_at, updated_at
+    RETURNING comment_id, thread_id, body, created_by, created_at, updated_at, creation_id, creation_hash, reply_to_comment_id
 )
 SELECT
     thread.thread_id,
@@ -154,6 +172,7 @@ SELECT
     thread.resolved_by,
     thread.created_at AS thread_created_at,
     comment.comment_id,
+    comment.reply_to_comment_id,
     comment.body,
     comment.created_by,
     comment.created_at,
@@ -166,32 +185,35 @@ INNER JOIN public.users AS author ON author.user_id = comment.created_by
 `
 
 type CreateDocumentCommentThreadParams struct {
-	ActorID     uuid.UUID
-	DocumentID  uuid.UUID
-	WorkspaceID uuid.UUID
-	Quote       string
-	AnchorStart int32
-	AnchorEnd   int32
-	Body        string
+	ActorID      uuid.UUID
+	DocumentID   uuid.UUID
+	WorkspaceID  uuid.UUID
+	Quote        string
+	AnchorStart  int32
+	AnchorEnd    int32
+	Body         string
+	CreationID   *uuid.UUID
+	CreationHash []byte
 }
 
 type CreateDocumentCommentThreadRow struct {
-	ThreadID        uuid.UUID
-	DocumentID      uuid.UUID
-	Quote           string
-	AnchorStart     int32
-	AnchorEnd       int32
-	ThreadCreatedBy uuid.UUID
-	ResolvedAt      *time.Time
-	ResolvedBy      *uuid.UUID
-	ThreadCreatedAt time.Time
-	CommentID       uuid.UUID
-	Body            string
-	CreatedBy       uuid.UUID
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
-	AuthorName      string
-	AuthorAvatar    *string
+	ThreadID         uuid.UUID
+	DocumentID       uuid.UUID
+	Quote            string
+	AnchorStart      int32
+	AnchorEnd        int32
+	ThreadCreatedBy  uuid.UUID
+	ResolvedAt       *time.Time
+	ResolvedBy       *uuid.UUID
+	ThreadCreatedAt  time.Time
+	CommentID        uuid.UUID
+	ReplyToCommentID *uuid.UUID
+	Body             string
+	CreatedBy        uuid.UUID
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+	AuthorName       string
+	AuthorAvatar     *string
 }
 
 func (q *Queries) CreateDocumentCommentThread(ctx context.Context, arg CreateDocumentCommentThreadParams) (CreateDocumentCommentThreadRow, error) {
@@ -203,6 +225,8 @@ func (q *Queries) CreateDocumentCommentThread(ctx context.Context, arg CreateDoc
 		arg.AnchorStart,
 		arg.AnchorEnd,
 		arg.Body,
+		arg.CreationID,
+		arg.CreationHash,
 	)
 	var i CreateDocumentCommentThreadRow
 	err := row.Scan(
@@ -216,6 +240,7 @@ func (q *Queries) CreateDocumentCommentThread(ctx context.Context, arg CreateDoc
 		&i.ResolvedBy,
 		&i.ThreadCreatedAt,
 		&i.CommentID,
+		&i.ReplyToCommentID,
 		&i.Body,
 		&i.CreatedBy,
 		&i.CreatedAt,
@@ -238,6 +263,7 @@ SELECT
     thread.resolved_by,
     thread.created_at AS thread_created_at,
     comment.comment_id,
+    comment.reply_to_comment_id,
     comment.body,
     comment.created_by,
     comment.created_at,
@@ -254,7 +280,7 @@ INNER JOIN public.workspace_members AS membership
    AND membership.user_id = $1
 INNER JOIN public.users AS actor
     ON actor.user_id = membership.user_id
-   AND actor.is_active = TRUE
+   AND actor.is_active = TRUE AND actor.is_system = FALSE
 INNER JOIN public.document_comments AS comment ON comment.thread_id = thread.thread_id
 INNER JOIN public.users AS author ON author.user_id = comment.created_by
 WHERE document.document_id = $2
@@ -265,7 +291,7 @@ WHERE document.document_id = $2
       OR EXISTS (
           SELECT 1
           FROM public.document_members AS reader
-          WHERE reader.document_id = document.document_id
+          WHERE document.visibility = 'restricted' AND reader.document_id = document.document_id
             AND reader.user_id = $1
       )
   )
@@ -279,22 +305,23 @@ type ListDocumentCommentsParams struct {
 }
 
 type ListDocumentCommentsRow struct {
-	ThreadID        uuid.UUID
-	DocumentID      uuid.UUID
-	Quote           string
-	AnchorStart     int32
-	AnchorEnd       int32
-	ThreadCreatedBy uuid.UUID
-	ResolvedAt      *time.Time
-	ResolvedBy      *uuid.UUID
-	ThreadCreatedAt time.Time
-	CommentID       uuid.UUID
-	Body            string
-	CreatedBy       uuid.UUID
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
-	AuthorName      string
-	AuthorAvatar    *string
+	ThreadID         uuid.UUID
+	DocumentID       uuid.UUID
+	Quote            string
+	AnchorStart      int32
+	AnchorEnd        int32
+	ThreadCreatedBy  uuid.UUID
+	ResolvedAt       *time.Time
+	ResolvedBy       *uuid.UUID
+	ThreadCreatedAt  time.Time
+	CommentID        uuid.UUID
+	ReplyToCommentID *uuid.UUID
+	Body             string
+	CreatedBy        uuid.UUID
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+	AuthorName       string
+	AuthorAvatar     *string
 }
 
 func (q *Queries) ListDocumentComments(ctx context.Context, arg ListDocumentCommentsParams) ([]ListDocumentCommentsRow, error) {
@@ -317,6 +344,7 @@ func (q *Queries) ListDocumentComments(ctx context.Context, arg ListDocumentComm
 			&i.ResolvedBy,
 			&i.ThreadCreatedAt,
 			&i.CommentID,
+			&i.ReplyToCommentID,
 			&i.Body,
 			&i.CreatedBy,
 			&i.CreatedAt,
@@ -346,7 +374,7 @@ INNER JOIN public.workspace_members AS membership
    AND membership.role <> CAST('guest' AS public.user_role)
 INNER JOIN public.users AS actor
     ON actor.user_id = membership.user_id
-   AND actor.is_active = TRUE
+   AND actor.is_active = TRUE AND actor.is_system = FALSE
 WHERE thread.thread_id = $3
   AND thread.document_id = document.document_id
   AND thread.workspace_id = document.workspace_id
@@ -359,7 +387,7 @@ WHERE thread.thread_id = $3
       OR EXISTS (
           SELECT 1
           FROM public.document_members AS reader
-          WHERE reader.document_id = document.document_id
+          WHERE document.visibility = 'restricted' AND reader.document_id = document.document_id
             AND reader.user_id = $2
       )
   )

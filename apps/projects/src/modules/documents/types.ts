@@ -1,6 +1,12 @@
 export type DocumentVisibility = "workspace" | "restricted" | "private";
 export type DocumentRelationType = "story" | "objective";
-export type DocumentScope = "all" | "mine" | "shared" | "templates";
+export type DocumentScope =
+  | "all"
+  | "mine"
+  | "shared"
+  | "favorites"
+  | "archived"
+  | "templates";
 
 export type DocumentMember = {
   userId: string;
@@ -13,6 +19,8 @@ export type RelatedWork = {
   title: string;
   reference: string | null;
   teamId: string | null;
+  statusColor?: string | null;
+  referencedInContent?: boolean;
 };
 
 export type WorkspaceDocument = {
@@ -20,6 +28,8 @@ export type WorkspaceDocument = {
   collaborationEpoch: number;
   collaborative: boolean;
   publicToken: string | null;
+  publicEnabled?: boolean;
+  archivedAt?: string | null;
   id: string;
   workspaceId: string;
   title: string;
@@ -48,9 +58,13 @@ export type WorkspaceDocumentSummary = Pick<
   | "updatedAt"
   | "canEdit"
   | "relatedWorkCount"
->;
+> & {
+  publicEnabled?: boolean;
+  archivedAt?: string | null;
+  relatedWork?: RelatedWork[];
+};
 
-export type DocumentAccessFilter = DocumentVisibility | "all";
+export type DocumentAccessFilter = DocumentVisibility | "public" | "all";
 export type DocumentOwnerFilter = "all" | "mine" | "others";
 export type DocumentUpdatedFilter = "all" | "today" | "7d" | "30d" | "90d";
 export type DocumentSortField = "updated" | "title";
@@ -109,6 +123,7 @@ export type DocumentComment = {
   authorAvatar: string | null;
   createdAt: string;
   updatedAt: string;
+  replyToCommentId?: string | null;
 };
 
 export type DocumentCommentThread = {
@@ -125,6 +140,8 @@ export type DocumentCommentThread = {
 };
 
 export type DocumentCommentSelection = {
+  draftKey?: string;
+  isDetached?: boolean;
   from: number;
   text: string;
   to: number;

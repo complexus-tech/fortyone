@@ -84,11 +84,24 @@ var (
 
 func main() {
 	migrateOnly := flag.Bool("migrate", false, "Run database migrations and exit")
+	checkSchemaOnly := flag.Bool("check-schema", false, "Verify the database schema without applying migrations and exit")
 	flag.Parse()
 
 	log := logger.NewWithJSON(os.Stdout, configuredLogLevel(), service)
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+
+	if *migrateOnly && *checkSchemaOnly {
+		log.Error(ctx, "choose either -migrate or -check-schema")
+		os.Exit(2)
+	}
+	if *checkSchemaOnly {
+		if err := runSchemaCheck(ctx, log); err != nil {
+			logAPIFailure(ctx, log, "schema_preflight", apiMigrationFailure.WrapIfUnclassified(err))
+			os.Exit(1)
+		}
+		return
+	}
 
 	if *migrateOnly {
 		if err := runMigrations(ctx, log); err != nil {

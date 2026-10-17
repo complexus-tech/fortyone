@@ -15,7 +15,18 @@ type SearchParamsReader = Pick<URLSearchParams, "get">;
 const DAY_IN_MILLISECONDS = 24 * 60 * 60 * 1000;
 
 const isAccessFilter = (value: string | null): value is DocumentAccessFilter =>
-  value === "workspace" || value === "restricted" || value === "private";
+  value === "workspace" ||
+  value === "restricted" ||
+  value === "private" ||
+  value === "public";
+
+export const isDocumentScope = (value: string | null): value is DocumentScope =>
+  value === "all" ||
+  value === "mine" ||
+  value === "shared" ||
+  value === "favorites" ||
+  value === "archived" ||
+  value === "templates";
 
 const isOwnerFilter = (value: string | null): value is DocumentOwnerFilter =>
   value === "mine" || value === "others";
@@ -50,7 +61,11 @@ export const getDocumentListState = (
   const defaultDirection = sort === "title" ? "asc" : "desc";
 
   return {
-    access: isAccessFilter(rawAccess) ? rawAccess : "all",
+    access:
+      isAccessFilter(rawAccess) &&
+      !(searchParams.get("scope") === "archived" && rawAccess === "public")
+        ? rawAccess
+        : "all",
     direction: isSortDirection(rawDirection) ? rawDirection : defaultDirection,
     owner: isOwnerFilter(rawOwner) ? rawOwner : "all",
     page: getPositiveInteger(searchParams.get("page")),
@@ -81,12 +96,14 @@ const getTimestamp = (value: string) => {
 export const filterAndSortDocumentSummaries = ({
   currentUserId,
   documents,
+  favoriteDocumentIds,
   now = new Date(),
   scope,
   state,
 }: {
   currentUserId?: string;
   documents: WorkspaceDocumentSummary[];
+  favoriteDocumentIds?: ReadonlySet<string>;
   now?: Date;
   scope: Exclude<DocumentScope, "templates">;
   state: DocumentListState;
@@ -94,7 +111,17 @@ export const filterAndSortDocumentSummaries = ({
   const updatedAfter = getUpdatedAfter(state.updated, now);
   const owner = scope === "mine" ? "all" : state.owner;
   const filtered = documents.filter((document) => {
-    if (state.access !== "all" && document.visibility !== state.access) {
+    if (scope === "favorites" && !favoriteDocumentIds?.has(document.id)) {
+      return false;
+    }
+    if (state.access === "public" && !document.publicEnabled) {
+      return false;
+    }
+    if (
+      state.access !== "all" &&
+      state.access !== "public" &&
+      document.visibility !== state.access
+    ) {
       return false;
     }
     if (

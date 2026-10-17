@@ -69,8 +69,13 @@ func (a *OpenAIAssistant) Respond(ctx context.Context, request Request) (Respons
 			if text == "" {
 				return Response{Usage: usage}, fmt.Errorf("%w: completed response contained no text", ErrMalformedResponse)
 			}
+			if request.SourceScope != nil {
+				// Native replies use Markdown indentation to distinguish code from
+				// actionable mentions. Trimming leading spaces could notify an example.
+				text = strings.Trim(analysis.text, "\r\n")
+			}
 			text, needsInput := nativeResponseText(text, request.SourceScope)
-			if text == "" {
+			if strings.TrimSpace(text) == "" {
 				return Response{Usage: usage}, fmt.Errorf("%w: empty native response", ErrMalformedResponse)
 			}
 			return Response{Text: text, NeedsInput: needsInput, Usage: usage}, nil
@@ -142,6 +147,7 @@ func (a *OpenAIAssistant) createResponse(
 	safetyID string,
 	instructions string,
 	definitions []ToolDefinition,
+	forcedTool ...string,
 ) (responsesAPIResponse, error) {
 	payload := responsesAPIRequest{
 		Model:             a.model,
@@ -154,6 +160,9 @@ func (a *OpenAIAssistant) createResponse(
 		ParallelToolCalls: false,
 		SafetyIdentifier:  safetyID,
 		Include:           []string{"reasoning.encrypted_content"},
+	}
+	if len(forcedTool) > 0 {
+		payload.ToolChoice = map[string]string{"type": "function", "name": forcedTool[0]}
 	}
 	body, err := json.Marshal(payload)
 	if err != nil {

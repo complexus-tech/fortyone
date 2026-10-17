@@ -7,6 +7,9 @@ export type CommentFileType =
   | "text"
   | "video"
   | "image"
+  | "audio"
+  | "archive"
+  | "code"
   | "file";
 
 const MIME_TYPES: Readonly<Partial<Record<string, CommentFileType>>> = {
@@ -26,6 +29,14 @@ const MIME_TYPES: Readonly<Partial<Record<string, CommentFileType>>> = {
   "image/png": "image",
   "image/gif": "image",
   "image/webp": "image",
+  "application/json": "code",
+  "application/xml": "code",
+  "text/xml": "code",
+  "application/x-rar": "archive",
+  "application/vnd.rar": "archive",
+  "application/x-7z-compressed": "archive",
+  "application/gzip": "archive",
+  "application/x-tar": "archive",
 };
 
 const EXTENSIONS: Readonly<Partial<Record<string, CommentFileType>>> = {
@@ -44,6 +55,16 @@ const EXTENSIONS: Readonly<Partial<Record<string, CommentFileType>>> = {
   png: "image",
   gif: "image",
   webp: "image",
+  mp3: "audio",
+  m4a: "audio",
+  wav: "audio",
+  ogg: "audio",
+  zip: "archive",
+  rar: "archive",
+  "7z": "archive",
+  gz: "archive",
+  json: "code",
+  xml: "code",
 };
 
 export const getCommentFileType = (
@@ -56,6 +77,7 @@ export const getCommentFileType = (
     : "";
 
   if (normalizedMimeType === "text/plain" && extension === "csv") return "csv";
+  if (normalizedMimeType.startsWith("audio/")) return "audio";
 
   // Prefer the server's recognized content type over a misleading extension.
   const detectedType = MIME_TYPES[normalizedMimeType];
@@ -67,7 +89,10 @@ export const getCommentFileType = (
     normalizedMimeType === "application/octet-stream" ||
     normalizedMimeType === "application/zip"
   ) {
-    return EXTENSIONS[extension] ?? "file";
+    return (
+      EXTENSIONS[extension] ??
+      (normalizedMimeType === "application/zip" ? "archive" : "file")
+    );
   }
   return "file";
 };

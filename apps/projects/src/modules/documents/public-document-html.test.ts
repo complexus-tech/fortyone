@@ -1,6 +1,31 @@
 import { publicDocumentHTML } from "./public-document-html";
 
 describe("public document rendering", () => {
+  it("renders saved work references as titles without exposing navigation metadata", () => {
+    const html = publicDocumentHTML(
+      '<p>Ship <span data-type="document-reference" data-entity-type="story" data-id="11111111-1111-1111-1111-111111111111" data-display-id="PRO-98" data-label="Refine onboarding">PRO-98 Refine onboarding</span> toward <span data-type="document-reference" data-entity-type="objective" data-display-id="OBJ-7" data-label="Improve activation">OBJ-7 Improve activation</span>.</p>',
+      "token",
+      "https://api.example",
+    );
+
+    expect(html).toBe(
+      "<p>Ship <span>Refine onboarding</span> toward <span>Improve activation</span>.</p>",
+    );
+  });
+
+  it("escapes reference titles and preserves text when a legacy reference has no title attribute", () => {
+    const html = publicDocumentHTML(
+      '<p><span data-type="document-reference" data-label="&lt;img src=x onerror=alert(1)&gt; &amp; title">PRO-98 Old title</span><span data-type="document-reference">Existing reference</span></p>',
+      "token",
+      "https://api.example",
+    );
+
+    expect(html).toBe(
+      "<p><span>&lt;img src=x onerror=alert(1)&gt; &amp; title</span><span>Existing reference</span></p>",
+    );
+    expect(html).not.toContain("<img");
+  });
+
   it("keeps safe text highlights", () => {
     const html = publicDocumentHTML(
       '<p><mark style="background-color: #FDE68A">Important</mark></p>',
@@ -55,6 +80,36 @@ describe("public document rendering", () => {
     expect(html).toContain("disabled");
     expect(html).not.toContain("password");
     expect(html).not.toContain("secret");
+  });
+
+  it("preserves task labels, checked state, and nested content without enabling public controls", () => {
+    const html = publicDocumentHTML(
+      '<ul data-type="taskList"><li data-type="taskItem" data-checked="true"><label contenteditable="false" onclick="alert(1)"><input type="checkbox" checked><span></span></label><div><p>Headings render as headings</p><ul data-type="taskList"><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Nested task</p><ul><li><p>Supporting detail</p></li></ul></div></li></ul></div></li></ul>',
+      "token",
+      "https://api.example",
+    );
+    const content = document.createElement("div");
+    content.innerHTML = html;
+    const tasks = content.querySelectorAll('li[data-type="taskItem"]');
+
+    expect(tasks).toHaveLength(2);
+    tasks.forEach((task, index) => {
+      const checkbox = task.querySelector<HTMLInputElement>(
+        ':scope > label > input[type="checkbox"]',
+      );
+
+      expect(checkbox).not.toBeNull();
+      expect(checkbox).toBeDisabled();
+      expect(checkbox?.checked).toBe(index === 0);
+      expect(task.querySelector(":scope > div > p")).not.toBeNull();
+    });
+    expect(
+      tasks[0].querySelector(':scope > div > ul[data-type="taskList"]'),
+    ).toContainElement(tasks[1] as HTMLElement);
+    expect(
+      tasks[1].querySelector(":scope > div > ul > li > p"),
+    ).toHaveTextContent("Supporting detail");
+    expect(html).not.toMatch(/onclick|contenteditable/);
   });
 
   it("repairs table and list markers left by legacy Markdown pastes", () => {

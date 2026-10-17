@@ -20,6 +20,7 @@ const (
 	PreferenceTypeObjectiveUpdate         PreferenceType = "objective_update"
 	PreferenceTypeKeyResultUpdate         PreferenceType = "key_result_update"
 	PreferenceTypeMention                 PreferenceType = "mention"
+	PreferenceTypeChatMessage             PreferenceType = "chat_message"
 	PreferenceTypeFeedbackComment         PreferenceType = "feedback_comment"
 	PreferenceTypeFeedbackStatusUpdate    PreferenceType = "feedback_status_update"
 	PreferenceTypeFeedbackUpdatePublished PreferenceType = "feedback_update_published"
@@ -30,6 +31,7 @@ const (
 )
 
 var preferenceTypes = [...]PreferenceType{
+	PreferenceTypeChatMessage,
 	PreferenceTypeStoryUpdate,
 	PreferenceTypeStoryComment,
 	PreferenceTypeCommentReply,

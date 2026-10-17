@@ -14,6 +14,8 @@ type repositoryStub struct {
 	listed       CoreListInput
 	created      CoreCreateInput
 	duplicated   [3]uuid.UUID
+	unarchived   [3]uuid.UUID
+	unarchiveErr error
 	deleted      [3]uuid.UUID
 	access       CoreAccessInput
 	relationship CoreRelationshipInput
@@ -51,6 +53,11 @@ func (r *repositoryStub) Update(context.Context, CoreUpdateInput) (CoreDocument,
 
 func (r *repositoryStub) Archive(context.Context, uuid.UUID, uuid.UUID, uuid.UUID) error {
 	return nil
+}
+
+func (r *repositoryStub) Unarchive(_ context.Context, workspaceID, userID, documentID uuid.UUID) (CoreDocument, error) {
+	r.unarchived = [3]uuid.UUID{workspaceID, userID, documentID}
+	return CoreDocument{ID: documentID}, r.unarchiveErr
 }
 
 func (r *repositoryStub) Delete(_ context.Context, workspaceID, userID, documentID uuid.UUID) ([]uuid.UUID, error) {
@@ -120,6 +127,36 @@ func TestListLeavesLimitUnsetWhenNotRequested(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Nil(t, repo.listed.Limit)
+}
+
+func TestListAcceptsArchivedScope(t *testing.T) {
+	repo := &repositoryStub{}
+	_, err := New(repo).List(context.Background(), CoreListInput{
+		WorkspaceID: uuid.New(), UserID: uuid.New(), Scope: "archived",
+	})
+	require.NoError(t, err)
+	require.Equal(t, "archived", repo.listed.Scope)
+}
+
+func TestUnarchiveValidatesIdentityAndPreservesRepositoryErrors(t *testing.T) {
+	workspaceID, userID, documentID := uuid.New(), uuid.New(), uuid.New()
+	for _, identity := range [][3]uuid.UUID{
+		{uuid.Nil, userID, documentID}, {workspaceID, uuid.Nil, documentID}, {workspaceID, userID, uuid.Nil},
+	} {
+		repo := &repositoryStub{}
+		_, err := New(repo).Unarchive(context.Background(), identity[0], identity[1], identity[2])
+		require.ErrorIs(t, err, ErrInvalidInput)
+		require.Empty(t, repo.unarchived)
+	}
+	for _, repositoryError := range []error{nil, ErrNotFound, ErrConflict} {
+		repo := &repositoryStub{unarchiveErr: repositoryError}
+		document, err := New(repo).Unarchive(context.Background(), workspaceID, userID, documentID)
+		require.Equal(t, [3]uuid.UUID{workspaceID, userID, documentID}, repo.unarchived)
+		require.ErrorIs(t, err, repositoryError)
+		if repositoryError == nil {
+			require.Equal(t, documentID, document.ID)
+		}
+	}
 }
 
 func TestListCapsRequestedLimit(t *testing.T) {

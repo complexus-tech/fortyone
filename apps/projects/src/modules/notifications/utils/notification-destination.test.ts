@@ -8,6 +8,21 @@ import {
 } from "./notification-destination";
 
 describe("notification destinations", () => {
+  it("opens a document notification at its specific discussion", () => {
+    const threadId = "55555555-5555-4555-8555-555555555555";
+    const path = getNotificationDetailsPath({
+      entityId: "document-1",
+      entityType: "document",
+      notificationId: "notification-1",
+      message: {
+        template: "Mentioned you",
+        variables: { thread_id: { value: threadId } },
+      },
+    });
+    const query = new URL(path, "https://fortyone.app").searchParams;
+    expect(query.get("thread")).toBe(threadId);
+    expect(query.get("entityType")).toBe("document");
+  });
   it("builds an in-app notification detail path from the API contract", () => {
     expect(
       getNotificationDetailsPath({

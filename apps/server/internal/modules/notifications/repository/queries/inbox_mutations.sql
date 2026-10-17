@@ -96,7 +96,9 @@ WITH actor_scope AS (
                     )
               )
           )
-          OR (
+          OR (CAST(notification.entity_type AS text) = 'chat_message' AND public.can_read_chat_message(notification.workspace_id,notification.recipient_id,notification.entity_id))
+          OR (CAST(notification.entity_type AS text) = 'document' AND public.can_read_document(notification.workspace_id,notification.recipient_id,notification.entity_id))
+              OR (
               CAST(notification.entity_type AS text) = 'strategy'
               AND (
                   scope.role = 'admin'
@@ -235,7 +237,9 @@ WITH actor_scope AS (
                     )
               )
           )
-          OR (
+          OR (CAST(notification.entity_type AS text) = 'chat_message' AND public.can_read_chat_message(notification.workspace_id,notification.recipient_id,notification.entity_id))
+          OR (CAST(notification.entity_type AS text) = 'document' AND public.can_read_document(notification.workspace_id,notification.recipient_id,notification.entity_id))
+              OR (
               CAST(notification.entity_type AS text) = 'strategy'
               AND (
                   scope.role = 'admin'

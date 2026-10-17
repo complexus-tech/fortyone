@@ -1,15 +1,24 @@
 package documentshttp
 
 import (
+	"context"
 	attachments "github.com/complexus-tech/projects-api/internal/modules/attachments/service"
 	documents "github.com/complexus-tech/projects-api/internal/modules/documents/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
+	"github.com/google/uuid"
 )
 
+type MayaAvailability interface {
+	Enabled(context.Context, uuid.UUID) (bool, error)
+}
+
 type Config struct {
+	CommentWriter     documents.CommentWriter
+	MayaAvailability  MayaAvailability
+	MayaID            uuid.UUID
 	Log               *logger.Logger
 	SecretKey         string
 	Cache             *cache.Service
@@ -26,6 +35,11 @@ func Routes(cfg Config, app *web.App) {
 	memberAndAdmin := mid.RequireMinimumRole(cfg.Log, mid.RoleMember)
 
 	h := New(documentsService, cfg.Attachments, cfg.Log)
+	if cfg.CommentWriter != nil {
+		h.commentWriter = cfg.CommentWriter
+	}
+	h.mayaAvailability = cfg.MayaAvailability
+	h.mayaID = cfg.MayaID
 
 	app.Get("/public/documents/{token}", h.PublicDocument)
 	app.Get("/public/documents/{token}/media/{attachmentId}", h.PublicMedia)
@@ -38,6 +52,7 @@ func Routes(cfg Config, app *web.App) {
 	app.Get("/workspaces/{workspaceSlug}/documents/related", h.ListRelatedDocuments, auth, workspace)
 	app.Post("/workspaces/{workspaceSlug}/documents", h.Create, auth, workspace, memberAndAdmin)
 	app.Get("/workspaces/{workspaceSlug}/documents/{id}", h.Get, auth, workspace)
+	app.Get("/workspaces/{workspaceSlug}/documents/{id}/comment-mentions", h.CommentMentions, auth, workspace)
 	app.Get("/workspaces/{workspaceSlug}/documents/{id}/comments", h.ListComments, auth, workspace)
 	app.Post("/workspaces/{workspaceSlug}/documents/{id}/comments", h.CreateComment, auth, workspace, memberAndAdmin)
 	app.Post("/workspaces/{workspaceSlug}/documents/{id}/comments/{threadId}/replies", h.ReplyToComment, auth, workspace, memberAndAdmin)
@@ -48,6 +63,7 @@ func Routes(cfg Config, app *web.App) {
 	app.Post("/workspaces/{workspaceSlug}/documents/{id}/media", h.UploadMedia, auth, workspace, memberAndAdmin)
 	app.Delete("/workspaces/{workspaceSlug}/documents/{id}/media/{attachmentId}", h.DeleteMedia, auth, workspace, memberAndAdmin)
 	app.Delete("/workspaces/{workspaceSlug}/documents/{id}", h.Archive, auth, workspace, memberAndAdmin)
+	app.Post("/workspaces/{workspaceSlug}/documents/{id}/unarchive", h.Unarchive, auth, workspace, memberAndAdmin)
 	app.Delete("/workspaces/{workspaceSlug}/documents/{id}/permanent", h.Delete, auth, workspace, memberAndAdmin)
 	app.Put("/workspaces/{workspaceSlug}/documents/{id}/access", h.SetAccess, auth, workspace, memberAndAdmin)
 	app.Post("/workspaces/{workspaceSlug}/documents/{id}/relationships", h.AddRelationship, auth, workspace, memberAndAdmin)

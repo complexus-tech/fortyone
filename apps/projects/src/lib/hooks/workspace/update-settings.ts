@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useWorkspacePath } from "@/hooks";
-import { workspaceKeys } from "@/constants/keys";
+import { chatCapabilityKeys, workspaceKeys } from "@/constants/keys";
 import type { WorkspaceSettings } from "@/types";
 import type { UpdateWorkspaceSettings } from "../../actions/workspaces/update";
 import { updateWorkspaceSettingsAction } from "../../actions/workspaces/update";
@@ -11,8 +11,16 @@ export const useUpdateWorkspaceSettingsMutation = () => {
   const { workspaceSlug } = useWorkspacePath();
 
   const mutation = useMutation({
-    mutationFn: (payload: UpdateWorkspaceSettings) =>
-      updateWorkspaceSettingsAction(payload, workspaceSlug),
+    mutationFn: async (payload: UpdateWorkspaceSettings) => {
+      const response = await updateWorkspaceSettingsAction(
+        payload,
+        workspaceSlug,
+      );
+      if (response.error?.message) {
+        throw new Error(response.error.message);
+      }
+      return response;
+    },
 
     onMutate: async (updates) => {
       await queryClient.cancelQueries({
@@ -53,13 +61,17 @@ export const useUpdateWorkspaceSettingsMutation = () => {
       });
     },
 
-    onSuccess: (res) => {
-      if (res.error?.message) {
-        throw new Error(res.error.message);
-      }
-      queryClient.invalidateQueries({
+    onSettled: (_data, _error, updates) => {
+      void queryClient.invalidateQueries({
         queryKey: workspaceKeys.settings(workspaceSlug),
       });
+      if (updates.chatEnabled !== undefined) {
+        // Capabilities remain the authoritative chat and attachment boundary.
+        // Recheck even after a failed response: the server may have committed.
+        void queryClient.invalidateQueries({
+          queryKey: chatCapabilityKeys.workspace(workspaceSlug),
+        });
+      }
     },
   });
 

@@ -144,7 +144,7 @@ func TestAutomationClaimsRecoverWithoutReplayingCompletedOrMissingLateEvents(t *
 	}
 	run, found, err := f.repo.ClaimRun(t.Context(), claim, "event:"+first.String())
 	if err != nil || !found {
-		t.Fatalf("missing durable run: %v found=%v",err,found)
+		t.Fatalf("missing durable run: %v found=%v", err, found)
 	}
 	if _, found, err := f.repo.ClaimRun(t.Context(), claim, "event:"+first.String()); err != nil || found {
 		t.Fatal("same run claimed twice by one worker")

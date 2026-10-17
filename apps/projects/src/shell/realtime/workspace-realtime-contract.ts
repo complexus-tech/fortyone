@@ -20,6 +20,23 @@ type StoryWorkspaceChanges = {
 export type WorkspaceRealtimeEvent =
   | { kind: "calendar-updated" }
   | {
+      kind: "chat-updated";
+      workspaceId: string;
+      userId: string;
+      conversationId: string;
+    }
+  | {
+      kind: "chat-typing";
+      workspaceId: string;
+      userId: string;
+      conversationId: string;
+      actorId: string;
+      fullName: string;
+      threadRootId: string | null;
+      isTyping: boolean;
+      expiresAt: string;
+    }
+  | {
       kind: "story-updated";
       storyId: string;
       changes: StoryWorkspaceChanges;
@@ -78,6 +95,10 @@ const isNonEmptyString = (value: unknown): value is string =>
 
 const isNullableString = (value: unknown): value is string | null =>
   value === null || typeof value === "string";
+
+const isUUID = (value: unknown): value is string =>
+  typeof value === "string" &&
+  /^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i.test(value);
 
 const decodeStoryChanges = (value: unknown): StoryWorkspaceChanges => {
   if (!isRecord(value)) {
@@ -213,6 +234,57 @@ export const parseWorkspaceRealtimeEvent = (
 
   if (value.type === "calendar.updated") {
     return { kind: "calendar-updated" };
+  }
+
+  if (value.type === "chat.updated") {
+    if (
+      ![
+        value.eventId,
+        value.workspaceId,
+        value.userId,
+        value.conversationId,
+      ].every(isUUID)
+    ) {
+      throw new WorkspaceRealtimeContractError(
+        "Chat update requires scoped IDs",
+      );
+    }
+    return {
+      kind: "chat-updated",
+      workspaceId: value.workspaceId as string,
+      userId: value.userId as string,
+      conversationId: value.conversationId as string,
+    };
+  }
+
+  if (value.type === "chat.typing") {
+    if (
+      !isUUID(value.workspaceId) ||
+      !isUUID(value.userId) ||
+      !isUUID(value.conversationId) ||
+      !isUUID(value.actorId) ||
+      !(value.threadRootId === null || isUUID(value.threadRootId)) ||
+      !isNonEmptyString(value.fullName) ||
+      value.fullName.length > 200 ||
+      typeof value.isTyping !== "boolean" ||
+      typeof value.expiresAt !== "string" ||
+      !Number.isFinite(Date.parse(value.expiresAt))
+    ) {
+      throw new WorkspaceRealtimeContractError(
+        "Invalid scoped chat typing activity",
+      );
+    }
+    return {
+      kind: "chat-typing",
+      workspaceId: value.workspaceId,
+      userId: value.userId,
+      conversationId: value.conversationId,
+      actorId: value.actorId,
+      fullName: value.fullName,
+      threadRootId: value.threadRootId,
+      isTyping: value.isTyping,
+      expiresAt: value.expiresAt,
+    };
   }
 
   if (value.type === "story.workspace_update") {

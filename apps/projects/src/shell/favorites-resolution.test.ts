@@ -6,9 +6,12 @@ import type { SavedView } from "@/modules/work-presets/public/views";
 import { getStory } from "@/modules/story/public/queries";
 import { getTeamDetails } from "@/modules/teams/public/queries";
 import { resolveSavedViews } from "@/modules/work-presets/public/views";
+import { getDocuments } from "@/modules/documents/queries";
+import type { WorkspaceDocumentSummary } from "@/modules/documents/types";
 import { favoriteRequests, loadFavoriteSource } from "./favorites-resolution";
 
 jest.mock("@/modules/story/public/queries", () => ({ getStory: jest.fn() }));
+jest.mock("@/modules/documents/queries", () => ({ getDocuments: jest.fn() }));
 jest.mock("@/modules/teams/public/queries", () => ({
   getTeamDetails: jest.fn(),
 }));
@@ -50,6 +53,39 @@ const view = {
 describe("authorized favorite resolution", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  it("resolves document favorites in one authorized list read and excludes archived documents", async () => {
+    const refs = [
+      { kind: "document" as const, id },
+      { kind: "document" as const, id: teamId },
+    ];
+    const requests = favoriteRequests(refs, "one", ctx);
+    const document = {
+      id,
+      title: "Project brief",
+      relatedWorkCount: 0,
+    } as WorkspaceDocumentSummary;
+    const archived = {
+      ...document,
+      id: teamId,
+      archivedAt: "2026-10-17T12:00:00Z",
+    };
+    jest.mocked(getDocuments).mockResolvedValue([document, archived]);
+    expect(requests).toHaveLength(1);
+    const source = await loadFavoriteSource(requests[0], signal);
+    expect(getDocuments).toHaveBeenCalledTimes(1);
+    expect(requests[0].project(source)).toEqual([
+      {
+        ref: refs[0],
+        name: "Project brief",
+        path: `/docs/${id}`,
+        icon: { kind: "document" },
+      },
+    ]);
+    expect(requests[0].key).not.toEqual(
+      favoriteRequests(refs, "two", ctx)[0].key,
+    );
   });
 
   it("uses account/workspace-specific keys and current canonical story metadata", async () => {

@@ -1170,4 +1170,8 @@ SELECT
         SELECT 1
         FROM public.document_attachments AS document_attachment
         WHERE document_attachment.attachment_id = sqlc.arg(target_attachment_id)
+    )
+    AND NOT EXISTS (
+        SELECT 1 FROM public.chat_attachments AS chat_attachment
+        WHERE chat_attachment.attachment_id = sqlc.arg(target_attachment_id)
     ) AS orphaned;

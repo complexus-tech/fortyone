@@ -24,6 +24,7 @@ type Workspace struct {
 }
 
 type CurrentMembership struct {
+	ChatEnabled bool
 	WorkspaceID uuid.UUID
 	Name        string
 	Slug        string
@@ -51,6 +52,7 @@ type WorkspaceSettings struct {
 	ObjectiveTerm      string
 	KeyResultTerm      string
 	ObjectiveEnabled   bool
+	ChatEnabled        bool
 	KeyResultEnabled   bool
 	WorkingDays        []int
 	WorkingStartMinute int

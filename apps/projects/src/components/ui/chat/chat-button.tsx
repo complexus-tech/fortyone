@@ -18,7 +18,7 @@ export const ChatButton = ({ onOpen, isOpen }: ChatButtonProps) => {
   return (
     <Box
       className={cn(
-        "fixed right-6 bottom-6 z-50 hidden transition-all duration-500 ease-in-out md:flex",
+        "fixed right-6 bottom-6 z-50 hidden transition-all duration-500 ease-in-out md:flex [body:has([data-chat-active-tab=messages])_&]:hidden",
         {
           "-bottom-16": isOpen,
           "md:hidden": isOnPage,

@@ -22,13 +22,13 @@ const CommentList = ({
     stateQuery,
     threadQuery,
     targetId,
+    highlightedId,
     revealKey,
     loadedTarget,
     comments,
     containerRef,
     stateById,
     hasUnread,
-    defaultExpandedThreadId,
     latestCommentId,
     jumpToLatest,
     currentUserId,
@@ -60,7 +60,7 @@ const CommentList = ({
           checkingMaya={mayaQuery.isFetching || commentsQuery.isRefetching}
           comment={comment}
           currentUserId={currentUserId}
-          defaultExpanded={comment.id === defaultExpandedThreadId}
+          highlightedId={highlightedId}
           isDialog={isDialog}
           key={comment.id}
           lastReadAt={

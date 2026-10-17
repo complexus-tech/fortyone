@@ -3,6 +3,7 @@ package workspaceshttp
 import (
 	"context"
 	"errors"
+	workspaces "github.com/complexus-tech/projects-api/internal/modules/workspaces/service"
 	"net/http"
 
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
@@ -47,6 +48,9 @@ func (h *Handlers) UpdateWorkspaceSettings(ctx context.Context, writer http.Resp
 	}
 	updated, err := h.workspaces.UpdateWorkspaceSettings(ctx, workspace.ID, toCoreWorkspaceSettings(input, workspace.ID, current))
 	if err != nil {
+		if errors.Is(err, workspaces.ErrSettingsConflict) {
+			return web.RespondError(ctx, writer, err, http.StatusConflict)
+		}
 		if errors.Is(err, workschedule.ErrInvalidWorkingDays) || errors.Is(err, workschedule.ErrInvalidWorkingHours) {
 			return web.RespondError(ctx, writer, err, http.StatusBadRequest)
 		}

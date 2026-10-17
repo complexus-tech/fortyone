@@ -84,6 +84,7 @@ func (q *Queries) DocumentMediaHasHistory(ctx context.Context, arg DocumentMedia
 
 const getDocumentEditingMetadata = `-- name: GetDocumentEditingMetadata :one
 SELECT revision, collaboration_epoch, CAST(collaboration_state IS NOT NULL AS boolean) AS collaborative,
+       CAST(public_token IS NOT NULL AND archived_at IS NULL AS boolean) AS public_enabled,
        CAST(COALESCE(CASE WHEN created_by = $1 THEN public_token ELSE NULL END, '') AS text) AS public_token
 FROM public.documents WHERE document_id = $2
 `
@@ -97,6 +98,7 @@ type GetDocumentEditingMetadataRow struct {
 	Revision           int64
 	CollaborationEpoch int64
 	Collaborative      bool
+	PublicEnabled      bool
 	PublicToken        string
 }
 
@@ -108,6 +110,7 @@ func (q *Queries) GetDocumentEditingMetadata(ctx context.Context, arg GetDocumen
 		&i.Revision,
 		&i.CollaborationEpoch,
 		&i.Collaborative,
+		&i.PublicEnabled,
 		&i.PublicToken,
 	)
 	return i, err

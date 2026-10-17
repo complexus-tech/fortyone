@@ -15,12 +15,14 @@ import (
 type EntityType string
 
 const (
-	EntityTypeStory     EntityType = "story"
-	EntityTypeComment   EntityType = "comment"
-	EntityTypeObjective EntityType = "objective"
-	EntityTypeKeyResult EntityType = "key_result"
-	EntityTypeFeedback  EntityType = "feedback"
-	EntityTypeStrategy  EntityType = "strategy"
+	EntityTypeStory       EntityType = "story"
+	EntityTypeComment     EntityType = "comment"
+	EntityTypeObjective   EntityType = "objective"
+	EntityTypeKeyResult   EntityType = "key_result"
+	EntityTypeFeedback    EntityType = "feedback"
+	EntityTypeStrategy    EntityType = "strategy"
+	EntityTypeDocument    EntityType = "document"
+	EntityTypeChatMessage EntityType = "chat_message"
 )
 
 func (e *EntityType) Scan(src interface{}) error {
@@ -65,7 +67,9 @@ func (e EntityType) Valid() bool {
 		EntityTypeObjective,
 		EntityTypeKeyResult,
 		EntityTypeFeedback,
-		EntityTypeStrategy:
+		EntityTypeStrategy,
+		EntityTypeDocument,
+		EntityTypeChatMessage:
 		return true
 	}
 	return false
@@ -85,6 +89,7 @@ const (
 	NotificationTypeStrategyUpdate          NotificationType = "strategy_update"
 	NotificationTypeFeedbackUpdatePublished NotificationType = "feedback_update_published"
 	NotificationTypeFeedbackItemMerged      NotificationType = "feedback_item_merged"
+	NotificationTypeChatMessage             NotificationType = "chat_message"
 )
 
 func (e *NotificationType) Scan(src interface{}) error {
@@ -134,7 +139,8 @@ func (e NotificationType) Valid() bool {
 		NotificationTypeFeedbackStatusUpdate,
 		NotificationTypeStrategyUpdate,
 		NotificationTypeFeedbackUpdatePublished,
-		NotificationTypeFeedbackItemMerged:
+		NotificationTypeFeedbackItemMerged,
+		NotificationTypeChatMessage:
 		return true
 	}
 	return false

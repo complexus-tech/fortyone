@@ -10,6 +10,7 @@ type responsesAPIRequest struct {
 	Instructions      string             `json:"instructions"`
 	Input             []json.RawMessage  `json:"input"`
 	Tools             []ToolDefinition   `json:"tools"`
+	ToolChoice        any                `json:"tool_choice,omitempty"`
 	Store             bool               `json:"store"`
 	Reasoning         responsesReasoning `json:"reasoning"`
 	MaxOutputTokens   int                `json:"max_output_tokens"`

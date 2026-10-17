@@ -10,6 +10,7 @@ SELECT
     thread.resolved_by,
     thread.created_at AS thread_created_at,
     comment.comment_id,
+    comment.reply_to_comment_id,
     comment.body,
     comment.created_by,
     comment.created_at,
@@ -26,7 +27,7 @@ INNER JOIN public.workspace_members AS membership
    AND membership.user_id = sqlc.arg(actor_id)
 INNER JOIN public.users AS actor
     ON actor.user_id = membership.user_id
-   AND actor.is_active = TRUE
+   AND actor.is_active = TRUE AND actor.is_system = FALSE
 INNER JOIN public.document_comments AS comment ON comment.thread_id = thread.thread_id
 INNER JOIN public.users AS author ON author.user_id = comment.created_by
 WHERE document.document_id = sqlc.arg(document_id)
@@ -37,7 +38,7 @@ WHERE document.document_id = sqlc.arg(document_id)
       OR EXISTS (
           SELECT 1
           FROM public.document_members AS reader
-          WHERE reader.document_id = document.document_id
+          WHERE document.visibility = 'restricted' AND reader.document_id = document.document_id
             AND reader.user_id = sqlc.arg(actor_id)
       )
   )
@@ -53,7 +54,7 @@ WITH accessible_document AS (
        AND membership.role <> CAST('guest' AS public.user_role)
     INNER JOIN public.users AS actor
         ON actor.user_id = membership.user_id
-       AND actor.is_active = TRUE
+       AND actor.is_active = TRUE AND actor.is_system = FALSE
     WHERE document.document_id = sqlc.arg(document_id)
       AND document.workspace_id = sqlc.arg(workspace_id)
       AND document.archived_at IS NULL
@@ -63,7 +64,7 @@ WITH accessible_document AS (
           OR EXISTS (
               SELECT 1
               FROM public.document_members AS reader
-              WHERE reader.document_id = document.document_id
+              WHERE document.visibility = 'restricted' AND reader.document_id = document.document_id
                 AND reader.user_id = sqlc.arg(actor_id)
           )
       )
@@ -81,8 +82,8 @@ WITH accessible_document AS (
     FROM accessible_document
     RETURNING *
 ), inserted_comment AS (
-    INSERT INTO public.document_comments (thread_id, body, created_by)
-    SELECT thread_id, sqlc.arg(body), sqlc.arg(actor_id)
+    INSERT INTO public.document_comments (thread_id, body, created_by, creation_id, creation_hash)
+    SELECT thread_id, sqlc.arg(body), sqlc.arg(actor_id), sqlc.narg(creation_id), sqlc.narg(creation_hash)
     FROM inserted_thread
     RETURNING *
 )
@@ -97,6 +98,7 @@ SELECT
     thread.resolved_by,
     thread.created_at AS thread_created_at,
     comment.comment_id,
+    comment.reply_to_comment_id,
     comment.body,
     comment.created_by,
     comment.created_at,
@@ -121,7 +123,7 @@ WITH accessible_thread AS (
        AND membership.role <> CAST('guest' AS public.user_role)
     INNER JOIN public.users AS actor
         ON actor.user_id = membership.user_id
-       AND actor.is_active = TRUE
+       AND actor.is_active = TRUE AND actor.is_system = FALSE
     WHERE thread.thread_id = sqlc.arg(thread_id)
       AND document.document_id = sqlc.arg(document_id)
       AND document.workspace_id = sqlc.arg(workspace_id)
@@ -131,18 +133,26 @@ WITH accessible_thread AS (
           OR EXISTS (
               SELECT 1
               FROM public.document_members AS reader
-              WHERE reader.document_id = document.document_id
+              WHERE document.visibility = 'restricted' AND reader.document_id = document.document_id
                 AND reader.user_id = sqlc.arg(actor_id)
           )
       )
 ), inserted_comment AS (
-    INSERT INTO public.document_comments (thread_id, body, created_by)
-    SELECT thread_id, sqlc.arg(body), sqlc.arg(actor_id)
+    INSERT INTO public.document_comments (thread_id, body, created_by, creation_id, creation_hash, reply_to_comment_id)
+    SELECT thread_id, sqlc.arg(body), sqlc.arg(author_id), sqlc.narg(creation_id), sqlc.narg(creation_hash), CAST(sqlc.narg(reply_to_comment_id) AS uuid)
     FROM accessible_thread
+    WHERE (CAST(sqlc.narg(reply_to_comment_id) AS uuid) IS NULL OR EXISTS (
+        SELECT 1 FROM public.document_comments AS parent
+        WHERE parent.comment_id = CAST(sqlc.narg(reply_to_comment_id) AS uuid) AND parent.thread_id = accessible_thread.thread_id
+    )) AND EXISTS (
+        SELECT 1 FROM public.users AS author WHERE author.user_id = sqlc.arg(author_id) AND author.is_active = TRUE
+            AND (author.user_id = sqlc.arg(actor_id) OR (author.is_system = TRUE AND author.username = 'maya'))
+    )
     RETURNING *
 )
 SELECT
     comment.comment_id,
+    comment.reply_to_comment_id,
     comment.thread_id,
     comment.body,
     comment.created_by,
@@ -165,7 +175,7 @@ INNER JOIN public.workspace_members AS membership
    AND membership.role <> CAST('guest' AS public.user_role)
 INNER JOIN public.users AS actor
     ON actor.user_id = membership.user_id
-   AND actor.is_active = TRUE
+   AND actor.is_active = TRUE AND actor.is_system = FALSE
 WHERE thread.thread_id = sqlc.arg(thread_id)
   AND thread.document_id = document.document_id
   AND thread.workspace_id = document.workspace_id
@@ -178,7 +188,7 @@ WHERE thread.thread_id = sqlc.arg(thread_id)
       OR EXISTS (
           SELECT 1
           FROM public.document_members AS reader
-          WHERE reader.document_id = document.document_id
+          WHERE document.visibility = 'restricted' AND reader.document_id = document.document_id
             AND reader.user_id = sqlc.arg(actor_id)
       )
   )

@@ -3,3 +3,27 @@
 //   sqlc v1.31.1
 
 package documentssql
+
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
+
+type DocumentAgentEdit struct {
+	ID                uuid.UUID
+	InvocationID      uuid.UUID
+	WorkspaceID       uuid.UUID
+	DocumentID        uuid.UUID
+	RequesterID       uuid.UUID
+	ExpectedRevision  int64
+	ExpectedEpoch     int64
+	Operations        []byte
+	Status            string
+	ResultingRevision *int64
+	Receipt           []byte
+	ErrorCode         *string
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
+	AppliedAt         *time.Time
+}

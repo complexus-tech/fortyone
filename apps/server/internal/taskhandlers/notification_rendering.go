@@ -125,12 +125,16 @@ func notificationEmailDestination(entityType string, entityID uuid.UUID, feedbac
 
 func notificationEntityLabel(entityType string) string {
 	switch entityType {
+	case "chat_message":
+		return "chat"
 	case "objective", "key_result":
 		return "strategy"
 	case "strategy":
 		return "strategy"
 	case "story":
 		return "work"
+	case "document":
+		return "document"
 	default:
 		return "update"
 	}

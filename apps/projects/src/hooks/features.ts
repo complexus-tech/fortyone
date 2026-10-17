@@ -5,13 +5,17 @@ export const useFeatures = () => {
     data: settings = {
       objectiveEnabled: true,
       keyResultEnabled: true,
+      chatEnabled: true,
     },
     isPending,
+    isError,
   } = useWorkspaceSettings();
 
   return {
     isPending,
+    isError,
     objectiveEnabled: settings.objectiveEnabled,
     keyResultEnabled: settings.keyResultEnabled,
+    chatEnabled: settings.chatEnabled,
   };
 };

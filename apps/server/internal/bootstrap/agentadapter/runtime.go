@@ -21,7 +21,6 @@ import (
 	"github.com/complexus-tech/projects-api/internal/platform/agentmentions"
 	"github.com/complexus-tech/projects-api/internal/platform/auth"
 	"github.com/complexus-tech/projects-api/internal/platform/authorization"
-	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/google/uuid"
 )
 
@@ -33,7 +32,14 @@ type CommentStories interface {
 }
 
 type CommentWriter interface {
-	CreateComment(context.Context, comments.CreateCommentCommand) (comments.CoreComment, error)
+	ResolveAgentMentions(context.Context, comments.AgentReplyScope, []uuid.UUID) ([]comments.MentionTarget, error)
+	CreateAgentReply(context.Context, comments.AgentReplyCommand) (comments.CoreComment, error)
+	GetAgentReply(context.Context, comments.AgentReplyScope, uuid.UUID) (comments.AgentReply, error)
+}
+
+type NotificationWriter interface {
+	Create(context.Context, notifications.CoreNewNotification) (notifications.CoreNotification, error)
+	DeferMayaReply(context.Context, notifications.CoreNewNotification, uuid.UUID) error
 }
 
 type MutationTools interface {
@@ -66,7 +72,7 @@ type CommentRuntime struct {
 	Usage             *messagingrepository.DailyUsageRepository
 	DailyTokenLimit   int64
 	NotificationRules *notifications.Rules
-	Notifications     *notifications.Service
+	Notifications     NotificationWriter
 }
 
 type commentAction struct {
@@ -262,61 +268,27 @@ func (r *CommentRuntime) PublishFailure(ctx context.Context, run agentruns.Run, 
 }
 
 func (r *CommentRuntime) publishComment(ctx context.Context, run agentruns.Run, kind, text string) (uuid.UUID, error) {
-	access, err := auth.RestrictedTeamAccess(run.TeamID)
+	scope, err := r.replyScope(ctx, run)
 	if err != nil {
 		return uuid.Nil, err
 	}
-	actor, err := auth.NewActor(r.MayaID, auth.PrincipalSystem, uuid.Nil, auth.MustScopeSet(auth.ScopeCommentsWrite), access)
+	if r.Comments == nil {
+		return uuid.Nil, errors.New("Maya comment publication is unavailable")
+	}
+	targets, err := r.Comments.ResolveAgentMentions(ctx, scope, replyMentionCandidates(text))
 	if err != nil {
 		return uuid.Nil, err
 	}
-	actor, err = actor.WithWorkspace(run.WorkspaceID)
-	if err != nil {
-		return uuid.Nil, err
+	names := make(map[uuid.UUID]string, len(targets))
+	for _, target := range targets {
+		names[target.ID] = target.Name
 	}
-	id := uuid.NewSHA1(run.ID, []byte(kind))
-	created, err := r.Comments.CreateComment(ctx, comments.CreateCommentCommand{
-		CreationID: &id, WorkspaceID: run.WorkspaceID, StoryID: run.EntityID, ParentID: &run.SourceID,
-		Actor: actor, Content: replyHTML(text),
+	reply := renderMentionReply(text, names)
+	created, err := r.Comments.CreateAgentReply(ctx, comments.AgentReplyCommand{
+		Scope: scope, CreationID: uuid.NewSHA1(run.ID, []byte(kind)),
+		Content: reply.HTML, MentionedUserIDs: reply.MentionedUserIDs,
 	})
 	return created.ID, err
-}
-
-func (r *CommentRuntime) Deliver(ctx context.Context, run agentruns.Run, outcome agentruns.Outcome, replyID uuid.UUID) error {
-	if r.NotificationRules == nil || r.Notifications == nil {
-		return errors.New("Maya notification delivery is unavailable")
-	}
-	ctx, err := humanContext(ctx, run)
-	if err != nil {
-		return err
-	}
-	audience, err := r.Stories.GetNotificationAudience(ctx, run.EntityID, run.WorkspaceID)
-	if err != nil {
-		return err
-	}
-	var payload commentPayload
-	if err := json.Unmarshal(run.Payload, &payload); err != nil {
-		return err
-	}
-	inputs, err := r.NotificationRules.ProcessCommentReplied(ctx, events.CommentRepliedPayload{
-		CommentID: replyID, ParentCommentID: run.SourceID, ParentAuthorID: run.RequesterID,
-		StoryID: run.EntityID, StoryTitle: payload.StoryTitle, WorkspaceID: run.WorkspaceID, Content: replyHTML(outcome.Reply),
-		AudienceIDs: audience, AudienceResolved: true,
-	}, r.MayaID)
-	if err != nil {
-		return err
-	}
-	for _, input := range inputs {
-		input.DedupeKey = "maya-reply:" + replyID.String() + ":" + input.RecipientID.String()
-		actor := input.Message.Variables["actor"]
-		actor.Value = "Maya"
-		input.Message.Variables["actor"] = actor
-		input.OccurredAt = run.CreatedAt
-		if _, err := r.Notifications.Create(ctx, input); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func sourceScope(run agentruns.Run) *messaging.SourceScope {

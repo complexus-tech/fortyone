@@ -1,3 +1,4 @@
+/* @jest-environment node */
 /* global beforeEach, describe, expect, it, jest -- Jest globals are provided by the projects test runner. */
 
 import type { NextRequest } from "next/server";
@@ -5,7 +6,23 @@ import { auth } from "@/auth";
 import { fetchPublicImage } from "../safe-fetch";
 import { MetadataFetchError } from "../target-policy";
 import { GET } from "./route";
+import { metadataImageCache } from "./image-cache";
 
+jest.mock("./object-store", () => ({
+  previewImageStore: {
+    read: async () => undefined,
+    write: async () => undefined,
+  },
+}));
+jest.mock("../shared-cache", () => ({
+  ...jest.requireActual("../shared-cache"),
+  sharedPreviewCache: {
+    read: async () => null,
+    write: async () => undefined,
+    claim: async () => null,
+    release: async () => undefined,
+  },
+}));
 jest.mock("@/auth", () => ({ auth: jest.fn() }));
 jest.mock("../safe-fetch", () => ({ fetchPublicImage: jest.fn() }));
 jest.mock("next/server", () => {
@@ -56,6 +73,7 @@ const createRequest = (target: string) =>
 describe("GET /api/metadata/image", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    metadataImageCache.clear();
     mockedAuth.mockResolvedValue({ user: { id: "user-1" } } as never);
   });
 
@@ -88,7 +106,7 @@ describe("GET /api/metadata/image", () => {
     expect(Buffer.from(await response.arrayBuffer())).toEqual(body);
     expect(mockedFetchPublicImage).toHaveBeenCalledWith(
       new URL("https://cdn.example.com/image.png"),
-      { signal: request.signal },
+      { signal: expect.any(AbortSignal) },
     );
   });
 
@@ -110,6 +128,7 @@ describe("GET /api/metadata/image", () => {
 
     await expect(GET(request)).resolves.toMatchObject({ status: 504 });
 
+    metadataImageCache.clear();
     mockedFetchPublicImage.mockRejectedValue(
       new MetadataFetchError("unsupported-response", "Not a raster image"),
     );

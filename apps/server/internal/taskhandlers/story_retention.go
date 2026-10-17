@@ -2,6 +2,7 @@ package taskhandlers
 
 import (
 	"context"
+	"errors"
 
 	"github.com/complexus-tech/projects-api/pkg/jobs"
 	"github.com/complexus-tech/projects-api/pkg/logger"
@@ -12,25 +13,28 @@ import (
 // capabilities required by scheduled story retention. Neither capability
 // exposes a database driver or storage credentials to the handler.
 type StoryRetentionHandlerDependencies struct {
-	Log     *logger.Logger
-	Store   jobs.DeletedStoryRetentionStore
-	Objects jobs.RetainedAttachmentObjectStore
+	Log                *logger.Logger
+	Store              jobs.DeletedStoryRetentionStore
+	Objects            jobs.RetainedAttachmentObjectStore
+	PendingChatUploads jobs.PendingChatUploadStore
 }
 
 // StoryRetentionHandlers owns the daily database purge and the independent,
 // minute-cadence delivery of durable attachment-object deletions.
 type StoryRetentionHandlers struct {
-	log     *logger.Logger
-	store   jobs.DeletedStoryRetentionStore
-	objects jobs.RetainedAttachmentObjectStore
+	log                *logger.Logger
+	store              jobs.DeletedStoryRetentionStore
+	objects            jobs.RetainedAttachmentObjectStore
+	pendingChatUploads jobs.PendingChatUploadStore
 }
 
 // NewStoryRetentionHandlers creates the story retention handler group.
 func NewStoryRetentionHandlers(dependencies StoryRetentionHandlerDependencies) *StoryRetentionHandlers {
 	return &StoryRetentionHandlers{
-		log:     dependencies.Log,
-		store:   dependencies.Store,
-		objects: dependencies.Objects,
+		log:                dependencies.Log,
+		store:              dependencies.Store,
+		objects:            dependencies.Objects,
+		pendingChatUploads: dependencies.PendingChatUploads,
 	}
 }
 
@@ -59,7 +63,9 @@ func (h *StoryRetentionHandlers) HandleAttachmentObjectDeletions(
 		"AttachmentObjectDeletions",
 		"attachment object deletions",
 		func(ctx context.Context) error {
-			return jobs.ProcessAttachmentObjectDeletions(ctx, h.store, h.objects, h.log)
+			retentionErr := jobs.PurgePendingChatUploads(ctx, h.pendingChatUploads, h.objects, h.log)
+			deliveryErr := jobs.ProcessAttachmentObjectDeletions(ctx, h.store, h.objects, h.log)
+			return errors.Join(retentionErr, deliveryErr)
 		},
 	)
 }

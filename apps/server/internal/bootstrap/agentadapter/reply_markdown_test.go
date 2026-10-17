@@ -53,7 +53,7 @@ func TestReplyMarkdownDoesNotCreateMediaMentionsOrExecutableMarkup(t *testing.T)
 	require.NoError(t, err)
 	var sanitized strings.Builder
 	for _, node := range nodes {
-		writeReplyNode(&sanitized, node)
+		writeReplyNode(&sanitized, node, &replyMentions{})
 	}
 	require.Equal(t, "<p>labelimage label</p>", sanitized.String())
 }

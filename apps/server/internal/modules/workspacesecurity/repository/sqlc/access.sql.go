@@ -311,22 +311,32 @@ SELECT account.email, CAST(member.role AS text) AS role,
     COALESCE(policy.allowed_domains, CAST('{}' AS text[])) AS allowed_domains,
     COALESCE(policy.allow_guests, TRUE) AS allow_guests,
     COALESCE(policy.max_session_age_hours, 0) AS max_session_age_hours,
-    epoch.revoked_before, session.revoked_at
+    epoch.revoked_before, session.revoked_at,
+    CAST(COALESCE(
+        session.authenticated_at = CAST($1 AS timestamptz)
+        AND session.expires_at = CAST($2 AS timestamptz)
+        AND session.last_seen_at > CURRENT_TIMESTAMP - INTERVAL '1 minute'
+        AND (session.browser_name IS NOT NULL OR CAST($3 AS text) IS NULL),
+        FALSE
+    ) AS boolean) AS session_is_current
 FROM public.workspace_members AS member
 JOIN public.users AS account ON account.user_id = member.user_id
 JOIN public.workspaces AS workspace ON workspace.workspace_id = member.workspace_id
 LEFT JOIN public.workspace_security_policies AS policy ON policy.workspace_id = member.workspace_id
 LEFT JOIN public.workspace_member_session_epochs AS epoch ON epoch.workspace_id = member.workspace_id AND epoch.user_id = member.user_id
-LEFT JOIN public.workspace_browser_sessions AS session ON session.workspace_id = member.workspace_id AND session.user_id = member.user_id AND session.session_id = $1
-WHERE member.workspace_id = $2 AND member.user_id = $3
+LEFT JOIN public.workspace_browser_sessions AS session ON session.workspace_id = member.workspace_id AND session.user_id = member.user_id AND session.session_id = $4
+WHERE member.workspace_id = $5 AND member.user_id = $6
   AND account.is_active = TRUE AND workspace.deleted_at IS NULL
 FOR SHARE OF workspace, member, account
 `
 
 type SessionAccessStateParams struct {
-	SessionID   uuid.UUID
-	WorkspaceID uuid.UUID
-	ActorID     uuid.UUID
+	AuthenticatedAt time.Time
+	ExpiresAt       time.Time
+	BrowserName     *string
+	SessionID       uuid.UUID
+	WorkspaceID     uuid.UUID
+	ActorID         uuid.UUID
 }
 
 type SessionAccessStateRow struct {
@@ -337,10 +347,18 @@ type SessionAccessStateRow struct {
 	MaxSessionAgeHours int32
 	RevokedBefore      *time.Time
 	RevokedAt          *time.Time
+	SessionIsCurrent   bool
 }
 
 func (q *Queries) SessionAccessState(ctx context.Context, arg SessionAccessStateParams) (SessionAccessStateRow, error) {
-	row := q.db.QueryRow(ctx, sessionAccessState, arg.SessionID, arg.WorkspaceID, arg.ActorID)
+	row := q.db.QueryRow(ctx, sessionAccessState,
+		arg.AuthenticatedAt,
+		arg.ExpiresAt,
+		arg.BrowserName,
+		arg.SessionID,
+		arg.WorkspaceID,
+		arg.ActorID,
+	)
 	var i SessionAccessStateRow
 	err := row.Scan(
 		&i.Email,
@@ -350,6 +368,7 @@ func (q *Queries) SessionAccessState(ctx context.Context, arg SessionAccessState
 		&i.MaxSessionAgeHours,
 		&i.RevokedBefore,
 		&i.RevokedAt,
+		&i.SessionIsCurrent,
 	)
 	return i, err
 }

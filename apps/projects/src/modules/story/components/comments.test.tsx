@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { FORMER_USER_ID } from "@/lib/former-user";
 import { useStoryCommentsInfinite } from "@/modules/story/hooks/story-comments";
 import { Comments } from "./comments";
@@ -33,6 +33,9 @@ jest.mock("../hooks/comment-read-tracking", () => ({
     hadUnread: false,
   }),
   useCommentThreadReadTracking: () => ({ current: null }),
+}));
+jest.mock("../hooks/use-comment-seen", () => ({
+  useCommentSeen: () => ({ current: null }),
 }));
 
 jest.mock("ui", () => ({ ...jest.requireActual("ui"), TimeAgo: () => null }));
@@ -96,6 +99,10 @@ it("keeps retained comments and reply threads visible without a former-user prof
   } as unknown as ReturnType<typeof useStoryCommentsInfinite>);
   const { container } = render(<Comments storyId="story-1" teamId="team-1" />);
   expect(screen.getByText("Shared decision remains.")).toBeInTheDocument();
+  expect(screen.queryByText("Shared reply remains.")).not.toBeInTheDocument();
+  fireEvent.click(
+    screen.getByRole("button", { name: "1 reply. Show replies" }),
+  );
   expect(screen.getByText("Shared reply remains.")).toBeInTheDocument();
   expect(screen.getAllByText("Former user").length).toBeGreaterThan(0);
   expect(screen.queryByRole("link")).not.toBeInTheDocument();

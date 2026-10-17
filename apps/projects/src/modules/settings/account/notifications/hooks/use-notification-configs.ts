@@ -13,6 +13,12 @@ export function useNotificationConfigs(): NotificationConfig[] {
 
   const configs: NotificationConfig[] = [
     {
+      type: "chat_message",
+      title: "Chat",
+      description:
+        "Direct messages, mentions, and replies to conversations you are part of",
+    },
+    {
       type: "story_update",
       title: `${getTermDisplay("storyTerm", { capitalize: true })} updates`,
       description: `Get notified when a ${getTermDisplay("storyTerm")} you're involved with is updated`,

@@ -7,6 +7,8 @@ const NOTIFICATION_ENTITY_TYPES = new Set<NotificationEntityType>([
   "objective",
   "key_result",
   "strategy",
+  "document",
+  "chat_message",
 ]);
 
 const COMMENT_ID_PATTERN =
@@ -50,6 +52,12 @@ export const getNotificationDetailsPath = ({
   const commentId = getNotificationCommentId(message);
   if (entityType === "story" && commentId)
     searchParams.set("comment", commentId);
+  if (entityType === "document") {
+    const threadId =
+      message?.variables.thread_id?.value ?? message?.variables.threadId?.value;
+    if (threadId && COMMENT_ID_PATTERN.test(threadId))
+      searchParams.set("thread", threadId);
+  }
 
   return `/notifications/${encodeURIComponent(notificationId)}?${searchParams.toString()}`;
 };

@@ -3,6 +3,8 @@ import { Pool } from "pg";
 import { Redis } from "@hocuspocus/extension-redis";
 import { DocumentStore } from "./documents";
 import { createCollaborationServer } from "./server";
+import { AgentEditStore } from "./agent-edit-store";
+import { AgentEditConsumer } from "./agent-edit-consumer";
 
 const databaseURL = process.env.DATABASE_URL;
 const origins = (process.env.COLLABORATION_ALLOWED_ORIGINS ?? "")
@@ -58,11 +60,17 @@ const server = createCollaborationServer(new DocumentStore(pool), {
 });
 await pool.query("SELECT 1");
 await server.listen();
+const agentEdits = new AgentEditConsumer(
+  new AgentEditStore(pool),
+  () => server.hocuspocus.documents,
+);
+agentEdits.start();
 console.info("Document collaboration service is ready");
 let stopping = false;
 const shutdown = async () => {
   if (stopping) return;
   stopping = true;
+  await agentEdits.stop();
   await server.destroy();
   await pool.end();
 };

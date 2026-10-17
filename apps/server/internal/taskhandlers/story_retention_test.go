@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	attachmentdomain "github.com/complexus-tech/projects-api/internal/modules/attachments/domain"
 	storydomain "github.com/complexus-tech/projects-api/internal/modules/stories/domain"
 	"github.com/hibiken/asynq"
 	"github.com/stretchr/testify/require"
@@ -14,9 +15,10 @@ import (
 func TestStoryRetentionHandlersDelegateBothRetentionPhases(t *testing.T) {
 	store := &storyRetentionStoreStub{}
 	handlers := NewStoryRetentionHandlers(StoryRetentionHandlerDependencies{
-		Log:     testTaskLogger(),
-		Store:   store,
-		Objects: retainedObjectStoreStub{},
+		Log:                testTaskLogger(),
+		Store:              store,
+		Objects:            retainedObjectStoreStub{},
+		PendingChatUploads: store,
 	})
 
 	require.NoError(t, handlers.HandleDeletedStories(t.Context(), asynq.NewTask("test", nil)))
@@ -24,15 +26,17 @@ func TestStoryRetentionHandlersDelegateBothRetentionPhases(t *testing.T) {
 	require.Equal(t, 1, store.purgeStoryCalls)
 	require.Equal(t, 1, store.claimObjectCalls)
 	require.Equal(t, 1, store.purgeCompletedCalls)
+	require.Equal(t, 1, store.pendingUploadCalls)
 }
 
 func TestStoryRetentionHandlersPreserveStoreFailures(t *testing.T) {
 	sentinel := errors.New("story retention store unavailable")
 	store := &storyRetentionStoreStub{purgeStoryErr: sentinel}
 	handlers := NewStoryRetentionHandlers(StoryRetentionHandlerDependencies{
-		Log:     testTaskLogger(),
-		Store:   store,
-		Objects: retainedObjectStoreStub{},
+		Log:                testTaskLogger(),
+		Store:              store,
+		Objects:            retainedObjectStoreStub{},
+		PendingChatUploads: store,
 	})
 
 	err := handlers.HandleDeletedStories(t.Context(), asynq.NewTask("test", nil))
@@ -60,6 +64,12 @@ type storyRetentionStoreStub struct {
 	purgeCompletedCalls int
 	purgeStoryErr       error
 	claimObjectErr      error
+	pendingUploadCalls  int
+}
+
+func (store *storyRetentionStoreStub) RetirePendingChatUploads(context.Context, attachmentdomain.PendingChatUploadRetention) (int, error) {
+	store.pendingUploadCalls++
+	return 0, nil
 }
 
 func (store *storyRetentionStoreStub) PurgeDeletedStoriesBatch(

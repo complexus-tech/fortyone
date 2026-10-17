@@ -23,6 +23,7 @@ RETURNING
     sprint_term,
     objective_term,
     key_result_term,
+    chat_enabled,
     objective_enabled,
     key_result_enabled,
     working_days,
@@ -42,6 +43,7 @@ type GetOrCreateWorkspaceSettingsRow struct {
 	SprintTerm         string
 	ObjectiveTerm      string
 	KeyResultTerm      string
+	ChatEnabled        bool
 	ObjectiveEnabled   bool
 	KeyResultEnabled   bool
 	WorkingDays        []int16
@@ -60,6 +62,7 @@ func (q *Queries) GetOrCreateWorkspaceSettings(ctx context.Context, arg GetOrCre
 		&i.SprintTerm,
 		&i.ObjectiveTerm,
 		&i.KeyResultTerm,
+		&i.ChatEnabled,
 		&i.ObjectiveEnabled,
 		&i.KeyResultEnabled,
 		&i.WorkingDays,
@@ -71,6 +74,26 @@ func (q *Queries) GetOrCreateWorkspaceSettings(ctx context.Context, arg GetOrCre
 	return i, err
 }
 
+const getWorkspaceChatEnabled = `-- name: GetWorkspaceChatEnabled :one
+SELECT COALESCE(settings.chat_enabled, TRUE) AS chat_enabled
+FROM public.workspaces AS workspace
+LEFT JOIN public.workspace_settings AS settings ON settings.workspace_id = workspace.workspace_id
+WHERE workspace.workspace_id = $1
+  AND workspace.deleted_at IS NULL
+FOR SHARE OF workspace
+`
+
+type GetWorkspaceChatEnabledParams struct {
+	WorkspaceID uuid.UUID
+}
+
+func (q *Queries) GetWorkspaceChatEnabled(ctx context.Context, arg GetWorkspaceChatEnabledParams) (bool, error) {
+	row := q.db.QueryRow(ctx, getWorkspaceChatEnabled, arg.WorkspaceID)
+	var chat_enabled bool
+	err := row.Scan(&chat_enabled)
+	return chat_enabled, err
+}
+
 const getWorkspaceSettings = `-- name: GetWorkspaceSettings :one
 SELECT
     settings.workspace_id,
@@ -78,6 +101,7 @@ SELECT
     settings.sprint_term,
     settings.objective_term,
     settings.key_result_term,
+    settings.chat_enabled,
     settings.objective_enabled,
     settings.key_result_enabled,
     settings.working_days,
@@ -99,6 +123,7 @@ type GetWorkspaceSettingsRow struct {
 	SprintTerm         string
 	ObjectiveTerm      string
 	KeyResultTerm      string
+	ChatEnabled        bool
 	ObjectiveEnabled   bool
 	KeyResultEnabled   bool
 	WorkingDays        []int16
@@ -117,6 +142,7 @@ func (q *Queries) GetWorkspaceSettings(ctx context.Context, arg GetWorkspaceSett
 		&i.SprintTerm,
 		&i.ObjectiveTerm,
 		&i.KeyResultTerm,
+		&i.ChatEnabled,
 		&i.ObjectiveEnabled,
 		&i.KeyResultEnabled,
 		&i.WorkingDays,
@@ -146,6 +172,26 @@ func (q *Queries) InitializeWorkspaceSettings(ctx context.Context, arg Initializ
 	return result.RowsAffected(), nil
 }
 
+const lockWorkspaceSettingsUpdate = `-- name: LockWorkspaceSettingsUpdate :one
+UPDATE public.workspaces
+SET updated_at = clock_timestamp()
+WHERE workspace_id = $1 AND deleted_at IS NULL
+RETURNING workspace_id
+`
+
+type LockWorkspaceSettingsUpdateParams struct {
+	WorkspaceID uuid.UUID
+}
+
+// Updating the parent version also invalidates an older Serializable snapshot
+// that waited on a chat authorization lock while this toggle committed.
+func (q *Queries) LockWorkspaceSettingsUpdate(ctx context.Context, arg LockWorkspaceSettingsUpdateParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, lockWorkspaceSettingsUpdate, arg.WorkspaceID)
+	var workspace_id uuid.UUID
+	err := row.Scan(&workspace_id)
+	return workspace_id, err
+}
+
 const updateWorkspaceSettings = `-- name: UpdateWorkspaceSettings :one
 UPDATE public.workspace_settings
 SET
@@ -165,19 +211,22 @@ SET
         WHEN CAST($4 AS text) = '' THEN key_result_term
         ELSE CAST($4 AS text)
     END,
-    objective_enabled = $5,
-    key_result_enabled = $6,
-    working_days = CAST($7 AS smallint[]),
-    working_start_minute = $8,
-    working_end_minute = $9,
-    updated_at = CURRENT_TIMESTAMP
-WHERE workspace_id = $10
+    chat_enabled = $5,
+    objective_enabled = $6,
+    key_result_enabled = $7,
+    working_days = CAST($8 AS smallint[]),
+    working_start_minute = $9,
+    working_end_minute = $10,
+    updated_at = GREATEST(clock_timestamp(), updated_at + INTERVAL '1 microsecond')
+WHERE workspace_id = $11
+  AND updated_at = $12
 RETURNING
     workspace_id,
     story_term,
     sprint_term,
     objective_term,
     key_result_term,
+    chat_enabled,
     objective_enabled,
     key_result_enabled,
     working_days,
@@ -192,12 +241,14 @@ type UpdateWorkspaceSettingsParams struct {
 	SprintTerm         string
 	ObjectiveTerm      string
 	KeyResultTerm      string
+	ChatEnabled        bool
 	ObjectiveEnabled   bool
 	KeyResultEnabled   bool
 	WorkingDays        []int16
 	WorkingStartMinute int16
 	WorkingEndMinute   int16
 	WorkspaceID        uuid.UUID
+	ExpectedUpdatedAt  time.Time
 }
 
 type UpdateWorkspaceSettingsRow struct {
@@ -206,6 +257,7 @@ type UpdateWorkspaceSettingsRow struct {
 	SprintTerm         string
 	ObjectiveTerm      string
 	KeyResultTerm      string
+	ChatEnabled        bool
 	ObjectiveEnabled   bool
 	KeyResultEnabled   bool
 	WorkingDays        []int16
@@ -221,12 +273,14 @@ func (q *Queries) UpdateWorkspaceSettings(ctx context.Context, arg UpdateWorkspa
 		arg.SprintTerm,
 		arg.ObjectiveTerm,
 		arg.KeyResultTerm,
+		arg.ChatEnabled,
 		arg.ObjectiveEnabled,
 		arg.KeyResultEnabled,
 		arg.WorkingDays,
 		arg.WorkingStartMinute,
 		arg.WorkingEndMinute,
 		arg.WorkspaceID,
+		arg.ExpectedUpdatedAt,
 	)
 	var i UpdateWorkspaceSettingsRow
 	err := row.Scan(
@@ -235,6 +289,7 @@ func (q *Queries) UpdateWorkspaceSettings(ctx context.Context, arg UpdateWorkspa
 		&i.SprintTerm,
 		&i.ObjectiveTerm,
 		&i.KeyResultTerm,
+		&i.ChatEnabled,
 		&i.ObjectiveEnabled,
 		&i.KeyResultEnabled,
 		&i.WorkingDays,

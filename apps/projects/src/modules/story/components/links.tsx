@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element -- ok for metadata image */
 import { Flex, Button, Tooltip, Box, Text, TimeAgo, Menu } from "ui";
 import {
   ArrowDown2Icon,
@@ -12,10 +11,9 @@ import {
 } from "icons";
 import { useState } from "react";
 import { toast } from "sonner";
-import { RowWrapper } from "@/components/ui";
+import { LinkPreview } from "@/components/ui/link-preview/link-preview";
 import type { Link as LinkType } from "@/types";
 import { useCopyToClipboard } from "@/hooks/clipboard";
-import { useLinkMetadata } from "@/lib/hooks/link-metadata";
 import { useDeleteLinkMutation } from "@/lib/hooks/delete-link-mutation";
 import { useUserRole } from "@/hooks";
 import { useStoryFigmaLinks } from "@/lib/hooks/figma";
@@ -31,17 +29,13 @@ import { AddLinkDialog } from "./add-link-dialog";
 const StoryLink = ({ canEdit, link }: { canEdit: boolean; link: LinkType }) => {
   const [_, copyLink] = useCopyToClipboard();
   const googleDriveURL = parseGoogleDriveURL(link.url);
-  const { data: metadata } = useLinkMetadata(link.url, {
-    enabled: !googleDriveURL,
-  });
   const { mutateAsync: deleteLink } = useDeleteLinkMutation();
   const [isOpen, setIsOpen] = useState(false);
 
   if (googleDriveURL) {
     const mimeType =
       googleDriveURL.mimeType ?? "application/vnd.google-apps.file";
-    const title =
-      link.title || metadata?.title || getGoogleFileTypeLabel(mimeType);
+    const title = link.title || getGoogleFileTypeLabel(mimeType);
 
     return (
       <>
@@ -137,40 +131,8 @@ const StoryLink = ({ canEdit, link }: { canEdit: boolean; link: LinkType }) => {
 
   return (
     <>
-      <RowWrapper className="gap-8 px-1 py-2 md:px-1" key={link.id}>
-        <a
-          className="flex-1 gap-2"
-          href={link.url}
-          rel="noopener"
-          target="_blank"
-        >
-          <Flex align="center" gap={2}>
-            {metadata?.image ? (
-              <img
-                alt={metadata.title || link.title || link.url}
-                className="size-6 rounded-lg object-cover"
-                src={metadata.image}
-              />
-            ) : (
-              <LinkIcon className="mx-0.5 h-[1.3rem]" />
-            )}
-            <Text
-              className="line-clamp-1 max-w-[24ch] font-medium md:shrink-0"
-              title={link.title || metadata?.title}
-            >
-              {link.title || metadata?.title || link.url}
-            </Text>
-            {metadata?.description ? (
-              <Text
-                className="line-clamp-1 opacity-80"
-                color="muted"
-                title={metadata.description}
-              >
-                {metadata.description.replace("No description", "")}
-              </Text>
-            ) : null}
-          </Flex>
-        </a>
+      <div className="mt-3 flex flex-wrap items-start gap-3" key={link.id}>
+        <LinkPreview title={link.title} url={link.url} />
         <Flex align="center" className="shrink-0" gap={3}>
           <Text color="muted">
             <TimeAgo timestamp={link.createdAt} />
@@ -204,41 +166,45 @@ const StoryLink = ({ canEdit, link }: { canEdit: boolean; link: LinkType }) => {
                   Copy link
                 </Menu.Item>
               </Menu.Group>
-              <Menu.Separator className="my-1.5" />
-              <Menu.Group>
-                <Menu.Item
-                  className="tracking-wide"
-                  onSelect={() => {
-                    setIsOpen(true);
-                  }}
-                >
-                  <EditIcon />
-                  Edit link
-                </Menu.Item>
-              </Menu.Group>
-              <Menu.Separator className="my-1.5" />
-              <Menu.Group>
-                <Menu.Item
-                  className="tracking-wide"
-                  onSelect={() => {
-                    deleteLink({
-                      linkId: link.id,
-                      storyId: link.storyId,
-                    }).then(() => {
-                      toast.success("Success", {
-                        description: "Link deleted",
-                      });
-                    });
-                  }}
-                >
-                  <DeleteIcon />
-                  Delete link
-                </Menu.Item>
-              </Menu.Group>
+              {canEdit ? (
+                <>
+                  <Menu.Separator className="my-1.5" />
+                  <Menu.Group>
+                    <Menu.Item
+                      className="tracking-wide"
+                      onSelect={() => {
+                        setIsOpen(true);
+                      }}
+                    >
+                      <EditIcon />
+                      Edit link
+                    </Menu.Item>
+                  </Menu.Group>
+                  <Menu.Separator className="my-1.5" />
+                  <Menu.Group>
+                    <Menu.Item
+                      className="tracking-wide"
+                      onSelect={() => {
+                        deleteLink({
+                          linkId: link.id,
+                          storyId: link.storyId,
+                        }).then(() => {
+                          toast.success("Success", {
+                            description: "Link deleted",
+                          });
+                        });
+                      }}
+                    >
+                      <DeleteIcon />
+                      Delete link
+                    </Menu.Item>
+                  </Menu.Group>
+                </>
+              ) : null}
             </Menu.Items>
           </Menu>
         </Flex>
-      </RowWrapper>
+      </div>
       <AddLinkDialog
         isOpen={isOpen}
         link={link}

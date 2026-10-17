@@ -58,7 +58,10 @@ func appendAudit(ctx context.Context, q *sql.Queries, scope domain.Scope, resour
 
 func (r *Repository) CheckSession(ctx context.Context, scope domain.Scope, session domain.SessionIdentity) error {
 	return r.within(ctx, true, func(q *sql.Queries) error {
-		row, err := q.SessionAccessState(ctx, sql.SessionAccessStateParams{WorkspaceID: scope.WorkspaceID, ActorID: scope.ActorID, SessionID: session.ID})
+		row, err := q.SessionAccessState(ctx, sql.SessionAccessStateParams{
+			WorkspaceID: scope.WorkspaceID, ActorID: scope.ActorID, SessionID: session.ID,
+			AuthenticatedAt: session.AuthenticatedAt, ExpiresAt: session.ExpiresAt, BrowserName: session.BrowserName,
+		})
 		if errors.Is(err, pgx.ErrNoRows) {
 			return domain.ErrForbidden
 		}
@@ -70,6 +73,11 @@ func (r *Repository) CheckSession(ctx context.Context, scope domain.Scope, sessi
 			return err
 		}
 		if session.ID == uuid.Nil || session.AuthenticatedAt.IsZero() || session.ExpiresAt.IsZero() {
+			return nil
+		}
+		// This flag comes from the same authoritative, locked read as policy and
+		// revocation state. Skip only redundant telemetry writes, never auth.
+		if row.SessionIsCurrent {
 			return nil
 		}
 		count, err := q.TrackBrowserSession(ctx, sql.TrackBrowserSessionParams{WorkspaceID: scope.WorkspaceID, ActorID: scope.ActorID, SessionID: session.ID, AuthenticatedAt: session.AuthenticatedAt, ExpiresAt: session.ExpiresAt, BrowserName: session.BrowserName})

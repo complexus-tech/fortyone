@@ -1,295 +1,120 @@
 "use client";
 
-import { useMemo, useState } from "react";
 import type { Editor } from "@tiptap/react";
-import { Avatar, Box, Button, Flex, Text, TextArea } from "ui";
-import { CheckIcon, CloseIcon, Comment01Icon } from "icons";
+import { useEffect, useRef, useState } from "react";
+import { Button } from "ui";
+import { CloseIcon, Comment01Icon } from "icons";
 import { cn } from "lib";
-import { useSession } from "@/lib/auth/client";
-import { useDocumentCommentMutations, useDocumentComments } from "./hooks";
+import { useDocumentComments } from "./hooks";
+import { DocumentCommentComposer } from "./document-comment-composer";
+import { DocumentCommentThreadCard } from "./document-comment-thread";
 import type { DocumentCommentSelection, DocumentCommentThread } from "./types";
+import {
+  useDocumentMayaRefresh,
+  useDocumentMayaRuns,
+} from "./document-comment-maya";
 
-const formatCommentTime = (value: string) => {
-  const elapsed = Math.max(0, Date.now() - new Date(value).getTime());
-  const minutes = Math.floor(elapsed / 60_000);
-  if (minutes < 1) return "now";
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d`;
-  return new Intl.DateTimeFormat(undefined, {
-    day: "numeric",
-    month: "short",
-  }).format(new Date(value));
-};
+export { DocumentCommentComposer } from "./document-comment-composer";
 
-const CommentComposer = ({
-  authorAvatar,
-  authorName,
-  isPending,
-  onCancel,
-  onSubmit,
-}: {
-  authorAvatar?: string | null;
-  authorName: string;
-  isPending: boolean;
-  onCancel: () => void;
-  onSubmit: (body: string) => void;
-}) => {
-  const [body, setBody] = useState("");
-  return (
-    <Flex align="start" gap={3}>
-      <Avatar
-        className="ring-border-strong ring-1"
-        name={authorName}
-        size="md"
-        src={authorAvatar}
-      />
-      <Box className="border-border bg-surface min-w-0 flex-1 rounded-lg border-[0.5px] p-3 shadow-sm">
-        <TextArea
-          aria-label="Comment"
-          autoFocus
-          className="min-h-20 resize-none rounded-none border-0 bg-transparent p-0 text-base leading-6 focus-visible:ring-0 dark:bg-transparent"
-          onChange={(event) => {
-            setBody(event.target.value);
-          }}
-          placeholder="Comment or type ‘/’ for commands…"
-          value={body}
-        />
-        <Flex className="mt-2" gap={2} justify="end">
-          <Button color="tertiary" onClick={onCancel} size="sm" variant="naked">
-            Cancel
-          </Button>
-          <Button
-            color="primary"
-            disabled={body.trim() === "" || isPending}
-            onClick={() => {
-              onSubmit(body.trim());
-            }}
-            size="sm"
-          >
-            {isPending ? "Commenting…" : "Comment"}
-          </Button>
-        </Flex>
-      </Box>
-    </Flex>
-  );
-};
-
-const CommentThread = ({
-  editor,
-  thread,
-}: {
-  editor: Editor | null;
-  thread: DocumentCommentThread;
-}) => {
-  const { reply, resolve } = useDocumentCommentMutations(thread.documentId);
-  const [isReplying, setIsReplying] = useState(false);
-  const [replyBody, setReplyBody] = useState("");
-  const resolved = Boolean(thread.resolvedAt);
-  const locate = () => {
-    if (!editor) return;
-    const maximumPosition = editor.state.doc.content.size;
-    if (
-      thread.anchorStart < 1 ||
-      thread.anchorEnd <= thread.anchorStart ||
-      thread.anchorEnd > maximumPosition
-    )
-      return;
-    editor
-      .chain()
-      .focus()
-      .setTextSelection({ from: thread.anchorStart, to: thread.anchorEnd })
-      .scrollIntoView()
-      .run();
-  };
-
-  return (
-    <Box
-      className={cn(
-        "border-border/70 border-b-[0.5px] py-4 first:pt-0 last:border-b-0 last:pb-0",
-        resolved && "opacity-70",
-      )}
-    >
-      <button
-        className="text-warning hover:bg-warning/10 mb-3 flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-medium transition-colors"
-        onClick={locate}
-        type="button"
-      >
-        <Comment01Icon className="size-4 text-current" strokeWidth={2} />
-        View in document
-      </button>
-      <Box className="space-y-4">
-        {thread.comments.map((comment) => (
-          <Flex align="start" gap={3} key={comment.id}>
-            <Avatar
-              className="ring-border-strong ring-1"
-              name={comment.authorName || "Teammate"}
-              size="md"
-              src={comment.authorAvatar}
-            />
-            <Box className="min-w-0 flex-1">
-              <Flex align="center" justify="between">
-                <Text className="truncate" fontSize="md" fontWeight="medium">
-                  {comment.authorName || "Teammate"}
-                </Text>
-                <Text
-                  className="shrink-0"
-                  color="muted"
-                  fontSize="sm"
-                  title={new Date(comment.createdAt).toLocaleString()}
-                >
-                  {formatCommentTime(comment.createdAt)}
-                </Text>
-              </Flex>
-              <Text className="mt-1 text-base leading-6 whitespace-pre-wrap">
-                {comment.body}
-              </Text>
-            </Box>
-          </Flex>
-        ))}
-      </Box>
-      {isReplying ? (
-        <Box className="mt-4">
-          <TextArea
-            aria-label="Reply"
-            className="border-border bg-surface min-h-20 resize-none rounded-lg border-[0.5px] px-3 py-2 text-base leading-6"
-            onChange={(event) => {
-              setReplyBody(event.target.value);
-            }}
-            placeholder="Reply…"
-            value={replyBody}
-          />
-          <Flex className="mt-2" gap={2} justify="end">
-            <Button
-              color="tertiary"
-              onClick={() => {
-                setIsReplying(false);
-                setReplyBody("");
-              }}
-              size="sm"
-              variant="naked"
-            >
-              Cancel
-            </Button>
-            <Button
-              disabled={replyBody.trim() === "" || reply.isPending}
-              onClick={() => {
-                reply.mutate({ body: replyBody.trim(), threadId: thread.id });
-                setReplyBody("");
-                setIsReplying(false);
-              }}
-              size="sm"
-            >
-              Reply
-            </Button>
-          </Flex>
-        </Box>
-      ) : (
-        <Flex className="mt-4" gap={1}>
-          {!resolved ? (
-            <Button
-              color="tertiary"
-              onClick={() => {
-                setIsReplying(true);
-              }}
-              size="sm"
-              variant="naked"
-            >
-              Reply
-            </Button>
-          ) : null}
-          <Button
-            color="primary"
-            leftIcon={resolved ? undefined : <CheckIcon className="size-4" />}
-            onClick={() => {
-              resolve.mutate({ resolved: !resolved, threadId: thread.id });
-            }}
-            size="sm"
-            variant="naked"
-          >
-            {resolved ? "Reopen" : "Resolve"}
-          </Button>
-        </Flex>
-      )}
-    </Box>
-  );
-};
-
-export const DocumentCommentsPanel = ({
+export function DocumentCommentsPanel({
   draft,
   documentId,
   editor,
   onClose,
   onDraftChange,
+  canComment = true,
+  activeThreadId,
+  onThreadSelect,
 }: {
   draft: DocumentCommentSelection | null;
   documentId: string;
   editor: Editor | null;
   onClose: () => void;
   onDraftChange: (draft: DocumentCommentSelection | null) => void;
-}) => {
-  const { data: threads = [], isPending } = useDocumentComments(documentId);
-  const { data: session } = useSession();
-  const { create } = useDocumentCommentMutations(documentId);
+  canComment?: boolean;
+  activeThreadId?: string;
+  onThreadSelect?: (thread: DocumentCommentThread) => void;
+}) {
+  const {
+    data: threads = [],
+    isPending,
+    isError,
+    isFetching,
+    refetch,
+  } = useDocumentComments(documentId);
+  const maya = useDocumentMayaRuns(documentId, true);
+  useDocumentMayaRefresh(documentId, maya.data?.runs);
   const [filter, setFilter] = useState<"open" | "resolved">("open");
   const openCount = threads.filter((thread) => !thread.resolvedAt).length;
-  const resolvedCount = threads.length - openCount;
-  const visibleThreads = useMemo(
-    () =>
-      threads.filter((thread) =>
-        filter === "open" ? !thread.resolvedAt : Boolean(thread.resolvedAt),
-      ),
-    [filter, threads],
+  const visible = threads.filter((thread) =>
+    filter === "open" ? !thread.resolvedAt : Boolean(thread.resolvedAt),
   );
+  const activeThread = threads.find((thread) => thread.id === activeThreadId);
+  let activeFilter: "open" | "resolved" | undefined;
+  if (activeThread)
+    activeFilter = activeThread.resolvedAt ? "resolved" : "open";
+  let emptyDescription = "Comments on this document will appear here.";
+  if (filter === "resolved")
+    emptyDescription =
+      "Resolved discussions will appear here. You can reopen them anytime.";
+  else if (canComment)
+    emptyDescription =
+      "Select a passage in the document to start a conversation.";
+  const selectedThread = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (activeFilter && selectedThread.current !== activeThreadId) {
+      selectedThread.current = activeThreadId;
+      setFilter(activeFilter);
+    }
+  }, [activeFilter, activeThreadId]);
 
   return (
-    <Box
+    <aside
       aria-labelledby="document-comments-title"
-      className="bg-surface/80 dark:bg-surface/80 flex h-full min-h-0 flex-col backdrop-blur-xl"
-      role="complementary"
+      className="bg-surface flex h-full min-h-0 min-w-0 flex-col text-base"
     >
-      <Box className="border-border shrink-0 border-b-[0.5px] px-5 py-4">
-        <Flex align="center" justify="between">
-          <Flex align="center" gap={2}>
-            <Comment01Icon className="size-4" strokeWidth={2} />
-            <Text
-              fontSize="xl"
-              fontWeight="semibold"
-              id="document-comments-title"
-            >
-              Comments
-            </Text>
-            {threads.length > 0 ? (
-              <Text color="muted" fontSize="sm">
-                {threads.length}
-              </Text>
-            ) : null}
-          </Flex>
+      <header className="border-border shrink-0 border-b px-5 pt-4">
+        <div className="flex items-center justify-between gap-3">
+          <h2
+            className="text-foreground flex items-center gap-2.5 text-lg font-semibold"
+            id="document-comments-title"
+          >
+            <Comment01Icon className="size-5" strokeWidth={1.7} />
+            Comments
+          </h2>
           <Button
             aria-label="Close comments"
             asIcon
             color="tertiary"
             onClick={onClose}
             size="sm"
+            type="button"
             variant="naked"
           >
             <CloseIcon className="size-5" />
           </Button>
-        </Flex>
-        <Flex className="mt-3" gap={4}>
+        </div>
+        <div
+          aria-label="Comment status"
+          className="mt-4 flex gap-5"
+          role="group"
+        >
           {(
             [
-              { count: openCount, label: "Open", value: "open" },
-              { count: resolvedCount, label: "Resolved", value: "resolved" },
+              { label: "Open", value: "open", count: openCount },
+              {
+                label: "Resolved",
+                value: "resolved",
+                count: threads.length - openCount,
+              },
             ] as const
           ).map((item) => (
             <button
+              aria-pressed={filter === item.value}
               className={cn(
-                "text-text-muted relative pb-1.5 text-sm font-medium transition-colors",
+                "text-text-muted relative flex items-center gap-2 pb-3 text-base font-medium transition-colors",
                 filter === item.value &&
-                  "text-foreground after:bg-primary after:absolute after:inset-x-0 after:-bottom-[1px] after:h-0.5 after:rounded-full",
+                  "text-foreground after:bg-primary after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:rounded-full",
               )}
               key={item.value}
               onClick={() => {
@@ -297,65 +122,94 @@ export const DocumentCommentsPanel = ({
               }}
               type="button"
             >
-              {item.label} {item.count}
+              {item.label}
+              <span className="text-text-muted font-normal">{item.count}</span>
             </button>
           ))}
-        </Flex>
-      </Box>
-      <Box className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
-        {draft ? (
-          <Box className="mb-4">
-            <CommentComposer
-              authorAvatar={session?.user.image}
-              authorName={session?.user.name ?? "You"}
-              isPending={create.isPending}
-              onCancel={() => {
-                onDraftChange(null);
+        </div>
+      </header>
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5">
+        {isError ? (
+          <div
+            className="border-border bg-surface-muted/40 mb-4 rounded-xl border p-4"
+            role="alert"
+          >
+            <p className="text-foreground text-base">
+              Comments could not be loaded.
+            </p>
+            <p className="text-text-muted mt-1 text-base leading-6">
+              Try again to see the latest discussion.
+            </p>
+            <Button
+              className="mt-3 text-base"
+              color="tertiary"
+              disabled={isFetching}
+              onClick={() => {
+                void refetch();
               }}
-              onSubmit={(body) => {
-                create.mutate({
-                  anchorEnd: draft.to,
-                  anchorStart: draft.from,
-                  body,
-                  quote: draft.text,
-                });
-                onDraftChange(null);
-              }}
-            />
-          </Box>
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              {isFetching ? "Retrying…" : "Retry"}
+            </Button>
+          </div>
         ) : null}
         {isPending ? (
-          <Text color="muted" fontSize="sm">
+          <p className="text-text-muted py-5 text-base" role="status">
             Loading comments…
-          </Text>
+          </p>
         ) : null}
-        {!isPending && visibleThreads.length === 0 && !draft ? (
-          <Flex
-            align="center"
-            className="min-h-64 text-center"
-            direction="column"
-            justify="center"
-          >
+        {!isPending &&
+        !isError &&
+        visible.length === 0 &&
+        !(draft && canComment) ? (
+          <div className="flex min-h-60 flex-col items-center justify-center px-2 text-center">
             <Comment01Icon
-              className="text-text-muted mb-3 size-8"
-              strokeWidth={1.5}
+              className="text-text-muted mb-4 size-8"
+              strokeWidth={1.4}
             />
-            <Text fontSize="md" fontWeight="medium">
+            <p className="text-foreground text-base font-medium">
               {filter === "open" ? "No open comments" : "No resolved comments"}
-            </Text>
-            {filter === "open" ? (
-              <Text className="mt-1 max-w-64" color="muted" fontSize="md">
-                Select text in the document and choose Comment from the toolbar.
-              </Text>
-            ) : null}
-          </Flex>
+            </p>
+            <p className="text-text-muted mt-2 max-w-72 text-base leading-6">
+              {emptyDescription}
+            </p>
+          </div>
         ) : null}
-        <Box>
-          {visibleThreads.map((thread) => (
-            <CommentThread editor={editor} key={thread.id} thread={thread} />
-          ))}
-        </Box>
-      </Box>
-    </Box>
+        {visible.map((thread) => (
+          <DocumentCommentThreadCard
+            active={thread.id === activeThreadId}
+            canComment={canComment}
+            editor={editor}
+            key={thread.id}
+            mayaRuns={maya.data?.runs}
+            mayaUnavailable={maya.isError}
+            onCheckMaya={() => {
+              void maya.refetch();
+              void refetch();
+            }}
+            onThreadSelect={onThreadSelect}
+            thread={thread}
+          />
+        ))}
+      </div>
+      {draft && canComment ? (
+        <div className="border-border shrink-0 border-t p-4">
+          <DocumentCommentComposer
+            documentId={documentId}
+            draft={draft}
+            onCancel={() => {
+              onDraftChange(null);
+            }}
+            onCreated={(thread) => {
+              onDraftChange(null);
+              setFilter("open");
+              onThreadSelect?.(thread);
+            }}
+          />
+        </div>
+      ) : null}
+    </aside>
   );
-};
+}

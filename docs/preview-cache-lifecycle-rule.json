@@ -1,0 +1,13 @@
+{
+  "ID": "fortyone-external-preview-cache-7-days",
+  "Status": "Enabled",
+  "Filter": {
+    "Prefix": "previews/external/v1/"
+  },
+  "Expiration": {
+    "Days": 7
+  },
+  "NoncurrentVersionExpiration": {
+    "NoncurrentDays": 7
+  }
+}

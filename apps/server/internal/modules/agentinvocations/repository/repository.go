@@ -187,6 +187,15 @@ func (r *Repository) Fail(ctx context.Context, run domain.Run, summary string, r
 func (r *Repository) withLease(ctx context.Context, run domain.Run, operation func(context.Context, *invocationsql.Queries, domain.Run) (domain.Run, error)) (domain.Run, error) {
 	var result domain.Run
 	var err error
+	if tx, joined := database.UnitTransaction(ctx); joined {
+		queries := invocationsql.New(tx)
+		row, lockErr := queries.LockAgentInvocationLease(ctx, invocationsql.LockAgentInvocationLeaseParams{ID: run.ID, LeaseToken: run.LeaseToken, LeaseGeneration: run.LeaseGeneration})
+		current, lockErr := mapResult(row, lockErr, domain.ErrLeaseLost)
+		if lockErr != nil {
+			return domain.Run{}, lockErr
+		}
+		return operation(ctx, queries, current)
+	}
 	for attempt := 0; attempt < 3; attempt++ {
 		err = database.WithinUnitOfWork(ctx, r.pool, func(txCtx context.Context, tx pgx.Tx) error {
 			queries := invocationsql.New(tx)
@@ -220,12 +229,15 @@ func mapResult(row invocationsql.AgentInvocation, err, noRows error) (domain.Run
 
 func toRun(row invocationsql.AgentInvocation) (domain.Run, error) {
 	run := domain.Run{
-		ID: row.ID, WorkspaceID: row.WorkspaceID, RequesterID: row.RequesterID, TeamID: row.TeamID, Surface: row.Surface,
+		ID: row.ID, WorkspaceID: row.WorkspaceID, RequesterID: row.RequesterID, Surface: row.Surface,
 		SourceID: row.SourceID, ConversationID: row.ConversationID, EntityID: row.EntityID, SourceRevision: row.SourceRevision, SourceHash: row.SourceHash,
 		ParentRunID: row.ParentRunID,
 		Payload:     row.Payload, Status: domain.Status(row.Status), Summary: row.Summary, Version: row.Version,
 		ReplyCommentID: row.ReplyID, ProposalReplyID: row.ProposalReplyID, ProposalDeliveredAt: row.ProposalDeliveredAt, FailureReplyID: row.FailureReplyID, FailurePending: row.FailurePending, LeaseToken: row.LeaseToken, LeaseGeneration: row.LeaseGeneration, LeaseExpiresAt: row.LeaseExpiresAt,
-		AttemptCount: row.AttemptCount, RetryAttemptCount: row.RetryAttemptCount, ApprovedAt: row.ApprovedAt, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt,
+		AttemptCount: row.AttemptCount, RetryAttemptCount: row.RetryAttemptCount, ApprovedAt: row.ApprovedAt, ActionStartedAt: row.ActionStartedAt, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt,
+	}
+	if row.TeamID != nil {
+		run.TeamID = *row.TeamID
 	}
 	if len(row.Proposal) > 0 {
 		run.Proposal = &domain.Proposal{}

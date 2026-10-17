@@ -15,6 +15,7 @@ import (
 )
 
 var (
+	ErrSettingsConflict       = workspacedomain.ErrSettingsConflict
 	ErrNotFound               = workspacedomain.ErrNotFound
 	ErrMemberNotFound         = workspacedomain.ErrMemberNotFound
 	ErrSlugTaken              = workspacedomain.ErrSlugTaken

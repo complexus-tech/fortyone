@@ -17,7 +17,7 @@ import (
 var (
 	ErrDeleteForbidden            = errors.New("story deletion is not permitted")
 	ErrInvalidStoryReference      = errors.New("invalid story reference")
-	ErrInvalidStoryMediaReference = errors.New("invalid story media reference")
+	ErrInvalidStoryMediaReference = storydomain.ErrInvalidStoryMediaReference
 	ErrObjectiveKeyResultMismatch = errors.New("key result does not belong to objective")
 	ErrInvalidStoryLabels         = errors.New("one or more labels do not belong to the story's workspace and team")
 	ErrStoryChanged               = storydomain.ErrStoryChanged

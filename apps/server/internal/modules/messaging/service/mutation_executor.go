@@ -108,9 +108,10 @@ type storyMutationConfirmationToolResult struct {
 }
 
 type batchStoryMutationProposal struct {
-	Version   int                      `json:"version"`
-	SourceURL string                   `json:"source_url,omitempty"`
-	Items     []batchStoryMutationItem `json:"items"`
+	SourceScope *SourceScope             `json:"source_scope,omitempty"`
+	Version     int                      `json:"version"`
+	SourceURL   string                   `json:"source_url,omitempty"`
+	Items       []batchStoryMutationItem `json:"items"`
 }
 
 type batchStoryMutationItem struct {

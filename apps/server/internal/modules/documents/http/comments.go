@@ -64,9 +64,9 @@ func (h *Handlers) CreateComment(ctx context.Context, w http.ResponseWriter, r *
 	if err := web.Decode(r, &input); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
-	thread, err := h.documents.CreateComment(ctx, documents.CoreCreateCommentInput{
+	thread, err := h.commentWriter.CreateComment(ctx, documents.CoreCreateCommentInput{
 		WorkspaceID: workspace.ID, UserID: userID, DocumentID: documentID,
-		Body: input.Body, Quote: input.Quote, AnchorStart: input.AnchorStart, AnchorEnd: input.AnchorEnd,
+		CreationID: input.CreationID, Body: input.Body, Quote: input.Quote, AnchorStart: input.AnchorStart, AnchorEnd: input.AnchorEnd,
 	})
 	if err != nil {
 		return web.RespondError(ctx, w, err, documentHTTPStatus(err))
@@ -90,9 +90,9 @@ func (h *Handlers) ReplyToComment(ctx context.Context, w http.ResponseWriter, r 
 	if err := web.Decode(r, &input); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
-	comment, err := h.documents.ReplyToComment(ctx, documents.CoreReplyCommentInput{
+	comment, err := h.commentWriter.ReplyToComment(ctx, documents.CoreReplyCommentInput{
 		WorkspaceID: workspace.ID, UserID: userID, DocumentID: documentID,
-		ThreadID: threadID, Body: input.Body,
+		ThreadID: threadID, Body: input.Body, CreationID: input.CreationID, ReplyToCommentID: input.ReplyToCommentID,
 	})
 	if err != nil {
 		return web.RespondError(ctx, w, err, documentHTTPStatus(err))
@@ -129,4 +129,36 @@ func commentThreadIDFromRequest(r *http.Request) (uuid.UUID, error) {
 		return uuid.Nil, documents.ErrInvalidInput
 	}
 	return threadID, nil
+}
+
+func (h *Handlers) CommentMentions(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspace, user, document, err := mutationContext(ctx, r)
+	if err != nil {
+		return web.RespondError(ctx, w, err, documentHTTPStatus(err))
+	}
+	members, err := h.documents.ListCommentMentions(ctx, workspace.ID, user, document)
+	if err != nil {
+		return web.RespondError(ctx, w, err, documentHTTPStatus(err))
+	}
+	for i := range members {
+		comment := documents.CoreComment{AuthorAvatar: members[i].AvatarURL}
+		h.resolveCommentAvatar(ctx, &comment)
+		members[i].AvatarURL = comment.AuthorAvatar
+	}
+	enabled := false
+	if h.mayaAvailability != nil && canMutateDocuments(workspace) {
+		enabled, err = h.mayaAvailability.Enabled(ctx, workspace.ID)
+		if err != nil {
+			return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		}
+	}
+	var mayaID *uuid.UUID
+	if enabled && h.mayaID != uuid.Nil {
+		mayaID = &h.mayaID
+	}
+	return web.Respond(ctx, w, struct {
+		Members     []documents.CoreCommentMention `json:"members"`
+		MayaEnabled bool                           `json:"mayaEnabled"`
+		MayaID      *uuid.UUID                     `json:"mayaId,omitempty"`
+	}{members, enabled, mayaID}, http.StatusOK)
 }

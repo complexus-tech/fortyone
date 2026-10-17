@@ -67,6 +67,10 @@ WHERE attachment.attachment_id = ANY(CAST(sqlc.arg(attachment_ids) AS uuid[]))
       FROM public.document_attachments AS document_relation
       WHERE document_relation.attachment_id = attachment.attachment_id
   )
+  AND NOT EXISTS (
+      SELECT 1 FROM public.chat_attachments AS chat_relation
+      WHERE chat_relation.attachment_id = attachment.attachment_id
+  )
 RETURNING
     attachment.attachment_id,
     attachment.workspace_id,

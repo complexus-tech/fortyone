@@ -13,6 +13,7 @@ import (
 
 type Querier interface {
 	AppendCommentMutationEvent(ctx context.Context, arg AppendCommentMutationEventParams) ([]uuid.UUID, error)
+	AuthorizeAgentReply(ctx context.Context, arg AuthorizeAgentReplyParams) (uuid.UUID, error)
 	CreateCommentForActor(ctx context.Context, arg CreateCommentForActorParams) (CreateCommentForActorRow, error)
 	DeleteCommentForAuthor(ctx context.Context, arg DeleteCommentForAuthorParams) (DeleteCommentForAuthorRow, error)
 	DeleteCommentMentionsForAuthor(ctx context.Context, arg DeleteCommentMentionsForAuthorParams) (DeleteCommentMentionsForAuthorRow, error)
@@ -20,11 +21,14 @@ type Querier interface {
 	GetCommentForWorkspace(ctx context.Context, arg GetCommentForWorkspaceParams) (GetCommentForWorkspaceRow, error)
 	GetCommentMentionIDs(ctx context.Context, arg GetCommentMentionIDsParams) ([]uuid.UUID, error)
 	GetStoryCommentReadState(ctx context.Context, arg GetStoryCommentReadStateParams) (GetStoryCommentReadStateRow, error)
+	InsertAgentCommentMentions(ctx context.Context, arg InsertAgentCommentMentionsParams) (int64, error)
 	InsertCommentMentionsForAuthor(ctx context.Context, arg InsertCommentMentionsForAuthorParams) (int64, error)
 	ListCommentCollaboration(ctx context.Context, arg ListCommentCollaborationParams) ([]ListCommentCollaborationRow, error)
+	MarkStoryCommentSeen(ctx context.Context, arg MarkStoryCommentSeenParams) (time.Time, error)
 	MarkStoryCommentThreadRead(ctx context.Context, arg MarkStoryCommentThreadReadParams) (time.Time, error)
 	MarkStoryCommentsRead(ctx context.Context, arg MarkStoryCommentsReadParams) (time.Time, error)
 	ReplaceCommentAttachmentReferences(ctx context.Context, arg ReplaceCommentAttachmentReferencesParams) (int64, error)
+	ResolveAgentMentionTargets(ctx context.Context, arg ResolveAgentMentionTargetsParams) ([]ResolveAgentMentionTargetsRow, error)
 	SetCommentReaction(ctx context.Context, arg SetCommentReactionParams) (uuid.UUID, error)
 	SetCommentResolution(ctx context.Context, arg SetCommentResolutionParams) (uuid.UUID, error)
 	UpdateCommentForAuthor(ctx context.Context, arg UpdateCommentForAuthorParams) (UpdateCommentForAuthorRow, error)

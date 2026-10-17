@@ -7,6 +7,10 @@ const source = readFileSync(
   join(process.cwd(), "src/modules/documents/document-page.tsx"),
   "utf8",
 );
+const headerSource = readFileSync(
+  join(process.cwd(), "src/modules/documents/document-page-header.tsx"),
+  "utf8",
+);
 const styles = readFileSync(
   join(process.cwd(), "src/modules/documents/document-page.module.css"),
   "utf8",
@@ -14,18 +18,18 @@ const styles = readFileSync(
 
 describe("document page header", () => {
   it("layers a borderless gradient header over the scrolling document", () => {
-    expect(source).toContain(
+    expect(headerSource).toContain(
       "pointer-events-none absolute inset-x-0 top-0 z-20",
     );
-    expect(source).toContain("styles.headerBackdrop");
-    expect(source).toContain("top-0 z-20 h-18");
+    expect(headerSource).toContain("styles.headerBackdrop");
+    expect(headerSource).toContain("top-0 z-20 h-18");
     expect(styles).toContain("background: linear-gradient(");
     expect(styles).not.toContain("backdrop-filter");
     expect(styles).not.toContain("mask-image");
     expect(styles).toContain("var(--document-canvas-color) 68%");
     expect(styles).toContain(":global(.dark) .headerBackdrop");
     expect(styles).toContain("var(--color-surface-muted) 50%");
-    expect(source).not.toContain(
+    expect(headerSource).not.toContain(
       'className="border-border/70 h-18 shrink-0 border-b',
     );
   });

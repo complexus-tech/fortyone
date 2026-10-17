@@ -23,6 +23,13 @@ func (service *Service) Create(ctx context.Context, input CoreNewNotification) (
 	if err := input.Validate(); err != nil {
 		return CoreNotification{}, err
 	}
+	allowed, settingErr := service.allowsChatDelivery(ctx, input.WorkspaceID, input.EntityType)
+	if settingErr != nil {
+		return CoreNotification{}, settingErr
+	}
+	if !allowed {
+		return CoreNotification{}, notificationsdomain.ErrForbidden
+	}
 	notification, mutated, err := service.repo.Create(ctx, input)
 	if err != nil {
 		span.RecordError(err)

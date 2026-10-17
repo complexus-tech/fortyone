@@ -21,11 +21,20 @@ func (r *Repository) CreateComment(
 	command commentsdomain.CreateCommand,
 	eventID uuid.UUID,
 ) (commentsdomain.Comment, error) {
+	return r.createComment(ctx, command, eventID, nil)
+}
+
+func (r *Repository) createComment(ctx context.Context, command commentsdomain.CreateCommand, eventID uuid.UUID, delegation *commentsdomain.AgentReplyScope) (commentsdomain.Comment, error) {
 	ctx, span := apptracing.AddSpanFromContext(ctx, "business.repository.comments.CreateComment")
 	defer span.End()
 
 	var created commentsdomain.Comment
 	err := r.withinTransaction(ctx, func(queries commentsql.Querier) error {
+		if delegation != nil {
+			if err := authorizeAgentReply(ctx, queries, *delegation); err != nil {
+				return err
+			}
+		}
 		row, err := queries.CreateCommentForActor(ctx, commentsql.CreateCommentForActorParams{
 			CreationID: command.CreationID,
 			Content:    command.Content, ActorID: command.Actor.PrincipalID,
@@ -53,7 +62,13 @@ func (r *Repository) CreateComment(
 		// A newly inserted comment has no mentions to clear. In particular, a
 		// provider comment must not enter the human-author mention mutation path.
 		if len(command.MentionedUserIDs) > 0 {
-			if _, err := replaceMentions(ctx, queries, scope, command.MentionedUserIDs); err != nil {
+			var err error
+			if delegation != nil {
+				err = insertAgentMentions(ctx, queries, *delegation, created.ID, command.MentionedUserIDs)
+			} else {
+				_, err = replaceMentions(ctx, queries, scope, command.MentionedUserIDs)
+			}
+			if err != nil {
 				return err
 			}
 		}

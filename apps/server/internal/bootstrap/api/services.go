@@ -3,8 +3,10 @@ package api
 import (
 	"context"
 	"github.com/complexus-tech/projects-api/internal/bootstrap/agentadapter"
+	"github.com/complexus-tech/projects-api/internal/bootstrap/chatadapter"
 	agentrunsrepository "github.com/complexus-tech/projects-api/internal/modules/agentinvocations/repository"
 	agentruns "github.com/complexus-tech/projects-api/internal/modules/agentinvocations/service"
+	"github.com/complexus-tech/projects-api/internal/platform/chatrollout"
 	"strings"
 
 	"github.com/complexus-tech/projects-api/internal/bootstrap/customfieldsadapter"
@@ -22,6 +24,7 @@ import (
 	attachments "github.com/complexus-tech/projects-api/internal/modules/attachments/service"
 	calendarrepository "github.com/complexus-tech/projects-api/internal/modules/calendar/repository"
 	calendar "github.com/complexus-tech/projects-api/internal/modules/calendar/service"
+	chatservice "github.com/complexus-tech/projects-api/internal/modules/chat/service"
 	chatsessionsrepository "github.com/complexus-tech/projects-api/internal/modules/chatsessions/repository"
 	chatsessions "github.com/complexus-tech/projects-api/internal/modules/chatsessions/service"
 	commentsrepository "github.com/complexus-tech/projects-api/internal/modules/comments/repository"
@@ -63,6 +66,8 @@ import (
 	maya "github.com/complexus-tech/projects-api/internal/modules/maya/service"
 	messagingrepository "github.com/complexus-tech/projects-api/internal/modules/messaging/repository"
 	messaging "github.com/complexus-tech/projects-api/internal/modules/messaging/service"
+	nativepreviewrepository "github.com/complexus-tech/projects-api/internal/modules/nativepreviews/repository"
+	nativepreviews "github.com/complexus-tech/projects-api/internal/modules/nativepreviews/service"
 	notificationsrepository "github.com/complexus-tech/projects-api/internal/modules/notifications/repository"
 	notifications "github.com/complexus-tech/projects-api/internal/modules/notifications/service"
 	objectivesrepository "github.com/complexus-tech/projects-api/internal/modules/objectives/repository"
@@ -110,13 +115,22 @@ import (
 	"github.com/complexus-tech/projects-api/internal/platform/http/mux"
 	platformidempotency "github.com/complexus-tech/projects-api/internal/platform/idempotency"
 	"github.com/complexus-tech/projects-api/internal/platform/oidcclient"
+	"github.com/google/uuid"
 )
 
 var _ messaging.StoryMutationService = (*stories.Service)(nil)
 
 type services struct {
+	nativePreviews       *nativepreviews.Service
+	chat                 *chatservice.Service
+	chatAttachments      *chatadapter.AttachmentRetirer
+	chatTranscriptions   *chatservice.Transcriptions
+	agentChatAccess      agentadapter.ChatAccess
 	agentRuns            *agentruns.Service
 	agentCommentsAccess  agentadapter.CommentAccess
+	agentDocumentsAccess agentadapter.DocumentAccess
+	documentComments     *agentadapter.DocumentCommentCreator
+	mayaActorID          uuid.UUID
 	desktopOperations    *desktoprepository.Store
 	activities           *activities.Service
 	admin                *admin.Service
@@ -410,6 +424,8 @@ func buildServices(cfg mux.Config, dependencies Dependencies) services {
 		panic("failed to resolve maya actor: " + err.Error())
 	}
 	agentRuns := agentruns.New(agentrunsrepository.New(dependencies.DatabasePool), nil)
+	chatService, chatAttachments := buildChatService(cfg, dependencies, agentRuns, mayaActorID)
+	documentsService := documents.New(documentsrepository.New(dependencies.DatabasePool))
 	storiesService.ConfigureCommentCreator(&agentadapter.CommentCreator{
 		Pool: dependencies.DatabasePool, Base: storyCommentCreator, Stories: storiesService,
 		Runs: agentRuns, MayaID: mayaActorID, Tasks: cfg.TasksService, Log: cfg.Log,
@@ -512,7 +528,12 @@ func buildServices(cfg mux.Config, dependencies Dependencies) services {
 	if err != nil {
 		panic("failed to initialize SCIM provisioning: " + err.Error())
 	}
+	var nativePreviewCache nativepreviews.Cache
+	if cfg.Cache != nil {
+		nativePreviewCache = cfg.Cache
+	}
 	return services{
+		nativePreviews:    nativepreviews.New(nativepreviewrepository.New(dependencies.DatabasePool), nativePreviewCache),
 		desktopOperations: desktoprepository.New(dependencies.DatabasePool),
 		activities:        activities.New(activitiesrepository.New(dependencies.DatabasePool)),
 		admin: admin.New(
@@ -522,9 +543,16 @@ func buildServices(cfg mux.Config, dependencies Dependencies) services {
 		),
 		attachments:          attachmentsService,
 		calendar:             calendarService,
+		chat:                 chatService,
+		chatAttachments:      chatAttachments,
+		chatTranscriptions:   buildChatTranscriptions(cfg, dependencies, mayaRepository),
+		agentChatAccess:      agentadapter.ChatAccess{Rollout: chatrollout.New(workspacesrepository.New(dependencies.DatabasePool)), Chats: chatService, Workspace: mayaRepository, Configured: strings.TrimSpace(cfg.AIAPIKey) != ""},
 		chatSessions:         chatsessions.New(cfg.Log, chatsessionsrepository.New(cfg.Log, dependencies.DatabasePool)),
 		comments:             commentsService,
-		documents:            documents.New(documentsrepository.New(dependencies.DatabasePool)),
+		documents:            documentsService,
+		mayaActorID:          mayaActorID,
+		documentComments:     &agentadapter.DocumentCommentCreator{Pool: dependencies.DatabasePool, Documents: documentsService, Runs: agentRuns, MayaID: mayaActorID, Tasks: cfg.TasksService, Log: cfg.Log},
+		agentDocumentsAccess: agentadapter.DocumentAccess{Documents: documentsService, Workspace: mayaRepository, Configured: strings.TrimSpace(cfg.AIAPIKey) != ""},
 		developerCredentials: developerCredentialService,
 		developerOAuth:       dependencies.DeveloperOAuthPlatform,
 		developerOAuthApps:   dependencies.DeveloperOAuthApplications,
@@ -549,7 +577,7 @@ func buildServices(cfg mux.Config, dependencies Dependencies) services {
 		dataExport:           dataexport.New(dataexportrepository.New(dependencies.DatabasePool), workspaceSecurityService),
 		links:                linksService,
 		maya:                 mayaService,
-		notifications:        notifications.New(cfg.Log, notificationsrepository.New(dependencies.DatabasePool), cfg.Redis, cfg.TasksService),
+		notifications:        notifications.New(cfg.Log, notificationsrepository.New(dependencies.DatabasePool), cfg.Redis, cfg.TasksService, notifications.WithChatSettings(chatrollout.New(workspacesrepository.New(dependencies.DatabasePool)))),
 		objectives:           objectivesService,
 		objectiveStats:       objectiveStatusService,
 		okrActivities:        okrActivitiesService,

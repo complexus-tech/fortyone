@@ -78,6 +78,13 @@ export const workspaceKeys = {
     [...workspaceKeys.all, "settings", workspaceSlug] as const,
 };
 
+export const chatCapabilityKeys = {
+  workspace: (workspaceSlug: string) =>
+    ["chat-capabilities", workspaceSlug.toLowerCase()] as const,
+  viewer: (workspaceSlug: string, userId: string | undefined) =>
+    [...chatCapabilityKeys.workspace(workspaceSlug), userId] as const,
+};
+
 export const teamKeys = {
   all: (workspaceSlug: string) => ["teams", workspaceSlug] as const,
   lists: (workspaceSlug: string) =>

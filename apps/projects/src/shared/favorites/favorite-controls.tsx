@@ -28,11 +28,12 @@ const FavoriteStar = ({ favorite }: { favorite: boolean }) => (
 );
 export const FavoriteButton = ({
   className,
+  tooltip,
   ...props
-}: FavoriteProps & { className?: string }) => {
+}: FavoriteProps & { className?: string; tooltip?: string }) => {
   const action = useFavoriteAction(props);
   return (
-    <Tooltip title={action.label}>
+    <Tooltip className="text-base" title={tooltip ?? action.label}>
       <Button
         aria-label={action.label}
         aria-pressed={action.favorite}

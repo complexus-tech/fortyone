@@ -114,6 +114,9 @@ WITH eligible_notification AS (
                     AND actor_membership.role IN ('admin', 'member', 'guest')
                     AND (
                         (
+                            (CAST($5 AS text) = 'chat_message' AND public.can_read_chat_message(workspace.workspace_id,actor.user_id,CAST($6 AS uuid)))
+                        )
+                        OR (
                             CAST($5 AS text) = 'story'
                             AND EXISTS (
                                 SELECT 1
@@ -229,6 +232,9 @@ WITH eligible_notification AS (
                     AND membership.role IN ('admin', 'member', 'guest')
                     AND (
                         (
+                            (CAST($5 AS text) = 'chat_message' AND public.can_read_chat_message(workspace.workspace_id,recipient.user_id,CAST($6 AS uuid)))
+                        )
+                        OR (
                             CAST($5 AS text) = 'story'
                             AND EXISTS (
                                 SELECT 1

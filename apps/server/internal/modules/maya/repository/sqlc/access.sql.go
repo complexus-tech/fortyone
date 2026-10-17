@@ -12,22 +12,7 @@ import (
 )
 
 const workspaceCanUseMaya = `-- name: WorkspaceCanUseMaya :one
-SELECT EXISTS (
-    SELECT 1
-    FROM workspaces workspace
-    WHERE workspace.workspace_id = $1
-        AND workspace.deleted_at IS NULL
-        AND (
-            workspace.trial_ends_on > CURRENT_TIMESTAMP
-            OR EXISTS (
-                SELECT 1
-                FROM workspace_subscriptions subscription
-                WHERE subscription.workspace_id = workspace.workspace_id
-                    AND subscription.subscription_tier <> 'free'
-                    AND subscription.subscription_status IN ('active', 'trialing', 'past_due')
-            )
-        )
-)
+SELECT public.workspace_can_use_maya($1) AS allowed
 `
 
 type WorkspaceCanUseMayaParams struct {
@@ -36,7 +21,7 @@ type WorkspaceCanUseMayaParams struct {
 
 func (q *Queries) WorkspaceCanUseMaya(ctx context.Context, arg WorkspaceCanUseMayaParams) (bool, error) {
 	row := q.db.QueryRow(ctx, workspaceCanUseMaya, arg.WorkspaceID)
-	var exists bool
-	err := row.Scan(&exists)
-	return exists, err
+	var allowed bool
+	err := row.Scan(&allowed)
+	return allowed, err
 }

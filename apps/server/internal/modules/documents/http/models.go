@@ -14,11 +14,13 @@ type AppDocumentMember struct {
 }
 
 type AppRelatedWork struct {
-	EntityID   uuid.UUID  `json:"entityId"`
-	EntityType string     `json:"entityType"`
-	Title      string     `json:"title"`
-	Reference  *string    `json:"reference"`
-	TeamID     *uuid.UUID `json:"teamId"`
+	ReferencedInContent bool       `json:"referencedInContent"`
+	EntityID            uuid.UUID  `json:"entityId"`
+	EntityType          string     `json:"entityType"`
+	Title               string     `json:"title"`
+	Reference           *string    `json:"reference"`
+	StatusColor         *string    `json:"statusColor"`
+	TeamID              *uuid.UUID `json:"teamId"`
 }
 
 type AppDocument struct {
@@ -26,6 +28,7 @@ type AppDocument struct {
 	CollaborationEpoch int64               `json:"collaborationEpoch"`
 	Collaborative      bool                `json:"collaborative"`
 	PublicToken        *string             `json:"publicToken"`
+	PublicEnabled      bool                `json:"publicEnabled"`
 	ID                 uuid.UUID           `json:"id"`
 	WorkspaceID        uuid.UUID           `json:"workspaceId"`
 	Title              string              `json:"title"`
@@ -43,16 +46,19 @@ type AppDocument struct {
 }
 
 type AppDocumentSummary struct {
-	ID               uuid.UUID `json:"id"`
-	WorkspaceID      uuid.UUID `json:"workspaceId"`
-	Title            string    `json:"title"`
-	Visibility       string    `json:"visibility"`
-	CreatedBy        uuid.UUID `json:"createdBy"`
-	UpdatedBy        uuid.UUID `json:"updatedBy"`
-	CreatedAt        time.Time `json:"createdAt"`
-	UpdatedAt        time.Time `json:"updatedAt"`
-	CanEdit          bool      `json:"canEdit"`
-	RelatedWorkCount int       `json:"relatedWorkCount"`
+	ID               uuid.UUID        `json:"id"`
+	WorkspaceID      uuid.UUID        `json:"workspaceId"`
+	Title            string           `json:"title"`
+	Visibility       string           `json:"visibility"`
+	CreatedBy        uuid.UUID        `json:"createdBy"`
+	UpdatedBy        uuid.UUID        `json:"updatedBy"`
+	CreatedAt        time.Time        `json:"createdAt"`
+	UpdatedAt        time.Time        `json:"updatedAt"`
+	ArchivedAt       *time.Time       `json:"archivedAt"`
+	PublicEnabled    bool             `json:"publicEnabled"`
+	CanEdit          bool             `json:"canEdit"`
+	RelatedWork      []AppRelatedWork `json:"relatedWork"`
+	RelatedWorkCount int              `json:"relatedWorkCount"`
 }
 
 type AppCreateDocument struct {
@@ -90,13 +96,14 @@ type AppDocumentMedia struct {
 }
 
 type AppDocumentComment struct {
-	ID           uuid.UUID `json:"id"`
-	Body         string    `json:"body"`
-	CreatedBy    uuid.UUID `json:"createdBy"`
-	AuthorName   string    `json:"authorName"`
-	AuthorAvatar *string   `json:"authorAvatar"`
-	CreatedAt    time.Time `json:"createdAt"`
-	UpdatedAt    time.Time `json:"updatedAt"`
+	ReplyToCommentID *uuid.UUID `json:"replyToCommentId,omitempty"`
+	ID               uuid.UUID  `json:"id"`
+	Body             string     `json:"body"`
+	CreatedBy        uuid.UUID  `json:"createdBy"`
+	AuthorName       string     `json:"authorName"`
+	AuthorAvatar     *string    `json:"authorAvatar"`
+	CreatedAt        time.Time  `json:"createdAt"`
+	UpdatedAt        time.Time  `json:"updatedAt"`
 }
 
 type AppDocumentCommentThread struct {
@@ -113,14 +120,17 @@ type AppDocumentCommentThread struct {
 }
 
 type AppCreateDocumentComment struct {
-	Body        string `json:"body"`
-	Quote       string `json:"quote"`
-	AnchorStart int32  `json:"anchorStart"`
-	AnchorEnd   int32  `json:"anchorEnd"`
+	CreationID  *uuid.UUID `json:"creationId,omitempty"`
+	Body        string     `json:"body"`
+	Quote       string     `json:"quote"`
+	AnchorStart int32      `json:"anchorStart"`
+	AnchorEnd   int32      `json:"anchorEnd"`
 }
 
 type AppDocumentCommentReply struct {
-	Body string `json:"body"`
+	CreationID       *uuid.UUID `json:"creationId,omitempty"`
+	ReplyToCommentID *uuid.UUID `json:"replyToCommentId,omitempty"`
+	Body             string     `json:"body"`
 }
 
 type AppResolveDocumentComment struct {
@@ -134,14 +144,12 @@ func toAppDocument(document documents.CoreDocument, canMutate bool) AppDocument 
 	}
 	relatedWork := make([]AppRelatedWork, len(document.RelatedWork))
 	for i, related := range document.RelatedWork {
-		relatedWork[i] = AppRelatedWork{
-			EntityID: related.EntityID, EntityType: string(related.EntityType), Title: related.Title,
-			Reference: related.Reference, TeamID: related.TeamID,
-		}
+		relatedWork[i] = toAppRelatedWork(related)
 	}
 	return AppDocument{
 		Revision: document.Revision, CollaborationEpoch: document.CollaborationEpoch, Collaborative: document.Collaborative, PublicToken: document.PublicToken,
-		ID: document.ID, WorkspaceID: document.WorkspaceID, Title: document.Title,
+		PublicEnabled: document.PublicEnabled,
+		ID:            document.ID, WorkspaceID: document.WorkspaceID, Title: document.Title,
 		ContentHTML: document.ContentHTML, ContentText: document.ContentText,
 		Visibility: string(document.Visibility), CreatedBy: document.CreatedBy,
 		UpdatedBy: document.UpdatedBy, CreatedAt: document.CreatedAt,
@@ -154,6 +162,10 @@ func toAppDocument(document documents.CoreDocument, canMutate bool) AppDocument 
 func toAppDocumentSummaries(coreDocuments []documents.CoreDocumentSummary, canMutate bool) []AppDocumentSummary {
 	result := make([]AppDocumentSummary, len(coreDocuments))
 	for i, document := range coreDocuments {
+		relatedWork := make([]AppRelatedWork, len(document.RelatedWork))
+		for index, related := range document.RelatedWork {
+			relatedWork[index] = toAppRelatedWork(related)
+		}
 		result[i] = AppDocumentSummary{
 			ID:               document.ID,
 			WorkspaceID:      document.WorkspaceID,
@@ -163,6 +175,9 @@ func toAppDocumentSummaries(coreDocuments []documents.CoreDocumentSummary, canMu
 			UpdatedBy:        document.UpdatedBy,
 			CreatedAt:        document.CreatedAt,
 			UpdatedAt:        document.UpdatedAt,
+			ArchivedAt:       document.ArchivedAt,
+			PublicEnabled:    document.PublicEnabled,
+			RelatedWork:      relatedWork,
 			CanEdit:          document.CanEdit && canMutate,
 			RelatedWorkCount: document.RelatedWorkCount,
 		}
@@ -173,7 +188,7 @@ func toAppDocumentSummaries(coreDocuments []documents.CoreDocumentSummary, canMu
 func toAppRelatedWork(related documents.CoreRelatedWork) AppRelatedWork {
 	return AppRelatedWork{
 		EntityID: related.EntityID, EntityType: string(related.EntityType), Title: related.Title,
-		Reference: related.Reference, TeamID: related.TeamID,
+		Reference: related.Reference, StatusColor: related.StatusColor, TeamID: related.TeamID, ReferencedInContent: related.ReferencedInContent,
 	}
 }
 
@@ -191,7 +206,7 @@ func toAppDocumentMedia(file attachments.FileInfo, stableURL string) AppDocument
 
 func toAppDocumentComment(comment documents.CoreComment) AppDocumentComment {
 	return AppDocumentComment{
-		ID: comment.ID, Body: comment.Body, CreatedBy: comment.CreatedBy,
+		ReplyToCommentID: comment.ReplyToCommentID, ID: comment.ID, Body: comment.Body, CreatedBy: comment.CreatedBy,
 		AuthorName: comment.AuthorName, AuthorAvatar: comment.AuthorAvatar,
 		CreatedAt: comment.CreatedAt, UpdatedAt: comment.UpdatedAt,
 	}

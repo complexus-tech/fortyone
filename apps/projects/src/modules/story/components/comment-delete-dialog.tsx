@@ -5,12 +5,10 @@ export const CommentDeleteDialog = ({
   open,
   onOpenChange,
   onDelete,
-  isSubComment,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onDelete: () => void;
-  isSubComment: boolean;
 }) => (
   <Dialog onOpenChange={onOpenChange} open={open}>
     <Dialog.Content>
@@ -21,9 +19,7 @@ export const CommentDeleteDialog = ({
       </Dialog.Header>
       <Dialog.Body className="pt-0">
         <Text color="muted">
-          {isSubComment
-            ? "This comment will be permanently deleted."
-            : "This comment will be permanently deleted and all replies will be deleted."}
+          This comment and any replies to it will be permanently deleted.
         </Text>
         <Flex align="center" className="mt-4" gap={2} justify="end">
           <Button

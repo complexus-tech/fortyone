@@ -75,10 +75,14 @@ INNER JOIN users AS actor
     ON actor.user_id = workspace_member.user_id
    AND actor.is_active = TRUE
    AND actor.is_system = FALSE
+INNER JOIN teams AS search_team
+    ON search_team.team_id = story.team_id
+   AND search_team.workspace_id = story.workspace_id
 WHERE story.workspace_id = $2
   AND story.deleted_at IS NULL
   AND (
       CAST($3 AS text) = ''
+      OR lower(search_team.code || '-' || CAST(story.sequence_id AS text)) = lower(btrim(CAST($3 AS text)))
       OR story.search_vector @@ plainto_tsquery('english', CAST($3 AS text))
       OR story.title ILIKE '%' || CAST($3 AS text) || '%'
       OR similarity(lower(story.title), lower(CAST($3 AS text))) >= 0.2
@@ -504,6 +508,7 @@ WHERE story.workspace_id = $2
   AND story.deleted_at IS NULL
   AND (
       CAST($3 AS text) = ''
+      OR lower(search_team.code || '-' || CAST(story.sequence_id AS text)) = lower(btrim(CAST($3 AS text)))
       OR story.search_vector @@ plainto_tsquery('english', CAST($3 AS text))
       OR story.title ILIKE '%' || CAST($3 AS text) || '%'
       OR similarity(lower(story.title), lower(CAST($3 AS text))) >= 0.2
@@ -540,6 +545,9 @@ WHERE story.workspace_id = $2
 ORDER BY
     CASE WHEN CAST($9 AS text) = 'updated' THEN story.updated_at END DESC,
     CASE WHEN CAST($9 AS text) = 'created' THEN story.created_at END DESC,
+    CASE WHEN CAST($9 AS text) = 'relevance'
+        THEN lower(search_team.code || '-' || CAST(story.sequence_id AS text)) = lower(btrim(CAST($3 AS text)))
+    END DESC,
     CASE
         WHEN CAST($9 AS text) = 'relevance'
          AND CAST($3 AS text) <> ''

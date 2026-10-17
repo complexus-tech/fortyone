@@ -299,6 +299,75 @@ ul[data-type="taskList"] > li ol[data-type="taskList"] {
   @apply relative;
 }
 
+/* Share task layout and checkbox appearance between editing and publication.
+   Native disabled checkboxes lose their accent color in public documents. */
+.rich-document-editor ul[data-type="taskList"],
+.rich-document-editor ul[data-type="taskList"] ul[data-type="taskList"] {
+  display: block;
+}
+
+.rich-document-editor ul[data-type="taskList"] > li {
+  display: flex;
+  align-items: flex-start;
+  padding-inline-start: 0;
+}
+
+.rich-document-editor ul[data-type="taskList"] > li > label {
+  display: flex;
+  align-items: center;
+  min-height: 1.5em;
+  margin-block: 1rem;
+}
+
+.rich-document-editor ul[data-type="taskList"] > li > div {
+  min-width: 0;
+}
+
+.rich-document-editor ul[data-type="taskList"] input[type="checkbox"] {
+  @apply border-text-muted/80 bg-foreground/10 text-primary-foreground m-0 grid appearance-none place-content-center rounded-[3px] border-[1.5px];
+  top: 0;
+  opacity: 1;
+}
+
+.rich-document-editor ul[data-type="taskList"] input[type="checkbox"]::before {
+  width: 0.55rem;
+  height: 0.3rem;
+  border-bottom: 2px solid currentColor;
+  border-left: 2px solid currentColor;
+  content: "";
+  transform: translateY(-0.08rem) rotate(-45deg);
+  visibility: hidden;
+}
+
+.rich-document-editor ul[data-type="taskList"] input[type="checkbox"]:checked {
+  @apply border-primary bg-primary;
+}
+
+.rich-document-editor
+  ul[data-type="taskList"]
+  input[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.rich-document-editor
+  ul[data-type="taskList"]
+  input[type="checkbox"]:checked::before {
+  visibility: visible;
+}
+
+@media (forced-colors: active) {
+  .rich-document-editor ul[data-type="taskList"] input[type="checkbox"] {
+    appearance: auto;
+  }
+
+  .rich-document-editor
+    ul[data-type="taskList"]
+    input[type="checkbox"]::before {
+    content: none;
+  }
+}
+
 @layer components {
   /* Match the shared editor's layer so its important prose margins can be reset. */
   .expandable-description .tiptap > :first-child {
@@ -522,11 +591,11 @@ ul[data-type="taskList"] > li ol[data-type="taskList"] {
 }
 
 .story-comment-content :is([data-type="mention"], .mention) {
-  @apply bg-foreground/10 text-foreground inline-flex items-center rounded-sm px-[4px] pt-px pb-[2px] align-baseline leading-[1.2] font-medium whitespace-nowrap no-underline;
+  @apply bg-primary/10 text-primary inline-flex items-center rounded-sm px-[4px] pt-px pb-[2px] align-baseline leading-[1.2] font-medium whitespace-nowrap no-underline;
 }
 
 .story-comment-content a:is([data-type="mention"], .mention):hover {
-  @apply bg-foreground/15 text-foreground;
+  @apply bg-primary/15 text-primary;
 }
 
 .comment-maya-dots > span {
@@ -569,4 +638,26 @@ ul[data-type="taskList"] > li ol[data-type="taskList"] {
     opacity: 0;
     pointer-events: none;
   }
+}
+
+/* Document mentions share the compact, readable treatment used in comments. */
+.document-comment-content [data-type="mention"],
+.tiptap [data-type="mention"],
+.tiptap [data-type="document-reference"] {
+  @apply bg-primary/10 text-primary inline rounded-sm px-[4px] py-px align-baseline font-medium no-underline;
+  line-height: inherit;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+.tiptap [data-type="document-reference"] {
+  @apply bg-foreground/5 text-foreground;
+}
+
+.tiptap [data-type="document-reference"] .document-reference-icon {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  margin-right: 0.25em;
+  vertical-align: -0.125em;
 }

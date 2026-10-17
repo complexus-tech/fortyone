@@ -109,6 +109,13 @@ func (m *storyMutationExecutor) proposeCreateBatch(
 	scope ToolScope,
 	raw json.RawMessage,
 ) (json.RawMessage, error) {
+	if scope.SourceScope != nil && scope.SourceScope.Surface == SourceSurfaceChatMessage {
+		var err error
+		raw, err = sourceTeamArguments(scope.SourceScope, raw)
+		if err != nil {
+			return nil, err
+		}
+	}
 	var args struct {
 		TeamID  string `json:"team_id"`
 		Stories []struct {
@@ -139,9 +146,10 @@ func (m *storyMutationExecutor) proposeCreateBatch(
 	team := joinedByID[teamID]
 
 	proposal := batchStoryMutationProposal{
-		Version:   batchStoryProposalVersion,
-		SourceURL: scope.SourceURL,
-		Items:     make([]batchStoryMutationItem, 0, len(args.Stories)),
+		SourceScope: scope.SourceScope,
+		Version:     batchStoryProposalVersion,
+		SourceURL:   scope.SourceURL,
+		Items:       make([]batchStoryMutationItem, 0, len(args.Stories)),
 	}
 	previews := make([]StoryMutationPreview, 0, len(args.Stories))
 	for index, item := range args.Stories {
@@ -246,13 +254,17 @@ func (m *storyMutationExecutor) proposeCreateBatch(
 		return nil, fmt.Errorf("register batch story confirmation: %w", err)
 	}
 
+	prompt := batchStoryConfirmationPrompt(team, previews)
+	if scope.SourceScope != nil && scope.SourceScope.Surface == SourceSurfaceChatMessage {
+		prompt = strings.ReplaceAll(prompt, "this Slack thread", "this conversation")
+	}
 	return marshalToolResult(storyMutationConfirmationToolResult{
 		Kind: storyMutationConfirmationKind,
 		Confirmation: StoryMutationConfirmation{
 			Operation: StoryMutationCreateBatch,
 			Token:     token,
 			ExpiresAt: expiresAt,
-			Prompt:    batchStoryConfirmationPrompt(team, previews),
+			Prompt:    prompt,
 			Stories:   previews,
 		},
 	})

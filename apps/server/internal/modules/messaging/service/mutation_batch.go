@@ -27,6 +27,11 @@ func decodeBatchStoryProposal(raw json.RawMessage) (batchStoryMutationProposal, 
 	if proposal.Version != batchStoryProposalVersion || len(proposal.Items) == 0 || len(proposal.Items) > maximumBatchStoryCount {
 		return batchStoryMutationProposal{}, fmt.Errorf("%w: unsupported or empty batch proposal", ErrInvalidConfirmation)
 	}
+	if proposal.SourceScope != nil {
+		if _, err := normalizedSourceScope(proposal.SourceScope); err != nil || proposal.SourceScope.Surface != SourceSurfaceChatMessage {
+			return batchStoryMutationProposal{}, fmt.Errorf("%w: invalid batch source scope", ErrInvalidConfirmation)
+		}
+	}
 	sourceURL, err := normalizedSourceURL(proposal.SourceURL)
 	if err != nil || sourceURL != proposal.SourceURL {
 		return batchStoryMutationProposal{}, fmt.Errorf("%w: invalid batch source URL", ErrInvalidConfirmation)

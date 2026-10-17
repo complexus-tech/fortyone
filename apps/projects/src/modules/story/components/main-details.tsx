@@ -77,12 +77,14 @@ export const MainDetails = ({
   isNotifications,
   isDialog,
   mainHeader,
+  onClose,
 }: {
   inlineProperties?: boolean;
   storyId: string;
   isNotifications: boolean;
   isDialog?: boolean;
   mainHeader?: ReactNode;
+  onClose?: () => void;
 }) => {
   const { data } = useStoryById(storyId);
   const { data: links = [], isLoading: isLinksLoading } = useLinks(storyId);
@@ -370,16 +372,25 @@ export const MainDetails = ({
       })}
     >
       {mainHeader}
-      <Box className="md:hidden">
-        <OptionsHeader isAdminOrOwner={isAdminOrOwner} storyId={storyId} />
-      </Box>
+      {onClose ? (
+        <OptionsHeader
+          isAdminOrOwner={isAdminOrOwner}
+          onClose={onClose}
+          storyId={storyId}
+        />
+      ) : (
+        <Box className="md:hidden">
+          <OptionsHeader isAdminOrOwner={isAdminOrOwner} storyId={storyId} />
+        </Box>
+      )}
 
       <Container
         className={cn("max-w-6xl pt-4 md:pt-7", {
           "md:px-6 md:pt-2": isDialog,
+          "px-5 pt-4 md:px-5 md:pt-4": Boolean(onClose),
         })}
       >
-        {isNotifications ? (
+        {isNotifications && !onClose ? (
           <Box className="notification-story-top-options-header relative -top-4.5 -mb-2 hidden [&>div]:h-auto [&>div]:px-0 [&>div]:pt-0">
             <OptionsHeader isAdminOrOwner={isAdminOrOwner} storyId={storyId} />
           </Box>

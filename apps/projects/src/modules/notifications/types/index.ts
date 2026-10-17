@@ -3,6 +3,7 @@ export type AppNotification = {
   recipientId: string;
   workspaceId: string;
   type:
+    | "chat_message"
     | "story_update"
     | "story_comment"
     | "comment_reply"
@@ -10,7 +11,13 @@ export type AppNotification = {
     | "objective_update"
     | "key_result_update"
     | "strategy_update";
-  entityType: "story" | "objective" | "key_result" | "strategy";
+  entityType:
+    | "story"
+    | "objective"
+    | "key_result"
+    | "strategy"
+    | "document"
+    | "chat_message";
   entityId: string;
   actorId: string;
   actor?: {
@@ -52,6 +59,7 @@ type NotificationChannel = {
 };
 
 export type NotificationType =
+  | "chat_message"
   | "story_update"
   | "objective_update"
   | "comment_reply"

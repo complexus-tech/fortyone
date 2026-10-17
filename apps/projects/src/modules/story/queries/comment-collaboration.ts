@@ -48,6 +48,20 @@ export const markCommentsRead = async (
     ),
   );
 
+export const markCommentSeen = async (
+  storyId: string,
+  commentId: string,
+  ctx: WorkspaceCtx,
+) => {
+  const response = await put<undefined, ApiResponse<null>>(
+    `stories/${storyId}/comments/${commentId}/seen`,
+    undefined,
+    ctx,
+    { retry: 0 },
+  );
+  if (response.error) throw new Error(response.error.message);
+};
+
 export const setCommentReaction = async (
   commentId: string,
   emoji: CommentEmoji,

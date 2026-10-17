@@ -371,8 +371,11 @@ SELECT
     document.updated_by,
     document.created_at,
     document.updated_at,
+    document.archived_at,
+    CAST(document.public_token IS NOT NULL AND document.archived_at IS NULL AS boolean) AS public_enabled,
     (
-        actor_membership.role <> CAST('guest' AS public.user_role)
+        document.archived_at IS NULL
+        AND actor_membership.role <> CAST('guest' AS public.user_role)
         AND (
             document.visibility = 'workspace'
             OR document.created_by = $1
@@ -385,38 +388,7 @@ SELECT
                   AND editor.role = 'editor'
             )
         )
-    ) AS can_edit,
-    (
-        SELECT COUNT(*)
-        FROM public.document_relationships AS relationship
-        LEFT JOIN public.stories AS story
-            ON relationship.entity_type = 'story'
-           AND story.id = relationship.entity_id
-           AND story.workspace_id = relationship.workspace_id
-           AND story.deleted_at IS NULL
-        LEFT JOIN public.teams AS story_team
-            ON story_team.team_id = story.team_id
-           AND story_team.workspace_id = relationship.workspace_id
-        LEFT JOIN public.objectives AS objective
-            ON relationship.entity_type = 'objective'
-           AND objective.objective_id = relationship.entity_id
-           AND objective.workspace_id = relationship.workspace_id
-        LEFT JOIN public.teams AS objective_team
-            ON objective_team.team_id = objective.team_id
-           AND objective_team.workspace_id = relationship.workspace_id
-        WHERE relationship.document_id = document.document_id
-          AND relationship.workspace_id = document.workspace_id
-          AND (
-              (story.id IS NOT NULL AND story_team.team_id IS NOT NULL)
-              OR (objective.objective_id IS NOT NULL AND objective_team.team_id IS NOT NULL)
-          )
-          AND EXISTS (
-              SELECT 1
-              FROM public.team_members AS viewer
-              WHERE viewer.user_id = $1
-                AND viewer.team_id = COALESCE(story_team.team_id, objective_team.team_id)
-          )
-    ) AS related_work_count
+    ) AS can_edit
 FROM public.documents AS document
 INNER JOIN public.workspaces AS workspace
     ON workspace.workspace_id = document.workspace_id
@@ -428,7 +400,15 @@ INNER JOIN public.users AS actor
     ON actor.user_id = actor_membership.user_id
    AND actor.is_active = TRUE
 WHERE document.workspace_id = $2
-  AND document.archived_at IS NULL
+  AND (
+      (CAST($3 AS text) <> 'archived' AND document.archived_at IS NULL)
+      OR (
+          CAST($3 AS text) = 'archived'
+          AND document.archived_at IS NOT NULL
+          AND document.created_by = $1
+          AND actor_membership.role <> CAST('guest' AS public.user_role)
+      )
+  )
   AND (
       document.visibility = 'workspace'
       OR document.created_by = $1
@@ -441,15 +421,15 @@ WHERE document.workspace_id = $2
       )
   )
   AND (
-      CAST($3 AS text) = ''
-      OR document.title ILIKE '%' || CAST($3 AS text) || '%'
-      OR document.content_text ILIKE '%' || CAST($3 AS text) || '%'
+      CAST($4 AS text) = ''
+      OR document.title ILIKE '%' || CAST($4 AS text) || '%'
+      OR document.content_text ILIKE '%' || CAST($4 AS text) || '%'
   )
   AND (
-      CAST($4 AS text) IN ('', 'all')
-      OR (CAST($4 AS text) = 'mine' AND document.created_by = $1)
+      CAST($3 AS text) IN ('', 'all', 'archived')
+      OR (CAST($3 AS text) = 'mine' AND document.created_by = $1)
       OR (
-          CAST($4 AS text) = 'shared'
+          CAST($3 AS text) = 'shared'
           AND document.created_by <> $1
           AND EXISTS (
               SELECT 1
@@ -467,31 +447,32 @@ LIMIT CAST($6 AS integer) OFFSET CAST($5 AS integer)
 type ListAccessibleDocumentsParams struct {
 	ActorID     uuid.UUID
 	WorkspaceID uuid.UUID
-	SearchText  string
 	ListScope   string
+	SearchText  string
 	RowOffset   int32
 	RowLimit    *int32
 }
 
 type ListAccessibleDocumentsRow struct {
-	DocumentID       uuid.UUID
-	WorkspaceID      uuid.UUID
-	Title            string
-	Visibility       string
-	CreatedBy        uuid.UUID
-	UpdatedBy        uuid.UUID
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
-	CanEdit          *bool
-	RelatedWorkCount int64
+	DocumentID    uuid.UUID
+	WorkspaceID   uuid.UUID
+	Title         string
+	Visibility    string
+	CreatedBy     uuid.UUID
+	UpdatedBy     uuid.UUID
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+	ArchivedAt    *time.Time
+	PublicEnabled bool
+	CanEdit       *bool
 }
 
 func (q *Queries) ListAccessibleDocuments(ctx context.Context, arg ListAccessibleDocumentsParams) ([]ListAccessibleDocumentsRow, error) {
 	rows, err := q.db.Query(ctx, listAccessibleDocuments,
 		arg.ActorID,
 		arg.WorkspaceID,
-		arg.SearchText,
 		arg.ListScope,
+		arg.SearchText,
 		arg.RowOffset,
 		arg.RowLimit,
 	)
@@ -511,8 +492,9 @@ func (q *Queries) ListAccessibleDocuments(ctx context.Context, arg ListAccessibl
 			&i.UpdatedBy,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.ArchivedAt,
+			&i.PublicEnabled,
 			&i.CanEdit,
-			&i.RelatedWorkCount,
 		); err != nil {
 			return nil, err
 		}

@@ -1,6 +1,7 @@
 -- Access is checked with GetAccessibleDocument in the same serializable transaction.
 -- name: GetDocumentEditingMetadata :one
 SELECT revision, collaboration_epoch, CAST(collaboration_state IS NOT NULL AS boolean) AS collaborative,
+       CAST(public_token IS NOT NULL AND archived_at IS NULL AS boolean) AS public_enabled,
        CAST(COALESCE(CASE WHEN created_by = sqlc.arg(actor_id) THEN public_token ELSE NULL END, '') AS text) AS public_token
 FROM public.documents WHERE document_id = sqlc.arg(document_id);
 

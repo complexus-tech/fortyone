@@ -1,17 +1,18 @@
 import { useState } from "react";
-import { Box, Flex, Text, TimeAgo } from "ui";
+import { Box, Text, TimeAgo } from "ui";
 import { CheckIcon } from "icons";
 import { cn } from "lib";
 import type { Comment } from "@/types/comment";
 import { useDeleteCommentMutation } from "@/lib/hooks/delete-comment-mutation";
-import { isFormerUser } from "@/lib/former-user";
 import { useCommentCollaboration } from "../hooks/comment-collaboration";
 import { useCommentThreadReadTracking } from "../hooks/comment-read-tracking";
+import { useCommentSeen } from "../hooks/use-comment-seen";
 import {
   flattenComments,
   isUnreadComment,
   latestComment,
 } from "../lib/comment-navigation";
+import { MAX_COMMENT_DEPTH } from "../lib/comment-tree";
 import type { CommentState } from "../types/comment-collaboration";
 import type { CommentMayaRun } from "../types/comment-maya";
 import type { MayaPendingReply } from "../hooks/use-maya-pending-replies";
@@ -30,14 +31,15 @@ type CommentRowProps = {
   storyId: string;
   teamId: string;
   isDialog?: boolean;
-  isSubComment?: boolean;
+  depth?: number;
+  threadResolved?: boolean;
   currentUserId?: string;
   stateById: ReadonlyMap<string, CommentState>;
   targetId: string | null;
+  highlightedId?: string | null;
   revealKey?: string | null;
   lastReadAt: string | null | undefined;
   readObservedAt?: string;
-  defaultExpanded?: boolean;
   mayaRuns?: CommentMayaRun[];
   mayaPending?: MayaPendingReply[];
   onCheckMaya?: () => void;
@@ -60,14 +62,15 @@ export const CommentRow = ({
   storyId,
   teamId,
   isDialog,
-  isSubComment = false,
+  depth = 1,
+  threadResolved = false,
   currentUserId,
   stateById,
   targetId,
+  highlightedId = null,
   revealKey = targetId,
   lastReadAt,
   readObservedAt,
-  defaultExpanded = false,
   mayaRuns = [],
   mayaPending = [],
   onCheckMaya,
@@ -81,25 +84,25 @@ export const CommentRow = ({
   const [isOpen, setIsOpen] = useState(false);
   const [isReplying, setIsReplying] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const isSubComment = depth > 1;
   const replies = flattenComments(subComments);
   const hasReplies = replies.length > 0 || mayaPending.length > 0;
-  const expandByDefault =
-    defaultExpanded ||
-    replies.length === 1 ||
-    (replies.length === 0 && mayaPending.length > 0) ||
-    mayaPending.some(({ run }) => run.requesterId === currentUserId);
-  const [openedByDefault, setOpenedByDefault] = useState(expandByDefault);
+  const descendantIds = new Set(replies.map((reply) => reply.id));
+  const pendingHere = isSubComment
+    ? mayaPending
+    : mayaPending.filter(({ run }) => !descendantIds.has(run.sourceId));
   const [expansion, setExpansion] = useState<{
     revealKey: string | null;
     expanded: boolean;
   }>();
-  // Automatic expansion only opens threads; it must never unmount an active draft.
-  if (expandByDefault && !openedByDefault) setOpenedByDefault(true);
   const hasTargetReply = replies.some((reply) => reply.id === targetId);
-  const showReplies =
+  // One disclosure controls the whole thread, including nested replies. This
+  // keeps the root's read receipt from consuming independently hidden branches.
+  const rootExpanded =
     hasTargetReply && expansion?.revealKey !== revealKey
       ? true
-      : expansion?.expanded ?? openedByDefault;
+      : expansion?.expanded ?? false;
+  const showReplies = isSubComment ? hasReplies : rootExpanded;
   const threadRef = useCommentThreadReadTracking(
     storyId,
     id,
@@ -110,6 +113,11 @@ export const CommentRow = ({
   );
   const isPending =
     Boolean(desktopPending) || id.startsWith("pending-comment:");
+  const seenRef = useCommentSeen(
+    storyId,
+    id,
+    user.isSystem && !isPending && !isEditing,
+  );
   const state = stateById.get(id);
   const resolved = Boolean(state?.resolvedAt);
   const reactions = state?.reactions ?? [];
@@ -119,13 +127,16 @@ export const CommentRow = ({
     setIsReplying(false);
     setIsEditing(false);
   };
-  const isMayaResponse = user.isSystem && !isFormerUser(userId);
   const approval = mayaRuns.find(
     (run) => run.replyCommentId === id && run.status === "awaiting_approval",
   );
   const canReply =
-    (!isSubComment || isMayaResponse) && !isReplying && !isEditing && !resolved;
-  const canCollapse = hasReplies && showReplies;
+    depth < MAX_COMMENT_DEPTH &&
+    !isReplying &&
+    !isEditing &&
+    !resolved &&
+    !threadResolved;
+  const canCollapse = !isSubComment && hasReplies && showReplies;
   const handleReact = (
     emoji: Parameters<typeof reaction.mutate>[0]["emoji"],
     reacted: boolean,
@@ -135,10 +146,14 @@ export const CommentRow = ({
 
   return (
     <Box
-      className={cn("comment-row relative scroll-mt-24 pb-3 outline-none", {
-        "ml-9 pt-1 pb-0": isSubComment,
-        "bg-primary/5 ring-primary/20 rounded-md ring-1": targetId === id,
-      })}
+      className={cn(
+        "comment-row relative scroll-mt-24 rounded-md pb-3 transition-[background-color,box-shadow] duration-300 outline-none motion-reduce:transition-none",
+        {
+          "ml-9 pt-1 pb-0": isSubComment,
+          "bg-primary/5 ring-primary/20 ring-1": highlightedId === id,
+        },
+      )}
+      data-comment-depth={depth}
       id={`comment-${id}`}
       tabIndex={-1}
     >
@@ -152,11 +167,9 @@ export const CommentRow = ({
             )}
           />
         ) : null}
-        <Flex
-          align="center"
-          className="group flex-wrap"
+        <Box
+          className="group flex flex-wrap items-center gap-1"
           data-comment-anchor
-          gap={1}
         >
           <CommentAuthor isDialog={isDialog} user={user} userId={userId} />
           <Text className="mx-0.5 text-[0.95rem]" color="muted">
@@ -199,9 +212,13 @@ export const CommentRow = ({
             resolved={resolved}
             storyId={storyId}
           />
-        </Flex>
+        </Box>
         {!isEditing ? (
-          <CommentBody className="mt-0.5 ml-9" html={comment} />
+          <CommentBody
+            className="mt-0.5 ml-9"
+            html={comment}
+            visibilityRef={user.isSystem ? seenRef : undefined}
+          />
         ) : null}
         {approval ? (
           <CommentMayaApproval
@@ -243,22 +260,37 @@ export const CommentRow = ({
             ) : null}
             {subComments.map((reply) => (
               <CommentRow
+                checkingMaya={checkingMaya}
                 comment={reply}
                 currentUserId={currentUserId}
+                depth={depth + 1}
+                highlightedId={highlightedId}
                 isDialog={isDialog}
-                isSubComment
                 key={reply.id}
                 lastReadAt={lastReadAt}
+                mayaPending={
+                  !isSubComment
+                    ? mayaPending.filter(({ run }) =>
+                        flattenComments([reply]).some(
+                          (source) => source.id === run.sourceId,
+                        ),
+                      )
+                    : undefined
+                }
                 mayaRuns={mayaRuns}
+                onCheckMaya={onCheckMaya}
+                onRetryMaya={onRetryMaya}
                 readObservedAt={readObservedAt}
+                retryingMayaRunId={retryingMayaRunId}
                 revealKey={revealKey}
                 stateById={stateById}
                 storyId={storyId}
                 targetId={targetId}
                 teamId={teamId}
+                threadResolved={threadResolved || resolved}
               />
             ))}
-            {mayaPending.map(({ run, status }) => (
+            {pendingHere.map(({ run, status }) => (
               <CommentMayaPending
                 checkAgainDisabled={checkingMaya}
                 isDialog={isDialog}
@@ -329,7 +361,6 @@ export const CommentRow = ({
         </Box>
       ) : null}
       <CommentDeleteDialog
-        isSubComment={isSubComment}
         onDelete={() => {
           setIsOpen(false);
           deleteComment({ commentId: id, storyId });

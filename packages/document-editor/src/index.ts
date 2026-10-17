@@ -18,6 +18,9 @@ import {
   normalizeRichTextImageAlignment,
   getRichTextImageStyleString,
 } from "./image-utils";
+import { DocumentMention, DocumentReference } from "./references";
+
+export { DocumentMention, DocumentReference } from "./references";
 
 export const DocumentImage = Image.extend({
   addAttributes() {
@@ -121,6 +124,8 @@ export const createDocumentExtensions = ({
   collaborative = false,
   image = DocumentImage,
   video = DocumentVideo,
+  mention = DocumentMention,
+  reference = DocumentReference,
 } = {}): Extensions => [
   StarterKit.configure({
     link: false,
@@ -139,6 +144,8 @@ export const createDocumentExtensions = ({
     HTMLAttributes: { class: "max-w-full rounded-xl border border-border" },
   }),
   video,
+  mention,
+  reference,
   Table.configure({ resizable: true }),
   TableRow,
   TableHeader,

@@ -201,10 +201,12 @@ export function PublicDocumentLayout({
               <p className="text-text-muted mb-12 text-[0.95rem]">
                 Last updated {updatedAt}
               </p>
-              <div
-                className="rich-document-editor rich-text-editor prose prose-lg prose-headings:font-medium prose-headings:tracking-[-0.02em] prose-pre:text-[1.1rem] prose-strong:font-bold prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-h4:text-lg prose-h5:text-lg prose-h6:text-lg prose-img:max-w-full w-full max-w-none text-[1.1rem] leading-7 print:text-black"
-                dangerouslySetInnerHTML={{ __html: contentHtml }}
-              />
+              <div className="rich-document-editor rich-text-editor prose prose-lg prose-headings:font-medium prose-pre:text-[1.1rem] prose-strong:font-bold prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-h4:text-lg prose-h5:text-lg prose-h6:text-lg w-full max-w-full text-[1.1rem] leading-7 print:text-black">
+                <div
+                  className="tiptap"
+                  dangerouslySetInnerHTML={{ __html: contentHtml }}
+                />
+              </div>
             </article>
             <footer className="border-border/70 mx-auto flex w-full max-w-5xl items-center justify-between border-t px-8 py-6 sm:px-10 lg:px-12 print:hidden">
               <Flex align="center" className="text-text-muted" gap={2}>

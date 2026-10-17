@@ -139,6 +139,7 @@ export const CoreOptions = ({
               </Button>
             </PrioritiesMenu.Trigger>
             <PrioritiesMenu.Items
+              priority={priority}
               setPriority={(nextPriority) => {
                 onUpdate({ priority: nextPriority });
               }}

@@ -19,6 +19,7 @@ type Querier interface {
 	CompleteAgentInvocationFailure(ctx context.Context, arg CompleteAgentInvocationFailureParams) (AgentInvocation, error)
 	ControlAgentInvocation(ctx context.Context, arg ControlAgentInvocationParams) (AgentInvocation, error)
 	CreateAgentInvocation(ctx context.Context, arg CreateAgentInvocationParams) (AgentInvocation, error)
+	DeferAgentInvocationAction(ctx context.Context, arg DeferAgentInvocationActionParams) (int64, error)
 	DeferAgentInvocationFailure(ctx context.Context, arg DeferAgentInvocationFailureParams) (int64, error)
 	FailAgentInvocation(ctx context.Context, arg FailAgentInvocationParams) (int64, error)
 	FindAgentInvocationClarification(ctx context.Context, arg FindAgentInvocationClarificationParams) (uuid.UUID, error)
@@ -34,6 +35,7 @@ type Querier interface {
 	SaveAgentInvocationProposal(ctx context.Context, arg SaveAgentInvocationProposalParams) (AgentInvocation, error)
 	SaveAgentInvocationProposalPublication(ctx context.Context, arg SaveAgentInvocationProposalPublicationParams) (AgentInvocation, error)
 	SaveAgentInvocationPublication(ctx context.Context, arg SaveAgentInvocationPublicationParams) (AgentInvocation, error)
+	StartAgentInvocationAction(ctx context.Context, arg StartAgentInvocationActionParams) (AgentInvocation, error)
 }
 
 var _ Querier = (*Queries)(nil)

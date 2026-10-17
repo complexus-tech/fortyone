@@ -4,8 +4,13 @@ SELECT
     CAST('story' AS text) AS entity_type,
     story.title,
     CAST(team.code || '-' || story.sequence_id AS text) AS reference,
-    story.team_id
+    story.team_id,
+    story_status.color AS status_color
 FROM public.stories AS story
+LEFT JOIN public.statuses AS story_status
+    ON story_status.status_id = story.status_id
+   AND story_status.team_id = story.team_id
+   AND story_status.workspace_id = story.workspace_id
 INNER JOIN public.teams AS team
     ON team.team_id = story.team_id
    AND team.workspace_id = story.workspace_id
@@ -127,7 +132,7 @@ WHERE document.document_id = sqlc.arg(document_id)
       )
   )
 ON CONFLICT (document_id, entity_type, entity_id) DO UPDATE
-SET created_by = document_relationships.created_by
+SET created_by = document_relationships.created_by, source = 'manual'
 RETURNING document_id;
 
 -- name: DeleteEditableDocumentRelationship :one
@@ -196,14 +201,17 @@ RETURNING relationship.entity_id;
 
 -- name: ListVisibleDocumentRelationships :many
 SELECT
+    relationship.document_id,
     relationship.entity_id,
     relationship.entity_type,
+    EXISTS(SELECT 1 FROM public.document_body_references AS reference WHERE reference.document_id=relationship.document_id AND reference.entity_type=relationship.entity_type AND reference.entity_id=relationship.entity_id) AS referenced_in_content,
     COALESCE(story.title, objective.name) AS title,
     CAST(COALESCE(
         story_team.code || '-' || story.sequence_id,
         objective_team.code || '-' || objective.sequence_id
     ) AS text) AS reference,
-    COALESCE(story.team_id, objective.team_id) AS team_id
+    COALESCE(story.team_id, objective.team_id) AS team_id,
+    story_status.color AS status_color
 FROM public.document_relationships AS relationship
 INNER JOIN public.documents AS document
     ON document.document_id = relationship.document_id
@@ -219,6 +227,10 @@ LEFT JOIN public.stories AS story
 LEFT JOIN public.teams AS story_team
     ON story_team.team_id = story.team_id
    AND story_team.workspace_id = relationship.workspace_id
+LEFT JOIN public.statuses AS story_status
+    ON story_status.status_id = story.status_id
+   AND story_status.team_id = story.team_id
+   AND story_status.workspace_id = story.workspace_id
 LEFT JOIN public.objectives AS objective
     ON relationship.entity_type = 'objective'
    AND objective.objective_id = relationship.entity_id
@@ -233,8 +245,15 @@ INNER JOIN public.users AS actor
     ON actor.user_id = workspace_membership.user_id
    AND actor.is_active = TRUE
 WHERE relationship.workspace_id = sqlc.arg(workspace_id)
-  AND relationship.document_id = sqlc.arg(document_id)
-  AND document.archived_at IS NULL
+  AND relationship.document_id = ANY(CAST(sqlc.arg(document_ids) AS uuid[]))
+  AND (
+      document.archived_at IS NULL
+      OR (
+          CAST(sqlc.arg(include_archived) AS boolean)
+          AND document.created_by = sqlc.arg(actor_id)
+          AND workspace_membership.role <> CAST('guest' AS public.user_role)
+      )
+  )
   AND (
       document.visibility = 'workspace'
       OR document.created_by = sqlc.arg(actor_id)
@@ -256,7 +275,7 @@ WHERE relationship.workspace_id = sqlc.arg(workspace_id)
       WHERE viewer.user_id = sqlc.arg(actor_id)
         AND viewer.team_id = COALESCE(story_team.team_id, objective_team.team_id)
   )
-ORDER BY relationship.created_at, relationship.entity_id;
+ORDER BY relationship.document_id, relationship.created_at, relationship.entity_id;
 
 -- name: ListAccessibleDocumentsForRelationship :many
 SELECT
@@ -268,6 +287,8 @@ SELECT
     document.updated_by,
     document.created_at,
     document.updated_at,
+    document.archived_at,
+    CAST(document.public_token IS NOT NULL AS boolean) AS public_enabled,
     (
         workspace_membership.role <> CAST('guest' AS public.user_role)
         AND (
@@ -282,38 +303,7 @@ SELECT
                   AND editor.role = 'editor'
             )
         )
-    ) AS can_edit,
-    (
-        SELECT COUNT(*)
-        FROM public.document_relationships AS count_relationship
-        LEFT JOIN public.stories AS count_story
-            ON count_relationship.entity_type = 'story'
-           AND count_story.id = count_relationship.entity_id
-           AND count_story.workspace_id = count_relationship.workspace_id
-           AND count_story.deleted_at IS NULL
-        LEFT JOIN public.teams AS count_story_team
-            ON count_story_team.team_id = count_story.team_id
-           AND count_story_team.workspace_id = count_relationship.workspace_id
-        LEFT JOIN public.objectives AS count_objective
-            ON count_relationship.entity_type = 'objective'
-           AND count_objective.objective_id = count_relationship.entity_id
-           AND count_objective.workspace_id = count_relationship.workspace_id
-        LEFT JOIN public.teams AS count_objective_team
-            ON count_objective_team.team_id = count_objective.team_id
-           AND count_objective_team.workspace_id = count_relationship.workspace_id
-        WHERE count_relationship.document_id = document.document_id
-          AND count_relationship.workspace_id = document.workspace_id
-          AND (
-              (count_story.id IS NOT NULL AND count_story_team.team_id IS NOT NULL)
-              OR (count_objective.objective_id IS NOT NULL AND count_objective_team.team_id IS NOT NULL)
-          )
-          AND EXISTS (
-              SELECT 1
-              FROM public.team_members AS viewer
-              WHERE viewer.user_id = sqlc.arg(actor_id)
-                AND viewer.team_id = COALESCE(count_story_team.team_id, count_objective_team.team_id)
-          )
-    ) AS related_work_count
+    ) AS can_edit
 FROM public.document_relationships AS relationship
 INNER JOIN public.documents AS document ON document.document_id = relationship.document_id
 INNER JOIN public.workspace_members AS workspace_membership
@@ -374,3 +364,12 @@ WHERE relationship.workspace_id = sqlc.arg(workspace_id)
       )
   )
 ORDER BY document.updated_at DESC, document.document_id;
+
+-- name: HasDocumentBodyReference :one
+SELECT EXISTS(SELECT 1 FROM public.document_body_references WHERE document_id=sqlc.arg(document_id) AND entity_type=sqlc.arg(entity_type) AND entity_id=sqlc.arg(entity_id)) AS present;
+
+-- name: SyncDocumentBodyReferences :exec
+SELECT public.sync_document_body_references(sqlc.arg(workspace_id),sqlc.arg(actor_id),sqlc.arg(document_id),CAST(sqlc.arg(reference_data) AS jsonb));
+
+-- name: SyncDocumentBodyMentions :exec
+SELECT public.sync_document_body_mentions(sqlc.arg(workspace_id),sqlc.arg(actor_id),sqlc.arg(document_id),CAST(sqlc.arg(mention_data) AS jsonb));

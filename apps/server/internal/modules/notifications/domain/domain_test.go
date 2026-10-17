@@ -18,6 +18,7 @@ func TestNotificationTypeAndEntityCompatibility(t *testing.T) {
 		entityType       EntityType
 	}{
 		{NotificationTypeStoryUpdate, EntityTypeStory},
+		{NotificationTypeChatMessage, EntityTypeChatMessage},
 		{NotificationTypeStoryComment, EntityTypeComment},
 		{NotificationTypeCommentReply, EntityTypeStory},
 		{NotificationTypeObjectiveUpdate, EntityTypeObjective},

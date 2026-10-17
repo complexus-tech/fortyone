@@ -12,6 +12,7 @@ import (
 	agentreadinesshttp "github.com/complexus-tech/projects-api/internal/modules/agentreadiness/http"
 	apiv1http "github.com/complexus-tech/projects-api/internal/modules/apiv1/http"
 	calendarhttp "github.com/complexus-tech/projects-api/internal/modules/calendar/http"
+	chathttp "github.com/complexus-tech/projects-api/internal/modules/chat/http"
 	chatsessionshttp "github.com/complexus-tech/projects-api/internal/modules/chatsessions/http"
 	commentshttp "github.com/complexus-tech/projects-api/internal/modules/comments/http"
 	customfieldshttp "github.com/complexus-tech/projects-api/internal/modules/customfields/http"
@@ -36,6 +37,7 @@ import (
 	labelshttp "github.com/complexus-tech/projects-api/internal/modules/labels/http"
 	linkshttp "github.com/complexus-tech/projects-api/internal/modules/links/http"
 	mayahttp "github.com/complexus-tech/projects-api/internal/modules/maya/http"
+	nativepreviewhttp "github.com/complexus-tech/projects-api/internal/modules/nativepreviews/http"
 	notificationshttp "github.com/complexus-tech/projects-api/internal/modules/notifications/http"
 	objectiveshttp "github.com/complexus-tech/projects-api/internal/modules/objectives/http"
 	objectivestatushttp "github.com/complexus-tech/projects-api/internal/modules/objectivestatus/http"
@@ -140,10 +142,11 @@ func (resolver workspaceResolver) ResolveCurrentWorkspace(
 		}
 	}
 	return mid.WorkspaceInfo{
-		ID:       membership.WorkspaceID,
-		Name:     membership.Name,
-		Slug:     membership.Slug,
-		UserRole: membership.Role,
+		ID:          membership.WorkspaceID,
+		ChatEnabled: membership.ChatEnabled,
+		Name:        membership.Name,
+		Slug:        membership.Slug,
+		UserRole:    membership.Role,
 	}, nil
 }
 
@@ -161,6 +164,7 @@ func (r routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		panic("bootstrap service validation failed: " + err.Error())
 	}
 	browserSessions := mid.NewBrowserSessionResolver(cfg.Cache, svcs.users)
+	nativepreviewhttp.Routes(nativepreviewhttp.Config{Log: cfg.Log, SecretKey: cfg.SecretKey, BrowserSessions: browserSessions, WorkspaceResolver: r.workspaceResolver, Service: svcs.nativePreviews}, app)
 	scimhttp.Routes(scimhttp.Config{Service: svcs.scim, PublicURL: cfg.APIPublicURL, SecretKey: cfg.SecretKey, Log: cfg.Log, BrowserSessions: browserSessions, WorkspaceResolver: r.workspaceResolver}, app)
 	ssohttp.Routes(ssohttp.Config{Service: svcs.enterpriseSSO, States: cfg.Cache, Issuer: usershttp.NewWorkspaceSSOSessionWriter(svcs.users, cfg.Cache, cfg.CookieDomain, cfg.DeploymentMode), CallbackURL: strings.TrimRight(cfg.APIPublicURL, "/") + "/auth/sso/callback", WebsiteURL: cfg.WebsiteURL, CookieDomain: cfg.CookieDomain, DeploymentMode: cfg.DeploymentMode, SecretKey: cfg.SecretKey, Log: cfg.Log, BrowserSessions: browserSessions, WorkspaceResolver: r.workspaceResolver}, app)
 	dataexporthttp.Routes(dataexporthttp.Config{Log: cfg.Log, SecretKey: cfg.SecretKey, BrowserSessions: browserSessions, WorkspaceResolver: r.workspaceResolver, Service: svcs.dataExport}, app)
@@ -357,7 +361,7 @@ func (r routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 	}, app)
 	agentrunshttp.Routes(agentrunshttp.Config{
 		Log: cfg.Log, SecretKey: cfg.SecretKey, BrowserSessions: browserSessions, WorkspaceResolver: r.workspaceResolver,
-		Runs: svcs.agentRuns, Access: svcs.agentCommentsAccess, Tasks: cfg.TasksService,
+		Runs: svcs.agentRuns, Access: svcs.agentCommentsAccess, DocumentAccess: svcs.agentDocumentsAccess, ChatAccess: svcs.agentChatAccess, Tasks: cfg.TasksService,
 	}, app)
 
 	objectiveshttp.Routes(objectiveshttp.Config{
@@ -436,6 +440,14 @@ func (r routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Teams: svcs.teams, Statuses: svcs.states, Operations: svcs.desktopOperations, Cache: cfg.Cache, Attachments: svcs.attachments, Users: svcs.users, Workspaces: svcs.workspaces,
 	}, app)
 
+	chathttp.Routes(chathttp.Config{
+		Log: cfg.Log, SecretKey: cfg.SecretKey, BrowserSessions: browserSessions,
+		WorkspaceResolver: r.workspaceResolver, Service: svcs.chat,
+	}, app)
+	registerChatAttachments(cfg, r.workspaceResolver, browserSessions, svcs, app)
+	registerChatAttachmentThumbnails(cfg, r.workspaceResolver, browserSessions, svcs, app)
+	registerChatTranscriptions(cfg, r.workspaceResolver, browserSessions, svcs, app)
+
 	documentshttp.Routes(documentshttp.Config{
 		WorkspaceResolver: r.workspaceResolver,
 		Log:               cfg.Log,
@@ -444,6 +456,7 @@ func (r routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		BrowserSessions:   browserSessions,
 		Service:           svcs.documents,
 		Attachments:       svcs.attachments,
+		CommentWriter:     svcs.documentComments, MayaAvailability: svcs.agentDocumentsAccess, MayaID: svcs.mayaActorID,
 	}, app)
 
 	stateshttp.Routes(stateshttp.Config{

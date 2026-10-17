@@ -5,6 +5,7 @@ import (
 	"time"
 
 	notificationsdomain "github.com/complexus-tech/projects-api/internal/modules/notifications/domain"
+	"github.com/complexus-tech/projects-api/internal/platform/chatrollout"
 	platformclock "github.com/complexus-tech/projects-api/internal/platform/clock"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
@@ -54,6 +55,17 @@ type PushTasksService interface {
 
 type Option func(*Service)
 
+func WithChatSettings(policy chatrollout.Policy) Option {
+	return func(service *Service) { service.chatRollout = &policy }
+}
+
+func (service *Service) allowsChatDelivery(ctx context.Context, workspaceID uuid.UUID, entityType notificationsdomain.EntityType) (bool, error) {
+	if entityType != notificationsdomain.EntityTypeChatMessage || service.chatRollout == nil {
+		return true, nil
+	}
+	return service.chatRollout.Enabled(ctx, workspaceID)
+}
+
 func WithClock(source platformclock.Clock) Option {
 	return func(service *Service) {
 		if source != nil {
@@ -63,6 +75,7 @@ func WithClock(source platformclock.Clock) Option {
 }
 
 type Service struct {
+	chatRollout     *chatrollout.Policy
 	repo            Repository
 	log             *logger.Logger
 	redisClient     *redis.Client

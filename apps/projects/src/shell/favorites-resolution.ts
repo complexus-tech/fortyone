@@ -15,6 +15,9 @@ import {
 import { teamKeys } from "@/constants/keys";
 import { storyKeys } from "@/shared/story/cache-keys";
 import { getStoryPath } from "@/shared/routing/story";
+import { getDocuments } from "@/modules/documents/queries";
+import type { WorkspaceDocumentSummary } from "@/modules/documents/types";
+import { documentKeys } from "@/shared/documents/keys";
 
 export type ResolvedFavorite = {
   ref: FavoriteRef;
@@ -23,9 +26,16 @@ export type ResolvedFavorite = {
   icon:
     | { kind: "view"; layout: "list" | "kanban"; icon?: ViewIconKey | null }
     | { kind: "story"; statusId: string }
-    | { kind: "team"; color: string };
+    | { kind: "team"; color: string }
+    | { kind: "document" };
 };
-type FavoriteSource = DetailedStory | Team[] | SavedView[] | null | undefined;
+type FavoriteSource =
+  | DetailedStory
+  | Team[]
+  | SavedView[]
+  | WorkspaceDocumentSummary[]
+  | null
+  | undefined;
 export type FavoriteRequest = {
   key: readonly unknown[];
   refs: FavoriteRef[];
@@ -56,8 +66,11 @@ export const favoriteRequests = (
 ): FavoriteRequest[] => {
   const requests: FavoriteRequest[] = [];
   const views = new Map<string, Extract<FavoriteRef, { kind: "view" }>[]>();
+  const documents: Extract<FavoriteRef, { kind: "document" }>[] = [];
   for (const ref of favorites) {
-    if (ref.kind === "view") {
+    if (ref.kind === "document") {
+      documents.push(ref);
+    } else if (ref.kind === "view") {
       const teamViews = views.get(ref.teamId) ?? [];
       teamViews.push(ref);
       views.set(ref.teamId, teamViews);
@@ -159,6 +172,31 @@ export const favoriteRequests = (
                 layout:
                   view.configuration.layout === "kanban" ? "kanban" : "list",
               },
+            },
+          ];
+        });
+      },
+    });
+  }
+  if (documents.length) {
+    requests.push({
+      key: [...documentKeys.lists(ctx.workspaceSlug), "favorites", userId],
+      refs: documents,
+      load: () => getDocuments(ctx),
+      project: (source) => {
+        if (!Array.isArray(source)) return [];
+        return documents.flatMap((ref) => {
+          const document = source.find(
+            (item): item is WorkspaceDocumentSummary =>
+              "relatedWorkCount" in item && item.id === ref.id,
+          );
+          if (!document || document.archivedAt) return [];
+          return [
+            {
+              ref,
+              name: document.title,
+              path: `/docs/${document.id}`,
+              icon: { kind: "document" as const },
             },
           ];
         });

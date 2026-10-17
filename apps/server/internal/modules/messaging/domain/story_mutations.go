@@ -64,6 +64,7 @@ type StoryMutationItemResult struct {
 	Index                    int        `json:"index"`
 	Status                   string     `json:"status"`
 	StoryID                  uuid.UUID  `json:"story_id"`
+	StoryStatusID            *uuid.UUID `json:"story_status_id,omitempty"`
 	Reference                string     `json:"reference"`
 	TeamID                   uuid.UUID  `json:"team_id"`
 	Title                    string     `json:"title"`

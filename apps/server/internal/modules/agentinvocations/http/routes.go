@@ -27,19 +27,23 @@ type Config struct {
 	WorkspaceResolver mid.WorkspaceResolver
 	Runs              *agentruns.Service
 	Access            StoryAccess
+	DocumentAccess    StoryAccess
+	ChatAccess        StoryAccess
 	Tasks             Wakeup
 }
 
 type runResponse struct {
-	ID             uuid.UUID        `json:"id"`
-	SourceID       uuid.UUID        `json:"sourceId"`
-	RequesterID    uuid.UUID        `json:"requesterId"`
-	Status         agentruns.Status `json:"status"`
-	Summary        string           `json:"summary"`
-	ProposalReview string           `json:"proposalReview,omitempty"`
-	ReplyCommentID *uuid.UUID       `json:"replyCommentId"`
-	Version        int64            `json:"version"`
-	UpdatedAt      time.Time        `json:"updatedAt"`
+	ID             uuid.UUID          `json:"id"`
+	SourceID       uuid.UUID          `json:"sourceId"`
+	RequesterID    uuid.UUID          `json:"requesterId"`
+	Status         agentruns.Status   `json:"status"`
+	Summary        string             `json:"summary"`
+	ProposalReview string             `json:"proposalReview,omitempty"`
+	ReplyCommentID *uuid.UUID         `json:"replyCommentId"`
+	Version        int64              `json:"version"`
+	UpdatedAt      time.Time          `json:"updatedAt"`
+	ReplyMessageID *uuid.UUID         `json:"replyMessageId,omitempty"`
+	Tasks          []chatTaskResponse `json:"tasks,omitempty"`
 }
 
 func present(run agentruns.Run) runResponse {
@@ -47,6 +51,10 @@ func present(run agentruns.Run) runResponse {
 		Summary: run.Summary, ReplyCommentID: publishedReplyID(run), Version: run.Version, UpdatedAt: run.UpdatedAt}
 	if run.Status == agentruns.StatusAwaitingApproval && run.Proposal != nil {
 		response.ProposalReview = run.Proposal.Review
+	}
+	if run.Surface == "chat_message" {
+		response.ReplyMessageID = response.ReplyCommentID
+		response.Tasks = presentChatTasks(run)
 	}
 	return response
 }
@@ -69,15 +77,39 @@ func publishedReplyID(run agentruns.Run) *uuid.UUID {
 }
 
 func Routes(cfg Config, app *web.App) {
-	h := &handler{cfg: cfg}
+	h := &handler{cfg: cfg, surface: "story_comment"}
 	authenticate := mid.Auth(cfg.Log, cfg.SecretKey, cfg.BrowserSessions)
 	workspace := mid.Workspace(cfg.Log, cfg.WorkspaceResolver)
 	member := mid.RequireMinimumRole(cfg.Log, mid.RoleMember)
 	app.Get("/workspaces/{workspaceSlug}/stories/{id}/maya-runs", h.list, authenticate, workspace)
 	app.Post("/workspaces/{workspaceSlug}/stories/{id}/maya-runs/{runId}/{operation}", h.control, authenticate, workspace, member)
+	if cfg.DocumentAccess != nil {
+		documentConfig := cfg
+		documentConfig.Access = cfg.DocumentAccess
+		documents := &handler{cfg: documentConfig, surface: "document_comment"}
+		app.Get("/workspaces/{workspaceSlug}/documents/{id}/maya-runs", documents.list, authenticate, workspace)
+		app.Post("/workspaces/{workspaceSlug}/documents/{id}/maya-runs/{runId}/{operation}", documents.control, authenticate, workspace, member)
+	}
+	if cfg.ChatAccess != nil {
+		chatConfig := cfg
+		chatConfig.Access = cfg.ChatAccess
+		chat := &handler{cfg: chatConfig, surface: "chat_message"}
+		app.Get("/workspaces/{workspaceSlug}/chat/conversations/{id}/maya-runs", chat.list, authenticate, workspace)
+		app.Post("/workspaces/{workspaceSlug}/chat/conversations/{id}/maya-runs/{runId}/{operation}", chat.control, authenticate, workspace, member)
+	}
 }
 
-type handler struct{ cfg Config }
+type handler struct {
+	cfg     Config
+	surface string
+}
+
+func (h *handler) sourceSurface() string {
+	if h.surface == "" {
+		return "story_comment"
+	}
+	return h.surface
+}
 
 func (h *handler) scope(ctx context.Context, r *http.Request) (uuid.UUID, uuid.UUID, error) {
 	workspace, err := mid.GetWorkspace(ctx)
@@ -102,7 +134,14 @@ func (h *handler) list(ctx context.Context, w http.ResponseWriter, r *http.Reque
 	if err != nil {
 		return respondError(ctx, w, err)
 	}
-	enabled, err := h.cfg.Access.Enabled(ctx, workspaceID)
+	var enabled bool
+	if access, ok := h.cfg.Access.(interface {
+		EnabledForEntity(context.Context, uuid.UUID, uuid.UUID) (bool, error)
+	}); ok {
+		enabled, err = access.EnabledForEntity(ctx, storyID, workspaceID)
+	} else {
+		enabled, err = h.cfg.Access.Enabled(ctx, workspaceID)
+	}
 	if err != nil {
 		return respondError(ctx, w, err)
 	}
@@ -112,7 +151,7 @@ func (h *handler) list(ctx context.Context, w http.ResponseWriter, r *http.Reque
 	}
 	result := make([]runResponse, 0, len(runs))
 	for _, run := range runs {
-		if run.Surface == "story_comment" {
+		if run.Surface == h.sourceSurface() {
 			result = append(result, present(run))
 		}
 	}
@@ -139,7 +178,7 @@ func (h *handler) control(ctx context.Context, w http.ResponseWriter, r *http.Re
 	if err != nil {
 		return respondError(ctx, w, err)
 	}
-	if run.EntityID != storyID || run.Surface != "story_comment" {
+	if run.EntityID != storyID || run.Surface != h.sourceSurface() {
 		return respondError(ctx, w, agentruns.ErrNotFound)
 	}
 	var input struct {

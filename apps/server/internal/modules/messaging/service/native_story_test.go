@@ -228,10 +228,52 @@ func TestNativeRequestUsesMarkdownAndReviewInstructionsWithoutChangingOtherSurfa
 	require.Contains(t, native, "call update_story with command_intent proposal and the exact proposed value")
 	require.Contains(t, native, `"do not change it yet": preparing a reviewable proposal does not change the story`)
 	require.Contains(t, native, "General informational advice without a concrete requested field change remains an ordinary answer")
+	require.Contains(t, native, "resolve that person uniquely through list_team_members")
+	require.Contains(t, native, "[@Display Name](mention:MEMBER_UUID)")
+	require.Contains(t, native, "Do not tag people merely because a name occurs in context or quoted material")
 	require.NotContains(t, native, base)
 	provider, err := instructionsForRequest(base, Request{AllowMutations: true})
 	require.NoError(t, err)
 	require.Equal(t, base, provider)
+}
+
+func TestNativeResponsePrefixPreservesIndentedMentionExamples(t *testing.T) {
+	t.Parallel()
+	source := &SourceScope{Surface: SourceSurfaceStoryComment, StoryID: uuid.New(), TeamID: uuid.New()}
+	example := "    [@Example](mention:" + uuid.NewString() + ")"
+	for _, input := range []string{example, nativeNeedsInputPrefix + "\n" + example, nativeNeedsInputPrefix + " " + example} {
+		text, _ := nativeResponseText(input, source)
+		require.Equal(t, example, text)
+	}
+}
+
+func TestNativeAssistantPreservesMentionExampleIndentation(t *testing.T) {
+	t.Parallel()
+	example := "    [@Example](mention:" + uuid.NewString() + ")"
+	output, err := json.Marshal(map[string]any{
+		"status": "completed",
+		"output": []any{map[string]any{"type": "message", "role": "assistant", "content": []any{
+			map[string]any{"type": "output_text", "text": example},
+		}}},
+	})
+	require.NoError(t, err)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write(output)
+	}))
+	defer server.Close()
+	assistant, err := NewOpenAIAssistant(OpenAIConfig{APIKey: "test", BaseURL: server.URL}, &assistantToolStub{})
+	require.NoError(t, err)
+	request := Request{WorkspaceID: uuid.New(), UserID: uuid.New(), SourceScope: &SourceScope{
+		Surface: SourceSurfaceStoryComment, StoryID: uuid.New(), TeamID: uuid.New(),
+	}, Prompt: "Show me a code example"}
+	response, err := assistant.Respond(t.Context(), request)
+	require.NoError(t, err)
+	require.Equal(t, example, response.Text)
+	request.SourceScope = nil
+	response, err = assistant.Respond(t.Context(), request)
+	require.NoError(t, err)
+	require.Equal(t, strings.TrimSpace(example), response.Text, "provider response normalization remains unchanged")
 }
 
 func TestDescriptionRewriteKeepsStructuredContentAndConsistentText(t *testing.T) {

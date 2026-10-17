@@ -68,14 +68,14 @@ func newDocument(
 func summaryFromList(row documentssql.ListAccessibleDocumentsRow) documentdomain.Summary {
 	return newSummary(
 		row.DocumentID, row.WorkspaceID, row.Title, row.Visibility, row.CreatedBy,
-		row.UpdatedBy, row.CreatedAt, row.UpdatedAt, boolValue(row.CanEdit), row.RelatedWorkCount,
+		row.UpdatedBy, row.CreatedAt, row.UpdatedAt, row.ArchivedAt, boolValue(row.CanEdit), row.PublicEnabled,
 	)
 }
 
 func summaryFromRelationship(row documentssql.ListAccessibleDocumentsForRelationshipRow) documentdomain.Summary {
 	return newSummary(
 		row.DocumentID, row.WorkspaceID, row.Title, row.Visibility, row.CreatedBy,
-		row.UpdatedBy, row.CreatedAt, row.UpdatedAt, boolValue(row.CanEdit), row.RelatedWorkCount,
+		row.UpdatedBy, row.CreatedAt, row.UpdatedAt, row.ArchivedAt, boolValue(row.CanEdit), row.PublicEnabled,
 	)
 }
 
@@ -84,14 +84,15 @@ func newSummary(
 	title, visibility string,
 	createdBy, updatedBy uuid.UUID,
 	createdAt, updatedAt time.Time,
-	canEdit bool,
-	relatedWorkCount int64,
+	archivedAt *time.Time,
+	canEdit, publicEnabled bool,
 ) documentdomain.Summary {
 	return documentdomain.Summary{
 		ID: id, WorkspaceID: workspaceID, Title: title,
 		Visibility: documentdomain.Visibility(visibility), CreatedBy: createdBy,
 		UpdatedBy: updatedBy, CreatedAt: createdAt, UpdatedAt: updatedAt,
-		CanEdit: canEdit, RelatedWorkCount: int(relatedWorkCount),
+		ArchivedAt: archivedAt, CanEdit: canEdit, PublicEnabled: publicEnabled,
+		RelatedWork: []documentdomain.RelatedWork{},
 	}
 }
 

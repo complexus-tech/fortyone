@@ -6,6 +6,8 @@ package workspacesql
 
 import (
 	"context"
+
+	"github.com/google/uuid"
 )
 
 type Querier interface {
@@ -20,6 +22,7 @@ type Querier interface {
 	GetOrCreateWorkspaceSettings(ctx context.Context, arg GetOrCreateWorkspaceSettingsParams) (GetOrCreateWorkspaceSettingsRow, error)
 	GetPublicWorkspaceBySlug(ctx context.Context, arg GetPublicWorkspaceBySlugParams) (GetPublicWorkspaceBySlugRow, error)
 	GetWorkspaceByID(ctx context.Context, arg GetWorkspaceByIDParams) (GetWorkspaceByIDRow, error)
+	GetWorkspaceChatEnabled(ctx context.Context, arg GetWorkspaceChatEnabledParams) (bool, error)
 	GetWorkspaceForMember(ctx context.Context, arg GetWorkspaceForMemberParams) (GetWorkspaceForMemberRow, error)
 	GetWorkspaceForMemberBySlug(ctx context.Context, arg GetWorkspaceForMemberBySlugParams) (GetWorkspaceForMemberBySlugRow, error)
 	GetWorkspaceSettings(ctx context.Context, arg GetWorkspaceSettingsParams) (GetWorkspaceSettingsRow, error)
@@ -30,8 +33,14 @@ type Querier interface {
 	ListWorkspaceAdminEmails(ctx context.Context, arg ListWorkspaceAdminEmailsParams) ([]string, error)
 	ListWorkspacesForUser(ctx context.Context, arg ListWorkspacesForUserParams) ([]ListWorkspacesForUserRow, error)
 	LockWorkspaceIntegrationLifecycle(ctx context.Context, arg LockWorkspaceIntegrationLifecycleParams) error
+	// Updating the parent version also invalidates an older Serializable snapshot
+	// that waited on a chat authorization lock while this toggle committed.
+	LockWorkspaceSettingsUpdate(ctx context.Context, arg LockWorkspaceSettingsUpdateParams) (uuid.UUID, error)
 	MarkWorkspaceInactivityWarningSent(ctx context.Context, arg MarkWorkspaceInactivityWarningSentParams) (int64, error)
+	// Activity is telemetry, not authorization. A fresh request must not rewrite
+	// the shared workspace row or contend with live session-policy locks.
 	RecordWorkspaceAccess(ctx context.Context, arg RecordWorkspaceAccessParams) error
+	RecordWorkspaceUserAccess(ctx context.Context, arg RecordWorkspaceUserAccessParams) error
 	RemoveWorkspaceMember(ctx context.Context, arg RemoveWorkspaceMemberParams) (int64, error)
 	RemoveWorkspaceTeamMemberships(ctx context.Context, arg RemoveWorkspaceTeamMembershipsParams) error
 	ResolveCurrentWorkspaceMembership(ctx context.Context, arg ResolveCurrentWorkspaceMembershipParams) (ResolveCurrentWorkspaceMembershipRow, error)

@@ -102,6 +102,9 @@ WITH eligible_notification AS (
                     AND actor_membership.role IN ('admin', 'member', 'guest')
                     AND (
                         (
+                            (CAST(sqlc.arg(entity_type) AS text) = 'chat_message' AND public.can_read_chat_message(workspace.workspace_id,actor.user_id,CAST(sqlc.arg(entity_id) AS uuid)))
+                        )
+                        OR (
                             CAST(sqlc.arg(entity_type) AS text) = 'story'
                             AND EXISTS (
                                 SELECT 1
@@ -217,6 +220,9 @@ WITH eligible_notification AS (
                     AND membership.role IN ('admin', 'member', 'guest')
                     AND (
                         (
+                            (CAST(sqlc.arg(entity_type) AS text) = 'chat_message' AND public.can_read_chat_message(workspace.workspace_id,recipient.user_id,CAST(sqlc.arg(entity_id) AS uuid)))
+                        )
+                        OR (
                             CAST(sqlc.arg(entity_type) AS text) = 'story'
                             AND EXISTS (
                                 SELECT 1

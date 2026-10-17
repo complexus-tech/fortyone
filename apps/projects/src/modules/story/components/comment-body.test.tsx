@@ -1,5 +1,6 @@
 /* global describe, expect, it, jest -- Jest globals are provided by the projects test runner. */
 import { Editor } from "@tiptap/core";
+import { createRef } from "react";
 import Document from "@tiptap/extension-document";
 import Paragraph from "@tiptap/extension-paragraph";
 import Text from "@tiptap/extension-text";
@@ -25,6 +26,22 @@ jest.mock("./comment-attachment-list", () => ({
 }));
 
 describe("comment body", () => {
+  it("anchors visibility to the first line of the reply body without affecting layout", () => {
+    const visibilityRef = createRef<HTMLDivElement>();
+    const { container } = render(
+      <CommentBody
+        html="<p>Maya's response</p>"
+        visibilityRef={visibilityRef}
+      />,
+    );
+    expect(visibilityRef.current).toHaveAttribute("aria-hidden", "true");
+    expect(visibilityRef.current).toHaveClass("absolute", "top-0", "h-6");
+    expect(visibilityRef.current?.parentElement).toBe(container.firstChild);
+    expect(visibilityRef.current?.parentElement).toHaveTextContent(
+      "Maya's response",
+    );
+  });
+
   it("extracts persisted image and file previews before sanitizing the text body", () => {
     const files = [
       {

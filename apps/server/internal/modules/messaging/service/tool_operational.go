@@ -66,6 +66,10 @@ func (e *FortyOneToolExecutor) listStatuses(ctx context.Context, scope ToolScope
 }
 
 func (e *FortyOneToolExecutor) listTeamMembers(ctx context.Context, scope ToolScope, raw json.RawMessage) (json.RawMessage, error) {
+	raw, err := sourceTeamArguments(scope.SourceScope, raw)
+	if err != nil {
+		return nil, err
+	}
 	var args struct {
 		TeamID string  `json:"team_id"`
 		Query  *string `json:"query"`
@@ -156,7 +160,7 @@ func (e *FortyOneToolExecutor) getStory(ctx context.Context, scope ToolScope, ra
 		return nil, err
 	}
 	var story messagingStory
-	if scope.SourceScope != nil {
+	if scope.SourceScope != nil && scope.SourceScope.Surface == SourceSurfaceStoryComment {
 		story, err = e.sourceStory(ctx, scope, joinedByID, &args.StoryReference, nil)
 	} else {
 		story, err = e.storyReader.QueryByRef(ctx, scope.WorkspaceID, storyReference)

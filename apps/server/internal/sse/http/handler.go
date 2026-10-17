@@ -2,9 +2,11 @@ package ssehttp
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
@@ -14,7 +16,10 @@ import (
 	"github.com/google/uuid"
 )
 
-const browserSessionRevalidationInterval = 25 * time.Second
+const (
+	browserSessionRevalidationInterval = 25 * time.Second
+	streamWriteTimeout                 = 10 * time.Second
+)
 
 type Handler struct {
 	Log             *logger.Logger
@@ -74,15 +79,9 @@ func (h *Handler) serveStream(
 	clientCtx context.Context,
 	messages <-chan []byte,
 ) error {
-	flusher, ok := w.(http.Flusher)
+	_, ok := w.(http.Flusher)
 	if !ok {
 		return fmt.Errorf("streaming unsupported: ResponseWriter does not implement http.Flusher")
-	}
-
-	// A global HTTP write timeout is useful for ordinary endpoints but would
-	// otherwise impose a fixed lifetime on this long-lived response.
-	if err := http.NewResponseController(w).SetWriteDeadline(time.Time{}); err != nil && !errors.Is(err, http.ErrNotSupported) {
-		h.Log.Warn(ctx, "sse: Failed to clear stream write deadline", "userID", userID, "workspaceID", workspaceID, "error", err)
 	}
 
 	w.Header().Set("Content-Type", "text/event-stream")
@@ -95,15 +94,13 @@ func (h *Handler) serveStream(
 		w.Header().Add("Vary", "Origin")
 	}
 	w.WriteHeader(http.StatusOK)
-	flusher.Flush()
 	h.Log.Info(ctx, "SSE client registered with hub", "userID", userID, "workspaceID", workspaceID)
 
 	initialEvent := fmt.Sprintf("event: connected\ndata: {\"status\": \"connected\", \"userID\": \"%s\", \"workspaceID\": \"%s\"}\n\n", userID.String(), workspaceID.String())
-	if _, err := fmt.Fprint(w, initialEvent); err != nil {
+	if err := writeStreamEvent(w, initialEvent, streamWriteTimeout); err != nil {
 		h.Log.Warn(ctx, "sse: Error writing initial connected event", "userID", userID, "workspaceID", workspaceID, "error", err)
 		return nil
 	}
-	flusher.Flush()
 
 	keepAlive := h.keepAlive
 	if keepAlive == nil {
@@ -121,37 +118,68 @@ func (h *Handler) serveStream(
 			h.Log.Info(context.Background(), "SSE hub client context done", "userID", userID, "workspaceID", workspaceID)
 			return nil
 		case messageData, ok := <-messages:
-			if !ok || !h.streamAuthorizationIsCurrent(ctx, r, clientCtx, userID, workspaceID, workspaceSlug) {
+			if !ok {
 				return nil
 			}
-			if _, err := fmt.Fprintf(w, "data: %s\n\n", messageData); err != nil {
+			workspace, authorized := h.currentStreamWorkspace(ctx, r, clientCtx, userID, workspaceID, workspaceSlug)
+			if !authorized {
+				return nil
+			}
+			if !h.allowsEvent(messageData, workspace.ChatEnabled) {
+				continue
+			}
+			if err := writeStreamEvent(w, fmt.Sprintf("data: %s\n\n", messageData), streamWriteTimeout); err != nil {
 				h.Log.Warn(ctx, "sse: Error writing data event to client", "userID", userID, "workspaceID", workspaceID, "error", err)
 				return nil
 			}
-			flusher.Flush()
 		case <-keepAlive:
-			if !h.streamAuthorizationIsCurrent(ctx, r, clientCtx, userID, workspaceID, workspaceSlug) {
+			if _, authorized := h.currentStreamWorkspace(ctx, r, clientCtx, userID, workspaceID, workspaceSlug); !authorized {
 				return nil
 			}
-			if _, err := fmt.Fprint(w, ":keep-alive\n\n"); err != nil {
+			if err := writeStreamEvent(w, ":keep-alive\n\n", streamWriteTimeout); err != nil {
 				h.Log.Warn(ctx, "sse: Error writing keep-alive", "userID", userID, "workspaceID", workspaceID, "error", err)
 				return nil
 			}
-			flusher.Flush()
 		}
 	}
 }
 
-func (h *Handler) streamAuthorizationIsCurrent(
+// Bound each write/flush rather than the stream lifetime. A stalled reader
+// must release its handler and Redis subscription, while an idle healthy stream
+// must remain usable beyond the server's ordinary request write timeout.
+func writeStreamEvent(w http.ResponseWriter, event string, timeout time.Duration) error {
+	controller := http.NewResponseController(w)
+	deadline := time.Now().Add(timeout)
+	if err := controller.SetWriteDeadline(deadline); err != nil && !errors.Is(err, http.ErrNotSupported) {
+		return err
+	}
+	if _, err := fmt.Fprint(w, event); err != nil {
+		return err
+	}
+	if err := controller.Flush(); err != nil {
+		return err
+	}
+	// Some middleware preserves http.Flusher but not FlushError. A timed-out
+	// flush still needs to close the stream even when its error was not exposed.
+	if !time.Now().Before(deadline) {
+		return context.DeadlineExceeded
+	}
+	if err := controller.SetWriteDeadline(time.Time{}); err != nil && !errors.Is(err, http.ErrNotSupported) {
+		return err
+	}
+	return nil
+}
+
+func (h *Handler) currentStreamWorkspace(
 	ctx context.Context,
 	r *http.Request,
 	clientCtx context.Context,
 	expectedUserID uuid.UUID,
 	workspaceID uuid.UUID,
 	workspaceSlug string,
-) bool {
+) (mid.WorkspaceInfo, bool) {
 	if ctx.Err() != nil || r.Context().Err() != nil || clientCtx.Err() != nil {
-		return false
+		return mid.WorkspaceInfo{}, false
 	}
 
 	userID, ok, err := mid.ResolveSessionUserID(ctx, r, h.BrowserSessions)
@@ -159,16 +187,16 @@ func (h *Handler) streamAuthorizationIsCurrent(
 		// Authentication and cache errors are intentionally confined to server
 		// logs. An SSE client learns only that its stream has ended.
 		h.Log.Warn(ctx, "sse: Browser session revalidation failed; closing stream", "userID", expectedUserID, "workspaceID", workspaceID, "error", err)
-		return false
+		return mid.WorkspaceInfo{}, false
 	}
 	if !ok || userID != expectedUserID {
 		h.Log.Info(ctx, "sse: Browser session is no longer valid; closing stream", "userID", expectedUserID, "workspaceID", workspaceID)
-		return false
+		return mid.WorkspaceInfo{}, false
 	}
 
 	if h.WorkspaceAccess == nil {
 		h.Log.Error(ctx, "sse: Workspace access resolver is unavailable; closing stream", "userID", expectedUserID, "workspaceID", workspaceID)
-		return false
+		return mid.WorkspaceInfo{}, false
 	}
 	workspace, err := h.WorkspaceAccess.ResolveCurrentWorkspace(ctx, workspaceSlug, expectedUserID)
 	if err != nil || workspace.ID != workspaceID {
@@ -180,10 +208,27 @@ func (h *Handler) streamAuthorizationIsCurrent(
 		} else {
 			h.Log.Warn(ctx, "sse: Workspace access changed; closing stream", "userID", expectedUserID, "workspaceID", workspaceID)
 		}
-		return false
+		return mid.WorkspaceInfo{}, false
 	}
 
 	// Cancellation can race the backing-store lookup. Recheck both lifetimes so
 	// a successful stale lookup cannot authorize one final write after teardown.
-	return ctx.Err() == nil && r.Context().Err() == nil && clientCtx.Err() == nil
+	return workspace, ctx.Err() == nil && r.Context().Err() == nil && clientCtx.Err() == nil
+}
+
+// Shared notification streams remain available while Messages is disabled, but
+// old replicas and already queued chat events cannot leak through this stream.
+func (h *Handler) allowsEvent(payload []byte, chatEnabled bool) bool {
+	var event struct {
+		Type             string `json:"type"`
+		EntityType       string `json:"entityType"`
+		StoredEntityType string `json:"entity_type"`
+	}
+	if json.Unmarshal(payload, &event) != nil {
+		return false
+	}
+	if strings.HasPrefix(event.Type, "chat.") || event.Type == "chat_message" || event.EntityType == "chat_message" || event.StoredEntityType == "chat_message" {
+		return chatEnabled
+	}
+	return true
 }

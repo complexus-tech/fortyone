@@ -38,40 +38,49 @@ SELECT
     workspace.workspace_id,
     workspace.name,
     workspace.slug,
-    CAST(membership.role AS text) AS user_role
+    CAST(membership.role AS text) AS user_role,
+    COALESCE(settings.chat_enabled, TRUE) AS chat_enabled
 FROM public.workspaces AS workspace
 INNER JOIN public.workspace_members AS membership
     ON membership.workspace_id = workspace.workspace_id
 INNER JOIN public.users AS account
     ON account.user_id = membership.user_id
+LEFT JOIN public.workspace_settings AS settings
+    ON settings.workspace_id = workspace.workspace_id
 WHERE workspace.slug = CAST(sqlc.arg(slug) AS text)
   AND membership.user_id = sqlc.arg(user_id)
   AND account.is_active = TRUE;
 
 -- name: RecordWorkspaceAccess :exec
-WITH current_membership AS (
-    SELECT membership.workspace_id
-    FROM public.workspace_members AS membership
-    INNER JOIN public.users AS account
-        ON account.user_id = membership.user_id
-    WHERE membership.workspace_id = sqlc.arg(workspace_id)
-      AND membership.user_id = sqlc.arg(user_id)
-      AND account.is_active = TRUE
-), touched_account AS (
-    UPDATE public.users AS account
-    SET
-        last_login_at = CURRENT_TIMESTAMP,
-        inactivity_warning_sent_at = NULL
-    WHERE account.user_id = sqlc.arg(user_id)
-      AND EXISTS (SELECT 1 FROM current_membership)
-    RETURNING account.user_id
-)
+-- Activity is telemetry, not authorization. A fresh request must not rewrite
+-- the shared workspace row or contend with live session-policy locks.
 UPDATE public.workspaces AS workspace
-SET
-    last_accessed_at = CURRENT_TIMESTAMP,
-    inactivity_warning_sent_at = NULL
+SET last_accessed_at = CURRENT_TIMESTAMP AT TIME ZONE 'UTC', inactivity_warning_sent_at = NULL
 WHERE workspace.workspace_id = sqlc.arg(workspace_id)
-  AND EXISTS (SELECT 1 FROM touched_account);
+  AND workspace.deleted_at IS NULL
+  AND (workspace.last_accessed_at IS NULL
+       OR workspace.last_accessed_at <= (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') - INTERVAL '1 minute'
+       OR workspace.inactivity_warning_sent_at IS NOT NULL)
+  AND EXISTS (
+    SELECT 1 FROM public.workspace_members AS membership
+    JOIN public.users AS account ON account.user_id = membership.user_id
+    WHERE membership.workspace_id = workspace.workspace_id
+      AND membership.user_id = sqlc.arg(user_id) AND account.is_active = TRUE
+  );
+
+-- name: RecordWorkspaceUserAccess :exec
+UPDATE public.users AS account
+SET last_login_at = CURRENT_TIMESTAMP, inactivity_warning_sent_at = NULL
+WHERE account.user_id = sqlc.arg(user_id) AND account.is_active = TRUE
+  AND (account.last_login_at IS NULL
+       OR account.last_login_at <= CURRENT_TIMESTAMP - INTERVAL '1 minute'
+       OR account.inactivity_warning_sent_at IS NOT NULL)
+  AND EXISTS (
+    SELECT 1 FROM public.workspace_members AS membership
+    JOIN public.workspaces AS workspace ON workspace.workspace_id = membership.workspace_id
+    WHERE membership.workspace_id = sqlc.arg(workspace_id)
+      AND membership.user_id = account.user_id AND workspace.deleted_at IS NULL
+  );
 
 -- name: ListWorkspaceAdminEmails :many
 SELECT account.email

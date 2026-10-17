@@ -19,7 +19,7 @@ WHERE id = $1 AND status = 'running' AND lease_token = $2
     AND lease_generation = $3 AND lease_expires_at > clock_timestamp()
     AND proposal_reply_id IS NOT NULL AND outcome IS NULL AND approved_at IS NULL
     AND proposal->>'requiresApproval' = 'true'
-RETURNING id, workspace_id, requester_id, team_id, surface, source_id, conversation_id, entity_id, parent_run_id, source_revision, source_hash, idempotency_key, request_hash, payload, status, summary, version, proposal, outcome, reply_id, proposal_reply_id, proposal_delivered_at, failure_reply_id, failure_pending, lease_token, lease_generation, lease_expires_at, attempt_count, retry_attempt_count, approved_at, available_at, created_at, updated_at
+RETURNING id, workspace_id, requester_id, team_id, surface, source_id, conversation_id, entity_id, parent_run_id, source_revision, source_hash, idempotency_key, request_hash, payload, status, summary, version, proposal, outcome, reply_id, proposal_reply_id, proposal_delivered_at, failure_reply_id, failure_pending, lease_token, lease_generation, lease_expires_at, attempt_count, retry_attempt_count, approved_at, available_at, created_at, updated_at, action_started_at
 `
 
 type AwaitAgentInvocationApprovalParams struct {
@@ -65,6 +65,7 @@ func (q *Queries) AwaitAgentInvocationApproval(ctx context.Context, arg AwaitAge
 		&i.AvailableAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ActionStartedAt,
 	)
 	return i, err
 }
@@ -75,7 +76,7 @@ UPDATE public.agent_invocations SET failure_pending = TRUE, summary = $1,
 WHERE id = $2 AND status = 'running' AND lease_token = $3
     AND lease_generation = $4 AND lease_expires_at > clock_timestamp()
     AND outcome IS NULL AND reply_id IS NULL
-RETURNING id, workspace_id, requester_id, team_id, surface, source_id, conversation_id, entity_id, parent_run_id, source_revision, source_hash, idempotency_key, request_hash, payload, status, summary, version, proposal, outcome, reply_id, proposal_reply_id, proposal_delivered_at, failure_reply_id, failure_pending, lease_token, lease_generation, lease_expires_at, attempt_count, retry_attempt_count, approved_at, available_at, created_at, updated_at
+RETURNING id, workspace_id, requester_id, team_id, surface, source_id, conversation_id, entity_id, parent_run_id, source_revision, source_hash, idempotency_key, request_hash, payload, status, summary, version, proposal, outcome, reply_id, proposal_reply_id, proposal_delivered_at, failure_reply_id, failure_pending, lease_token, lease_generation, lease_expires_at, attempt_count, retry_attempt_count, approved_at, available_at, created_at, updated_at, action_started_at
 `
 
 type BeginAgentInvocationFailureParams struct {
@@ -127,6 +128,7 @@ func (q *Queries) BeginAgentInvocationFailure(ctx context.Context, arg BeginAgen
 		&i.AvailableAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ActionStartedAt,
 	)
 	return i, err
 }
@@ -137,7 +139,13 @@ UPDATE public.agent_invocations SET status = 'running', lease_token = $1,
     attempt_count = attempt_count + 1, retry_attempt_count = retry_attempt_count + 1,
     version = version + 1, updated_at = clock_timestamp()
 WHERE id = $2 AND ((status = 'queued' AND available_at <= clock_timestamp()) OR (status = 'running' AND lease_expires_at < clock_timestamp()))
-RETURNING id, workspace_id, requester_id, team_id, surface, source_id, conversation_id, entity_id, parent_run_id, source_revision, source_hash, idempotency_key, request_hash, payload, status, summary, version, proposal, outcome, reply_id, proposal_reply_id, proposal_delivered_at, failure_reply_id, failure_pending, lease_token, lease_generation, lease_expires_at, attempt_count, retry_attempt_count, approved_at, available_at, created_at, updated_at
+  AND (surface <> 'chat_message' OR EXISTS (
+      SELECT 1 FROM public.workspaces AS workspace
+      LEFT JOIN public.workspace_settings AS settings ON settings.workspace_id = workspace.workspace_id
+      WHERE workspace.workspace_id = agent_invocations.workspace_id
+        AND workspace.deleted_at IS NULL AND COALESCE(settings.chat_enabled, TRUE)
+  ))
+RETURNING id, workspace_id, requester_id, team_id, surface, source_id, conversation_id, entity_id, parent_run_id, source_revision, source_hash, idempotency_key, request_hash, payload, status, summary, version, proposal, outcome, reply_id, proposal_reply_id, proposal_delivered_at, failure_reply_id, failure_pending, lease_token, lease_generation, lease_expires_at, attempt_count, retry_attempt_count, approved_at, available_at, created_at, updated_at, action_started_at
 `
 
 type ClaimAgentInvocationParams struct {
@@ -182,6 +190,7 @@ func (q *Queries) ClaimAgentInvocation(ctx context.Context, arg ClaimAgentInvoca
 		&i.AvailableAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ActionStartedAt,
 	)
 	return i, err
 }
@@ -192,7 +201,7 @@ UPDATE public.agent_invocations SET status = $1, reply_id = $2,
     lease_token = NULL, lease_expires_at = NULL, version = version + 1, updated_at = clock_timestamp()
 WHERE id = $3 AND status = 'running' AND lease_token = $4
     AND lease_generation = $5 AND lease_expires_at > clock_timestamp()
-RETURNING id, workspace_id, requester_id, team_id, surface, source_id, conversation_id, entity_id, parent_run_id, source_revision, source_hash, idempotency_key, request_hash, payload, status, summary, version, proposal, outcome, reply_id, proposal_reply_id, proposal_delivered_at, failure_reply_id, failure_pending, lease_token, lease_generation, lease_expires_at, attempt_count, retry_attempt_count, approved_at, available_at, created_at, updated_at
+RETURNING id, workspace_id, requester_id, team_id, surface, source_id, conversation_id, entity_id, parent_run_id, source_revision, source_hash, idempotency_key, request_hash, payload, status, summary, version, proposal, outcome, reply_id, proposal_reply_id, proposal_delivered_at, failure_reply_id, failure_pending, lease_token, lease_generation, lease_expires_at, attempt_count, retry_attempt_count, approved_at, available_at, created_at, updated_at, action_started_at
 `
 
 type CompleteAgentInvocationParams struct {
@@ -246,6 +255,7 @@ func (q *Queries) CompleteAgentInvocation(ctx context.Context, arg CompleteAgent
 		&i.AvailableAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ActionStartedAt,
 	)
 	return i, err
 }
@@ -274,7 +284,7 @@ UPDATE public.agent_invocations SET status = 'failed', failure_pending = FALSE,
 WHERE id = $1 AND status = 'running' AND lease_token = $2
     AND lease_generation = $3 AND lease_expires_at > clock_timestamp()
     AND failure_pending = TRUE AND failure_reply_id IS NOT NULL
-RETURNING id, workspace_id, requester_id, team_id, surface, source_id, conversation_id, entity_id, parent_run_id, source_revision, source_hash, idempotency_key, request_hash, payload, status, summary, version, proposal, outcome, reply_id, proposal_reply_id, proposal_delivered_at, failure_reply_id, failure_pending, lease_token, lease_generation, lease_expires_at, attempt_count, retry_attempt_count, approved_at, available_at, created_at, updated_at
+RETURNING id, workspace_id, requester_id, team_id, surface, source_id, conversation_id, entity_id, parent_run_id, source_revision, source_hash, idempotency_key, request_hash, payload, status, summary, version, proposal, outcome, reply_id, proposal_reply_id, proposal_delivered_at, failure_reply_id, failure_pending, lease_token, lease_generation, lease_expires_at, attempt_count, retry_attempt_count, approved_at, available_at, created_at, updated_at, action_started_at
 `
 
 type CompleteAgentInvocationFailureParams struct {
@@ -320,6 +330,7 @@ func (q *Queries) CompleteAgentInvocationFailure(ctx context.Context, arg Comple
 		&i.AvailableAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ActionStartedAt,
 	)
 	return i, err
 }
@@ -336,10 +347,10 @@ UPDATE public.agent_invocations SET
     updated_at = clock_timestamp()
 WHERE id = $3 AND workspace_id = $4 AND requester_id = $5
     AND version = $6
-    AND ((CAST($1 AS text) = 'cancel' AND status IN ('queued','running','awaiting_approval','needs_input') AND outcome IS NULL)
+    AND ((CAST($1 AS text) = 'cancel' AND status IN ('queued','running','awaiting_approval','needs_input') AND outcome IS NULL AND action_started_at IS NULL)
       OR (CAST($1 AS text) = 'retry' AND status IN ('failed','cancelled'))
       OR (CAST($1 AS text) = 'approve' AND status = 'awaiting_approval'))
-RETURNING id, workspace_id, requester_id, team_id, surface, source_id, conversation_id, entity_id, parent_run_id, source_revision, source_hash, idempotency_key, request_hash, payload, status, summary, version, proposal, outcome, reply_id, proposal_reply_id, proposal_delivered_at, failure_reply_id, failure_pending, lease_token, lease_generation, lease_expires_at, attempt_count, retry_attempt_count, approved_at, available_at, created_at, updated_at
+RETURNING id, workspace_id, requester_id, team_id, surface, source_id, conversation_id, entity_id, parent_run_id, source_revision, source_hash, idempotency_key, request_hash, payload, status, summary, version, proposal, outcome, reply_id, proposal_reply_id, proposal_delivered_at, failure_reply_id, failure_pending, lease_token, lease_generation, lease_expires_at, attempt_count, retry_attempt_count, approved_at, available_at, created_at, updated_at, action_started_at
 `
 
 type ControlAgentInvocationParams struct {
@@ -395,6 +406,7 @@ func (q *Queries) ControlAgentInvocation(ctx context.Context, arg ControlAgentIn
 		&i.AvailableAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ActionStartedAt,
 	)
 	return i, err
 }
@@ -404,25 +416,41 @@ INSERT INTO public.agent_invocations (
     workspace_id, requester_id, team_id, surface, source_id, conversation_id, entity_id, parent_run_id,
     source_revision, source_hash, idempotency_key, request_hash, payload
 )
-SELECT $1, $2, $3, $4,
-    $5, $6, $7, $8, $9,
+SELECT $1, $2, CAST($3 AS uuid), CAST($4 AS text),
+    $5, $6, $7, $8, CAST($9 AS text),
     $10, $11, $12, $13
 WHERE EXISTS (
     SELECT 1 FROM public.workspace_members AS member
     INNER JOIN public.users AS account ON account.user_id = member.user_id AND account.is_active = TRUE AND account.is_system = FALSE
     INNER JOIN public.workspaces AS workspace ON workspace.workspace_id = member.workspace_id AND workspace.deleted_at IS NULL
-    INNER JOIN public.teams AS team ON team.workspace_id = workspace.workspace_id AND team.team_id = $3
-    INNER JOIN public.team_members AS team_member ON team_member.team_id = team.team_id AND team_member.user_id = member.user_id
     WHERE member.workspace_id = $1 AND member.user_id = $2
+      AND member.role <> CAST('guest' AS public.user_role)
+      AND ((CAST($4 AS text) = 'document_comment' AND CAST($3 AS uuid) IS NULL
+          AND public.can_read_document(member.workspace_id, member.user_id, $7))
+        OR (CAST($4 AS text) <> 'document_comment' AND EXISTS (
+          SELECT 1 FROM public.teams AS team
+          JOIN public.team_members AS team_member ON team_member.team_id = team.team_id AND team_member.user_id = member.user_id
+          WHERE team.workspace_id = workspace.workspace_id AND team.team_id = CAST($3 AS uuid)
+        )))
 )
+AND (CAST($4 AS text) <> 'chat_message' OR EXISTS (
+    SELECT 1 FROM public.chat_conversation_messages AS message
+    JOIN public.chat_conversations AS conversation ON conversation.id = message.conversation_id AND conversation.workspace_id = message.workspace_id
+    WHERE message.id = $5 AND message.workspace_id = $1
+      AND conversation.id = $7 AND conversation.kind = 'team' AND conversation.team_id = CAST($3 AS uuid)
+      AND message.author_id = $2 AND message.deleted_at IS NULL
+      AND COALESCE(message.thread_root_id, message.id) = $6
+      AND CAST(message.version AS text) = CAST($9 AS text)
+      AND public.can_read_chat_conversation(message.workspace_id, message.author_id, conversation.id)
+))
 ON CONFLICT (workspace_id, surface, idempotency_key) DO NOTHING
-RETURNING id, workspace_id, requester_id, team_id, surface, source_id, conversation_id, entity_id, parent_run_id, source_revision, source_hash, idempotency_key, request_hash, payload, status, summary, version, proposal, outcome, reply_id, proposal_reply_id, proposal_delivered_at, failure_reply_id, failure_pending, lease_token, lease_generation, lease_expires_at, attempt_count, retry_attempt_count, approved_at, available_at, created_at, updated_at
+RETURNING id, workspace_id, requester_id, team_id, surface, source_id, conversation_id, entity_id, parent_run_id, source_revision, source_hash, idempotency_key, request_hash, payload, status, summary, version, proposal, outcome, reply_id, proposal_reply_id, proposal_delivered_at, failure_reply_id, failure_pending, lease_token, lease_generation, lease_expires_at, attempt_count, retry_attempt_count, approved_at, available_at, created_at, updated_at, action_started_at
 `
 
 type CreateAgentInvocationParams struct {
 	WorkspaceID    uuid.UUID
 	RequesterID    uuid.UUID
-	TeamID         uuid.UUID
+	TeamID         *uuid.UUID
 	Surface        string
 	SourceID       uuid.UUID
 	ConversationID uuid.UUID
@@ -486,8 +514,31 @@ func (q *Queries) CreateAgentInvocation(ctx context.Context, arg CreateAgentInvo
 		&i.AvailableAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ActionStartedAt,
 	)
 	return i, err
+}
+
+const deferAgentInvocationAction = `-- name: DeferAgentInvocationAction :execrows
+UPDATE public.agent_invocations SET status = 'queued', available_at = clock_timestamp() + INTERVAL '5 seconds',
+    retry_attempt_count = 0, lease_token = NULL, lease_expires_at = NULL, version = version + 1, updated_at = clock_timestamp()
+WHERE id = $1 AND status = 'running' AND lease_token = $2
+    AND lease_generation = $3 AND lease_expires_at > clock_timestamp()
+    AND action_started_at IS NOT NULL AND outcome IS NULL
+`
+
+type DeferAgentInvocationActionParams struct {
+	ID              uuid.UUID
+	LeaseToken      *uuid.UUID
+	LeaseGeneration int64
+}
+
+func (q *Queries) DeferAgentInvocationAction(ctx context.Context, arg DeferAgentInvocationActionParams) (int64, error) {
+	result, err := q.db.Exec(ctx, deferAgentInvocationAction, arg.ID, arg.LeaseToken, arg.LeaseGeneration)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const deferAgentInvocationFailure = `-- name: DeferAgentInvocationFailure :execrows
@@ -514,7 +565,7 @@ func (q *Queries) DeferAgentInvocationFailure(ctx context.Context, arg DeferAgen
 const failAgentInvocation = `-- name: FailAgentInvocation :execrows
 UPDATE public.agent_invocations SET status = CASE
         WHEN CAST($1 AS boolean) AND (retry_attempt_count < CAST($2 AS integer)
-            OR outcome IS NOT NULL OR proposal_reply_id IS NOT NULL) THEN 'queued'
+            OR outcome IS NOT NULL OR proposal_reply_id IS NOT NULL OR action_started_at IS NOT NULL) THEN 'queued'
         ELSE 'failed' END,
     summary = $3,
     failure_pending = FALSE,
@@ -580,7 +631,7 @@ func (q *Queries) FindAgentInvocationClarification(ctx context.Context, arg Find
 }
 
 const getAgentInvocation = `-- name: GetAgentInvocation :one
-SELECT id, workspace_id, requester_id, team_id, surface, source_id, conversation_id, entity_id, parent_run_id, source_revision, source_hash, idempotency_key, request_hash, payload, status, summary, version, proposal, outcome, reply_id, proposal_reply_id, proposal_delivered_at, failure_reply_id, failure_pending, lease_token, lease_generation, lease_expires_at, attempt_count, retry_attempt_count, approved_at, available_at, created_at, updated_at FROM public.agent_invocations WHERE id = $1 AND workspace_id = $2
+SELECT id, workspace_id, requester_id, team_id, surface, source_id, conversation_id, entity_id, parent_run_id, source_revision, source_hash, idempotency_key, request_hash, payload, status, summary, version, proposal, outcome, reply_id, proposal_reply_id, proposal_delivered_at, failure_reply_id, failure_pending, lease_token, lease_generation, lease_expires_at, attempt_count, retry_attempt_count, approved_at, available_at, created_at, updated_at, action_started_at FROM public.agent_invocations WHERE id = $1 AND workspace_id = $2
 `
 
 type GetAgentInvocationParams struct {
@@ -625,22 +676,30 @@ func (q *Queries) GetAgentInvocation(ctx context.Context, arg GetAgentInvocation
 		&i.AvailableAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ActionStartedAt,
 	)
 	return i, err
 }
 
 const getAgentInvocationByKey = `-- name: GetAgentInvocationByKey :one
-SELECT invocation.id, invocation.workspace_id, invocation.requester_id, invocation.team_id, invocation.surface, invocation.source_id, invocation.conversation_id, invocation.entity_id, invocation.parent_run_id, invocation.source_revision, invocation.source_hash, invocation.idempotency_key, invocation.request_hash, invocation.payload, invocation.status, invocation.summary, invocation.version, invocation.proposal, invocation.outcome, invocation.reply_id, invocation.proposal_reply_id, invocation.proposal_delivered_at, invocation.failure_reply_id, invocation.failure_pending, invocation.lease_token, invocation.lease_generation, invocation.lease_expires_at, invocation.attempt_count, invocation.retry_attempt_count, invocation.approved_at, invocation.available_at, invocation.created_at, invocation.updated_at FROM public.agent_invocations AS invocation
+SELECT invocation.id, invocation.workspace_id, invocation.requester_id, invocation.team_id, invocation.surface, invocation.source_id, invocation.conversation_id, invocation.entity_id, invocation.parent_run_id, invocation.source_revision, invocation.source_hash, invocation.idempotency_key, invocation.request_hash, invocation.payload, invocation.status, invocation.summary, invocation.version, invocation.proposal, invocation.outcome, invocation.reply_id, invocation.proposal_reply_id, invocation.proposal_delivered_at, invocation.failure_reply_id, invocation.failure_pending, invocation.lease_token, invocation.lease_generation, invocation.lease_expires_at, invocation.attempt_count, invocation.retry_attempt_count, invocation.approved_at, invocation.available_at, invocation.created_at, invocation.updated_at, invocation.action_started_at FROM public.agent_invocations AS invocation
 WHERE invocation.workspace_id = $1 AND invocation.surface = $2
     AND invocation.idempotency_key = $3 AND invocation.requester_id = $4
     AND EXISTS (
         SELECT 1 FROM public.workspace_members AS member
         INNER JOIN public.users AS account ON account.user_id = member.user_id AND account.is_active = TRUE AND account.is_system = FALSE
         INNER JOIN public.workspaces AS workspace ON workspace.workspace_id = member.workspace_id AND workspace.deleted_at IS NULL
-        INNER JOIN public.teams AS team ON team.workspace_id = workspace.workspace_id AND team.team_id = invocation.team_id
-        INNER JOIN public.team_members AS team_member ON team_member.team_id = team.team_id AND team_member.user_id = member.user_id
         WHERE member.workspace_id = invocation.workspace_id AND member.user_id = invocation.requester_id
+          AND member.role <> CAST('guest' AS public.user_role)
+          AND ((invocation.surface = 'document_comment' AND invocation.team_id IS NULL
+              AND public.can_read_document(member.workspace_id, member.user_id, invocation.entity_id))
+            OR (invocation.surface <> 'document_comment' AND EXISTS (
+              SELECT 1 FROM public.teams AS team
+              JOIN public.team_members AS team_member ON team_member.team_id = team.team_id AND team_member.user_id = member.user_id
+              WHERE team.workspace_id = workspace.workspace_id AND team.team_id = invocation.team_id
+            )))
     )
+    AND (invocation.surface <> 'chat_message' OR public.can_read_chat_conversation(invocation.workspace_id, invocation.requester_id, invocation.entity_id))
 `
 
 type GetAgentInvocationByKeyParams struct {
@@ -692,6 +751,7 @@ func (q *Queries) GetAgentInvocationByKey(ctx context.Context, arg GetAgentInvoc
 		&i.AvailableAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ActionStartedAt,
 	)
 	return i, err
 }
@@ -727,7 +787,7 @@ func (q *Queries) GetAgentInvocationSourceParent(ctx context.Context, arg GetAge
 }
 
 const listAgentInvocations = `-- name: ListAgentInvocations :many
-SELECT id, workspace_id, requester_id, team_id, surface, source_id, conversation_id, entity_id, parent_run_id, source_revision, source_hash, idempotency_key, request_hash, payload, status, summary, version, proposal, outcome, reply_id, proposal_reply_id, proposal_delivered_at, failure_reply_id, failure_pending, lease_token, lease_generation, lease_expires_at, attempt_count, retry_attempt_count, approved_at, available_at, created_at, updated_at FROM public.agent_invocations
+SELECT id, workspace_id, requester_id, team_id, surface, source_id, conversation_id, entity_id, parent_run_id, source_revision, source_hash, idempotency_key, request_hash, payload, status, summary, version, proposal, outcome, reply_id, proposal_reply_id, proposal_delivered_at, failure_reply_id, failure_pending, lease_token, lease_generation, lease_expires_at, attempt_count, retry_attempt_count, approved_at, available_at, created_at, updated_at, action_started_at FROM public.agent_invocations
 WHERE workspace_id = $1 AND entity_id = $2
 ORDER BY created_at DESC, id DESC LIMIT 100
 `
@@ -780,6 +840,7 @@ func (q *Queries) ListAgentInvocations(ctx context.Context, arg ListAgentInvocat
 			&i.AvailableAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.ActionStartedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -793,8 +854,14 @@ func (q *Queries) ListAgentInvocations(ctx context.Context, arg ListAgentInvocat
 
 const listPendingAgentInvocationIDs = `-- name: ListPendingAgentInvocationIDs :many
 SELECT id FROM public.agent_invocations
-WHERE (status = 'queued' AND available_at <= clock_timestamp()) OR (status = 'running' AND lease_expires_at < clock_timestamp())
-ORDER BY created_at, id LIMIT $1
+WHERE ((status = 'queued' AND available_at <= clock_timestamp()) OR (status = 'running' AND lease_expires_at < clock_timestamp()))
+  AND (surface <> 'chat_message' OR EXISTS (
+      SELECT 1 FROM public.workspaces AS workspace
+      LEFT JOIN public.workspace_settings AS settings ON settings.workspace_id = workspace.workspace_id
+      WHERE workspace.workspace_id = agent_invocations.workspace_id
+        AND workspace.deleted_at IS NULL AND COALESCE(settings.chat_enabled, TRUE)
+  ))
+ORDER BY CASE WHEN status = 'running' THEN lease_expires_at ELSE available_at END, created_at, id LIMIT $1
 `
 
 type ListPendingAgentInvocationIDsParams struct {
@@ -822,9 +889,9 @@ func (q *Queries) ListPendingAgentInvocationIDs(ctx context.Context, arg ListPen
 }
 
 const lockAgentInvocationContinuation = `-- name: LockAgentInvocationContinuation :one
-SELECT id, workspace_id, requester_id, team_id, surface, source_id, conversation_id, entity_id, parent_run_id, source_revision, source_hash, idempotency_key, request_hash, payload, status, summary, version, proposal, outcome, reply_id, proposal_reply_id, proposal_delivered_at, failure_reply_id, failure_pending, lease_token, lease_generation, lease_expires_at, attempt_count, retry_attempt_count, approved_at, available_at, created_at, updated_at FROM public.agent_invocations
+SELECT id, workspace_id, requester_id, team_id, surface, source_id, conversation_id, entity_id, parent_run_id, source_revision, source_hash, idempotency_key, request_hash, payload, status, summary, version, proposal, outcome, reply_id, proposal_reply_id, proposal_delivered_at, failure_reply_id, failure_pending, lease_token, lease_generation, lease_expires_at, attempt_count, retry_attempt_count, approved_at, available_at, created_at, updated_at, action_started_at FROM public.agent_invocations
 WHERE id = $1 AND workspace_id = $2
-    AND team_id = $3 AND surface = $4 AND entity_id = $5
+    AND team_id IS NOT DISTINCT FROM CAST($3 AS uuid) AND surface = $4 AND entity_id = $5
     AND conversation_id = $6
 FOR UPDATE
 `
@@ -832,7 +899,7 @@ FOR UPDATE
 type LockAgentInvocationContinuationParams struct {
 	ID             uuid.UUID
 	WorkspaceID    uuid.UUID
-	TeamID         uuid.UUID
+	TeamID         *uuid.UUID
 	Surface        string
 	EntityID       uuid.UUID
 	ConversationID uuid.UUID
@@ -882,12 +949,13 @@ func (q *Queries) LockAgentInvocationContinuation(ctx context.Context, arg LockA
 		&i.AvailableAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ActionStartedAt,
 	)
 	return i, err
 }
 
 const lockAgentInvocationLease = `-- name: LockAgentInvocationLease :one
-SELECT id, workspace_id, requester_id, team_id, surface, source_id, conversation_id, entity_id, parent_run_id, source_revision, source_hash, idempotency_key, request_hash, payload, status, summary, version, proposal, outcome, reply_id, proposal_reply_id, proposal_delivered_at, failure_reply_id, failure_pending, lease_token, lease_generation, lease_expires_at, attempt_count, retry_attempt_count, approved_at, available_at, created_at, updated_at FROM public.agent_invocations
+SELECT id, workspace_id, requester_id, team_id, surface, source_id, conversation_id, entity_id, parent_run_id, source_revision, source_hash, idempotency_key, request_hash, payload, status, summary, version, proposal, outcome, reply_id, proposal_reply_id, proposal_delivered_at, failure_reply_id, failure_pending, lease_token, lease_generation, lease_expires_at, attempt_count, retry_attempt_count, approved_at, available_at, created_at, updated_at, action_started_at FROM public.agent_invocations
 WHERE id = $1 AND status = 'running' AND lease_token = $2
     AND lease_generation = $3 AND lease_expires_at > clock_timestamp()
 FOR UPDATE
@@ -936,6 +1004,7 @@ func (q *Queries) LockAgentInvocationLease(ctx context.Context, arg LockAgentInv
 		&i.AvailableAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ActionStartedAt,
 	)
 	return i, err
 }
@@ -945,7 +1014,7 @@ UPDATE public.agent_invocations SET failure_reply_id = $1, version = version + 1
 WHERE id = $2 AND status = 'running' AND lease_token = $3
     AND lease_generation = $4 AND lease_expires_at > clock_timestamp()
     AND failure_pending = TRUE AND failure_reply_id IS NULL
-RETURNING id, workspace_id, requester_id, team_id, surface, source_id, conversation_id, entity_id, parent_run_id, source_revision, source_hash, idempotency_key, request_hash, payload, status, summary, version, proposal, outcome, reply_id, proposal_reply_id, proposal_delivered_at, failure_reply_id, failure_pending, lease_token, lease_generation, lease_expires_at, attempt_count, retry_attempt_count, approved_at, available_at, created_at, updated_at
+RETURNING id, workspace_id, requester_id, team_id, surface, source_id, conversation_id, entity_id, parent_run_id, source_revision, source_hash, idempotency_key, request_hash, payload, status, summary, version, proposal, outcome, reply_id, proposal_reply_id, proposal_delivered_at, failure_reply_id, failure_pending, lease_token, lease_generation, lease_expires_at, attempt_count, retry_attempt_count, approved_at, available_at, created_at, updated_at, action_started_at
 `
 
 type SaveAgentInvocationFailurePublicationParams struct {
@@ -997,6 +1066,7 @@ func (q *Queries) SaveAgentInvocationFailurePublication(ctx context.Context, arg
 		&i.AvailableAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ActionStartedAt,
 	)
 	return i, err
 }
@@ -1005,7 +1075,7 @@ const saveAgentInvocationOutcome = `-- name: SaveAgentInvocationOutcome :one
 UPDATE public.agent_invocations SET outcome = $1, version = version + 1, updated_at = clock_timestamp()
 WHERE id = $2 AND status = 'running' AND lease_token = $3
     AND lease_generation = $4 AND lease_expires_at > clock_timestamp() AND outcome IS NULL
-RETURNING id, workspace_id, requester_id, team_id, surface, source_id, conversation_id, entity_id, parent_run_id, source_revision, source_hash, idempotency_key, request_hash, payload, status, summary, version, proposal, outcome, reply_id, proposal_reply_id, proposal_delivered_at, failure_reply_id, failure_pending, lease_token, lease_generation, lease_expires_at, attempt_count, retry_attempt_count, approved_at, available_at, created_at, updated_at
+RETURNING id, workspace_id, requester_id, team_id, surface, source_id, conversation_id, entity_id, parent_run_id, source_revision, source_hash, idempotency_key, request_hash, payload, status, summary, version, proposal, outcome, reply_id, proposal_reply_id, proposal_delivered_at, failure_reply_id, failure_pending, lease_token, lease_generation, lease_expires_at, attempt_count, retry_attempt_count, approved_at, available_at, created_at, updated_at, action_started_at
 `
 
 type SaveAgentInvocationOutcomeParams struct {
@@ -1057,6 +1127,7 @@ func (q *Queries) SaveAgentInvocationOutcome(ctx context.Context, arg SaveAgentI
 		&i.AvailableAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ActionStartedAt,
 	)
 	return i, err
 }
@@ -1068,7 +1139,7 @@ UPDATE public.agent_invocations SET proposal = $1, summary = $2,
     lease_expires_at = CASE WHEN CAST($3 AS text) = 'running' THEN lease_expires_at ELSE NULL END
 WHERE id = $4 AND status = 'running' AND lease_token = $5
     AND lease_generation = $6 AND lease_expires_at > clock_timestamp() AND proposal IS NULL
-RETURNING id, workspace_id, requester_id, team_id, surface, source_id, conversation_id, entity_id, parent_run_id, source_revision, source_hash, idempotency_key, request_hash, payload, status, summary, version, proposal, outcome, reply_id, proposal_reply_id, proposal_delivered_at, failure_reply_id, failure_pending, lease_token, lease_generation, lease_expires_at, attempt_count, retry_attempt_count, approved_at, available_at, created_at, updated_at
+RETURNING id, workspace_id, requester_id, team_id, surface, source_id, conversation_id, entity_id, parent_run_id, source_revision, source_hash, idempotency_key, request_hash, payload, status, summary, version, proposal, outcome, reply_id, proposal_reply_id, proposal_delivered_at, failure_reply_id, failure_pending, lease_token, lease_generation, lease_expires_at, attempt_count, retry_attempt_count, approved_at, available_at, created_at, updated_at, action_started_at
 `
 
 type SaveAgentInvocationProposalParams struct {
@@ -1124,6 +1195,7 @@ func (q *Queries) SaveAgentInvocationProposal(ctx context.Context, arg SaveAgent
 		&i.AvailableAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ActionStartedAt,
 	)
 	return i, err
 }
@@ -1132,7 +1204,7 @@ const saveAgentInvocationProposalPublication = `-- name: SaveAgentInvocationProp
 UPDATE public.agent_invocations SET proposal_reply_id = $1, version = version + 1, updated_at = clock_timestamp()
 WHERE id = $2 AND status = 'running' AND lease_token = $3
     AND lease_generation = $4 AND lease_expires_at > clock_timestamp() AND proposal_reply_id IS NULL
-RETURNING id, workspace_id, requester_id, team_id, surface, source_id, conversation_id, entity_id, parent_run_id, source_revision, source_hash, idempotency_key, request_hash, payload, status, summary, version, proposal, outcome, reply_id, proposal_reply_id, proposal_delivered_at, failure_reply_id, failure_pending, lease_token, lease_generation, lease_expires_at, attempt_count, retry_attempt_count, approved_at, available_at, created_at, updated_at
+RETURNING id, workspace_id, requester_id, team_id, surface, source_id, conversation_id, entity_id, parent_run_id, source_revision, source_hash, idempotency_key, request_hash, payload, status, summary, version, proposal, outcome, reply_id, proposal_reply_id, proposal_delivered_at, failure_reply_id, failure_pending, lease_token, lease_generation, lease_expires_at, attempt_count, retry_attempt_count, approved_at, available_at, created_at, updated_at, action_started_at
 `
 
 type SaveAgentInvocationProposalPublicationParams struct {
@@ -1184,6 +1256,7 @@ func (q *Queries) SaveAgentInvocationProposalPublication(ctx context.Context, ar
 		&i.AvailableAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ActionStartedAt,
 	)
 	return i, err
 }
@@ -1192,7 +1265,7 @@ const saveAgentInvocationPublication = `-- name: SaveAgentInvocationPublication 
 UPDATE public.agent_invocations SET reply_id = $1, version = version + 1, updated_at = clock_timestamp()
 WHERE id = $2 AND status = 'running' AND lease_token = $3
     AND lease_generation = $4 AND lease_expires_at > clock_timestamp() AND reply_id IS NULL
-RETURNING id, workspace_id, requester_id, team_id, surface, source_id, conversation_id, entity_id, parent_run_id, source_revision, source_hash, idempotency_key, request_hash, payload, status, summary, version, proposal, outcome, reply_id, proposal_reply_id, proposal_delivered_at, failure_reply_id, failure_pending, lease_token, lease_generation, lease_expires_at, attempt_count, retry_attempt_count, approved_at, available_at, created_at, updated_at
+RETURNING id, workspace_id, requester_id, team_id, surface, source_id, conversation_id, entity_id, parent_run_id, source_revision, source_hash, idempotency_key, request_hash, payload, status, summary, version, proposal, outcome, reply_id, proposal_reply_id, proposal_delivered_at, failure_reply_id, failure_pending, lease_token, lease_generation, lease_expires_at, attempt_count, retry_attempt_count, approved_at, available_at, created_at, updated_at, action_started_at
 `
 
 type SaveAgentInvocationPublicationParams struct {
@@ -1244,6 +1317,63 @@ func (q *Queries) SaveAgentInvocationPublication(ctx context.Context, arg SaveAg
 		&i.AvailableAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ActionStartedAt,
+	)
+	return i, err
+}
+
+const startAgentInvocationAction = `-- name: StartAgentInvocationAction :one
+UPDATE public.agent_invocations SET action_started_at = clock_timestamp(), version = version + 1, updated_at = clock_timestamp()
+WHERE id = $1 AND status = 'running' AND lease_token = $2
+    AND lease_generation = $3 AND lease_expires_at > clock_timestamp()
+    AND action_started_at IS NULL AND outcome IS NULL
+RETURNING id, workspace_id, requester_id, team_id, surface, source_id, conversation_id, entity_id, parent_run_id, source_revision, source_hash, idempotency_key, request_hash, payload, status, summary, version, proposal, outcome, reply_id, proposal_reply_id, proposal_delivered_at, failure_reply_id, failure_pending, lease_token, lease_generation, lease_expires_at, attempt_count, retry_attempt_count, approved_at, available_at, created_at, updated_at, action_started_at
+`
+
+type StartAgentInvocationActionParams struct {
+	ID              uuid.UUID
+	LeaseToken      *uuid.UUID
+	LeaseGeneration int64
+}
+
+func (q *Queries) StartAgentInvocationAction(ctx context.Context, arg StartAgentInvocationActionParams) (AgentInvocation, error) {
+	row := q.db.QueryRow(ctx, startAgentInvocationAction, arg.ID, arg.LeaseToken, arg.LeaseGeneration)
+	var i AgentInvocation
+	err := row.Scan(
+		&i.ID,
+		&i.WorkspaceID,
+		&i.RequesterID,
+		&i.TeamID,
+		&i.Surface,
+		&i.SourceID,
+		&i.ConversationID,
+		&i.EntityID,
+		&i.ParentRunID,
+		&i.SourceRevision,
+		&i.SourceHash,
+		&i.IdempotencyKey,
+		&i.RequestHash,
+		&i.Payload,
+		&i.Status,
+		&i.Summary,
+		&i.Version,
+		&i.Proposal,
+		&i.Outcome,
+		&i.ReplyID,
+		&i.ProposalReplyID,
+		&i.ProposalDeliveredAt,
+		&i.FailureReplyID,
+		&i.FailurePending,
+		&i.LeaseToken,
+		&i.LeaseGeneration,
+		&i.LeaseExpiresAt,
+		&i.AttemptCount,
+		&i.RetryAttemptCount,
+		&i.ApprovedAt,
+		&i.AvailableAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.ActionStartedAt,
 	)
 	return i, err
 }

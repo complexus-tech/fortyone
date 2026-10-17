@@ -45,6 +45,7 @@ const (
 	StrategyMissingElementPillars      = notificationsdomain.StrategyMissingElementPillars
 	StrategyMissingElementObjectives   = notificationsdomain.StrategyMissingElementObjectives
 
+	NotificationTypeChatMessage             = notificationsdomain.NotificationTypeChatMessage
 	NotificationTypeStoryUpdate             = notificationsdomain.NotificationTypeStoryUpdate
 	NotificationTypeStoryComment            = notificationsdomain.NotificationTypeStoryComment
 	NotificationTypeCommentReply            = notificationsdomain.NotificationTypeCommentReply
@@ -57,12 +58,14 @@ const (
 	NotificationTypeFeedbackItemMerged      = notificationsdomain.NotificationTypeFeedbackItemMerged
 	NotificationTypeStrategyUpdate          = notificationsdomain.NotificationTypeStrategyUpdate
 
-	EntityTypeStory     = notificationsdomain.EntityTypeStory
-	EntityTypeComment   = notificationsdomain.EntityTypeComment
-	EntityTypeObjective = notificationsdomain.EntityTypeObjective
-	EntityTypeKeyResult = notificationsdomain.EntityTypeKeyResult
-	EntityTypeFeedback  = notificationsdomain.EntityTypeFeedback
-	EntityTypeStrategy  = notificationsdomain.EntityTypeStrategy
+	EntityTypeChatMessage = notificationsdomain.EntityTypeChatMessage
+	EntityTypeStory       = notificationsdomain.EntityTypeStory
+	EntityTypeDocument    = notificationsdomain.EntityTypeDocument
+	EntityTypeComment     = notificationsdomain.EntityTypeComment
+	EntityTypeObjective   = notificationsdomain.EntityTypeObjective
+	EntityTypeKeyResult   = notificationsdomain.EntityTypeKeyResult
+	EntityTypeFeedback    = notificationsdomain.EntityTypeFeedback
+	EntityTypeStrategy    = notificationsdomain.EntityTypeStrategy
 )
 
 func SupportsInAppDelivery[T ~string](notificationType T) bool {

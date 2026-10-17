@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"mime/multipart"
 	"net/http"
-	"net/url"
 	"time"
 
 	attachments "github.com/complexus-tech/projects-api/internal/modules/attachments/service"
+	storytransport "github.com/complexus-tech/projects-api/internal/modules/stories/transport"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/pkg/validate"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -127,12 +127,7 @@ func storyMediaAttachmentID(r *http.Request) (uuid.UUID, error) {
 }
 
 func storyMediaURL(workspaceSlug string, storyID, attachmentID uuid.UUID) string {
-	return fmt.Sprintf(
-		"/workspaces/%s/stories/%s/media/%s",
-		url.PathEscape(workspaceSlug),
-		storyID,
-		attachmentID,
-	)
+	return storytransport.StoryMediaURL(workspaceSlug, storyID, attachmentID)
 }
 
 func redirectStoryMedia(w http.ResponseWriter, r *http.Request, accessURL string) {

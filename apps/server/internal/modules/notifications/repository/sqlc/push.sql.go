@@ -184,7 +184,9 @@ WITH notification_scope AS (
                   )
             )
         )
-        OR (
+        OR (CAST(scope.entity_type AS text) = 'chat_message' AND public.can_read_chat_message(scope.workspace_id,scope.recipient_id,scope.entity_id))
+          OR (CAST(scope.entity_type AS text) = 'document' AND public.can_read_document(scope.workspace_id,scope.recipient_id,scope.entity_id))
+            OR (
             CAST(scope.entity_type AS text) = 'strategy'
             AND (
                 scope.role = 'admin'

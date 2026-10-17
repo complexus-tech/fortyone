@@ -2723,6 +2723,276 @@
         "The catalog includes 80 canonical emoji across expressions, feedback, celebration, and work.",
         "Existing per-user emoji uniqueness and count aggregation remain unchanged."
       ]
+    },
+    {
+      "version": 227,
+      "slug": "document_comment_agents",
+      "classification": "forward-only",
+      "files": {
+        "up": "000227_document_comment_agents.up.sql",
+        "down": "000227_document_comment_agents.down.sql"
+      },
+      "compatibility": {
+        "schema": "Adds document comment identities, document-scoped notifications, nullable team scope for document invocations, and the durable CRDT edit queue.",
+        "api": "Document comment creation IDs and reply targets are additive. Story invocation team scope remains required.",
+        "worker": "Document edits require the collaboration consumer and document-aware invocation runtime.",
+        "mixed_versions": "Apply schema before API, worker, and collaboration service. Older story workers must be upgraded before document requests are enabled."
+      },
+      "rollout": {
+        "sequence": 76,
+        "mode": "schema-first",
+        "steps": [
+          "Apply migration 000227 after 000226.",
+          "Deploy document-aware API, worker, and collaboration consumer together."
+        ]
+      },
+      "recovery": {
+        "strategy": "forward-fix",
+        "procedure": [
+          "Preserve comments, edit receipts, and invocations. Repair forward."
+        ]
+      },
+      "operational_notes": [
+        "Document notification visibility follows current document access without an admin bypass.",
+        "Queued CRDT edits are revision and collaboration-epoch fenced."
+      ]
+    },
+    {
+      "version": 228,
+      "slug": "document_mention_observation_ledger",
+      "classification": "forward-only",
+      "files": {
+        "up": "000228_document_mention_observation_ledger.up.sql",
+        "down": "000228_document_mention_observation_ledger.down.sql"
+      },
+      "compatibility": {
+        "schema": "Separates persisted document mention observations from current notification recipient eligibility.",
+        "api": "No API shape changes.",
+        "worker": "Existing document notification dispatcher and collaboration writes use the updated shared function.",
+        "mixed_versions": "Safe with document-aware API and collaboration versions using the existing sync_document_body_mentions signature."
+      },
+      "rollout": {
+        "sequence": 77,
+        "mode": "schema-first",
+        "steps": [
+          "Apply migration 000228 after 000227. No application restart is required."
+        ]
+      },
+      "recovery": {
+        "strategy": "forward-fix",
+        "procedure": [
+          "Preserve document mention observations and repair forward."
+        ]
+      },
+      "operational_notes": [
+        "Mention delivery still requires current document read access.",
+        "An unchanged mention does not notify merely because its recipient gains access or becomes active later."
+      ]
+    },
+    {
+      "version": 229,
+      "slug": "team_chat",
+      "classification": "forward-only",
+      "files": {
+        "up": "000229_team_chat.up.sql",
+        "down": "000229_team_chat.down.sql"
+      },
+      "compatibility": {
+        "schema": "Adds membership-scoped team conversations, DMs, message history, attachment ownership, read cursors, and a transactional chat outbox.",
+        "api": "New chat endpoints are additive; existing personal Maya conversations are unchanged.",
+        "worker": "New chat dispatcher consumes identifiers only after live recipient authorization.",
+        "mixed_versions": "Apply schema before enabling chat API and worker. Older versions ignore the new tables."
+      },
+      "rollout": {
+        "sequence": 78,
+        "mode": "schema-first",
+        "steps": [
+          "Apply migration 000229 after 000228.",
+          "Deploy chat API and outbox dispatcher before enabling Chat clients."
+        ]
+      },
+      "recovery": {
+        "strategy": "forward-fix",
+        "procedure": [
+          "Preserve messages, attachments, read state, and pending events. Disable new writes and repair forward."
+        ]
+      },
+      "operational_notes": [
+        "Team rooms are provisioned for existing teams and future team inserts.",
+        "DM and team visibility require current active workspace membership; team rooms additionally require current team membership.",
+        "Outbox events exclude message bodies; consumers recheck current recipient access."
+      ]
+    },
+    {
+      "version": 230,
+      "slug": "chat_notifications",
+      "classification": "forward-only",
+      "files": {
+        "up": "000230_chat_notifications.up.sql",
+        "down": "000230_chat_notifications.down.sql"
+      },
+      "compatibility": {
+        "schema": "Adds chat_message notification and entity enum values.",
+        "api": "Chat notifications use existing inbox and preferences APIs.",
+        "worker": "Delivery rechecks current chat membership before sending.",
+        "mixed_versions": "Apply after team chat schema and before enabling chat notification delivery."
+      },
+      "rollout": {
+        "sequence": 79,
+        "mode": "schema-first",
+        "steps": [
+          "Apply 000230 after 000229.",
+          "Deploy chat-aware API and notification workers together."
+        ]
+      },
+      "recovery": {
+        "strategy": "forward-fix",
+        "procedure": [
+          "Preserve existing notifications and repair forward."
+        ]
+      },
+      "operational_notes": [
+        "No message bodies are included in chat notification text.",
+        "Chat notification visibility follows live conversation membership."
+      ]
+    },
+    {
+      "version": 231,
+      "slug": "chat_audio_transcriptions",
+      "classification": "forward-only",
+      "files": {
+        "up": "000231_chat_audio_transcriptions.up.sql",
+        "down": "000231_chat_audio_transcriptions.down.sql"
+      },
+      "compatibility": {
+        "schema": "Adds optional voice-note metadata and durable explicitly requested transcripts owned by live chat attachments.",
+        "api": "Attachment kind and durationMs are optional; transcription GET and POST endpoints are additive.",
+        "worker": "A new worker claims pending transcripts and treats expired processing leases as failed until explicit retry.",
+        "mixed_versions": "Apply schema before updated API and worker. Existing chat clients ignore optional metadata."
+      },
+      "rollout": {
+        "sequence": 80,
+        "mode": "schema-first",
+        "steps": [
+          "Apply migration 000231 after 000230.",
+          "Deploy the chat transcription worker and API before enabling recording clients."
+        ]
+      },
+      "recovery": {
+        "strategy": "forward-fix",
+        "procedure": [
+          "Disable new transcription requests if necessary; preserve voice notes and completed transcripts and repair forward."
+        ]
+      },
+      "operational_notes": [
+        "Transcription starts only after an explicit request for a sent recording.",
+        "Expired processing leases require explicit retry to avoid automatically repeating potentially billed inference.",
+        "Recorded duration is client metadata; streaming WebM may not include a verifiable duration. Audio bytes are capped at 20 MiB."
+      ]
+    },
+    {
+      "version": 232,
+      "slug": "maya_reply_seen_notifications",
+      "classification": "forward-only",
+      "files": {
+        "up": "000232_maya_reply_seen_notifications.up.sql",
+        "down": "000232_maya_reply_seen_notifications.down.sql"
+      },
+      "compatibility": {
+        "schema": "Additive exact visible-comment receipts and delayed Maya reply notification decisions.",
+        "api": "Updated API records scoped comment visibility; older clients receive normal delayed reply notifications.",
+        "worker": "Updated worker defers Maya comment replies for five seconds and recovers decisions from PostgreSQL. Explicit mentions remain immediate.",
+        "mixed_versions": "Apply schema first, then deploy API and workers. Old workers retain immediate reply notification behavior."
+      },
+      "rollout": {
+        "sequence": 81,
+        "mode": "schema-first",
+        "steps": [
+          "Apply migration 000232 after 000231.",
+          "Deploy the API and workers before clients begin exact comment acknowledgments."
+        ]
+      },
+      "recovery": {
+        "strategy": "forward-fix",
+        "procedure": [
+          "Preserve seen receipts and pending notification decisions; repair forward."
+        ]
+      },
+      "operational_notes": [
+        "A seen receipt suppresses only the same recipient and comment. Thread read cutoffs are not visibility evidence.",
+        "Pending delivery retries use bounded exponential backoff; notification event receipts prevent duplicate inbox rows."
+      ]
+    },
+    {
+      "version": 233,
+      "slug": "attachment_thumbnails",
+      "classification": "reversible",
+      "files": {
+        "up": "000233_attachment_thumbnails.up.sql",
+        "down": "000233_attachment_thumbnails.down.sql"
+      },
+      "compatibility": {
+        "schema": "Additive private versioned attachment thumbnail metadata and durable object cleanup.",
+        "api": "Thumbnail API authorizes the parent resource before serving or conditionally validating derivatives.",
+        "worker": "Updated workers require pdftoppm (poppler-utils); the worker image installs it.",
+        "mixed_versions": "Apply schema then deploy API and workers before the cached-thumbnail frontend."
+      },
+      "rollout": {
+        "sequence": 82,
+        "mode": "schema-first",
+        "steps": [
+          "Apply migration 000233 after 000232.",
+          "Deploy API and Poppler-equipped workers, then the frontend."
+        ]
+      },
+      "recovery": {
+        "strategy": "down-migration",
+        "procedure": [
+          "Roll back the cached-thumbnail frontend and stop thumbnail producers before running the down migration.",
+          "The down migration deletes derivative rows while the retirement trigger is active, preserving durable object cleanup. Original attachments remain unchanged."
+        ]
+      },
+      "operational_notes": [
+        "Thumbnail jobs are versioned, idempotent and bounded to two concurrent renders per worker process.",
+        "All cached bytes remain private; derived physical-object UUIDs have independent durable deletion records.",
+        "Original files remain available to the full viewer; thumbnail failure does not block original-file access."
+      ]
+    },
+    {
+      "version": 234,
+      "slug": "workspace_chat_enabled",
+      "classification": "forward-only",
+      "files": {
+        "up": "000234_workspace_chat_enabled.up.sql",
+        "down": "000234_workspace_chat_enabled.down.sql"
+      },
+      "compatibility": {
+        "schema": "Adds default-on chat_enabled to existing workspace_settings and enforces it in shared chat authorization. Initializes missing legacy settings rows without touching messages.",
+        "api": "Updated API exposes chatEnabled through the existing admin-only workspace settings update and reads live feature state; obsolete chat rollout environment variables are removed.",
+        "worker": "Updated workers read database feature state and preserve disabled-workspace pending work.",
+        "mixed_versions": "Apply schema first, then deploy API and workers together before publishing the settings toggle. Older binaries still use their previous environment rollout policy."
+      },
+      "rollout": {
+        "sequence": 83,
+        "mode": "schema-first",
+        "steps": [
+          "Apply migration 000234 after 000233. Chat defaults to enabled for existing and new workspaces.",
+          "Deploy API and workers, then the frontend feature switch. Remove obsolete chat rollout variables from deployment configuration.",
+          "If a restricted rollout is intended, explicitly disable non-pilot workspaces before exposing the new frontend."
+        ]
+      },
+      "recovery": {
+        "strategy": "forward-fix",
+        "procedure": [
+          "Disable Chat using the existing workspace settings API to pause new work while preserving messages and pending jobs.",
+          "Preserve feature decisions and repair forward; do not drop the setting or bypass schema preflight with an older binary."
+        ]
+      },
+      "operational_notes": [
+        "The constant column default is metadata-only on supported PostgreSQL; missing settings initialization scans workspaces, not message history.",
+        "Feature reads are read-only and scoped to live workspaces. Existing database membership resolution carries the setting into request and SSE authorization.",
+        "The scanner address remains separate infrastructure configuration; enabling Chat does not bypass upload scanning."
+      ]
     }
   ]
 }

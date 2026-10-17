@@ -25,27 +25,33 @@ func (repository *Repository) LockTeamDeletionAttachments(ctx context.Context, t
 	return ids, nil
 }
 
-// RetireTeamDeletionAttachments reuses the normal all-consumer orphan check;
-// shared story, document, and feedback files remain available. Storage work is
-// queued in this transaction and performed by the existing retryable worker.
 func (repository *Repository) RetireTeamDeletionAttachments(
+	ctx context.Context, tx pgx.Tx, ids []uuid.UUID, workspaceID uuid.UUID,
+	provider, container string, deletedAt time.Time,
+) error {
+	return repository.RetireUnreferencedAttachments(ctx, tx, ids, workspaceID, provider, container, deletedAt)
+}
+
+// RetireUnreferencedAttachments preserves uploads with any surviving consumer.
+// Metadata retirement and retryable storage deletion are committed together.
+func (repository *Repository) RetireUnreferencedAttachments(
 	ctx context.Context, tx pgx.Tx, ids []uuid.UUID, workspaceID uuid.UUID,
 	provider, container string, deletedAt time.Time,
 ) error {
 	if tx == nil || workspaceID == uuid.Nil || strings.TrimSpace(provider) == "" ||
 		strings.TrimSpace(container) == "" || deletedAt.IsZero() {
-		return errors.New("team attachment deletion storage route and transaction are required")
+		return errors.New("attachment retirement storage route and transaction are required")
 	}
 	queries := attachmentssql.New(tx)
 	const batchSize = 500
 	for start := 0; start < len(ids); start += batchSize {
 		end := min(start+batchSize, len(ids))
-		_, err := queries.RetireTeamDeletionAttachments(ctx, attachmentssql.RetireTeamDeletionAttachmentsParams{
+		_, err := queries.RetireUnreferencedAttachments(ctx, attachmentssql.RetireUnreferencedAttachmentsParams{
 			AttachmentIds: ids[start:end], WorkspaceID: workspaceID,
 			StorageProvider: provider, ContainerName: container, DeletedAt: deletedAt.UTC(),
 		})
 		if err != nil {
-			return fmt.Errorf("retire team attachments and enqueue object deletion: %w", err)
+			return fmt.Errorf("retire attachments and enqueue object deletion: %w", err)
 		}
 	}
 	return nil

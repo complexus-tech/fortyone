@@ -11,6 +11,7 @@ import (
 	domain "github.com/complexus-tech/projects-api/internal/modules/agentinvocations/domain"
 	invocationsql "github.com/complexus-tech/projects-api/internal/modules/agentinvocations/repository/sqlc"
 	"github.com/complexus-tech/projects-api/internal/platform/database"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -61,7 +62,7 @@ func (r *Repository) accept(ctx context.Context, input domain.Input, hash []byte
 	queries := r.query(ctx)
 	if input.ContinuationID != nil {
 		parent, err := queries.LockAgentInvocationContinuation(ctx, invocationsql.LockAgentInvocationContinuationParams{
-			ID: *input.ContinuationID, WorkspaceID: input.WorkspaceID, TeamID: input.TeamID,
+			ID: *input.ContinuationID, WorkspaceID: input.WorkspaceID, TeamID: optionalTeamID(input.TeamID),
 			Surface: input.Surface, EntityID: input.EntityID, ConversationID: input.ConversationID,
 		})
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -91,7 +92,7 @@ func (r *Repository) accept(ctx context.Context, input domain.Input, hash []byte
 		}
 	}
 	row, err := queries.CreateAgentInvocation(ctx, invocationsql.CreateAgentInvocationParams{
-		WorkspaceID: input.WorkspaceID, RequesterID: input.RequesterID, TeamID: input.TeamID,
+		WorkspaceID: input.WorkspaceID, RequesterID: input.RequesterID, TeamID: optionalTeamID(input.TeamID),
 		Surface: input.Surface, SourceID: input.SourceID, ConversationID: input.ConversationID, EntityID: input.EntityID, ParentRunID: input.ContinuationID,
 		SourceRevision: input.SourceRevision, SourceHash: input.SourceHash, IdempotencyKey: input.IdempotencyKey, RequestHash: hash, Payload: input.Payload,
 	})
@@ -123,4 +124,11 @@ func (r *Repository) accept(ctx context.Context, input domain.Input, hash []byte
 
 func keyParams(input domain.Input) invocationsql.GetAgentInvocationByKeyParams {
 	return invocationsql.GetAgentInvocationByKeyParams{WorkspaceID: input.WorkspaceID, RequesterID: input.RequesterID, Surface: input.Surface, IdempotencyKey: input.IdempotencyKey}
+}
+
+func optionalTeamID(id uuid.UUID) *uuid.UUID {
+	if id == uuid.Nil {
+		return nil
+	}
+	return &id
 }

@@ -52,7 +52,7 @@ impl Notification {
             || self.created_at.len() > 64
             || !matches!(
                 self.entity_type.as_str(),
-                "story" | "comment" | "objective" | "key_result" | "strategy" | "document"
+                "story" | "comment" | "objective" | "key_result" | "strategy" | "document" | "chat_message"
             )
         {
             return Err("Invalid notification content".into());
@@ -273,7 +273,7 @@ fn destination(mut current: Url, notification: &Notification, production: bool) 
     current.set_fragment(None);
     if matches!(
         notification.entity_type.as_str(),
-        "story" | "objective" | "key_result" | "strategy"
+        "story" | "objective" | "key_result" | "strategy" | "chat_message"
     ) {
         current.set_path(&format!(
             "{prefix}/notifications/{}",

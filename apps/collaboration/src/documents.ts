@@ -5,6 +5,7 @@ import { generateHTML, generateJSON } from "@tiptap/html/server";
 import { prosemirrorJSONToYDoc, yDocToProsemirrorJSON } from "@tiptap/y-tiptap";
 import * as Y from "yjs";
 import { createDocumentExtensions } from "@fortyone/document-editor";
+import { extractDocumentLinks } from "./document-links";
 
 const extensions = createDocumentExtensions({ collaborative: true });
 const schema = getSchema(extensions);
@@ -56,12 +57,34 @@ export function renderDocument(document: Y.Doc) {
     document.getText("title").toString().trim() || "Untitled document";
   if ([...title].length > 255) throw new Error("Document title is too long");
   const html = generateHTML(json, extensions);
-  const text = schema
-    .nodeFromJSON(json)
-    .textBetween(0, schema.nodeFromJSON(json).content.size, "\n");
+  const node = schema.nodeFromJSON(json);
+  const text = node.textBetween(0, node.content.size, "\n", (leaf) => {
+    if (leaf.type.name === "mention") return `@${leaf.attrs.label}`;
+    if (leaf.type.name === "documentReference") return leaf.attrs.label;
+    return leaf.type.name === "hardBreak" ? "\n" : "";
+  });
   if (Buffer.byteLength(html) > MAX_DOCUMENT_BYTES)
     throw new Error("Document is too large");
-  return { title, html, text };
+  return { title, html, text, ...extractDocumentLinks(json) };
+}
+
+export function restoreDocument(
+  state: Uint8Array | null,
+  title: string,
+  html: string,
+): Y.Doc {
+  if (state) {
+    const document = new Y.Doc();
+    Y.applyUpdate(document, state);
+    return document;
+  }
+  const document = prosemirrorJSONToYDoc(
+    schema,
+    generateJSON(html || "<p></p>", extensions),
+    "default",
+  );
+  document.getText("title").insert(0, title);
+  return document;
 }
 
 // A single Postgres transaction validates access, merges CRDT updates and stores
@@ -143,12 +166,7 @@ export class DocumentStore {
       if (row.collaboration_state) return row.collaboration_state;
       // Initialization is locked and persisted once, before any client receives
       // it. Concurrent first connections cannot seed duplicate paragraphs.
-      const document = prosemirrorJSONToYDoc(
-        schema,
-        generateJSON(row.content_html || "<p></p>", extensions),
-        "default",
-      );
-      document.getText("title").insert(0, row.title);
+      const document = restoreDocument(null, row.title, row.content_html);
       const state = Buffer.from(Y.encodeStateAsUpdate(document));
       document.destroy();
       await client.query(
@@ -180,10 +198,20 @@ export class DocumentStore {
         if (state.byteLength > MAX_DOCUMENT_BYTES)
           throw new Error("Document is too large");
         if (!state.equals(result.rows[0].collaboration_state)) {
-          const { title, html, text } = renderDocument(document);
+          const { title, html, text, references, mentions } =
+            renderDocument(document);
           await client.query(
             "UPDATE documents SET collaboration_state = $2, title = $3, content_html = $4, content_text = $5, updated_by = $6 WHERE document_id = $1",
             [id, state, title, html, text, current.userId],
+          );
+          await client.query(
+            "SELECT sync_document_body_references(workspace_id, $2, document_id, CAST($3 AS jsonb)), sync_document_body_mentions(workspace_id, $2, document_id, CAST($4 AS jsonb)) FROM documents WHERE document_id = $1",
+            [
+              id,
+              current.userId,
+              JSON.stringify(references),
+              JSON.stringify(mentions),
+            ],
           );
         }
         return state;

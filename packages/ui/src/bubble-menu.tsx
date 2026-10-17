@@ -201,7 +201,7 @@ const TextStyleMenu = ({
                   "text-xl font-semibold": level === 1,
                   "text-lg font-semibold": level === 2,
                   "font-semibold": level === 3,
-                  "text-sm font-semibold": level === 4,
+                  "text-base font-semibold": level === 4,
                 })}
               >
                 {label}
@@ -327,10 +327,7 @@ const ColorMenu = ({
     >
       <Menu.Group className="space-y-4 px-0">
         <section>
-          <Text
-            className="text-text-muted mb-2 text-[0.95rem]"
-            fontWeight="medium"
-          >
+          <Text className="text-text-muted mb-2 text-base" fontWeight="medium">
             Text colors
           </Text>
           <div className="grid grid-cols-8 gap-2">
@@ -356,10 +353,7 @@ const ColorMenu = ({
           </div>
         </section>
         <section>
-          <Text
-            className="text-text-muted mb-2 text-[0.95rem]"
-            fontWeight="medium"
-          >
+          <Text className="text-text-muted mb-2 text-base" fontWeight="medium">
             Text highlights
           </Text>
           <div className="grid grid-cols-8 gap-2">
@@ -408,12 +402,14 @@ const getLinkHref = (editor: Editor): string => {
 
 export const BubbleMenu = ({
   activeMenu,
+  allowFormatting,
   commentAction,
   createActions = [],
   editor,
   setActiveMenu,
 }: {
   activeMenu: BubbleMenuPanel;
+  allowFormatting?: boolean;
   commentAction?: BubbleMenuCommentAction;
   createActions?: readonly BubbleMenuCreateAction[];
   editor: Editor;
@@ -444,6 +440,29 @@ export const BubbleMenu = ({
     inputRef.current.focus();
   }, [editor, isLinkOpen]);
 
+  if (!(allowFormatting ?? editor.isEditable)) {
+    if (!commentAction) return null;
+    return (
+      <Box className="border-border-strong bg-surface-elevated rounded-xl border-[0.5px] p-1.5 shadow-xl">
+        <ButtonBase
+          aria-label="Comment"
+          className="text-base"
+          color="tertiary"
+          leftIcon={<CommentAdd01Icon className="size-5" />}
+          onClick={() => {
+            const { from, to } = editor.state.selection;
+            commentAction({ from, text: getSelectedText(editor), to });
+          }}
+          onMouseDown={preserveEditorSelection}
+          type="button"
+          variant="naked"
+        >
+          Comment
+        </ButtonBase>
+      </Box>
+    );
+  }
+
   return (
     <Box>
       <Flex
@@ -463,7 +482,7 @@ export const BubbleMenu = ({
         {commentAction ? (
           <ButtonBase
             aria-label="Comment"
-            className="hover:bg-state-active focus-visible:bg-state-active h-8 gap-1.5 px-2 text-sm font-medium"
+            className="hover:bg-state-active focus-visible:bg-state-active h-8 gap-1.5 px-2 text-base font-medium"
             color="tertiary"
             leftIcon={<CommentAdd01Icon className="size-4" strokeWidth={2} />}
             onMouseDown={preserveEditorSelection}
@@ -640,10 +659,10 @@ export const BubbleMenu = ({
         )}
         gap={1}
       >
-        <Box className="flex items-center gap-1">
+        <Box className="flex min-w-0 flex-wrap items-center gap-1">
           <input
             aria-label="Link URL"
-            className="placeholder:text-text-muted w-60 bg-transparent p-2 text-sm outline-none"
+            className="placeholder:text-text-muted min-w-0 flex-1 basis-40 bg-transparent p-2 text-base outline-none"
             defaultValue={getLinkHref(editor)}
             onKeyDown={(event) => {
               if (event.key === "Enter") setLink();
@@ -656,7 +675,7 @@ export const BubbleMenu = ({
             active
             color="tertiary"
             onClick={setLink}
-            size="xs"
+            size="md"
             type="button"
           >
             Save
@@ -671,7 +690,7 @@ export const BubbleMenu = ({
               editor.chain().focus().unsetLink().run();
               setActiveMenu(null);
             }}
-            size="xs"
+            size="md"
             type="button"
           >
             <span className="sr-only">Delete</span>

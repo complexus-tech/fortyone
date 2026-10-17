@@ -33,6 +33,17 @@
   word-break: normal;
 }
 
+.collaborativeEditor :global(.document-comment-highlight) {
+  cursor: pointer;
+  text-decoration-style: dotted;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.collaborativeEditor :global(.document-comment-highlight:hover) {
+  background-color: color-mix(in oklab, var(--color-warning) 20%, transparent);
+}
+
 .collaborativeEditor :global(.collaboration-carets__label) {
   border-radius: 3px 3px 3px 0;
   color: white;

@@ -31,4 +31,5 @@ const PopoverContent = forwardRef<
 PopoverContent.displayName = PopoverPrimitive.Content.displayName;
 
 Popover.Trigger = PopoverTrigger;
+Popover.Anchor = PopoverPrimitive.Anchor;
 Popover.Content = PopoverContent;

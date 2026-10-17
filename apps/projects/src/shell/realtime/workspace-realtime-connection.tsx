@@ -3,10 +3,17 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { usePostHog } from "posthog-js/react";
 import { useEffect, useEffectEvent } from "react";
-import { calendarKeys, notificationKeys } from "@/constants/keys";
+import {
+  calendarKeys,
+  chatCapabilityKeys,
+  notificationKeys,
+  workspaceKeys,
+} from "@/constants/keys";
 import { getApiUrl } from "@/lib/api-url";
 import { useSession } from "@/lib/auth/client";
 import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
+import { reconcileChatQueries } from "@/modules/chat/realtime";
+import { applyChatTypingEvent, clearChatTyping } from "@/modules/chat/typing";
 import type { DetailedStory } from "@/modules/story/types";
 import { storyKeys } from "@/modules/stories/constants";
 import { deliverDesktopNotification } from "@/shell/desktop/notification";
@@ -33,10 +40,21 @@ export const WorkspaceRealtimeConnection = () => {
 
   const invalidateRealtimeCaches = useEffectEvent((workspaceSlug: string) => {
     void queryClient.invalidateQueries({
+      queryKey: workspaceKeys.settings(workspaceSlug),
+    });
+    void queryClient.invalidateQueries({
+      queryKey: chatCapabilityKeys.workspace(workspaceSlug),
+    });
+    void reconcileChatQueries(queryClient, workspaceSlug);
+    void queryClient.invalidateQueries({
       queryKey: notificationKeys.all(workspaceSlug),
     });
     void queryClient.invalidateQueries({
       queryKey: storyKeys.all(workspaceSlug),
+    });
+    void queryClient.invalidateQueries({
+      predicate: ({ queryKey }) =>
+        queryKey[0] === "native-link-preview" && queryKey[2] === workspaceSlug,
     });
     void queryClient.invalidateQueries({
       queryKey: calendarKeys.all(workspaceSlug),
@@ -48,6 +66,30 @@ export const WorkspaceRealtimeConnection = () => {
       try {
         const realtimeEvent = parseWorkspaceRealtimeEvent(event.data);
 
+        if (realtimeEvent.kind === "chat-typing") {
+          if (
+            realtimeEvent.workspaceId === connectionWorkspaceId &&
+            realtimeEvent.userId === connectionAccountId
+          ) {
+            applyChatTypingEvent(realtimeEvent);
+          }
+          return;
+        }
+
+        if (realtimeEvent.kind === "chat-updated") {
+          if (
+            realtimeEvent.workspaceId === connectionWorkspaceId &&
+            realtimeEvent.userId === connectionAccountId
+          ) {
+            void reconcileChatQueries(
+              queryClient,
+              workspaceSlug,
+              realtimeEvent.conversationId,
+            );
+          }
+          return;
+        }
+
         if (realtimeEvent.kind === "calendar-updated") {
           void queryClient.invalidateQueries({
             queryKey: calendarKeys.all(workspaceSlug),
@@ -57,6 +99,23 @@ export const WorkspaceRealtimeConnection = () => {
 
         if (realtimeEvent.kind === "story-updated") {
           const { checklistChanged, ...storyChanges } = realtimeEvent.changes;
+
+          void queryClient.invalidateQueries({
+            predicate: ({ queryKey, state }) => {
+              if (
+                queryKey[0] !== "native-link-preview" ||
+                queryKey[2] !== workspaceSlug
+              )
+                return false;
+              const preview = state.data as
+                | { resource?: { kind: string; value: { id: string } } }
+                | undefined;
+              return (
+                preview?.resource?.kind === "story" &&
+                preview.resource.value.id === realtimeEvent.storyId
+              );
+            },
+          });
 
           void queryClient.invalidateQueries({
             predicate: (query) => {
@@ -152,6 +211,7 @@ export const WorkspaceRealtimeConnection = () => {
     };
     eventSource.onerror = (error) => {
       shouldReconcileOnOpen = true;
+      if (connectionWorkspaceId) clearChatTyping(connectionWorkspaceId);
       handleError(error);
     };
     eventSource.onopen = () => {
@@ -164,6 +224,7 @@ export const WorkspaceRealtimeConnection = () => {
     return () => {
       active = false;
       eventSource.close();
+      if (connectionWorkspaceId) clearChatTyping(connectionWorkspaceId);
     };
   }, [connectionAccountId, connectionWorkspaceId, connectionWorkspaceSlug]); // eslint-disable-line react-hooks/exhaustive-deps -- Effect Events are stable and must not become reconnection dependencies.
 

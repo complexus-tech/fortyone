@@ -228,7 +228,19 @@ it("rolls back only a failed create while another comment is still being sent", 
   expect(cached()!.pages[0].comments.map((comment) => comment.comment)).toEqual(
     ["Second", "<p>existing</p>"],
   );
-  expect(invalidate).not.toHaveBeenCalled();
+  // Maya's run status can refresh independently; comment reads must wait for
+  // the remaining optimistic write before replacing the conversation cache.
+  expect(invalidate).not.toHaveBeenCalledWith({
+    queryKey: QUERY_KEY,
+    exact: true,
+  });
+  expect(invalidate).not.toHaveBeenCalledWith({
+    queryKey: storyKeys.commentThreads("acme", STORY_ID),
+  });
+  expect(invalidate).not.toHaveBeenCalledWith({
+    queryKey: storyKeys.commentState("acme", STORY_ID),
+    exact: true,
+  });
   act(() => {
     second.resolve({
       data: makeComment("second-saved", {
@@ -240,7 +252,6 @@ it("rolls back only a failed create while another comment is still being sent", 
   await waitFor(() => {
     expect(result.current.second.isSuccess).toBe(true);
   });
-  expect(invalidate).toHaveBeenCalledTimes(3);
   expect(invalidate).toHaveBeenCalledWith({ queryKey: QUERY_KEY, exact: true });
   expect(invalidate).toHaveBeenCalledWith({
     queryKey: storyKeys.commentThreads("acme", STORY_ID),

@@ -23,8 +23,8 @@ describe("Documents home controls", () => {
     expect(controlsSource).not.toContain("DocumentControlMenu");
   });
 
-  it("uses compact sort labels and icon pagination in the top toolbar", () => {
-    expect(controlsSource).toContain('label: "Newest"');
+  it("uses compact sort labels and readable sort labels and icon pagination", () => {
+    expect(controlsSource).toContain('label: "Recently updated"');
     expect(controlsSource).toContain('label: "Oldest"');
     expect(controlsSource).toContain('label: "A to Z"');
     expect(controlsSource).toContain('label: "Z to A"');

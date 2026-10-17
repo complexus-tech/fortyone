@@ -15,6 +15,7 @@ on:
       - "apps/server/Dockerfile"
       - "apps/server/.dockerignore"
       - ".github/workflows/ecs-fargate-release.yml"
+      - ".github/scripts/ecs_release.py"
       - "!apps/server/**/*_test.go"
       - "!apps/server/internal/bootstrap/architecture/**"
       - "!apps/server/internal/testkit/**"
@@ -37,6 +38,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Test release safety checks
+        run: python3 -m unittest discover -s .github/scripts -p "test_*.py"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
@@ -106,7 +110,11 @@ jobs:
     concurrency:
       group: ecs-production-deploy
       cancel-in-progress: false
+    timeout-minutes: 45
     steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # v5.1.1
         with:
@@ -128,13 +136,39 @@ jobs:
           container-name: ${{ vars.ECS_SERVER_CONTAINER }}
           image: ${{ env.DOCKERHUB_SERVER_IMAGE }}:${{ env.IMAGE_TAG }}
 
+      # Schema changes remain an explicitly reviewed operator procedure. This
+      # task only reads migration state; it never runs -migrate on a main push.
+      - name: Verify candidate database schema
+        env:
+          ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
+          ECS_SERVICE: ${{ vars.ECS_SERVER_SERVICE }}
+          ECS_CONTAINER: ${{ vars.ECS_SERVER_CONTAINER }}
+          TASK_DEFINITION: ${{ steps.render-server.outputs.task-definition }}
+          RELEASE_RUN_ID: ${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          python3 .github/scripts/ecs_release.py check-schema \
+            --cluster "$ECS_CLUSTER" --service "$ECS_SERVICE" \
+            --container "$ECS_CONTAINER" --task-definition "$TASK_DEFINITION" \
+            --run-id "$RELEASE_RUN_ID"
+
       - name: Submit server rollout
         uses: aws-actions/amazon-ecs-deploy-task-definition@c465972ecbd160473f22e683363b422a5412a3de # v2.6.3
         with:
           task-definition: ${{ steps.render-server.outputs.task-definition }}
           service: ${{ vars.ECS_SERVER_SERVICE }}
           cluster: ${{ vars.ECS_CLUSTER }}
-          wait-for-service-stability: false
+          wait-for-service-stability: true
+
+      - name: Verify server candidate is healthy
+        env:
+          ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
+          ECS_SERVICE: ${{ vars.ECS_SERVER_SERVICE }}
+          ECS_CONTAINER: ${{ vars.ECS_SERVER_CONTAINER }}
+        run: |
+          python3 .github/scripts/ecs_release.py verify \
+            --cluster "$ECS_CLUSTER" --service "$ECS_SERVICE" \
+            --container "$ECS_CONTAINER" \
+            --expected-image "$DOCKERHUB_SERVER_IMAGE:$IMAGE_TAG"
 
       - name: Download worker task definition
         run: |
@@ -157,3 +191,14 @@ jobs:
           service: ${{ vars.ECS_WORKER_SERVICE }}
           cluster: ${{ vars.ECS_CLUSTER }}
           wait-for-service-stability: true
+
+      - name: Verify worker candidate is healthy
+        env:
+          ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
+          ECS_SERVICE: ${{ vars.ECS_WORKER_SERVICE }}
+          ECS_CONTAINER: ${{ vars.ECS_WORKER_CONTAINER }}
+        run: |
+          python3 .github/scripts/ecs_release.py verify \
+            --cluster "$ECS_CLUSTER" --service "$ECS_SERVICE" \
+            --container "$ECS_CONTAINER" \
+            --expected-image "$DOCKERHUB_WORKER_IMAGE:$IMAGE_TAG"

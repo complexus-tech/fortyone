@@ -59,6 +59,7 @@ func (repository *Repository) CreateAttachment(
 		UploadedBy:         uploaderID,
 		WorkspaceID:        attachment.WorkspaceID,
 		ScanStatus:         string(defaultScanStatus(attachment.ScanStatus)),
+		ScanCompletedAt:    attachment.ScanCompletedAt,
 		OptimizationStatus: string(defaultOptimizationStatus(attachment.OptimizationStatus)),
 	})
 	if err != nil {

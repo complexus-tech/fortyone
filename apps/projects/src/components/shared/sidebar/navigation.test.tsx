@@ -9,6 +9,11 @@ let mockPathname = "/acme/calendar";
 let mockTeamScope: string | null = null;
 let mockView: string | null = null;
 let mockHasViews = true;
+let mockChatEnabled = true;
+
+jest.mock("@/lib/hooks/workspace/chat-capabilities", () => ({
+  useChatCapabilities: () => ({ enabled: mockChatEnabled }),
+}));
 
 jest.mock("@/shared/views/presence-context", () => ({
   useViewsPresence: () => ({ hasViews: mockHasViews }),
@@ -27,6 +32,7 @@ jest.mock("icons", () => ({
   ActiveSprintIcon: () => null,
   AiIcon: () => null,
   CalendarIcon: () => null,
+  ChatIcon: () => null,
   ChevronRightIcon: () => null,
   DashboardIcon: () => null,
   DocsIcon: () => null,
@@ -138,6 +144,21 @@ describe("Navigation", () => {
     mockTeamScope = null;
     mockView = null;
     mockHasViews = true;
+    mockChatEnabled = true;
+  });
+
+  it("hides Chat until the server enables it for this workspace", () => {
+    mockChatEnabled = false;
+    const view = render(<Navigation />);
+    expect(
+      screen.queryByRole("link", { name: "Chat" }),
+    ).not.toBeInTheDocument();
+    mockChatEnabled = true;
+    view.rerender(<Navigation />);
+    expect(screen.getByRole("link", { name: "Chat" })).toHaveAttribute(
+      "href",
+      "/acme/chat",
+    );
   });
 
   it("groups shared destinations under an expanded Workspace section", () => {
@@ -153,6 +174,7 @@ describe("Navigation", () => {
       screen.getAllByRole("link").map((link) => link.textContent.trim()),
     ).toEqual([
       "My work",
+      "Chat",
       "AI Agent",
       "Calendar",
       "Active Sprint",
@@ -220,7 +242,14 @@ describe("Navigation", () => {
     );
     expect(
       screen.getAllByRole("link").map((link) => link.textContent.trim()),
-    ).toEqual(["My work", "AI Agent", "Calendar", "Active Sprint", "Summary"]);
+    ).toEqual([
+      "My work",
+      "Chat",
+      "AI Agent",
+      "Calendar",
+      "Active Sprint",
+      "Summary",
+    ]);
 
     fireEvent.click(workspaceTrigger);
 

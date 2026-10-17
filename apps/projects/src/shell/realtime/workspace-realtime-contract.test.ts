@@ -96,3 +96,55 @@ describe("workspace realtime contract", () => {
     }
   });
 });
+
+it("decodes scoped chat hints and rejects missing identities", () => {
+  const payload = {
+    type: "chat.updated",
+    eventId: "11111111-1111-4111-8111-111111111111",
+    workspaceId: "22222222-2222-4222-8222-222222222222",
+    userId: "33333333-3333-4333-8333-333333333333",
+    conversationId: "44444444-4444-4444-8444-444444444444",
+  };
+  expect(parseWorkspaceRealtimeEvent(JSON.stringify(payload))).toEqual({
+    kind: "chat-updated",
+    workspaceId: payload.workspaceId,
+    userId: payload.userId,
+    conversationId: payload.conversationId,
+  });
+  expect(() =>
+    parseWorkspaceRealtimeEvent(
+      JSON.stringify({ ...payload, userId: undefined }),
+    ),
+  ).toThrow(WorkspaceRealtimeContractError);
+});
+
+it("validates typing scope, identity and expiry without treating it as a notification", () => {
+  const payload = {
+    type: "chat.typing",
+    workspaceId: "11111111-1111-4111-8111-111111111111",
+    userId: "22222222-2222-4222-8222-222222222222",
+    conversationId: "33333333-3333-4333-8333-333333333333",
+    actorId: "44444444-4444-4444-8444-444444444444",
+    fullName: "Sarah Chen",
+    threadRootId: null,
+    isTyping: true,
+    expiresAt: "2026-10-16T19:00:06.000Z",
+  };
+  const { type: _type, ...activity } = payload;
+  expect(parseWorkspaceRealtimeEvent(JSON.stringify(payload))).toEqual({
+    kind: "chat-typing",
+    ...activity,
+  });
+  for (const invalid of [
+    { actorId: null },
+    { userId: undefined },
+    { threadRootId: "another-thread" },
+    { fullName: "" },
+    { isTyping: "true" },
+    { expiresAt: "never" },
+  ]) {
+    expect(() =>
+      parseWorkspaceRealtimeEvent(JSON.stringify({ ...payload, ...invalid })),
+    ).toThrow(WorkspaceRealtimeContractError);
+  }
+});

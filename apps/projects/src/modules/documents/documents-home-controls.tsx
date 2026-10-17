@@ -15,6 +15,7 @@ type FilterOption<T extends string> = {
 
 const accessOptions: FilterOption<DocumentAccessFilter>[] = [
   { label: "All access", value: "all" },
+  { label: "Public link", value: "public" },
   { label: "Workspace", value: "workspace" },
   { label: "Shared", value: "restricted" },
   { label: "Private", value: "private" },
@@ -41,7 +42,7 @@ type DocumentSortOption = {
 };
 
 const sortOptions: DocumentSortOption[] = [
-  { direction: "desc", field: "updated", label: "Newest" },
+  { direction: "desc", field: "updated", label: "Recently updated" },
   { direction: "asc", field: "updated", label: "Oldest" },
   { direction: "asc", field: "title", label: "A to Z" },
   { direction: "desc", field: "title", label: "Z to A" },
@@ -66,13 +67,20 @@ const DocumentFilterSelect = <T extends string>({
       }}
       value={value}
     >
-      <Select.Trigger className="bg-surface-muted dark:bg-surface-prominent/70 w-40">
+      <Select.Trigger
+        aria-label={label}
+        className="bg-surface-muted dark:bg-surface-prominent/70 h-10 w-44 text-base"
+      >
         <Select.Input />
       </Select.Trigger>
       <Select.Content className="ring-border/70 shadow-2xl ring-1">
         <Select.Group>
           {options.map((option) => (
-            <Select.Option key={option.value} value={option.value}>
+            <Select.Option
+              className="text-base"
+              key={option.value}
+              value={option.value}
+            >
               {option.label}
             </Select.Option>
           ))}
@@ -91,6 +99,7 @@ type DocumentFiltersProps = {
   onUpdatedChange: (value: DocumentUpdatedFilter) => void;
   owner: DocumentOwnerFilter;
   showOwner: boolean;
+  showPublic?: boolean;
   updated: DocumentUpdatedFilter;
 };
 
@@ -103,6 +112,7 @@ export const DocumentFilters = ({
   onUpdatedChange,
   owner,
   showOwner,
+  showPublic = true,
   updated,
 }: DocumentFiltersProps) => (
   <Popover>
@@ -115,7 +125,6 @@ export const DocumentFilters = ({
         color="tertiary"
         leftIcon={<FilterIcon className="h-4 w-auto" />}
         rightIcon={<ArrowDown2Icon className="h-3.5 w-auto" />}
-        size="sm"
         variant="outline"
       >
         {activeCount > 0 ? (
@@ -135,7 +144,6 @@ export const DocumentFilters = ({
             className="text-primary dark:text-primary"
             color="tertiary"
             onClick={onClear}
-            size="sm"
             variant="naked"
           >
             Clear filters
@@ -145,7 +153,11 @@ export const DocumentFilters = ({
       <DocumentFilterSelect
         label="Access"
         onChange={onAccessChange}
-        options={accessOptions}
+        options={
+          showPublic
+            ? accessOptions
+            : accessOptions.filter((option) => option.value !== "public")
+        }
         value={access}
       />
       {showOwner ? (
@@ -186,7 +198,7 @@ export const DocumentSortMenu = ({
     <Menu>
       <Menu.Button>
         <Button
-          className="gap-1.5 px-1.5 whitespace-nowrap"
+          className="gap-2 whitespace-nowrap"
           color="tertiary"
           leftIcon={
             <ArrowUpDownIcon
@@ -200,8 +212,7 @@ export const DocumentSortMenu = ({
               strokeWidth={2}
             />
           }
-          size="sm"
-          variant="naked"
+          variant="outline"
         >
           {selectedOption.label}
         </Button>

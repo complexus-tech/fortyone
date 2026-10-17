@@ -8,6 +8,7 @@ export const favoriteRefSchema = z.discriminatedUnion("kind", [
     teamId: z.uuid().optional(),
   }),
   z.object({ kind: z.literal("team"), id: z.uuid() }),
+  z.object({ kind: z.literal("document"), id: z.uuid() }),
 ]);
 
 export type FavoriteRef = z.infer<typeof favoriteRefSchema>;

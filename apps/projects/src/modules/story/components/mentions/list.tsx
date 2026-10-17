@@ -107,21 +107,12 @@ export const MentionList = forwardRef<MentionListRef, MentionListProps>(
             <Avatar name={item.label} size="sm" src={item.avatar} />
             <Text className="max-w-48 truncate">
               {item.label}
-              {item.id === session?.user.id && (
+              {item.mentionKind === "agent" || item.id === session?.user.id ? (
                 <Text as="span" color="muted">
-                  (You)
+                  {item.mentionKind === "agent" ? " (agent)" : " (You)"}
                 </Text>
-              )}
+              ) : null}
             </Text>
-            {item.mentionKind === "agent" ? (
-              <Text
-                className="ml-auto text-xs"
-                color="muted"
-                fontWeight="medium"
-              >
-                Agent
-              </Text>
-            ) : null}
           </button>
         ))}
       </Box>

@@ -1,6 +1,7 @@
 package documentdomain
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -29,11 +30,13 @@ type Member struct {
 }
 
 type RelatedWork struct {
-	EntityID   uuid.UUID
-	EntityType RelationshipType
-	Title      string
-	Reference  *string
-	TeamID     *uuid.UUID
+	ReferencedInContent bool
+	EntityID            uuid.UUID
+	EntityType          RelationshipType
+	Title               string
+	Reference           *string
+	StatusColor         *string
+	TeamID              *uuid.UUID
 }
 
 type Document struct {
@@ -42,6 +45,7 @@ type Document struct {
 	CollaborationEpoch int64
 	Collaborative      bool
 	PublicToken        *string
+	PublicEnabled      bool
 	ID                 uuid.UUID
 	WorkspaceID        uuid.UUID
 	Title              string
@@ -68,7 +72,10 @@ type Summary struct {
 	UpdatedBy        uuid.UUID
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
+	ArchivedAt       *time.Time
+	PublicEnabled    bool
 	CanEdit          bool
+	RelatedWork      []RelatedWork
 	RelatedWorkCount int
 }
 
@@ -124,13 +131,15 @@ type MediaInput struct {
 }
 
 type Comment struct {
-	ID           uuid.UUID
-	Body         string
-	CreatedBy    uuid.UUID
-	AuthorName   string
-	AuthorAvatar *string
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	ReplyToCommentID *uuid.UUID
+	MentionedUserIDs []uuid.UUID
+	ID               uuid.UUID
+	Body             string
+	CreatedBy        uuid.UUID
+	AuthorName       string
+	AuthorAvatar     *string
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
 }
 
 type CommentThread struct {
@@ -147,6 +156,7 @@ type CommentThread struct {
 }
 
 type CreateCommentInput struct {
+	CreationID  *uuid.UUID
 	WorkspaceID uuid.UUID
 	UserID      uuid.UUID
 	DocumentID  uuid.UUID
@@ -157,11 +167,13 @@ type CreateCommentInput struct {
 }
 
 type ReplyCommentInput struct {
-	WorkspaceID uuid.UUID
-	UserID      uuid.UUID
-	DocumentID  uuid.UUID
-	ThreadID    uuid.UUID
-	Body        string
+	CreationID       *uuid.UUID
+	ReplyToCommentID *uuid.UUID
+	WorkspaceID      uuid.UUID
+	UserID           uuid.UUID
+	DocumentID       uuid.UUID
+	ThreadID         uuid.UUID
+	Body             string
 }
 
 type ResolveCommentInput struct {
@@ -194,4 +206,38 @@ type PublicDocument struct {
 type CollaborationSession struct {
 	Token string `json:"token"`
 	Name  string `json:"name"`
+}
+
+// CommentContext is scoped to the current reader and document, never a global ID lookup.
+type CommentContext struct {
+	Comment  Comment
+	Thread   CommentThread
+	Document Document
+}
+type CommentMention struct {
+	ID        uuid.UUID `json:"id"`
+	Name      string    `json:"name"`
+	Username  string    `json:"username"`
+	AvatarURL *string   `json:"avatarUrl"`
+}
+type AgentReplyInput struct {
+	WorkspaceID, DocumentID, RequesterID, AuthorID, ThreadID, CreationID uuid.UUID
+	ReplyToCommentID                                                     *uuid.UUID
+	Body                                                                 string
+}
+type AgentEditInput struct {
+	InvocationID, WorkspaceID, DocumentID, RequesterID uuid.UUID
+	ExpectedRevision, ExpectedEpoch                    int64
+	Operations                                         json.RawMessage
+}
+type AgentEdit struct {
+	ID, InvocationID, WorkspaceID, DocumentID, RequesterID uuid.UUID
+	ExpectedRevision, ExpectedEpoch                        int64
+	Operations                                             json.RawMessage
+	Status                                                 string
+	ResultingRevision                                      *int64
+	Receipt                                                json.RawMessage
+	ErrorCode                                              *string
+	CreatedAt, UpdatedAt                                   time.Time
+	AppliedAt                                              *time.Time
 }

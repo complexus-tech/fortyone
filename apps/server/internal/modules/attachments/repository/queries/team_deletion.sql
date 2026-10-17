@@ -21,6 +21,12 @@ WITH candidates AS (
     WHERE board.team_id = sqlc.arg(team_id)
       AND board.workspace_id = sqlc.arg(workspace_id)
       AND item.workspace_id = board.workspace_id
+    UNION
+    SELECT relation.attachment_id
+    FROM public.chat_attachments AS relation
+    INNER JOIN public.chat_conversations AS conversation ON conversation.id = relation.conversation_id
+    WHERE conversation.team_id = sqlc.arg(team_id)
+      AND conversation.workspace_id = sqlc.arg(workspace_id)
 )
 SELECT attachment.attachment_id
 FROM public.attachments AS attachment
@@ -31,7 +37,7 @@ FOR UPDATE OF attachment;
 
 -- Retire only files with no surviving consumer and atomically enqueue physical
 -- deletion. Batches avoid one database round trip per uploaded file.
--- name: RetireTeamDeletionAttachments :execrows
+-- name: RetireUnreferencedAttachments :execrows
 WITH retired AS (
     DELETE FROM public.attachments AS attachment
     WHERE attachment.attachment_id = ANY(CAST(sqlc.arg(attachment_ids) AS uuid[]))
@@ -45,11 +51,19 @@ WITH retired AS (
           WHERE relation.attachment_id = attachment.attachment_id
       )
       AND NOT EXISTS (
+          SELECT 1 FROM public.story_comment_attachments AS relation
+          WHERE relation.attachment_id = attachment.attachment_id
+      )
+      AND NOT EXISTS (
           SELECT 1 FROM public.document_attachments AS relation
           WHERE relation.attachment_id = attachment.attachment_id
       )
       AND NOT EXISTS (
           SELECT 1 FROM public.feedback_item_attachments AS relation
+          WHERE relation.attachment_id = attachment.attachment_id
+      )
+      AND NOT EXISTS (
+          SELECT 1 FROM public.chat_attachments AS relation
           WHERE relation.attachment_id = attachment.attachment_id
       )
     RETURNING attachment.attachment_id, attachment.workspace_id, attachment.blob_name

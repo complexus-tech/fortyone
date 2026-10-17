@@ -48,6 +48,11 @@ CMD ["/app/api"]
 
 FROM runtime AS worker
 
+# PDF thumbnails are generated only by background workers.
+USER root
+RUN apk add --no-cache poppler-utils
+USER fortyone
+
 LABEL org.opencontainers.image.title="FortyOne worker" \
     org.opencontainers.image.revision="$BUILD_VERSION"
 

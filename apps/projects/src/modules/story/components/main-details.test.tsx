@@ -178,7 +178,17 @@ jest.mock("./sub-stories", () => ({ SubStories: () => null }));
 jest.mock("./story-banners", () => ({ StoryBanners: () => null }));
 jest.mock("./links-skeleton", () => ({ LinksSkeleton: () => null }));
 jest.mock("./figma-section", () => ({ FigmaSection: () => null }));
-jest.mock("./options-header", () => ({ OptionsHeader: () => null }));
+jest.mock("./options-header", () => ({
+  OptionsHeader: ({ onClose }: { onClose?: () => void }) => (
+    <header aria-label="Story actions">
+      {onClose ? (
+        <button onClick={onClose} type="button">
+          Close story
+        </button>
+      ) : null}
+    </header>
+  ),
+}));
 jest.mock("./options", () => ({ Options: () => null }));
 jest.mock("./checklist", () => ({
   StoryChecklist: ({ story }: { story: { id: string } }) => (
@@ -590,4 +600,12 @@ describe("description autosave", () => {
     act(() => mockDescriptionCallbacks.onCreate?.({ editor }));
     expect(mockUpdateStory).toHaveBeenCalledTimes(1);
   });
+});
+
+it("uses one existing story header with dismissal in a side panel", () => {
+  const onClose = jest.fn();
+  render(<MainDetails isNotifications onClose={onClose} storyId="first" />);
+  expect(screen.getAllByLabelText("Story actions")).toHaveLength(1);
+  fireEvent.click(screen.getByRole("button", { name: "Close story" }));
+  expect(onClose).toHaveBeenCalledTimes(1);
 });

@@ -14,7 +14,7 @@ type AgentInvocation struct {
 	ID                  uuid.UUID
 	WorkspaceID         uuid.UUID
 	RequesterID         uuid.UUID
-	TeamID              uuid.UUID
+	TeamID              *uuid.UUID
 	Surface             string
 	SourceID            uuid.UUID
 	ConversationID      uuid.UUID
@@ -44,4 +44,5 @@ type AgentInvocation struct {
 	AvailableAt         time.Time
 	CreatedAt           time.Time
 	UpdatedAt           time.Time
+	ActionStartedAt     *time.Time
 }

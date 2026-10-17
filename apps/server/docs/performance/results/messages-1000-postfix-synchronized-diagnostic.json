@@ -1,0 +1,206 @@
+{
+  "achieved_history_requests_per_second": 20,
+  "active_at_end": 1000,
+  "active_chat_users": 200,
+  "all_user_probe_deliveries": 1000,
+  "application_errors": "",
+  "cpus": 11,
+  "delivery_lag_ms": {
+    "max": 8003.226,
+    "p50": 380.663,
+    "p95": 808.075,
+    "p99": 1004.751
+  },
+  "distinct_users": 1000,
+  "errors": [
+    "reactive reconciliation: Get \"http://127.0.0.1:56746/workspaces/8ce05f2a-5a80-4449-9f81-03ae4ff30174/chat/conversations/00e35065-aa7d-4624-952d-a17a39e27ae2/messages?limit=50\": read tcp 127.0.0.1:59600-\u003e127.0.0.1:56746: read: connection reset by peer",
+    "reactive reconciliation: Get \"http://127.0.0.1:56746/workspaces/8ce05f2a-5a80-4449-9f81-03ae4ff30174/chat/conversations?limit=50\": read tcp 127.0.0.1:59598-\u003e127.0.0.1:56746: read: connection reset by peer",
+    "POST create returned 500: {\"data\":null,\"error\":{\"code\":\"internal_error\",\"message\":\"internal server error\",\"hint\":\"Retry only when the operation is safe to repeat.\",\"request_id\":\"64bd84d5-e8c4-453a-a4b6-ccb2b298767d\"}}",
+    "POST create returned 500: {\"data\":null,\"error\":{\"code\":\"internal_error\",\"message\":\"internal server error\",\"hint\":\"Retry only when the operation is safe to repeat.\",\"request_id\":\"2943bdea-82d1-4f32-a353-2e60c95b7934\"}}"
+  ],
+  "go_version": "go1.26.9",
+  "held_history_requests": 600,
+  "held_reactions": 30,
+  "held_reactive_http_reads": 14080,
+  "held_thread_replies": 6,
+  "held_top_level_messages": 150,
+  "hold_seconds": 30,
+  "limits": "Loopback laptop; no TLS/proxy, browser rendering, object storage, AI, voice, email/push delivery or network partition. API replicas share process/Redis client; process memory includes generator. Not a production capacity guarantee.",
+  "message_creates": 167,
+  "observed_created_deliveries": 16698,
+  "outbox_recovery_ms": 7000,
+  "passed": false,
+  "peak_go_heap_bytes": 217013280,
+  "peak_goroutines": 12306,
+  "peak_oldest_outbox_age_ms": 799,
+  "peak_pending_outbox_events": 4,
+  "peak_redis_clients": 1071,
+  "peak_redis_memory_bytes": 27591280,
+  "peak_sse_connections": 1000,
+  "pending_during_worker_pause": 1,
+  "reactive_http_reads": 14080,
+  "reactive_http_reads_per_second": 469.3333333333333,
+  "reactive_refresh_cycles": 3520,
+  "reactive_sse_hints": 3620,
+  "redis_clients": 1071,
+  "redis_memory_bytes": 26943216,
+  "requests": {
+    "catchup_cursor": {
+      "count": 1,
+      "errors": 0,
+      "max_ms": 7.732,
+      "p50_ms": 7.732,
+      "p95_ms": 7.732,
+      "p99_ms": 7.732
+    },
+    "catchup_history": {
+      "count": 1,
+      "errors": 0,
+      "max_ms": 4.228,
+      "p50_ms": 4.228,
+      "p95_ms": 4.228,
+      "p99_ms": 4.228
+    },
+    "create": {
+      "count": 169,
+      "errors": 2,
+      "max_ms": 778.841,
+      "p50_ms": 23.408,
+      "p95_ms": 275.342,
+      "p99_ms": 651.874
+    },
+    "cursor": {
+      "count": 2,
+      "errors": 0,
+      "max_ms": 17.899,
+      "p50_ms": 10.425,
+      "p95_ms": 10.425,
+      "p99_ms": 10.425
+    },
+    "delete": {
+      "count": 1,
+      "errors": 0,
+      "max_ms": 1.511,
+      "p50_ms": 1.511,
+      "p95_ms": 1.511,
+      "p99_ms": 1.511
+    },
+    "edit": {
+      "count": 1,
+      "errors": 0,
+      "max_ms": 2.275,
+      "p50_ms": 2.275,
+      "p95_ms": 2.275,
+      "p99_ms": 2.275
+    },
+    "history": {
+      "count": 700,
+      "errors": 0,
+      "max_ms": 828.208,
+      "p50_ms": 7.078,
+      "p95_ms": 199.669,
+      "p99_ms": 540.839
+    },
+    "idempotent_create": {
+      "count": 1,
+      "errors": 0,
+      "max_ms": 16.03,
+      "p50_ms": 16.03,
+      "p95_ms": 16.03,
+      "p99_ms": 16.03
+    },
+    "idempotent_replay": {
+      "count": 1,
+      "errors": 0,
+      "max_ms": 1.192,
+      "p50_ms": 1.192,
+      "p95_ms": 1.192,
+      "p99_ms": 1.192
+    },
+    "mark_read": {
+      "count": 1,
+      "errors": 0,
+      "max_ms": 3.669,
+      "p50_ms": 3.669,
+      "p95_ms": 3.669,
+      "p99_ms": 3.669
+    },
+    "reaction": {
+      "count": 30,
+      "errors": 0,
+      "max_ms": 124.166,
+      "p50_ms": 6.531,
+      "p95_ms": 77.53,
+      "p99_ms": 84.682
+    },
+    "reactive_conversation": {
+      "count": 3520,
+      "errors": 0,
+      "max_ms": 884.882,
+      "p50_ms": 95.363,
+      "p95_ms": 573.525,
+      "p99_ms": 799.51
+    },
+    "reactive_conversations": {
+      "count": 3520,
+      "errors": 1,
+      "max_ms": 857.286,
+      "p50_ms": 74.917,
+      "p95_ms": 408.182,
+      "p99_ms": 531.317
+    },
+    "reactive_history": {
+      "count": 3520,
+      "errors": 1,
+      "max_ms": 888.488,
+      "p50_ms": 107.689,
+      "p95_ms": 764.483,
+      "p99_ms": 858.049
+    },
+    "reactive_latest": {
+      "count": 3520,
+      "errors": 0,
+      "max_ms": 890.983,
+      "p50_ms": 107.033,
+      "p95_ms": 666.337,
+      "p99_ms": 870.628
+    },
+    "read_message": {
+      "count": 1,
+      "errors": 0,
+      "max_ms": 0.825,
+      "p50_ms": 0.825,
+      "p95_ms": 0.825,
+      "p99_ms": 0.825
+    },
+    "sse_connect": {
+      "count": 1101,
+      "errors": 0,
+      "max_ms": 89.537,
+      "p50_ms": 4.593,
+      "p95_ms": 45.645,
+      "p99_ms": 49.081
+    },
+    "thread": {
+      "count": 1,
+      "errors": 0,
+      "max_ms": 1.317,
+      "p50_ms": 1.317,
+      "p95_ms": 1.317,
+      "p99_ms": 1.317
+    }
+  },
+  "retried_outbox_events": 1,
+  "run_at": "2026-10-17T10:49:56Z",
+  "scenario": "10 teams, 2 real HTTP API/hub replicas in one process, 20 history reads/s + 5 message creates/s + 1 reaction/s + 0.2 replies/s; 10% cross-replica reconnect; real Asynq wakeups and 5s sweep, durable outbox pause/retry/recovery",
+  "steady_delivery_lag_ms": {
+    "max": 1087.021,
+    "p50": 359.692,
+    "p95": 802.167,
+    "p99": 988.051
+  },
+  "steady_observed_created_deliveries": 15400,
+  "synchronized_chat_start": true,
+  "target_history_requests_per_second": 20,
+  "total_seconds": 73.674349083
+}

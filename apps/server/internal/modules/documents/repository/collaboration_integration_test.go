@@ -12,6 +12,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/migrations"
 	documentdomain "github.com/complexus-tech/projects-api/internal/modules/documents/domain"
 	"github.com/complexus-tech/projects-api/internal/testkit"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
@@ -205,16 +206,18 @@ func TestCheckpointMigrationConsolidatesAndCapsExistingHistory(t *testing.T) {
 	postgres := testkit.NewPostgresAtMigration(t, 194)
 	ctx := t.Context()
 	f := newDocumentFixture(t, ctx, postgres.Pool)
-	r := New(postgres.Pool)
-	doc := createDocument(t, ctx, r, f.workspaceA, f.ownerA, documentdomain.VisibilityPrivate, "Baseline")
+	// Seed through the historical schema: current repository commands correctly
+	// require newer relationship/notification metadata functions.
+	doc := documentdomain.Document{ID: uuid.New(), Revision: 1}
+	_, err := postgres.Pool.Exec(ctx, `INSERT INTO documents(document_id,workspace_id,title,visibility,created_by,updated_by) VALUES($1,$2,'Baseline','private',$3,$3)`, doc.ID, f.workspaceA, f.ownerA)
+	require.NoError(t, err)
 	for i := 0; i < 25; i++ {
 		title := fmt.Sprintf("Old autosave %d", i)
-		next, err := r.Update(ctx, documentdomain.UpdateInput{WorkspaceID: f.workspaceA, UserID: f.ownerA, DocumentID: doc.ID, ExpectedRevision: doc.Revision, Title: &title})
+		err := postgres.Pool.QueryRow(ctx, `UPDATE documents SET title=$2,revision=revision+1,updated_by=$3 WHERE document_id=$1 RETURNING revision`, doc.ID, title, f.ownerA).Scan(&doc.Revision)
 		require.NoError(t, err)
-		doc = next
 	}
 	// Create distinct old sessions plus a burst of five saves in the newest bucket.
-	_, err := postgres.Pool.Exec(ctx, `UPDATE document_revisions SET created_at = CASE WHEN revision <=21 THEN date_trunc('hour',NOW()) - (26-revision)*INTERVAL '20 minutes' ELSE date_trunc('hour',NOW()) END WHERE document_id=$1`, doc.ID)
+	_, err = postgres.Pool.Exec(ctx, `UPDATE document_revisions SET created_at = CASE WHEN revision <=21 THEN date_trunc('hour',NOW()) - (26-revision)*INTERVAL '20 minutes' ELSE date_trunc('hour',NOW()) END WHERE document_id=$1`, doc.ID)
 	require.NoError(t, err)
 	script, err := migrations.FS.ReadFile("000195_document_history_checkpoints.up.sql")
 	require.NoError(t, err)
@@ -224,7 +227,7 @@ func TestCheckpointMigrationConsolidatesAndCapsExistingHistory(t *testing.T) {
 	require.NoError(t, postgres.Pool.QueryRow(ctx, "SELECT count(*), count(*) FILTER (WHERE revision>21) FROM document_revisions WHERE document_id=$1", doc.ID).Scan(&count, &burst))
 	require.Equal(t, 10, count)
 	require.Equal(t, 1, burst)
-	latest, err := r.GetRevision(ctx, f.workspaceA, f.ownerA, doc.ID, doc.Revision)
-	require.NoError(t, err)
-	require.Equal(t, "Old autosave 24", latest.Title)
+	var latestTitle string
+	require.NoError(t, postgres.Pool.QueryRow(ctx, "SELECT title FROM document_revisions WHERE document_id=$1 AND revision=$2", doc.ID, doc.Revision).Scan(&latestTitle))
+	require.Equal(t, "Old autosave 24", latestTitle)
 }

@@ -56,6 +56,12 @@ WHERE attachment.uploaded_by = sqlc.arg(user_id)
        WHERE relation.attachment_id = attachment.attachment_id
          AND document.created_by = sqlc.arg(user_id) AND document.visibility = 'private'
    )
+   OR EXISTS (
+       SELECT 1 FROM public.chat_attachments AS relation
+       JOIN public.chat_conversations AS conversation ON conversation.id = relation.conversation_id
+       WHERE relation.attachment_id = attachment.attachment_id AND conversation.kind = 'dm'
+         AND sqlc.arg(user_id) IN (conversation.dm_user_low, conversation.dm_user_high)
+   )
 ORDER BY attachment.attachment_id FOR UPDATE OF attachment;
 
 -- Comments belong to the shared work record. Preserve IDs, prose and the entire
@@ -175,6 +181,7 @@ WITH retired AS (
       AND NOT EXISTS (SELECT 1 FROM public.story_attachments WHERE attachment_id = attachment.attachment_id)
       AND NOT EXISTS (SELECT 1 FROM public.story_inline_attachments WHERE attachment_id = attachment.attachment_id)
       AND NOT EXISTS (SELECT 1 FROM public.document_attachments WHERE attachment_id = attachment.attachment_id)
+      AND NOT EXISTS (SELECT 1 FROM public.chat_attachments WHERE attachment_id = attachment.attachment_id)
       AND NOT EXISTS (SELECT 1 FROM public.feedback_item_attachments WHERE attachment_id = attachment.attachment_id)
     RETURNING attachment.attachment_id, attachment.workspace_id, attachment.blob_name
 )
@@ -499,3 +506,26 @@ DELETE FROM public.feedback_contributor_unsubscribe_tokens WHERE contributor_id 
 DELETE FROM public.feedback_contributor_deliveries WHERE contributor_id IN (
     SELECT id FROM public.feedback_contributors WHERE user_id = sqlc.arg(user_id)
 );
+
+-- Remove private conversations before the attachment sweep, including when
+-- provider cleanup defers removal of the inactive account's identity row.
+-- name: DeleteAccountDirectConversations :exec
+DELETE FROM public.chat_conversations
+WHERE kind = 'dm' AND sqlc.arg(user_id) IN (dm_user_low, dm_user_high);
+
+-- A draft upload has no shared history to preserve or remaining owner to send it.
+-- name: DeleteAccountPendingChatAttachments :exec
+DELETE FROM public.chat_attachments WHERE uploaded_by = sqlc.arg(user_id) AND message_id IS NULL;
+
+-- Preserve shared team history. Creation keys are unique only within an author,
+-- so use the globally unique message ID when merging erased authors.
+-- name: ReattributeAccountChatMessages :exec
+UPDATE public.chat_conversation_messages SET author_id = sqlc.arg(deleted_user_id), creation_id = id
+WHERE author_id = sqlc.arg(user_id);
+
+-- name: ReattributeAccountChatAttachments :exec
+UPDATE public.chat_attachments SET uploaded_by = sqlc.arg(deleted_user_id)
+WHERE uploaded_by = sqlc.arg(user_id);
+
+-- name: RemoveAccountChatEvents :exec
+DELETE FROM public.chat_outbox WHERE actor_id = sqlc.arg(user_id);

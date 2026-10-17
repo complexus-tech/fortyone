@@ -3,37 +3,21 @@
 import type { Dispatch, SetStateAction } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { useEditor } from "@tiptap/react";
 import Collaboration from "@tiptap/extension-collaboration";
 import CollaborationCaret from "@tiptap/extension-collaboration-caret";
 import { cn } from "lib";
 import { toast } from "sonner";
 import {
-  Avatar,
   Box,
-  Button,
   Divider,
   Flex,
-  Menu,
-  Skeleton,
   Text,
   TextEditor,
   type BubbleMenuCreateAction,
 } from "ui";
-import {
-  ArchiveIcon,
-  HistoryIcon,
-  ArrowLeftIcon,
-  CopyIcon,
-  DeleteIcon,
-  DuplicateIcon,
-  Comment01Icon,
-  LockKeyholeIcon,
-  MoreHorizontalIcon,
-  ObjectiveIcon,
-  StoryIcon,
-  UserMultiple02Icon,
-} from "icons";
+import { ObjectiveIcon, StoryIcon } from "icons";
 import {
   useCopyToClipboard,
   useFeatures,
@@ -51,20 +35,23 @@ import {
 } from "@/components/ui";
 import { useDebouncedCallback } from "@/hooks/debounce";
 import { useSession } from "@/lib/auth/client";
+import { documentKeys } from "@/shared/documents/keys";
 import { useDesktop } from "@/shell/desktop/desktop-provider";
 import { createRichTextExtensions } from "@/lib/tiptap/rich-text-extensions";
 import {
   getPersistableRichTextContent,
   RICH_TEXT_MEDIA_ACCEPT,
-  uploadRichTextMediaFiles,
 } from "@/lib/tiptap/rich-text-media";
 import { RichTextTableMenu } from "@/lib/tiptap/rich-text-table-menu";
-import {
-  CommentHighlights,
-  updateCommentHighlights,
-} from "@/lib/tiptap/comment-highlights";
+import { CommentHighlights } from "@/lib/tiptap/comment-highlights";
 import { GoogleDriveFileSection } from "@/modules/google-drive/public/files";
 import { useGoogleDriveDescriptionPaste } from "@/modules/google-drive/public/editor";
+import {
+  DocumentPersonReference,
+  DocumentWorkReference,
+} from "./document-inline-references";
+import { useDocumentMentions } from "./use-document-mentions";
+import { DocumentMentionSuggestions } from "./document-mentions";
 import indexStyles from "./document-index.module.css";
 import { DocumentIndex } from "./document-index";
 import {
@@ -72,36 +59,34 @@ import {
   useDocumentCollaboration,
 } from "./use-document-collaboration";
 import { DocumentHistory } from "./document-history";
+import { DocumentInsertMenu } from "./document-insert-menu";
 import { DocumentCommentsPanel } from "./document-comments";
-import { DocumentAccessMenu } from "./document-access-menu";
 import {
-  deleteDocumentMediaAction,
-  uploadDocumentMediaAction,
-} from "./actions";
+  DocumentCommentsOverlay,
+  DocumentCommentSelectionPopover,
+} from "./document-comment-overlays";
 import {
   useArchiveDocument,
   useDeleteDocument,
   useDocument,
   useDocumentComments,
   useDuplicateDocument,
-  useUpdateDocument,
 } from "./hooks";
 import {
   DocumentRelationshipControl,
   RelatedWorkPanel,
 } from "./related-work-panel";
-import type { DocumentCommentSelection, DocumentUpdate } from "./types";
+import {
+  DocumentPageHeader,
+  DocumentPageSkeleton,
+} from "./document-page-header";
+import { useDocumentCommentInteractions } from "./use-document-comment-interactions";
+import { useDocumentMedia } from "./use-document-media";
+import { useDocumentAutosave } from "./use-document-autosave";
+import { DocumentSyncNotice } from "./document-sync-notice";
 import styles from "./document-page.module.css";
 
-const documentAccessLabels = {
-  private: "Private",
-  restricted: "Shared",
-  workspace: "Workspace",
-} as const;
-
 const DOCUMENT_MEDIA_INPUT_ID = "document-media-upload";
-const DOCUMENT_HEADER_BACKDROP_CLASS_NAME =
-  "pointer-events-none absolute inset-x-0 top-0 z-20 h-18";
 
 type DocumentCreationDraft = {
   description: string;
@@ -117,48 +102,37 @@ const shouldShowDocumentTextMenu = ({
   !editor.isActive("documentVideo") &&
   !editor.isActive("table");
 
-const DocumentPageSkeleton = () => (
-  <Box className="relative h-full min-h-0">
-    <Box
-      className={cn(DOCUMENT_HEADER_BACKDROP_CLASS_NAME, styles.headerBackdrop)}
-    >
-      <Flex
-        align="center"
-        className="pointer-events-auto relative z-10 h-18 px-5"
-        justify="between"
-      >
-        <Skeleton className="h-5 w-44" />
-        <Skeleton className="h-8 w-24" />
-      </Flex>
-    </Box>
-    <Box className="mx-auto w-full max-w-5xl px-8 pt-34 pb-16 sm:px-10 lg:px-12 lg:pt-34">
-      <Skeleton className="mb-8 h-12 w-3/4" />
-      <Skeleton className="mb-3 h-6 w-full" />
-      <Skeleton className="mb-3 h-6 w-5/6" />
-      <Skeleton className="h-6 w-2/3" />
-    </Box>
-  </Box>
-);
-
 export const DocumentPage = ({ documentId }: { documentId: string }) => (
   <DocumentPageContent documentId={documentId} key={documentId} />
 );
 
 const DocumentPageContent = ({ documentId }: { documentId: string }) => {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { data: session } = useSession();
   const features = useFeatures();
   const { getTermDisplay } = useTerminology();
   const { userRole } = useUserRole();
   const { withWorkspace, workspaceSlug } = useWorkspacePath();
   const { data: document, isPending } = useDocument(documentId);
-  const updateDocument = useUpdateDocument(documentId);
   const { data: commentThreads = [] } = useDocumentComments(documentId);
   const collaboration = useDocumentCollaboration(
     document?.id ?? "",
     workspaceSlug,
     session?.user,
     document,
+  );
+  const {
+    updateDocument,
+    persist,
+    saveTitle,
+    flushTitle,
+    saveContent,
+    flushContent,
+    initializeRevision,
+  } = useDocumentAutosave(
+    documentId,
+    !collaboration.configured && Boolean(document),
   );
   const [recoveryOpen, setRecoveryOpen] = useState(false);
   const [openingRestored, setOpeningRestored] = useState(false);
@@ -186,9 +160,6 @@ const DocumentPageContent = ({ documentId }: { documentId: string }) => {
     "workspace:documents:related-work:isExpanded",
     false,
   );
-  const [isCommentsOpen, setIsCommentsOpen] = useState(false);
-  const [commentDraft, setCommentDraft] =
-    useState<DocumentCommentSelection | null>(null);
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const { isDesktop: isDesktopApp } = useDesktop();
   const [scrollContainer, setScrollContainer] = useState<HTMLDivElement | null>(
@@ -196,16 +167,9 @@ const DocumentPageContent = ({ documentId }: { documentId: string }) => {
   );
   const titleRef = useRef<HTMLTextAreaElement>(null);
   const loadedDocumentIdRef = useRef<string | null>(null);
-  const editingRevision = useRef(0);
-  const saveQueue = useRef<Promise<void> | null>(null);
-  const saveFailed = useRef(false);
   const closeRelatedWork = useCallback(() => {
     setIsRelatedWorkOpen(false);
   }, [setIsRelatedWorkOpen]);
-  const closeComments = useCallback(() => {
-    setIsCommentsOpen(false);
-    setCommentDraft(null);
-  }, []);
   const setCreationDialogOpen: Dispatch<SetStateAction<boolean>> = (
     nextOpen,
   ) => {
@@ -215,95 +179,29 @@ const DocumentPageContent = ({ documentId }: { documentId: string }) => {
       return isOpen ? current : null;
     });
   };
-  const handleMediaFiles = useCallback(
-    (
-      currentEditor: NonNullable<ReturnType<typeof useEditor>>,
-      files: File[],
-      position?: number,
-    ) => {
-      void uploadRichTextMediaFiles({
-        cleanup: async (media) => {
-          const response = await deleteDocumentMediaAction(
-            documentId,
-            media.id,
-            workspaceSlug,
-          );
-          if (response.error) {
-            throw new Error(
-              response.error.message || "Could not clean up uploaded media.",
-            );
-          }
-        },
-        editor: currentEditor,
-        files,
-        position,
-        upload: async (file) => {
-          const response = await uploadDocumentMediaAction(
-            documentId,
-            file,
-            workspaceSlug,
-          );
-          if (response.error || !response.data) {
-            throw new Error(
-              response.error?.message || "Could not upload this media file.",
-            );
-          }
-          return response.data;
-        },
-        onError: (_file, error) => {
-          toast.error(
-            error instanceof Error
-              ? error.message
-              : "Could not upload this media file.",
-          );
-        },
-      });
-    },
-    [documentId, workspaceSlug],
-  );
+  const handleMediaFiles = useDocumentMedia(documentId, workspaceSlug);
 
-  const persist = (payload: Omit<DocumentUpdate, "expectedRevision">) => {
-    if (collaboration.configured || !document) return Promise.resolve();
-    const pending = (saveQueue.current ?? Promise.resolve()).then(async () => {
-      if (saveFailed.current) throw new Error("Reload before saving again");
-      const response = await updateDocument.mutateAsync({
-        ...payload,
-        expectedRevision: editingRevision.current,
-      });
-      if (!response.data) throw new Error("Document was not saved");
-      editingRevision.current = response.data.revision;
+  const { callback: refreshDocumentMetadata } = useDebouncedCallback(() => {
+    void queryClient.invalidateQueries({
+      queryKey: documentKeys.detail(workspaceSlug, documentId),
+      exact: true,
     });
-    saveQueue.current = pending.catch(() => {
-      saveFailed.current = true;
-    });
-    return pending;
-  };
-  const { callback: saveTitle, flush: flushTitle } = useDebouncedCallback(
-    (nextTitle: string) => {
-      void persist({ title: nextTitle }).catch(() => {});
-    },
-    700,
-    { flushOnUnmount: true },
-  );
-  const { callback: saveContent, flush: flushContent } = useDebouncedCallback(
-    (content: Pick<DocumentUpdate, "contentHtml" | "contentText">) => {
-      void persist(content).catch(() => {});
-    },
-    700,
-    { flushOnUnmount: true },
-  );
+  }, 1_000);
 
   const editor = useEditor(
     {
       extensions: [
         CommentHighlights,
+        DocumentMentionSuggestions,
         ...createRichTextExtensions({
           collaborative: Boolean(collaboration.connection),
+          mention: DocumentPersonReference,
+          reference: DocumentWorkReference.configure({ documentId }),
           onMediaFiles: handleMediaFiles,
           onMediaRequest: () => {
             window.document.getElementById(DOCUMENT_MEDIA_INPUT_ID)?.click();
           },
-          placeholder: "Type / for commands",
+          placeholder: "Type / for commands or @ to mention people and work",
         }),
         ...(collaboration.connection
           ? [
@@ -331,11 +229,13 @@ const DocumentPageContent = ({ documentId }: { documentId: string }) => {
       onUpdate: ({ editor: currentEditor }) => {
         if (!collaboration.configured)
           saveContent(getPersistableRichTextContent(currentEditor));
+        else refreshDocumentMetadata(undefined);
       },
       onBlur: flushContent,
     },
     [collaboration.connection],
   );
+  useDocumentMentions(editor, documentId, "body");
   const { onPaste: handleGoogleDrivePaste, picker: googleDrivePastePicker } =
     useGoogleDriveDescriptionPaste({
       editor,
@@ -352,24 +252,36 @@ const DocumentPageContent = ({ documentId }: { documentId: string }) => {
     ) {
       editor.commands.setContent(document.contentHtml, { emitUpdate: false });
       loadedDocumentIdRef.current = document.id;
-      editingRevision.current = document.revision;
+      initializeRevision(document.revision);
       setTitleDraft({ documentId: document.id, value: document.title });
     }
-  }, [document, editor, canEditContent, collaboration.connection]);
+  }, [
+    document,
+    editor,
+    canEditContent,
+    collaboration.connection,
+    initializeRevision,
+  ]);
 
-  useEffect(() => {
-    if (!editor) return;
-    updateCommentHighlights(
-      editor,
-      commentThreads
-        .filter((thread) => !thread.resolvedAt)
-        .map((thread) => ({
-          from: thread.anchorStart,
-          id: thread.id,
-          to: thread.anchorEnd,
-        })),
-    );
-  }, [commentThreads, editor, document?.revision, collaboration.ready]);
+  const {
+    isCommentsOpen,
+    setIsCommentsOpen,
+    commentDraft,
+    setCommentDraft,
+    isCommentComposerOpen,
+    setIsCommentComposerOpen,
+    activeCommentThreadId,
+    setActiveCommentThreadId,
+    closeComments,
+    openComments,
+    startComment,
+  } = useDocumentCommentInteractions({
+    editor,
+    commentThreads,
+    documentRevision: document?.revision,
+    collaborationReady: collaboration.ready,
+    closeRelatedWork,
+  });
 
   useEffect(() => {
     const element = titleRef.current;
@@ -412,9 +324,7 @@ const DocumentPageContent = ({ documentId }: { documentId: string }) => {
   if (collaboration.localStatus) saveStatus = collaboration.localStatus;
   const canManageDocument =
     session?.user.id === document.createdBy && document.canEdit;
-  const accessLabel = documentAccessLabels[document.visibility];
-  const AccessIcon =
-    document.visibility === "private" ? LockKeyholeIcon : UserMultiple02Icon;
+  const canComment = userRole === "admin" || userRole === "member";
   const canCreateWork =
     document.canEdit && userRole !== undefined && userRole !== "guest";
   const canEditGoogleDriveFiles = Boolean(
@@ -498,157 +408,9 @@ const DocumentPageContent = ({ documentId }: { documentId: string }) => {
     });
   };
 
-  const documentHeader = (
-    <Box
-      className={cn(DOCUMENT_HEADER_BACKDROP_CLASS_NAME, styles.headerBackdrop)}
-    >
-      <Flex
-        align="center"
-        className="pointer-events-auto relative z-10 h-18 px-4 md:px-5"
-        justify="between"
-      >
-        <Flex align="center" className="min-w-0" gap={2}>
-          <Button
-            aria-label="Back to documents"
-            asIcon
-            className="md:hidden"
-            color="tertiary"
-            onClick={() => {
-              router.push(withWorkspace("/docs"));
-            }}
-            size="sm"
-            variant="naked"
-          >
-            <ArrowLeftIcon />
-          </Button>
-          <Text
-            className="max-w-80 truncate"
-            fontSize="lg"
-            fontWeight="semibold"
-          >
-            {title || "Untitled document"}
-          </Text>
-          <Menu>
-            <Menu.Button>
-              <Button
-                aria-label="Document actions"
-                asIcon
-                color="tertiary"
-                size="sm"
-                variant="naked"
-              >
-                <MoreHorizontalIcon />
-              </Button>
-            </Menu.Button>
-            <Menu.Items align="start" className="min-w-52">
-              <Menu.Group>
-                <Menu.Item onSelect={() => void handleCopyLink()}>
-                  <CopyIcon />
-                  Copy link
-                </Menu.Item>
-                <Menu.Item
-                  disabled={
-                    !canEditContent ||
-                    collaboration.status === "saving" ||
-                    duplicateDocument.isPending
-                  }
-                  onSelect={() => void handleDuplicate()}
-                >
-                  <DuplicateIcon />
-                  {duplicateDocument.isPending
-                    ? "Duplicating..."
-                    : "Duplicate document"}
-                </Menu.Item>
-              </Menu.Group>
-              <Menu.Group>
-                <Menu.Item
-                  onSelect={() => {
-                    setHistoryOpen(true);
-                  }}
-                >
-                  <HistoryIcon />
-                  Version history
-                </Menu.Item>
-                {canManageDocument ? (
-                  <Menu.Item onSelect={handleArchive}>
-                    <ArchiveIcon />
-                    Archive document
-                  </Menu.Item>
-                ) : (
-                  <Menu.Item disabled>Archive unavailable</Menu.Item>
-                )}
-              </Menu.Group>
-              <Menu.Separator />
-              <Menu.Group>
-                {canManageDocument ? (
-                  <Menu.Item
-                    className="text-danger dark:text-danger!"
-                    onSelect={() => {
-                      setIsDeleteDialogOpen(true);
-                    }}
-                  >
-                    <DeleteIcon className="text-danger dark:text-danger!" />
-                    Delete permanently...
-                  </Menu.Item>
-                ) : (
-                  <Menu.Item disabled>Delete unavailable</Menu.Item>
-                )}
-              </Menu.Group>
-            </Menu.Items>
-          </Menu>
-        </Flex>
-        <Flex align="center" gap={2}>
-          {!isDesktopApp ? (
-            <span
-              aria-live="polite"
-              className="text-text-muted hidden md:inline"
-            >
-              {saveStatus}
-            </span>
-          ) : null}
-          <Flex className="-space-x-2">
-            {collaboration.peers.slice(0, 3).map((peer) => (
-              <span key={peer.id} title={peer.name}>
-                <Avatar name={peer.name} size="xs" />
-              </span>
-            ))}
-          </Flex>
-          <Button
-            aria-label={`${commentThreads.length} ${commentThreads.length === 1 ? "comment" : "comments"}`}
-            className="gap-1.5"
-            color="tertiary"
-            leftIcon={<Comment01Icon className="size-4" strokeWidth={2} />}
-            onClick={() => {
-              setIsRelatedWorkOpen(false);
-              setIsCommentsOpen(true);
-            }}
-            size="sm"
-            variant="naked"
-          >
-            {commentThreads.length > 0 ? commentThreads.length : "Comments"}
-          </Button>
-          {canManageDocument ? (
-            <DocumentAccessMenu document={document} />
-          ) : (
-            <Button
-              aria-label={`Document access: ${accessLabel}`}
-              asIcon
-              color="tertiary"
-              disabled
-              size="sm"
-              variant="outline"
-            >
-              <AccessIcon />
-            </Button>
-          )}
-        </Flex>
-      </Flex>
-    </Box>
-  );
-
   return (
     <Flex className="h-full min-h-0 min-w-0" direction="column">
-      <Box className="min-h-0 flex-1">
+      <Box className="relative min-h-0 flex-1">
         <BoardDividedPanel autoSaveId="workspace:documents:related-work:divided-panel">
           <BoardDividedPanel.MainPanel>
             <Box className={cn("relative h-full min-w-0", indexStyles.host)}>
@@ -657,7 +419,33 @@ const DocumentPageContent = ({ documentId }: { documentId: string }) => {
                 readingOffset={112}
                 scrollContainer={scrollContainer}
               />
-              {documentHeader}
+              <DocumentPageHeader
+                canDuplicate={Boolean(
+                  canEditContent &&
+                    collaboration.status !== "saving" &&
+                    !duplicateDocument.isPending,
+                )}
+                canManageDocument={canManageDocument}
+                commentCount={commentThreads.length}
+                document={document}
+                isDuplicating={duplicateDocument.isPending}
+                onArchive={handleArchive}
+                onBack={() => {
+                  router.push(withWorkspace("/docs"));
+                }}
+                onCopyLink={handleCopyLink}
+                onDelete={() => {
+                  setIsDeleteDialogOpen(true);
+                }}
+                onDuplicate={handleDuplicate}
+                onShowComments={openComments}
+                onShowHistory={() => {
+                  setHistoryOpen(true);
+                }}
+                peers={collaboration.peers}
+                saveStatus={saveStatus}
+                title={title}
+              />
               <input
                 accept={RICH_TEXT_MEDIA_ACCEPT}
                 aria-label="Upload document media"
@@ -679,91 +467,21 @@ const DocumentPageContent = ({ documentId }: { documentId: string }) => {
               >
                 <div className={indexStyles.contentPadding}>
                   <Box className="mx-auto w-full max-w-5xl px-8 pt-30 pb-32 sm:px-10 lg:px-12 lg:pt-34">
-                    {(collaboration.configured &&
-                      (!isDesktopApp ||
-                        !collaboration.writable ||
-                        Boolean(collaboration.storageError)) &&
-                      (collaboration.status === "blocked" ||
-                        collaboration.status === "offline" ||
-                        Boolean(collaboration.error) ||
-                        Boolean(collaboration.storageError))) ||
-                    updateDocument.isError ||
-                    (!collaboration.configured && document.collaborative) ? (
-                      <Box
-                        className="bg-surface-elevated border-border mb-6 rounded-xl border p-4"
-                        role="status"
-                      >
-                        <Text>
-                          {collaboration.storageError ??
-                            collaboration.error ??
-                            (collaboration.writable
-                              ? "You can keep editing offline. Changes are saved on this device and merge when you reconnect."
-                              : "Editing is paused. Your connection or document access changed. Preserve any unsaved work before reloading.")}
-                        </Text>
-                        <Flex className="mt-3 gap-2">
-                          {collaboration.retry ? (
-                            <Button
-                              color="tertiary"
-                              onClick={() => {
-                                void collaboration
-                                  .retry()
-                                  .catch((reason: unknown) =>
-                                    toast.error(String(reason)),
-                                  );
-                              }}
-                              size="sm"
-                            >
-                              Retry connection and save
-                            </Button>
-                          ) : (
-                            <Button
-                              color="tertiary"
-                              onClick={() => {
-                                window.location.reload();
-                              }}
-                              size="sm"
-                            >
-                              Reload document
-                            </Button>
-                          )}
-                          {collaboration.exported &&
-                          collaboration.status === "blocked" &&
-                          collaboration.openRestored ? (
-                            <Button
-                              color="tertiary"
-                              onClick={() => {
-                                setRecoveryOpen(true);
-                              }}
-                              size="sm"
-                            >
-                              Open restored version
-                            </Button>
-                          ) : null}
-                          {collaboration.exportRecovery ? (
-                            <Button
-                              color="tertiary"
-                              onClick={() => {
-                                void collaboration
-                                  .exportRecovery({
-                                    contentHtml: editor?.getHTML() ?? "",
-                                    contentText: editor?.getText() ?? "",
-                                  })
-                                  .catch((reason: unknown) =>
-                                    toast.error(String(reason)),
-                                  );
-                              }}
-                              size="sm"
-                            >
-                              Export recovery file
-                            </Button>
-                          ) : null}
-                        </Flex>
-                      </Box>
-                    ) : null}
+                    <DocumentSyncNotice
+                      collaboration={collaboration}
+                      collaborative={document.collaborative}
+                      editor={editor}
+                      hasSaveError={updateDocument.isError}
+                      isDesktopApp={isDesktopApp}
+                      onOpenRestored={() => {
+                        setRecoveryOpen(true);
+                      }}
+                    />
                     <DocumentRelationshipControl
                       document={document}
                       onShowRelationships={() => {
                         setIsCommentsOpen(false);
+                        setIsCommentComposerOpen(false);
                         setIsRelatedWorkOpen(true);
                       }}
                     />
@@ -791,25 +509,49 @@ const DocumentPageContent = ({ documentId }: { documentId: string }) => {
                     />
                     <Divider className="mb-8" />
                     <TextEditor
+                      allowFormatting={canEditContent}
+                      bubbleMenuAppendTo={() => window.document.body}
+                      bubbleMenuClassName="z-40 max-w-[calc(100vw-2rem)] [&>div>div]:max-w-full [&>div>div]:flex-wrap"
                       bubbleMenuCommentAction={
-                        canEditContent && userRole !== "guest"
-                          ? (selection) => {
-                              setCommentDraft(selection);
-                              setIsRelatedWorkOpen(false);
-                              setIsCommentsOpen(true);
-                            }
-                          : undefined
+                        canComment ? startComment : undefined
                       }
                       bubbleMenuCreateActions={bubbleMenuCreateActions}
+                      bubbleMenuOptions={{
+                        placement: "bottom-start",
+                        strategy: "fixed",
+                        scrollTarget: scrollContainer ?? undefined,
+                        flip: {
+                          boundary: scrollContainer ?? "clippingAncestors",
+                          padding: { top: 88, right: 16, bottom: 16, left: 16 },
+                        },
+                        shift: {
+                          boundary: scrollContainer ?? "clippingAncestors",
+                          padding: { top: 88, right: 16, bottom: 16, left: 16 },
+                        },
+                        size: {
+                          boundary: scrollContainer ?? "clippingAncestors",
+                          padding: 16,
+                          apply: ({ availableWidth, elements }) => {
+                            elements.floating.style.maxWidth = `${Math.max(0, availableWidth)}px`;
+                          },
+                        },
+                      }}
                       bubbleMenuShouldShow={shouldShowDocumentTextMenu}
                       className={cn(
                         "rich-document-editor min-h-[55dvh] text-[1.1rem] leading-7",
                         styles.collaborativeEditor,
                       )}
                       editor={editor}
+                      hideBubbleMenu={isCommentComposerOpen}
                       onPaste={handleGoogleDrivePaste}
                     />
                     {googleDrivePastePicker}
+                    {editor && canEditContent ? (
+                      <DocumentInsertMenu
+                        editor={editor}
+                        scrollContainer={scrollContainer}
+                      />
+                    ) : null}
                     <RichTextTableMenu
                       editor={editor}
                       scrollTarget={scrollContainer}
@@ -827,24 +569,51 @@ const DocumentPageContent = ({ documentId }: { documentId: string }) => {
           </BoardDividedPanel.MainPanel>
           <BoardDividedPanel.SideBar
             className="h-full!"
-            isExpanded={isDesktop ? isRelatedWorkOpen || isCommentsOpen : false}
+            isExpanded={Boolean(isDesktop && isRelatedWorkOpen)}
           >
-            {isCommentsOpen ? (
-              <DocumentCommentsPanel
-                documentId={document.id}
-                draft={commentDraft}
-                editor={editor}
-                onClose={closeComments}
-                onDraftChange={setCommentDraft}
-              />
-            ) : (
-              <RelatedWorkPanel
-                document={document}
-                onClose={closeRelatedWork}
-              />
-            )}
+            <RelatedWorkPanel document={document} onClose={closeRelatedWork} />
           </BoardDividedPanel.SideBar>
         </BoardDividedPanel>
+        {isCommentsOpen ? (
+          <DocumentCommentsOverlay
+            isDesktop={isDesktop}
+            onClose={closeComments}
+          >
+            <DocumentCommentsPanel
+              activeThreadId={activeCommentThreadId}
+              canComment={canComment}
+              documentId={document.id}
+              draft={commentDraft}
+              editor={editor}
+              onClose={closeComments}
+              onDraftChange={setCommentDraft}
+              onThreadSelect={(thread) => {
+                setActiveCommentThreadId(thread.id);
+                closeComments();
+              }}
+            />
+          </DocumentCommentsOverlay>
+        ) : null}
+        {commentDraft && editor && isCommentComposerOpen ? (
+          <DocumentCommentSelectionPopover
+            canComment={
+              canComment ? commentDraft.to > commentDraft.from : false
+            }
+            documentId={document.id}
+            draft={commentDraft}
+            editor={editor}
+            isDesktop={isDesktop}
+            onClose={() => {
+              setIsCommentComposerOpen(false);
+            }}
+            onCreated={(thread) => {
+              setCommentDraft(null);
+              setIsCommentComposerOpen(false);
+              setActiveCommentThreadId(thread.id);
+              setIsCommentsOpen(true);
+            }}
+          />
+        ) : null}
       </Box>
       {historyOpen ? (
         <DocumentHistory

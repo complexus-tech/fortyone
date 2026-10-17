@@ -259,6 +259,12 @@ func (s *Service) processClaim(ctx context.Context, run *Run) error {
 	if run.Proposal.RequiresApproval && run.ApprovedAt == nil {
 		return s.publishApproval(ctx, run)
 	}
+	if run.Outcome == nil && run.Proposal.HasAction() {
+		waiting, err := s.prepareDeferredAction(ctx, run)
+		if err != nil || waiting {
+			return err
+		}
+	}
 	if run.Outcome == nil {
 		updated, err := s.store.Execute(ctx, *run, func(txCtx context.Context, current Run) (Outcome, error) {
 			if err := s.runtime.Authorize(txCtx, current); err != nil {
@@ -351,7 +357,7 @@ func safeFailure(err error) (string, bool) {
 	case errors.Is(err, ErrPermissionDenied):
 		return "Maya can no longer access this request.", false
 	case errors.Is(err, ErrSourceChanged):
-		return "This request changed. Ask Maya again using the current comment.", false
+		return "This request changed. Ask Maya again using the current text.", false
 	case errors.Is(err, ErrInvalidInput), errors.Is(err, ErrConflict):
 		return "Maya could not safely apply this request. Review it and try again.", false
 	default:

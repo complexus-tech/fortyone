@@ -8,10 +8,15 @@ import (
 	"time"
 
 	"github.com/complexus-tech/projects-api/internal/bootstrap/agentadapter"
+	"github.com/complexus-tech/projects-api/internal/bootstrap/chatadapter"
 	agentrunsrepository "github.com/complexus-tech/projects-api/internal/modules/agentinvocations/repository"
 	agentruns "github.com/complexus-tech/projects-api/internal/modules/agentinvocations/service"
+	chatrepository "github.com/complexus-tech/projects-api/internal/modules/chat/repository"
+	chat "github.com/complexus-tech/projects-api/internal/modules/chat/service"
 	commentsrepository "github.com/complexus-tech/projects-api/internal/modules/comments/repository"
 	comments "github.com/complexus-tech/projects-api/internal/modules/comments/service"
+	documentsrepository "github.com/complexus-tech/projects-api/internal/modules/documents/repository"
+	documents "github.com/complexus-tech/projects-api/internal/modules/documents/service"
 	messagingbudget "github.com/complexus-tech/projects-api/internal/modules/messaging/budget"
 	messagingcontext "github.com/complexus-tech/projects-api/internal/modules/messaging/context"
 	messagingrepository "github.com/complexus-tech/projects-api/internal/modules/messaging/repository"
@@ -30,6 +35,7 @@ import (
 	usersrepository "github.com/complexus-tech/projects-api/internal/modules/users/repository"
 	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
 	workspacesrepository "github.com/complexus-tech/projects-api/internal/modules/workspaces/repository"
+	"github.com/complexus-tech/projects-api/internal/platform/chatrollout"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/publisher"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
@@ -81,7 +87,21 @@ func registerAgentInvocationWorker(mux *asynq.ServeMux, scheduler scheduleRegist
 		DailyTokenLimit:   cfg.MessagingAssistant.WorkspaceTokensPerDay,
 		NotificationRules: notifications.NewRules(log, storyService, userService, stateService), Notifications: notificationService,
 	}
-	service := agentruns.New(agentrunsrepository.New(pool), runtime)
+	documentService := documents.New(documentsrepository.New(pool))
+	var documentAssistant messaging.DocumentAssistant
+	if provider, ok := assistant.(messaging.DocumentAssistant); ok {
+		documentAssistant = provider
+	}
+	documentRuntime := &agentadapter.DocumentRuntime{Documents: documentService, Assistant: documentAssistant, Shared: runtime, Runs: runtime.Runs, EditsAvailable: documentService.AgentEditsAvailable}
+	chatAttachments := chatadapter.NewAttachmentRetirer(pool, cfg.Storage.Provider, cfg.Storage.AttachmentsBucket)
+	chatRepository := chatrepository.New(log, pool, chatrepository.WithAttachmentRetirement(chatAttachments.Retire))
+	chatService := chat.New(chatRepository, chat.WithWorkspaceSettings(chatrollout.New(workspacesrepository.New(pool))), chat.WithMayaActorID(mayaID), chat.WithAfterCommit(func(ctx context.Context) {
+		if err := taskService.EnqueueChatDelivery(ctx); err != nil {
+			log.Error(ctx, "enqueue chat delivery", "error", err)
+		}
+	}))
+	chatRuntime := &agentadapter.ChatRuntime{Rollout: chatrollout.New(workspacesrepository.New(pool)), Chats: chatService, Shared: runtime, Tools: tools}
+	service := agentruns.New(agentrunsrepository.New(pool), &agentadapter.RuntimeRouter{Story: runtime, Document: documentRuntime, Chat: chatRuntime})
 	mux.HandleFunc(tasks.TypeAgentInvocation, func(ctx context.Context, task *asynq.Task) error {
 		var payload tasks.AgentInvocationPayload
 		if err := json.Unmarshal(task.Payload(), &payload); err != nil || payload.RunID == uuid.Nil {

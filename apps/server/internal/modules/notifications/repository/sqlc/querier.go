@@ -13,6 +13,8 @@ import (
 type Querier interface {
 	BeginRoutineEmailSend(ctx context.Context, arg BeginRoutineEmailSendParams) (int64, error)
 	ClaimRoutineEmail(ctx context.Context, arg ClaimRoutineEmailParams) (uuid.UUID, error)
+	CompleteDocumentNotificationDelivery(ctx context.Context, arg CompleteDocumentNotificationDeliveryParams) error
+	CompleteMayaReplyNotification(ctx context.Context, arg CompleteMayaReplyNotificationParams) error
 	CompleteRoutineEmail(ctx context.Context, arg CompleteRoutineEmailParams) (int64, error)
 	CountUnreadPortalFeedbackNotifications(ctx context.Context, arg CountUnreadPortalFeedbackNotificationsParams) (int64, error)
 	CountUnreadWorkspaceNotifications(ctx context.Context, arg CountUnreadWorkspaceNotificationsParams) (int64, error)
@@ -24,6 +26,7 @@ type Querier interface {
 	// A deleted latest row does not let an older queued event recreate stale inbox content.
 	CreateNotification(ctx context.Context, arg CreateNotificationParams) (CreateNotificationRow, error)
 	DisableNotificationPushDevices(ctx context.Context, arg DisableNotificationPushDevicesParams) (int64, error)
+	EnqueueMayaReplyNotification(ctx context.Context, arg EnqueueMayaReplyNotificationParams) (*bool, error)
 	FailRoutineEmail(ctx context.Context, arg FailRoutineEmailParams) (int64, error)
 	// GetNotificationEmailDelivery returns one pending email only when the task
 	// payload's recipient/workspace scope still owns the notification and retains
@@ -86,10 +89,13 @@ type Querier interface {
 	// MutateWorkspaceNotifications performs bulk read/delete operations against
 	// the same currently visible set used by inbox reads.
 	MutateWorkspaceNotifications(ctx context.Context, arg MutateWorkspaceNotificationsParams) (int32, error)
+	NextDocumentNotificationDelivery(ctx context.Context) (NextDocumentNotificationDeliveryRow, error)
+	NextMayaReplyNotification(ctx context.Context) (NextMayaReplyNotificationRow, error)
 	PortalNotificationActorAuthorized(ctx context.Context, arg PortalNotificationActorAuthorizedParams) (bool, error)
 	RecordNotificationEventReceipt(ctx context.Context, arg RecordNotificationEventReceiptParams) error
 	RecordRoutineEmailGuidance(ctx context.Context, arg RecordRoutineEmailGuidanceParams) error
 	RegisterNotificationPushDevice(ctx context.Context, arg RegisterNotificationPushDeviceParams) (NotificationPushDevice, error)
+	RetryMayaReplyNotification(ctx context.Context, arg RetryMayaReplyNotificationParams) error
 	UnregisterNotificationPushDevice(ctx context.Context, arg UnregisterNotificationPushDeviceParams) (int64, error)
 	// UpdateNotificationPreference applies one presence-aware channel patch inside
 	// PostgreSQL. Concurrent updates to different preference types or channels do

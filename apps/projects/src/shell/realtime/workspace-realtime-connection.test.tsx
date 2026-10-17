@@ -2,15 +2,30 @@ import { render } from "@testing-library/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePostHog } from "posthog-js/react";
 import { ServerSentEvents } from "@/app/server-sent-events";
-import { calendarKeys, notificationKeys } from "@/constants/keys";
+import {
+  calendarKeys,
+  chatCapabilityKeys,
+  notificationKeys,
+  workspaceKeys,
+} from "@/constants/keys";
 import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
 import { useSession } from "@/lib/auth/client";
 import { deliverDesktopNotification } from "@/shell/desktop/notification";
+import { reconcileChatQueries } from "@/modules/chat/realtime";
+import { applyChatTypingEvent, clearChatTyping } from "@/modules/chat/typing";
 import { storyKeys } from "@/modules/stories/constants";
 import { WorkspaceRealtimeConnection } from "./workspace-realtime-connection";
 
 jest.mock("@tanstack/react-query", () => ({
   useQueryClient: jest.fn(),
+}));
+
+jest.mock("@/modules/chat/realtime", () => ({
+  reconcileChatQueries: jest.fn(),
+}));
+jest.mock("@/modules/chat/typing", () => ({
+  applyChatTypingEvent: jest.fn(),
+  clearChatTyping: jest.fn(),
 }));
 
 jest.mock("posthog-js/react", () => ({
@@ -116,12 +131,10 @@ afterAll(() => {
 
 describe("WorkspaceRealtimeConnection", () => {
   it("forwards live notifications to native delivery without replaying on reconnect", () => {
-    jest
-      .mocked(useSession)
-      .mockReturnValue({
-        data: { user: { id: "account-id" } },
-        status: "authenticated",
-      } as ReturnType<typeof useSession>);
+    jest.mocked(useSession).mockReturnValue({
+      data: { user: { id: "account-id" } },
+      status: "authenticated",
+    } as ReturnType<typeof useSession>);
     render(<WorkspaceRealtimeConnection />);
     const data = JSON.stringify({ entity_id: "story-1", entity_type: "story" });
     connection().onmessage?.({ data } as MessageEvent);
@@ -140,20 +153,16 @@ describe("WorkspaceRealtimeConnection", () => {
   });
 
   it("closes the previous account subscription and rejects its late events", () => {
-    jest
-      .mocked(useSession)
-      .mockReturnValue({
-        data: { user: { id: "account-id" } },
-        status: "authenticated",
-      } as ReturnType<typeof useSession>);
+    jest.mocked(useSession).mockReturnValue({
+      data: { user: { id: "account-id" } },
+      status: "authenticated",
+    } as ReturnType<typeof useSession>);
     const view = render(<WorkspaceRealtimeConnection />);
     const previous = connection();
-    jest
-      .mocked(useSession)
-      .mockReturnValue({
-        data: { user: { id: "other-account" } },
-        status: "authenticated",
-      } as ReturnType<typeof useSession>);
+    jest.mocked(useSession).mockReturnValue({
+      data: { user: { id: "other-account" } },
+      status: "authenticated",
+    } as ReturnType<typeof useSession>);
     view.rerender(<WorkspaceRealtimeConnection />);
     previous.onmessage?.({
       data: JSON.stringify({ entity_id: "story-1", entity_type: "story" }),
@@ -260,10 +269,50 @@ describe("WorkspaceRealtimeConnection", () => {
 
     const collectionFilter = queryClient.invalidateQueries.mock.calls
       .map(([filter]) => filter)
-      .find((filter) => typeof filter?.predicate === "function");
+      .find(
+        (filter) =>
+          typeof filter?.predicate === "function" &&
+          filter.predicate({
+            queryKey: ["stories", "engineering", "grouped", {}],
+          }),
+      );
     const matchesCollection = collectionFilter?.predicate as
       | ((query: { queryKey: readonly unknown[] }) => boolean)
       | undefined;
+    const nativePreview = {
+      queryKey: [
+        "native-link-preview",
+        "user-1",
+        "engineering",
+        "story",
+        "ENG-1",
+      ],
+      state: {
+        data: { resource: { kind: "story", value: { id: "story-1" } } },
+      },
+    };
+    const previewFilter = queryClient.invalidateQueries.mock.calls
+      .map(([filter]) => filter)
+      .find(
+        (filter) =>
+          typeof filter?.predicate === "function" &&
+          filter.predicate(nativePreview),
+      );
+    expect(previewFilter).toBeDefined();
+    expect(
+      previewFilter?.predicate({
+        ...nativePreview,
+        queryKey: ["native-link-preview", "user-1", "product"],
+      }),
+    ).toBe(false);
+    expect(
+      previewFilter?.predicate({
+        ...nativePreview,
+        state: {
+          data: { resource: { kind: "story", value: { id: "story-2" } } },
+        },
+      }),
+    ).toBe(false);
     expect(matchesCollection).toBeDefined();
     expect(
       matchesCollection?.({
@@ -371,6 +420,13 @@ describe("WorkspaceRealtimeConnection", () => {
     source.onopen?.(new Event("open"));
 
     expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
+      queryKey: workspaceKeys.settings("engineering"),
+    });
+    expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
+      queryKey: chatCapabilityKeys.workspace("engineering"),
+    });
+
+    expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
       queryKey: notificationKeys.all("engineering"),
     });
     expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
@@ -380,4 +436,85 @@ describe("WorkspaceRealtimeConnection", () => {
       queryKey: calendarKeys.all("engineering"),
     });
   });
+});
+
+it("accepts chat hints only for the active account and workspace", () => {
+  const accountId = "11111111-1111-4111-8111-111111111111";
+  const workspaceId = "22222222-2222-4222-8222-222222222222";
+  const conversationId = "33333333-3333-4333-8333-333333333333";
+  mockedUseCurrentWorkspace.mockReturnValue({
+    workspace: { id: workspaceId, slug: "engineering" },
+  } as ReturnType<typeof useCurrentWorkspace>);
+  jest.mocked(useSession).mockReturnValue({
+    data: { user: { id: accountId } },
+    status: "authenticated",
+  } as ReturnType<typeof useSession>);
+  render(<WorkspaceRealtimeConnection />);
+  const payload = {
+    type: "chat.updated",
+    eventId: "44444444-4444-4444-8444-444444444444",
+    userId: accountId,
+    workspaceId,
+    conversationId,
+  };
+  connection().onmessage?.({
+    data: JSON.stringify({ ...payload, userId: conversationId }),
+  } as MessageEvent);
+  connection().onmessage?.({
+    data: JSON.stringify({ ...payload, workspaceId: conversationId }),
+  } as MessageEvent);
+  expect(reconcileChatQueries).not.toHaveBeenCalled();
+  connection().onmessage?.({ data: JSON.stringify(payload) } as MessageEvent);
+  expect(reconcileChatQueries).toHaveBeenCalledWith(
+    queryClient,
+    "engineering",
+    conversationId,
+  );
+  expect(deliverDesktopNotification).not.toHaveBeenCalled();
+});
+
+it("routes typing only to the current account and clears transient activity on disconnect", () => {
+  const userId = "11111111-1111-4111-8111-111111111111";
+  const workspaceId = "22222222-2222-4222-8222-222222222222";
+  const conversationId = "33333333-3333-4333-8333-333333333333";
+  mockedUseCurrentWorkspace.mockReturnValue({
+    workspace: { id: workspaceId, slug: "engineering" },
+  } as ReturnType<typeof useCurrentWorkspace>);
+  jest.mocked(useSession).mockReturnValue({
+    data: { user: { id: userId } },
+    status: "authenticated",
+  } as ReturnType<typeof useSession>);
+  const view = render(<WorkspaceRealtimeConnection />);
+  const payload = {
+    type: "chat.typing",
+    userId,
+    workspaceId,
+    conversationId,
+    actorId: conversationId,
+    fullName: "Sarah Chen",
+    threadRootId: null,
+    isTyping: true,
+    expiresAt: "2026-10-16T19:00:06Z",
+  };
+  connection().onmessage?.({
+    data: JSON.stringify({ ...payload, workspaceId: conversationId }),
+  } as MessageEvent);
+  connection().onmessage?.({
+    data: JSON.stringify({ ...payload, userId: conversationId }),
+  } as MessageEvent);
+  expect(applyChatTypingEvent).not.toHaveBeenCalled();
+  connection().onmessage?.({ data: JSON.stringify(payload) } as MessageEvent);
+  expect(applyChatTypingEvent).toHaveBeenCalledWith(
+    expect.objectContaining({
+      kind: "chat-typing",
+      workspaceId,
+      conversationId,
+    }),
+  );
+  expect(queryClient.invalidateQueries).not.toHaveBeenCalled();
+  expect(deliverDesktopNotification).not.toHaveBeenCalled();
+  connection().onerror?.(new Event("error"));
+  expect(clearChatTyping).toHaveBeenCalledWith(workspaceId);
+  view.unmount();
+  expect(clearChatTyping).toHaveBeenCalledTimes(2);
 });

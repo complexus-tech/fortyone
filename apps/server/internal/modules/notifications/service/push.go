@@ -62,7 +62,18 @@ func (service *Service) GetPushDelivery(ctx context.Context, notificationID uuid
 	if !ok {
 		return nil, fmt.Errorf("push delivery repository is unavailable")
 	}
-	return repository.GetPushDelivery(ctx, notificationID)
+	delivery, err := repository.GetPushDelivery(ctx, notificationID)
+	if err != nil || delivery == nil {
+		return delivery, err
+	}
+	allowed, err := service.allowsChatDelivery(ctx, delivery.WorkspaceID, delivery.EntityType)
+	if err != nil {
+		return nil, err
+	}
+	if !allowed {
+		return nil, nil
+	}
+	return delivery, nil
 }
 
 func (service *Service) MarkPushSent(ctx context.Context, notificationID uuid.UUID) error {

@@ -7,6 +7,7 @@ package attachmentssql
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -146,6 +147,7 @@ INSERT INTO public.attachments (
     uploaded_by,
     workspace_id,
     scan_status,
+    scan_completed_at,
     optimization_status
 )
 VALUES (
@@ -156,7 +158,8 @@ VALUES (
     $5,
     $6,
     $7,
-    $8
+    $8,
+    $9
 )
 RETURNING attachment_id, filename, size, mime_type, uploaded_by, workspace_id, created_at, blob_name, scan_status, scan_completed_at, scan_failure_reason, optimization_status, optimization_attempts, optimization_started_at, optimization_completed_at, optimization_lease_expires_at, optimization_last_error, updated_at, slack_file_import_id
 `
@@ -169,6 +172,7 @@ type CreateAttachmentParams struct {
 	UploadedBy         *uuid.UUID
 	WorkspaceID        uuid.UUID
 	ScanStatus         string
+	ScanCompletedAt    *time.Time
 	OptimizationStatus string
 }
 
@@ -181,6 +185,7 @@ func (q *Queries) CreateAttachment(ctx context.Context, arg CreateAttachmentPara
 		arg.UploadedBy,
 		arg.WorkspaceID,
 		arg.ScanStatus,
+		arg.ScanCompletedAt,
 		arg.OptimizationStatus,
 	)
 	var i Attachment
@@ -301,6 +306,10 @@ WHERE attachment.attachment_id = $1
       SELECT 1
       FROM public.document_attachments AS document_relation
       WHERE document_relation.attachment_id = attachment.attachment_id
+  )
+  AND NOT EXISTS (
+      SELECT 1 FROM public.chat_attachments AS chat_relation
+      WHERE chat_relation.attachment_id = attachment.attachment_id
   )
   AND NOT EXISTS (
       SELECT 1

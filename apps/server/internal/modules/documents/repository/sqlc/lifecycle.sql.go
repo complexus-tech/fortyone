@@ -15,6 +15,7 @@ import (
 const archiveOwnedDocument = `-- name: ArchiveOwnedDocument :one
 UPDATE public.documents AS document
 SET archived_at = CURRENT_TIMESTAMP,
+    public_token = NULL,
     updated_at = CURRENT_TIMESTAMP,
     updated_by = $1
 FROM public.workspace_members AS membership
@@ -271,7 +272,7 @@ func (q *Queries) ListOrphanedDocumentMediaCandidates(ctx context.Context, arg L
 	return items, nil
 }
 
-const lockOwnedDocumentForDelete = `-- name: LockOwnedDocumentForDelete :one
+const lockOwnedDocumentForLifecycle = `-- name: LockOwnedDocumentForLifecycle :one
 SELECT document.document_id
 FROM public.documents AS document
 INNER JOIN public.workspace_members AS membership
@@ -288,14 +289,48 @@ WHERE document.document_id = $2
 FOR UPDATE OF document
 `
 
-type LockOwnedDocumentForDeleteParams struct {
+type LockOwnedDocumentForLifecycleParams struct {
 	ActorID     uuid.UUID
 	DocumentID  uuid.UUID
 	WorkspaceID uuid.UUID
 }
 
-func (q *Queries) LockOwnedDocumentForDelete(ctx context.Context, arg LockOwnedDocumentForDeleteParams) (uuid.UUID, error) {
-	row := q.db.QueryRow(ctx, lockOwnedDocumentForDelete, arg.ActorID, arg.DocumentID, arg.WorkspaceID)
+func (q *Queries) LockOwnedDocumentForLifecycle(ctx context.Context, arg LockOwnedDocumentForLifecycleParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, lockOwnedDocumentForLifecycle, arg.ActorID, arg.DocumentID, arg.WorkspaceID)
+	var document_id uuid.UUID
+	err := row.Scan(&document_id)
+	return document_id, err
+}
+
+const unarchiveOwnedDocument = `-- name: UnarchiveOwnedDocument :one
+UPDATE public.documents AS document
+SET archived_at = NULL,
+    public_token = NULL,
+    updated_at = CURRENT_TIMESTAMP,
+    updated_by = $1
+FROM public.workspace_members AS membership
+INNER JOIN public.users AS actor ON actor.user_id = membership.user_id AND actor.is_active = TRUE
+INNER JOIN public.workspaces AS workspace
+    ON workspace.workspace_id = membership.workspace_id
+   AND workspace.deleted_at IS NULL
+WHERE document.document_id = $2
+  AND document.workspace_id = $3
+  AND document.created_by = $1
+  AND document.archived_at IS NOT NULL
+  AND membership.workspace_id = document.workspace_id
+  AND membership.user_id = $1
+  AND membership.role <> CAST('guest' AS public.user_role)
+RETURNING document.document_id
+`
+
+type UnarchiveOwnedDocumentParams struct {
+	ActorID     uuid.UUID
+	DocumentID  uuid.UUID
+	WorkspaceID uuid.UUID
+}
+
+func (q *Queries) UnarchiveOwnedDocument(ctx context.Context, arg UnarchiveOwnedDocumentParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, unarchiveOwnedDocument, arg.ActorID, arg.DocumentID, arg.WorkspaceID)
 	var document_id uuid.UUID
 	err := row.Scan(&document_id)
 	return document_id, err

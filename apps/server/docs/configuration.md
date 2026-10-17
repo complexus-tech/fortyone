@@ -116,37 +116,38 @@ A blank example means the deployment must choose a value when the enabled capabi
 | Variable | Process | Type | Default | Sensitive | Schema field | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | `OPENAI_API_KEY` | worker | `string` | — | yes | [worker Config.AIAPIKey](../internal/bootstrap/worker/config.go#L140) | OpenAI |
-| `OPENAI_ASSISTANT_USER_CALLS_PER_MINUTE` | worker | `int64` | `12` | no | [worker Config.MessagingAssistant.UserCallsPerMinute](../internal/bootstrap/worker/config.go#L144) |  |
-| `OPENAI_ASSISTANT_WORKSPACE_CALLS_PER_MINUTE` | worker | `int64` | `120` | no | [worker Config.MessagingAssistant.WorkspaceCallsPerMinute](../internal/bootstrap/worker/config.go#L145) |  |
-| `OPENAI_ASSISTANT_WORKSPACE_TOKENS_PER_DAY` | worker | `int64` | `1000000` | no | [worker Config.MessagingAssistant.WorkspaceTokensPerDay](../internal/bootstrap/worker/config.go#L146) |  |
+| `OPENAI_ASSISTANT_USER_CALLS_PER_MINUTE` | worker | `int64` | `12` | no | [worker Config.MessagingAssistant.UserCallsPerMinute](../internal/bootstrap/worker/config.go#L145) |  |
+| `OPENAI_ASSISTANT_WORKSPACE_CALLS_PER_MINUTE` | worker | `int64` | `120` | no | [worker Config.MessagingAssistant.WorkspaceCallsPerMinute](../internal/bootstrap/worker/config.go#L146) |  |
+| `OPENAI_ASSISTANT_WORKSPACE_TOKENS_PER_DAY` | worker | `int64` | `1000000` | no | [worker Config.MessagingAssistant.WorkspaceTokensPerDay](../internal/bootstrap/worker/config.go#L147) |  |
 | `OPENAI_MODEL` | worker | `string` | `gpt-5.6-luna` | no | [worker Config.AIModel](../internal/bootstrap/worker/config.go#L141) | Optional overrides; the worker defaults to these values when omitted. |
+| `OPENAI_TRANSCRIPTION_MODEL` | worker | `string` | `gpt-4o-mini-transcribe` | no | [worker Config.AudioTranscriptionModel](../internal/bootstrap/worker/config.go#L142) |  |
 
 ## Provider integrations
 
 | Variable | Process | Type | Default | Sensitive | Schema field | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| `APP_GITHUB_APP_ID` | API, worker | `int64` | API: —<br>worker: — | no | [API Config.GitHub.AppID](../cmd/api/config.go#L164)<br>[worker Config.GitHub.AppID](../internal/bootstrap/worker/config.go#L159) | GitHub Integration |
-| `FIGMA_CLIENT_ID` | API, worker | `string` | API: —<br>worker: — | no | [API Config.Figma.ClientID](../cmd/api/config.go#L180)<br>[worker Config.Figma.ClientID](../internal/bootstrap/worker/config.go#L166) | Figma OAuth integration |
-| `FIGMA_CLIENT_SECRET` | API, worker | `string` | API: —<br>worker: — | yes | [API Config.Figma.ClientSecret](../cmd/api/config.go#L181)<br>[worker Config.Figma.ClientSecret](../internal/bootstrap/worker/config.go#L167) |  |
-| `FIGMA_REDIRECT_URL` | API, worker | `string` | API: `https://api.fortyone.app/integrations/figma/callback`<br>worker: `https://api.fortyone.app/integrations/figma/callback` | no | [API Config.Figma.RedirectURL](../cmd/api/config.go#L182)<br>[worker Config.Figma.RedirectURL](../internal/bootstrap/worker/config.go#L168) |  |
-| `FIGMA_WEBHOOK_URL` | API, worker | `string` | API: `https://api.fortyone.app/webhooks/figma`<br>worker: `https://api.fortyone.app/webhooks/figma` | no | [API Config.Figma.WebhookURL](../cmd/api/config.go#L183)<br>[worker Config.Figma.WebhookURL](../internal/bootstrap/worker/config.go#L169) |  |
-| `GITHUB_APP_SLUG` | API, worker | `string` | API: —<br>worker: — | no | [API Config.GitHub.AppSlug](../cmd/api/config.go#L165)<br>[worker Config.GitHub.AppSlug](../internal/bootstrap/worker/config.go#L160) |  |
+| `APP_GITHUB_APP_ID` | API, worker | `int64` | API: —<br>worker: — | no | [API Config.GitHub.AppID](../cmd/api/config.go#L164)<br>[worker Config.GitHub.AppID](../internal/bootstrap/worker/config.go#L160) | GitHub Integration |
+| `FIGMA_CLIENT_ID` | API, worker | `string` | API: —<br>worker: — | no | [API Config.Figma.ClientID](../cmd/api/config.go#L180)<br>[worker Config.Figma.ClientID](../internal/bootstrap/worker/config.go#L167) | Figma OAuth integration |
+| `FIGMA_CLIENT_SECRET` | API, worker | `string` | API: —<br>worker: — | yes | [API Config.Figma.ClientSecret](../cmd/api/config.go#L181)<br>[worker Config.Figma.ClientSecret](../internal/bootstrap/worker/config.go#L168) |  |
+| `FIGMA_REDIRECT_URL` | API, worker | `string` | API: `https://api.fortyone.app/integrations/figma/callback`<br>worker: `https://api.fortyone.app/integrations/figma/callback` | no | [API Config.Figma.RedirectURL](../cmd/api/config.go#L182)<br>[worker Config.Figma.RedirectURL](../internal/bootstrap/worker/config.go#L169) |  |
+| `FIGMA_WEBHOOK_URL` | API, worker | `string` | API: `https://api.fortyone.app/webhooks/figma`<br>worker: `https://api.fortyone.app/webhooks/figma` | no | [API Config.Figma.WebhookURL](../cmd/api/config.go#L183)<br>[worker Config.Figma.WebhookURL](../internal/bootstrap/worker/config.go#L170) |  |
+| `GITHUB_APP_SLUG` | API, worker | `string` | API: —<br>worker: — | no | [API Config.GitHub.AppSlug](../cmd/api/config.go#L165)<br>[worker Config.GitHub.AppSlug](../internal/bootstrap/worker/config.go#L161) |  |
 | `GITHUB_CLIENT_ID` | API | `string` | — | no | [API Config.GitHub.ClientID](../cmd/api/config.go#L166) |  |
 | `GITHUB_CLIENT_SECRET` | API | `string` | — | yes | [API Config.GitHub.ClientSecret](../cmd/api/config.go#L167) |  |
-| `GITHUB_PRIVATE_KEY_BASE64` | API, worker | `string` | API: —<br>worker: — | yes | [API Config.GitHub.PrivateKeyBase64](../cmd/api/config.go#L168)<br>[worker Config.GitHub.PrivateKeyBase64](../internal/bootstrap/worker/config.go#L161) |  |
-| `GITHUB_REDIRECT_URL` | API, worker | `string` | API: —<br>worker: — | no | [API Config.GitHub.RedirectURL](../cmd/api/config.go#L169)<br>[worker Config.GitHub.RedirectURL](../internal/bootstrap/worker/config.go#L162) |  |
-| `GITHUB_WEBHOOK_SECRET` | API, worker | `string` | API: —<br>worker: — | yes | [API Config.GitHub.WebhookSecret](../cmd/api/config.go#L171)<br>[worker Config.GitHub.WebhookSecret](../internal/bootstrap/worker/config.go#L163) |  |
+| `GITHUB_PRIVATE_KEY_BASE64` | API, worker | `string` | API: —<br>worker: — | yes | [API Config.GitHub.PrivateKeyBase64](../cmd/api/config.go#L168)<br>[worker Config.GitHub.PrivateKeyBase64](../internal/bootstrap/worker/config.go#L162) |  |
+| `GITHUB_REDIRECT_URL` | API, worker | `string` | API: —<br>worker: — | no | [API Config.GitHub.RedirectURL](../cmd/api/config.go#L169)<br>[worker Config.GitHub.RedirectURL](../internal/bootstrap/worker/config.go#L163) |  |
+| `GITHUB_WEBHOOK_SECRET` | API, worker | `string` | API: —<br>worker: — | yes | [API Config.GitHub.WebhookSecret](../cmd/api/config.go#L171)<br>[worker Config.GitHub.WebhookSecret](../internal/bootstrap/worker/config.go#L164) |  |
 | `GITHUB_WEBHOOK_URL` | API | `string` | — | no | [API Config.GitHub.WebhookURL](../cmd/api/config.go#L170) |  |
-| `GOOGLE_CLIENT_ID` | API, worker | `string` | API: —<br>worker: — | no | [API Config.Google.ClientID](../cmd/api/config.go#L134)<br>[worker Config.GoogleClientID](../internal/bootstrap/worker/config.go#L142) | Google (legacy fallback, use APP_AUTH_GOOGLE_CLIENT_IDS instead) |
+| `GOOGLE_CLIENT_ID` | API, worker | `string` | API: —<br>worker: — | no | [API Config.Google.ClientID](../cmd/api/config.go#L134)<br>[worker Config.GoogleClientID](../internal/bootstrap/worker/config.go#L143) | Google (legacy fallback, use APP_AUTH_GOOGLE_CLIENT_IDS instead) |
 | `GOOGLE_DRIVE_APP_ID` | API | `string` | — | no | [API Config.GoogleDrive.AppID](../cmd/api/config.go#L190) |  |
 | `GOOGLE_DRIVE_CLIENT_ID` | API | `string` | — | no | [API Config.GoogleDrive.ClientID](../cmd/api/config.go#L186) | Google Drive personal integration (dedicated Cloud project; never share with sign-in or Calendar) |
 | `GOOGLE_DRIVE_CLIENT_SECRET` | API | `string` | — | yes | [API Config.GoogleDrive.ClientSecret](../cmd/api/config.go#L187) |  |
 | `GOOGLE_DRIVE_PICKER_API_KEY` | API | `string` | — | no | [API Config.GoogleDrive.PickerAPIKey](../cmd/api/config.go#L189) |  |
 | `GOOGLE_DRIVE_REDIRECT_URL` | API | `string` | `https://api.fortyone.app/integrations/google-drive/callback` | no | [API Config.GoogleDrive.RedirectURL](../cmd/api/config.go#L188) |  |
-| `SLACK_CLIENT_ID` | API, worker | `string` | API: —<br>worker: — | no | [API Config.Slack.ClientID](../cmd/api/config.go#L174)<br>[worker Config.Slack.ClientID](../internal/bootstrap/worker/config.go#L154) | Slack |
-| `SLACK_CLIENT_SECRET` | API, worker | `string` | API: —<br>worker: — | yes | [API Config.Slack.ClientSecret](../cmd/api/config.go#L175)<br>[worker Config.Slack.ClientSecret](../internal/bootstrap/worker/config.go#L155) |  |
+| `SLACK_CLIENT_ID` | API, worker | `string` | API: —<br>worker: — | no | [API Config.Slack.ClientID](../cmd/api/config.go#L174)<br>[worker Config.Slack.ClientID](../internal/bootstrap/worker/config.go#L155) | Slack |
+| `SLACK_CLIENT_SECRET` | API, worker | `string` | API: —<br>worker: — | yes | [API Config.Slack.ClientSecret](../cmd/api/config.go#L175)<br>[worker Config.Slack.ClientSecret](../internal/bootstrap/worker/config.go#L156) |  |
 | `SLACK_REDIRECT_URL` | API | `string` | `https://api.fortyone.app/integrations/slack/setup` | no | [API Config.Slack.RedirectURL](../cmd/api/config.go#L177) | Optional outside local development; the API defaults to this production URL. |
-| `SLACK_SIGNING_SECRET` | API, worker | `string` | API: —<br>worker: — | yes | [API Config.Slack.SigningSecret](../cmd/api/config.go#L176)<br>[worker Config.Slack.SigningSecret](../internal/bootstrap/worker/config.go#L156) |  |
+| `SLACK_SIGNING_SECRET` | API, worker | `string` | API: —<br>worker: — | yes | [API Config.Slack.SigningSecret](../cmd/api/config.go#L176)<br>[worker Config.Slack.SigningSecret](../internal/bootstrap/worker/config.go#L157) |  |
 | `STRIPE_SECRET_KEY` | API | `string` | — | yes | [API Config.Stripe.SecretKey](../cmd/api/config.go#L160) | Stripe |
 | `STRIPE_WEBHOOK_SECRET` | API | `string` | — | yes | [API Config.Stripe.WebhookSecret](../cmd/api/config.go#L161) |  |
 
@@ -181,9 +182,9 @@ A blank example means the deployment must choose a value when the enabled capabi
 | Variable | Process | Type | Default | Sensitive | Schema field | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | `APP_FEEDBACK_SECURITY_KEY` | API, worker | `string` | API: `development-only-feedback-security-key`<br>worker: `development-only-feedback-security-key` | no | [API Config.Feedback.SecurityKey](../cmd/api/config.go#L58)<br>[worker Config.Feedback.SecurityKey](../internal/bootstrap/worker/config.go#L103) | Dedicated key for feedback verification-code digests, unsubscribe links, and widget-secret encryption. The API and worker must share this value. Replace the development default with at least 32 random bytes in production and do not reuse any auth, token, OAuth, or credential-vault key. |
-| `APP_INTERNAL_SLACK_CHANNEL_ID` | worker | `string` | — | no | [worker Config.InternalSlack.ChannelID](../internal/bootstrap/worker/config.go#L151) |  |
-| `APP_INTERNAL_SLACK_ENABLED` | worker | `bool` | `true` | no | [worker Config.InternalSlack.Enabled](../internal/bootstrap/worker/config.go#L149) | Internal operations alerts through the existing Slack installation (worker only). Enabled by default; configure the internal team and its general channel explicitly. Set false to disable internal alerts. |
-| `APP_INTERNAL_SLACK_TEAM_ID` | worker | `string` | — | no | [worker Config.InternalSlack.TeamID](../internal/bootstrap/worker/config.go#L150) |  |
+| `APP_INTERNAL_SLACK_CHANNEL_ID` | worker | `string` | — | no | [worker Config.InternalSlack.ChannelID](../internal/bootstrap/worker/config.go#L152) |  |
+| `APP_INTERNAL_SLACK_ENABLED` | worker | `bool` | `true` | no | [worker Config.InternalSlack.Enabled](../internal/bootstrap/worker/config.go#L150) | Internal operations alerts through the existing Slack installation (worker only). Enabled by default; configure the internal team and its general channel explicitly. Set false to disable internal alerts. |
+| `APP_INTERNAL_SLACK_TEAM_ID` | worker | `string` | — | no | [worker Config.InternalSlack.TeamID](../internal/bootstrap/worker/config.go#L151) |  |
 | `APP_MCP_LOGIN_URL` | API | `string` | `http://localhost:3000` | no | [API Config.MCP.LoginURL](../cmd/api/config.go#L100) |  |
 | `APP_MESSAGING_MUTATION_HMAC_KEY` | API, worker | `string` | API: development placeholder<br>worker: development placeholder | yes | [API Config.Messaging.MutationHMACKey](../cmd/api/config.go#L64)<br>[worker Config.Messaging.MutationHMACKey](../internal/bootstrap/worker/config.go#L109) | Shared only by API and worker replicas that issue or confirm assistant story mutations. Use independent random key material in production. |
 | `APP_OAUTH_ACCESS_TOKEN_SIGNING_KEY` | API | `string` | development placeholder | yes | [API Config.DeveloperOAuth.AccessTokenSigningKey](../cmd/api/config.go#L81) | Dedicated OAuth keys for delegated MCP clients. The access-token signing key and authorization/refresh-token digest keyring must be independent from each other and from every credential key above. Replace all development values in production and retain old digest keys only for their bounded token lifetime. |

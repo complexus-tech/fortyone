@@ -15,6 +15,7 @@ const view: FavoriteRef = {
 };
 const story: FavoriteRef = { kind: "story", id: view.id };
 const team: FavoriteRef = { kind: "team", id: view.teamId };
+const document: FavoriteRef = { kind: "document", id: view.id };
 
 describe("generalized favorite references", () => {
   beforeEach(() => {
@@ -22,6 +23,17 @@ describe("generalized favorite references", () => {
   });
   afterEach(() => {
     jest.restoreAllMocks();
+  });
+
+  it("persists document favorites independently from other kinds and accounts", () => {
+    updateFavorites(scope, () => [view, document, document]);
+    expect(readFavoriteSnapshot(scope).favorites).toEqual([view, document]);
+    expect(readFavoriteSnapshot({ ...scope, userId: "two" }).favorites).toEqual(
+      [],
+    );
+    expect(
+      JSON.parse(localStorage.getItem(favoritesKey(scope))!).favorites,
+    ).toEqual([view, document]);
   });
 
   it("migrates legacy views on the next write and retains recovery data", () => {

@@ -151,6 +151,7 @@ WHERE story.workspace_id = sqlc.arg(workspace_id)
   AND story.deleted_at IS NULL
   AND (
       CAST(sqlc.arg(query_text) AS text) = ''
+      OR lower(search_team.code || '-' || CAST(story.sequence_id AS text)) = lower(btrim(CAST(sqlc.arg(query_text) AS text)))
       OR story.search_vector @@ plainto_tsquery('english', CAST(sqlc.arg(query_text) AS text))
       OR story.title ILIKE '%' || CAST(sqlc.arg(query_text) AS text) || '%'
       OR similarity(lower(story.title), lower(CAST(sqlc.arg(query_text) AS text))) >= 0.2
@@ -187,6 +188,9 @@ WHERE story.workspace_id = sqlc.arg(workspace_id)
 ORDER BY
     CASE WHEN CAST(sqlc.arg(sort_by) AS text) = 'updated' THEN story.updated_at END DESC,
     CASE WHEN CAST(sqlc.arg(sort_by) AS text) = 'created' THEN story.created_at END DESC,
+    CASE WHEN CAST(sqlc.arg(sort_by) AS text) = 'relevance'
+        THEN lower(search_team.code || '-' || CAST(story.sequence_id AS text)) = lower(btrim(CAST(sqlc.arg(query_text) AS text)))
+    END DESC,
     CASE
         WHEN CAST(sqlc.arg(sort_by) AS text) = 'relevance'
          AND CAST(sqlc.arg(query_text) AS text) <> ''
@@ -217,10 +221,14 @@ INNER JOIN users AS actor
     ON actor.user_id = workspace_member.user_id
    AND actor.is_active = TRUE
    AND actor.is_system = FALSE
+INNER JOIN teams AS search_team
+    ON search_team.team_id = story.team_id
+   AND search_team.workspace_id = story.workspace_id
 WHERE story.workspace_id = sqlc.arg(workspace_id)
   AND story.deleted_at IS NULL
   AND (
       CAST(sqlc.arg(query_text) AS text) = ''
+      OR lower(search_team.code || '-' || CAST(story.sequence_id AS text)) = lower(btrim(CAST(sqlc.arg(query_text) AS text)))
       OR story.search_vector @@ plainto_tsquery('english', CAST(sqlc.arg(query_text) AS text))
       OR story.title ILIKE '%' || CAST(sqlc.arg(query_text) AS text) || '%'
       OR similarity(lower(story.title), lower(CAST(sqlc.arg(query_text) AS text))) >= 0.2

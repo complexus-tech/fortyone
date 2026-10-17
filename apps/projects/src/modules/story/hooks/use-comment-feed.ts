@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useSession } from "@/lib/auth/client";
 import { isStoryUuid } from "@/shared/routing/story";
+import { normalizeCommentThreads } from "../lib/comment-tree";
 import {
   findCommentThread,
   flattenComments,
@@ -51,24 +52,18 @@ export const useCommentFeed = (storyId: string) => {
     : undefined;
   const threadQuery = useCommentThread(storyId, loadedTarget ? null : targetId);
   const linkedThread = !threadQuery.isError ? threadQuery.data : undefined;
-  let comments = loadedComments;
-  if (linkedThread) {
-    comments = loadedComments.some((comment) => comment.id === linkedThread.id)
-      ? loadedComments.map((comment) =>
-          comment.id === linkedThread.id ? linkedThread : comment,
-        )
-      : [linkedThread, ...loadedComments];
-  }
+  const comments = useMemo(() => {
+    let threads = loadedComments;
+    if (linkedThread) {
+      threads = loadedComments.some((comment) => comment.id === linkedThread.id)
+        ? loadedComments.map((comment) =>
+            comment.id === linkedThread.id ? linkedThread : comment,
+          )
+        : [linkedThread, ...loadedComments];
+    }
+    return normalizeCommentThreads(threads);
+  }, [loadedComments, linkedThread]);
   const newest = latestComment(comments);
-  const defaultExpandedThreadId = comments.reduce<
-    { id: string; at: string } | undefined
-  >((latest, comment) => {
-    const reply = latestComment(comment.subComments);
-    return reply &&
-      (!latest || Date.parse(reply.createdAt) > Date.parse(latest.at))
-      ? { id: comment.id, at: reply.createdAt }
-      : latest;
-  }, undefined)?.id;
   const latestRootLoadedAt = comments.reduce<string | undefined>(
     (latest, comment) => {
       if (comment.id.startsWith("pending-comment:")) return latest;
@@ -106,16 +101,41 @@ export const useCommentFeed = (storyId: string) => {
   );
   const hasUnread = hasLoadedUnread || (stateQuery.data?.unreadCount ?? 0) > 0;
   const latestCommentId = stateQuery.data?.latestCommentId ?? newest?.id;
-  const focusedTarget = useRef<string | null>(null);
+  const focusedTarget = useRef({ key: revealKey, focused: false });
+  const [highlight, setHighlight] = useState<{
+    key: string;
+    commentId: string;
+  } | null>(null);
 
   useEffect(() => {
-    if (!targetId) {
-      focusedTarget.current = null;
-      return;
+    if (focusedTarget.current.key !== revealKey)
+      focusedTarget.current = { key: revealKey, focused: false };
+    if (!targetId || !revealKey) return;
+    // An off-page thread can arrive first. Wait for the initial feed so its
+    // insertion does not move the focused reply out of view immediately after.
+    if (commentsQuery.isPending) return;
+    if (focusedTarget.current.focused) return;
+    if (focusComment(targetId)) {
+      focusedTarget.current.focused = true;
+      setHighlight({ key: revealKey, commentId: targetId });
     }
-    if (focusedTarget.current === revealKey) return;
-    if (focusComment(targetId)) focusedTarget.current = revealKey;
-  }, [targetId, revealKey, commentsQuery.data, threadQuery.data]);
+  }, [
+    targetId,
+    revealKey,
+    commentsQuery.data,
+    commentsQuery.isPending,
+    threadQuery.data,
+  ]);
+
+  useEffect(() => {
+    if (!highlight || highlight.key !== revealKey) return;
+    const timeout = window.setTimeout(() => {
+      setHighlight((current) => (current === highlight ? null : current));
+    }, 5_000);
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [highlight, revealKey]);
 
   const jumpToLatest = () => {
     const commentId = latestCommentId;
@@ -125,7 +145,6 @@ export const useCommentFeed = (storyId: string) => {
       commentId,
       sequence: (current?.sequence ?? 0) + 1,
     }));
-    focusComment(commentId);
   };
   return {
     commentsQuery,
@@ -133,6 +152,7 @@ export const useCommentFeed = (storyId: string) => {
     mayaQuery,
     threadQuery,
     targetId,
+    highlightedId: highlight?.key === revealKey ? highlight.commentId : null,
     revealKey,
     loadedTarget,
     comments,
@@ -140,7 +160,6 @@ export const useCommentFeed = (storyId: string) => {
     lastReadAt,
     stateById,
     hasUnread,
-    defaultExpandedThreadId,
     latestCommentId,
     jumpToLatest,
     currentUserId: session?.user.id,

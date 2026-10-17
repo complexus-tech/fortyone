@@ -12,6 +12,7 @@ const ENTITY_TYPES = new Set([
   "objective",
   "key_result",
   "strategy",
+  "chat_message",
 ]);
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === "object" && !Array.isArray(value);

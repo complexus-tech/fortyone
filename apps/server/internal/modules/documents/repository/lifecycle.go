@@ -2,12 +2,14 @@ package documentsrepository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
 	documentdomain "github.com/complexus-tech/projects-api/internal/modules/documents/domain"
 	documentssql "github.com/complexus-tech/projects-api/internal/modules/documents/repository/sqlc"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 )
 
 func (repository *Repository) Duplicate(
@@ -26,6 +28,10 @@ func (repository *Repository) Duplicate(
 			return mapNotFound("get document for duplicate", err)
 		}
 		source := documentFromDuplicateSource(sourceRow)
+		source.ContentHTML, err = filterDuplicateReferences(ctx, queries, workspaceID, userID, source.ContentHTML)
+		if err != nil {
+			return err
+		}
 		oldMediaPath := "/documents/" + source.ID.String() + "/media/"
 
 		// Generate the identity before insertion so stable media URLs can be
@@ -47,6 +53,9 @@ func (repository *Repository) Duplicate(
 			SourceDocumentID: documentID, WorkspaceID: workspaceID,
 		}); err != nil {
 			return fmt.Errorf("copy workspace document media: %w", err)
+		}
+		if err := syncDocumentBody(ctx, queries, workspaceID, userID, duplicate.ID, duplicate.ContentHTML); err != nil {
+			return err
 		}
 		return hydrateDocument(ctx, queries, &duplicate, userID)
 	})
@@ -80,6 +89,38 @@ func (repository *Repository) Archive(
 	return nil
 }
 
+func (repository *Repository) Unarchive(
+	ctx context.Context,
+	workspaceID, userID, documentID uuid.UUID,
+) (documentdomain.Document, error) {
+	if err := repository.configured(); err != nil {
+		return documentdomain.Document{}, err
+	}
+	var document documentdomain.Document
+	err := repository.withinSerializable(ctx, func(queries *documentssql.Queries) error {
+		if _, err := queries.LockOwnedDocumentForLifecycle(ctx, documentssql.LockOwnedDocumentForLifecycleParams{
+			ActorID: userID, DocumentID: documentID, WorkspaceID: workspaceID,
+		}); err != nil {
+			return mapNotFound("lock owned document for unarchive", err)
+		}
+		if _, err := queries.UnarchiveOwnedDocument(ctx, documentssql.UnarchiveOwnedDocumentParams{
+			ActorID: userID, DocumentID: documentID, WorkspaceID: workspaceID,
+		}); err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				return documentdomain.ErrConflict
+			}
+			return fmt.Errorf("unarchive owned document: %w", err)
+		}
+		var err error
+		document, err = getDocument(ctx, queries, workspaceID, userID, documentID)
+		return err
+	})
+	if err != nil {
+		return documentdomain.Document{}, err
+	}
+	return document, nil
+}
+
 func (repository *Repository) Delete(
 	ctx context.Context,
 	workspaceID, userID, documentID uuid.UUID,
@@ -89,10 +130,10 @@ func (repository *Repository) Delete(
 	}
 	var orphanCandidates []uuid.UUID
 	err := repository.withinSerializable(ctx, func(queries *documentssql.Queries) error {
-		params := documentssql.LockOwnedDocumentForDeleteParams{
+		params := documentssql.LockOwnedDocumentForLifecycleParams{
 			ActorID: userID, DocumentID: documentID, WorkspaceID: workspaceID,
 		}
-		if _, err := queries.LockOwnedDocumentForDelete(ctx, params); err != nil {
+		if _, err := queries.LockOwnedDocumentForLifecycle(ctx, params); err != nil {
 			return mapNotFound("lock owned document for delete", err)
 		}
 		var err error

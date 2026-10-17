@@ -158,8 +158,13 @@ SELECT
     CAST('story' AS text) AS entity_type,
     story.title,
     CAST(team.code || '-' || story.sequence_id AS text) AS reference,
-    story.team_id
+    story.team_id,
+    story_status.color AS status_color
 FROM public.stories AS story
+LEFT JOIN public.statuses AS story_status
+    ON story_status.status_id = story.status_id
+   AND story_status.team_id = story.team_id
+   AND story_status.workspace_id = story.workspace_id
 INNER JOIN public.teams AS team
     ON team.team_id = story.team_id
    AND team.workspace_id = story.workspace_id
@@ -187,11 +192,12 @@ type GetVisibleStoryRelationshipTargetParams struct {
 }
 
 type GetVisibleStoryRelationshipTargetRow struct {
-	EntityID   uuid.UUID
-	EntityType string
-	Title      string
-	Reference  string
-	TeamID     uuid.UUID
+	EntityID    uuid.UUID
+	EntityType  string
+	Title       string
+	Reference   string
+	TeamID      uuid.UUID
+	StatusColor *string
 }
 
 func (q *Queries) GetVisibleStoryRelationshipTarget(ctx context.Context, arg GetVisibleStoryRelationshipTargetParams) (GetVisibleStoryRelationshipTargetRow, error) {
@@ -203,8 +209,26 @@ func (q *Queries) GetVisibleStoryRelationshipTarget(ctx context.Context, arg Get
 		&i.Title,
 		&i.Reference,
 		&i.TeamID,
+		&i.StatusColor,
 	)
 	return i, err
+}
+
+const hasDocumentBodyReference = `-- name: HasDocumentBodyReference :one
+SELECT EXISTS(SELECT 1 FROM public.document_body_references WHERE document_id=$1 AND entity_type=$2 AND entity_id=$3) AS present
+`
+
+type HasDocumentBodyReferenceParams struct {
+	DocumentID uuid.UUID
+	EntityType string
+	EntityID   uuid.UUID
+}
+
+func (q *Queries) HasDocumentBodyReference(ctx context.Context, arg HasDocumentBodyReferenceParams) (bool, error) {
+	row := q.db.QueryRow(ctx, hasDocumentBodyReference, arg.DocumentID, arg.EntityType, arg.EntityID)
+	var present bool
+	err := row.Scan(&present)
+	return present, err
 }
 
 const insertEditableDocumentRelationship = `-- name: InsertEditableDocumentRelationship :one
@@ -281,7 +305,7 @@ WHERE document.document_id = $4
       )
   )
 ON CONFLICT (document_id, entity_type, entity_id) DO UPDATE
-SET created_by = document_relationships.created_by
+SET created_by = document_relationships.created_by, source = 'manual'
 RETURNING document_id
 `
 
@@ -318,6 +342,8 @@ SELECT
     document.updated_by,
     document.created_at,
     document.updated_at,
+    document.archived_at,
+    CAST(document.public_token IS NOT NULL AS boolean) AS public_enabled,
     (
         workspace_membership.role <> CAST('guest' AS public.user_role)
         AND (
@@ -332,38 +358,7 @@ SELECT
                   AND editor.role = 'editor'
             )
         )
-    ) AS can_edit,
-    (
-        SELECT COUNT(*)
-        FROM public.document_relationships AS count_relationship
-        LEFT JOIN public.stories AS count_story
-            ON count_relationship.entity_type = 'story'
-           AND count_story.id = count_relationship.entity_id
-           AND count_story.workspace_id = count_relationship.workspace_id
-           AND count_story.deleted_at IS NULL
-        LEFT JOIN public.teams AS count_story_team
-            ON count_story_team.team_id = count_story.team_id
-           AND count_story_team.workspace_id = count_relationship.workspace_id
-        LEFT JOIN public.objectives AS count_objective
-            ON count_relationship.entity_type = 'objective'
-           AND count_objective.objective_id = count_relationship.entity_id
-           AND count_objective.workspace_id = count_relationship.workspace_id
-        LEFT JOIN public.teams AS count_objective_team
-            ON count_objective_team.team_id = count_objective.team_id
-           AND count_objective_team.workspace_id = count_relationship.workspace_id
-        WHERE count_relationship.document_id = document.document_id
-          AND count_relationship.workspace_id = document.workspace_id
-          AND (
-              (count_story.id IS NOT NULL AND count_story_team.team_id IS NOT NULL)
-              OR (count_objective.objective_id IS NOT NULL AND count_objective_team.team_id IS NOT NULL)
-          )
-          AND EXISTS (
-              SELECT 1
-              FROM public.team_members AS viewer
-              WHERE viewer.user_id = $1
-                AND viewer.team_id = COALESCE(count_story_team.team_id, count_objective_team.team_id)
-          )
-    ) AS related_work_count
+    ) AS can_edit
 FROM public.document_relationships AS relationship
 INNER JOIN public.documents AS document ON document.document_id = relationship.document_id
 INNER JOIN public.workspace_members AS workspace_membership
@@ -434,16 +429,17 @@ type ListAccessibleDocumentsForRelationshipParams struct {
 }
 
 type ListAccessibleDocumentsForRelationshipRow struct {
-	DocumentID       uuid.UUID
-	WorkspaceID      uuid.UUID
-	Title            string
-	Visibility       string
-	CreatedBy        uuid.UUID
-	UpdatedBy        uuid.UUID
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
-	CanEdit          *bool
-	RelatedWorkCount int64
+	DocumentID    uuid.UUID
+	WorkspaceID   uuid.UUID
+	Title         string
+	Visibility    string
+	CreatedBy     uuid.UUID
+	UpdatedBy     uuid.UUID
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+	ArchivedAt    *time.Time
+	PublicEnabled bool
+	CanEdit       *bool
 }
 
 func (q *Queries) ListAccessibleDocumentsForRelationship(ctx context.Context, arg ListAccessibleDocumentsForRelationshipParams) ([]ListAccessibleDocumentsForRelationshipRow, error) {
@@ -469,8 +465,9 @@ func (q *Queries) ListAccessibleDocumentsForRelationship(ctx context.Context, ar
 			&i.UpdatedBy,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.ArchivedAt,
+			&i.PublicEnabled,
 			&i.CanEdit,
-			&i.RelatedWorkCount,
 		); err != nil {
 			return nil, err
 		}
@@ -484,14 +481,17 @@ func (q *Queries) ListAccessibleDocumentsForRelationship(ctx context.Context, ar
 
 const listVisibleDocumentRelationships = `-- name: ListVisibleDocumentRelationships :many
 SELECT
+    relationship.document_id,
     relationship.entity_id,
     relationship.entity_type,
+    EXISTS(SELECT 1 FROM public.document_body_references AS reference WHERE reference.document_id=relationship.document_id AND reference.entity_type=relationship.entity_type AND reference.entity_id=relationship.entity_id) AS referenced_in_content,
     COALESCE(story.title, objective.name) AS title,
     CAST(COALESCE(
         story_team.code || '-' || story.sequence_id,
         objective_team.code || '-' || objective.sequence_id
     ) AS text) AS reference,
-    COALESCE(story.team_id, objective.team_id) AS team_id
+    COALESCE(story.team_id, objective.team_id) AS team_id,
+    story_status.color AS status_color
 FROM public.document_relationships AS relationship
 INNER JOIN public.documents AS document
     ON document.document_id = relationship.document_id
@@ -507,6 +507,10 @@ LEFT JOIN public.stories AS story
 LEFT JOIN public.teams AS story_team
     ON story_team.team_id = story.team_id
    AND story_team.workspace_id = relationship.workspace_id
+LEFT JOIN public.statuses AS story_status
+    ON story_status.status_id = story.status_id
+   AND story_status.team_id = story.team_id
+   AND story_status.workspace_id = story.workspace_id
 LEFT JOIN public.objectives AS objective
     ON relationship.entity_type = 'objective'
    AND objective.objective_id = relationship.entity_id
@@ -521,8 +525,15 @@ INNER JOIN public.users AS actor
     ON actor.user_id = workspace_membership.user_id
    AND actor.is_active = TRUE
 WHERE relationship.workspace_id = $2
-  AND relationship.document_id = $3
-  AND document.archived_at IS NULL
+  AND relationship.document_id = ANY(CAST($3 AS uuid[]))
+  AND (
+      document.archived_at IS NULL
+      OR (
+          CAST($4 AS boolean)
+          AND document.created_by = $1
+          AND workspace_membership.role <> CAST('guest' AS public.user_role)
+      )
+  )
   AND (
       document.visibility = 'workspace'
       OR document.created_by = $1
@@ -544,25 +555,34 @@ WHERE relationship.workspace_id = $2
       WHERE viewer.user_id = $1
         AND viewer.team_id = COALESCE(story_team.team_id, objective_team.team_id)
   )
-ORDER BY relationship.created_at, relationship.entity_id
+ORDER BY relationship.document_id, relationship.created_at, relationship.entity_id
 `
 
 type ListVisibleDocumentRelationshipsParams struct {
-	ActorID     uuid.UUID
-	WorkspaceID uuid.UUID
-	DocumentID  uuid.UUID
+	ActorID         uuid.UUID
+	WorkspaceID     uuid.UUID
+	DocumentIds     []uuid.UUID
+	IncludeArchived bool
 }
 
 type ListVisibleDocumentRelationshipsRow struct {
-	EntityID   uuid.UUID
-	EntityType string
-	Title      string
-	Reference  string
-	TeamID     uuid.UUID
+	DocumentID          uuid.UUID
+	EntityID            uuid.UUID
+	EntityType          string
+	ReferencedInContent bool
+	Title               string
+	Reference           string
+	TeamID              uuid.UUID
+	StatusColor         *string
 }
 
 func (q *Queries) ListVisibleDocumentRelationships(ctx context.Context, arg ListVisibleDocumentRelationshipsParams) ([]ListVisibleDocumentRelationshipsRow, error) {
-	rows, err := q.db.Query(ctx, listVisibleDocumentRelationships, arg.ActorID, arg.WorkspaceID, arg.DocumentID)
+	rows, err := q.db.Query(ctx, listVisibleDocumentRelationships,
+		arg.ActorID,
+		arg.WorkspaceID,
+		arg.DocumentIds,
+		arg.IncludeArchived,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -571,11 +591,14 @@ func (q *Queries) ListVisibleDocumentRelationships(ctx context.Context, arg List
 	for rows.Next() {
 		var i ListVisibleDocumentRelationshipsRow
 		if err := rows.Scan(
+			&i.DocumentID,
 			&i.EntityID,
 			&i.EntityType,
+			&i.ReferencedInContent,
 			&i.Title,
 			&i.Reference,
 			&i.TeamID,
+			&i.StatusColor,
 		); err != nil {
 			return nil, err
 		}
@@ -585,4 +608,46 @@ func (q *Queries) ListVisibleDocumentRelationships(ctx context.Context, arg List
 		return nil, err
 	}
 	return items, nil
+}
+
+const syncDocumentBodyMentions = `-- name: SyncDocumentBodyMentions :exec
+SELECT public.sync_document_body_mentions($1,$2,$3,CAST($4 AS jsonb))
+`
+
+type SyncDocumentBodyMentionsParams struct {
+	WorkspaceID uuid.UUID
+	ActorID     uuid.UUID
+	DocumentID  uuid.UUID
+	MentionData []byte
+}
+
+func (q *Queries) SyncDocumentBodyMentions(ctx context.Context, arg SyncDocumentBodyMentionsParams) error {
+	_, err := q.db.Exec(ctx, syncDocumentBodyMentions,
+		arg.WorkspaceID,
+		arg.ActorID,
+		arg.DocumentID,
+		arg.MentionData,
+	)
+	return err
+}
+
+const syncDocumentBodyReferences = `-- name: SyncDocumentBodyReferences :exec
+SELECT public.sync_document_body_references($1,$2,$3,CAST($4 AS jsonb))
+`
+
+type SyncDocumentBodyReferencesParams struct {
+	WorkspaceID   uuid.UUID
+	ActorID       uuid.UUID
+	DocumentID    uuid.UUID
+	ReferenceData []byte
+}
+
+func (q *Queries) SyncDocumentBodyReferences(ctx context.Context, arg SyncDocumentBodyReferencesParams) error {
+	_, err := q.db.Exec(ctx, syncDocumentBodyReferences,
+		arg.WorkspaceID,
+		arg.ActorID,
+		arg.DocumentID,
+		arg.ReferenceData,
+	)
+	return err
 }

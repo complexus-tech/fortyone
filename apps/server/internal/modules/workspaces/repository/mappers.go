@@ -87,6 +87,7 @@ type workspaceSettingsRecord struct {
 	sprintTerm         string
 	objectiveTerm      string
 	keyResultTerm      string
+	chatEnabled        bool
 	objectiveEnabled   bool
 	keyResultEnabled   bool
 	workingDays        []int16
@@ -107,6 +108,7 @@ func workspaceSettingsFromRecord(record workspaceSettingsRecord) workspacedomain
 		SprintTerm:         record.sprintTerm,
 		ObjectiveTerm:      record.objectiveTerm,
 		KeyResultTerm:      record.keyResultTerm,
+		ChatEnabled:        record.chatEnabled,
 		ObjectiveEnabled:   record.objectiveEnabled,
 		KeyResultEnabled:   record.keyResultEnabled,
 		WorkingDays:        workingDays,
@@ -118,13 +120,13 @@ func workspaceSettingsFromRecord(record workspaceSettingsRecord) workspacedomain
 }
 
 func workspaceSettingsRecordFromGet(row workspacesql.GetWorkspaceSettingsRow) workspaceSettingsRecord {
-	return workspaceSettingsRecord{workspaceID: row.WorkspaceID, storyTerm: row.StoryTerm, sprintTerm: row.SprintTerm, objectiveTerm: row.ObjectiveTerm, keyResultTerm: row.KeyResultTerm, objectiveEnabled: row.ObjectiveEnabled, keyResultEnabled: row.KeyResultEnabled, workingDays: row.WorkingDays, workingStartMinute: row.WorkingStartMinute, workingEndMinute: row.WorkingEndMinute, createdAt: row.CreatedAt, updatedAt: row.UpdatedAt}
+	return workspaceSettingsRecord{workspaceID: row.WorkspaceID, storyTerm: row.StoryTerm, sprintTerm: row.SprintTerm, objectiveTerm: row.ObjectiveTerm, keyResultTerm: row.KeyResultTerm, chatEnabled: row.ChatEnabled, objectiveEnabled: row.ObjectiveEnabled, keyResultEnabled: row.KeyResultEnabled, workingDays: row.WorkingDays, workingStartMinute: row.WorkingStartMinute, workingEndMinute: row.WorkingEndMinute, createdAt: row.CreatedAt, updatedAt: row.UpdatedAt}
 }
 
 func workspaceSettingsRecordFromGetOrCreate(row workspacesql.GetOrCreateWorkspaceSettingsRow) workspaceSettingsRecord {
-	return workspaceSettingsRecord{workspaceID: row.WorkspaceID, storyTerm: row.StoryTerm, sprintTerm: row.SprintTerm, objectiveTerm: row.ObjectiveTerm, keyResultTerm: row.KeyResultTerm, objectiveEnabled: row.ObjectiveEnabled, keyResultEnabled: row.KeyResultEnabled, workingDays: row.WorkingDays, workingStartMinute: row.WorkingStartMinute, workingEndMinute: row.WorkingEndMinute, createdAt: row.CreatedAt, updatedAt: row.UpdatedAt}
+	return workspaceSettingsRecord{workspaceID: row.WorkspaceID, storyTerm: row.StoryTerm, sprintTerm: row.SprintTerm, objectiveTerm: row.ObjectiveTerm, keyResultTerm: row.KeyResultTerm, chatEnabled: row.ChatEnabled, objectiveEnabled: row.ObjectiveEnabled, keyResultEnabled: row.KeyResultEnabled, workingDays: row.WorkingDays, workingStartMinute: row.WorkingStartMinute, workingEndMinute: row.WorkingEndMinute, createdAt: row.CreatedAt, updatedAt: row.UpdatedAt}
 }
 
 func workspaceSettingsRecordFromUpdate(row workspacesql.UpdateWorkspaceSettingsRow) workspaceSettingsRecord {
-	return workspaceSettingsRecord{workspaceID: row.WorkspaceID, storyTerm: row.StoryTerm, sprintTerm: row.SprintTerm, objectiveTerm: row.ObjectiveTerm, keyResultTerm: row.KeyResultTerm, objectiveEnabled: row.ObjectiveEnabled, keyResultEnabled: row.KeyResultEnabled, workingDays: row.WorkingDays, workingStartMinute: row.WorkingStartMinute, workingEndMinute: row.WorkingEndMinute, createdAt: row.CreatedAt, updatedAt: row.UpdatedAt}
+	return workspaceSettingsRecord{workspaceID: row.WorkspaceID, storyTerm: row.StoryTerm, sprintTerm: row.SprintTerm, objectiveTerm: row.ObjectiveTerm, keyResultTerm: row.KeyResultTerm, chatEnabled: row.ChatEnabled, objectiveEnabled: row.ObjectiveEnabled, keyResultEnabled: row.KeyResultEnabled, workingDays: row.WorkingDays, workingStartMinute: row.WorkingStartMinute, workingEndMinute: row.WorkingEndMinute, createdAt: row.CreatedAt, updatedAt: row.UpdatedAt}
 }

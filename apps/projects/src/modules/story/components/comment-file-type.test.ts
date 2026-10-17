@@ -47,9 +47,11 @@ describe("comment file types", () => {
     );
   });
 
-  it("keeps unsupported archives and unknown files generic", () => {
-    expect(getCommentFileType("application/zip", "backup.zip")).toBe("file");
-    expect(getCommentFileType("application/x-rar", "backup.rar")).toBe("file");
+  it("identifies archives and keeps unknown files generic", () => {
+    expect(getCommentFileType("application/zip", "backup.zip")).toBe("archive");
+    expect(getCommentFileType("application/x-rar", "backup.rar")).toBe(
+      "archive",
+    );
     expect(getCommentFileType("application/octet-stream", "unknown")).toBe(
       "file",
     );

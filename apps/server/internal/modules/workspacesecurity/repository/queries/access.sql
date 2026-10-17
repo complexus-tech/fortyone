@@ -20,7 +20,14 @@ SELECT account.email, CAST(member.role AS text) AS role,
     COALESCE(policy.allowed_domains, CAST('{}' AS text[])) AS allowed_domains,
     COALESCE(policy.allow_guests, TRUE) AS allow_guests,
     COALESCE(policy.max_session_age_hours, 0) AS max_session_age_hours,
-    epoch.revoked_before, session.revoked_at
+    epoch.revoked_before, session.revoked_at,
+    CAST(COALESCE(
+        session.authenticated_at = CAST(sqlc.arg(authenticated_at) AS timestamptz)
+        AND session.expires_at = CAST(sqlc.arg(expires_at) AS timestamptz)
+        AND session.last_seen_at > CURRENT_TIMESTAMP - INTERVAL '1 minute'
+        AND (session.browser_name IS NOT NULL OR CAST(sqlc.narg(browser_name) AS text) IS NULL),
+        FALSE
+    ) AS boolean) AS session_is_current
 FROM public.workspace_members AS member
 JOIN public.users AS account ON account.user_id = member.user_id
 JOIN public.workspaces AS workspace ON workspace.workspace_id = member.workspace_id

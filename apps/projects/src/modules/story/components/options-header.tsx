@@ -2,6 +2,7 @@
 import { Button, Container, Flex, Text, Tooltip } from "ui";
 import { CopyIcon, GitIcon, MaximizeIcon } from "icons";
 import { toast } from "sonner";
+import { cn } from "lib";
 import {
   useCopyToClipboard,
   useTerminology,
@@ -20,6 +21,7 @@ import { FavoriteButton } from "@/shared/favorites";
 import { buildGitBranchName } from "@/modules/settings/workspace/integrations/github/branch-format";
 import { useUpdateStoryMutation } from "../hooks/update-mutation";
 import { StoryActionsMenu } from "./story-actions-menu";
+import { StoryCloseButton } from "./story-close-button";
 
 const isFortyOneApp = process.env.NEXT_PUBLIC_DOMAIN === "fortyone.app";
 
@@ -27,10 +29,12 @@ export const OptionsHeader = ({
   isAdminOrOwner,
   storyId,
   isDialog,
+  onClose,
 }: {
   isAdminOrOwner: boolean;
   storyId: string;
   isDialog?: boolean;
+  onClose?: () => void;
 }) => {
   const { data: currentUser } = useProfile();
   const { data } = useStoryById(storyId);
@@ -102,7 +106,12 @@ export const OptionsHeader = ({
   };
 
   return (
-    <Container className="border-border d flex h-16 w-full items-center justify-between border-b-[0.5px] md:border-b-0 md:px-6">
+    <Container
+      className={cn(
+        "border-border d flex h-16 w-full items-center justify-between border-b-[0.5px] md:border-b-0 md:px-6",
+        onClose && "md:px-5",
+      )}
+    >
       <Flex align="center" gap={2}>
         <MobileMenuButton />
         <Text color="muted" fontWeight="semibold" transform="uppercase">
@@ -175,6 +184,12 @@ export const OptionsHeader = ({
         )}
         {!isDialog ? (
           <StoryActionsMenu isAdminOrOwner={isAdminOrOwner} storyId={storyId} />
+        ) : null}
+        {onClose ? (
+          <StoryCloseButton
+            onClose={onClose}
+            term={getTermDisplay("storyTerm")}
+          />
         ) : null}
       </Flex>
     </Container>

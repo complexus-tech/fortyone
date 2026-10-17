@@ -13,12 +13,16 @@ import {
 } from "@/modules/notifications/utils/notification-destination";
 import { resolveNotificationTarget } from "@/modules/notifications/utils/resolve-notification-target";
 import { withWorkspacePath } from "@/utils";
+import { get } from "@/lib/http";
+import type { ApiResponse } from "@/types";
+import { getDocument } from "@/modules/documents/queries";
 
 type NotificationSearchParams = {
   entityId?: string | string[];
   entityType?: string | string[];
   objectiveId?: string | string[];
   observedCreatedAt?: string | string[];
+  thread?: string | string[];
 };
 
 export async function generateMetadata({
@@ -62,6 +66,10 @@ export async function generateMetadata({
     title = "Key result update";
   } else if (entityType === "strategy") {
     title = "Strategy update";
+  } else if (entityType === "chat_message") {
+    title = "Chat message";
+  } else if (entityType === "document") {
+    title = "Document comment";
   }
   return {
     title,
@@ -91,6 +99,43 @@ export default async function Page({
   }
 
   const entityType = entityTypeValue;
+  if (entityType === "chat_message") {
+    const session = await auth();
+    const message = await resolveNotificationTarget(async () => {
+      const response = await get<
+        ApiResponse<{ id: string; conversationId: string }>
+      >(`chat/messages/${encodeURIComponent(entityId)}`, {
+        session: session!,
+        workspaceSlug,
+      });
+      return response.data;
+    });
+    await readNotification(notificationId, workspaceSlug, observedCreatedAt);
+    if (message.status === "terminal") return redirect(notificationsPath);
+    const target = new URLSearchParams({
+      conversation: message.value.conversationId,
+      message: message.value.id,
+    });
+    return redirect(
+      withWorkspacePath(`/chat?${target.toString()}`, workspaceSlug),
+    );
+  }
+  if (entityType === "document") {
+    const session = await auth();
+    const document = await resolveNotificationTarget(() =>
+      getDocument(entityId, { session: session!, workspaceSlug }),
+    );
+    await readNotification(notificationId, workspaceSlug, observedCreatedAt);
+    if (document.status === "terminal") return redirect(notificationsPath);
+    const thread = getSingleSearchParam(rawSearchParams.thread);
+    const suffix = thread ? `?thread=${encodeURIComponent(thread)}` : "";
+    return redirect(
+      withWorkspacePath(
+        `/docs/${encodeURIComponent(document.value.id)}${suffix}`,
+        workspaceSlug,
+      ),
+    );
+  }
   if (entityType === "strategy") {
     await readNotification(notificationId, workspaceSlug, observedCreatedAt);
     return redirect(withWorkspacePath("/strategy", workspaceSlug));

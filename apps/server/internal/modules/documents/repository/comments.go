@@ -14,7 +14,7 @@ func (repository *Repository) ListComments(ctx context.Context, workspaceID, use
 	if err := repository.configured(); err != nil {
 		return nil, err
 	}
-	rows, err := repository.queries.ListDocumentComments(ctx, documentssql.ListDocumentCommentsParams{
+	rows, err := repository.commentQueries(ctx).ListDocumentComments(ctx, documentssql.ListDocumentCommentsParams{
 		ActorID: userID, DocumentID: documentID, WorkspaceID: workspaceID,
 	})
 	if err != nil {
@@ -36,46 +36,10 @@ func (repository *Repository) ListComments(ctx context.Context, workspaceID, use
 			})
 		}
 		threads[index].Comments = append(threads[index].Comments, commentFromRow(
-			row.CommentID, row.Body, row.CreatedBy, row.AuthorName, row.AuthorAvatar, row.CreatedAt, row.UpdatedAt,
+			row.CommentID, row.Body, row.CreatedBy, row.AuthorName, row.AuthorAvatar, row.CreatedAt, row.UpdatedAt, row.ReplyToCommentID,
 		))
 	}
 	return threads, nil
-}
-
-func (repository *Repository) CreateComment(ctx context.Context, input documentdomain.CreateCommentInput) (documentdomain.CommentThread, error) {
-	if err := repository.configured(); err != nil {
-		return documentdomain.CommentThread{}, err
-	}
-	row, err := repository.queries.CreateDocumentCommentThread(ctx, documentssql.CreateDocumentCommentThreadParams{
-		ActorID: input.UserID, DocumentID: input.DocumentID, WorkspaceID: input.WorkspaceID,
-		Quote: input.Quote, AnchorStart: input.AnchorStart, AnchorEnd: input.AnchorEnd, Body: input.Body,
-	})
-	if err != nil {
-		return documentdomain.CommentThread{}, mapNotFound("create document comment", err)
-	}
-	return documentdomain.CommentThread{
-		ID: row.ThreadID, DocumentID: row.DocumentID, Quote: row.Quote,
-		AnchorStart: row.AnchorStart, AnchorEnd: row.AnchorEnd,
-		CreatedBy: row.ThreadCreatedBy, ResolvedAt: row.ResolvedAt,
-		ResolvedBy: row.ResolvedBy, CreatedAt: row.ThreadCreatedAt,
-		Comments: []documentdomain.Comment{commentFromRow(
-			row.CommentID, row.Body, row.CreatedBy, row.AuthorName, row.AuthorAvatar, row.CreatedAt, row.UpdatedAt,
-		)},
-	}, nil
-}
-
-func (repository *Repository) ReplyToComment(ctx context.Context, input documentdomain.ReplyCommentInput) (documentdomain.Comment, error) {
-	if err := repository.configured(); err != nil {
-		return documentdomain.Comment{}, err
-	}
-	row, err := repository.queries.AddDocumentCommentReply(ctx, documentssql.AddDocumentCommentReplyParams{
-		ActorID: input.UserID, DocumentID: input.DocumentID, WorkspaceID: input.WorkspaceID,
-		ThreadID: input.ThreadID, Body: input.Body,
-	})
-	if err != nil {
-		return documentdomain.Comment{}, mapNotFound("reply to document comment", err)
-	}
-	return commentFromRow(row.CommentID, row.Body, row.CreatedBy, row.AuthorName, row.AuthorAvatar, row.CreatedAt, row.UpdatedAt), nil
 }
 
 func (repository *Repository) ResolveComment(ctx context.Context, input documentdomain.ResolveCommentInput) error {
@@ -83,7 +47,7 @@ func (repository *Repository) ResolveComment(ctx context.Context, input document
 		return err
 	}
 	actorID := input.UserID
-	_, err := repository.queries.SetDocumentCommentResolved(ctx, documentssql.SetDocumentCommentResolvedParams{
+	_, err := repository.commentQueries(ctx).SetDocumentCommentResolved(ctx, documentssql.SetDocumentCommentResolvedParams{
 		Resolved: input.Resolved, ActorID: &actorID, ThreadID: input.ThreadID,
 		DocumentID: input.DocumentID, WorkspaceID: input.WorkspaceID,
 	})
@@ -93,9 +57,9 @@ func (repository *Repository) ResolveComment(ctx context.Context, input document
 	return nil
 }
 
-func commentFromRow(id uuid.UUID, body string, createdBy uuid.UUID, authorName string, authorAvatar *string, createdAt, updatedAt time.Time) documentdomain.Comment {
+func commentFromRow(id uuid.UUID, body string, createdBy uuid.UUID, authorName string, authorAvatar *string, createdAt, updatedAt time.Time, replyTo *uuid.UUID) documentdomain.Comment {
 	return documentdomain.Comment{
-		ID: id, Body: body, CreatedBy: createdBy, AuthorName: authorName,
+		ID: id, Body: body, CreatedBy: createdBy, AuthorName: authorName, ReplyToCommentID: replyTo,
 		AuthorAvatar: authorAvatar, CreatedAt: createdAt, UpdatedAt: updatedAt,
 	}
 }

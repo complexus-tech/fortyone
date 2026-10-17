@@ -34,3 +34,9 @@ type CoreCommentThread = documentdomain.CommentThread
 type CoreCreateCommentInput = documentdomain.CreateCommentInput
 type CoreReplyCommentInput = documentdomain.ReplyCommentInput
 type CoreResolveCommentInput = documentdomain.ResolveCommentInput
+
+type CoreCommentContext = documentdomain.CommentContext
+type CoreCommentMention = documentdomain.CommentMention
+type CoreAgentReplyInput = documentdomain.AgentReplyInput
+type CoreAgentEditInput = documentdomain.AgentEditInput
+type CoreAgentEdit = documentdomain.AgentEdit

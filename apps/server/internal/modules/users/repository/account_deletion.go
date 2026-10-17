@@ -133,6 +133,21 @@ func (r *AccountDeletionRepository) TouchPending(ctx context.Context, tx pgx.Tx,
 
 func eraseAccountContributions(ctx context.Context, q *usersql.Queries, userID uuid.UUID, email string) error {
 	deletedUserID := usersdomain.DeletedUserID
+	if err := q.DeleteAccountDirectConversations(ctx, usersql.DeleteAccountDirectConversationsParams{UserID: &userID}); err != nil {
+		return fmt.Errorf("delete private chat conversations: %w", err)
+	}
+	if err := q.DeleteAccountPendingChatAttachments(ctx, usersql.DeleteAccountPendingChatAttachmentsParams{UserID: userID}); err != nil {
+		return fmt.Errorf("delete pending chat attachments: %w", err)
+	}
+	if err := q.ReattributeAccountChatMessages(ctx, usersql.ReattributeAccountChatMessagesParams{UserID: userID, DeletedUserID: deletedUserID}); err != nil {
+		return fmt.Errorf("reattribute chat messages: %w", err)
+	}
+	if err := q.ReattributeAccountChatAttachments(ctx, usersql.ReattributeAccountChatAttachmentsParams{UserID: userID, DeletedUserID: deletedUserID}); err != nil {
+		return fmt.Errorf("reattribute chat attachments: %w", err)
+	}
+	if err := q.RemoveAccountChatEvents(ctx, usersql.RemoveAccountChatEventsParams{UserID: userID}); err != nil {
+		return fmt.Errorf("remove chat delivery events: %w", err)
+	}
 	if err := q.ReattributeAccountComments(ctx, usersql.ReattributeAccountCommentsParams{UserID: userID, DeletedUserID: deletedUserID}); err != nil {
 		return fmt.Errorf("ReattributeAccountComments: %w", err)
 	}

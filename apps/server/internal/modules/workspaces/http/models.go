@@ -105,6 +105,7 @@ type AppWorkspaceSettings struct {
 	SprintTerm         string    `json:"sprintTerm"`
 	ObjectiveTerm      string    `json:"objectiveTerm"`
 	KeyResultTerm      string    `json:"keyResultTerm"`
+	ChatEnabled        bool      `json:"chatEnabled"`
 	ObjectiveEnabled   bool      `json:"objectiveEnabled"`
 	KeyResultEnabled   bool      `json:"keyResultEnabled"`
 	WorkingDays        []int     `json:"workingDays"`
@@ -120,6 +121,7 @@ type AppUpdateWorkspaceSettings struct {
 	SprintTerm         string `json:"sprintTerm,omitempty"`
 	ObjectiveTerm      string `json:"objectiveTerm,omitempty"`
 	KeyResultTerm      string `json:"keyResultTerm,omitempty"`
+	ChatEnabled        *bool  `json:"chatEnabled,omitempty"`
 	ObjectiveEnabled   *bool  `json:"objectiveEnabled,omitempty"`
 	KeyResultEnabled   *bool  `json:"keyResultEnabled,omitempty"`
 	WorkingDays        *[]int `json:"workingDays,omitempty"`
@@ -131,10 +133,12 @@ type AppUpdateWorkspaceSettings struct {
 func toCoreWorkspaceSettings(settings AppUpdateWorkspaceSettings, workspaceID uuid.UUID, current workspaces.CoreWorkspaceSettings) workspaces.CoreWorkspaceSettings {
 	result := workspaces.CoreWorkspaceSettings{
 		WorkspaceID:        workspaceID,
+		UpdatedAt:          current.UpdatedAt,
 		StoryTerm:          settings.StoryTerm,
 		SprintTerm:         settings.SprintTerm,
 		ObjectiveTerm:      settings.ObjectiveTerm,
 		KeyResultTerm:      settings.KeyResultTerm,
+		ChatEnabled:        current.ChatEnabled,
 		ObjectiveEnabled:   current.ObjectiveEnabled,
 		KeyResultEnabled:   current.KeyResultEnabled,
 		WorkingDays:        append([]int(nil), current.WorkingDays...),
@@ -143,6 +147,9 @@ func toCoreWorkspaceSettings(settings AppUpdateWorkspaceSettings, workspaceID uu
 	}
 
 	// Only update boolean fields if they are provided
+	if settings.ChatEnabled != nil {
+		result.ChatEnabled = *settings.ChatEnabled
+	}
 	if settings.ObjectiveEnabled != nil {
 		result.ObjectiveEnabled = *settings.ObjectiveEnabled
 	}
@@ -169,6 +176,7 @@ func toAppWorkspaceSettings(settings workspaces.CoreWorkspaceSettings) AppWorksp
 		SprintTerm:         settings.SprintTerm,
 		ObjectiveTerm:      settings.ObjectiveTerm,
 		KeyResultTerm:      settings.KeyResultTerm,
+		ChatEnabled:        settings.ChatEnabled,
 		ObjectiveEnabled:   settings.ObjectiveEnabled,
 		KeyResultEnabled:   settings.KeyResultEnabled,
 		WorkingDays:        settings.WorkingDays,

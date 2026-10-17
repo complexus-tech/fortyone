@@ -1,0 +1,5 @@
+            datname             | deadlocks | conflicts | numbackends 
+--------------------------------+-----------+-----------+-------------
+ fortyone_test_32995ca3d3586a0f |         0 |         0 |          52
+(1 row)
+

@@ -2,6 +2,7 @@
 
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { fireEvent, render, screen } from "@testing-library/react";
+import { useTerminology } from "@/hooks/use-terminology-display";
 import { useStoryById } from "./hooks/story";
 import { preloadMainDetails } from "./load-main-details";
 import { StoryPage } from ".";
@@ -36,6 +37,22 @@ jest.mock("next/dynamic", () => ({
 }));
 jest.mock("@/hooks", () => ({
   useWorkspacePath: () => ({ withWorkspace: (path: string) => path }),
+}));
+jest.mock("@/hooks/use-terminology-display", () => ({
+  useTerminology: jest.fn(() => ({ getTermDisplay: () => "task" })),
+}));
+jest.mock("./components/story-close-button", () => ({
+  StoryCloseButton: ({
+    onClose,
+    term,
+  }: {
+    onClose: () => void;
+    term: string;
+  }) => (
+    <button onClick={onClose} type="button">
+      Close {term}
+    </button>
+  ),
 }));
 jest.mock("@/shared/story/use-recent-story-history", () => ({
   useRecordStoryVisit: jest.fn(),
@@ -158,4 +175,17 @@ it("preserves the error retry path without mounting editors", () => {
   fireEvent.click(screen.getByRole("button", { name: "Try again" }));
   expect(mockRefetch).toHaveBeenCalledTimes(1);
   expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+});
+
+it("keeps the loading panel dismissible using workspace terminology", () => {
+  mockedUseStoryById.mockReturnValue({
+    ...ready,
+    data: undefined,
+    isPending: true,
+  } as ReturnType<typeof useStoryById>);
+  const onClose = jest.fn();
+  render(<StoryPage onClose={onClose} storyId="story" />);
+  expect(useTerminology).toHaveBeenCalledWith(null);
+  fireEvent.click(screen.getByRole("button", { name: "Close task" }));
+  expect(onClose).toHaveBeenCalledTimes(1);
 });

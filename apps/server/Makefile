@@ -38,6 +38,7 @@ test-race:
 # runner-speed-dependent deadline failures. Add a line here when a new fuzz
 # target becomes part of the governed pull-request surface.
 test-fuzz:
+	@go test -run '^$$' -fuzz '^FuzzVoiceNoteContainerValidation$$' -fuzztime=10000x ./pkg/validate
 	@go test -run '^$$' -fuzz '^FuzzCursorCodecDecode$$' -fuzztime=10000x ./internal/platform/pagination
 	@go test -run '^$$' -fuzz '^FuzzParseKeyAndDigest$$' -fuzztime=10000x ./internal/platform/idempotency
 	@go test -run '^$$' -fuzz '^FuzzHashRequestUsesExactBytes$$' -fuzztime=10000x ./internal/platform/idempotency

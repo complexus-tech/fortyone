@@ -137,10 +137,11 @@ type Config struct {
 		ForcePathStyle  bool   `default:"false" env:"APP_AWS_FORCE_PATH_STYLE"`
 		Bucket          string `env:"APP_AWS_BUCKET" default:"fortyone"`
 	}
-	AIAPIKey           string `env:"OPENAI_API_KEY"`
-	AIModel            string `default:"gpt-5.6-luna" env:"OPENAI_MODEL"`
-	GoogleClientID     string `env:"GOOGLE_CLIENT_ID"`
-	MessagingAssistant struct {
+	AIAPIKey                string `env:"OPENAI_API_KEY"`
+	AIModel                 string `default:"gpt-5.6-luna" env:"OPENAI_MODEL"`
+	AudioTranscriptionModel string `default:"gpt-4o-mini-transcribe" env:"OPENAI_TRANSCRIPTION_MODEL"`
+	GoogleClientID          string `env:"GOOGLE_CLIENT_ID"`
+	MessagingAssistant      struct {
 		UserCallsPerMinute      int64 `default:"12" env:"OPENAI_ASSISTANT_USER_CALLS_PER_MINUTE"`
 		WorkspaceCallsPerMinute int64 `default:"120" env:"OPENAI_ASSISTANT_WORKSPACE_CALLS_PER_MINUTE"`
 		WorkspaceTokensPerDay   int64 `default:"1000000" env:"OPENAI_ASSISTANT_WORKSPACE_TOKENS_PER_DAY"`

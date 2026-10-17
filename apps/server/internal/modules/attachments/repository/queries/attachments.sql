@@ -7,6 +7,7 @@ INSERT INTO public.attachments (
     uploaded_by,
     workspace_id,
     scan_status,
+    scan_completed_at,
     optimization_status
 )
 VALUES (
@@ -17,6 +18,7 @@ VALUES (
     sqlc.arg(uploaded_by),
     sqlc.arg(workspace_id),
     sqlc.arg(scan_status),
+    sqlc.narg(scan_completed_at),
     sqlc.arg(optimization_status)
 )
 RETURNING *;
@@ -101,6 +103,10 @@ WHERE attachment.attachment_id = sqlc.arg(attachment_id)
       SELECT 1
       FROM public.document_attachments AS document_relation
       WHERE document_relation.attachment_id = attachment.attachment_id
+  )
+  AND NOT EXISTS (
+      SELECT 1 FROM public.chat_attachments AS chat_relation
+      WHERE chat_relation.attachment_id = attachment.attachment_id
   )
   AND NOT EXISTS (
       SELECT 1

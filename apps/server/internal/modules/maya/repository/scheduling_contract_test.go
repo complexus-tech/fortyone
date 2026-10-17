@@ -6,21 +6,11 @@ import (
 	"testing"
 )
 
-func TestWorkspaceMayaAccessPreservesTrialAndPaidSubscriptionPolicy(t *testing.T) {
+func TestWorkspaceMayaAccessUsesSharedEntitlementPolicy(t *testing.T) {
 	t.Parallel()
-
 	query := readNamedRepositoryQuery(t, "access.sql", "WorkspaceCanUseMaya")
-	for _, fragment := range []string{
-		"workspace.workspace_id = sqlc.arg(workspace_id)",
-		"workspace.deleted_at is null",
-		"workspace.trial_ends_on > current_timestamp",
-		"subscription.workspace_id = workspace.workspace_id",
-		"subscription.subscription_tier <> 'free'",
-		"subscription.subscription_status in ('active', 'trialing', 'past_due')",
-	} {
-		if !strings.Contains(query, fragment) {
-			t.Fatalf("Maya entitlement query must contain %q: %s", fragment, query)
-		}
+	if !strings.Contains(query, "public.workspace_can_use_maya(sqlc.arg(workspace_id))") {
+		t.Fatalf("Maya access must share the collaboration consumer policy: %s", query)
 	}
 }
 

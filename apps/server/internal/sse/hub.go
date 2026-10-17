@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"sync"
 	"time"
 
@@ -31,6 +30,7 @@ type Client struct {
 	Send        chan []byte // Channel for sending messages to this client.
 	ctx         context.Context
 	cancelFunc  context.CancelFunc
+	ready       chan error
 }
 
 // Ctx returns the client's context. This context is cancelled when the client unregisters or the hub shuts down.
@@ -154,10 +154,8 @@ func (h *Hub) handleRegistration(client *Client) {
 
 	// All listeners are accounted for so Run cannot return while a Redis
 	// subscription still owns process resources.
-	h.listeners.Add(3)
-	go h.runClientListener(func() { h.listenToUserNotifications(client) })
-	go h.runClientListener(func() { h.listenToUserUpdates(client) })
-	go h.runClientListener(func() { h.listenToWorkspaceUpdates(client) })
+	h.listeners.Add(1)
+	go h.runClientListener(func() { h.listenToClientEvents(client) })
 }
 
 func (h *Hub) handleUnregistration(client *Client) {
@@ -191,10 +189,23 @@ func (h *Hub) RegisterNewClient(userID, workspaceID uuid.UUID) (*Client, error) 
 		Send:        make(chan []byte, 256), // Buffered channel.
 		ctx:         clientCtx,
 		cancelFunc:  cancel,
+		ready:       make(chan error, 1),
 	}
 	select {
 	case h.register <- client:
-		return client, nil
+		// Do not acknowledge an SSE connection until every Redis channel is ready.
+		// Otherwise the browser's reconnect refetch can race subscription setup.
+		select {
+		case err := <-client.ready:
+			if err != nil {
+				h.UnregisterClient(client)
+				return nil, err
+			}
+			return client, nil
+		case <-clientCtx.Done():
+			h.UnregisterClient(client)
+			return nil, errors.New("SSE subscription was cancelled")
+		}
 	case <-appCtx.Done():
 		cancel()
 		return nil, errors.New("SSE hub is shutting down")
@@ -228,166 +239,101 @@ func (h *Hub) runClientListener(listener func()) {
 	listener()
 }
 
-// listenToUserNotifications is run in a goroutine for each connected client.
-// It subscribes to the user-specific Redis Pub/Sub channel and forwards messages.
-func (h *Hub) listenToUserNotifications(client *Client) {
-	channelName := fmt.Sprintf("%s%s", pubSubChannelPrefix, client.UserID.String())
-	pubsub := h.redisClient.Subscribe(client.ctx, channelName) // client.ctx will be cancelled on disconnect
-	defer pubsub.Close()                                       // Ensure subscription is closed when this goroutine exits.
-
-	// Wait for subscription to be confirmed.
-	_, err := pubsub.Receive(client.ctx) // Use client.ctx for this operation as well
-	if err != nil {
-		// If client.ctx is already Done, this error might be expected (e.g., context canceled)
-		if client.ctx.Err() != nil {
-			h.log.Info(client.ctx, "Client disconnected before Pub/Sub subscription could be confirmed", "userID", client.UserID, "channel", channelName)
-		} else {
-			h.log.Error(client.ctx, "Failed to subscribe to Redis Pub/Sub channel", "userID", client.UserID, "channel", channelName, "error", err)
-		}
-		// Ensure client is unregistered if subscription fails and it's not already being unregistered
-		// No need to call h.UnregisterClient(client) here because if subscription fails, the client goroutine exits,
-		// and the HTTP handler is responsible for calling UnregisterClient upon detecting a disconnect or error.
-		return
-	}
-
-	h.log.Info(client.ctx, "Subscribed to Redis Pub/Sub channel", "userID", client.UserID, "channel", channelName)
-	redisChannel := pubsub.Channel() // Get the Go channel for messages
-
-	for {
-		select {
-		case <-client.ctx.Done(): // Client disconnected (cancelled by unregister or app shutdown)
-			h.log.Info(client.ctx, "Client context done, stopping Pub/Sub listener", "userID", client.UserID, "channel", channelName)
-			return
-		case msg, ok := <-redisChannel:
-			if !ok { // Channel closed by Redis client (e.g. connection issue, or pubsub.Close() called)
-				h.log.Info(client.ctx, "Redis Pub/Sub channel closed by library", "userID", client.UserID, "channel", channelName)
-				// No need to call h.UnregisterClient here; the HTTP handler should detect the client has gone.
-				return
-			}
-
-			// Attempt to deserialize the payload into a CoreNotification to make sure it's valid and for logging.
-			var notificationPayload notifications.CoreNotification
-			if err := json.Unmarshal([]byte(msg.Payload), &notificationPayload); err != nil {
-				h.log.Error(client.ctx, "Failed to unmarshal notification from Pub/Sub, skipping", "userID", client.UserID, "channel", channelName, "payload", msg.Payload, "error", err)
-				continue // Skip malformed messages
-			}
-			if !notificationMatchesWorkspace(notificationPayload, client.WorkspaceID) {
-				h.log.Warn(client.ctx, "Dropping notification for a different workspace", "userID", client.UserID, "clientWorkspaceID", client.WorkspaceID, "notificationWorkspaceID", notificationPayload.WorkspaceID, "notificationID", notificationPayload.ID)
-				continue
-			}
-			publicPayload, err := json.Marshal(notificationPayload.Public())
-			if err != nil {
-				h.log.Error(client.ctx, "Failed to sanitize notification from Pub/Sub, skipping", "userID", client.UserID, "channel", channelName, "notificationID", notificationPayload.ID, "error", err)
-				continue
-			}
-
-			h.log.Debug(client.ctx, "Received message from Pub/Sub", "userID", client.UserID, "channel", channelName, "notificationID", notificationPayload.ID)
-
-			// Send message to client's personal channel.
-			select {
-			case client.Send <- publicPayload:
-				h.log.Debug(client.ctx, "Message sent to client's send channel", "userID", client.UserID, "notificationID", notificationPayload.ID)
-			case <-time.After(clientSendTimeout):
-				h.log.Warn(client.ctx, "Timeout sending message to client channel, client might be slow or send channel full", "userID", client.UserID, "channel", channelName, "notificationID", notificationPayload.ID)
-			// Note: If client.Send is full and times out, the message is dropped for this client.
-			// Consider strategies if this becomes an issue (e.g., increasing buffer, or more aggressive client disconnect).
-			case <-client.ctx.Done(): // Check again in case client disconnected while trying to send.
-				h.log.Info(client.ctx, "Client disconnected while attempting to send message from Pub/Sub", "userID", client.UserID, "channel", channelName)
-				return
-			}
-		}
-	}
-}
-
-// listenToUserUpdates forwards non-notification, user-scoped application
-// updates such as a completed calendar sync to every active tab for that user.
-func (h *Hub) listenToUserUpdates(client *Client) {
-	channelName := publisher.UserUpdatesChannel(client.UserID)
-	pubsub := h.redisClient.Subscribe(client.ctx, channelName)
+// A single Redis socket carries the three existing scopes for a browser.
+// Keeping subscriptions per client preserves independent cancellation and tab
+// lifetimes while avoiding three sockets and listener trees per connection.
+func (h *Hub) listenToClientEvents(client *Client) {
+	defer client.cancelFunc()
+	notificationChannel := pubSubChannelPrefix + client.UserID.String()
+	updateChannel := publisher.UserUpdatesChannel(client.UserID)
+	workspaceChannel := workspaceChannelPrefix + client.WorkspaceID.String()
+	channels := []string{notificationChannel, updateChannel, workspaceChannel}
+	pubsub := h.redisClient.Subscribe(client.ctx, channels...)
 	defer pubsub.Close()
-
-	if _, err := pubsub.Receive(client.ctx); err != nil {
-		if client.ctx.Err() == nil {
-			h.log.Error(client.ctx, "Failed to subscribe to user updates", "userID", client.UserID, "channel", channelName, "error", err)
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		remaining := time.Until(deadline)
+		if remaining <= 0 {
+			client.ready <- errors.New("SSE subscription setup timed out")
+			return
 		}
-		return
+		reply, err := pubsub.ReceiveTimeout(client.ctx, remaining)
+		if err != nil {
+			if client.ctx.Err() == nil {
+				h.log.Error(client.ctx, "Failed to subscribe SSE client", "userID", client.UserID, "workspaceID", client.WorkspaceID, "error", err)
+			}
+			client.ready <- errors.New("SSE subscription is unavailable")
+			return
+		}
+		if subscription, ok := reply.(*redis.Subscription); ok && subscription.Kind == "subscribe" && subscription.Count == len(channels) {
+			break
+		}
 	}
-
-	redisChannel := pubsub.Channel()
+	client.ready <- nil
+	// Redis Pub/Sub is not a durable log. A reconnect can miss hints while the
+	// browser still believes its SSE connection is healthy. Surface resubscribe
+	// acknowledgements so we can close that browser stream and reconcile from
+	// authoritative HTTP state after EventSource reconnects.
+	messages := pubsub.ChannelWithSubscriptions()
 	for {
 		select {
 		case <-client.ctx.Done():
 			return
-		case msg, ok := <-redisChannel:
+		case event, ok := <-messages:
 			if !ok {
 				return
 			}
-			var update publisher.UserUpdate
-			if err := json.Unmarshal([]byte(msg.Payload), &update); err != nil {
-				h.log.Error(client.ctx, "Failed to unmarshal user update", "userID", client.UserID, "channel", channelName, "error", err)
+			if _, reconnected := event.(*redis.Subscription); reconnected {
+				h.log.Info(client.ctx, "Redis resubscribed; closing SSE client for reconciliation", "userID", client.UserID, "workspaceID", client.WorkspaceID)
+				return
+			}
+			message, ok := event.(*redis.Message)
+			if !ok {
 				continue
 			}
-			if !userUpdateMatchesClient(update, client) {
-				h.log.Warn(client.ctx, "Dropping user update outside the active SSE scope", "userID", client.UserID, "workspaceID", client.WorkspaceID, "updateUserID", update.UserID, "updateWorkspaceID", update.WorkspaceID)
+			payload, valid := h.clientPayload(client, message, notificationChannel, updateChannel, workspaceChannel)
+			if !valid {
 				continue
 			}
+			timer := time.NewTimer(clientSendTimeout)
 			select {
-			case client.Send <- []byte(msg.Payload):
-			case <-time.After(clientSendTimeout):
-				h.log.Warn(client.ctx, "Timeout sending user update", "userID", client.UserID, "workspaceID", client.WorkspaceID, "channel", channelName)
+			case client.Send <- payload:
+				timer.Stop()
+			case <-timer.C:
+				// Closing forces the normal reconnect/history reconciliation path. A
+				// connected stream that silently drops hints can leave stale UI forever.
+				h.log.Warn(client.ctx, "Closing slow SSE client", "userID", client.UserID, "workspaceID", client.WorkspaceID)
+				return
 			case <-client.ctx.Done():
+				timer.Stop()
 				return
 			}
 		}
 	}
 }
 
-// listenToWorkspaceUpdates is run in a goroutine for each connected client.
-// It subscribes to the workspace-specific Redis Pub/Sub channel and forwards messages.
-func (h *Hub) listenToWorkspaceUpdates(client *Client) {
-	channelName := fmt.Sprintf("%s%s", workspaceChannelPrefix, client.WorkspaceID.String())
-	pubsub := h.redisClient.Subscribe(client.ctx, channelName) // client.ctx will be cancelled on disconnect
-	defer pubsub.Close()                                       // Ensure subscription is closed when this goroutine exits.
-
-	// Wait for subscription to be confirmed.
-	_, err := pubsub.Receive(client.ctx)
-	if err != nil {
-		// If client.ctx is already Done, this error might be expected (e.g., context canceled)
-		if client.ctx.Err() != nil {
-			h.log.Info(client.ctx, "Client disconnected before workspace Pub/Sub subscription could be confirmed", "userID", client.UserID, "workspaceID", client.WorkspaceID, "channel", channelName)
-		} else {
-			h.log.Error(client.ctx, "Failed to subscribe to workspace Redis Pub/Sub channel", "userID", client.UserID, "workspaceID", client.WorkspaceID, "channel", channelName, "error", err)
+func (h *Hub) clientPayload(client *Client, message *redis.Message, notificationChannel, updateChannel, workspaceChannel string) ([]byte, bool) {
+	switch message.Channel {
+	case notificationChannel:
+		var notification notifications.CoreNotification
+		if err := json.Unmarshal([]byte(message.Payload), &notification); err != nil || notification.RecipientID != client.UserID || !notificationMatchesWorkspace(notification, client.WorkspaceID) {
+			return nil, false
 		}
-		return
-	}
-
-	h.log.Info(client.ctx, "Subscribed to workspace Redis Pub/Sub channel", "userID", client.UserID, "workspaceID", client.WorkspaceID, "channel", channelName)
-	redisChannel := pubsub.Channel() // Get the Go channel for messages
-
-	for {
-		select {
-		case <-client.ctx.Done(): // Client disconnected (cancelled by unregister or app shutdown)
-			h.log.Info(client.ctx, "Client context done, stopping workspace Pub/Sub listener", "userID", client.UserID, "workspaceID", client.WorkspaceID, "channel", channelName)
-			return
-		case msg, ok := <-redisChannel:
-			if !ok { // Channel closed by Redis client (e.g. connection issue, or pubsub.Close() called)
-				h.log.Info(client.ctx, "Workspace Redis Pub/Sub channel closed by library", "userID", client.UserID, "workspaceID", client.WorkspaceID, "channel", channelName)
-				return
-			}
-
-			h.log.Debug(client.ctx, "Received workspace update from Pub/Sub", "userID", client.UserID, "workspaceID", client.WorkspaceID, "channel", channelName)
-
-			// Send workspace update to client's channel.
-			select {
-			case client.Send <- []byte(msg.Payload):
-				h.log.Debug(client.ctx, "Workspace update sent to client's send channel", "userID", client.UserID, "workspaceID", client.WorkspaceID)
-			case <-time.After(clientSendTimeout):
-				h.log.Warn(client.ctx, "Timeout sending workspace update to client channel", "userID", client.UserID, "workspaceID", client.WorkspaceID, "channel", channelName)
-			case <-client.ctx.Done(): // Check again in case client disconnected while trying to send.
-				h.log.Info(client.ctx, "Client disconnected while attempting to send workspace update", "userID", client.UserID, "workspaceID", client.WorkspaceID, "channel", channelName)
-				return
-			}
+		payload, err := json.Marshal(notification.Public())
+		if err != nil {
+			return nil, false
 		}
+		return payload, true
+	case updateChannel:
+		var update publisher.UserUpdate
+		if err := json.Unmarshal([]byte(message.Payload), &update); err != nil || !userUpdateMatchesClient(update, client) {
+			return nil, false
+		}
+		return []byte(message.Payload), true
+	case workspaceChannel:
+		return []byte(message.Payload), true
+	default:
+		return nil, false
 	}
 }
 

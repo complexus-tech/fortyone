@@ -1,68 +1,12 @@
-import * as cheerio from "cheerio";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { fetchPublicHtml } from "./safe-fetch";
+import { MetadataCapacityError } from "./metadata-cache";
+import { metadataService } from "./metadata-service";
 import { MetadataFetchError, parseMetadataUrl } from "./target-policy";
+import { allowPreviewRefresh } from "./refresh-limiter";
 
 export const runtime = "nodejs";
-
-export type LinkMetadata = {
-  title?: string;
-  description?: string;
-  image?: string;
-};
-
-const toMetadataImageProxyPath = (
-  values: readonly (string | undefined)[],
-  baseUrl: URL,
-) => {
-  for (const value of values) {
-    if (!value) continue;
-    try {
-      const imageUrl = parseMetadataUrl(new URL(value, baseUrl));
-      return `/api/metadata/image?${new URLSearchParams({
-        url: imageUrl.href,
-      }).toString()}`;
-    } catch {
-      // A malformed or unsupported favicon should not hide a valid OG image.
-    }
-  }
-  return undefined;
-};
-
-async function fetchMetadata(
-  url: URL,
-  signal: AbortSignal,
-): Promise<LinkMetadata> {
-  const { body, finalUrl } = await fetchPublicHtml(url, { signal });
-  const $ = cheerio.load(body);
-  const title =
-    $('meta[property="og:title"]').attr("content") ||
-    $('meta[name="twitter:title"]').attr("content") ||
-    $("title").text().trim() ||
-    undefined;
-  const description =
-    $('meta[name="description"]').attr("content") ||
-    $('meta[property="og:description"]').attr("content") ||
-    $('meta[name="twitter:description"]').attr("content") ||
-    undefined;
-  const image =
-    $('meta[property="og:image"]').attr("content") ||
-    $('meta[name="twitter:image"]').attr("content") ||
-    $('meta[name="twitter:image:src"]').attr("content");
-  const favicon =
-    $('link[rel="shortcut icon"]').attr("href") ||
-    $('link[rel="icon"]').attr("href") ||
-    $('link[rel="apple-touch-icon"]').attr("href") ||
-    $('link[rel="apple-touch-icon-precomposed"]').attr("href");
-
-  return {
-    title,
-    description,
-    image: toMetadataImageProxyPath([favicon, image], finalUrl),
-  };
-}
 
 export async function GET(request: NextRequest) {
   const session = await auth();
@@ -81,10 +25,31 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const validUrl = parseMetadataUrl(url);
-    const metadata = await fetchMetadata(validUrl, request.signal);
-    return NextResponse.json(metadata);
+    const force = searchParams.get("refresh") === "1";
+    const target = parseMetadataUrl(url);
+    target.hash = "";
+    if (force && !(await allowPreviewRefresh(session.user.id, target.href))) {
+      return NextResponse.json(
+        { error: "Please wait a moment before refreshing again." },
+        {
+          status: 429,
+          headers: { "Retry-After": "5", "Cache-Control": "private, no-store" },
+        },
+      );
+    }
+    const metadata = await metadataService.get(target, request.signal, {
+      force,
+    });
+    return NextResponse.json(metadata, {
+      headers: { "Cache-Control": "private, no-store" },
+    });
   } catch (error) {
+    if (error instanceof MetadataCapacityError) {
+      return NextResponse.json(
+        { error: "Metadata service is busy" },
+        { status: 503, headers: { "Retry-After": "1" } },
+      );
+    }
     if (
       error instanceof MetadataFetchError &&
       (error.code === "invalid-url" || error.code === "unsafe-target")

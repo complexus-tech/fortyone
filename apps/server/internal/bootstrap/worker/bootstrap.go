@@ -3,14 +3,17 @@ package workerbootstrap
 import (
 	"context"
 	"fmt"
+	workspacesrepository "github.com/complexus-tech/projects-api/internal/modules/workspaces/repository"
 	"strings"
 	"sync/atomic"
 
+	"github.com/complexus-tech/projects-api/internal/bootstrap/chatadapter"
 	"github.com/complexus-tech/projects-api/internal/bootstrap/slackadapter"
 	attachmentsrepository "github.com/complexus-tech/projects-api/internal/modules/attachments/repository"
 	attachments "github.com/complexus-tech/projects-api/internal/modules/attachments/service"
 	calendarrepository "github.com/complexus-tech/projects-api/internal/modules/calendar/repository"
 	calendar "github.com/complexus-tech/projects-api/internal/modules/calendar/service"
+	chatrepository "github.com/complexus-tech/projects-api/internal/modules/chat/repository"
 	emailreply "github.com/complexus-tech/projects-api/internal/modules/emailreply/service"
 	feedbackrepository "github.com/complexus-tech/projects-api/internal/modules/feedback/repository"
 	feedback "github.com/complexus-tech/projects-api/internal/modules/feedback/service"
@@ -32,6 +35,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/platform/actors"
 	actorsrepository "github.com/complexus-tech/projects-api/internal/platform/actors/repository"
 	"github.com/complexus-tech/projects-api/internal/platform/appkeys"
+	"github.com/complexus-tech/projects-api/internal/platform/chatrollout"
 	platformdatabase "github.com/complexus-tech/projects-api/internal/platform/database"
 	platformidempotency "github.com/complexus-tech/projects-api/internal/platform/idempotency"
 	"github.com/complexus-tech/projects-api/pkg/aws"
@@ -126,6 +130,7 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 		notificationsStore,
 		redisClient,
 		tasksService,
+		notifications.WithChatSettings(chatrollout.New(workspacesrepository.New(connections.Pool))),
 	)
 	messagingRepo := messagingrepository.New(connections.Pool)
 	emailThreads, err := emailthread.New(messagingRepo)
@@ -443,6 +448,20 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 	}
 	if err := registerAgentInvocationWorker(taskMux, scheduler, log, connections.Pool, redisClient, cfg, systemUserID, mayaRepository, eventPublisher, tasksService, notificationsService); err != nil {
 		return App{}, fmt.Errorf("initialize Maya comment worker: %w", err)
+	}
+	if err := registerChatDelivery(taskMux, scheduler, chatadapter.Dispatcher{
+		Store: chatrepository.New(log, connections.Pool), Updates: eventPublisher, Notifications: notificationsService,
+	}); err != nil {
+		return App{}, fmt.Errorf("initialize chat delivery: %w", err)
+	}
+	if err := registerChatTranscription(taskMux, scheduler, log, connections.Pool, cfg, storageService, mayaRepository); err != nil {
+		return App{}, fmt.Errorf("initialize voice transcription: %w", err)
+	}
+	if err := registerDocumentNotificationDelivery(taskMux, scheduler, notificationsService); err != nil {
+		return App{}, fmt.Errorf("initialize document notification delivery: %w", err)
+	}
+	if err := registerMayaReplyNotificationDelivery(taskMux, scheduler, notificationsService); err != nil {
+		return App{}, fmt.Errorf("initialize Maya reply notification delivery: %w", err)
 	}
 	if err := registerOutboundWebhookTask(taskMux, log, storyMutationEventDispatcher, outboundWebhookDispatcher); err != nil {
 		return App{}, fmt.Errorf("register outbound webhook worker: %w", err)

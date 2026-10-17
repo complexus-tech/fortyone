@@ -24,6 +24,38 @@ func TestToAppDocumentRequiresWorkspaceMutationPermission(t *testing.T) {
 	}
 }
 
+func TestRelatedWorkSerializesNullableStatusColor(t *testing.T) {
+	t.Parallel()
+	color := "#22c55e"
+	for _, test := range []struct {
+		name  string
+		color *string
+		want  string
+	}{
+		{name: "current status", color: &color, want: `"#22c55e"`},
+		{name: "no status", want: "null"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			related := documents.CoreRelatedWork{EntityID: uuid.New(), StatusColor: test.color}
+			document := toAppDocument(documents.CoreDocument{RelatedWork: []documents.CoreRelatedWork{related}}, true)
+			for _, result := range []AppRelatedWork{toAppRelatedWork(related), document.RelatedWork[0]} {
+				payload, err := json.Marshal(result)
+				if err != nil {
+					t.Fatalf("marshal related work: %v", err)
+				}
+				var fields map[string]json.RawMessage
+				if err := json.Unmarshal(payload, &fields); err != nil {
+					t.Fatalf("unmarshal related work: %v", err)
+				}
+				if got := string(fields["statusColor"]); got != test.want {
+					t.Fatalf("statusColor = %s, want %s", got, test.want)
+				}
+			}
+		})
+	}
+}
+
 func TestToAppDocumentSummaryOmitsDetailFields(t *testing.T) {
 	t.Parallel()
 
@@ -49,18 +81,36 @@ func TestToAppDocumentSummaryOmitsDetailFields(t *testing.T) {
 	if len(documentsPayload) != 1 {
 		t.Fatalf("expected one document summary, got %d", len(documentsPayload))
 	}
-	for _, field := range []string{"contentHtml", "contentText", "sharedWith", "relatedWork"} {
+	for _, field := range []string{"contentHtml", "contentText", "sharedWith", "publicToken"} {
 		if _, exists := documentsPayload[0][field]; exists {
 			t.Fatalf("document summary must not serialize %q", field)
 		}
 	}
 	for _, field := range []string{
 		"id", "workspaceId", "title", "visibility", "createdBy", "updatedBy",
-		"createdAt", "updatedAt", "canEdit", "relatedWorkCount",
+		"createdAt", "updatedAt", "archivedAt", "canEdit", "publicEnabled", "relatedWork", "relatedWorkCount",
 	} {
 		if _, exists := documentsPayload[0][field]; !exists {
 			t.Fatalf("document summary must serialize %q", field)
 		}
+	}
+	if got := string(documentsPayload[0]["relatedWork"]); got != "[]" {
+		t.Fatalf("empty relatedWork = %s, want []", got)
+	}
+}
+
+func TestDocumentPublicStatusDoesNotRequireExposingToken(t *testing.T) {
+	t.Parallel()
+	document := toAppDocument(documents.CoreDocument{PublicEnabled: true}, false)
+	if !document.PublicEnabled || document.PublicToken != nil {
+		t.Fatal("public status must remain available without exposing the owner's link token")
+	}
+	related := documents.CoreRelatedWork{EntityID: uuid.New(), Title: "Launch", EntityType: documents.RelationshipStory}
+	summaries := toAppDocumentSummaries([]documents.CoreDocumentSummary{{
+		PublicEnabled: true, RelatedWork: []documents.CoreRelatedWork{related}, RelatedWorkCount: 1,
+	}}, false)
+	if !summaries[0].PublicEnabled || len(summaries[0].RelatedWork) != 1 || summaries[0].RelatedWork[0].EntityID != related.EntityID {
+		t.Fatalf("summary omitted public status or relationship metadata: %#v", summaries[0])
 	}
 }
 

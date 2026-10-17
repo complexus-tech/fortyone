@@ -98,6 +98,17 @@ func (e *FortyOneToolExecutor) confirmStoryBatch(
 	if record.Operation != StoryMutationCreateBatch || record.TeamID == uuid.Nil {
 		return StoryMutationResult{}, fmt.Errorf("%w: opaque token is not a batch story proposal", ErrInvalidConfirmation)
 	}
+	// Check the persisted source before any already-applied shortcut. A token
+	// from another conversation must not reveal its result or authorize a write.
+	if scope.SourceScope != nil || len(record.Proposal) > 0 {
+		proposal, err := decodeBatchStoryProposal(record.Proposal)
+		if err != nil {
+			return StoryMutationResult{}, err
+		}
+		if err := validateBatchSource(scope, proposal, record.TeamID); err != nil {
+			return StoryMutationResult{}, err
+		}
+	}
 	switch record.Status {
 	case StoryMutationConfirmationCancelled:
 		return StoryMutationResult{}, ErrCancelledConfirmation
@@ -355,6 +366,7 @@ func (m *storyMutationExecutor) confirmCreateBatch(
 			Index:                    index,
 			Status:                   itemStatus,
 			StoryID:                  story.ID,
+			StoryStatusID:            cloneUUIDPointer(story.Status),
 			Reference:                storyReference(team.Code, story.SequenceID),
 			TeamID:                   team.ID,
 			Title:                    story.Title,

@@ -1,11 +1,9 @@
 package storieshttp
 
 import (
-	"fmt"
-	"strings"
-
 	attachments "github.com/complexus-tech/projects-api/internal/modules/attachments/service"
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
+	storytransport "github.com/complexus-tech/projects-api/internal/modules/stories/transport"
 	"github.com/google/uuid"
 )
 
@@ -32,38 +30,7 @@ func toAppComments(i []stories.CoreComment, usersByID map[uuid.UUID]AppUserSumma
 }
 
 func toCoreNewStory(a AppNewStory, userID uuid.UUID) stories.CoreNewStory {
-	var creationKey *string
-	if a.IdempotencyKey != nil {
-		trimmedKey := strings.TrimSpace(*a.IdempotencyKey)
-		if trimmedKey != "" {
-			key := fmt.Sprintf("app:%s:%s", userID, trimmedKey)
-			creationKey = &key
-		}
-	}
-
-	return stories.CoreNewStory{
-		Title:                    a.Title,
-		EstimateValue:            a.EstimateValue,
-		EstimatedDurationMinutes: a.EstimatedDurationMinutes,
-		MinimumFocusBlockMinutes: a.MinimumFocusBlockMinutes,
-		AutoSchedulingEnabled:    a.AutoSchedulingEnabled,
-		Description:              a.Description,
-		DescriptionHTML:          a.DescriptionHTML,
-		Parent:                   a.Parent,
-		Objective:                a.Objective,
-		Status:                   a.Status,
-		Assignee:                 a.Assignee,
-		Reporter:                 &userID,
-		Priority:                 a.Priority,
-		Sprint:                   a.Sprint,
-		KeyResult:                a.KeyResult,
-		LabelIDs:                 a.LabelIDs,
-		CustomFieldValues:        a.CustomFieldValues,
-		StartDate:                a.StartDate.TimePtr(),
-		EndDate:                  a.EndDate.TimePtr(),
-		Team:                     a.Team,
-		CreationKey:              creationKey,
-	}
+	return storytransport.ToNewStory(a, userID)
 }
 
 func toAppStoryMedia(file attachments.FileInfo, stableURL string) AppStoryMedia {

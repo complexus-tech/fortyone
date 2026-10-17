@@ -9,6 +9,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/google/uuid"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
 	markdownhtml "github.com/yuin/goldmark/renderer/html"
@@ -22,25 +23,40 @@ var commentMarkdown = goldmark.New(
 )
 
 // replyHTML accepts Markdown, never trusted HTML. Raw HTML stays disabled in
-// the parser, then a second allowlist excludes media, mentions and attributes
-// that could bypass the normal attachment/mention write paths.
+// the parser, then a second allowlist excludes media and untrusted attributes.
+// Only server-resolved member links can enter the separate mention write path.
 func replyHTML(text string) string {
-	text = strings.TrimSpace(text)
+	return renderMentionReply(text, nil).HTML
+}
+
+func boundedReplyText(text string) string {
+	// Leading indentation is Markdown code, where an example must never ping.
+	text = strings.Trim(text, "\r\n")
 	if runes := []rune(text); len(runes) > 6000 {
 		text = string(runes[:6000]) + "…"
 	}
+	return text
+}
+
+func renderReplyMarkdown(text string) string {
+	return renderReplyMarkdownWithMentions(text, &replyMentions{})
+}
+
+func renderMentionReply(text string, targets map[uuid.UUID]string) renderedReply {
+	text = boundedReplyText(text)
 	for {
-		output := renderReplyMarkdown(text)
+		mentions := &replyMentions{targets: targets}
+		output := renderReplyMarkdownWithMentions(text, mentions)
 		if utf8.RuneCountInString(output) <= 9500 {
-			return output
+			return renderedReply{HTML: output, MentionedUserIDs: mentions.ids}
 		}
-		// Reparse a shorter source so the persisted markup remains balanced.
+		// Reparse both markup and recipients together: omitted text cannot notify.
 		runes := []rune(text)
 		text = string(runes[:len(runes)/2]) + "…"
 	}
 }
 
-func renderReplyMarkdown(text string) string {
+func renderReplyMarkdownWithMentions(text string, mentions *replyMentions) string {
 	var rendered bytes.Buffer
 	if err := commentMarkdown.Convert([]byte(text), &rendered); err != nil {
 		return plainReplyHTML(text)
@@ -51,7 +67,7 @@ func renderReplyMarkdown(text string) string {
 	}
 	var output strings.Builder
 	for _, node := range nodes {
-		writeReplyNode(&output, node)
+		writeReplyNode(&output, node, mentions)
 	}
 	if value := strings.TrimSpace(output.String()); value != "" && value != "<p></p>" {
 		return value
@@ -65,7 +81,7 @@ func plainReplyHTML(text string) string {
 	return "<p>" + strings.ReplaceAll(stdhtml.EscapeString(text), "\n", "<br>") + "</p>"
 }
 
-func writeReplyNode(output *strings.Builder, node *html.Node) {
+func writeReplyNode(output *strings.Builder, node *html.Node, mentions *replyMentions) {
 	if node.Type == html.TextNode {
 		output.WriteString(stdhtml.EscapeString(node.Data))
 		return
@@ -74,6 +90,10 @@ func writeReplyNode(output *strings.Builder, node *html.Node) {
 		return
 	}
 	name := node.Data
+	if name == "blockquote" || name == "pre" || name == "code" {
+		mentions.blockedDepth++
+		defer func() { mentions.blockedDepth-- }()
+	}
 	switch name {
 	case "script", "style", "iframe", "object", "embed", "svg", "math", "template", "form", "input", "button", "video", "audio", "source", "picture":
 		return
@@ -86,11 +106,14 @@ func writeReplyNode(output *strings.Builder, node *html.Node) {
 		return
 	case "p", "br", "strong", "em", "del", "h1", "h2", "h3", "h4", "h5", "h6", "ul", "ol", "li", "blockquote", "code", "pre", "hr", "table", "thead", "tbody", "tr", "th", "td", "a":
 	default:
-		writeReplyChildren(output, node)
+		writeReplyChildren(output, node, mentions)
+		return
+	}
+	if name == "a" && mentions.write(output, replyAttribute(node, "href")) {
 		return
 	}
 	if name == "a" && !safeReplyLink(replyAttribute(node, "href")) {
-		writeReplyChildren(output, node)
+		writeReplyChildren(output, node, mentions)
 		return
 	}
 	output.WriteByte('<')
@@ -107,13 +130,13 @@ func writeReplyNode(output *strings.Builder, node *html.Node) {
 	if name == "br" || name == "hr" {
 		return
 	}
-	writeReplyChildren(output, node)
+	writeReplyChildren(output, node, mentions)
 	output.WriteString("</" + name + ">")
 }
 
-func writeReplyChildren(output *strings.Builder, node *html.Node) {
+func writeReplyChildren(output *strings.Builder, node *html.Node, mentions *replyMentions) {
 	for child := node.FirstChild; child != nil; child = child.NextSibling {
-		writeReplyNode(output, child)
+		writeReplyNode(output, child, mentions)
 	}
 }
 

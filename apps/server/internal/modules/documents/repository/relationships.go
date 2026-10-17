@@ -31,7 +31,8 @@ func (repository *Repository) AddRelationship(
 		if err != nil {
 			return mapNotFound("insert editable document relationship", err)
 		}
-		return nil
+		related.ReferencedInContent, err = queries.HasDocumentBodyReference(ctx, documentssql.HasDocumentBodyReferenceParams{DocumentID: input.DocumentID, EntityType: string(input.EntityType), EntityID: input.EntityID})
+		return err
 	})
 	if err != nil {
 		return documentdomain.RelatedWork{}, err
@@ -50,7 +51,14 @@ func (repository *Repository) RemoveRelationship(
 		if _, err := getRelatedWork(ctx, queries, input.WorkspaceID, input.UserID, input.EntityType, input.EntityID); err != nil {
 			return err
 		}
-		_, err := queries.DeleteEditableDocumentRelationship(ctx, documentssql.DeleteEditableDocumentRelationshipParams{
+		present, err := queries.HasDocumentBodyReference(ctx, documentssql.HasDocumentBodyReferenceParams{DocumentID: input.DocumentID, EntityType: string(input.EntityType), EntityID: input.EntityID})
+		if err != nil {
+			return err
+		}
+		if present {
+			return documentdomain.ErrInlineReference
+		}
+		_, err = queries.DeleteEditableDocumentRelationship(ctx, documentssql.DeleteEditableDocumentRelationshipParams{
 			DocumentID: input.DocumentID, WorkspaceID: input.WorkspaceID,
 			EntityType: string(input.EntityType), EntityID: input.EntityID, ActorID: input.UserID,
 		})
@@ -93,7 +101,7 @@ func (repository *Repository) ListRelatedDocuments(
 			for _, row := range rows {
 				result = append(result, summaryFromRelationship(row))
 			}
-			return nil
+			return hydrateSummaries(ctx, queries, workspaceID, userID, result, false)
 		},
 	)
 	if err != nil {
@@ -108,19 +116,59 @@ func listRelationships(
 	workspaceID, documentID, userID uuid.UUID,
 ) ([]documentdomain.RelatedWork, error) {
 	rows, err := queries.ListVisibleDocumentRelationships(ctx, documentssql.ListVisibleDocumentRelationshipsParams{
-		ActorID: userID, WorkspaceID: workspaceID, DocumentID: documentID,
+		ActorID: userID, WorkspaceID: workspaceID, DocumentIds: []uuid.UUID{documentID},
 	})
 	if err != nil {
 		return nil, fmt.Errorf("list visible document relationships: %w", err)
 	}
 	result := make([]documentdomain.RelatedWork, 0, len(rows))
 	for _, row := range rows {
-		result = append(result, documentdomain.RelatedWork{
-			EntityID: row.EntityID, EntityType: documentdomain.RelationshipType(row.EntityType),
-			Title: row.Title, Reference: stringPointer(row.Reference), TeamID: uuidPointer(row.TeamID),
-		})
+		result = append(result, relatedWorkFromList(row))
 	}
 	return result, nil
+}
+
+// Fetch relationship metadata for the entire page under the same access snapshot.
+// Keeping one batch avoids a separate query for every document in the library.
+func hydrateSummaries(
+	ctx context.Context,
+	queries *documentssql.Queries,
+	workspaceID, userID uuid.UUID,
+	summaries []documentdomain.Summary,
+	includeArchived bool,
+) error {
+	if len(summaries) == 0 {
+		return nil
+	}
+	documentIDs := make([]uuid.UUID, len(summaries))
+	indices := make(map[uuid.UUID]int, len(summaries))
+	for index, summary := range summaries {
+		documentIDs[index] = summary.ID
+		indices[summary.ID] = index
+	}
+	rows, err := queries.ListVisibleDocumentRelationships(ctx, documentssql.ListVisibleDocumentRelationshipsParams{
+		ActorID: userID, WorkspaceID: workspaceID, DocumentIds: documentIDs, IncludeArchived: includeArchived,
+	})
+	if err != nil {
+		return fmt.Errorf("list visible relationships for document summaries: %w", err)
+	}
+	for _, row := range rows {
+		index, exists := indices[row.DocumentID]
+		if !exists {
+			continue
+		}
+		summaries[index].RelatedWork = append(summaries[index].RelatedWork, relatedWorkFromList(row))
+		summaries[index].RelatedWorkCount++
+	}
+	return nil
+}
+
+func relatedWorkFromList(row documentssql.ListVisibleDocumentRelationshipsRow) documentdomain.RelatedWork {
+	return documentdomain.RelatedWork{
+		EntityID: row.EntityID, EntityType: documentdomain.RelationshipType(row.EntityType),
+		Title: row.Title, Reference: stringPointer(row.Reference), StatusColor: row.StatusColor,
+		TeamID: uuidPointer(row.TeamID), ReferencedInContent: row.ReferencedInContent,
+	}
 }
 
 func getRelatedWork(
@@ -140,7 +188,7 @@ func getRelatedWork(
 		}
 		return documentdomain.RelatedWork{
 			EntityID: row.EntityID, EntityType: documentdomain.RelationshipStory,
-			Title: row.Title, Reference: stringPointer(row.Reference), TeamID: uuidPointer(row.TeamID),
+			Title: row.Title, Reference: stringPointer(row.Reference), StatusColor: row.StatusColor, TeamID: uuidPointer(row.TeamID),
 		}, nil
 	case documentdomain.RelationshipObjective:
 		row, err := queries.GetVisibleObjectiveRelationshipTarget(ctx, documentssql.GetVisibleObjectiveRelationshipTargetParams{

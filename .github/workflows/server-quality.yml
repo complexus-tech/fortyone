@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - "apps/server/**"
+      - ".github/scripts/**"
       - ".github/workflows/server-quality.yml"
       - ".github/workflows/weekly-assurance.yml"
       - ".github/workflows/codeql-weekly.yml"
@@ -27,6 +28,10 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
+
+      - name: Test release safety checks
+        working-directory: .
+        run: python3 -m unittest discover -s .github/scripts -p "test_*.py"
 
       - name: Set up Go
         uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0

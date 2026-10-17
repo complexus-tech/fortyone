@@ -124,7 +124,7 @@ func (e *FortyOneToolExecutor) confirmOpaqueMutation(ctx context.Context, scope 
 	if err != nil {
 		return StoryMutationResult{}, err
 	}
-	if record.Operation == StoryMutationCreateBatch && scope.SourceScope == nil {
+	if record.Operation == StoryMutationCreateBatch && (scope.SourceScope == nil || scope.SourceScope.Surface == SourceSurfaceChatMessage) {
 		return e.confirmStoryBatch(ctx, scope, id, token)
 	}
 	if scope.SourceScope == nil || record.Operation != StoryMutationUpdate || record.TeamID != scope.SourceScope.TeamID {

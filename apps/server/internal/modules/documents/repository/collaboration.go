@@ -64,7 +64,13 @@ func (r *Repository) RestoreRevision(ctx context.Context, workspaceID, userID, d
 			return mapNotFound("restore document revision", err)
 		}
 		result, err = getDocument(ctx, q, workspaceID, userID, documentID)
-		return err
+		if err != nil {
+			return err
+		}
+		if err := syncDocumentBody(ctx, q, workspaceID, userID, documentID, result.ContentHTML); err != nil {
+			return err
+		}
+		return hydrateDocument(ctx, q, &result, userID)
 	})
 	return result, err
 }

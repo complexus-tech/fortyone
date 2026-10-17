@@ -158,7 +158,7 @@ describe("slash command items", () => {
       "min-w-56",
       "border-[0.5px]",
       "py-2",
-      "text-[13px]",
+      "text-base",
     );
     expect(screen.getByRole("menuitem", { name: "Regular text" })).toHaveClass(
       "gap-1.5",

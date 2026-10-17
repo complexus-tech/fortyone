@@ -37,6 +37,8 @@ const (
 	ScopeStoriesWrite          Scope = "stories:write"
 	ScopeCommentsRead          Scope = "comments:read"
 	ScopeCommentsWrite         Scope = "comments:write"
+	ScopeChatRead              Scope = "chat:read"
+	ScopeChatWrite             Scope = "chat:write"
 	ScopeLabelsRead            Scope = "labels:read"
 	ScopeLabelsWrite           Scope = "labels:write"
 	ScopeSprintsRead           Scope = "sprints:read"
@@ -73,6 +75,8 @@ var knownScopes = map[Scope]struct{}{
 	ScopeStoriesWrite:          {},
 	ScopeCommentsRead:          {},
 	ScopeCommentsWrite:         {},
+	ScopeChatRead:              {},
+	ScopeChatWrite:             {},
 	ScopeLabelsRead:            {},
 	ScopeLabelsWrite:           {},
 	ScopeSprintsRead:           {},

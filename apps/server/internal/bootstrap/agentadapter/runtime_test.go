@@ -24,6 +24,7 @@ type runtimeStories struct {
 	err        error
 	commentErr error
 	actor      auth.Actor
+	audience   []uuid.UUID
 }
 
 func (s *runtimeStories) Get(ctx context.Context, _, _ uuid.UUID) (stories.CoreSingleStory, error) {
@@ -40,7 +41,7 @@ func (s *runtimeStories) GetCommentThread(context.Context, uuid.UUID, uuid.UUID,
 	return s.comment, s.err
 }
 func (s *runtimeStories) GetNotificationAudience(context.Context, uuid.UUID, uuid.UUID) ([]uuid.UUID, error) {
-	return nil, s.err
+	return s.audience, s.err
 }
 
 type runtimeAccess bool
@@ -59,12 +60,25 @@ func (m runtimeMembership) Get(context.Context, uuid.UUID, uuid.UUID) (workspace
 }
 
 type runtimeWriter struct {
-	calls []comments.CreateCommentCommand
+	calls   []comments.CreateCommentCommand
+	targets []comments.MentionTarget
+	reply   comments.AgentReply
+	scope   comments.AgentReplyScope
 }
 
-func (w *runtimeWriter) CreateComment(_ context.Context, c comments.CreateCommentCommand) (comments.CoreComment, error) {
-	w.calls = append(w.calls, c)
-	return comments.CoreComment{ID: *c.CreationID}, nil
+func (w *runtimeWriter) ResolveAgentMentions(_ context.Context, scope comments.AgentReplyScope, _ []uuid.UUID) ([]comments.MentionTarget, error) {
+	w.scope = scope
+	return w.targets, nil
+}
+
+func (w *runtimeWriter) CreateAgentReply(_ context.Context, c comments.AgentReplyCommand) (comments.CoreComment, error) {
+	w.calls = append(w.calls, comments.CreateCommentCommand{CreationID: &c.CreationID, WorkspaceID: c.Scope.WorkspaceID, StoryID: c.Scope.StoryID,
+		ParentID: &c.Scope.ParentID, Actor: c.Scope.Author, Content: c.Content, MentionedUserIDs: c.MentionedUserIDs})
+	return comments.CoreComment{ID: c.CreationID}, nil
+}
+
+func (w *runtimeWriter) GetAgentReply(context.Context, comments.AgentReplyScope, uuid.UUID) (comments.AgentReply, error) {
+	return w.reply, nil
 }
 
 type runtimeTools struct {

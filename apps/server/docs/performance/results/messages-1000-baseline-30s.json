@@ -1,0 +1,84 @@
+{
+  "active_at_end": 1000,
+  "all_user_probe_deliveries": 1000,
+  "cpus": 11,
+  "delivery_lag_ms": {
+    "max": 3161.077,
+    "p50": 72.246,
+    "p95": 505.248,
+    "p99": 2323.092
+  },
+  "distinct_users": 1000,
+  "errors": null,
+  "go_version": "go1.26.9",
+  "hold_seconds": 30,
+  "limits": "Loopback laptop; no TLS/proxy, browser rendering, object storage, AI, voice, email/push delivery or network partition. API replicas share process/Redis client; process memory includes generator. Not a production capacity guarantee.",
+  "message_creates": 165,
+  "observed_created_deliveries": 16500,
+  "peak_go_heap_bytes": 206286552,
+  "peak_goroutines": 14196,
+  "peak_sse_connections": 1000,
+  "redis_clients": 3064,
+  "redis_memory_bytes": 72172288,
+  "requests": {
+    "create": {
+      "count": 165,
+      "errors": 0,
+      "max_ms": 744.898,
+      "p50_ms": 19.914,
+      "p95_ms": 253.148,
+      "p99_ms": 637.601
+    },
+    "cursor": {
+      "count": 2,
+      "errors": 0,
+      "max_ms": 14.362,
+      "p50_ms": 4.59,
+      "p95_ms": 4.59,
+      "p99_ms": 4.59
+    },
+    "history": {
+      "count": 697,
+      "errors": 0,
+      "max_ms": 242.403,
+      "p50_ms": 5.564,
+      "p95_ms": 45.984,
+      "p99_ms": 116.131
+    },
+    "idempotent_create": {
+      "count": 1,
+      "errors": 0,
+      "max_ms": 319.062,
+      "p50_ms": 319.062,
+      "p95_ms": 319.062,
+      "p99_ms": 319.062
+    },
+    "idempotent_replay": {
+      "count": 1,
+      "errors": 0,
+      "max_ms": 16.374,
+      "p50_ms": 16.374,
+      "p95_ms": 16.374,
+      "p99_ms": 16.374
+    },
+    "reaction": {
+      "count": 29,
+      "errors": 0,
+      "max_ms": 62.232,
+      "p50_ms": 4.954,
+      "p95_ms": 35.273,
+      "p99_ms": 42.236
+    },
+    "sse_connect": {
+      "count": 1100,
+      "errors": 0,
+      "max_ms": 136.461,
+      "p50_ms": 2.656,
+      "p95_ms": 69.897,
+      "p99_ms": 111.338
+    }
+  },
+  "run_at": "2026-10-17T10:03:12Z",
+  "scenario": "10 teams, 2 real HTTP API/hub replicas in one process, 20 history reads/s + 5 message creates/s + 1 reaction/s + 0.2 replies/s; 10% cross-replica reconnect; durable outbox pause/recovery",
+  "total_seconds": 54.051523833
+}

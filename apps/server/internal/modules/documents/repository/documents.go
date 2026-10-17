@@ -6,6 +6,7 @@ import (
 
 	documentdomain "github.com/complexus-tech/projects-api/internal/modules/documents/domain"
 	documentssql "github.com/complexus-tech/projects-api/internal/modules/documents/repository/sqlc"
+	"github.com/complexus-tech/projects-api/internal/platform/database"
 	"github.com/complexus-tech/projects-api/internal/platform/safecast"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -30,16 +31,28 @@ func (repository *Repository) List(
 	if err != nil || offset < 0 {
 		return nil, documentdomain.ErrInvalidInput
 	}
-	rows, err := repository.queries.ListAccessibleDocuments(ctx, documentssql.ListAccessibleDocumentsParams{
-		ActorID: input.UserID, WorkspaceID: input.WorkspaceID, SearchText: input.Search,
-		ListScope: input.Scope, RowLimit: rowLimit, RowOffset: offset,
-	})
+	var result []documentdomain.Summary
+	err = repository.transactor.WithinTransaction(
+		ctx,
+		pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly},
+		func(tx pgx.Tx) error {
+			queries := documentssql.New(tx)
+			rows, err := queries.ListAccessibleDocuments(ctx, documentssql.ListAccessibleDocumentsParams{
+				ActorID: input.UserID, WorkspaceID: input.WorkspaceID, SearchText: input.Search,
+				ListScope: input.Scope, RowLimit: rowLimit, RowOffset: offset,
+			})
+			if err != nil {
+				return fmt.Errorf("list accessible documents: %w", err)
+			}
+			result = make([]documentdomain.Summary, 0, len(rows))
+			for _, row := range rows {
+				result = append(result, summaryFromList(row))
+			}
+			return hydrateSummaries(ctx, queries, input.WorkspaceID, input.UserID, result, input.Scope == "archived")
+		},
+	)
 	if err != nil {
-		return nil, fmt.Errorf("list accessible documents: %w", err)
-	}
-	result := make([]documentdomain.Summary, 0, len(rows))
-	for _, row := range rows {
-		result = append(result, summaryFromList(row))
+		return nil, err
 	}
 	return result, nil
 }
@@ -50,6 +63,9 @@ func (repository *Repository) Get(
 ) (documentdomain.Document, error) {
 	if err := repository.configured(); err != nil {
 		return documentdomain.Document{}, err
+	}
+	if tx, joined := database.UnitTransaction(ctx); joined {
+		return getDocument(ctx, documentssql.New(tx), workspaceID, userID, documentID)
 	}
 	var document documentdomain.Document
 	err := repository.transactor.WithinTransaction(
@@ -116,6 +132,7 @@ func hydrateDocument(
 	document.Revision = metadata.Revision
 	document.CollaborationEpoch = metadata.CollaborationEpoch
 	document.Collaborative = metadata.Collaborative
+	document.PublicEnabled = metadata.PublicEnabled
 	if metadata.PublicToken != "" {
 		document.PublicToken = &metadata.PublicToken
 	}
@@ -158,6 +175,9 @@ func (repository *Repository) Create(
 			return mapCreateError(err)
 		}
 		document = documentFromCreate(row)
+		if err := syncDocumentBody(ctx, queries, input.WorkspaceID, input.UserID, document.ID, input.ContentHTML); err != nil {
+			return err
+		}
 		return hydrateDocument(ctx, queries, &document, input.UserID)
 	})
 	return document, err
@@ -190,6 +210,11 @@ func (repository *Repository) Update(
 			return mapNotFound("update editable document", err)
 		}
 		document = documentFromUpdate(row)
+		if input.ContentHTML != nil {
+			if err := syncDocumentBody(ctx, queries, input.WorkspaceID, input.UserID, document.ID, *input.ContentHTML); err != nil {
+				return err
+			}
+		}
 		return hydrateDocument(ctx, queries, &document, input.UserID)
 	})
 	if err != nil {

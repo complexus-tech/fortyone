@@ -43,6 +43,7 @@ export type WorkspaceSettings = {
   keyResultTerm: "key result" | "milestone" | "focus area";
   objectiveEnabled: boolean;
   keyResultEnabled: boolean;
+  chatEnabled: boolean;
   workingDays: number[];
   workingStartMinute: number;
   workingEndMinute: number;

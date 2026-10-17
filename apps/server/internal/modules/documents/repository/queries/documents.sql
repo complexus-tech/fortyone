@@ -8,8 +8,11 @@ SELECT
     document.updated_by,
     document.created_at,
     document.updated_at,
+    document.archived_at,
+    CAST(document.public_token IS NOT NULL AND document.archived_at IS NULL AS boolean) AS public_enabled,
     (
-        actor_membership.role <> CAST('guest' AS public.user_role)
+        document.archived_at IS NULL
+        AND actor_membership.role <> CAST('guest' AS public.user_role)
         AND (
             document.visibility = 'workspace'
             OR document.created_by = sqlc.arg(actor_id)
@@ -22,38 +25,7 @@ SELECT
                   AND editor.role = 'editor'
             )
         )
-    ) AS can_edit,
-    (
-        SELECT COUNT(*)
-        FROM public.document_relationships AS relationship
-        LEFT JOIN public.stories AS story
-            ON relationship.entity_type = 'story'
-           AND story.id = relationship.entity_id
-           AND story.workspace_id = relationship.workspace_id
-           AND story.deleted_at IS NULL
-        LEFT JOIN public.teams AS story_team
-            ON story_team.team_id = story.team_id
-           AND story_team.workspace_id = relationship.workspace_id
-        LEFT JOIN public.objectives AS objective
-            ON relationship.entity_type = 'objective'
-           AND objective.objective_id = relationship.entity_id
-           AND objective.workspace_id = relationship.workspace_id
-        LEFT JOIN public.teams AS objective_team
-            ON objective_team.team_id = objective.team_id
-           AND objective_team.workspace_id = relationship.workspace_id
-        WHERE relationship.document_id = document.document_id
-          AND relationship.workspace_id = document.workspace_id
-          AND (
-              (story.id IS NOT NULL AND story_team.team_id IS NOT NULL)
-              OR (objective.objective_id IS NOT NULL AND objective_team.team_id IS NOT NULL)
-          )
-          AND EXISTS (
-              SELECT 1
-              FROM public.team_members AS viewer
-              WHERE viewer.user_id = sqlc.arg(actor_id)
-                AND viewer.team_id = COALESCE(story_team.team_id, objective_team.team_id)
-          )
-    ) AS related_work_count
+    ) AS can_edit
 FROM public.documents AS document
 INNER JOIN public.workspaces AS workspace
     ON workspace.workspace_id = document.workspace_id
@@ -65,7 +37,15 @@ INNER JOIN public.users AS actor
     ON actor.user_id = actor_membership.user_id
    AND actor.is_active = TRUE
 WHERE document.workspace_id = sqlc.arg(workspace_id)
-  AND document.archived_at IS NULL
+  AND (
+      (CAST(sqlc.arg(list_scope) AS text) <> 'archived' AND document.archived_at IS NULL)
+      OR (
+          CAST(sqlc.arg(list_scope) AS text) = 'archived'
+          AND document.archived_at IS NOT NULL
+          AND document.created_by = sqlc.arg(actor_id)
+          AND actor_membership.role <> CAST('guest' AS public.user_role)
+      )
+  )
   AND (
       document.visibility = 'workspace'
       OR document.created_by = sqlc.arg(actor_id)
@@ -83,7 +63,7 @@ WHERE document.workspace_id = sqlc.arg(workspace_id)
       OR document.content_text ILIKE '%' || CAST(sqlc.arg(search_text) AS text) || '%'
   )
   AND (
-      CAST(sqlc.arg(list_scope) AS text) IN ('', 'all')
+      CAST(sqlc.arg(list_scope) AS text) IN ('', 'all', 'archived')
       OR (CAST(sqlc.arg(list_scope) AS text) = 'mine' AND document.created_by = sqlc.arg(actor_id))
       OR (
           CAST(sqlc.arg(list_scope) AS text) = 'shared'

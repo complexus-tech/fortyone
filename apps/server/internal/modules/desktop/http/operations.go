@@ -17,8 +17,8 @@ import (
 	desktoprepository "github.com/complexus-tech/projects-api/internal/modules/desktop/repository"
 	documentdomain "github.com/complexus-tech/projects-api/internal/modules/documents/domain"
 	documents "github.com/complexus-tech/projects-api/internal/modules/documents/service"
-	storieshttp "github.com/complexus-tech/projects-api/internal/modules/stories/http"
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
+	storytransport "github.com/complexus-tech/projects-api/internal/modules/stories/transport"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -150,7 +150,7 @@ func (h *Handlers) prepareMutation(operation Operation, workspaceID, userID uuid
 	case "attachment.upload":
 		return h.prepareAttachment(operation, workspaceID, userID)
 	case "story.create":
-		var input storieshttp.AppNewStory
+		var input storytransport.NewStoryRequest
 		if err := decodePayload(operation.Payload, &input); err != nil {
 			return nil, err
 		}
@@ -163,7 +163,7 @@ func (h *Handlers) prepareMutation(operation Operation, workspaceID, userID uuid
 		if strings.TrimSpace(input.Title) == "" || len([]rune(input.Title)) > 255 {
 			return nil, errInvalidOperation
 		}
-		create := storieshttp.ToCoreNewStory(input, userID)
+		create := storytransport.ToNewStory(input, userID)
 		key := fmt.Sprintf("desktop:%s:%s", userID, operation.ID)
 		create.CreationKey = &key
 		return func(ctx context.Context) (uuid.UUID, error) {
@@ -186,7 +186,7 @@ func (h *Handlers) prepareMutation(operation Operation, workspaceID, userID uuid
 		if err := json.Unmarshal(operation.Payload, &fields); err != nil {
 			return nil, errInvalidOperation
 		}
-		reconcile, references, err := storieshttp.StoryMediaReconciliationRequest(fields, workspaceSlug, operation.ResourceID)
+		reconcile, references, err := storytransport.StoryMediaReconciliationRequest(fields, workspaceSlug, operation.ResourceID)
 		if err != nil {
 			return nil, fmt.Errorf("%w: %v", errInvalidOperation, err)
 		}

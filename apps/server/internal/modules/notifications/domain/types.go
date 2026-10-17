@@ -17,6 +17,7 @@ const (
 	NotificationTypeObjectiveUpdate         NotificationType = "objective_update"
 	NotificationTypeKeyResultUpdate         NotificationType = "key_result_update"
 	NotificationTypeMention                 NotificationType = "mention"
+	NotificationTypeChatMessage             NotificationType = "chat_message"
 	NotificationTypeFeedbackComment         NotificationType = "feedback_comment"
 	NotificationTypeFeedbackStatusUpdate    NotificationType = "feedback_status_update"
 	NotificationTypeFeedbackUpdatePublished NotificationType = "feedback_update_published"
@@ -35,6 +36,7 @@ func ParseNotificationType(value string) (NotificationType, error) {
 func (notificationType NotificationType) Valid() bool {
 	switch notificationType {
 	case NotificationTypeStoryUpdate,
+		NotificationTypeChatMessage,
 		NotificationTypeStoryComment,
 		NotificationTypeCommentReply,
 		NotificationTypeObjectiveUpdate,
@@ -55,12 +57,14 @@ func (notificationType NotificationType) Valid() bool {
 type EntityType string
 
 const (
-	EntityTypeStory     EntityType = "story"
-	EntityTypeComment   EntityType = "comment"
-	EntityTypeObjective EntityType = "objective"
-	EntityTypeKeyResult EntityType = "key_result"
-	EntityTypeFeedback  EntityType = "feedback"
-	EntityTypeStrategy  EntityType = "strategy"
+	EntityTypeStory       EntityType = "story"
+	EntityTypeDocument    EntityType = "document"
+	EntityTypeChatMessage EntityType = "chat_message"
+	EntityTypeComment     EntityType = "comment"
+	EntityTypeObjective   EntityType = "objective"
+	EntityTypeKeyResult   EntityType = "key_result"
+	EntityTypeFeedback    EntityType = "feedback"
+	EntityTypeStrategy    EntityType = "strategy"
 )
 
 func ParseEntityType(value string) (EntityType, error) {
@@ -73,7 +77,7 @@ func ParseEntityType(value string) (EntityType, error) {
 
 func (entityType EntityType) Valid() bool {
 	switch entityType {
-	case EntityTypeStory, EntityTypeComment, EntityTypeObjective,
+	case EntityTypeChatMessage, EntityTypeDocument, EntityTypeStory, EntityTypeComment, EntityTypeObjective,
 		EntityTypeKeyResult, EntityTypeFeedback, EntityTypeStrategy:
 		return true
 	default:
@@ -87,10 +91,11 @@ func SupportsInAppDelivery(notificationType NotificationType) bool {
 
 func (notificationType NotificationType) SupportsEntity(entityType EntityType) bool {
 	switch notificationType {
-	case NotificationTypeStoryUpdate,
-		NotificationTypeStoryComment,
-		NotificationTypeCommentReply,
-		NotificationTypeMention:
+	case NotificationTypeChatMessage:
+		return entityType == EntityTypeChatMessage
+	case NotificationTypeMention, NotificationTypeCommentReply:
+		return entityType == EntityTypeStory || entityType == EntityTypeComment || entityType == EntityTypeDocument
+	case NotificationTypeStoryUpdate, NotificationTypeStoryComment:
 		return entityType == EntityTypeStory || entityType == EntityTypeComment
 	case NotificationTypeObjectiveUpdate:
 		return entityType == EntityTypeObjective

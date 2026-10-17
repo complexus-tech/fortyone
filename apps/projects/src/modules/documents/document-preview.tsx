@@ -1,7 +1,8 @@
 "use client";
 
-import { EditorContent, useEditor } from "@tiptap/react";
+import { useEditor } from "@tiptap/react";
 import { createDocumentExtensions } from "@fortyone/document-editor";
+import { TextEditor } from "ui";
 
 export const DocumentPreview = ({ html }: { html: string }) => {
   const editor = useEditor(
@@ -14,9 +15,10 @@ export const DocumentPreview = ({ html }: { html: string }) => {
     [html],
   );
   return (
-    <EditorContent
-      className="rich-document-editor prose prose-lg dark:prose-invert max-w-none"
+    <TextEditor
+      className="rich-document-editor text-[1.1rem] leading-7"
       editor={editor}
+      hideBubbleMenu
     />
   );
 };

@@ -4,6 +4,7 @@ import {
   filterAndSortDocumentSummaries,
   getDocumentPageAfterArchive,
   getDocumentListState,
+  isDocumentScope,
   paginateDocumentSummaries,
 } from "./document-list-state";
 import type { DocumentListState, WorkspaceDocumentSummary } from "./types";
@@ -108,6 +109,73 @@ describe("document list state", () => {
     });
 
     expect(result).toHaveLength(1);
+  });
+
+  it("recognizes favorites and archived routes without accepting unknown scopes", () => {
+    expect(isDocumentScope("favorites")).toBe(true);
+    expect(isDocumentScope("archived")).toBe(true);
+    expect(isDocumentScope("deleted")).toBe(false);
+  });
+
+  it("ignores the public-link filter in archived views", () => {
+    expect(
+      getDocumentListState(new URLSearchParams("scope=archived&access=public")),
+    ).toEqual(defaultState);
+    expect(
+      getDocumentListState(
+        new URLSearchParams("scope=archived&access=private"),
+      ),
+    ).toEqual({ ...defaultState, access: "private" });
+  });
+
+  it("filters favorites before pagination while keeping access and owner filters", () => {
+    const result = filterAndSortDocumentSummaries({
+      currentUserId: "user-1",
+      documents: [
+        summary("favorite"),
+        summary("not-favorite"),
+        summary("other-favorite", { createdBy: "user-2" }),
+      ],
+      favoriteDocumentIds: new Set(["favorite", "other-favorite"]),
+      scope: "favorites",
+      state: { ...defaultState, owner: "mine" },
+    });
+    expect(result.map(({ id }) => id)).toEqual(["favorite"]);
+    expect(
+      filterAndSortDocumentSummaries({
+        documents: [summary("favorite")],
+        scope: "favorites",
+        state: defaultState,
+      }),
+    ).toEqual([]);
+  });
+
+  it("filters public links separately from workspace editing visibility", () => {
+    const documents = [
+      summary("public-private", { visibility: "private", publicEnabled: true }),
+      summary("public-workspace", { publicEnabled: true }),
+      summary("workspace-only"),
+    ];
+    const state = getDocumentListState(
+      new URLSearchParams("access=public&sort=title"),
+    );
+    expect(
+      filterAndSortDocumentSummaries({ documents, scope: "all", state }).map(
+        ({ id }) => id,
+      ),
+    ).toEqual(["public-private", "public-workspace"]);
+    expect(
+      filterAndSortDocumentSummaries({
+        documents,
+        scope: "all",
+        state: {
+          ...defaultState,
+          access: "workspace",
+          sort: "title",
+          direction: "asc",
+        },
+      }).map(({ id }) => id),
+    ).toEqual(["public-workspace", "workspace-only"]);
   });
 
   it("sorts titles case-insensitively in either direction", () => {

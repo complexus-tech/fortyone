@@ -4,7 +4,7 @@ import type { ComponentType } from "react";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Box, Button, Flex, Skeleton, Text } from "ui";
+import { Box, Button, Flex, Input, Skeleton, Text } from "ui";
 import {
   BookIcon,
   CalendarPlusIcon,
@@ -26,7 +26,9 @@ import { DocumentsEmptyIllustration } from "@/components/ui/illustrations/empty-
 import { useUserRole } from "@/hooks/role";
 import { useWorkspacePath } from "@/hooks/use-workspace-path";
 import { useSession } from "@/lib/auth/client";
-import { DocumentRow } from "./document-row";
+import { useMembers } from "@/lib/hooks/members";
+import { useFavorites } from "@/shared/favorites";
+import { DocumentRow, DOCUMENT_LIBRARY_COLUMNS } from "./document-row";
 import { DocumentFilters, DocumentSortMenu } from "./documents-home-controls";
 import {
   documentTemplates,
@@ -38,9 +40,15 @@ import {
   filterAndSortDocumentSummaries,
   getDocumentPageAfterArchive,
   getDocumentListState,
+  isDocumentScope,
   paginateDocumentSummaries,
 } from "./document-list-state";
-import { useArchiveDocument, useCreateDocument, useDocuments } from "./hooks";
+import {
+  useArchiveDocument,
+  useCreateDocument,
+  useDocuments,
+  useRestoreArchivedDocument,
+} from "./hooks";
 import type { DocumentScope } from "./types";
 
 const scopeCopy: Record<
@@ -48,8 +56,8 @@ const scopeCopy: Record<
   { description: string; heading: string }
 > = {
   all: {
-    heading: "Recent documents",
-    description: "Pick up where your workspace most recently left off.",
+    heading: "Documents",
+    description: "Find the context behind your work.",
   },
   mine: {
     heading: "My documents",
@@ -58,6 +66,15 @@ const scopeCopy: Record<
   shared: {
     heading: "Shared with me",
     description: "Documents other workspace members shared directly with you.",
+  },
+  favorites: {
+    heading: "Favorite documents",
+    description: "Keep the documents you return to close at hand.",
+  },
+  archived: {
+    heading: "Archived documents",
+    description:
+      "Restore documents you archived. Public links stay off until you share them again.",
   },
   templates: {
     heading: "Document templates",
@@ -95,17 +112,13 @@ const templateIconStyles: Record<DocumentTemplateIcon, string> = {
   checklist: "border-success/25 bg-success/10 text-success",
 };
 
-const isDocumentScope = (value: string | null): value is DocumentScope =>
-  value === "all" ||
-  value === "mine" ||
-  value === "shared" ||
-  value === "templates";
-
 const mobileScopes: { label: string; value: DocumentScope }[] = [
   { label: "Recent", value: "all" },
   { label: "My documents", value: "mine" },
   { label: "Shared", value: "shared" },
+  { label: "Favorites", value: "favorites" },
   { label: "Templates", value: "templates" },
+  { label: "Archived", value: "archived" },
 ];
 
 const TemplateCard = ({
@@ -172,6 +185,10 @@ const getEmptyDescription = (
   canCreateDocuments: boolean,
 ) => {
   if (isFiltered) return "Try adjusting your search or filters.";
+  if (scope === "favorites")
+    return "Favorite a document using the star beside its title.";
+  if (scope === "archived")
+    return "Documents you archive will appear here, ready to restore.";
   if (scope === "shared") {
     return "Documents shared directly with you will appear here.";
   }
@@ -217,10 +234,25 @@ export const DocumentsHome = () => {
   const search = searchParams.get("search")?.trim() ?? "";
   const rawSearchParams = searchParams.toString();
   const listState = getDocumentListState(new URLSearchParams(rawSearchParams));
-  const apiScope = scope === "templates" ? "all" : scope;
-  const { data: documents = [], isPending } = useDocuments(search, apiScope);
+  const apiScope =
+    scope === "templates" || scope === "favorites" ? "all" : scope;
+  const {
+    data: documents = [],
+    isPending,
+    isError,
+    refetch,
+  } = useDocuments(search, apiScope);
+  const { data: members = [] } = useMembers();
+  const membersById = new Map(members.map((member) => [member.id, member]));
+  const { favorites, error: favoritesError } = useFavorites();
+  const favoriteDocumentIds = new Set(
+    favorites
+      .filter((favorite) => favorite.kind === "document")
+      .map((favorite) => favorite.id),
+  );
   const createDocument = useCreateDocument();
   const archiveDocument = useArchiveDocument();
+  const restoreDocument = useRestoreArchivedDocument();
   const [creatingTemplateId, setCreatingTemplateId] = useState<string | null>(
     null,
   );
@@ -230,6 +262,7 @@ export const DocumentsHome = () => {
   const filteredDocuments = filterAndSortDocumentSummaries({
     currentUserId: session?.user.id,
     documents,
+    favoriteDocumentIds,
     scope: listScope,
     state: listState,
   });
@@ -263,6 +296,9 @@ export const DocumentsHome = () => {
       params.delete("search");
     }
     if (nextScope === "mine") params.delete("owner");
+    if (nextScope === "archived" && params.get("access") === "public") {
+      params.delete("access");
+    }
     return getDocumentsPath(params);
   };
 
@@ -311,7 +347,7 @@ export const DocumentsHome = () => {
         title: template.title,
         contentHtml: template.contentHtml,
         contentText: template.contentText,
-        visibility: "workspace",
+        visibility: template.id === "one-to-one" ? "private" : "workspace",
       },
       {
         onSuccess: (response) => {
@@ -326,7 +362,6 @@ export const DocumentsHome = () => {
     );
   };
 
-  const visibleTemplates = documentTemplates.slice(0, 5);
   const copy = scopeCopy[scope];
   const activeFilterCount = [
     listState.access !== "all",
@@ -394,100 +429,118 @@ export const DocumentsHome = () => {
           ))}
         </Flex>
       </Box>
-      <Box className="mx-auto w-full max-w-[90rem] px-6 pt-7 pb-32 sm:px-8 lg:px-10 lg:pt-8">
-        <Box className="mb-6">
-          <Text as="h1" fontSize="2xl" fontWeight="semibold">
-            {search ? `Results for “${search}”` : copy.heading}
-          </Text>
-          <Text className="mt-0.5" color="muted">
-            {search
-              ? "Search results across the selected document view."
-              : copy.description}
-          </Text>
-        </Box>
-
-        <Box className="mb-8">
-          <Flex align="center" className="mb-3" gap={3} justify="between">
-            <Text fontWeight="semibold">
-              {showTemplateGallery
-                ? "Choose a template"
-                : "Start a new document"}
+      <Box className="@container mx-auto w-full max-w-[90rem] px-6 pt-7 pb-32 sm:px-8 lg:px-10 lg:pt-8">
+        <Flex
+          align="start"
+          className="mb-8 flex-col gap-x-6 gap-y-4 @3xl:flex-row"
+          justify="between"
+          wrap
+        >
+          <Box className="w-full min-w-0 @3xl:w-auto @3xl:flex-1">
+            <Text as="h1" fontSize="2xl" fontWeight="semibold">
+              {search ? `Results for “${search}”` : copy.heading}
             </Text>
-            {showTemplateGallery ? (
+            <Text className="mt-1 max-w-2xl" color="muted">
+              {search
+                ? "Search results across the selected document view."
+                : copy.description}
+            </Text>
+          </Box>
+          <Flex
+            align="center"
+            className="w-full @3xl:w-auto @3xl:shrink-0"
+            gap={3}
+            justify="between"
+            wrap
+          >
+            {!showTemplateGallery ? (
               <Button
                 color="tertiary"
-                disabled={!canCreateDocuments || createDocument.isPending}
-                leftIcon={<PlusIcon className="size-4" />}
-                onClick={() => {
-                  handleCreate(documentTemplates[0]);
-                }}
-                size="sm"
-                variant="outline"
+                href={getDocumentsHref("templates", "")}
+                variant="naked"
               >
-                {creatingTemplateId === "blank"
-                  ? "Creating…"
-                  : "Blank document"}
+                Browse templates
               </Button>
             ) : null}
+            <Button
+              disabled={!canCreateDocuments || createDocument.isPending}
+              leftIcon={<PlusIcon className="size-5" />}
+              loading={creatingTemplateId === "blank"}
+              loadingText="Creating…"
+              onClick={() => {
+                handleCreate(documentTemplates[0]);
+              }}
+            >
+              {showTemplateGallery ? "Blank document" : "New document"}
+            </Button>
           </Flex>
-          {showTemplateGallery ? (
-            <Box className="space-y-8">
-              {documentTemplateCategories.map((category) => (
-                <section
-                  aria-labelledby={`template-category-${category.id}`}
-                  key={category.id}
+        </Flex>
+
+        {showTemplateGallery ? (
+          <Box className="space-y-8">
+            {documentTemplateCategories.map((category) => (
+              <section
+                aria-labelledby={`template-category-${category.id}`}
+                key={category.id}
+              >
+                <Text
+                  as="h2"
+                  className="mb-3"
+                  fontSize="lg"
+                  fontWeight="semibold"
+                  id={`template-category-${category.id}`}
                 >
-                  <Text
-                    as="h2"
-                    className="mb-3"
-                    fontSize="lg"
-                    fontWeight="semibold"
-                    id={`template-category-${category.id}`}
-                  >
-                    {category.label}
-                  </Text>
-                  <Box className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                    {documentTemplates
-                      .filter((template) => template.category === category.id)
-                      .map((template) => (
-                        <TemplateCard
-                          disabled={
-                            !canCreateDocuments || createDocument.isPending
-                          }
-                          isCreating={creatingTemplateId === template.id}
-                          key={template.id}
-                          onCreate={handleCreate}
-                          template={template}
-                        />
-                      ))}
-                  </Box>
-                </section>
-              ))}
-            </Box>
-          ) : (
-            <Box className="grid auto-cols-[minmax(13.5rem,1fr)] grid-flow-col gap-3 overflow-x-auto pb-2">
-              {visibleTemplates.map((template) => (
-                <TemplateCard
-                  disabled={!canCreateDocuments || createDocument.isPending}
-                  isCreating={creatingTemplateId === template.id}
-                  key={template.id}
-                  onCreate={handleCreate}
-                  template={template}
-                />
-              ))}
-            </Box>
-          )}
-        </Box>
+                  {category.label}
+                </Text>
+                <Box className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  {documentTemplates
+                    .filter((template) => template.category === category.id)
+                    .map((template) => (
+                      <TemplateCard
+                        disabled={
+                          !canCreateDocuments || createDocument.isPending
+                        }
+                        isCreating={creatingTemplateId === template.id}
+                        key={template.id}
+                        onCreate={handleCreate}
+                        template={template}
+                      />
+                    ))}
+                </Box>
+              </section>
+            ))}
+          </Box>
+        ) : null}
 
         {!showTemplateGallery ? (
           <Box>
-            <Flex
-              align="center"
-              className="border-border/70 border-b-[0.5px] py-3"
-              gap={3}
-              justify="between"
-              wrap
-            >
+            <Flex align="center" className="mb-7 gap-3" wrap>
+              <form
+                className="min-w-48 flex-1"
+                key={search}
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  const value = new FormData(event.currentTarget).get("search");
+                  router.push(
+                    getDocumentsHref(
+                      scope,
+                      typeof value === "string" ? value : "",
+                    ),
+                    { scroll: false },
+                  );
+                }}
+                role="search"
+              >
+                <Input
+                  aria-label="Search documents"
+                  className="h-10 text-base"
+                  defaultValue={search}
+                  leftIcon={<SearchIcon className="size-5" />}
+                  name="search"
+                  placeholder="Search documents…"
+                  type="search"
+                />
+              </form>
               <DocumentFilters
                 access={listState.access}
                 activeCount={activeFilterCount}
@@ -515,9 +568,117 @@ export const DocumentsHome = () => {
                 }}
                 owner={listState.owner}
                 showOwner={scope !== "mine"}
+                showPublic={scope !== "archived"}
                 updated={listState.updated}
               />
-              <Flex align="center" gap={3}>
+              <DocumentSortMenu
+                direction={listState.direction}
+                field={listState.sort}
+                onChange={(option) => {
+                  const isDefault =
+                    option.field === "updated" && option.direction === "desc";
+                  updateListControls({
+                    direction: isDefault ? null : option.direction,
+                    sort: isDefault ? null : option.field,
+                  });
+                }}
+              />
+            </Flex>
+            <div
+              aria-hidden
+              className={cn(
+                DOCUMENT_LIBRARY_COLUMNS,
+                "text-text-muted border-border/70 border-b-[0.5px] pb-3",
+              )}
+            >
+              <span>Document</span>
+              <span className="hidden @4xl:block">Owner</span>
+              <span className="hidden @4xl:block">Related work</span>
+              <span className="hidden @2xl:block">Access</span>
+              <span className="hidden @2xl:block">
+                {scope === "archived" ? "Archived" : "Updated"}
+              </span>
+              <span />
+            </div>
+            {favoritesError && scope === "favorites" ? (
+              <Text className="py-4" color="danger">
+                Favorites could not be loaded in this browser.
+              </Text>
+            ) : null}
+            {isError ? (
+              <Flex align="center" className="py-12" direction="column" gap={3}>
+                <Text>Documents could not be loaded.</Text>
+                <Button
+                  color="tertiary"
+                  onClick={() => {
+                    void refetch();
+                  }}
+                  variant="outline"
+                >
+                  Try again
+                </Button>
+              </Flex>
+            ) : null}
+            {isPending ? <DocumentsTableSkeleton /> : null}
+            {!isPending && !isError && filteredDocuments.length === 0 ? (
+              <EmptyDocuments
+                canCreateDocuments={canCreateDocuments}
+                isFiltered={Boolean(search) || activeFilterCount > 0}
+                scope={scope}
+              />
+            ) : null}
+            {!isPending && !isError && filteredDocuments.length > 0 ? (
+              <ul aria-label={copy.heading}>
+                {pagination.items.map((document) => (
+                  <DocumentRow
+                    document={document}
+                    isArchived={scope === "archived"}
+                    isArchiving={
+                      archiveDocument.isPending
+                        ? archiveDocument.variables === document.id
+                        : false
+                    }
+                    isOwner={
+                      session?.user.id === document.createdBy &&
+                      document.canEdit
+                    }
+                    isRestoring={
+                      restoreDocument.isPending
+                        ? restoreDocument.variables === document.id
+                        : false
+                    }
+                    key={document.id}
+                    onArchive={() => {
+                      archiveDocumentAndMaintainPage(document.id);
+                    }}
+                    onRestore={() => {
+                      const nextPage = getDocumentPageAfterArchive(
+                        pagination.page,
+                        pagination.items.length,
+                      );
+                      restoreDocument.mutate(document.id, {
+                        onSuccess: () => {
+                          if (nextPage !== pagination.page) goToPage(nextPage);
+                        },
+                      });
+                    }}
+                    owner={membersById.get(document.createdBy)}
+                    withWorkspace={withWorkspace}
+                  />
+                ))}
+              </ul>
+            ) : null}
+            {!isPending && !isError && pagination.total > 0 ? (
+              <Flex
+                align="center"
+                className="mt-5 gap-3"
+                justify="between"
+                wrap
+              >
+                <Text color="muted">
+                  {pagination.start}–{pagination.end} of {pagination.total}{" "}
+                  documents
+                </Text>
                 <Flex align="center" gap={1}>
                   <Button
                     aria-label="Previous page"
@@ -529,7 +690,6 @@ export const DocumentsHome = () => {
                       goToPage(pagination.page - 1);
                     }}
                     rounded="lg"
-                    size="sm"
                     variant="naked"
                   >
                     <ChevronLeftIcon className="h-5 w-auto" strokeWidth={2.5} />
@@ -550,7 +710,6 @@ export const DocumentsHome = () => {
                       goToPage(pagination.page + 1);
                     }}
                     rounded="lg"
-                    size="sm"
                     variant="naked"
                   >
                     <ChevronRightIcon
@@ -559,50 +718,7 @@ export const DocumentsHome = () => {
                     />
                   </Button>
                 </Flex>
-                <DocumentSortMenu
-                  direction={listState.direction}
-                  field={listState.sort}
-                  onChange={(option) => {
-                    const isDefault =
-                      option.field === "updated" && option.direction === "desc";
-                    updateListControls({
-                      direction: isDefault ? null : option.direction,
-                      sort: isDefault ? null : option.field,
-                    });
-                  }}
-                />
               </Flex>
-            </Flex>
-            {isPending ? <DocumentsTableSkeleton /> : null}
-            {!isPending && filteredDocuments.length === 0 ? (
-              <EmptyDocuments
-                canCreateDocuments={canCreateDocuments}
-                isFiltered={Boolean(search) || activeFilterCount > 0}
-                scope={scope}
-              />
-            ) : null}
-            {!isPending && filteredDocuments.length > 0 ? (
-              <Box>
-                {pagination.items.map((document) => (
-                  <DocumentRow
-                    document={document}
-                    isArchiving={
-                      archiveDocument.isPending
-                        ? archiveDocument.variables === document.id
-                        : false
-                    }
-                    isOwner={
-                      session?.user.id === document.createdBy &&
-                      document.canEdit
-                    }
-                    key={document.id}
-                    onArchive={() => {
-                      archiveDocumentAndMaintainPage(document.id);
-                    }}
-                    withWorkspace={withWorkspace}
-                  />
-                ))}
-              </Box>
             ) : null}
           </Box>
         ) : null}

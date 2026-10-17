@@ -36,13 +36,16 @@ type attachmentMediaService interface {
 }
 
 type Handlers struct {
-	documents   *documents.Service
-	attachments attachmentMediaService
-	log         *logger.Logger
+	commentWriter    documents.CommentWriter
+	mayaAvailability MayaAvailability
+	mayaID           uuid.UUID
+	documents        *documents.Service
+	attachments      attachmentMediaService
+	log              *logger.Logger
 }
 
 func New(service *documents.Service, attachmentService attachmentMediaService, log *logger.Logger) *Handlers {
-	return &Handlers{documents: service, attachments: attachmentService, log: log}
+	return &Handlers{commentWriter: service, documents: service, attachments: attachmentService, log: log}
 }
 
 func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -303,6 +306,18 @@ func (h *Handlers) Archive(ctx context.Context, w http.ResponseWriter, r *http.R
 	return web.Respond(ctx, w, nil, http.StatusNoContent)
 }
 
+func (h *Handlers) Unarchive(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspace, userID, documentID, err := mutationContext(ctx, r)
+	if err != nil {
+		return web.RespondError(ctx, w, err, documentHTTPStatus(err))
+	}
+	document, err := h.documents.Unarchive(ctx, workspace.ID, userID, documentID)
+	if err != nil {
+		return web.RespondError(ctx, w, err, documentHTTPStatus(err))
+	}
+	return web.Respond(ctx, w, toAppDocument(document, canMutateDocuments(workspace)), http.StatusOK)
+}
+
 func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	workspace, userID, documentID, err := mutationContext(ctx, r)
 	if err != nil {
@@ -457,7 +472,7 @@ func documentMediaURL(workspaceSlug string, documentID, attachmentID uuid.UUID) 
 
 func documentHTTPStatus(err error) int {
 	switch {
-	case errors.Is(err, documents.ErrConflict):
+	case errors.Is(err, documents.ErrConflict), errors.Is(err, documents.ErrInlineReference):
 		return http.StatusConflict
 	case errors.Is(err, documents.ErrInvalidInput):
 		return http.StatusBadRequest

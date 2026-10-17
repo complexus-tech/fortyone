@@ -74,6 +74,7 @@ ON CONFLICT (document_id, attachment_id) DO NOTHING;
 -- name: ArchiveOwnedDocument :one
 UPDATE public.documents AS document
 SET archived_at = CURRENT_TIMESTAMP,
+    public_token = NULL,
     updated_at = CURRENT_TIMESTAMP,
     updated_by = sqlc.arg(actor_id)
 FROM public.workspace_members AS membership
@@ -90,7 +91,27 @@ WHERE document.document_id = sqlc.arg(document_id)
   AND membership.role <> CAST('guest' AS public.user_role)
 RETURNING document.document_id;
 
--- name: LockOwnedDocumentForDelete :one
+-- name: UnarchiveOwnedDocument :one
+UPDATE public.documents AS document
+SET archived_at = NULL,
+    public_token = NULL,
+    updated_at = CURRENT_TIMESTAMP,
+    updated_by = sqlc.arg(actor_id)
+FROM public.workspace_members AS membership
+INNER JOIN public.users AS actor ON actor.user_id = membership.user_id AND actor.is_active = TRUE
+INNER JOIN public.workspaces AS workspace
+    ON workspace.workspace_id = membership.workspace_id
+   AND workspace.deleted_at IS NULL
+WHERE document.document_id = sqlc.arg(document_id)
+  AND document.workspace_id = sqlc.arg(workspace_id)
+  AND document.created_by = sqlc.arg(actor_id)
+  AND document.archived_at IS NOT NULL
+  AND membership.workspace_id = document.workspace_id
+  AND membership.user_id = sqlc.arg(actor_id)
+  AND membership.role <> CAST('guest' AS public.user_role)
+RETURNING document.document_id;
+
+-- name: LockOwnedDocumentForLifecycle :one
 SELECT document.document_id
 FROM public.documents AS document
 INNER JOIN public.workspace_members AS membership

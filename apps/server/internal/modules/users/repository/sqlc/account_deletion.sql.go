@@ -392,6 +392,22 @@ func (q *Queries) DeleteAccountCommentMentions(ctx context.Context, arg DeleteAc
 	return err
 }
 
+const deleteAccountDirectConversations = `-- name: DeleteAccountDirectConversations :exec
+DELETE FROM public.chat_conversations
+WHERE kind = 'dm' AND $1 IN (dm_user_low, dm_user_high)
+`
+
+type DeleteAccountDirectConversationsParams struct {
+	UserID *uuid.UUID
+}
+
+// Remove private conversations before the attachment sweep, including when
+// provider cleanup defers removal of the inactive account's identity row.
+func (q *Queries) DeleteAccountDirectConversations(ctx context.Context, arg DeleteAccountDirectConversationsParams) error {
+	_, err := q.db.Exec(ctx, deleteAccountDirectConversations, arg.UserID)
+	return err
+}
+
 const deleteAccountDocumentMemberships = `-- name: DeleteAccountDocumentMemberships :exec
 DELETE FROM public.document_members WHERE user_id = $1
 `
@@ -848,6 +864,20 @@ type DeleteAccountOwnedOAuthInstallationsParams struct {
 
 func (q *Queries) DeleteAccountOwnedOAuthInstallations(ctx context.Context, arg DeleteAccountOwnedOAuthInstallationsParams) error {
 	_, err := q.db.Exec(ctx, deleteAccountOwnedOAuthInstallations, arg.UserID)
+	return err
+}
+
+const deleteAccountPendingChatAttachments = `-- name: DeleteAccountPendingChatAttachments :exec
+DELETE FROM public.chat_attachments WHERE uploaded_by = $1 AND message_id IS NULL
+`
+
+type DeleteAccountPendingChatAttachmentsParams struct {
+	UserID uuid.UUID
+}
+
+// A draft upload has no shared history to preserve or remaining owner to send it.
+func (q *Queries) DeleteAccountPendingChatAttachments(ctx context.Context, arg DeleteAccountPendingChatAttachmentsParams) error {
+	_, err := q.db.Exec(ctx, deleteAccountPendingChatAttachments, arg.UserID)
 	return err
 }
 
@@ -1314,6 +1344,12 @@ WHERE attachment.uploaded_by = $1
        WHERE relation.attachment_id = attachment.attachment_id
          AND document.created_by = $1 AND document.visibility = 'private'
    )
+   OR EXISTS (
+       SELECT 1 FROM public.chat_attachments AS relation
+       JOIN public.chat_conversations AS conversation ON conversation.id = relation.conversation_id
+       WHERE relation.attachment_id = attachment.attachment_id AND conversation.kind = 'dm'
+         AND $1 IN (conversation.dm_user_low, conversation.dm_user_high)
+   )
 ORDER BY attachment.attachment_id FOR UPDATE OF attachment
 `
 
@@ -1536,6 +1572,38 @@ func (q *Queries) ReattributeAccountActivities(ctx context.Context, arg Reattrib
 	return err
 }
 
+const reattributeAccountChatAttachments = `-- name: ReattributeAccountChatAttachments :exec
+UPDATE public.chat_attachments SET uploaded_by = $1
+WHERE uploaded_by = $2
+`
+
+type ReattributeAccountChatAttachmentsParams struct {
+	DeletedUserID uuid.UUID
+	UserID        uuid.UUID
+}
+
+func (q *Queries) ReattributeAccountChatAttachments(ctx context.Context, arg ReattributeAccountChatAttachmentsParams) error {
+	_, err := q.db.Exec(ctx, reattributeAccountChatAttachments, arg.DeletedUserID, arg.UserID)
+	return err
+}
+
+const reattributeAccountChatMessages = `-- name: ReattributeAccountChatMessages :exec
+UPDATE public.chat_conversation_messages SET author_id = $1, creation_id = id
+WHERE author_id = $2
+`
+
+type ReattributeAccountChatMessagesParams struct {
+	DeletedUserID uuid.UUID
+	UserID        uuid.UUID
+}
+
+// Preserve shared team history. Creation keys are unique only within an author,
+// so use the globally unique message ID when merging erased authors.
+func (q *Queries) ReattributeAccountChatMessages(ctx context.Context, arg ReattributeAccountChatMessagesParams) error {
+	_, err := q.db.Exec(ctx, reattributeAccountChatMessages, arg.DeletedUserID, arg.UserID)
+	return err
+}
+
 const reattributeAccountComments = `-- name: ReattributeAccountComments :exec
 UPDATE public.story_comments SET commenter_id = $1
 WHERE commenter_id = $2
@@ -1707,6 +1775,19 @@ func (q *Queries) RemoveAccountAuditSnapshots(ctx context.Context, arg RemoveAcc
 	return err
 }
 
+const removeAccountChatEvents = `-- name: RemoveAccountChatEvents :exec
+DELETE FROM public.chat_outbox WHERE actor_id = $1
+`
+
+type RemoveAccountChatEventsParams struct {
+	UserID uuid.UUID
+}
+
+func (q *Queries) RemoveAccountChatEvents(ctx context.Context, arg RemoveAccountChatEventsParams) error {
+	_, err := q.db.Exec(ctx, removeAccountChatEvents, arg.UserID)
+	return err
+}
+
 const removeAccountMutationSnapshots = `-- name: RemoveAccountMutationSnapshots :exec
 DELETE FROM public.story_mutation_events WHERE actor_id = $1
 `
@@ -1740,6 +1821,7 @@ WITH retired AS (
       AND NOT EXISTS (SELECT 1 FROM public.story_attachments WHERE attachment_id = attachment.attachment_id)
       AND NOT EXISTS (SELECT 1 FROM public.story_inline_attachments WHERE attachment_id = attachment.attachment_id)
       AND NOT EXISTS (SELECT 1 FROM public.document_attachments WHERE attachment_id = attachment.attachment_id)
+      AND NOT EXISTS (SELECT 1 FROM public.chat_attachments WHERE attachment_id = attachment.attachment_id)
       AND NOT EXISTS (SELECT 1 FROM public.feedback_item_attachments WHERE attachment_id = attachment.attachment_id)
     RETURNING attachment.attachment_id, attachment.workspace_id, attachment.blob_name
 )

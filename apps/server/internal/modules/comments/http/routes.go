@@ -31,6 +31,7 @@ func Routes(cfg Config, app *web.App) {
 	app.Delete("/workspaces/{workspaceSlug}/comments/{id}", h.DeleteComment, auth, writeScope, workspace)
 	app.Get("/workspaces/{workspaceSlug}/stories/{storyId}/comments/state", collaboration.GetState, auth, readScope, workspace)
 	app.Put("/workspaces/{workspaceSlug}/stories/{storyId}/comments/read", collaboration.MarkRead, auth, readScope, workspace)
+	app.Put("/workspaces/{workspaceSlug}/stories/{storyId}/comments/{commentId}/seen", collaboration.MarkSeen, auth, readScope, workspace)
 	app.Put("/workspaces/{workspaceSlug}/comments/{id}/reactions", collaboration.SetReaction, auth, writeScope, workspace)
 	app.Delete("/workspaces/{workspaceSlug}/comments/{id}/reactions", collaboration.SetReaction, auth, writeScope, workspace)
 	app.Put("/workspaces/{workspaceSlug}/comments/{id}/resolution", collaboration.SetResolution, auth, writeScope, workspace)

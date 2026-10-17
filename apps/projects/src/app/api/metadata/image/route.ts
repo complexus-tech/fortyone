@@ -1,8 +1,8 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { fetchPublicImage } from "../safe-fetch";
 import { MetadataFetchError, parseMetadataUrl } from "../target-policy";
+import { metadataImageCache } from "./image-cache";
 
 export const runtime = "nodejs";
 
@@ -23,7 +23,18 @@ export async function GET(request: NextRequest) {
 
   try {
     const validUrl = parseMetadataUrl(url);
-    const image = await fetchPublicImage(validUrl, { signal: request.signal });
+    const version = searchParams.get("v") ?? "";
+    if (!/^[a-zA-Z0-9-]{0,64}$/.test(version)) {
+      return NextResponse.json(
+        { error: "Invalid image version" },
+        { status: 400 },
+      );
+    }
+    const image = await metadataImageCache.get(
+      validUrl.href,
+      version,
+      request.signal,
+    );
 
     return new NextResponse(new Uint8Array(image.body), {
       headers: {

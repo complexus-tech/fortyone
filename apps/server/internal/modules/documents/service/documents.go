@@ -11,10 +11,11 @@ import (
 )
 
 var (
-	ErrConflict     = documentdomain.ErrConflict
-	ErrInvalidInput = documentdomain.ErrInvalidInput
-	ErrForbidden    = documentdomain.ErrForbidden
-	ErrNotFound     = documentdomain.ErrNotFound
+	ErrInlineReference = documentdomain.ErrInlineReference
+	ErrConflict        = documentdomain.ErrConflict
+	ErrInvalidInput    = documentdomain.ErrInvalidInput
+	ErrForbidden       = documentdomain.ErrForbidden
+	ErrNotFound        = documentdomain.ErrNotFound
 )
 
 var documentTracer = otel.Tracer("github.com/complexus-tech/projects-api/internal/modules/documents/service")
@@ -37,6 +38,7 @@ type Repository interface {
 	Duplicate(ctx context.Context, workspaceID, userID, documentID uuid.UUID) (CoreDocument, error)
 	Update(ctx context.Context, input CoreUpdateInput) (CoreDocument, error)
 	Archive(ctx context.Context, workspaceID, userID, documentID uuid.UUID) error
+	Unarchive(ctx context.Context, workspaceID, userID, documentID uuid.UUID) (CoreDocument, error)
 	Delete(ctx context.Context, workspaceID, userID, documentID uuid.UUID) ([]uuid.UUID, error)
 	SetAccess(ctx context.Context, input CoreAccessInput) (CoreDocument, error)
 	AddRelationship(ctx context.Context, input CoreRelationshipInput) (CoreRelatedWork, error)
@@ -66,7 +68,7 @@ func (s *Service) List(ctx context.Context, input CoreListInput) ([]CoreDocument
 		return nil, ErrInvalidInput
 	}
 	input.Search = strings.TrimSpace(input.Search)
-	if input.Scope != "" && input.Scope != "all" && input.Scope != "mine" && input.Scope != "shared" {
+	if input.Scope != "" && input.Scope != "all" && input.Scope != "mine" && input.Scope != "shared" && input.Scope != "archived" {
 		return nil, ErrInvalidInput
 	}
 	if input.Limit != nil {
@@ -152,6 +154,13 @@ func (s *Service) Archive(ctx context.Context, workspaceID, userID, documentID u
 	return s.repo.Archive(ctx, workspaceID, userID, documentID)
 }
 
+func (s *Service) Unarchive(ctx context.Context, workspaceID, userID, documentID uuid.UUID) (CoreDocument, error) {
+	if workspaceID == uuid.Nil || userID == uuid.Nil || documentID == uuid.Nil {
+		return CoreDocument{}, ErrInvalidInput
+	}
+	return s.repo.Unarchive(ctx, workspaceID, userID, documentID)
+}
+
 func (s *Service) Delete(ctx context.Context, workspaceID, userID, documentID uuid.UUID) ([]uuid.UUID, error) {
 	if workspaceID == uuid.Nil || userID == uuid.Nil || documentID == uuid.Nil {
 		return nil, ErrInvalidInput
@@ -232,17 +241,23 @@ func (s *Service) ListComments(ctx context.Context, workspaceID, userID, documen
 }
 
 func (s *Service) CreateComment(ctx context.Context, input CoreCreateCommentInput) (CoreCommentThread, error) {
-	input.Body = strings.TrimSpace(input.Body)
+	if input.CreationID != nil && *input.CreationID == uuid.Nil {
+		return CoreCommentThread{}, ErrInvalidInput
+	}
+	input.Body = strings.Trim(input.Body, "\r\n")
 	input.Quote = strings.TrimSpace(input.Quote)
-	if input.WorkspaceID == uuid.Nil || input.UserID == uuid.Nil || input.DocumentID == uuid.Nil || input.Body == "" || len([]rune(input.Body)) > 10000 || len([]rune(input.Quote)) > 2000 || input.AnchorStart < 0 || input.AnchorEnd < input.AnchorStart {
+	if input.WorkspaceID == uuid.Nil || input.UserID == uuid.Nil || input.DocumentID == uuid.Nil || strings.TrimSpace(input.Body) == "" || len([]rune(input.Body)) > 10000 || len([]rune(input.Quote)) > 2000 || input.AnchorStart < 0 || input.AnchorEnd < input.AnchorStart {
 		return CoreCommentThread{}, ErrInvalidInput
 	}
 	return s.repo.CreateComment(ctx, input)
 }
 
 func (s *Service) ReplyToComment(ctx context.Context, input CoreReplyCommentInput) (CoreComment, error) {
-	input.Body = strings.TrimSpace(input.Body)
-	if input.WorkspaceID == uuid.Nil || input.UserID == uuid.Nil || input.DocumentID == uuid.Nil || input.ThreadID == uuid.Nil || input.Body == "" || len([]rune(input.Body)) > 10000 {
+	if (input.CreationID != nil && *input.CreationID == uuid.Nil) || (input.ReplyToCommentID != nil && *input.ReplyToCommentID == uuid.Nil) {
+		return CoreComment{}, ErrInvalidInput
+	}
+	input.Body = strings.Trim(input.Body, "\r\n")
+	if input.WorkspaceID == uuid.Nil || input.UserID == uuid.Nil || input.DocumentID == uuid.Nil || input.ThreadID == uuid.Nil || strings.TrimSpace(input.Body) == "" || len([]rune(input.Body)) > 10000 {
 		return CoreComment{}, ErrInvalidInput
 	}
 	return s.repo.ReplyToComment(ctx, input)

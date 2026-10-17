@@ -4,7 +4,7 @@ import { useQueries, useQuery } from "@tanstack/react-query";
 import { useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Box, Button, Collapsible, Flex, Text, Tooltip } from "ui";
-import { ChevronRightIcon, CloseIcon, StoryIcon } from "icons";
+import { ChevronRightIcon, CloseIcon, DocsIcon, StoryIcon } from "icons";
 import { cn } from "lib";
 import { NavLink } from "@/components/ui/nav-link";
 import { TeamColor } from "@/components/ui/team-color";
@@ -170,6 +170,8 @@ export const FavoritesSidebar = ({ isCollapsed }: { isCollapsed: boolean }) => {
       return <TeamColor className={className} color={item.icon.color} />;
     if (item.icon.kind === "view")
       return <SavedViewIcon className={className} configuration={item.icon} />;
+    if (item.icon.kind === "document")
+      return <DocsIcon aria-hidden className={className} />;
     const statusId = item.icon.statusId;
     const status =
       !statuses.isError && statuses.isFetchedAfterMount
@@ -272,6 +274,9 @@ export const FavoritesSidebar = ({ isCollapsed }: { isCollapsed: boolean }) => {
                         "min-w-0 flex-1 truncate",
                         isCollapsed &&
                           "line-clamp-2 w-full flex-none text-xs leading-3.5 font-semibold whitespace-normal",
+                        isCollapsed &&
+                          ref.kind === "document" &&
+                          "text-base leading-5",
                       )}
                     >
                       {item.name}

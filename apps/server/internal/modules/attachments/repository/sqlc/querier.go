@@ -18,6 +18,9 @@ type Querier interface {
 	CreateSlackImportAttachment(ctx context.Context, arg CreateSlackImportAttachmentParams) (Attachment, error)
 	DeleteUnreferencedWorkspaceAttachment(ctx context.Context, arg DeleteUnreferencedWorkspaceAttachmentParams) (Attachment, error)
 	DeleteWorkspaceAttachment(ctx context.Context, arg DeleteWorkspaceAttachmentParams) (int64, error)
+	// Only unclaimed uploads expire. A sender holding the association row lock
+	// wins over cleanup; overlapping cleanup workers skip each other's candidates.
+	ExpirePendingChatUploads(ctx context.Context, arg ExpirePendingChatUploadsParams) ([]ExpirePendingChatUploadsRow, error)
 	FailQueuedWorkspaceAttachmentOptimization(ctx context.Context, arg FailQueuedWorkspaceAttachmentOptimizationParams) (int64, error)
 	FailWorkspaceAttachmentOptimization(ctx context.Context, arg FailWorkspaceAttachmentOptimizationParams) (int64, error)
 	GetWorkspaceAttachment(ctx context.Context, arg GetWorkspaceAttachmentParams) (Attachment, error)
@@ -30,7 +33,7 @@ type Querier interface {
 	LockTeamDeletionAttachments(ctx context.Context, arg LockTeamDeletionAttachmentsParams) ([]uuid.UUID, error)
 	// Retire only files with no surviving consumer and atomically enqueue physical
 	// deletion. Batches avoid one database round trip per uploaded file.
-	RetireTeamDeletionAttachments(ctx context.Context, arg RetireTeamDeletionAttachmentsParams) (int64, error)
+	RetireUnreferencedAttachments(ctx context.Context, arg RetireUnreferencedAttachmentsParams) (int64, error)
 	StartWorkspaceAttachmentOptimization(ctx context.Context, arg StartWorkspaceAttachmentOptimizationParams) (Attachment, error)
 	StoryExistsInWorkspace(ctx context.Context, arg StoryExistsInWorkspaceParams) (bool, error)
 	UnlinkWorkspaceStoryMedia(ctx context.Context, arg UnlinkWorkspaceStoryMediaParams) (uuid.UUID, error)

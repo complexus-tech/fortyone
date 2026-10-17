@@ -118,7 +118,7 @@ export const SlashCommandList = forwardRef<
 
   if (items.length === 0) {
     return (
-      <Box className="not-prose border-border/70 bg-surface-elevated shadow-shadow dark:bg-surface-elevated/80 w-max max-w-[calc(100vw-1.5rem)] min-w-56 rounded-xl border-[0.5px] px-3 py-4 text-[13px] font-medium shadow-xl backdrop-blur-md 2xl:text-[13.5px]">
+      <Box className="not-prose border-border/70 bg-surface-elevated shadow-shadow dark:bg-surface-elevated/80 w-max max-w-[calc(100vw-1.5rem)] min-w-56 rounded-xl border-[0.5px] px-3 py-4 text-base font-medium shadow-xl backdrop-blur-md">
         <Text color="muted">No matching commands</Text>
       </Box>
     );
@@ -127,7 +127,7 @@ export const SlashCommandList = forwardRef<
   let previousGroup: SlashCommandItem["group"] | null = null;
   return (
     <Box
-      className="not-prose border-border/70 bg-surface-elevated shadow-shadow dark:bg-surface-elevated/80 max-h-[min(26rem,calc(100dvh-1.5rem))] w-max max-w-[calc(100vw-1.5rem)] min-w-56 overflow-y-auto rounded-xl border-[0.5px] py-2 text-[13px] font-medium shadow-xl backdrop-blur-md 2xl:text-[13.5px]"
+      className="not-prose border-border/70 bg-surface-elevated shadow-shadow dark:bg-surface-elevated/80 max-h-[min(26rem,calc(100dvh-1.5rem))] w-max max-w-[calc(100vw-1.5rem)] min-w-56 overflow-y-auto rounded-xl border-[0.5px] py-2 text-base font-medium shadow-xl backdrop-blur-md"
       data-slash-command-menu=""
       role="menu"
     >

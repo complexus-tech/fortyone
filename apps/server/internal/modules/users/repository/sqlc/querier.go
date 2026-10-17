@@ -64,6 +64,9 @@ type Querier interface {
 	DeleteAccountChatApprovals(ctx context.Context, arg DeleteAccountChatApprovalsParams) error
 	DeleteAccountChats(ctx context.Context, arg DeleteAccountChatsParams) error
 	DeleteAccountCommentMentions(ctx context.Context, arg DeleteAccountCommentMentionsParams) error
+	// Remove private conversations before the attachment sweep, including when
+	// provider cleanup defers removal of the inactive account's identity row.
+	DeleteAccountDirectConversations(ctx context.Context, arg DeleteAccountDirectConversationsParams) error
 	DeleteAccountDocumentMemberships(ctx context.Context, arg DeleteAccountDocumentMembershipsParams) error
 	DeleteAccountDriveAccounts(ctx context.Context, arg DeleteAccountDriveAccountsParams) error
 	DeleteAccountDriveCreateOperations(ctx context.Context, arg DeleteAccountDriveCreateOperationsParams) error
@@ -102,6 +105,8 @@ type Querier interface {
 	DeleteAccountOAuthGrants(ctx context.Context, arg DeleteAccountOAuthGrantsParams) error
 	DeleteAccountOwnedOAuthApplications(ctx context.Context, arg DeleteAccountOwnedOAuthApplicationsParams) error
 	DeleteAccountOwnedOAuthInstallations(ctx context.Context, arg DeleteAccountOwnedOAuthInstallationsParams) error
+	// A draft upload has no shared history to preserve or remaining owner to send it.
+	DeleteAccountPendingChatAttachments(ctx context.Context, arg DeleteAccountPendingChatAttachmentsParams) error
 	DeleteAccountPersonalIntegrations(ctx context.Context, arg DeleteAccountPersonalIntegrationsParams) error
 	DeleteAccountPrincipals(ctx context.Context, arg DeleteAccountPrincipalsParams) error
 	DeleteAccountPrivateDocuments(ctx context.Context, arg DeleteAccountPrivateDocumentsParams) error
@@ -172,6 +177,10 @@ type Querier interface {
 	QueueAccountSubscriberDeletion(ctx context.Context, arg QueueAccountSubscriberDeletionParams) error
 	ReactivateUserForVerifiedSignIn(ctx context.Context, arg ReactivateUserForVerifiedSignInParams) (ReactivateUserForVerifiedSignInRow, error)
 	ReattributeAccountActivities(ctx context.Context, arg ReattributeAccountActivitiesParams) error
+	ReattributeAccountChatAttachments(ctx context.Context, arg ReattributeAccountChatAttachmentsParams) error
+	// Preserve shared team history. Creation keys are unique only within an author,
+	// so use the globally unique message ID when merging erased authors.
+	ReattributeAccountChatMessages(ctx context.Context, arg ReattributeAccountChatMessagesParams) error
 	// Comments belong to the shared work record. Preserve IDs, prose and the entire
 	// reply hierarchy while moving the author FK away from the erased account.
 	ReattributeAccountComments(ctx context.Context, arg ReattributeAccountCommentsParams) error
@@ -188,6 +197,7 @@ type Querier interface {
 	ReattributeAccountWorkspacesCreatedBy(ctx context.Context, arg ReattributeAccountWorkspacesCreatedByParams) error
 	ReleaseAccountSubscriberLifecycle(ctx context.Context, arg ReleaseAccountSubscriberLifecycleParams) (bool, error)
 	RemoveAccountAuditSnapshots(ctx context.Context, arg RemoveAccountAuditSnapshotsParams) error
+	RemoveAccountChatEvents(ctx context.Context, arg RemoveAccountChatEventsParams) error
 	RemoveAccountMutationSnapshots(ctx context.Context, arg RemoveAccountMutationSnapshotsParams) error
 	RemoveAccountScheduleSnapshots(ctx context.Context, arg RemoveAccountScheduleSnapshotsParams) error
 	// Revalidate after waiting for the email lifecycle lock; an expired worker
