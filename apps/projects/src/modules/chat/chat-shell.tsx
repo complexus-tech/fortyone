@@ -60,6 +60,7 @@ export const ChatShell = ({
     selectConversation,
     selectTab,
     sendMessage,
+    retryMessage,
     showConversation,
     showList,
     targetMessageId,
@@ -74,7 +75,6 @@ export const ChatShell = ({
     deleteMessage,
     updateDraft,
     viewMessage,
-    sendingKeys,
     sentMessage,
   } = useChat();
   const [openedStory, setOpenedStory] = useState<{
@@ -250,6 +250,7 @@ export const ChatShell = ({
                         setOpenedStory(null);
                         openThread(message, trigger);
                       }}
+                      onRetryMessage={retryMessage}
                       onSend={() => {
                         void sendMessage(activeId);
                       }}
@@ -269,7 +270,6 @@ export const ChatShell = ({
                           ? sentMessage.id
                           : null
                       }
-                      sending={sendingKeys.has(activeId)}
                       showConversation={showConversation}
                       targetMessageId={targetMessageId}
                     />
@@ -315,6 +315,7 @@ export const ChatShell = ({
                       onRetry={() => {
                         void repliesQuery.refetch();
                       }}
+                      onRetryMessage={retryMessage}
                       onSend={() => {
                         void sendMessage(threadKey, thread.id);
                       }}
@@ -327,7 +328,6 @@ export const ChatShell = ({
                           ? sentMessage.id
                           : null
                       }
-                      sending={sendingKeys.has(threadKey)}
                       targetMessageId={
                         threadTargetId === sentMessage?.id
                           ? null

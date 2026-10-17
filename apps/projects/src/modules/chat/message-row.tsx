@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { cn } from "lib";
 import { PersonAvatar } from "./avatars";
 import { ChatPlainText, ChatRichText } from "./chat-rich-text";
 import type { PreviewDraft } from "./chat-rich-text";
@@ -16,6 +15,7 @@ import { ChatTaskResults } from "./chat-task-results";
 import { ChatMayaStatus } from "./chat-maya-status";
 import { formatMessageTime } from "./format";
 import { MessageAttachments } from "./message-attachments";
+import { MessageReactions } from "./message-reactions";
 import { MessageLinkPreviews } from "./link-preview";
 import { ChatUnreadBadge } from "./unread-badge";
 
@@ -103,11 +103,12 @@ const MessageDetails = ({
   onToggleReaction: (messageId: string, emoji: string) => void;
 }) => {
   if (message.deletedAt) return null;
-  const reactions = message.reactions.filter(({ count }) => count > 0);
   return (
     <>
       {message.attachments.length > 0 ? (
-        <MessageAttachments message={message} />
+        <div inert={Boolean(message.deliveryStatus)}>
+          <MessageAttachments message={message} />
+        </div>
       ) : null}
       {message.links.length > 0 ? (
         <MessageLinkPreviews
@@ -118,31 +119,11 @@ const MessageDetails = ({
       {message.taskRefs.length > 0 ? (
         <ChatTaskResults tasks={message.taskRefs} />
       ) : null}
-      {reactions.length > 0 ? (
-        <div aria-label="Reactions" className="mt-1.5 flex flex-wrap gap-1">
-          {reactions.map(({ emoji, count, reacted = false }) => (
-            <button
-              aria-label={`${reacted ? "Remove" : "Add"} ${emoji} reaction, ${count} ${count === 1 ? "reaction" : "reactions"}`}
-              aria-pressed={reacted}
-              className={cn(
-                "border-border bg-surface/95 dark:bg-background/95 hover:bg-foreground/[0.025] dark:hover:bg-foreground/[0.035] focus-visible:ring-primary/40 inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 outline-none focus-visible:ring-2",
-                reacted &&
-                  "border-primary/30 bg-primary/5 text-primary dark:bg-primary/10",
-              )}
-              key={emoji}
-              onClick={() => {
-                onToggleReaction(message.id, emoji);
-              }}
-              type="button"
-            >
-              <span aria-hidden className="text-foreground opacity-100">
-                {emoji}
-              </span>
-              <span className="tabular-nums">{count}</span>
-            </button>
-          ))}
-        </div>
-      ) : null}
+      <MessageReactions
+        messageId={message.id}
+        onToggleReaction={onToggleReaction}
+        reactions={message.reactions}
+      />
     </>
   );
 };
@@ -154,6 +135,7 @@ export const MessageRow = ({
   onToggleReaction,
   onEditMessage,
   onDeleteMessage,
+  onRetryMessage,
   draftScope = "conversation",
 }: {
   message: ChatMessage;
@@ -167,6 +149,7 @@ export const MessageRow = ({
   ) => void | Promise<void>;
   onDeleteMessage: (messageId: string) => void | Promise<void>;
   draftScope?: MessageDraftScope;
+  onRetryMessage?: (messageId: string) => void;
 }) => {
   const {
     draft: editDraft,
@@ -236,10 +219,34 @@ export const MessageRow = ({
             message={message}
             onToggleReaction={onToggleReaction}
           />
-          <ChatMayaStatus
-            conversationId={message.conversationId}
-            sourceMessageId={message.id}
-          />
+          {message.deliveryStatus ? (
+            <div
+              className="text-text-muted flex items-center gap-2"
+              role="status"
+            >
+              {message.deliveryStatus === "sending" ? (
+                "Sending…"
+              ) : (
+                <>
+                  <span>Not sent.</span>
+                  <button
+                    className="text-primary underline underline-offset-2"
+                    onClick={() => {
+                      onRetryMessage?.(message.id);
+                    }}
+                    type="button"
+                  >
+                    Retry
+                  </button>
+                </>
+              )}
+            </div>
+          ) : (
+            <ChatMayaStatus
+              conversationId={message.conversationId}
+              sourceMessageId={message.id}
+            />
+          )}
           {message.replyCount > 0 && onReply ? (
             <button
               aria-label={`Open thread with ${message.replyCount} replies${message.unreadReplyCount ? `, ${message.unreadReplyCount} unread` : ""}`}
@@ -276,7 +283,7 @@ export const MessageRow = ({
           ) : null}
         </div>
       </div>
-      {!message.deletedAt && !editDraft ? (
+      {!message.deliveryStatus && !message.deletedAt && !editDraft ? (
         <MessageActions
           message={message}
           onDelete={() => {

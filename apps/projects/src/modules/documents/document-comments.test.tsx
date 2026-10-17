@@ -293,3 +293,77 @@ test("a reply being drafted keeps its target when a newer comment arrives", () =
     "new-reply",
   );
 });
+
+test("a passage scope filters threads and status counts while the full panel keeps every section", () => {
+  const unrelated: DocumentCommentThread = {
+    ...thread,
+    id: "unrelated",
+    quote: "Another section",
+    anchorStart: 50,
+    anchorEnd: 65,
+    comments: [
+      {
+        ...thread.comments[0],
+        id: "other-root",
+        body: "Unrelated section comment",
+      },
+    ],
+  };
+  const resolved: DocumentCommentThread = {
+    ...thread,
+    id: "resolved",
+    resolvedAt: "2026-10-16T13:00:00Z",
+    resolvedBy: "alice",
+    comments: [
+      {
+        ...thread.comments[0],
+        id: "resolved-root",
+        body: "Resolved passage comment",
+      },
+    ],
+  };
+  const unrelatedResolved = {
+    ...unrelated,
+    id: "unrelated-resolved",
+    resolvedAt: "2026-10-16T13:00:00Z",
+  };
+  jest.mocked(useDocumentComments).mockReturnValue({
+    data: [thread, unrelated, resolved, unrelatedResolved],
+    isPending: false,
+    isError: false,
+    isFetching: false,
+    refetch,
+  } as unknown as ReturnType<typeof useDocumentComments>);
+  const scope = {
+    activeThreadId: "thread",
+    threadScope: ["thread", "resolved"],
+  };
+  const view = render(panel(scope));
+  expect(screen.getByText("outcomes")).toBeInTheDocument();
+  expect(screen.getByText("I agree with this")).toBeInTheDocument();
+  expect(
+    screen.queryByText("Unrelated section comment"),
+  ).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Open 1" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Resolved 1" }));
+  expect(screen.getByText("Resolved passage comment")).toBeInTheDocument();
+  expect(
+    screen.queryByText("Unrelated section comment"),
+  ).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Open 1" }));
+  view.rerender(panel());
+  expect(screen.getByText("Unrelated section comment")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Open 2" })).toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "Resolved 2" }),
+  ).toBeInTheDocument();
+});
+
+test("a missing scoped thread never falls back to comments from other sections", () => {
+  render(panel({ activeThreadId: "removed", threadScope: ["removed"] }));
+  expect(screen.queryByText("outcomes")).not.toBeInTheDocument();
+  expect(screen.getByText("No open comments")).toBeInTheDocument();
+});

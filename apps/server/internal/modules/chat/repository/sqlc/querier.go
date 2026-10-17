@@ -52,6 +52,7 @@ type Querier interface {
 	LockTranscriptionAudio(ctx context.Context, arg LockTranscriptionAudioParams) (uuid.UUID, error)
 	MarkConversationRead(ctx context.Context, arg MarkConversationReadParams) (int64, error)
 	MarkThreadRead(ctx context.Context, arg MarkThreadReadParams) (int64, error)
+	NotificationContent(ctx context.Context, arg NotificationContentParams) ([]byte, error)
 	NotificationRecipients(ctx context.Context, arg NotificationRecipientsParams) ([]NotificationRecipientsRow, error)
 	ReadRecipientIDs(ctx context.Context, arg ReadRecipientIDsParams) ([]uuid.UUID, error)
 	ReadTranscriptionAudio(ctx context.Context, arg ReadTranscriptionAudioParams) (ReadTranscriptionAudioRow, error)

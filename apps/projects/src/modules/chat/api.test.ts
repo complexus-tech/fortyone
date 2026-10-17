@@ -48,6 +48,28 @@ const serverMessage = {
 };
 
 describe("chat message link decoding", () => {
+  it("preserves reaction users and supports older responses without them", async () => {
+    const user = {
+      id: "peer",
+      fullName: "Sarah",
+      avatarUrl: null,
+      isSystem: false,
+    };
+    mockResponse = {
+      ...serverMessage,
+      reactions: [{ emoji: "👍", count: 1, reacted: false, users: [user] }],
+    };
+    expect((await getMessage(context, "message-1")).reactions[0].users).toEqual(
+      [user],
+    );
+    mockResponse = {
+      ...serverMessage,
+      reactions: [{ emoji: "👍", count: 1, reacted: false }],
+    };
+    expect((await getMessage(context, "message-1")).reactions[0].users).toEqual(
+      [],
+    );
+  });
   it("decodes unread summaries and unread roots without losing their conversation context", async () => {
     mockResponse = {
       totalUnread: 500,

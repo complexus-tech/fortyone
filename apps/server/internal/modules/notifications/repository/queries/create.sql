@@ -398,7 +398,7 @@ SELECT pg_advisory_xact_lock(hashtextextended(
     CAST(sqlc.arg(entity_id) AS text) || ':' || CAST(sqlc.arg(coalescing_key) AS text), 213));
 
 -- name: GetNotificationEventReceipt :one
-SELECT notification_id, recipient_id, workspace_id,
+SELECT notification_id, recipient_id, workspace_id, actor_id, entity_id, notification_type, entity_type,
        payload = CAST(sqlc.arg(payload) AS jsonb) AS matches_payload
 FROM public.notification_event_receipts
 WHERE dedupe_key = CAST(sqlc.arg(dedupe_key) AS text);

@@ -7,6 +7,7 @@ import { Avatar, Button, Text } from "ui";
 import { MayaAvatar } from "@/components/ui/maya-avatar";
 import { useUnreadThreads } from "./queries";
 import { ChatUnreadBadge } from "./unread-badge";
+import { MessagePreview } from "./message-preview";
 import type { ChatUnreadThread } from "./types";
 
 export const UnreadThreads = ({
@@ -56,7 +57,7 @@ export const UnreadThreads = ({
           <button
             aria-current={activeThreadId === thread.id ? "page" : undefined}
             className={cn(
-              "hover:bg-surface-muted focus-visible:ring-primary/40 flex w-full items-start gap-3 px-3 py-4 text-left outline-none focus-visible:ring-2",
+              "hover:bg-surface-muted focus-visible:ring-primary/40 flex w-full items-start gap-3 px-3 py-2.5 text-left outline-none focus-visible:ring-2",
               activeThreadId === thread.id && "bg-primary/5",
             )}
             key={thread.id}
@@ -71,15 +72,14 @@ export const UnreadThreads = ({
               ) : (
                 <Avatar
                   name={thread.author.fullName}
-                  rounded="md"
                   size="md"
                   src={thread.author.avatarUrl}
                 />
               )}
             </span>
-            <span className="flex min-w-0 flex-1 flex-col gap-1.5">
+            <span className="flex min-w-0 flex-1 flex-col gap-0.5">
               <span className="flex items-start gap-2">
-                <span className="min-w-0 flex-1 font-semibold [overflow-wrap:anywhere]">
+                <span className="min-w-0 flex-1 font-medium [overflow-wrap:anywhere]">
                   {thread.author.fullName}
                 </span>
                 <ChatUnreadBadge
@@ -88,13 +88,18 @@ export const UnreadThreads = ({
                 />
               </span>
               <span className="line-clamp-2 font-normal [overflow-wrap:anywhere]">
-                {thread.deletedAt
-                  ? "Deleted message"
-                  : thread.text || "Shared an attachment"}
+                {thread.deletedAt ? (
+                  "Deleted message"
+                ) : (
+                  <MessagePreview
+                    content={thread.richContent}
+                    text={thread.text || "Shared an attachment"}
+                  />
+                )}
               </span>
               <span className="text-text-muted font-normal [overflow-wrap:anywhere]">
                 Thread in{" "}
-                <span className="font-medium">
+                <span className="font-bold">
                   {thread.conversationKind === "team" ? "# " : ""}
                   {thread.conversationName}
                 </span>

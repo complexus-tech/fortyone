@@ -198,10 +198,7 @@ const present = async (
       const event = [...banner.events].sort(
         (a, b) => Date.parse(a.occurredAt) - Date.parse(b.occurredAt),
       )[banner.events.length - 1];
-      const body =
-        banner.events.length > 1
-          ? `${banner.events.length} new messages in this conversation.`
-          : event.body;
+      const body = event.body;
       if (bridge?.deliverNotification) {
         if (!(await bindDesktopSession(scope)) || !isCurrent()) {
           await release(banner);

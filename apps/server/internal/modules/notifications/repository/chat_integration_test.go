@@ -53,6 +53,18 @@ func TestChatNotificationsFollowLiveConversationAccess(t *testing.T) {
 	if err != nil || inserted || replay.ID != created.ID {
 		t.Fatalf("chat replay duplicated: %v %v", inserted, err)
 	}
+	changed := input
+	changed.Title = "Renamed team"
+	changed.Message = notifications.NotificationMessage{Template: "{message}", Variables: map[string]notifications.Variable{"message": {Value: "An edited preview", Type: "plain_text"}}}
+	replay, inserted, err = f.repo.Create(ctx, changed)
+	require.NoError(t, err, "message edits and renames must not poison chat outbox retries")
+	require.False(t, inserted)
+	require.Equal(t, created.ID, replay.ID)
+	require.Equal(t, created.Title, replay.Title)
+	require.Equal(t, created.Message, replay.Message)
+	changed.ActorID = f.recipientA
+	_, _, err = f.repo.Create(ctx, changed)
+	require.ErrorIs(t, err, notifications.ErrConflict, "a different source must not reuse a chat receipt")
 	_, err = f.postgres.Pool.Exec(ctx, "DELETE FROM public.team_members WHERE team_id=$1 AND user_id=$2", f.teamA, f.recipientA)
 	if err != nil {
 		t.Fatal(err)

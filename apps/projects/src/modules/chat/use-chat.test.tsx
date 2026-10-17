@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import type { ReactNode } from "react";
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { toast } from "sonner";
 import type {
   ChatConversation,
   ChatMessage,
@@ -10,6 +11,7 @@ import type {
   ChatUnreadThread,
 } from "./types";
 import { useChat } from "./use-chat";
+import { chatKeys } from "./constants";
 import * as api from "./api";
 import { reconcileChatQueries } from "./realtime";
 import { recordChatMessageVisible } from "./alerts/active-view";
@@ -17,19 +19,23 @@ import { recordChatMessageVisible } from "./alerts/active-view";
 const params = new URLSearchParams();
 const replace = jest.fn();
 let mockSubdomain = false;
+let mockAccountId = "me";
+let mockWorkspaceSlug = "workspace";
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ replace }),
   useSearchParams: () => params,
 }));
 jest.mock("@/hooks/use-workspace-path", () => ({
   useWorkspacePath: () => ({
-    workspaceSlug: "workspace",
+    workspaceSlug: mockWorkspaceSlug,
     withWorkspace: (path: string) =>
       mockSubdomain ? path : `/workspace${path}`,
   }),
 }));
 jest.mock("@/lib/auth/client", () => ({
-  useSession: () => ({ data: { user: { id: "me" } } }),
+  useSession: () => ({
+    data: { user: { id: mockAccountId, name: "Joseph", image: null } },
+  }),
 }));
 jest.mock("sonner", () => ({ toast: { error: jest.fn() } }));
 jest.mock("./api");
@@ -109,6 +115,8 @@ const wrapper = ({ children }: { children: ReactNode }) => (
 );
 beforeEach(() => {
   mockSubdomain = false;
+  mockAccountId = "me";
+  mockWorkspaceSlug = "workspace";
   Object.defineProperty(window, "matchMedia", {
     configurable: true,
     value: jest.fn().mockReturnValue({ matches: false }),
@@ -286,7 +294,12 @@ describe("live chat state", () => {
       act(() => {
         sending = result.current.sendMessage("team");
       });
-      expect(result.current.sendingKeys.has("team")).toBe(true);
+      expect(result.current.draft.text).toBe("");
+      await waitFor(() => {
+        expect(
+          result.current.conversation?.messages.at(-1)?.deliveryStatus,
+        ).toBe("sending");
+      });
       act(() => {
         result.current.startNewMessage();
       });
@@ -299,9 +312,7 @@ describe("live chat state", () => {
       act(() => {
         result.current.chooseNewMessageRecipient("team");
       });
-      expect(result.current.draft.text).toBe(
-        "Earlier message\n\nNew unsent thought",
-      );
+      expect(result.current.draft.text).toBe("New unsent thought");
 
       await act(async () => {
         if (outcome === "succeeds") {
@@ -321,12 +332,14 @@ describe("live chat state", () => {
       expect(mocked.createMessage.mock.calls[0][2].text).toBe(
         "Earlier message",
       );
-      expect(result.current.sendingKeys.has("team")).toBe(false);
-      expect(result.current.draft.text).toBe(
-        outcome === "succeeds"
-          ? "New unsent thought"
-          : "Earlier message\n\nNew unsent thought",
-      );
+      expect(result.current.draft.text).toBe("New unsent thought");
+      if (outcome === "fails") {
+        await waitFor(() => {
+          expect(
+            result.current.conversation?.messages.at(-1)?.deliveryStatus,
+          ).toBe("failed");
+        });
+      }
       expect(result.current.newMessageDraft.text).toBe("");
     },
   );
@@ -377,7 +390,7 @@ describe("live chat state", () => {
       mocked.getMessages.mock.calls.every((call) => call[1] === "team"),
     ).toBe(true);
   });
-  it("keeps failed drafts and reuses creationId across retries, preventing duplicate sends", async () => {
+  it("keeps failed messages and reuses creationId across retries, preventing duplicate sends", async () => {
     mocked.createMessage.mockRejectedValueOnce(
       new Error("Network disconnected"),
     );
@@ -394,18 +407,352 @@ describe("live chat state", () => {
     await act(async () => {
       await result.current.sendMessage("team");
     });
-    expect(result.current.draft.text).toBe("Retry safely");
+    expect(result.current.draft.text).toBe("");
+    await waitFor(() => {
+      expect(result.current.conversation?.messages.at(-1)?.deliveryStatus).toBe(
+        "failed",
+      );
+    });
+    const failedId = result.current.conversation!.messages.at(-1)!.id;
     const firstId = mocked.createMessage.mock.calls[0][2].creationId;
     await act(async () => {
       await Promise.all([
-        result.current.sendMessage("team"),
-        result.current.sendMessage("team"),
+        result.current.retryMessage(failedId),
+        result.current.retryMessage(failedId),
       ]);
     });
     expect(mocked.createMessage).toHaveBeenCalledTimes(2);
     expect(mocked.createMessage.mock.calls[1][2].creationId).toBe(firstId);
     expect(result.current.draft.text).toBe("");
   });
+  it("inserts root messages immediately and allows another send before either request finishes", async () => {
+    const first = deferred<ChatMessage>();
+    const second = deferred<ChatMessage>();
+    mocked.createMessage
+      .mockReturnValueOnce(first.promise)
+      .mockReturnValueOnce(second.promise);
+    const { result } = renderHook(useChat, { wrapper });
+    await waitFor(() => {
+      expect(result.current.conversation?.messages).toHaveLength(1);
+    });
+    let firstSend = Promise.resolve();
+    let secondSend = Promise.resolve();
+    act(() => {
+      result.current.updateDraft("team", { text: "First", content: null });
+      firstSend = result.current.sendMessage("team");
+      void result.current.sendMessage("team");
+    });
+    expect(result.current.draft.text).toBe("");
+    await waitFor(() => {
+      expect(result.current.conversation?.messages.at(-1)?.text).toBe("First");
+    });
+    expect(mocked.createMessage).toHaveBeenCalledTimes(1);
+    act(() => {
+      result.current.updateDraft("team", { text: "Second", content: null });
+      secondSend = result.current.sendMessage("team");
+    });
+    await waitFor(() => {
+      expect(
+        result.current.conversation?.messages
+          .slice(-2)
+          .map((item) => item.text),
+      ).toEqual(["First", "Second"]);
+    });
+    expect(mocked.createMessage).toHaveBeenCalledTimes(2);
+    const creationIds = mocked.createMessage.mock.calls.map(
+      (call) => call[2].creationId,
+    );
+    await act(async () => {
+      second.resolve({
+        ...message,
+        id: "second",
+        text: "Second",
+        creationId: creationIds[1],
+        sequence: 3,
+      });
+      first.resolve({
+        ...message,
+        id: "first",
+        text: "First",
+        creationId: creationIds[0],
+        sequence: 2,
+      });
+      await Promise.all([firstSend, secondSend]);
+    });
+    await waitFor(() => {
+      expect(
+        result.current.conversation?.messages.map((item) => item.id),
+      ).toEqual(["root", "first", "second"]);
+    });
+    expect(result.current.draft.text).toBe("");
+  });
+
+  it("inserts replies with attachments immediately, excludes them from read receipts, and dedupes a realtime response before HTTP finishes", async () => {
+    const send = deferred<ChatMessage>();
+    mocked.createMessage.mockReturnValueOnce(send.promise);
+    const focused = jest.spyOn(document, "hasFocus").mockReturnValue(true);
+    const { result } = renderHook(useChat, { wrapper });
+    await waitFor(() => {
+      expect(result.current.conversation?.messages).toHaveLength(1);
+    });
+    act(() => {
+      result.current.openThread(message, document.createElement("button"));
+    });
+    await waitFor(() => {
+      expect(result.current.repliesQuery.isSuccess).toBe(true);
+    });
+    const attachment = {
+      id: "file",
+      fileName: "brief.pdf",
+      mediaType: "application/pdf",
+      sizeBytes: 100,
+      url: "",
+    };
+    let sending = Promise.resolve();
+    act(() => {
+      result.current.updateDraft(result.current.threadKey, {
+        text: "",
+        content: null,
+        attachments: [attachment],
+      });
+      sending = result.current.sendMessage(result.current.threadKey, "root");
+    });
+    expect(result.current.threadDraft.text).toBe("");
+    expect(result.current.threadDraft.attachments).toBeUndefined();
+    await waitFor(() => {
+      expect(result.current.replies).toHaveLength(1);
+    });
+    const pending = result.current.replies[0];
+    expect(pending).toMatchObject({
+      threadRootId: "root",
+      attachments: [attachment],
+      deliveryStatus: "sending",
+    });
+    act(() => {
+      result.current.markVisible(pending);
+      result.current.recordVisibleMessages([pending]);
+    });
+    expect(mocked.markRead).not.toHaveBeenCalled();
+    expect(recordChatMessageVisible).not.toHaveBeenCalled();
+    const confirmed = {
+      ...message,
+      id: "reply",
+      threadRootId: "root",
+      text: "",
+      attachments: [attachment],
+      creationId: pending.creationId,
+      sequence: 2,
+    };
+    act(() => {
+      client.setQueryData(
+        [...chatKeys.replies("workspace", "team", "root"), "start"],
+        { pages: [{ ...page, items: [confirmed] }], pageParams: [{}] },
+      );
+    });
+    await waitFor(() => {
+      expect(result.current.replies).toEqual([confirmed]);
+    });
+    await act(async () => {
+      send.resolve(confirmed);
+      await sending;
+    });
+    expect(result.current.replies).toEqual([confirmed]);
+    focused.mockRestore();
+  });
+
+  it("does not show an outgoing message in another account or workspace", async () => {
+    const send = deferred<ChatMessage>();
+    mocked.createMessage.mockReturnValueOnce(send.promise);
+    const { result, rerender } = renderHook(useChat, { wrapper });
+    await waitFor(() => {
+      expect(result.current.conversation?.id).toBe("team");
+    });
+    let sending = Promise.resolve();
+    act(() => {
+      result.current.updateDraft("team", {
+        text: "Scoped message",
+        content: null,
+      });
+      sending = result.current.sendMessage("team");
+    });
+    await waitFor(() => {
+      expect(result.current.conversation?.messages.at(-1)?.text).toBe(
+        "Scoped message",
+      );
+    });
+    mockAccountId = "another-account";
+    rerender();
+    expect(
+      result.current.conversation?.messages.some(
+        (item) => item.text === "Scoped message",
+      ),
+    ).toBe(false);
+    mockAccountId = "me";
+    mockWorkspaceSlug = "other-workspace";
+    rerender();
+    await waitFor(() => {
+      expect(result.current.conversation?.id).toBe("team");
+    });
+    expect(
+      result.current.conversation?.messages.some(
+        (item) => item.text === "Scoped message",
+      ),
+    ).toBe(false);
+    mockWorkspaceSlug = "workspace";
+    rerender();
+    await waitFor(() => {
+      expect(result.current.conversation?.messages.at(-1)?.text).toBe(
+        "Scoped message",
+      );
+    });
+    await act(async () => {
+      send.reject(new Error("Offline"));
+      await sending;
+    });
+  });
+
+  it("treats a realtime-confirmed message as sent even if the HTTP response is lost", async () => {
+    const send = deferred<ChatMessage>();
+    mocked.createMessage.mockReturnValueOnce(send.promise);
+    const { result } = renderHook(useChat, { wrapper });
+    await waitFor(() => {
+      expect(result.current.conversation?.messages).toHaveLength(1);
+    });
+    let sending = Promise.resolve();
+    act(() => {
+      result.current.updateDraft("team", {
+        text: "Confirmed elsewhere",
+        content: null,
+      });
+      sending = result.current.sendMessage("team");
+    });
+    const creationId = mocked.createMessage.mock.calls[0][2].creationId;
+    const confirmed = {
+      ...message,
+      id: "confirmed",
+      text: "Confirmed elsewhere",
+      creationId,
+      sequence: 2,
+    };
+    act(() => {
+      client.setQueryData(chatKeys.messages("workspace", "team"), {
+        pages: [{ ...page, items: [message, confirmed] }],
+        pageParams: [{}],
+      });
+    });
+    await waitFor(() => {
+      expect(result.current.conversation?.messages).toEqual([
+        message,
+        confirmed,
+      ]);
+    });
+    await act(async () => {
+      send.reject(new Error("Response lost"));
+      await sending;
+    });
+    expect(result.current.conversation?.messages).toEqual([message, confirmed]);
+    expect(toast.error).not.toHaveBeenCalled();
+  });
+
+  it("retains failed sends when Chat unmounts without replacing a newer draft", async () => {
+    mocked.createMessage.mockRejectedValueOnce(new Error("Offline"));
+    const mounted = renderHook(useChat, { wrapper });
+    await waitFor(() => {
+      expect(mounted.result.current.conversation?.id).toBe("team");
+    });
+    await act(async () => {
+      mounted.result.current.updateDraft("team", {
+        text: "Keep this",
+        content: null,
+      });
+      await mounted.result.current.sendMessage("team");
+    });
+    await waitFor(() => {
+      expect(
+        mounted.result.current.conversation?.messages.at(-1)?.deliveryStatus,
+      ).toBe("failed");
+    });
+    mounted.unmount();
+    const remounted = renderHook(useChat, { wrapper });
+    await waitFor(() => {
+      expect(
+        remounted.result.current.conversation?.messages.at(-1),
+      ).toMatchObject({ text: "Keep this", deliveryStatus: "failed" });
+    });
+  });
+
+  it.each(["account", "workspace"])(
+    "keeps late sent messages out of shared caches after a %s switch",
+    async (change) => {
+      const send = deferred<ChatMessage>();
+      mocked.createMessage.mockReturnValueOnce(send.promise);
+      const mounted = renderHook(useChat, { wrapper });
+      await waitFor(() => {
+        expect(mounted.result.current.conversation?.id).toBe("team");
+      });
+      let sending = Promise.resolve();
+      act(() => {
+        mounted.result.current.updateDraft("team", {
+          text: "Original account",
+          content: null,
+        });
+        sending = mounted.result.current.sendMessage("team");
+      });
+      const creationId = mocked.createMessage.mock.calls[0][2].creationId;
+      if (change === "account") mockAccountId = "other-account";
+      else mockWorkspaceSlug = "other-workspace";
+      mounted.rerender();
+      await act(async () => {
+        send.resolve({ ...message, id: "late-sent", creationId, sequence: 2 });
+        await sending;
+      });
+      expect(
+        client.getQueryData([
+          ...chatKeys.all("workspace"),
+          "message",
+          "late-sent",
+        ]),
+      ).toBeUndefined();
+      expect(reconcileChatQueries).not.toHaveBeenCalled();
+      expect(toast.error).not.toHaveBeenCalled();
+      expect(client.getQueryData(["chat-outbox", "workspace", "me"])).toEqual([
+        expect.objectContaining({ id: "late-sent", creationId }),
+      ]);
+    },
+  );
+
+  it("retains a send that fails after unmount without notifying the next page", async () => {
+    const send = deferred<ChatMessage>();
+    mocked.createMessage.mockReturnValueOnce(send.promise);
+    const mounted = renderHook(useChat, { wrapper });
+    await waitFor(() => {
+      expect(mounted.result.current.conversation?.id).toBe("team");
+    });
+    let sending = Promise.resolve();
+    act(() => {
+      mounted.result.current.updateDraft("team", {
+        text: "Keep after navigation",
+        content: null,
+      });
+      sending = mounted.result.current.sendMessage("team");
+    });
+    mounted.unmount();
+    await act(async () => {
+      send.reject(new Error("Offline"));
+      await sending;
+    });
+    expect(toast.error).not.toHaveBeenCalled();
+    const remounted = renderHook(useChat, { wrapper });
+    await waitFor(() => {
+      expect(
+        remounted.result.current.conversation?.messages.at(-1),
+      ).toMatchObject({
+        text: "Keep after navigation",
+        deliveryStatus: "failed",
+      });
+    });
+  });
+
   it("resolves deep-linked replies to their root and opens the correct thread", async () => {
     params.set("conversation", "team");
     params.set("message", "reply");

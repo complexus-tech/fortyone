@@ -2,8 +2,15 @@
 import type { ReactNode } from "react";
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useSession } from "@/lib/auth/client";
+import { useWorkspacePath } from "@/hooks/use-workspace-path";
 import { getLinkMetadata } from "../queries/links/get-metadata";
 import { useLinkMetadata } from "./link-metadata";
+
+jest.mock("@/lib/auth/client", () => ({ useSession: jest.fn() }));
+jest.mock("@/hooks/use-workspace-path", () => ({
+  useWorkspacePath: jest.fn(),
+}));
 
 jest.mock("../queries/links/get-metadata", () => ({
   getLinkMetadata: jest.fn(),
@@ -15,6 +22,14 @@ const Wrapper = ({ children }: { children: ReactNode }) => (
 );
 
 beforeEach(() => {
+  localStorage.clear();
+  jest.mocked(useSession).mockReturnValue({
+    data: { user: { id: "reader-a" } },
+    status: "authenticated",
+  } as ReturnType<typeof useSession>);
+  jest
+    .mocked(useWorkspacePath)
+    .mockReturnValue({ workspaceSlug: "work", withWorkspace: (path) => path });
   queryClient = new QueryClient();
   jest
     .mocked(getLinkMetadata)
@@ -28,6 +43,89 @@ afterEach(() => {
 });
 
 describe("link metadata query lifecycle", () => {
+  it("restores a successful external preview after a browser reload", async () => {
+    const first = renderHook(
+      () => useLinkMetadata("https://example.com/article"),
+      { wrapper: Wrapper },
+    );
+    await waitFor(() => {
+      expect(first.result.current.data?.title).toBe("Article");
+    });
+    first.unmount();
+    queryClient.clear();
+    queryClient = new QueryClient();
+    const restored = renderHook(
+      () => useLinkMetadata("https://example.com/article"),
+      { wrapper: Wrapper },
+    );
+    expect(restored.result.current.data?.title).toBe("Article");
+    expect(getLinkMetadata).toHaveBeenCalledTimes(1);
+  });
+  it("does not persist failed metadata", async () => {
+    jest.mocked(getLinkMetadata).mockResolvedValueOnce({});
+    const first = renderHook(
+      () => useLinkMetadata("https://example.com/article"),
+      { wrapper: Wrapper },
+    );
+    await waitFor(() => {
+      expect(first.result.current.isSuccess).toBe(true);
+    });
+    first.unmount();
+    queryClient.clear();
+    queryClient = new QueryClient();
+    const restored = renderHook(
+      () => useLinkMetadata("https://example.com/article"),
+      { wrapper: Wrapper },
+    );
+    expect(restored.result.current.data).toBeUndefined();
+    await waitFor(() => {
+      expect(restored.result.current.data?.title).toBe("Article");
+    });
+    expect(getLinkMetadata).toHaveBeenCalledTimes(2);
+  });
+  it("scopes persisted metadata by identity and workspace", async () => {
+    const first = renderHook(
+      () => useLinkMetadata("https://example.com/article"),
+      { wrapper: Wrapper },
+    );
+    await waitFor(() => {
+      expect(first.result.current.data?.title).toBe("Article");
+    });
+    first.unmount();
+    queryClient.clear();
+    queryClient = new QueryClient();
+    jest.mocked(getLinkMetadata).mockResolvedValue({});
+    jest.mocked(useSession).mockReturnValue({
+      data: { user: { id: "reader-b" } },
+      status: "authenticated",
+    } as ReturnType<typeof useSession>);
+    const otherUser = renderHook(
+      () => useLinkMetadata("https://example.com/article"),
+      { wrapper: Wrapper },
+    );
+    expect(otherUser.result.current.data).toBeUndefined();
+    await waitFor(() => {
+      expect(otherUser.result.current.isSuccess).toBe(true);
+    });
+    expect(otherUser.result.current.data?.title).toBeUndefined();
+    jest.mocked(useSession).mockReturnValue({
+      data: { user: { id: "reader-a" } },
+      status: "authenticated",
+    } as ReturnType<typeof useSession>);
+    jest.mocked(useWorkspacePath).mockReturnValue({
+      workspaceSlug: "another",
+      withWorkspace: (path) => path,
+    });
+    const otherWorkspace = renderHook(
+      () => useLinkMetadata("https://example.com/article"),
+      { wrapper: Wrapper },
+    );
+    expect(otherWorkspace.result.current.data).toBeUndefined();
+    await waitFor(() => {
+      expect(otherWorkspace.result.current.isSuccess).toBe(true);
+    });
+    expect(otherWorkspace.result.current.data?.title).toBeUndefined();
+  });
   it("shares metadata across repeated links and virtualized remounts", async () => {
     const first = renderHook(
       () => useLinkMetadata("https://example.com/article"),
@@ -114,7 +212,7 @@ describe("link metadata query lifecycle", () => {
     first.unmount();
     act(() => {
       queryClient.setQueryData(
-        ["link-metadata", "https://example.com/article"],
+        ["link-metadata", "https://example.com/article", "reader-a", "work"],
         {},
         { updatedAt: Date.now() - 30_001 },
       );
@@ -131,6 +229,72 @@ describe("link metadata query lifecycle", () => {
 });
 
 describe("manual preview refresh", () => {
+  it("keeps a late manual refresh scoped to its original account", async () => {
+    const { result, rerender } = renderHook(
+      () => useLinkMetadata("https://example.com/article"),
+      { wrapper: Wrapper },
+    );
+    await waitFor(() => {
+      expect(result.current.data?.title).toBe("Article");
+    });
+    let complete!: (value: { title: string }) => void;
+    jest.mocked(getLinkMetadata).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          complete = resolve;
+        }),
+    );
+    let request!: Promise<void>;
+    act(() => {
+      request = result.current.refreshPreview();
+    });
+    await waitFor(() => {
+      expect(result.current.isRefreshing).toBe(true);
+    });
+    jest
+      .mocked(useSession)
+      .mockReturnValue({
+        data: { user: { id: "reader-b" } },
+        status: "authenticated",
+      } as ReturnType<typeof useSession>);
+    jest
+      .mocked(getLinkMetadata)
+      .mockResolvedValue({ title: "Current account" });
+    rerender();
+    await waitFor(() => {
+      expect(result.current.data?.title).toBe("Current account");
+    });
+    await act(async () => {
+      complete({ title: "Previous account result" });
+      await request;
+    });
+    expect(result.current.data?.title).toBe("Current account");
+    expect(
+      queryClient.getQueryData([
+        "link-metadata",
+        "https://example.com/article",
+        "reader-a",
+        "work",
+      ]),
+    ).toMatchObject({ title: "Previous account result" });
+  });
+
+  it("preserves the last successful preview when refresh returns empty metadata", async () => {
+    const { result } = renderHook(
+      () => useLinkMetadata("https://example.com/article"),
+      { wrapper: Wrapper },
+    );
+    await waitFor(() => {
+      expect(result.current.data?.title).toBe("Article");
+    });
+    jest.mocked(getLinkMetadata).mockResolvedValueOnce({});
+    await act(async () => {
+      await expect(result.current.refreshPreview()).rejects.toThrow(
+        "could not be refreshed",
+      );
+    });
+    expect(result.current.data?.title).toBe("Article");
+  });
   it("updates every observer with the new revision while retaining the old card during refresh", async () => {
     const first = renderHook(
       () => useLinkMetadata("https://example.com/article"),

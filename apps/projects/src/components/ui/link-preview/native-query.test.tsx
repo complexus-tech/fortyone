@@ -10,6 +10,7 @@ import { storyKeys } from "@/shared/story/cache-keys";
 import { documentKeys } from "@/shared/documents/keys";
 import { get } from "@/lib/http";
 import { useSession } from "@/lib/auth/client";
+import { PREVIEW_CACHE_TTL_MS } from "@/lib/queries/links/preview-cache";
 import { useNativeLink, fetchNativeLink } from "./native-query";
 import type { NativeStorySummary } from "./native-query";
 import type { NativeLinkTarget } from "./native-target";
@@ -48,6 +49,7 @@ const wrapper = ({ children }: { children: ReactNode }) => (
 );
 
 beforeEach(() => {
+  localStorage.clear();
   client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
@@ -69,6 +71,162 @@ const loaded = async (result: {
 };
 
 describe("cached native preview summaries", () => {
+  it("recovers from a first transient failure without requiring a tab switch", async () => {
+    jest
+      .mocked(get)
+      .mockRejectedValueOnce(new Error("Temporary connection failure"));
+    const { result } = renderHook(() => useNativeLink(target, true), {
+      wrapper,
+    });
+    expect(result.current.loading).toBe(true);
+    await loaded(result);
+    expect(result.current.unavailable).toBe(false);
+    expect(result.current.data).toMatchObject({
+      value: { title: story.title },
+    });
+    expect(get).toHaveBeenCalledTimes(2);
+  });
+
+  it("invalidates a persisted preview when its story changes after the card unmounts", async () => {
+    const first = renderHook(() => useNativeLink(target, true), { wrapper });
+    await loaded(first.result);
+    first.unmount();
+    await act(async () => {
+      await client.invalidateQueries({
+        queryKey: storyKeys.detail("other", story.id),
+      });
+    });
+    client.clear();
+    client = new QueryClient();
+    jest
+      .mocked(get)
+      .mockResolvedValue(response({ ...story, title: "Changed elsewhere" }));
+    const next = renderHook(() => useNativeLink(target, true), { wrapper });
+    expect(next.result.current.data).toBeNull();
+    await loaded(next.result);
+    expect(next.result.current.data).toMatchObject({
+      value: { title: "Changed elsewhere" },
+    });
+    expect(get).toHaveBeenCalledTimes(2);
+  });
+
+  it("restores a successful summary after a browser reload without regenerating it", async () => {
+    const first = renderHook(() => useNativeLink(target, true), { wrapper });
+    await loaded(first.result);
+    first.unmount();
+    client.clear();
+    client = new QueryClient();
+    const restored = renderHook(() => useNativeLink(target, true), { wrapper });
+    expect(restored.result.current.data).toMatchObject({
+      value: { title: story.title },
+    });
+    expect(get).toHaveBeenCalledTimes(1);
+    expect(
+      client.getQueryData(storyKeys.detail("other", story.id)),
+    ).toBeUndefined();
+  });
+  it("keeps a restored preview visible when a manual refresh is temporarily offline", async () => {
+    const first = renderHook(() => useNativeLink(target, true), { wrapper });
+    await loaded(first.result);
+    first.unmount();
+    client.clear();
+    client = new QueryClient();
+    jest.mocked(get).mockRejectedValue(new Error("Offline"));
+    const restored = renderHook(() => useNativeLink(target, true), { wrapper });
+    await act(async () => {
+      await expect(restored.result.current.refresh()).rejects.toThrow(
+        "Offline",
+      );
+    });
+    expect(restored.result.current.data).toMatchObject({
+      value: { title: story.title },
+    });
+    expect(restored.result.current.unavailable).toBe(false);
+  });
+  it("evicts a denied preview from browser storage so it cannot reappear on reload", async () => {
+    const first = renderHook(() => useNativeLink(target, true), { wrapper });
+    await loaded(first.result);
+    jest
+      .mocked(get)
+      .mockRejectedValue(
+        Object.assign(new Error("Forbidden"), { status: 403 }),
+      );
+    await act(async () => {
+      await expect(first.result.current.refresh()).rejects.toThrow(
+        "no longer available",
+      );
+    });
+    first.unmount();
+    client.clear();
+    client = new QueryClient();
+    const restored = renderHook(() => useNativeLink(target, true), { wrapper });
+    expect(restored.result.current.data).toBeNull();
+    await waitFor(() => {
+      expect(restored.result.current.unavailable).toBe(true);
+    });
+    expect(get).toHaveBeenCalledTimes(3);
+  });
+  it("clears browser persistence when canonical access is revoked", async () => {
+    const first = renderHook(() => useNativeLink(target, true), { wrapper });
+    await loaded(first.result);
+    jest
+      .mocked(get)
+      .mockRejectedValue(
+        Object.assign(new Error("Forbidden"), { status: 403 }),
+      );
+    await act(async () => {
+      await client
+        .fetchQuery({
+          queryKey: storyKeys.detail("other", story.id),
+          queryFn: () =>
+            Promise.reject(
+              Object.assign(new Error("Forbidden"), { status: 403 }),
+            ),
+          retry: false,
+        })
+        .catch(() => undefined);
+    });
+    await waitFor(() => {
+      expect(first.result.current.data).toBeNull();
+    });
+    first.unmount();
+    client.clear();
+    client = new QueryClient();
+    const restored = renderHook(() => useNativeLink(target, true), { wrapper });
+    expect(restored.result.current.data).toBeNull();
+    await waitFor(() => {
+      expect(restored.result.current.unavailable).toBe(true);
+    });
+  });
+  it("does not reuse persisted summaries across workspaces or identities", async () => {
+    const first = renderHook(() => useNativeLink(target, true), { wrapper });
+    await loaded(first.result);
+    first.unmount();
+    client.clear();
+    client = new QueryClient();
+    jest
+      .mocked(get)
+      .mockRejectedValue(
+        Object.assign(new Error("Forbidden"), { status: 403 }),
+      );
+    const otherWorkspace = renderHook(
+      () => useNativeLink({ ...target, workspaceSlug: "another" }, true),
+      { wrapper },
+    );
+    expect(otherWorkspace.result.current.data).toBeNull();
+    await waitFor(() => {
+      expect(otherWorkspace.result.current.unavailable).toBe(true);
+    });
+    jest.mocked(useSession).mockReturnValue(session("reader-b"));
+    const otherUser = renderHook(() => useNativeLink(target, true), {
+      wrapper,
+    });
+    expect(otherUser.result.current.data).toBeNull();
+    await waitFor(() => {
+      expect(otherUser.result.current.unavailable).toBe(true);
+    });
+  });
+
   it("defers until visible, requests a small summary, and never seeds partial detail data", async () => {
     const { result, rerender } = renderHook(
       ({ enabled }) => useNativeLink(target, enabled),
@@ -128,9 +286,9 @@ describe("cached native preview summaries", () => {
       key,
       {
         resource: response().data,
-        requestedAt: Date.now() - 40_000,
+        requestedAt: Date.now() - PREVIEW_CACHE_TTL_MS - 1,
       },
-      { updatedAt: Date.now() - 40_000 },
+      { updatedAt: Date.now() - PREVIEW_CACHE_TTL_MS - 1 },
     );
     jest.mocked(get).mockRejectedValue(new Error("Offline"));
     const next = renderHook(() => useNativeLink(target, true), { wrapper });
@@ -146,8 +304,11 @@ describe("cached native preview summaries", () => {
     first.unmount();
     client.setQueryData(
       ["native-link-preview", "reader-a", "other", "story", "ENG-42", ""],
-      { resource: response().data, requestedAt: Date.now() - 40_000 },
-      { updatedAt: Date.now() - 40_000 },
+      {
+        resource: response().data,
+        requestedAt: Date.now() - PREVIEW_CACHE_TTL_MS - 1,
+      },
+      { updatedAt: Date.now() - PREVIEW_CACHE_TTL_MS - 1 },
     );
     let resolveRead: ((value: unknown) => void) | undefined;
     jest.mocked(get).mockImplementation(
@@ -181,8 +342,10 @@ describe("cached native preview summaries", () => {
       ({ active }) => useNativeLink(target, true, active),
       { initialProps: { active: false }, wrapper },
     );
-    expect(result.current.data).toBeNull();
-    expect(result.current.loading).toBe(true);
+    expect(result.current.data).toMatchObject({
+      value: { title: story.title },
+    });
+    expect(result.current.loading).toBe(false);
     expect(result.current.unavailable).toBe(false);
     rerender({ active: true });
     await loaded(result);
@@ -344,6 +507,7 @@ describe("cached native preview summaries", () => {
       expect.anything(),
     );
     await act(async () => {
+      jest.mocked(get).mockRejectedValue(new Error("Offline"));
       rejectRead?.(new Error("Offline"));
       await expect(refresh).rejects.toThrow("Offline");
     });
@@ -563,7 +727,7 @@ describe("cached native preview summaries", () => {
         },
       });
       await act(async () => {
-        jest.advanceTimersByTime(30_000);
+        jest.advanceTimersByTime(PREVIEW_CACHE_TTL_MS);
       });
       await waitFor(() => {
         expect(result.current.data).toMatchObject({
@@ -595,12 +759,9 @@ describe("cached native preview summaries", () => {
       await loaded(result);
       rerender({ active: false });
       await act(async () => {
-        jest.advanceTimersByTime(40_000);
+        jest.advanceTimersByTime(PREVIEW_CACHE_TTL_MS + 1);
       });
       expect(get).toHaveBeenCalledTimes(1);
-      expect(result.current.data).toMatchObject({
-        value: { title: story.title },
-      });
       rerender({ active: true });
       await waitFor(() => {
         expect(get).toHaveBeenCalledTimes(2);

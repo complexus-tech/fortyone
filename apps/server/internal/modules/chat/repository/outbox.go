@@ -67,6 +67,14 @@ func (r *Repository) NotificationRecipients(ctx context.Context, event domain.Ev
 	return result, nil
 }
 
+func (r *Repository) NotificationContent(ctx context.Context, event domain.Event) (domain.NotificationContent, error) {
+	raw, err := r.query(ctx).NotificationContent(ctx, chatsql.NotificationContentParams{WorkspaceID: event.WorkspaceID, EventID: event.ID})
+	if err != nil {
+		return domain.NotificationContent{}, scopedError(err)
+	}
+	return decode[domain.NotificationContent](raw)
+}
+
 func (r *Repository) ReadRecipientIDs(ctx context.Context, event domain.Event) ([]uuid.UUID, error) {
 	return r.query(ctx).ReadRecipientIDs(ctx, chatsql.ReadRecipientIDsParams{WorkspaceID: event.WorkspaceID, ConversationID: event.ConversationID, ActorID: event.ActorID})
 }

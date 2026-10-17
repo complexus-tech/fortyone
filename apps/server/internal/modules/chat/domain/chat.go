@@ -63,9 +63,10 @@ type AttachmentMetadata struct {
 }
 
 type Reaction struct {
-	Emoji   string `json:"emoji"`
-	Count   int    `json:"count"`
-	Reacted bool   `json:"reacted"`
+	Emoji   string   `json:"emoji"`
+	Count   int      `json:"count"`
+	Reacted bool     `json:"reacted"`
+	Users   []Person `json:"users,omitempty"`
 }
 
 type Message struct {
@@ -251,6 +252,17 @@ type Event struct {
 type NotificationRecipient struct {
 	UserID uuid.UUID
 	Reason string
+}
+
+// NotificationContent is resolved from the current message once per outbox
+// event. Recipient eligibility is still rechecked before creating each receipt.
+type NotificationContent struct {
+	ConversationKind string          `json:"conversationKind"`
+	ConversationName string          `json:"conversationName"`
+	AuthorName       string          `json:"authorName"`
+	Text             string          `json:"text"`
+	RichContent      json.RawMessage `json:"richContent"`
+	Attachments      []Attachment    `json:"attachments"`
 }
 
 type AttachmentScope struct {

@@ -128,6 +128,47 @@ func (q *Queries) InsertEvent(ctx context.Context, arg InsertEventParams) error 
 	return err
 }
 
+const notificationContent = `-- name: NotificationContent :one
+SELECT jsonb_build_object(
+    'conversationKind', conversation.kind,
+    'conversationName', COALESCE(team.name, ''),
+    'authorName', COALESCE(NULLIF(author.full_name, ''), author.username),
+    'text', message.text,
+    'richContent', message.rich_content,
+    'attachments', COALESCE((
+        SELECT jsonb_agg(jsonb_build_object(
+            'fileName', attachment.filename, 'mediaType', attachment.mime_type, 'kind', COALESCE(chat_attachment.kind, '')
+        ) ORDER BY attachment.attachment_id)
+        FROM public.chat_attachments chat_attachment
+        JOIN public.attachments attachment ON attachment.attachment_id=chat_attachment.attachment_id
+        WHERE chat_attachment.message_id=message.id
+    ), '[]')
+)
+FROM public.chat_outbox event
+JOIN public.chat_conversation_messages message ON message.id=event.message_id AND message.workspace_id=event.workspace_id
+JOIN public.chat_conversations conversation ON conversation.id=message.conversation_id
+JOIN public.users author ON author.user_id=message.author_id
+LEFT JOIN public.teams team ON team.team_id=conversation.team_id
+WHERE event.id=$1 AND event.workspace_id=$2 AND event.event_type='message.created'
+AND message.deleted_at IS NULL
+AND EXISTS (
+    SELECT 1 FROM public.chat_outbox_recipients recipient
+    WHERE recipient.event_id=event.id AND public.can_read_chat_message(event.workspace_id,recipient.user_id,message.id)
+)
+`
+
+type NotificationContentParams struct {
+	EventID     uuid.UUID
+	WorkspaceID uuid.UUID
+}
+
+func (q *Queries) NotificationContent(ctx context.Context, arg NotificationContentParams) ([]byte, error) {
+	row := q.db.QueryRow(ctx, notificationContent, arg.EventID, arg.WorkspaceID)
+	var jsonb_build_object []byte
+	err := row.Scan(&jsonb_build_object)
+	return jsonb_build_object, err
+}
+
 const notificationRecipients = `-- name: NotificationRecipients :many
 SELECT recipient.user_id, recipient.reason
 FROM public.chat_outbox_recipients recipient JOIN public.chat_outbox event ON event.id=recipient.event_id

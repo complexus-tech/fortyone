@@ -52,7 +52,7 @@ const message = (
   threadRootId: null,
   createdAt: now.toISOString(),
   occurredAt: now.toISOString(),
-  title: "New chat message",
+  title: "Product",
   body: `Message ${id}`,
   ...change,
 });
@@ -148,7 +148,7 @@ it.each([
   expect(playChatSound).not.toHaveBeenCalled();
 });
 
-it("groups a burst once, targets the latest unseen message, and counts only unseen messages", async () => {
+it("groups a burst once and preserves the source and actual latest unseen message", async () => {
   const bridge = native();
   jest
     .mocked(wasChatMessageVisible)
@@ -179,7 +179,8 @@ it("groups a burst once, targets the latest unseen message, and counts only unse
       notificationId: "receipt-second",
       entityId: "second",
       threadRootId: "thread",
-      body: "2 new messages in this conversation.",
+      title: "Product",
+      body: "Message second",
       silent: false,
     }),
   );
@@ -194,8 +195,8 @@ it("shares banner and audio receipts across two tabs and replay", async () => {
   await jest.advanceTimersByTimeAsync(800);
   expect(browserNotification).toHaveBeenCalledTimes(1);
   expect(browserNotification).toHaveBeenCalledWith(
-    "New chat message",
-    expect.objectContaining({ silent: true }),
+    "Product",
+    expect.objectContaining({ body: "Message one", silent: true }),
   );
   expect(playChatSound).toHaveBeenCalledTimes(1);
   await jest.advanceTimersByTimeAsync(4_000);

@@ -44,7 +44,7 @@ export const ConversationView = ({
   onToggleReaction,
   onEditMessage,
   onDeleteMessage,
-  sending = false,
+  onRetryMessage,
   hasOlder = false,
   hasNewer = false,
   loadingOlder = false,
@@ -77,7 +77,7 @@ export const ConversationView = ({
     draft: PreviewDraft,
   ) => void | Promise<void>;
   onDeleteMessage: (messageId: string) => void | Promise<void>;
-  sending?: boolean;
+  onRetryMessage?: (messageId: string) => void;
   hasOlder?: boolean;
   hasNewer?: boolean;
   loadingOlder?: boolean;
@@ -220,6 +220,7 @@ export const ConversationView = ({
                         onTabChange("files");
                       }}
                       onReply={onReply}
+                      onRetryMessage={onRetryMessage}
                       onToggleReaction={onToggleReaction}
                     />
                   </div>
@@ -238,7 +239,6 @@ export const ConversationView = ({
 
               <Composer
                 allowMaya={mayaEnabled}
-                disabled={sending}
                 draft={draft}
                 key={`composer:${conversation.id}`}
                 label={`Message ${conversation.name}…`}

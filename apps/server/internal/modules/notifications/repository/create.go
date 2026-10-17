@@ -63,7 +63,14 @@ func (repository *Repository) Create(ctx context.Context, notification notificat
 		if receipt.RecipientID != notification.RecipientID || receipt.WorkspaceID != notification.WorkspaceID {
 			return notificationsdomain.Notification{}, false, fmt.Errorf("replay notification event: %w", notificationsdomain.ErrForbidden)
 		}
-		if !receipt.MatchesPayload {
+		// Chat copy is resolved at delivery time, so an edit or rename may change
+		// it before an outbox retry. Reuse the original receipt only when its full
+		// source identity still matches; other notification replays stay exact.
+		sameChatEvent := notification.EntityType == notificationsdomain.EntityTypeChatMessage &&
+			string(receipt.EntityType) == string(notification.EntityType) &&
+			string(receipt.NotificationType) == string(notification.Type) &&
+			receipt.EntityID == notification.EntityID && receipt.ActorID == notification.ActorID
+		if !receipt.MatchesPayload && !sameChatEvent {
 			return notificationsdomain.Notification{}, false, fmt.Errorf("replay notification event: %w", notificationsdomain.ErrConflict)
 		}
 		if receipt.NotificationID == nil {

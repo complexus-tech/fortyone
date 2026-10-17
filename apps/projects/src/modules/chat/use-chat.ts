@@ -22,6 +22,7 @@ import {
 import { reconcileChatQueries } from "./realtime";
 import { mergeChatDrafts } from "./merge-chat-drafts";
 import { recordChatMessageVisible } from "./alerts/active-view";
+import { mergeOutgoingMessages, useMessageOutbox } from "./use-message-outbox";
 
 const NO_MESSAGES: ChatMessage[] = [];
 const NEW_MESSAGE_DRAFT_KEY = "new-message";
@@ -60,11 +61,22 @@ export const useChat = () => {
   const [anchor, setAnchor] = useState<string | null>(requestedMessage);
   const [sentMessage, setSentMessage] = useState<ChatMessage | null>(null);
   const [drafts, setDrafts] = useState<Record<string, ChatDraft>>({});
-  const [sendingKeys, setSendingKeys] = useState<ReadonlySet<string>>(
-    new Set(),
+  const draftsRef = useRef(drafts);
+  const updateDrafts = useCallback(
+    (
+      update: (current: Record<string, ChatDraft>) => Record<string, ChatDraft>,
+    ) => {
+      draftsRef.current = update(draftsRef.current);
+      setDrafts(draftsRef.current);
+    },
+    [],
   );
-  const sending = useRef(new Set<string>());
-  const draftsAddedDuringSend = useRef(new Map<string, ChatDraft>());
+  const {
+    outgoing,
+    enqueue,
+    retry: retryMessage,
+    acknowledge,
+  } = useMessageOutbox();
   const navigationVersion = useRef(0);
   useEffect(
     () => () => {
@@ -72,9 +84,6 @@ export const useChat = () => {
       composing.current = false;
     },
     [],
-  );
-  const identities = useRef(
-    new Map<string, { fingerprint: string; id: string }>(),
   );
   const closeThreadRef = useRef<HTMLButtonElement>(null);
   const conversationHeadingRef = useRef<HTMLHeadingElement>(null);
@@ -87,10 +96,8 @@ export const useChat = () => {
     [conversationList.data],
   );
   const activeId = isComposing ? "" : selectedId || conversations[0]?.id || "";
-  const currentView = useRef({ conversationId: activeId, threadId });
   useEffect(() => {
     navigationVersion.current += 1;
-    currentView.current = { conversationId: activeId, threadId };
   }, [activeId, threadId]);
   const detail = useChatConversation(activeId);
   const conversation =
@@ -103,7 +110,7 @@ export const useChat = () => {
     enabled: Boolean(activeId),
     staleTime: 15_000,
   });
-  const messages = useMemo(() => {
+  const loadedMessages = useMemo(() => {
     const pages = history.data?.pages;
     const loaded = flattenMessages(pages);
     const latest = tail.data;
@@ -114,6 +121,17 @@ export const useChat = () => {
       ? flattenMessages([...(pages ?? []), latest])
       : loaded;
   }, [history.data, tail.data]);
+  const messages = useMemo(
+    () =>
+      mergeOutgoingMessages(
+        loadedMessages,
+        outgoing.filter(
+          (message) =>
+            message.conversationId === activeId && !message.threadRootId,
+        ),
+      ),
+    [activeId, loadedMessages, outgoing],
+  );
   const linkedMessage = useChatMessage(requestedMessage);
   const selectedThread = useChatMessage(threadId);
   const thread =
@@ -123,10 +141,25 @@ export const useChat = () => {
     threadTargetId,
     threadId ?? undefined,
   );
-  const replies = useMemo(
+  const loadedReplies = useMemo(
     () => flattenMessages(repliesQuery.data?.pages),
     [repliesQuery.data],
   );
+  const replies = useMemo(
+    () =>
+      mergeOutgoingMessages(
+        loadedReplies,
+        outgoing.filter(
+          (message) =>
+            message.conversationId === activeId &&
+            message.threadRootId === threadId,
+        ),
+      ),
+    [activeId, loadedReplies, outgoing, threadId],
+  );
+  useEffect(() => {
+    acknowledge([...loadedMessages, ...loadedReplies]);
+  }, [acknowledge, loadedMessages, loadedReplies]);
   const threadKey = `${activeId}:thread:${threadId ?? ""}`;
   const feed = useMemo(
     () => (conversation ? { ...conversation, messages } : undefined),
@@ -135,7 +168,7 @@ export const useChat = () => {
   const hasNewer = Boolean(
     history.hasNextPage ||
       (tail.data?.items.at(-1)?.sequence ?? 0) >
-        (messages.at(-1)?.sequence ?? 0),
+        (loadedMessages.at(-1)?.sequence ?? 0),
   );
 
   const linkedId = linkedMessage.data?.id;
@@ -225,24 +258,16 @@ export const useChat = () => {
   const chooseNewMessageRecipient = useCallback(
     (id: string) => {
       if (!composing.current) return;
-      const incoming = drafts[NEW_MESSAGE_DRAFT_KEY] ?? EMPTY_PREVIEW_DRAFT;
-      if (sending.current.has(id)) {
-        draftsAddedDuringSend.current.set(
-          id,
-          mergeChatDrafts(
-            draftsAddedDuringSend.current.get(id) ?? EMPTY_PREVIEW_DRAFT,
-            incoming,
-          ),
-        );
-      }
-      setDrafts((current) => ({
+      const incoming =
+        draftsRef.current[NEW_MESSAGE_DRAFT_KEY] ?? EMPTY_PREVIEW_DRAFT;
+      updateDrafts((current) => ({
         ...current,
         [id]: mergeChatDrafts(current[id] ?? EMPTY_PREVIEW_DRAFT, incoming),
         [NEW_MESSAGE_DRAFT_KEY]: EMPTY_PREVIEW_DRAFT,
       }));
       selectConversation(id);
     },
-    [drafts, selectConversation],
+    [selectConversation, updateDrafts],
   );
   const openThread = useCallback(
     (message: ChatMessage, trigger: HTMLButtonElement) => {
@@ -321,9 +346,12 @@ export const useChat = () => {
     },
     [chatPath, router, workspaceSlug],
   );
-  const updateDraft = useCallback((key: string, draft: ChatDraft) => {
-    setDrafts((current) => ({ ...current, [key]: draft }));
-  }, []);
+  const updateDraft = useCallback(
+    (key: string, draft: ChatDraft) => {
+      updateDrafts((current) => ({ ...current, [key]: draft }));
+    },
+    [updateDrafts],
+  );
   const loadLatest = useCallback(
     async (conversationId: string) => {
       const latest = await api.getMessages({ workspaceSlug }, conversationId);
@@ -351,68 +379,29 @@ export const useChat = () => {
   }, [activeId, loadLatest]);
   const sendMessage = useCallback(
     async (key: string, rootId?: string) => {
-      const draft = drafts[key] ?? EMPTY_PREVIEW_DRAFT;
+      const draft = draftsRef.current[key] ?? EMPTY_PREVIEW_DRAFT;
       if (
         !activeId ||
         (!draft.text.trim() && !draft.attachments?.length) ||
-        draft.text.length > 4000 ||
-        sending.current.has(key)
+        draft.text.length > 4000
       )
         return;
-      const input = getMessageInput(draft);
-      const fingerprint = JSON.stringify({ ...input, rootId });
-      const previous = identities.current.get(key);
-      const creationId =
-        previous?.fingerprint === fingerprint
-          ? previous.id
-          : crypto.randomUUID();
-      identities.current.set(key, { fingerprint, id: creationId });
-      sending.current.add(key);
-      draftsAddedDuringSend.current.delete(key);
-      setSendingKeys(new Set(sending.current));
-      let committed = false;
-      try {
-        const message = await api.createMessage({ workspaceSlug }, activeId, {
-          ...input,
-          creationId,
-          threadRootId: rootId,
-        });
-        committed = true;
-        setSentMessage(message);
-        updateCachedMessage(client, workspaceSlug, message);
-        const addedDraft = draftsAddedDuringSend.current.get(key);
-        setDrafts((current) => ({
-          ...current,
-          [key]:
-            addedDraft ??
-            (current[key] === draft ? EMPTY_PREVIEW_DRAFT : current[key]),
-        }));
-        identities.current.delete(key);
-        if (!rootId) {
-          await loadLatest(activeId);
-          if (currentView.current.conversationId === activeId) {
-            setAnchor(null);
-            setTargetMessageId(null);
-          }
-        } else if (
-          currentView.current.conversationId === activeId &&
-          currentView.current.threadId === rootId
-        )
-          setThreadTargetId(message.id);
-        await reconcileChatQueries(client, workspaceSlug, activeId);
-      } catch (error) {
-        notification(
-          error,
-          committed
-            ? "Message sent. Could not refresh the conversation."
-            : "Message was not sent. Your draft is kept.",
+      const send = enqueue(activeId, draft, rootId);
+      if (!send) return;
+      updateDraft(key, EMPTY_PREVIEW_DRAFT);
+      setSentMessage(send.pending);
+      if (!rootId) {
+        setAnchor(null);
+        setTargetMessageId(null);
+      }
+      const message = await send.delivery;
+      if (message) {
+        setSentMessage((current) =>
+          current?.creationId === message.creationId ? message : current,
         );
       }
-      sending.current.delete(key);
-      draftsAddedDuringSend.current.delete(key);
-      setSendingKeys(new Set(sending.current));
     },
-    [activeId, client, drafts, loadLatest, workspaceSlug],
+    [activeId, enqueue, updateDraft],
   );
   const editMessage = useCallback(
     async (messageId: string, draft: ChatDraft) => {
@@ -482,6 +471,7 @@ export const useChat = () => {
       if (document.visibilityState !== "visible" || !document.hasFocus())
         return;
       for (const message of visible) {
+        if (message.deliveryStatus) continue;
         recordChatMessageVisible(accountId, workspaceSlug, message);
       }
     },
@@ -497,7 +487,11 @@ export const useChat = () => {
   }, []);
   const markVisible = useCallback(
     (message: ChatMessage) => {
-      if (document.visibilityState !== "visible" || !document.hasFocus())
+      if (
+        message.deliveryStatus ||
+        document.visibilityState !== "visible" ||
+        !document.hasFocus()
+      )
         return;
       if (accountId)
         recordChatMessageVisible(accountId, workspaceSlug, message);
@@ -573,13 +567,13 @@ export const useChat = () => {
     conversationListRef,
     draft: drafts[activeId] ?? EMPTY_PREVIEW_DRAFT,
     threadDraft: drafts[threadKey] ?? EMPTY_PREVIEW_DRAFT,
-    sendingKeys,
     selectConversation,
     openThread,
     closeThread,
     viewMessage,
     updateDraft,
     sendMessage,
+    retryMessage,
     editMessage,
     deleteMessage,
     toggleReaction,

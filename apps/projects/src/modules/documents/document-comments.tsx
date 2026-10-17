@@ -24,6 +24,7 @@ export function DocumentCommentsPanel({
   onDraftChange,
   canComment = true,
   activeThreadId,
+  threadScope,
   onThreadSelect,
 }: {
   draft: DocumentCommentSelection | null;
@@ -33,15 +34,20 @@ export function DocumentCommentsPanel({
   onDraftChange: (draft: DocumentCommentSelection | null) => void;
   canComment?: boolean;
   activeThreadId?: string;
+  threadScope?: readonly string[];
   onThreadSelect?: (thread: DocumentCommentThread) => void;
 }) {
   const {
-    data: threads = [],
+    data: allThreads = [],
     isPending,
     isError,
     isFetching,
     refetch,
   } = useDocumentComments(documentId);
+  const scopedThreadIds = threadScope ? new Set(threadScope) : undefined;
+  const threads = scopedThreadIds
+    ? allThreads.filter((thread) => scopedThreadIds.has(thread.id))
+    : allThreads;
   const maya = useDocumentMayaRuns(documentId, true);
   useDocumentMayaRefresh(documentId, maya.data?.runs);
   const [filter, setFilter] = useState<"open" | "resolved">("open");
@@ -61,12 +67,19 @@ export function DocumentCommentsPanel({
     emptyDescription =
       "Select a passage in the document to start a conversation.";
   const selectedThread = useRef<string | undefined>(undefined);
+  const selectedScope = useRef(threadScope);
   useEffect(() => {
-    if (activeFilter && selectedThread.current !== activeThreadId) {
+    if (!activeThreadId) selectedThread.current = undefined;
+    if (
+      activeFilter &&
+      (selectedThread.current !== activeThreadId ||
+        selectedScope.current !== threadScope)
+    ) {
       selectedThread.current = activeThreadId;
+      selectedScope.current = threadScope;
       setFilter(activeFilter);
     }
-  }, [activeFilter, activeThreadId]);
+  }, [activeFilter, activeThreadId, threadScope]);
 
   return (
     <aside

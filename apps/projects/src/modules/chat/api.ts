@@ -67,6 +67,7 @@ const messageSchema = z
           emoji: z.string(),
           count: z.number(),
           reacted: z.boolean().default(false),
+          users: z.array(personSchema).default([]),
         }),
       )
       .default([]),

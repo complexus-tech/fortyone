@@ -3,6 +3,7 @@ import type { Transaction } from "@tiptap/pm/state";
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
+  resolveCommentHighlight,
   updateCommentDraftHighlight,
   updateCommentHighlights,
 } from "@/lib/tiptap/comment-highlights";
@@ -29,12 +30,15 @@ export function useDocumentCommentInteractions({
     useState<DocumentCommentSelection | null>(null);
   const [isCommentComposerOpen, setIsCommentComposerOpen] = useState(false);
   const [activeCommentThreadId, setActiveCommentThreadId] = useState<string>();
+  const [commentThreadScope, setCommentThreadScope] = useState<string[]>();
   const closeComments = useCallback(() => {
     setIsCommentsOpen(false);
+    setCommentThreadScope(undefined);
   }, []);
   useEffect(() => {
     const threadId = searchParams.get("thread");
     if (!threadId) return;
+    setCommentThreadScope(undefined);
     setActiveCommentThreadId(threadId);
     setIsCommentsOpen(true);
   }, [searchParams]);
@@ -71,6 +75,26 @@ export function useDocumentCommentInteractions({
       const threadId = target.closest<HTMLElement>("[data-comment-thread-id]")
         ?.dataset.commentThreadId;
       if (!threadId || threadId === "draft") return;
+      const anchors = commentThreads.map((thread) =>
+        resolveCommentHighlight(editor, {
+          id: thread.id,
+          from: thread.anchorStart,
+          to: thread.anchorEnd,
+          quote: thread.quote,
+        }),
+      );
+      const selected = anchors.find((anchor) => anchor?.id === threadId);
+      setCommentThreadScope(
+        selected
+          ? anchors.flatMap((anchor) =>
+              anchor &&
+              anchor.from === selected.from &&
+              anchor.to === selected.to
+                ? [anchor.id]
+                : [],
+            )
+          : [threadId],
+      );
       setActiveCommentThreadId(threadId);
       setIsCommentComposerOpen(false);
       setIsCommentsOpen(true);
@@ -81,7 +105,7 @@ export function useDocumentCommentInteractions({
     return () => {
       element.removeEventListener("click", openThread);
     };
-  }, [editor, closeRelatedWork]);
+  }, [commentThreads, editor, closeRelatedWork]);
 
   useEffect(() => {
     if (!editor) return;
@@ -109,10 +133,12 @@ export function useDocumentCommentInteractions({
   const openComments = () => {
     closeRelatedWork();
     setIsCommentComposerOpen(false);
+    setCommentThreadScope(undefined);
     setActiveCommentThreadId(undefined);
     setIsCommentsOpen(true);
   };
   const startComment = (selection: DocumentCommentSelection) => {
+    setCommentThreadScope(undefined);
     setCommentDraft({
       ...selection,
       draftKey: `${selection.from}:${selection.to}:${selection.text}`,
@@ -129,6 +155,7 @@ export function useDocumentCommentInteractions({
     isCommentComposerOpen,
     setIsCommentComposerOpen,
     activeCommentThreadId,
+    commentThreadScope,
     setActiveCommentThreadId,
     closeComments,
     openComments,

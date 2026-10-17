@@ -3,12 +3,47 @@
 package chatrepository
 
 import (
+	"encoding/json"
 	"testing"
 
 	domain "github.com/complexus-tech/projects-api/internal/modules/chat/domain"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
+
+func TestNotificationContentUsesCurrentMessageAndSourceWithinWorkspace(t *testing.T) {
+	f := newFixture(t)
+	rich := json.RawMessage(`{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Please review","marks":[{"type":"bold"}]}]}]}`)
+	message, err := f.service.CreateMessage(f.ctx, domain.CreateMessageCommand{
+		Scope: f.scope, ConversationID: f.room, CreationID: uuid.New(), Text: "Please review", RichContent: rich,
+	})
+	require.NoError(t, err)
+	event := f.eventFor(t, message.ID)
+	content, err := f.repo.NotificationContent(f.ctx, event)
+	require.NoError(t, err)
+	require.Equal(t, "team", content.ConversationKind)
+	require.Equal(t, "Product", content.ConversationName)
+	require.Equal(t, "Person "+f.author.String(), content.AuthorName)
+	require.Equal(t, "Please review", content.Text)
+	require.JSONEq(t, string(rich), string(content.RichContent))
+	require.Empty(t, content.Attachments)
+
+	foreign := event
+	foreign.WorkspaceID = uuid.New()
+	_, err = f.repo.NotificationContent(f.ctx, foreign)
+	require.ErrorIs(t, err, domain.ErrNotFound)
+
+	_, err = f.service.UpdateMessage(f.ctx, domain.UpdateMessageCommand{Scope: f.scope, MessageID: message.ID, Version: message.Version, Text: "Updated before delivery"})
+	require.NoError(t, err)
+	content, err = f.repo.NotificationContent(f.ctx, event)
+	require.NoError(t, err)
+	require.Equal(t, "Updated before delivery", content.Text)
+
+	_, err = f.pool.Exec(f.ctx, `DELETE FROM team_members WHERE team_id=$1 AND user_id=$2`, f.team, f.peer)
+	require.NoError(t, err)
+	_, err = f.repo.NotificationContent(f.ctx, event)
+	require.ErrorIs(t, err, domain.ErrNotFound, "no remaining authorized recipient must suppress message content")
+}
 
 func TestEveryIncomingMessageSnapshotsMembersAndRechecksReadBoundaries(t *testing.T) {
 	f := newFixture(t)

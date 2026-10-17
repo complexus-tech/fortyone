@@ -7,7 +7,12 @@ export type ChatPerson = {
   isSystem: boolean;
 };
 
-export type ChatReaction = { emoji: string; count: number; reacted: boolean };
+export type ChatReaction = {
+  emoji: string;
+  count: number;
+  reacted: boolean;
+  users?: ChatPerson[];
+};
 export type ChatAttachment = {
   id: string;
   fileName: string;
@@ -22,6 +27,7 @@ export type ChatLink = { id: string; url: string; title: string };
 export type ChatTask = { id: string; title: string; reference?: string };
 
 export type ChatMessage = {
+  deliveryStatus?: "sending" | "failed";
   id: string;
   conversationId: string;
   threadRootId: string | null;

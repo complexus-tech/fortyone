@@ -470,7 +470,7 @@ func (q *Queries) CreateNotification(ctx context.Context, arg CreateNotification
 }
 
 const getNotificationEventReceipt = `-- name: GetNotificationEventReceipt :one
-SELECT notification_id, recipient_id, workspace_id,
+SELECT notification_id, recipient_id, workspace_id, actor_id, entity_id, notification_type, entity_type,
        payload = CAST($1 AS jsonb) AS matches_payload
 FROM public.notification_event_receipts
 WHERE dedupe_key = CAST($2 AS text)
@@ -482,10 +482,14 @@ type GetNotificationEventReceiptParams struct {
 }
 
 type GetNotificationEventReceiptRow struct {
-	NotificationID *uuid.UUID
-	RecipientID    uuid.UUID
-	WorkspaceID    uuid.UUID
-	MatchesPayload bool
+	NotificationID   *uuid.UUID
+	RecipientID      uuid.UUID
+	WorkspaceID      uuid.UUID
+	ActorID          uuid.UUID
+	EntityID         uuid.UUID
+	NotificationType NotificationType
+	EntityType       EntityType
+	MatchesPayload   bool
 }
 
 func (q *Queries) GetNotificationEventReceipt(ctx context.Context, arg GetNotificationEventReceiptParams) (GetNotificationEventReceiptRow, error) {
@@ -495,6 +499,10 @@ func (q *Queries) GetNotificationEventReceipt(ctx context.Context, arg GetNotifi
 		&i.NotificationID,
 		&i.RecipientID,
 		&i.WorkspaceID,
+		&i.ActorID,
+		&i.EntityID,
+		&i.NotificationType,
+		&i.EntityType,
 		&i.MatchesPayload,
 	)
 	return i, err

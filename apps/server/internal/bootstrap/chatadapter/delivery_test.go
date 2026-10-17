@@ -24,6 +24,9 @@ type eventStoreStub struct {
 	events              []chat.Event
 	recipients          []uuid.UUID
 	targets             []chat.NotificationRecipient
+	content             chat.NotificationContent
+	contentErr          error
+	contentLookups      int
 	completed, released int
 }
 
@@ -69,6 +72,10 @@ func (s *eventStoreStub) RecipientIDs(context.Context, uuid.UUID, uuid.UUID) ([]
 func (s *eventStoreStub) NotificationRecipients(context.Context, chat.Event) ([]chat.NotificationRecipient, error) {
 	return s.targets, nil
 }
+func (s *eventStoreStub) NotificationContent(context.Context, chat.Event) (chat.NotificationContent, error) {
+	s.contentLookups++
+	return s.content, s.contentErr
+}
 
 type deliveryStub struct {
 	mu          sync.Mutex
@@ -105,7 +112,7 @@ func (s *deliveryStub) Create(_ context.Context, n notifications.NewNotification
 	if s.receipts[n.DedupeKey] == uuid.Nil {
 		s.receipts[n.DedupeKey] = uuid.New()
 	}
-	return notifications.Notification{ID: s.receipts[n.DedupeKey], InAppEnabled: !s.alertsMuted, CreatedAt: n.OccurredAt, ReadAt: s.readAt}, nil
+	return notifications.Notification{ID: s.receipts[n.DedupeKey], Title: n.Title, Message: n.Message, InAppEnabled: !s.alertsMuted, CreatedAt: n.OccurredAt, ReadAt: s.readAt}, nil
 }
 func (s *deliveryStub) PublishChatNotification(_ context.Context, notification publisher.ChatNotification) error {
 	s.mu.Lock()
@@ -121,6 +128,7 @@ func TestDeliveryScopesHintsAndDeduplicatesTargets(t *testing.T) {
 	event := chat.Event{ID: uuid.New(), LeaseToken: uuid.New(), WorkspaceID: uuid.New(), ConversationID: uuid.New(), MessageID: uuid.New(), ActorID: actor, Type: "message.created", Version: 1, CreatedAt: time.Now()}
 	store := &eventStoreStub{events: []chat.Event{event}, recipients: []uuid.UUID{actor, recipient}, targets: []chat.NotificationRecipient{{UserID: recipient, Reason: "mention"}, {UserID: recipient, Reason: "reply"}, {UserID: actor, Reason: "dm"}}}
 	delivery := &deliveryStub{}
+	store.content = chat.NotificationContent{ConversationKind: "team", ConversationName: "Product", AuthorName: "Sarah", Text: "Please review the launch plan"}
 	count, err := (Dispatcher{Store: store, Updates: delivery, Notifications: delivery}).Dispatch(t.Context(), 50)
 	if err != nil || count != 1 || store.completed != 1 {
 		t.Fatalf("dispatch = %d, %v", count, err)
@@ -140,10 +148,13 @@ func TestDeliveryScopesHintsAndDeduplicatesTargets(t *testing.T) {
 	if err := notice.Validate(); err != nil {
 		t.Fatal(err)
 	}
-	if notice.DedupeKey == "" || notice.Message.Template != "You were mentioned in a conversation." {
-		t.Fatal("notification receipt or privacy-safe template missing")
+	if notice.DedupeKey == "" || notice.Title != "Product" || notice.Message.Template != "{message}" || notice.Message.Variables["message"] != (notifications.Variable{Value: "Sarah: Please review the launch plan", Type: "plain_text"}) {
+		t.Fatal("notification receipt or source message missing")
 	}
 	alert := delivery.alerts[0]
+	if alert.Title != notice.Title || alert.Body != notice.Message.Variables["message"].Value || store.contentLookups != 1 {
+		t.Fatal("live alert must preserve the source and preview from one lookup per event")
+	}
 	if alert.EventID != event.ID || alert.WorkspaceID != event.WorkspaceID || alert.UserID != recipient || alert.ActorID != actor || alert.ConversationID != event.ConversationID || alert.MessageID != event.MessageID || !alert.OccurredAt.Equal(event.CreatedAt) || alert.NotificationID == uuid.Nil {
 		t.Fatal("chat alert lost its source, recipient or receipt identity")
 	}

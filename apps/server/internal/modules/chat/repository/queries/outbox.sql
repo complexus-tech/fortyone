@@ -50,6 +50,34 @@ AND public.can_read_chat_message(event.workspace_id,recipient.user_id,event.mess
 AND message.sequence>CASE WHEN message.thread_root_id IS NULL THEN COALESCE(conversation_read.last_read_sequence,0) ELSE COALESCE(thread_read.last_read_sequence,0) END
 ORDER BY recipient.user_id;
 
+-- name: NotificationContent :one
+SELECT jsonb_build_object(
+    'conversationKind', conversation.kind,
+    'conversationName', COALESCE(team.name, ''),
+    'authorName', COALESCE(NULLIF(author.full_name, ''), author.username),
+    'text', message.text,
+    'richContent', message.rich_content,
+    'attachments', COALESCE((
+        SELECT jsonb_agg(jsonb_build_object(
+            'fileName', attachment.filename, 'mediaType', attachment.mime_type, 'kind', COALESCE(chat_attachment.kind, '')
+        ) ORDER BY attachment.attachment_id)
+        FROM public.chat_attachments chat_attachment
+        JOIN public.attachments attachment ON attachment.attachment_id=chat_attachment.attachment_id
+        WHERE chat_attachment.message_id=message.id
+    ), '[]')
+)
+FROM public.chat_outbox event
+JOIN public.chat_conversation_messages message ON message.id=event.message_id AND message.workspace_id=event.workspace_id
+JOIN public.chat_conversations conversation ON conversation.id=message.conversation_id
+JOIN public.users author ON author.user_id=message.author_id
+LEFT JOIN public.teams team ON team.team_id=conversation.team_id
+WHERE event.id=sqlc.arg(event_id) AND event.workspace_id=sqlc.arg(workspace_id) AND event.event_type='message.created'
+AND message.deleted_at IS NULL
+AND EXISTS (
+    SELECT 1 FROM public.chat_outbox_recipients recipient
+    WHERE recipient.event_id=event.id AND public.can_read_chat_message(event.workspace_id,recipient.user_id,message.id)
+);
+
 -- name: ReadRecipientIDs :many
 SELECT u.user_id FROM public.users u WHERE u.user_id=sqlc.arg(actor_id)
 AND public.can_read_chat_conversation(sqlc.arg(workspace_id),u.user_id,sqlc.arg(conversation_id));

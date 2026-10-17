@@ -8,7 +8,7 @@ import {
   useQueryClient,
   useMutationState,
 } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { WorkspaceCtx } from "@/lib/http";
 import { get } from "@/lib/http";
 import { useSession } from "@/lib/auth/client";
@@ -19,6 +19,13 @@ import type { Objective } from "@/shared/objectives/types";
 import { documentKeys } from "@/shared/documents/keys";
 import type { WorkspaceDocument } from "@/modules/documents/types";
 import type { ApiResponse } from "@/types/api-response";
+import {
+  PREVIEW_CACHE_TTL_MS,
+  readPreviewCache,
+  removePreviewCache,
+  usePreviewCacheReady,
+  writePreviewCache,
+} from "@/lib/queries/links/preview-cache";
 import type { NativeLinkTarget } from "./native-target";
 
 export type NativeStorySummary = Pick<
@@ -65,13 +72,19 @@ type CachedPreview = {
   requestedAt: number;
 };
 
-const ACCESS_LEASE_MS = 30_000;
+const isCachedPreview = (value: unknown): value is CachedPreview => {
+  if (!isRecord(value) || typeof value.requestedAt !== "number") return false;
+  const resource = value.resource;
+  if (!isRecord(resource) || !isRecord(resource.value)) return false;
+  if (typeof resource.value.id !== "string") return false;
+  return resource.kind === "objective"
+    ? typeof resource.value.name === "string"
+    : (resource.kind === "story" || resource.kind === "document") &&
+        typeof resource.value.title === "string";
+};
 // A query can have several card observers. The refresh signal must belong to
 // the shared query, not the particular card whose menu was clicked.
 const refreshRequests = new WeakMap<QueryClient, Set<string>>();
-// QueryCache passes the same event to every card observer. Each affected
-// summary needs one refresh per event; a later edit must still start a new one.
-const handledInvalidations = new WeakMap<object, Set<string>>();
 const requestRefresh = (client: QueryClient, queryHash: string) => {
   let requests = refreshRequests.get(client);
   if (!requests) {
@@ -170,6 +183,50 @@ const resourceKey = (
   }
 };
 
+const observedClients = new WeakSet<QueryClient>();
+const observePreviewInvalidations = (client: QueryClient) => {
+  if (observedClients.has(client)) return;
+  observedClients.add(client);
+  // Follow the QueryClient lifetime so navigating away from a card does not
+  // leave its durable copy fresh after a later edit elsewhere in the app.
+  client.getQueryCache().subscribe((event) => {
+    if (event.type !== "updated") return;
+    const invalidated = event.action.type === "invalidate";
+    const denied =
+      event.action.type === "error" && isAccessDenied(event.query.state.error);
+    if (!invalidated && !denied) return;
+    for (const query of client
+      .getQueryCache()
+      .findAll({ queryKey: ["native-link-preview"] })) {
+      const cached: unknown = query.state.data;
+      const workspace = query.queryKey[2];
+      if (
+        !isCachedPreview(cached) ||
+        !cached.resource ||
+        typeof workspace !== "string"
+      )
+        continue;
+      if (
+        hashKey(resourceKey(workspace, cached.resource)) !==
+        event.query.queryHash
+      )
+        continue;
+      removePreviewCache(query.queryHash);
+      if (denied) {
+        void client.cancelQueries({ queryKey: query.queryKey, exact: true });
+        client.setQueryData<CachedPreview>(query.queryKey, {
+          ...cached,
+          resource: null,
+        });
+      } else {
+        void client.invalidateQueries({
+          predicate: (candidate) => candidate.queryHash === query.queryHash,
+        });
+      }
+    }
+  });
+};
+
 /** Summaries have their own identity-scoped cache; full resources remain owned by their features. */
 export const useNativeLink = (
   target: NativeLinkTarget,
@@ -179,6 +236,7 @@ export const useNativeLink = (
   const { data: session } = useSession();
   const client = useQueryClient();
   const identity = session?.user.id;
+  const cacheReady = usePreviewCacheReady();
   const queryKey = [
     "native-link-preview",
     identity,
@@ -188,48 +246,57 @@ export const useNativeLink = (
     target.kind === "objective" ? target.teamId : "",
   ];
   const queryHash = hashKey(queryKey);
-  const [accessScope, setAccessScope] = useState(() => ({
-    queryHash,
-    mountedAt: Date.now(),
-  }));
-  useEffect(() => {
-    const mountedAt = Date.now();
-    setAccessScope((current) =>
-      current.queryHash === queryHash ? current : { queryHash, mountedAt },
-    );
-  }, [queryHash]);
+  const persisted = useMemo(
+    () => (identity ? readPreviewCache(queryHash, isCachedPreview) : undefined),
+    [identity, queryHash],
+  );
   const canFetch =
     enabled && Boolean(identity) && target.kind !== "unsupported";
   const access = useQuery({
     queryKey,
     queryFn: async ({ signal }): Promise<CachedPreview> => {
       const requestedAt = Date.now();
-      const refresh = refreshRequests.get(client)?.delete(queryHash) ?? false;
+      const refresh = refreshRequests.get(client)?.has(queryHash) ?? false;
       const resource = await fetchNativeLink(
         target,
         { session, workspaceSlug: target.workspaceSlug },
         { signal, refresh },
       );
-      return { resource, requestedAt };
+      const preview = { resource, requestedAt };
+      if (!signal.aborted) {
+        refreshRequests.get(client)?.delete(queryHash);
+        if (resource) writePreviewCache(queryHash, preview, requestedAt);
+        else removePreviewCache(queryHash);
+      }
+      return preview;
     },
+    initialData: persisted?.data,
+    initialDataUpdatedAt: persisted?.savedAt,
     enabled: canFetch && active,
-    staleTime: ACCESS_LEASE_MS,
-    gcTime: 5 * 60_000,
-    retry: false,
-    refetchInterval: canFetch && active ? ACCESS_LEASE_MS : false,
+    staleTime: (query) =>
+      query.state.data?.resource ? PREVIEW_CACHE_TTL_MS : 30_000,
+    gcTime: PREVIEW_CACHE_TTL_MS,
+    retry: (failures, error) => {
+      // Explicit refresh failures surface immediately. Initial/background reads
+      // get one retry so a brief outage does not require switching tabs.
+      if (refreshRequests.get(client)?.delete(queryHash)) return false;
+      return failures < 1 && !isAccessDenied(error);
+    },
+    retryDelay: 500,
+    refetchInterval: canFetch && active ? PREVIEW_CACHE_TTL_MS : false,
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
-    refetchOnReconnect: "always",
+    refetchOnReconnect: true,
   });
   const resource = access.data?.resource;
   const canonicalKey = resource
     ? resourceKey(target.workspaceSlug, resource)
     : ["native-link-preview-unresolved", identity, target.href];
-  const canonicalHash = hashKey(canonicalKey);
   const canonical = useQuery<NativeLinkResource["value"] | null>({
     queryKey: canonicalKey,
     queryFn: skipToken,
     enabled: false,
+    gcTime: PREVIEW_CACHE_TTL_MS,
   });
   const pendingChanges = useMutationState({
     filters: { status: "pending" },
@@ -237,29 +304,8 @@ export const useNativeLink = (
   });
 
   useEffect(() => {
-    if (!canFetch || !resource) return;
-    return client.getQueryCache().subscribe((event) => {
-      // Existing mutations and realtime reconciliation invalidate canonical
-      // keys. Translate those signals to a small preview request, never a full
-      // document/story fetch owned by this component.
-      if (
-        event.query.queryHash === canonicalHash &&
-        event.type === "updated" &&
-        event.action.type === "invalidate"
-      ) {
-        let refreshedQueries = handledInvalidations.get(event);
-        if (!refreshedQueries) {
-          refreshedQueries = new Set();
-          handledInvalidations.set(event, refreshedQueries);
-        }
-        if (refreshedQueries.has(queryHash)) return;
-        refreshedQueries.add(queryHash);
-        void client.invalidateQueries({
-          predicate: (query) => query.queryHash === queryHash,
-        });
-      }
-    });
-  }, [canFetch, client, canonicalHash, queryHash, resource]);
+    observePreviewInvalidations(client);
+  }, [client]);
 
   useEffect(() => {
     if (!canFetch) return;
@@ -275,29 +321,63 @@ export const useNativeLink = (
             cached.resource,
             event.mutation.state.variables,
           );
-          return updated === cached.resource
-            ? cached
-            : { ...cached, resource: updated };
+          if (updated === cached.resource) return cached;
+          const preview = { ...cached, resource: updated };
+          if (updated.kind === "story" && updated.value.deletedAt)
+            removePreviewCache(queryHash);
+          else writePreviewCache(queryHash, preview, cached.requestedAt);
+          return preview;
         },
         { updatedAt: query.state.dataUpdatedAt },
       );
     });
   }, [canFetch, client, queryHash]);
 
+  const [leaseClock, setLeaseClock] = useState(() => ({
+    queryHash,
+    now: Date.now(),
+  }));
+  const requestedAt = access.data?.requestedAt;
+  useEffect(() => {
+    const now = Date.now();
+    setLeaseClock({ queryHash, now });
+    if (!requestedAt) return;
+    const remaining = requestedAt + PREVIEW_CACHE_TTL_MS - now;
+    if (remaining <= 0) return;
+    const timer = setTimeout(() => {
+      setLeaseClock({ queryHash, now: Date.now() });
+    }, remaining);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [queryHash, requestedAt]);
+
+  const canonicalDenied =
+    isAccessDenied(canonical.error) &&
+    canonical.errorUpdatedAt >= access.dataUpdatedAt;
+  useEffect(() => {
+    if (!canonicalDenied) return;
+    removePreviewCache(queryHash);
+    const query = client.getQueryCache().get(queryHash);
+    if (query)
+      client.setQueryData<CachedPreview>(query.queryKey, (cached) =>
+        cached?.resource ? { ...cached, resource: null } : cached,
+      );
+  }, [canonicalDenied, client, queryHash]);
+
+  // A successful scoped preview remains usable throughout its one-day lease,
+  // including remounts/offscreen cards and temporary refresh failures.
   const authorized =
+    cacheReady &&
     canFetch &&
     Boolean(resource) &&
-    accessScope.queryHash === queryHash &&
     Boolean(
       access.data &&
-        (access.dataUpdatedAt >= accessScope.mountedAt ||
-          (active && !access.isStale)),
+        leaseClock.queryHash === queryHash &&
+        leaseClock.now - access.data.requestedAt < PREVIEW_CACHE_TTL_MS,
     ) &&
     !isAccessDenied(access.error) &&
-    !(
-      isAccessDenied(canonical.error) &&
-      canonical.errorUpdatedAt >= access.dataUpdatedAt
-    );
+    !canonicalDenied;
   const canonicalIsNewer =
     canonical.data &&
     canonical.dataUpdatedAt >= (access.data?.requestedAt ?? Infinity);
@@ -311,9 +391,7 @@ export const useNativeLink = (
   const data = base
     ? pendingChanges.reduce<NativeLinkResource>(applyWorkMutation, base)
     : null;
-  // A remounted cached query can already be in the success state while its
-  // current access check is still pending. Keep stale fields hidden, but do not
-  // describe that normal revalidation/visibility wait as an access failure.
+  // An expired lease still waits for a fresh access check before showing data.
   const awaitingAccess =
     canFetch &&
     !data &&

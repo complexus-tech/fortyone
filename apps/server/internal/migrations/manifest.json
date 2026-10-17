@@ -3029,6 +3029,41 @@
         "Unread counters exclude own messages and deleted content, retain current membership boundaries, and are independent of paginated conversation loading.",
         "The unread helper uses existing conversation/thread sequence indexes; no counter backfill or message-history rewrite is required."
       ]
+    },
+    {
+      "version": 236,
+      "slug": "chat_reaction_users",
+      "classification": "reversible",
+      "files": {
+        "up": "000236_chat_reaction_users.up.sql",
+        "down": "000236_chat_reaction_users.down.sql"
+      },
+      "compatibility": {
+        "schema": "Extends the chat message projection with the people who reacted to each emoji; no stored messages or reactions are changed.",
+        "api": "Updated API returns users on chat reactions for per-person hover tooltips.",
+        "worker": "No worker changes are required for reaction metadata.",
+        "mixed_versions": "Apply schema before the API; older clients ignore users and newer clients tolerate older responses without it."
+      },
+      "rollout": {
+        "sequence": 85,
+        "mode": "schema-first",
+        "steps": [
+          "Apply migration 000236 after 000235.",
+          "Deploy the API and client with reaction users and hover tooltips.",
+          "Verify each emoji lists only its reactors and removing a reaction updates the list."
+        ]
+      },
+      "recovery": {
+        "strategy": "down-migration",
+        "procedure": [
+          "Restore the prior projection with the down migration; all message and reaction data is retained.",
+          "Clients without users metadata continue to show reaction counts."
+        ]
+      },
+      "operational_notes": [
+        "Users are resolved through the existing reaction primary key and user identity join, ordered by display name and ID.",
+        "Existing message access checks protect reaction metadata, and deleted messages expose no reactions."
+      ]
     }
   ]
 }

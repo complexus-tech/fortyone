@@ -19,7 +19,7 @@ Credential configuration is indexed in [`docs/configuration.md`](../configuratio
 | `apiv1` | 20 | 7 / 27 | 0 | no | 0 | [collaboration_resources.go](../../internal/modules/apiv1/http/collaboration_resources.go#L1) (328) |
 | `attachments` | 0 | 15 / 42 | 20 | yes | 0 | [attachments.go](../../internal/modules/attachments/service/attachments.go#L1) (549) |
 | `calendar` | 15 | 18 / 105 | 90 | yes | 0 | [microsoft.go](../../internal/modules/calendar/service/microsoft.go#L1) (583) |
-| `chat` | 19 | 28 / 72 | 58 | yes | 0 | [service.go](../../internal/modules/chat/service/service.go#L1) (461) |
+| `chat` | 19 | 29 / 76 | 59 | yes | 0 | [service.go](../../internal/modules/chat/service/service.go#L1) (461) |
 | `chatsessions` | 16 | 15 / 61 | 35 | yes | 0 | [chatsessions.go](../../internal/modules/chatsessions/http/chatsessions.go#L1) (661) |
 | `comments` | 8 | 19 / 45 | 20 | yes | 0 | [commands.go](../../internal/modules/comments/repository/commands.go#L1) (313) |
 | `customfields` | 8 | 7 / 14 | 26 | yes | 0 | [validation.go](../../internal/modules/customfields/domain/validation.go#L1) (170) |
@@ -47,7 +47,7 @@ Credential configuration is indexed in [`docs/configuration.md`](../configuratio
 | `maya` | 11 | 28 / 131 | 35 | yes | 0 | [reconciliation_flow.go](../../internal/modules/maya/service/reconciliation_flow.go#L1) (645) |
 | `messaging` | 0 | 34 / 165 | 73 | yes | 0 | [team_work.go](../../internal/modules/messaging/service/team_work.go#L1) (654) |
 | `nativepreviews` | 0 | 3 / 7 | 0 | no | 0 | [preview.go](../../internal/modules/nativepreviews/repository/preview.go#L1) (119) |
-| `notifications` | 17 | 36 / 113 | 51 | yes | 0 | [rules_story_updates.go](../../internal/modules/notifications/service/rules_story_updates.go#L1) (420) |
+| `notifications` | 17 | 36 / 115 | 51 | yes | 0 | [rules_story_updates.go](../../internal/modules/notifications/service/rules_story_updates.go#L1) (420) |
 | `objectives` | 15 | 18 / 58 | 36 | yes | 0 | [strategy_communications.go](../../internal/modules/objectives/repository/strategy_communications.go#L1) (442) |
 | `objectivestatus` | 4 | 3 / 3 | 15 | yes | 0 | [repository.go](../../internal/modules/objectivestatus/repository/repository.go#L1) (318) |
 | `okractivities` | 0 | 4 / 12 | 3 | yes | 0 | [repository.go](../../internal/modules/okractivities/repository/repository.go#L1) (201) |

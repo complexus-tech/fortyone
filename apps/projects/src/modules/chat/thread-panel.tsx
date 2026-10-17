@@ -27,7 +27,7 @@ export const ThreadPanel = ({
   onToggleReaction,
   onEditMessage,
   onDeleteMessage,
-  sending = false,
+  onRetryMessage,
   hasOlder = false,
   hasNewer = false,
   loading = false,
@@ -55,7 +55,7 @@ export const ThreadPanel = ({
     draft: PreviewDraft,
   ) => void | Promise<void>;
   onDeleteMessage: (messageId: string) => void | Promise<void>;
-  sending?: boolean;
+  onRetryMessage?: (messageId: string) => void;
   hasOlder?: boolean;
   hasNewer?: boolean;
   loading?: boolean;
@@ -115,6 +115,7 @@ export const ThreadPanel = ({
                 message={thread}
                 onDeleteMessage={onDeleteMessage}
                 onEditMessage={onEditMessage}
+                onRetryMessage={onRetryMessage}
                 onToggleReaction={onToggleReaction}
               />
             </div>
@@ -160,6 +161,7 @@ export const ThreadPanel = ({
             message={message}
             onDeleteMessage={onDeleteMessage}
             onEditMessage={onEditMessage}
+            onRetryMessage={onRetryMessage}
             onToggleReaction={onToggleReaction}
           />
         )}
@@ -181,7 +183,6 @@ export const ThreadPanel = ({
 
       <Composer
         allowMaya={allowMaya}
-        disabled={sending}
         draft={draft}
         key={`composer:${thread.id}`}
         label="Reply in thread…"

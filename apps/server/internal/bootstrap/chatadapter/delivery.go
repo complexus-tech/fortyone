@@ -21,6 +21,7 @@ type EventStore interface {
 	ReadRecipientIDs(context.Context, chatdomain.Event) ([]uuid.UUID, error)
 	RecipientIDs(context.Context, uuid.UUID, uuid.UUID) ([]uuid.UUID, error)
 	NotificationRecipients(context.Context, chatdomain.Event) ([]chatdomain.NotificationRecipient, error)
+	NotificationContent(context.Context, chatdomain.Event) (chatdomain.NotificationContent, error)
 }
 type UpdatePublisher interface {
 	PublishChatUpdated(context.Context, publisher.ChatUpdate) error
@@ -117,6 +118,17 @@ func (d Dispatcher) deliver(ctx context.Context, event chatdomain.Event) error {
 	if err != nil {
 		return err
 	}
+	if len(targets) == 0 {
+		return nil
+	}
+	content, err := d.Store.NotificationContent(ctx, event)
+	if errors.Is(err, chatdomain.ErrNotFound) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	title, body := notificationCopy(content)
 	seen := make(map[uuid.UUID]struct{}, len(targets))
 	for _, target := range targets {
 		if target.UserID == uuid.Nil || target.UserID == event.ActorID {
@@ -126,15 +138,8 @@ func (d Dispatcher) deliver(ctx context.Context, event chatdomain.Event) error {
 			continue
 		}
 		seen[target.UserID] = struct{}{}
-		title, body := "New chat message", "You have a new direct message."
 		switch target.Reason {
-		case "mention":
-			title, body = "Mentioned in chat", "You were mentioned in a conversation."
-		case "reply":
-			title, body = "New reply", "There is a new reply in a conversation you are part of."
-		case "dm":
-		case "message":
-			body = "There is a new message in a team conversation."
+		case "mention", "reply", "dm", "message":
 		default:
 			continue
 		}
@@ -143,7 +148,9 @@ func (d Dispatcher) deliver(ctx context.Context, event chatdomain.Event) error {
 			WorkspaceID: event.WorkspaceID, RecipientID: target.UserID, ActorID: event.ActorID,
 			Type: notifications.NotificationTypeChatMessage, EntityType: notifications.EntityTypeChatMessage, EntityID: event.MessageID,
 			Title: title, Message: notifications.NotificationMessage{
-				Template: body, Variables: map[string]notifications.Variable{},
+				Template: "{message}", Variables: map[string]notifications.Variable{
+					"message": {Value: body, Type: "plain_text"},
+				},
 				EmailSuppressed: target.Reason == "message",
 			},
 		})
@@ -158,6 +165,12 @@ func (d Dispatcher) deliver(ctx context.Context, event chatdomain.Event) error {
 		if notification.ID == uuid.Nil || !notification.InAppEnabled || notification.ReadAt != nil {
 			continue
 		}
+		// A retry returns the original receipt even if the message was edited
+		// meanwhile. Native, browser and mobile delivery must show the same copy.
+		body := notification.Message.Template
+		if message, ok := notification.Message.Variables["message"]; ok && body == "{message}" {
+			body = message.Value
+		}
 		// Publish even when Create reuses an existing receipt: the earlier attempt
 		// may have persisted successfully but failed before live publication.
 		// Clients deduplicate this stable event/receipt pair.
@@ -166,7 +179,7 @@ func (d Dispatcher) deliver(ctx context.Context, event chatdomain.Event) error {
 			WorkspaceID: event.WorkspaceID, UserID: target.UserID, ActorID: event.ActorID,
 			ConversationID: event.ConversationID, MessageID: event.MessageID, ThreadRootID: event.ThreadRootID,
 			CreatedAt: notification.CreatedAt, OccurredAt: event.CreatedAt,
-			Title: title, Body: body,
+			Title: notification.Title, Body: body,
 		}); err != nil {
 			return err
 		}

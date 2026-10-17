@@ -271,6 +271,7 @@ const DocumentPageContent = ({ documentId }: { documentId: string }) => {
     isCommentComposerOpen,
     setIsCommentComposerOpen,
     activeCommentThreadId,
+    commentThreadScope,
     setActiveCommentThreadId,
     closeComments,
     openComments,
@@ -591,6 +592,7 @@ const DocumentPageContent = ({ documentId }: { documentId: string }) => {
                 setActiveCommentThreadId(thread.id);
                 closeComments();
               }}
+              threadScope={commentThreadScope}
             />
           </DocumentCommentsOverlay>
         ) : null}

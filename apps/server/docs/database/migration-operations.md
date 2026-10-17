@@ -100,6 +100,7 @@ The machine-readable source of truth is [`internal/migrations/manifest.json`](..
 | `000233` | `attachment_thumbnails` | `reversible` | `schema-first` | Thumbnail API authorizes the parent resource before serving or conditionally validating derivatives. | Updated workers require pdftoppm (poppler-utils); the worker image installs it. |
 | `000234` | `workspace_chat_enabled` | `forward-only` | `schema-first` | Updated API exposes chatEnabled through the existing admin-only workspace settings update and reads live feature state; obsolete chat rollout environment variables are removed. | Updated workers read database feature state and preserve disabled-workspace pending work. |
 | `000235` | `chat_unread_counts` | `reversible` | `schema-first` | Updated API exposes an authoritative workspace unread summary and paginated unread threads with a first-unread-reply destination. Conversation unreadCount now includes both roots and replies. | Updated workers publish dedicated chat attention events and recheck chat reads; generic notification receipts remain internal delivery state. |
+| `000236` | `chat_reaction_users` | `reversible` | `schema-first` | Updated API returns users on chat reactions for per-person hover tooltips. | No worker changes are required for reaction metadata. |
 
 ## `000152_harden_verification_tokens`
 
@@ -2361,6 +2362,32 @@ Operational notes:
 - Missing read cursors start at zero, so previously unopened threads become visible as unread rather than being silently marked read during rollout.
 - Unread counters exclude own messages and deleted content, retain current membership boundaries, and are independent of paginated conversation loading.
 - The unread helper uses existing conversation/thread sequence indexes; no counter backfill or message-history rewrite is required.
+
+## `000236_chat_reaction_users`
+
+- **Classification:** `reversible`
+- **Files:** `000236_chat_reaction_users.up.sql`, `000236_chat_reaction_users.down.sql`
+- **Schema:** Extends the chat message projection with the people who reacted to each emoji; no stored messages or reactions are changed.
+- **API:** Updated API returns users on chat reactions for per-person hover tooltips.
+- **Worker:** No worker changes are required for reaction metadata.
+- **Mixed versions:** Apply schema before the API; older clients ignore users and newer clients tolerate older responses without it.
+- **Rollout mode:** `schema-first`
+
+Rollout:
+
+1. Apply migration 000236 after 000235.
+2. Deploy the API and client with reaction users and hover tooltips.
+3. Verify each emoji lists only its reactors and removing a reaction updates the list.
+
+Recovery (`down-migration`):
+
+1. Restore the prior projection with the down migration; all message and reaction data is retained.
+2. Clients without users metadata continue to show reaction counts.
+
+Operational notes:
+
+- Users are resolved through the existing reaction primary key and user identity join, ordered by display name and ID.
+- Existing message access checks protect reaction metadata, and deleted messages expose no reactions.
 
 ## Adding the next migration
 

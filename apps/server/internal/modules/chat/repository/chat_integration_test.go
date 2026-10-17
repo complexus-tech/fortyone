@@ -305,7 +305,7 @@ func TestChatReadReactionAndDelayedNotificationSemantics(t *testing.T) {
 	reacted, err := f.service.GetMessage(f.ctx, peer, second.ID)
 	require.NoError(t, err)
 	require.Equal(t, 1, reacted.Version)
-	require.Equal(t, []domain.Reaction{{Emoji: "👍", Count: 1, Reacted: true}}, reacted.Reactions)
+	require.Equal(t, []domain.Reaction{{Emoji: "👍", Count: 1, Reacted: true, Users: []domain.Person{{ID: f.peer, FullName: "Person " + f.peer.String()}}}}, reacted.Reactions)
 	var events int
 	require.NoError(t, f.pool.QueryRow(f.ctx, `SELECT count(*) FROM chat_outbox WHERE message_id=$1 AND event_type='reaction.updated'`, second.ID).Scan(&events))
 	require.Equal(t, 1, events)

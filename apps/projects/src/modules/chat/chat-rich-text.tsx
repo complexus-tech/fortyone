@@ -21,14 +21,16 @@ export const EMPTY_PREVIEW_DRAFT: PreviewDraft = { text: "", content: null };
 export const CHAT_CONTENT_CLASS =
   "text-foreground text-base leading-6 [overflow-wrap:anywhere] [&_p]:my-1 [&_p]:min-h-6 [&_strong]:font-semibold [&_a]:text-primary [&_a]:underline [&_a]:underline-offset-2 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_li>p]:my-0 [&_blockquote]:border-border-strong [&_blockquote]:text-text-muted [&_blockquote]:my-2 [&_blockquote]:border-l-2 [&_blockquote]:pl-3 [&_code]:bg-surface-muted [&_code]:rounded [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_pre]:bg-surface-muted [&_pre]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:p-3 [&_pre]:whitespace-pre-wrap [&_pre_code]:bg-transparent [&_pre_code]:p-0";
 
+export const ChatMention = ({ children }: { children: ReactNode }) => (
+  <span className="bg-primary/10 text-primary rounded px-1 py-0.5 font-medium">
+    {children}
+  </span>
+);
+
 const renderMentions = (text: string): ReactNode =>
   text.split("@Maya").map((part, index) => (
     <Fragment key={index}>
-      {index > 0 ? (
-        <span className="bg-primary/10 text-primary rounded px-1 py-0.5 font-medium">
-          @Maya
-        </span>
-      ) : null}
+      {index > 0 ? <ChatMention>@Maya</ChatMention> : null}
       {part}
     </Fragment>
   ));
@@ -116,9 +118,9 @@ const renderNode = (node: JSONContent, inCode = false): ReactNode => {
   switch (node.type) {
     case "mention":
       return (
-        <span className="bg-primary/10 text-primary rounded px-1 py-0.5 font-medium">
+        <ChatMention>
           @{typeof node.attrs?.label === "string" ? node.attrs.label : "Member"}
-        </span>
+        </ChatMention>
       );
     case "doc":
       return children;
