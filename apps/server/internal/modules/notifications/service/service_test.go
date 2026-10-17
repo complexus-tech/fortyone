@@ -256,6 +256,36 @@ func TestCreateSkipsRealtimeForPortalAndEmailOnlyRows(t *testing.T) {
 	}
 }
 
+func TestChatReceiptPreservesPushWithoutGeneralInboxRealtime(t *testing.T) {
+	t.Parallel()
+	input, created := validNotification()
+	input.Type, created.Type = notificationsdomain.NotificationTypeChatMessage, notificationsdomain.NotificationTypeChatMessage
+	input.EntityType, created.EntityType = notificationsdomain.EntityTypeChatMessage, notificationsdomain.EntityTypeChatMessage
+	queue := &taskStub{}
+	service := newTestService(&repositoryStub{created: created, inserted: true}, queue)
+	published := 0
+	service.publishRealtime = func(context.Context, CoreNotification) error { published++; return nil }
+	result, err := service.Create(t.Context(), input)
+	require.NoError(t, err)
+	require.Equal(t, created.ID, result.ID)
+	require.Zero(t, published, "chat interruptions belong to chat.notification, never the work inbox")
+	require.Equal(t, []tasks.NotificationPushPayload{{NotificationID: created.ID}}, queue.pushPayloads)
+}
+
+func TestOrdinaryChatReceiptDoesNotEnqueueEmail(t *testing.T) {
+	t.Parallel()
+	input, created := validNotification()
+	input.Type, created.Type = notificationsdomain.NotificationTypeChatMessage, notificationsdomain.NotificationTypeChatMessage
+	input.EntityType, created.EntityType = notificationsdomain.EntityTypeChatMessage, notificationsdomain.EntityTypeChatMessage
+	input.Message.EmailSuppressed, created.Message.EmailSuppressed = true, true
+	queue := &taskStub{}
+	service := newTestService(&repositoryStub{created: created, inserted: true}, queue)
+	_, err := service.Create(t.Context(), input)
+	require.NoError(t, err)
+	require.Empty(t, queue.payloads)
+	require.Len(t, queue.pushPayloads, 1, "per-event email suppression must not suppress mobile push")
+}
+
 func TestWorkspaceMutationCarriesActorWorkspaceAndClock(t *testing.T) {
 	t.Parallel()
 	repository := &repositoryStub{}

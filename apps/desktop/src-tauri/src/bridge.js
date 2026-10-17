@@ -76,6 +76,7 @@
     value: Object.freeze({
       version: 2,
       commentNotificationLinks: true,
+      chatNotificationLinks: true,
       platform,
       vibrancy: platform === "macos",
       exportRecovery: (request) => window.__TAURI_INTERNALS__.invoke("hosted_export_recovery", { request }),

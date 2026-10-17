@@ -26,6 +26,12 @@ pub struct Notification {
     entity_id: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     comment_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    conversation_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    thread_root_id: Option<String>,
+    #[serde(default)]
+    silent: bool,
 }
 
 impl Notification {
@@ -45,6 +51,18 @@ impl Notification {
                 return Err("Invalid comment notification target".into());
             }
         }
+        for id in [&self.conversation_id, &self.thread_root_id]
+            .into_iter()
+            .flatten()
+        {
+            let id = uuid::Uuid::parse_str(id).map_err(|_| "Invalid chat notification identity")?;
+            if id.is_nil() || self.entity_type != "chat_message" {
+                return Err("Invalid chat notification target".into());
+            }
+        }
+        if self.thread_root_id.is_some() && self.conversation_id.is_none() {
+            return Err("Chat thread notification requires a conversation".into());
+        }
         if self.title.trim().is_empty()
             || self.title.len() > 2048
             || self.body.len() > 8192
@@ -52,7 +70,13 @@ impl Notification {
             || self.created_at.len() > 64
             || !matches!(
                 self.entity_type.as_str(),
-                "story" | "comment" | "objective" | "key_result" | "strategy" | "document" | "chat_message"
+                "story"
+                    | "comment"
+                    | "objective"
+                    | "key_result"
+                    | "strategy"
+                    | "document"
+                    | "chat_message"
             )
         {
             return Err("Invalid notification content".into());
@@ -95,6 +119,8 @@ fn activation_payload(notification: &Notification) -> Value {
         "workspaceSlug":notification.workspace_slug,"notificationId":notification.notification_id,
         "createdAt":notification.created_at,"entityType":notification.entity_type,"entityId":notification.entity_id,
         "commentId":notification.comment_id,
+        "conversationId":notification.conversation_id,"threadRootId":notification.thread_root_id,
+        "silent":notification.silent,
         "title":"FortyOne","body":""
     })
 }
@@ -202,15 +228,19 @@ async fn deliver(
             .map_err(|_| "Invalid notification identity")?
             .as_u128() as u32
             & 0x7fff_ffff) as i32;
-        window
+        let builder = window
             .notification()
             .builder()
             .id(id)
             .title(clean_text(&notification.title, 256))
             .body(clean_text(&notification.body, 1024))
-            .extra("fortyoneHostedTarget", activation_payload(notification))
-            .show()
-            .map_err(|error| error.to_string())
+            .extra("fortyoneHostedTarget", activation_payload(notification));
+        let builder = if notification.silent {
+            builder
+        } else {
+            builder.sound("default")
+        };
+        builder.show().map_err(|error| error.to_string())
     }
 }
 
@@ -271,6 +301,21 @@ fn destination(mut current: Url, notification: &Notification, production: bool) 
     };
     current.set_query(None);
     current.set_fragment(None);
+    if notification.entity_type == "chat_message" {
+        if let Some(conversation_id) = &notification.conversation_id {
+            current.set_path(&format!("{prefix}/chat"));
+            current
+                .query_pairs_mut()
+                .append_pair("conversation", conversation_id)
+                .append_pair("message", &notification.entity_id);
+            if let Some(thread_root_id) = &notification.thread_root_id {
+                current
+                    .query_pairs_mut()
+                    .append_pair("thread", thread_root_id);
+            }
+            return current;
+        }
+    }
     if matches!(
         notification.entity_type.as_str(),
         "story" | "objective" | "key_result" | "strategy" | "chat_message"
@@ -367,6 +412,9 @@ mod tests {
             entity_type: "story".into(),
             entity_id: uuid::Uuid::new_v4().to_string(),
             comment_id: None,
+            conversation_id: None,
+            thread_root_id: None,
+            silent: false,
         }
     }
     #[test]
@@ -472,6 +520,61 @@ mod tests {
         let mut event = notification();
         event.entity_type = "objective".into();
         event.comment_id = Some(uuid::Uuid::new_v4().to_string());
+        assert!(event.validate().is_err());
+    }
+
+    #[test]
+    fn chat_activation_opens_the_conversation_and_exact_thread_message() {
+        let mut event = notification();
+        event.entity_type = "chat_message".into();
+        event.conversation_id = Some(uuid::Uuid::new_v4().to_string());
+        event.thread_root_id = Some(uuid::Uuid::new_v4().to_string());
+        event.silent = true;
+        assert!(event.validate().is_ok());
+        let restored: Notification = serde_json::from_value(activation_payload(&event)).unwrap();
+        assert!(restored.silent);
+        for (origin, production, path) in [
+            (
+                "https://engineering.fortyone.app/my-work?old=true",
+                true,
+                "/chat",
+            ),
+            (
+                "http://localhost:3000/engineering/my-work",
+                false,
+                "/engineering/chat",
+            ),
+        ] {
+            let url = destination(Url::parse(origin).unwrap(), &restored, production);
+            assert_eq!(url.path(), path);
+            let query: std::collections::HashMap<_, _> = url.query_pairs().collect();
+            assert_eq!(
+                query.get("conversation").map(|value| value.as_ref()),
+                event.conversation_id.as_deref()
+            );
+            assert_eq!(
+                query.get("thread").map(|value| value.as_ref()),
+                event.thread_root_id.as_deref()
+            );
+            assert_eq!(
+                query.get("message").map(|value| value.as_ref()),
+                Some(event.entity_id.as_str())
+            );
+            assert!(!query.contains_key("old"));
+        }
+    }
+
+    #[test]
+    fn chat_destinations_require_valid_scoped_metadata() {
+        let mut event = notification();
+        event.conversation_id = Some(uuid::Uuid::new_v4().to_string());
+        assert!(event.validate().is_err());
+        event.entity_type = "chat_message".into();
+        assert!(event.validate().is_ok());
+        event.thread_root_id = Some(uuid::Uuid::new_v4().to_string());
+        event.conversation_id = None;
+        assert!(event.validate().is_err());
+        event.conversation_id = Some("https://outside.example".into());
         assert!(event.validate().is_err());
     }
 }

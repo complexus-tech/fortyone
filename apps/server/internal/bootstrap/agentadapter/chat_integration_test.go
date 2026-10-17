@@ -43,10 +43,21 @@ import (
 // The provider is deterministic; the source, membership checks, invocation,
 // proposal, task mutation, receipts, reply and outbox all use real PostgreSQL.
 type chatIntegrationAssistant struct {
-	tools       *messaging.FortyOneToolExecutor
-	createTasks bool
-	calls       int
-	request     messaging.Request
+	tools               *messaging.FortyOneToolExecutor
+	createTasks         bool
+	calls               int
+	request             messaging.Request
+	followupDecision    bool
+	followupError       error
+	followupUsage       messaging.Usage
+	classificationCalls int
+	classification      messaging.ChatFollowupRequest
+}
+
+func (a *chatIntegrationAssistant) ClassifyChatFollowup(_ context.Context, request messaging.ChatFollowupRequest) (messaging.ChatFollowupDecision, error) {
+	a.classificationCalls++
+	a.classification = request
+	return messaging.ChatFollowupDecision{ShouldRespond: a.followupDecision, Usage: a.followupUsage}, a.followupError
 }
 
 func (a *chatIntegrationAssistant) Respond(ctx context.Context, request messaging.Request) (messaging.Response, error) {

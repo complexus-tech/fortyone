@@ -8,8 +8,11 @@ import { Button, Flex, Input, Text, Tooltip } from "ui";
 import { useDebounce } from "@/hooks/debounce";
 import { ConversationMark } from "./avatars";
 import { ConversationListActions } from "./conversation-list-actions";
-import type { ChatConversation } from "./types";
+import type { ChatConversation, ChatUnreadThread } from "./types";
 import { useChatConversations } from "./queries";
+import { useChatUnread } from "./use-chat-unread";
+import { ChatUnreadBadge } from "./unread-badge";
+import { UnreadThreads } from "./unread-threads";
 
 const ROW_CLASS =
   "hover:bg-surface-muted focus-visible:ring-primary/40 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left transition-colors outline-none focus-visible:ring-2";
@@ -20,17 +23,31 @@ export const ConversationList = ({
   onSelect,
   onNewMessage,
   conversations,
+  activeThreadId,
+  onSelectThread,
 }: {
   activeId: string;
   conversations: ChatConversation[];
   navigationControl?: ReactNode;
   onSelect: (id: string) => void;
   onNewMessage: () => void;
+  activeThreadId?: string;
+  onSelectThread: (
+    thread: ChatUnreadThread,
+    trigger: HTMLButtonElement,
+  ) => void;
 }) => {
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState("");
   const searchLater = useDebounce(setQuery, 200);
   const result = useChatConversations(query);
+  const unread = useChatUnread();
+  const unreadByConversation = new Map(
+    unread.data?.conversations.map((conversation) => [
+      conversation.conversationId,
+      conversation.unreadCount,
+    ]),
+  );
   const [expanded, setExpanded] = useState({ team: true, dm: true });
   const sectionId = useId();
   const searchRef = useRef<HTMLInputElement>(null);
@@ -114,6 +131,11 @@ export const ConversationList = ({
         className="min-h-0 flex-1 overflow-y-auto px-3 py-3"
         id={`${sectionId}-conversations`}
       >
+        <UnreadThreads
+          activeThreadId={activeThreadId}
+          count={unread.data?.unreadThreads ?? 0}
+          onSelect={onSelectThread}
+        />
         {(["team", "dm"] as const).map((kind) => (
           <section className="mb-4" key={kind}>
             <h2>
@@ -165,16 +187,14 @@ export const ConversationList = ({
                       conversation={conversation}
                     />
                     <span className="truncate">{conversation.name}</span>
-                    {conversation.unreadCount > 0 ? (
-                      <span
-                        aria-label={`${conversation.unreadCount} unread messages`}
-                        className="bg-primary/10 text-primary ml-auto rounded-full px-2 py-0.5 tabular-nums"
-                      >
-                        {conversation.unreadCount > 99
-                          ? "99+"
-                          : conversation.unreadCount}
-                      </span>
-                    ) : null}
+                    <ChatUnreadBadge
+                      className="ml-auto"
+                      count={
+                        unread.data
+                          ? unreadByConversation.get(conversation.id) ?? 0
+                          : conversation.unreadCount
+                      }
+                    />
                   </button>
                 ))}
             </div>

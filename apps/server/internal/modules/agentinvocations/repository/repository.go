@@ -157,7 +157,8 @@ func (r *Repository) Publish(ctx context.Context, run domain.Run, publish func(c
 }
 
 func (r *Repository) Complete(ctx context.Context, run domain.Run) (domain.Run, error) {
-	if run.Outcome == nil || run.ReplyCommentID == nil {
+	ignored := run.Proposal != nil && run.Proposal.Ignore && run.Proposal.Validate() == nil && run.Outcome == nil && run.ReplyCommentID == nil && run.ProposalReplyID == nil
+	if !ignored && (run.Outcome == nil || run.ReplyCommentID == nil) {
 		return domain.Run{}, domain.ErrConflict
 	}
 	nextStatus := domain.StatusSucceeded

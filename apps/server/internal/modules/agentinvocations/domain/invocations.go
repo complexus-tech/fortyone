@@ -90,6 +90,10 @@ type Run struct {
 }
 
 type Proposal struct {
+	// Ignore records a completed addressing decision without publishing a reply
+	// or executing tools. It is mutually exclusive with every response/action.
+	Ignore           bool            `json:"ignore,omitempty"`
+	IgnoreReceipt    json.RawMessage `json:"ignoreReceipt,omitempty"`
 	Summary          string          `json:"summary"`
 	Review           string          `json:"review,omitempty"`
 	Reply            string          `json:"reply"`
@@ -107,7 +111,7 @@ type Outcome struct {
 // already committed work. Transient publication/delivery outages must not strand
 // an action receipt or an approval question after the model retry limit.
 func (run Run) HasDurableResponse() bool {
-	return run.Outcome != nil || run.ProposalReplyID != nil || run.ActionStartedAt != nil
+	return run.Outcome != nil || run.ProposalReplyID != nil || run.ActionStartedAt != nil || (run.Proposal != nil && run.Proposal.Ignore)
 }
 
 type Control struct {
@@ -170,8 +174,17 @@ func (proposal Proposal) HasAction() bool {
 }
 
 func (proposal Proposal) Validate() error {
+	if len(proposal.IgnoreReceipt) > MaximumPayloadBytes || (len(proposal.IgnoreReceipt) > 0 && (!proposal.Ignore || !json.Valid(proposal.IgnoreReceipt))) {
+		return ErrInvalidInput
+	}
 	if len(proposal.Summary) > 2000 || len(proposal.Review) > MaximumPayloadBytes || len(proposal.Reply) > MaximumPayloadBytes || len(proposal.Action) > MaximumPayloadBytes || (proposal.HasAction() && !json.Valid(proposal.Action)) {
 		return ErrInvalidInput
+	}
+	if proposal.Ignore {
+		if proposal.HasAction() || proposal.RequiresApproval || proposal.NeedsInput || strings.TrimSpace(proposal.Reply) != "" || strings.TrimSpace(proposal.Review) != "" {
+			return ErrInvalidInput
+		}
+		return nil
 	}
 	if proposal.NeedsInput && (proposal.HasAction() || proposal.RequiresApproval) {
 		return ErrInvalidInput

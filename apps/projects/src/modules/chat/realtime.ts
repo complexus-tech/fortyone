@@ -41,6 +41,8 @@ export const reconcileChatQueries = (
           queryKey: chatKeys.all(workspace),
           predicate: ({ queryKey }: { queryKey: readonly unknown[] }) =>
             refresh.all ||
+            queryKey[2] === "unread" ||
+            queryKey[2] === "unread-threads" ||
             queryKey[2] === "conversations" ||
             queryKey[2] === "message" ||
             (typeof queryKey[3] === "string" && conversations.has(queryKey[3])),

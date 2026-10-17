@@ -81,6 +81,7 @@ const messageWith = (attachments: ChatAttachment[]): ChatMessage => ({
   deletedAt: null,
   version: 1,
   replyCount: 0,
+  unreadReplyCount: 0,
   lastReplyAt: null,
   replyAuthors: [],
   reactions: [],

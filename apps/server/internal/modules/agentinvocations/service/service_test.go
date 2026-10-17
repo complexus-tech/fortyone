@@ -13,6 +13,28 @@ import (
 
 type transactionMarker struct{}
 
+func TestIgnoredInvocationCompletesWithoutToolsPublicationOrDelivery(t *testing.T) {
+	for _, recovered := range []bool{false, true} {
+		store := &lifecycleStore{run: Run{ID: uuid.New()}}
+		runtime := &lifecycleRuntime{proposal: Proposal{Ignore: true}}
+		if recovered {
+			store.run.Proposal = &Proposal{Ignore: true}
+		}
+		if err := New(store, runtime).Process(t.Context(), store.run.ID); err != nil {
+			t.Fatal(err)
+		}
+		if store.run.Status != StatusSucceeded || store.run.Outcome != nil || store.run.ReplyCommentID != nil {
+			t.Fatalf("ignored invocation unexpectedly published an outcome: %+v", store.run)
+		}
+		if runtime.applyCalls != 0 || runtime.publishCalls != 0 || runtime.deliveryCalls != 0 || store.executeCalls != 0 || store.publishCalls != 0 || store.completeCalls != 1 {
+			t.Fatal("an ignored invocation must complete without a response, tool, notification, or publication")
+		}
+		if recovered && runtime.prepareCalls != 0 {
+			t.Fatal("recovery must reuse the durable addressing decision")
+		}
+	}
+}
+
 type lifecycleStore struct {
 	Store
 	run                                       Run
@@ -106,6 +128,9 @@ type lifecycleRuntime struct {
 	prepareError, deliveryError                                                                      error
 	authorizationError, publishError                                                                 error
 	proposalPublishCalls                                                                             int
+	ignoredFinalizations                                                                             int
+	ignoredFinalizeError                                                                             error
+	prepareContext                                                                                   context.Context
 }
 
 func (r *lifecycleRuntime) Authorize(ctx context.Context, _ Run) error {
@@ -121,9 +146,18 @@ func (r *lifecycleRuntime) Authorize(ctx context.Context, _ Run) error {
 	}
 	return nil
 }
-func (r *lifecycleRuntime) Prepare(context.Context, Run) (Proposal, error) {
+func (r *lifecycleRuntime) Prepare(ctx context.Context, _ Run) (Proposal, error) {
 	r.prepareCalls++
+	r.prepareContext = ctx
 	return r.proposal, r.prepareError
+}
+
+func (r *lifecycleRuntime) FinalizeIgnored(ctx context.Context, _ Run, _ Proposal) error {
+	r.ignoredFinalizations++
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+	return r.ignoredFinalizeError
 }
 func (r *lifecycleRuntime) Apply(ctx context.Context, _ Run, _ Proposal) (Outcome, error) {
 	r.applyCalls++

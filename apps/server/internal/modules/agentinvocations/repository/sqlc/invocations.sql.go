@@ -139,7 +139,7 @@ UPDATE public.agent_invocations SET status = 'running', lease_token = $1,
     attempt_count = attempt_count + 1, retry_attempt_count = retry_attempt_count + 1,
     version = version + 1, updated_at = clock_timestamp()
 WHERE id = $2 AND ((status = 'queued' AND available_at <= clock_timestamp()) OR (status = 'running' AND lease_expires_at < clock_timestamp()))
-  AND (surface <> 'chat_message' OR EXISTS (
+  AND (surface <> 'chat_message' OR proposal->>'ignore' = 'true' OR EXISTS (
       SELECT 1 FROM public.workspaces AS workspace
       LEFT JOIN public.workspace_settings AS settings ON settings.workspace_id = workspace.workspace_id
       WHERE workspace.workspace_id = agent_invocations.workspace_id
@@ -347,7 +347,8 @@ UPDATE public.agent_invocations SET
     updated_at = clock_timestamp()
 WHERE id = $3 AND workspace_id = $4 AND requester_id = $5
     AND version = $6
-    AND ((CAST($1 AS text) = 'cancel' AND status IN ('queued','running','awaiting_approval','needs_input') AND outcome IS NULL AND action_started_at IS NULL)
+    AND ((CAST($1 AS text) = 'cancel' AND status IN ('queued','running','awaiting_approval','needs_input') AND outcome IS NULL AND action_started_at IS NULL
+        AND COALESCE(proposal->>'ignore', 'false') <> 'true')
       OR (CAST($1 AS text) = 'retry' AND status IN ('failed','cancelled'))
       OR (CAST($1 AS text) = 'approve' AND status = 'awaiting_approval'))
 RETURNING id, workspace_id, requester_id, team_id, surface, source_id, conversation_id, entity_id, parent_run_id, source_revision, source_hash, idempotency_key, request_hash, payload, status, summary, version, proposal, outcome, reply_id, proposal_reply_id, proposal_delivered_at, failure_reply_id, failure_pending, lease_token, lease_generation, lease_expires_at, attempt_count, retry_attempt_count, approved_at, available_at, created_at, updated_at, action_started_at
@@ -565,7 +566,8 @@ func (q *Queries) DeferAgentInvocationFailure(ctx context.Context, arg DeferAgen
 const failAgentInvocation = `-- name: FailAgentInvocation :execrows
 UPDATE public.agent_invocations SET status = CASE
         WHEN CAST($1 AS boolean) AND (retry_attempt_count < CAST($2 AS integer)
-            OR outcome IS NOT NULL OR proposal_reply_id IS NOT NULL OR action_started_at IS NOT NULL) THEN 'queued'
+            OR outcome IS NOT NULL OR proposal_reply_id IS NOT NULL OR action_started_at IS NOT NULL
+            OR proposal->>'ignore' = 'true') THEN 'queued'
         ELSE 'failed' END,
     summary = $3,
     failure_pending = FALSE,
@@ -789,6 +791,7 @@ func (q *Queries) GetAgentInvocationSourceParent(ctx context.Context, arg GetAge
 const listAgentInvocations = `-- name: ListAgentInvocations :many
 SELECT id, workspace_id, requester_id, team_id, surface, source_id, conversation_id, entity_id, parent_run_id, source_revision, source_hash, idempotency_key, request_hash, payload, status, summary, version, proposal, outcome, reply_id, proposal_reply_id, proposal_delivered_at, failure_reply_id, failure_pending, lease_token, lease_generation, lease_expires_at, attempt_count, retry_attempt_count, approved_at, available_at, created_at, updated_at, action_started_at FROM public.agent_invocations
 WHERE workspace_id = $1 AND entity_id = $2
+  AND COALESCE(proposal->>'ignore', 'false') <> 'true'
 ORDER BY created_at DESC, id DESC LIMIT 100
 `
 
@@ -855,7 +858,7 @@ func (q *Queries) ListAgentInvocations(ctx context.Context, arg ListAgentInvocat
 const listPendingAgentInvocationIDs = `-- name: ListPendingAgentInvocationIDs :many
 SELECT id FROM public.agent_invocations
 WHERE ((status = 'queued' AND available_at <= clock_timestamp()) OR (status = 'running' AND lease_expires_at < clock_timestamp()))
-  AND (surface <> 'chat_message' OR EXISTS (
+  AND (surface <> 'chat_message' OR proposal->>'ignore' = 'true' OR EXISTS (
       SELECT 1 FROM public.workspaces AS workspace
       LEFT JOIN public.workspace_settings AS settings ON settings.workspace_id = workspace.workspace_id
       WHERE workspace.workspace_id = agent_invocations.workspace_id

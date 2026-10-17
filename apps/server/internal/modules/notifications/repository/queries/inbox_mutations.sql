@@ -162,7 +162,7 @@ WITH actor_scope AS (
     CROSS JOIN actor_scope AS scope
     WHERE notification.recipient_id = CAST(sqlc.arg(actor_id) AS uuid)
       AND notification.workspace_id = CAST(sqlc.arg(workspace_id) AS uuid)
-      AND CAST(notification.entity_type AS text) <> 'feedback'
+      AND CAST(notification.entity_type AS text) NOT IN ('feedback', 'chat_message')
       AND notification.in_app_enabled = TRUE
       AND (
           (

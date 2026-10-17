@@ -422,3 +422,23 @@ FROM public.notifications
 WHERE notification_id = CAST(sqlc.arg(notification_id) AS uuid)
   AND recipient_id = CAST(sqlc.arg(recipient_id) AS uuid)
   AND workspace_id = CAST(sqlc.arg(workspace_id) AS uuid);
+
+-- Internal chat receipts may be retried after the original transaction. Recheck
+-- current access and independent read boundaries before replaying delivery.
+-- name: IsChatNotificationEligible :one
+SELECT EXISTS (
+    SELECT 1 FROM public.chat_conversation_messages AS message
+    LEFT JOIN public.chat_conversation_reads AS conversation_read
+      ON conversation_read.conversation_id = message.conversation_id
+     AND conversation_read.user_id = CAST(sqlc.arg(recipient_id) AS uuid)
+    LEFT JOIN public.chat_thread_reads AS thread_read
+      ON thread_read.thread_root_id = message.thread_root_id
+     AND thread_read.user_id = CAST(sqlc.arg(recipient_id) AS uuid)
+    WHERE message.id = CAST(sqlc.arg(message_id) AS uuid)
+      AND message.workspace_id = CAST(sqlc.arg(workspace_id) AS uuid)
+      AND message.author_id <> CAST(sqlc.arg(recipient_id) AS uuid)
+      AND public.can_read_chat_message(message.workspace_id, CAST(sqlc.arg(recipient_id) AS uuid), message.id)
+      AND message.sequence > CASE WHEN message.thread_root_id IS NULL
+          THEN COALESCE(conversation_read.last_read_sequence, 0)
+          ELSE COALESCE(thread_read.last_read_sequence, 0) END
+) AS eligible;

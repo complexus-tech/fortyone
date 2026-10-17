@@ -21,7 +21,8 @@ type Conversation = {
   name: string; description: string; color: string | null;
   members: ChatPerson[]; memberCount: number;
   lastMessageAt: string | null; lastMessageText: string;
-  unreadCount: number; lastReadSequence: number;
+  unreadCount: number; unreadRootCount: number; unreadReplyCount: number;
+  lastReadSequence: number;
 };
 type Message = {
   id: string; conversationId: string; threadRootId: string | null;
@@ -31,7 +32,8 @@ type Message = {
   mentionedUserIds: string[]; agentMentions: ("maya")[]; attachmentIds: string[];
   attachments: {id: string; fileName: string; mediaType: string; sizeBytes: number}[];
   reactions: { emoji: string; count: number; reacted: boolean }[];
-  replyCount: number; lastReplyAt: string | null; replyAuthors: ChatPerson[];
+  replyCount: number; unreadReplyCount: number;
+  lastReplyAt: string | null; replyAuthors: ChatPerson[];
 };
 type MessagePage = {
   items: Message[]; olderCursor: string | null; newerCursor: string | null;
@@ -47,6 +49,8 @@ Root messages include reply summaries and up to three recent distinct reply auth
 
 | Method and path | Request | Response |
 | --- | --- | --- |
+| `GET /unread` | — | `{totalUnread, unreadThreads, conversations: [{conversationId, unreadCount, unreadRootCount, unreadReplyCount}]}` across every accessible conversation; zero-count conversations omitted |
+| `GET /threads/unread` | Optional `conversationId`, `cursor`, `limit` (default 50, max 100) | `{items: (Message & {conversationName, conversationKind, firstUnreadReplyId})[], nextCursor}` containing roots with unread replies, newest unread-reply activity first; `firstUnreadReplyId` is the earliest unread reply by sequence |
 | `GET /conversations` | Optional `search`, `cursor`, `limit` (default 100, max 200) | `{items: Conversation[], nextCursor: string|null}` sorted by latest activity, then ID; empty team rooms follow active conversations |
 | `POST /conversations/direct` | `{userId}` | Conversation; repeated or concurrent requests return the same participant pair |
 | `GET /conversations/{id}` | — | Conversation |
@@ -68,7 +72,7 @@ Message cursors are opaque values representing a sequence. An initial root reque
 
 `creationId` is a client-generated UUID retained across retries. Uniqueness is scoped to author and conversation. Reusing it with different content, thread, mentions, or attachment IDs returns 409. The server accepts up to 4,000 text characters, bounded rich-text JSON, and the existing finite reaction catalog. Mentions must identify visible participants; only `maya` is accepted as an agent mention and only in team rooms. Edits preserve the original creation identity and timestamp.
 
-The read cursor counts unread root messages from other authors. Replies have separate per-thread read cursors, so opening a conversation does not silently mark unopened threads read. A read request must reference a message from its specified root/thread scope; it cannot advance based on a client clock.
+The conversation read cursor tracks root messages from other authors. Replies have separate per-thread read cursors, so opening a conversation does not silently mark unopened threads read. A read request must reference a message from its specified root/thread scope; it cannot advance based on a client clock. Its `unreadCount` remains scoped to that timeline or thread. Conversation projections and the workspace unread summary include both roots and replies, each counted once, excluding the viewer's own messages and deleted content. A missing cursor starts at zero; existing read cursors are preserved when unread counts are introduced. `unreadThreads` counts roots with at least one unread reply, and `unreadReplyCount` on a root is independent from its lifetime `replyCount`. Unread-thread pagination can discover old roots outside loaded conversation history, including deleted roots with visible unread replies; cursors are scoped to the viewer, workspace and conversation filter.
 
 Resources use `{id, conversationId, messageId, kind:"file"|"link", title, description, author:ChatPerson, createdAt, attachmentId?, fileName?, mediaType?, sizeBytes?, url?}`. Attachment upload and signed access URL routes are supplied by the existing storage lifecycle integration; the core does not return storage keys or manufacture downloads. Uploads are pending and owned by their uploader in a specific conversation. Creation atomically claims them; published file access rechecks message visibility and current conversation access. Link resources are derived from validated rich-text links without remote preview fetching.
 

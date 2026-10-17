@@ -58,6 +58,7 @@ WITH eligible_notification AS (
         CAST(COALESCE(CAST(membership.role AS text), CAST('' AS text)) AS text) AS workspace_role,
         COALESCE(feedback_item.slug, '') AS feedback_slug,
         CASE
+            WHEN notification.message -> 'emailSuppressed' = CAST('true' AS jsonb) THEN FALSE
             WHEN jsonb_typeof(
                 preference.preferences
                     -> CAST(notification.type AS text)
@@ -406,6 +407,7 @@ WHERE notification.recipient_id = CAST($1 AS uuid)
   AND notification.workspace_id = CAST($2 AS uuid)
   AND notification.read_at IS NULL
   AND notification.email_sent_at IS NULL
+  AND notification.message -> 'emailSuppressed' IS DISTINCT FROM CAST('true' AS jsonb)
   AND (
       notification.message -> 'scheduleIssue' IS NULL
       OR EXISTS (

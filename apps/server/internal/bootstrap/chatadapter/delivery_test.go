@@ -3,14 +3,15 @@ package chatadapter
 import (
 	"context"
 	"errors"
-	chat "github.com/complexus-tech/projects-api/internal/modules/chat/domain"
-	notifications "github.com/complexus-tech/projects-api/internal/modules/notifications/domain"
-	"github.com/complexus-tech/projects-api/pkg/publisher"
-	"github.com/google/uuid"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
+
+	chat "github.com/complexus-tech/projects-api/internal/modules/chat/domain"
+	notifications "github.com/complexus-tech/projects-api/internal/modules/notifications/domain"
+	"github.com/complexus-tech/projects-api/pkg/publisher"
+	"github.com/google/uuid"
 )
 
 type eventStoreStub struct {
@@ -70,10 +71,16 @@ func (s *eventStoreStub) NotificationRecipients(context.Context, chat.Event) ([]
 }
 
 type deliveryStub struct {
-	mu      sync.Mutex
-	updates []publisher.ChatUpdate
-	notices []notifications.NewNotification
-	fail    bool
+	mu          sync.Mutex
+	updates     []publisher.ChatUpdate
+	notices     []notifications.NewNotification
+	alerts      []publisher.ChatNotification
+	receipts    map[string]uuid.UUID
+	fail        bool
+	alertErr    error
+	createErr   error
+	alertsMuted bool
+	readAt      *time.Time
 }
 
 func (s *deliveryStub) PublishChatUpdated(_ context.Context, u publisher.ChatUpdate) error {
@@ -89,7 +96,25 @@ func (s *deliveryStub) Create(_ context.Context, n notifications.NewNotification
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.notices = append(s.notices, n)
-	return notifications.Notification{}, nil
+	if s.createErr != nil {
+		return notifications.Notification{}, s.createErr
+	}
+	if s.receipts == nil {
+		s.receipts = make(map[string]uuid.UUID)
+	}
+	if s.receipts[n.DedupeKey] == uuid.Nil {
+		s.receipts[n.DedupeKey] = uuid.New()
+	}
+	return notifications.Notification{ID: s.receipts[n.DedupeKey], InAppEnabled: !s.alertsMuted, CreatedAt: n.OccurredAt, ReadAt: s.readAt}, nil
+}
+func (s *deliveryStub) PublishChatNotification(_ context.Context, notification publisher.ChatNotification) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.alertErr != nil {
+		return s.alertErr
+	}
+	s.alerts = append(s.alerts, notification)
+	return nil
 }
 func TestDeliveryScopesHintsAndDeduplicatesTargets(t *testing.T) {
 	actor, recipient := uuid.New(), uuid.New()
@@ -100,7 +125,7 @@ func TestDeliveryScopesHintsAndDeduplicatesTargets(t *testing.T) {
 	if err != nil || count != 1 || store.completed != 1 {
 		t.Fatalf("dispatch = %d, %v", count, err)
 	}
-	if len(delivery.updates) != 2 || len(delivery.notices) != 1 {
+	if len(delivery.updates) != 2 || len(delivery.notices) != 1 || len(delivery.alerts) != 1 {
 		t.Fatalf("unexpected delivery fanout: %+v", delivery)
 	}
 	for _, hint := range delivery.updates {
@@ -117,6 +142,75 @@ func TestDeliveryScopesHintsAndDeduplicatesTargets(t *testing.T) {
 	}
 	if notice.DedupeKey == "" || notice.Message.Template != "You were mentioned in a conversation." {
 		t.Fatal("notification receipt or privacy-safe template missing")
+	}
+	alert := delivery.alerts[0]
+	if alert.EventID != event.ID || alert.WorkspaceID != event.WorkspaceID || alert.UserID != recipient || alert.ActorID != actor || alert.ConversationID != event.ConversationID || alert.MessageID != event.MessageID || !alert.OccurredAt.Equal(event.CreatedAt) || alert.NotificationID == uuid.Nil {
+		t.Fatal("chat alert lost its source, recipient or receipt identity")
+	}
+}
+
+func TestAllIncomingMessageKindsPublishChatAlerts(t *testing.T) {
+	for _, reason := range []string{"message", "dm", "mention", "reply"} {
+		t.Run(reason, func(t *testing.T) {
+			thread := uuid.New()
+			event := chat.Event{ID: uuid.New(), WorkspaceID: uuid.New(), ConversationID: uuid.New(), MessageID: uuid.New(), ActorID: uuid.New(), CreatedAt: time.Now().UTC(), Type: "message.created"}
+			if reason == "reply" {
+				event.ThreadRootID = &thread
+			}
+			store := &eventStoreStub{targets: []chat.NotificationRecipient{{UserID: uuid.New(), Reason: reason}}}
+			delivery := &deliveryStub{}
+			if err := (Dispatcher{Store: store, Updates: delivery, Notifications: delivery}).deliver(t.Context(), event); err != nil {
+				t.Fatal(err)
+			}
+			if len(delivery.alerts) != 1 || delivery.alerts[0].ThreadRootID != event.ThreadRootID {
+				t.Fatal("new message did not produce a correctly routed chat alert")
+			}
+			if delivery.notices[0].Message.EmailSuppressed != (reason == "message") {
+				t.Fatal("new team-message interruptions must not expand the existing email audience")
+			}
+		})
+	}
+}
+
+func TestChatAlertPublicationFailureRetriesTheSameReceipt(t *testing.T) {
+	event := chat.Event{ID: uuid.New(), WorkspaceID: uuid.New(), ConversationID: uuid.New(), MessageID: uuid.New(), ActorID: uuid.New(), CreatedAt: time.Now().UTC(), Type: "message.created"}
+	store := &eventStoreStub{events: []chat.Event{event}, targets: []chat.NotificationRecipient{{UserID: uuid.New(), Reason: "message"}}}
+	delivery := &deliveryStub{alertErr: errors.New("redis unavailable")}
+	dispatcher := Dispatcher{Store: store, Updates: delivery, Notifications: delivery}
+	count, err := dispatcher.Dispatch(t.Context(), 1)
+	if err == nil || count != 0 || store.completed != 0 || store.released != 1 {
+		t.Fatal("failed live delivery must retain retryable outbox intent")
+	}
+	delivery.alertErr = nil
+	store.events = []chat.Event{event}
+	count, err = dispatcher.Dispatch(t.Context(), 1)
+	if err != nil || count != 1 || len(delivery.alerts) != 1 || len(delivery.receipts) != 1 || len(delivery.notices) != 2 {
+		t.Fatalf("retry did not recover one receipt: count=%d err=%v", count, err)
+	}
+	store.events = []chat.Event{event}
+	if _, err := dispatcher.Dispatch(t.Context(), 1); err != nil {
+		t.Fatal(err)
+	}
+	if delivery.alerts[0].NotificationID != delivery.alerts[1].NotificationID || delivery.alerts[0].EventID != delivery.alerts[1].EventID {
+		t.Fatal("at-least-once delivery must retain stable client dedupe identity")
+	}
+}
+
+func TestSuppressedChatReceiptsDoNotPublishAlerts(t *testing.T) {
+	now := time.Now()
+	for name, delivery := range map[string]*deliveryStub{
+		"read": {readAt: &now}, "muted": {alertsMuted: true},
+		"revoked": {createErr: notifications.ErrForbidden}, "deleted": {createErr: notifications.ErrNotFound},
+	} {
+		t.Run(name, func(t *testing.T) {
+			store := &eventStoreStub{targets: []chat.NotificationRecipient{{UserID: uuid.New(), Reason: "message"}}}
+			if err := (Dispatcher{Store: store, Updates: delivery, Notifications: delivery}).deliver(t.Context(), chat.Event{}); err != nil {
+				t.Fatal(err)
+			}
+			if len(delivery.alerts) != 0 {
+				t.Fatal("suppressed receipt produced an interruption")
+			}
+		})
 	}
 }
 func TestFailedDeliveryReleasesLeaseWithoutCompleting(t *testing.T) {

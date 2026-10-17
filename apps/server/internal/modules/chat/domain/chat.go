@@ -43,6 +43,8 @@ type Conversation struct {
 	LastMessageAt    *time.Time `json:"lastMessageAt"`
 	LastMessageText  string     `json:"lastMessageText"`
 	UnreadCount      int        `json:"unreadCount"`
+	UnreadRootCount  int        `json:"unreadRootCount"`
+	UnreadReplyCount int        `json:"unreadReplyCount"`
 	LastReadSequence int64      `json:"lastReadSequence"`
 }
 
@@ -85,6 +87,7 @@ type Message struct {
 	Attachments      []Attachment    `json:"attachments"`
 	Reactions        []Reaction      `json:"reactions"`
 	ReplyCount       int             `json:"replyCount"`
+	UnreadReplyCount int             `json:"unreadReplyCount"`
 	LastReplyAt      *time.Time      `json:"lastReplyAt"`
 	ReplyAuthors     []Person        `json:"replyAuthors"`
 	Replayed         bool            `json:"-"`

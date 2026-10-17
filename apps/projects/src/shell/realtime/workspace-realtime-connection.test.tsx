@@ -12,6 +12,7 @@ import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
 import { useSession } from "@/lib/auth/client";
 import { deliverDesktopNotification } from "@/shell/desktop/notification";
 import { reconcileChatQueries } from "@/modules/chat/realtime";
+import { createChatAlertDelivery } from "@/modules/chat/alerts/delivery";
 import { applyChatTypingEvent, clearChatTyping } from "@/modules/chat/typing";
 import { storyKeys } from "@/modules/stories/constants";
 import { WorkspaceRealtimeConnection } from "./workspace-realtime-connection";
@@ -22,6 +23,12 @@ jest.mock("@tanstack/react-query", () => ({
 
 jest.mock("@/modules/chat/realtime", () => ({
   reconcileChatQueries: jest.fn(),
+}));
+jest.mock("@/modules/chat/alerts/delivery", () => ({
+  createChatAlertDelivery: jest.fn(() => ({
+    receive: jest.fn(),
+    dispose: jest.fn(),
+  })),
 }));
 jest.mock("@/modules/chat/typing", () => ({
   applyChatTypingEvent: jest.fn(),
@@ -130,6 +137,55 @@ afterAll(() => {
 });
 
 describe("WorkspaceRealtimeConnection", () => {
+  it("routes chat alerts separately from the work inbox and disposes their pending delivery", () => {
+    jest.mocked(useSession).mockReturnValue({
+      data: { user: { id: "10000000-0000-4000-8000-000000000004" } },
+      status: "authenticated",
+    } as ReturnType<typeof useSession>);
+    const view = render(<WorkspaceRealtimeConnection />);
+    const delivery = jest
+      .mocked(createChatAlertDelivery)
+      .mock.results.at(-1)?.value;
+    const payload = {
+      type: "chat.notification",
+      notificationId: "10000000-0000-4000-8000-000000000001",
+      eventId: "10000000-0000-4000-8000-000000000002",
+      workspaceId: "10000000-0000-4000-8000-000000000003",
+      userId: "10000000-0000-4000-8000-000000000004",
+      actorId: "10000000-0000-4000-8000-000000000005",
+      conversationId: "10000000-0000-4000-8000-000000000006",
+      messageId: "10000000-0000-4000-8000-000000000007",
+      threadRootId: null,
+      createdAt: "2026-10-17T12:00:00Z",
+      occurredAt: "2026-10-17T12:00:00Z",
+      title: "New message",
+      body: "You have a new message.",
+    };
+    connection().onmessage?.({ data: JSON.stringify(payload) } as MessageEvent);
+    expect(delivery.receive).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: "chat-notification",
+        conversationId: payload.conversationId,
+      }),
+    );
+    expect(deliverDesktopNotification).not.toHaveBeenCalled();
+    expect(queryClient.invalidateQueries).not.toHaveBeenCalled();
+    view.unmount();
+    expect(delivery.dispose).toHaveBeenCalled();
+  });
+
+  it("does not put legacy generic chat events back into the work inbox", () => {
+    render(<WorkspaceRealtimeConnection />);
+    connection().onmessage?.({
+      data: JSON.stringify({
+        entity_id: "message-id",
+        entity_type: "chat_message",
+      }),
+    } as MessageEvent);
+    expect(deliverDesktopNotification).not.toHaveBeenCalled();
+    expect(queryClient.invalidateQueries).not.toHaveBeenCalled();
+  });
+
   it("forwards live notifications to native delivery without replaying on reconnect", () => {
     jest.mocked(useSession).mockReturnValue({
       data: { user: { id: "account-id" } },

@@ -193,7 +193,23 @@ WITH notification_scope AS (
                   )
             )
         )
-        OR (CAST(scope.entity_type AS text) = 'chat_message' AND public.can_read_chat_message(scope.workspace_id,scope.recipient_id,scope.entity_id))
+        OR (
+            CAST(scope.entity_type AS text) = 'chat_message'
+            AND public.can_read_chat_message(scope.workspace_id,scope.recipient_id,scope.entity_id)
+            AND EXISTS (
+                SELECT 1 FROM public.chat_conversation_messages AS message
+                LEFT JOIN public.chat_conversation_reads AS conversation_read
+                  ON conversation_read.conversation_id = message.conversation_id
+                 AND conversation_read.user_id = scope.recipient_id
+                LEFT JOIN public.chat_thread_reads AS thread_read
+                  ON thread_read.thread_root_id = message.thread_root_id
+                 AND thread_read.user_id = scope.recipient_id
+                WHERE message.id = scope.entity_id AND message.author_id <> scope.recipient_id
+                  AND message.sequence > CASE WHEN message.thread_root_id IS NULL
+                      THEN COALESCE(conversation_read.last_read_sequence, 0)
+                      ELSE COALESCE(thread_read.last_read_sequence, 0) END
+            )
+        )
           OR (CAST(scope.entity_type AS text) = 'document' AND public.can_read_document(scope.workspace_id,scope.recipient_id,scope.entity_id))
             OR (
             CAST(scope.entity_type AS text) = 'strategy'

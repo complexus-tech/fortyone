@@ -10,7 +10,7 @@ import (
 
 func (h *handlers) respond(ctx context.Context, w http.ResponseWriter, value any, err error, success int) error {
 	if err == nil {
-		return web.Respond(ctx, w, value, success)
+		return web.Respond(ctx, w, h.resolveResponseAvatars(ctx, value), success)
 	}
 	code := status(err)
 	if code >= http.StatusInternalServerError && h.log != nil {

@@ -15,6 +15,8 @@ import type {
   ChatResourceFilter,
   ChatResourceSort,
   ChatSearchResult,
+  ChatUnreadSummary,
+  ChatUnreadThread,
   VoiceNoteUpload,
 } from "./types";
 import { CHAT_PAGE_SIZE } from "./constants";
@@ -56,6 +58,7 @@ const messageSchema = z
     deletedAt: z.string().nullable().default(null),
     version: z.number().int(),
     replyCount: z.number().int().default(0),
+    unreadReplyCount: z.number().int().nonnegative().default(0),
     lastReplyAt: z.string().nullable().default(null),
     replyAuthors: z.array(personSchema).default([]),
     reactions: z
@@ -100,10 +103,32 @@ const conversationSchema = z.object({
   members: z.array(personSchema).default([]),
   memberCount: z.number().default(0),
   unreadCount: z.number().default(0),
+  unreadRootCount: z.number().int().nonnegative().default(0),
+  unreadReplyCount: z.number().int().nonnegative().default(0),
   lastReadSequence: z.number().default(0),
   lastMessageAt: z.string().nullable().default(null),
   lastMessageText: z.string().default(""),
 });
+const unreadSummarySchema = z.object({
+  totalUnread: z.number().int().nonnegative(),
+  unreadThreads: z.number().int().nonnegative(),
+  conversations: z.array(
+    z.object({
+      conversationId: z.string(),
+      unreadCount: z.number().int().nonnegative(),
+      unreadRootCount: z.number().int().nonnegative(),
+      unreadReplyCount: z.number().int().nonnegative(),
+    }),
+  ),
+});
+const unreadThreadSchema = z.intersection(
+  messageSchema,
+  z.object({
+    firstUnreadReplyId: z.string(),
+    conversationName: z.string(),
+    conversationKind: z.enum(["team", "dm"]),
+  }),
+);
 const messagePageSchema = z.object({
   items: z.array(messageSchema),
   olderCursor: z.string().nullable(),
@@ -164,6 +189,22 @@ export const getConversations = (
     ctx,
     { signal },
     decode(pageSchema(conversationSchema)),
+  );
+export const getUnreadSummary = (
+  ctx: WorkspaceCtx,
+  signal?: AbortSignal,
+): Promise<ChatUnreadSummary> =>
+  get(`${base}/unread`, ctx, { signal }, decode(unreadSummarySchema));
+export const getUnreadThreads = (
+  ctx: WorkspaceCtx,
+  cursor?: string,
+  signal?: AbortSignal,
+): Promise<ChatPage<ChatUnreadThread>> =>
+  get(
+    `${base}/threads/unread${queryString({ cursor, limit: CHAT_PAGE_SIZE })}`,
+    ctx,
+    { signal },
+    decode(pageSchema(unreadThreadSchema)),
   );
 export const getConversation = (
   ctx: WorkspaceCtx,

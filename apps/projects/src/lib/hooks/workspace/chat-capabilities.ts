@@ -2,16 +2,11 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useSession } from "@/lib/auth/client";
-import { get } from "@/lib/http";
 import { useWorkspacePath } from "@/hooks/use-workspace-path";
-import { chatCapabilityKeys } from "@/constants/keys";
-import type { ApiResponse } from "@/types/api-response";
-
-export type ChatCapabilities = {
-  enabled: boolean;
-  attachmentsEnabled: boolean;
-};
-const RECHECK_INTERVAL_MS = 30_000;
+import {
+  CHAT_CAPABILITY_RECHECK_INTERVAL_MS,
+  chatCapabilitiesQueryOptions,
+} from "@/lib/queries/workspaces/get-chat-capabilities";
 
 /** Chat and attachment availability are authorized by the server for this viewer. */
 export const useChatCapabilities = () => {
@@ -19,26 +14,11 @@ export const useChatCapabilities = () => {
   const { workspaceSlug } = useWorkspacePath();
   const userId = session?.user.id;
   const query = useQuery({
-    queryKey: chatCapabilityKeys.viewer(workspaceSlug, userId),
-    queryFn: async ({ signal }) => {
-      const response = await get<ApiResponse<ChatCapabilities>>(
-        "chat/capabilities",
-        { session, workspaceSlug },
-        { signal, cache: "no-store", retry: 0 },
-      );
-      if (typeof response.data?.enabled !== "boolean") {
-        throw new Error("Chat availability could not be checked.");
-      }
-      return response.data;
-    },
-    enabled: Boolean(userId && workspaceSlug),
-    staleTime: RECHECK_INTERVAL_MS,
-    gcTime: RECHECK_INTERVAL_MS,
-    refetchInterval: RECHECK_INTERVAL_MS,
+    ...chatCapabilitiesQueryOptions({ session, workspaceSlug }, userId),
+    refetchInterval: CHAT_CAPABILITY_RECHECK_INTERVAL_MS,
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: "always",
     refetchOnReconnect: "always",
-    retry: false,
   });
 
   return {

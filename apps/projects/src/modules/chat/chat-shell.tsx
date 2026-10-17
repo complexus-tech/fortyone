@@ -9,8 +9,8 @@ import { useWorkspacePath } from "@/hooks/use-workspace-path";
 import { NativeLinkNavigationProvider } from "@/components/ui/link-preview/native-navigation";
 import type { NativeLinkNavigation } from "@/components/ui/link-preview/native-navigation";
 import type { NativeLinkTarget } from "@/components/ui/link-preview/native-target";
-import { ChatStoryPanel } from "./story-panel";
 import { AttachmentThumbnailCacheProvider } from "@/components/ui/attachment-preview/thumbnail-cache-context";
+import { ChatStoryPanel } from "./story-panel";
 import { ThumbnailAccessGuard } from "./thumbnail-access-guard";
 import { AudioAccessGuard } from "./audio-access-guard";
 import { AudioPlaybackProvider } from "./audio-playback-context";
@@ -54,7 +54,9 @@ export const ChatShell = ({
     hasNewer,
     jumpToLatest,
     markVisible,
+    recordVisibleMessages,
     openThread,
+    openUnreadThread,
     selectConversation,
     selectTab,
     sendMessage,
@@ -162,6 +164,7 @@ export const ChatShell = ({
                   >
                     <ConversationList
                       activeId={activeId}
+                      activeThreadId={thread?.id}
                       conversations={conversations}
                       navigationControl={navigationControl}
                       onNewMessage={() => {
@@ -171,6 +174,10 @@ export const ChatShell = ({
                       onSelect={(id) => {
                         setOpenedStory(null);
                         selectConversation(id);
+                      }}
+                      onSelectThread={(message, trigger) => {
+                        setOpenedStory(null);
+                        openUnreadThread(message, trigger);
                       }}
                     />
                   </aside>
@@ -214,6 +221,7 @@ export const ChatShell = ({
                   {!isComposing && !error && conversation ? (
                     <ConversationView
                       activeTab={activeTab}
+                      activeThreadRootId={thread?.id}
                       conversation={conversation}
                       draft={draft}
                       fetchingHistory={history.isFetching}
@@ -254,6 +262,7 @@ export const ChatShell = ({
                         void viewMessage(id);
                       }}
                       onVisibleMessage={markVisible}
+                      onVisibleMessages={recordVisibleMessages}
                       scrollToMessageId={
                         sentMessage?.conversationId === activeId &&
                         !sentMessage.threadRootId
@@ -311,6 +320,7 @@ export const ChatShell = ({
                       }}
                       onToggleReaction={toggleReaction}
                       onVisibleMessage={markVisible}
+                      onVisibleMessages={recordVisibleMessages}
                       replies={replies}
                       scrollToMessageId={
                         sentMessage?.threadRootId === thread.id

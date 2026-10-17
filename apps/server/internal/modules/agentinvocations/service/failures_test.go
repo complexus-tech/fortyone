@@ -14,6 +14,59 @@ type failureRuntime struct {
 	failurePublications int
 }
 
+func TestIgnoredAccountingFailureStaysSilentAndRetriesWithoutPreparation(t *testing.T) {
+	for _, accountingErr := range []error{errors.New("accounting unavailable"), context.DeadlineExceeded} {
+		store := &lifecycleStore{run: Run{ID: uuid.New()}}
+		runtime := &failureRuntime{lifecycleRuntime: &lifecycleRuntime{proposal: Proposal{Ignore: true}, ignoredFinalizeError: accountingErr}}
+		service := New(store, runtime)
+		for range 5 {
+			if err := service.Process(t.Context(), store.run.ID); !errors.Is(err, accountingErr) {
+				t.Fatal(err)
+			}
+			if store.run.Proposal == nil || !store.run.Proposal.Ignore || store.run.Status != StatusQueued || runtime.failurePublications != 0 || runtime.applyCalls != 0 || runtime.publishCalls != 0 {
+				t.Fatalf("ignored bookkeeping failure became visible: %+v", store.run)
+			}
+		}
+		if runtime.prepareCalls != 1 || !errors.Is(runtime.prepareContext.Err(), context.Canceled) {
+			t.Fatal("accounting must use the worker context and preserve the saved decision")
+		}
+		runtime.ignoredFinalizeError = nil
+		runtime.authorizationError = ErrPermissionDenied
+		if err := service.Process(t.Context(), store.run.ID); err != nil {
+			t.Fatal(err)
+		}
+		if store.run.Status != StatusSucceeded || runtime.prepareCalls != 1 || runtime.failurePublications != 0 || runtime.deliveryCalls != 0 {
+			t.Fatal("accounting recovery must finish silently without rereading revoked content or rerunning the assistant")
+		}
+	}
+}
+
+func TestIgnoredProposalPersistenceFailureDoesNotPublish(t *testing.T) {
+	store := &lifecycleStore{run: Run{ID: uuid.New(), RetryAttemptCount: 3}, saveError: errors.New("proposal store unavailable")}
+	runtime := &failureRuntime{lifecycleRuntime: &lifecycleRuntime{proposal: Proposal{Ignore: true}}}
+	if err := New(store, runtime).Process(t.Context(), store.run.ID); err == nil {
+		t.Fatal("expected persistence error")
+	}
+	if runtime.failurePublications != 0 || runtime.applyCalls != 0 || runtime.publishCalls != 0 || runtime.ignoredFinalizations != 0 {
+		t.Fatal("an unsaved ignore decision must not publish or account before persistence")
+	}
+}
+
+type unaddressedFailureRuntime struct{ *failureRuntime }
+
+func (*unaddressedFailureRuntime) CanPublishFailure(Run, error) bool { return false }
+
+func TestUnaddressedCandidateCannotPublishPreparationFailure(t *testing.T) {
+	store := &lifecycleStore{run: Run{ID: uuid.New(), RetryAttemptCount: 3}}
+	runtime := &unaddressedFailureRuntime{&failureRuntime{lifecycleRuntime: &lifecycleRuntime{prepareError: context.DeadlineExceeded}}}
+	if err := New(store, runtime).Process(t.Context(), store.run.ID); !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatal(err)
+	}
+	if runtime.failurePublications != 0 || runtime.applyCalls != 0 || runtime.publishCalls != 0 {
+		t.Fatal("unclassified candidates must not publish a failure after exhausting retries")
+	}
+}
+
 func (r *failureRuntime) PublishFailure(ctx context.Context, _ Run, summary string) (uuid.UUID, error) {
 	r.failurePublications++
 	if ctx.Value(transactionMarker{}) != true {

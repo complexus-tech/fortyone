@@ -17,6 +17,7 @@ import { ChatMayaStatus } from "./chat-maya-status";
 import { formatMessageTime } from "./format";
 import { MessageAttachments } from "./message-attachments";
 import { MessageLinkPreviews } from "./link-preview";
+import { ChatUnreadBadge } from "./unread-badge";
 
 const restoreMessageActionsFocus = (row: HTMLElement | null) => {
   const surface = row?.closest<HTMLElement>(
@@ -241,7 +242,7 @@ export const MessageRow = ({
           />
           {message.replyCount > 0 && onReply ? (
             <button
-              aria-label={`Open thread with ${message.replyCount} replies`}
+              aria-label={`Open thread with ${message.replyCount} replies${message.unreadReplyCount ? `, ${message.unreadReplyCount} unread` : ""}`}
               className="focus-visible:ring-primary/40 mt-1.5 flex max-w-full items-center gap-2 rounded px-0.5 py-1 text-left outline-none focus-visible:ring-2"
               onClick={(event) => {
                 onReply(message, event.currentTarget);
@@ -262,6 +263,10 @@ export const MessageRow = ({
                 {message.replyCount}{" "}
                 {message.replyCount === 1 ? "reply" : "replies"}
               </span>
+              <ChatUnreadBadge
+                count={message.unreadReplyCount}
+                label="unread replies"
+              />
               {message.lastReplyAt ? (
                 <span className="text-text-muted group-hover:text-foreground group-focus-within:text-foreground truncate leading-5">
                   Last reply {formatMessageTime(message.lastReplyAt)}

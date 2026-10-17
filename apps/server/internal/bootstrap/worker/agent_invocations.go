@@ -100,7 +100,7 @@ func registerAgentInvocationWorker(mux *asynq.ServeMux, scheduler scheduleRegist
 			log.Error(ctx, "enqueue chat delivery", "error", err)
 		}
 	}))
-	chatRuntime := &agentadapter.ChatRuntime{Rollout: chatrollout.New(workspacesrepository.New(pool)), Chats: chatService, Shared: runtime, Tools: tools}
+	chatRuntime := &agentadapter.ChatRuntime{Rollout: chatrollout.New(workspacesrepository.New(pool)), Chats: chatService, Shared: runtime, Tools: tools, Log: log}
 	service := agentruns.New(agentrunsrepository.New(pool), &agentadapter.RuntimeRouter{Story: runtime, Document: documentRuntime, Chat: chatRuntime})
 	mux.HandleFunc(tasks.TypeAgentInvocation, func(ctx context.Context, task *asynq.Task) error {
 		var payload tasks.AgentInvocationPayload

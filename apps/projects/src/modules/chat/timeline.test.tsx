@@ -89,6 +89,24 @@ const settleLayout = async () => {
 };
 
 describe("chat history initialization", () => {
+  it("reports every visible message for alert suppression while keeping one read high-water mark", async () => {
+    const onVisibleItem = jest.fn();
+    const onVisibleItems = jest.fn();
+    render(
+      <VirtuosoMockContext.Provider value={measurements}>
+        <Timeline
+          header={null}
+          items={messages.slice(0, 3)}
+          onVisibleItem={onVisibleItem}
+          onVisibleItems={onVisibleItems}
+          renderItem={(item) => <p>{item.id}</p>}
+        />
+      </VirtuosoMockContext.Provider>,
+    );
+    await settleLayout();
+    expect(onVisibleItems).toHaveBeenLastCalledWith(messages.slice(0, 3));
+    expect(onVisibleItem).toHaveBeenLastCalledWith(messages[2]);
+  });
   it("keeps the introduction usable until history arrives, then shows the latest messages", async () => {
     const { rerender } = render(timeline([]));
     await settleLayout();

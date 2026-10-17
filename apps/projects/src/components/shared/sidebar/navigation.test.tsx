@@ -10,6 +10,13 @@ let mockTeamScope: string | null = null;
 let mockView: string | null = null;
 let mockHasViews = true;
 let mockChatEnabled = true;
+let mockSubdomain = false;
+let mockConversation: string | null = null;
+let mockChatUnread = 0;
+
+jest.mock("@/modules/chat/use-chat-unread", () => ({
+  useChatUnread: () => ({ data: { totalUnread: mockChatUnread } }),
+}));
 
 jest.mock("@/lib/hooks/workspace/chat-capabilities", () => ({
   useChatCapabilities: () => ({ enabled: mockChatEnabled }),
@@ -25,6 +32,7 @@ jest.mock("next/navigation", () => ({
     new URLSearchParams({
       ...(mockTeamScope ? { team: mockTeamScope } : {}),
       ...(mockView ? { view: mockView } : {}),
+      ...(mockConversation ? { conversation: mockConversation } : {}),
     }),
 }));
 
@@ -96,15 +104,18 @@ jest.mock("@/components/ui", () => ({
     children,
     href,
     "data-walkthrough-target": walkthroughTarget,
+    "aria-label": ariaLabel,
   }: {
     active?: boolean;
     className?: string;
     children: ReactNode;
     href: string;
     "data-walkthrough-target"?: string;
+    "aria-label"?: string;
   }) => (
     <a
       aria-current={active ? "page" : undefined}
+      aria-label={ariaLabel}
       className={className}
       data-walkthrough-target={walkthroughTarget}
       href={href}
@@ -125,7 +136,7 @@ jest.mock("@/hooks", () => {
     }),
     useUserRole: () => ({ userRole: "member" }),
     useWorkspacePath: () => ({
-      withWorkspace: (path: string) => `/acme${path}`,
+      withWorkspace: (path: string) => (mockSubdomain ? path : `/acme${path}`),
       workspaceSlug: "acme",
     }),
   };
@@ -145,6 +156,60 @@ describe("Navigation", () => {
     mockView = null;
     mockHasViews = true;
     mockChatEnabled = true;
+    mockSubdomain = false;
+    mockConversation = null;
+    mockChatUnread = 0;
+  });
+
+  it.each([false, true])(
+    "shows all unread chat messages when collapsed=%s",
+    (isCollapsed) => {
+      mockChatUnread = 500;
+      render(<Navigation isCollapsed={isCollapsed} />);
+      expect(
+        screen.getByRole("link", { name: "Chat, 500 unread messages" }),
+      ).toHaveTextContent("500");
+    },
+  );
+
+  it("caps the visual count while retaining the exact accessible count", () => {
+    mockChatUnread = 1250;
+    render(<Navigation />);
+    expect(
+      screen.getByRole("link", { name: "Chat, 1,250 unread messages" }),
+    ).toHaveTextContent("999+");
+  });
+
+  it.each([
+    { path: "/acme/chat", subdomain: false, conversation: "team" },
+    { path: "/acme/chat", subdomain: false, conversation: "direct-message" },
+    { path: "/chat", subdomain: true, conversation: "team" },
+    { path: "/chat", subdomain: true, conversation: "direct-message" },
+    { path: "/acme/chat", subdomain: true, conversation: "team" },
+    { path: "/acme/chat", subdomain: true, conversation: "direct-message" },
+  ])(
+    "keeps Chat highlighted on $path for $conversation (subdomain=$subdomain)",
+    ({ path, subdomain, conversation }) => {
+      mockPathname = path;
+      mockSubdomain = subdomain;
+      mockConversation = conversation;
+      render(<Navigation />);
+      expect(screen.getByRole("link", { name: "Chat" })).toHaveAttribute(
+        "aria-current",
+        "page",
+      );
+      expect(screen.getByRole("link", { name: "My work" })).not.toHaveAttribute(
+        "aria-current",
+      );
+    },
+  );
+
+  it("does not highlight Chat for an unrelated route with a similar prefix", () => {
+    mockPathname = "/acme/chat-settings";
+    render(<Navigation />);
+    expect(screen.getByRole("link", { name: "Chat" })).not.toHaveAttribute(
+      "aria-current",
+    );
   });
 
   it("hides Chat until the server enables it for this workspace", () => {

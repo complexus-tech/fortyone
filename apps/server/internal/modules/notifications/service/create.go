@@ -39,7 +39,9 @@ func (service *Service) Create(ctx context.Context, input CoreNewNotification) (
 	if notification.ID == uuid.Nil {
 		return notification, nil
 	}
-	if mutated && notification.InAppEnabled && notification.EntityType != notificationsdomain.EntityTypeFeedback {
+	// Chat owns live interruptions through its durable outbox. Retain its row as
+	// an internal delivery receipt, never publish it into the general inbox feed.
+	if mutated && notification.InAppEnabled && notification.EntityType != notificationsdomain.EntityTypeFeedback && notification.EntityType != notificationsdomain.EntityTypeChatMessage {
 		if err := service.publishRealtime(ctx, notification.Public()); err != nil {
 			span.RecordError(err)
 			return notification, fmt.Errorf("publish notification realtime event: %w", err)
@@ -80,6 +82,9 @@ func (service *Service) enqueuePush(notification CoreNotification) error {
 }
 
 func (service *Service) enqueueDigest(notification CoreNotification) error {
+	if notification.Message.EmailSuppressed {
+		return nil
+	}
 	if service.tasksService == nil {
 		return fmt.Errorf("enqueue notification email digest: task service is unavailable")
 	}

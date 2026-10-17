@@ -12,6 +12,8 @@ import { chatKeys } from "./constants";
 export type ChatMayaRun = {
   id: string;
   sourceId: string;
+  /** Destination thread; optional while older API replicas are being replaced. */
+  threadRootId?: string;
   requesterId: string;
   status:
     | "queued"

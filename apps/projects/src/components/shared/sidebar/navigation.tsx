@@ -26,6 +26,8 @@ import {
 } from "@/hooks";
 import { useRunningSprints } from "@/modules/sprints/hooks/running-sprints";
 import { useChatCapabilities } from "@/lib/hooks/workspace/chat-capabilities";
+import { useChatUnread } from "@/modules/chat/use-chat-unread";
+import { ChatUnreadBadge } from "@/modules/chat/unread-badge";
 import { useViewsPresence } from "@/shared/views/presence-context";
 import {
   walkthroughTargets,
@@ -37,6 +39,7 @@ type MenuItem = {
   icon: ReactNode;
   href: string;
   disabled?: boolean;
+  unreadCount?: number;
 };
 
 export const Navigation = ({
@@ -55,6 +58,7 @@ export const Navigation = ({
 
   const features = useFeatures();
   const chat = useChatCapabilities();
+  const { data: chatUnread } = useChatUnread();
   const [isWorkspaceOpen, setIsWorkspaceOpen] = useLocalStorage(
     `sidebar:${workspaceSlug}:workspace-expanded`,
     true,
@@ -92,6 +96,7 @@ export const Navigation = ({
       icon: <ChatIcon className={isCollapsed ? "h-5.5" : undefined} />,
       href: withWorkspace("/chat"),
       disabled: !chat.enabled,
+      unreadCount: chatUnread?.totalUnread,
     },
     {
       name: "AI Agent",
@@ -141,6 +146,12 @@ export const Navigation = ({
     /^[^/]+\/stories$/.test(pathname.slice(withWorkspace("/teams/").length)) &&
     Boolean(searchParams.get("view"));
   const isLinkActive = (href: string) => {
+    if (href === withWorkspace("/chat")) {
+      // Subdomains use clean URLs; older links may retain the workspace prefix.
+      return [href, `/${workspaceSlug}/chat`].some(
+        (path) => pathname === path || pathname.startsWith(`${path}/`),
+      );
+    }
     if (href === withWorkspace("/views")) {
       return isSelectedStoryView || (pathname === href && !teamScope);
     }
@@ -148,7 +159,7 @@ export const Navigation = ({
   };
 
   const renderLinks = (links: MenuItem[]) =>
-    links.map(({ name, icon, href, disabled }) => {
+    links.map(({ name, icon, href, disabled, unreadCount }) => {
       if (disabled) return null;
 
       const isActive = isLinkActive(href);
@@ -176,7 +187,11 @@ export const Navigation = ({
         <NavLink
           active={isActive}
           aria-current={isActive ? "page" : undefined}
-          aria-label={name}
+          aria-label={
+            unreadCount
+              ? `${name}, ${unreadCount.toLocaleString()} unread messages`
+              : name
+          }
           className={cn(
             "hover:bg-primary/5 hover:text-primary hover:[&_svg]:text-primary relative",
             isActive &&
@@ -201,7 +216,15 @@ export const Navigation = ({
           href={href}
           key={name}
         >
-          <span className="shrink-0">{icon}</span>
+          <span className="relative shrink-0">
+            {icon}
+            {isCollapsed && unreadCount ? (
+              <ChatUnreadBadge
+                className="bg-primary absolute -top-2 -right-4 text-[10px] text-white"
+                count={unreadCount}
+              />
+            ) : null}
+          </span>
           <span
             className={cn(
               "min-w-0 first-letter:capitalize",
@@ -212,6 +235,9 @@ export const Navigation = ({
           >
             {name}
           </span>
+          {!isCollapsed && unreadCount ? (
+            <ChatUnreadBadge count={unreadCount} />
+          ) : null}
         </NavLink>
       );
     });

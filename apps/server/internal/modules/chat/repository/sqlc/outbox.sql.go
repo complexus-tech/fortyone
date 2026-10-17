@@ -95,13 +95,20 @@ WITH event AS (
     RETURNING id,message_id,event_type
 )
 INSERT INTO public.chat_outbox_recipients(event_id,user_id,reason)
-SELECT event.id,wm.user_id,CASE WHEN c.kind='dm' THEN 'dm' WHEN EXISTS (SELECT 1 FROM public.chat_message_mentions mm WHERE mm.message_id=m.id AND mm.user_id=wm.user_id) THEN 'mention' ELSE 'reply' END
+SELECT event.id,wm.user_id,CASE
+    WHEN c.kind='dm' THEN 'dm'
+    WHEN EXISTS (SELECT 1 FROM public.chat_message_mentions mm WHERE mm.message_id=m.id AND mm.user_id=wm.user_id) THEN 'mention'
+    WHEN m.thread_root_id IS NOT NULL AND EXISTS (
+        SELECT 1 FROM public.chat_conversation_messages participant
+        WHERE (participant.id=m.thread_root_id OR participant.thread_root_id=m.thread_root_id)
+          AND participant.author_id=wm.user_id AND participant.deleted_at IS NULL
+    ) THEN 'reply'
+    ELSE 'message'
+END
 FROM event JOIN public.chat_conversation_messages m ON m.id=event.message_id JOIN public.chat_conversations c ON c.id=m.conversation_id
 JOIN public.workspace_members wm ON wm.workspace_id=m.workspace_id
 WHERE event.event_type='message.created' AND wm.user_id<>m.author_id
 AND public.can_read_chat_conversation(m.workspace_id,wm.user_id,m.conversation_id)
-AND (c.kind='dm' OR EXISTS (SELECT 1 FROM public.chat_message_mentions mm WHERE mm.message_id=m.id AND mm.user_id=wm.user_id)
-OR (m.thread_root_id IS NOT NULL AND EXISTS (SELECT 1 FROM public.chat_conversation_messages participant WHERE (participant.id=m.thread_root_id OR participant.thread_root_id=m.thread_root_id) AND participant.author_id=wm.user_id AND participant.deleted_at IS NULL)))
 `
 
 type InsertEventParams struct {
@@ -124,8 +131,13 @@ func (q *Queries) InsertEvent(ctx context.Context, arg InsertEventParams) error 
 const notificationRecipients = `-- name: NotificationRecipients :many
 SELECT recipient.user_id, recipient.reason
 FROM public.chat_outbox_recipients recipient JOIN public.chat_outbox event ON event.id=recipient.event_id
+JOIN public.chat_conversation_messages message ON message.id=event.message_id
+LEFT JOIN public.chat_conversation_reads conversation_read ON conversation_read.conversation_id=message.conversation_id AND conversation_read.user_id=recipient.user_id
+LEFT JOIN public.chat_thread_reads thread_read ON thread_read.thread_root_id=message.thread_root_id AND thread_read.user_id=recipient.user_id
 WHERE event.id=$1 AND event.workspace_id=$2 AND event.event_type='message.created'
+AND recipient.user_id<>message.author_id
 AND public.can_read_chat_message(event.workspace_id,recipient.user_id,event.message_id)
+AND message.sequence>CASE WHEN message.thread_root_id IS NULL THEN COALESCE(conversation_read.last_read_sequence,0) ELSE COALESCE(thread_read.last_read_sequence,0) END
 ORDER BY recipient.user_id
 `
 

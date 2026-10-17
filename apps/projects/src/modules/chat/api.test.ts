@@ -5,6 +5,8 @@ import {
   getMessage,
   getMessages,
   getResources,
+  getUnreadSummary,
+  getUnreadThreads,
 } from "./api";
 import type { ChatMessageInput } from "./types";
 
@@ -46,6 +48,40 @@ const serverMessage = {
 };
 
 describe("chat message link decoding", () => {
+  it("decodes unread summaries and unread roots without losing their conversation context", async () => {
+    mockResponse = {
+      totalUnread: 500,
+      unreadThreads: 2,
+      conversations: [
+        {
+          conversationId: "room-1",
+          unreadCount: 100,
+          unreadRootCount: 30,
+          unreadReplyCount: 70,
+        },
+      ],
+    };
+    expect((await getUnreadSummary(context)).totalUnread).toBe(500);
+    mockResponse = {
+      items: [
+        {
+          ...serverMessage,
+          conversationName: "Product",
+          conversationKind: "team",
+          firstUnreadReplyId: "first-unread",
+          unreadReplyCount: 70,
+        },
+      ],
+      nextCursor: "next",
+    };
+    expect((await getUnreadThreads(context)).items[0]).toMatchObject({
+      id: "message-1",
+      conversationName: "Product",
+      conversationKind: "team",
+      firstUnreadReplyId: "first-unread",
+      unreadReplyCount: 70,
+    });
+  });
   it("preserves voice metadata across message and resource responses", async () => {
     const attachment = {
       id: "audio-1",

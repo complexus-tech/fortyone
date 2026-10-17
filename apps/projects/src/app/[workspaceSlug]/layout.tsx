@@ -14,6 +14,7 @@ import {
 import { getStatuses } from "@/lib/queries/states/get-states";
 import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
 import { getWorkspaceSettings } from "@/lib/queries/workspaces/get-settings";
+import { chatCapabilitiesQueryOptions } from "@/lib/queries/workspaces/get-chat-capabilities";
 import { getRunningSprints } from "@/modules/sprints/queries/get-running-sprints";
 import { Chat } from "@/components/ui/chat";
 import { WalkthroughProvider } from "@/components/walkthrough/walkthrough-provider";
@@ -79,6 +80,13 @@ export default async function RootLayout({
   // Settle the data used by the initial navigation and terminology. Supporting
   // feature queries stream independently through the hydration boundary.
   await Promise.all([
+    // Hydrate the same viewer-scoped decision used by Chat before navigation
+    // becomes interactive, without a separate client-side loading round trip.
+    session?.user.id
+      ? queryClient.prefetchQuery(
+          chatCapabilitiesQueryOptions(ctx, session.user.id),
+        )
+      : undefined,
     // Terminology affects the shell's server-rendered text and must hydrate
     // from the same settled snapshot on the client.
     queryClient.prefetchQuery({

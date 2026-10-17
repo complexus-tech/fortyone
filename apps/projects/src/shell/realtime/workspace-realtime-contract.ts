@@ -2,6 +2,8 @@ import type {
   AutoSchedulingStatus,
   StoryPriority,
 } from "@/modules/stories/types";
+import type { ChatNotificationEvent } from "@/modules/chat/alerts/contract";
+import { parseChatNotification } from "@/modules/chat/alerts/contract";
 
 type StoryWorkspaceChanges = {
   checklistChanged?: true;
@@ -18,6 +20,7 @@ type StoryWorkspaceChanges = {
 };
 
 export type WorkspaceRealtimeEvent =
+  | ChatNotificationEvent
   | { kind: "calendar-updated" }
   | {
       kind: "chat-updated";
@@ -234,6 +237,16 @@ export const parseWorkspaceRealtimeEvent = (
 
   if (value.type === "calendar.updated") {
     return { kind: "calendar-updated" };
+  }
+
+  if (value.type === "chat.notification") {
+    const notification = parseChatNotification(value);
+    if (!notification) {
+      throw new WorkspaceRealtimeContractError(
+        "Invalid scoped chat notification",
+      );
+    }
+    return notification;
   }
 
   if (value.type === "chat.updated") {

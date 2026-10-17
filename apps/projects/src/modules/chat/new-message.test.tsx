@@ -58,6 +58,8 @@ const team: ChatConversation = {
   members: [],
   memberCount: 3,
   unreadCount: 0,
+  unreadRootCount: 0,
+  unreadReplyCount: 0,
   lastReadSequence: 0,
   lastMessageAt: null,
   lastMessageText: "",

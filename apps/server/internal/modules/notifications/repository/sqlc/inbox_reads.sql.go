@@ -58,7 +58,7 @@ WHERE notification.recipient_id = CAST($1 AS uuid)
       )
   )
   AND notification.workspace_id = CAST($2 AS uuid)
-  AND CAST(notification.entity_type AS text) <> 'feedback'
+  AND CAST(notification.entity_type AS text) NOT IN ('feedback', 'chat_message')
   AND notification.in_app_enabled = TRUE
   AND notification.read_at IS NULL
   AND (
@@ -210,7 +210,7 @@ WITH actor_scope AS (
       )
   )
       AND notification.workspace_id = CAST($4 AS uuid)
-      AND CAST(notification.entity_type AS text) <> 'feedback'
+      AND CAST(notification.entity_type AS text) NOT IN ('feedback', 'chat_message')
       AND notification.in_app_enabled = TRUE
       AND (
           (

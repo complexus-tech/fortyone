@@ -2,7 +2,8 @@ import { QueryClient } from "@tanstack/react-query";
 import { redirect } from "next/navigation";
 import { getQueryClient } from "@/app/get-query-client";
 import { auth } from "@/auth";
-import { userKeys, workspaceKeys } from "@/constants/keys";
+import { chatCapabilityKeys, userKeys, workspaceKeys } from "@/constants/keys";
+import { get } from "@/lib/http";
 import { objectiveKeys } from "@/modules/objectives/constants";
 import { getObjectiveStatuses } from "@/modules/objectives/queries/statuses";
 import { getOnboardingTourProgress } from "@/shared/walkthrough/progress/get-progress";
@@ -15,6 +16,11 @@ import type * as NonCriticalQueriesModule from "./non-critical-important-queries
 jest.mock("next/navigation", () => ({ redirect: jest.fn() }));
 jest.mock("@/app/get-query-client", () => ({ getQueryClient: jest.fn() }));
 jest.mock("@/auth", () => ({ auth: jest.fn() }));
+jest.mock("@/lib/http", () => ({
+  get: jest
+    .fn()
+    .mockResolvedValue({ data: { enabled: true, attachmentsEnabled: true } }),
+}));
 jest.mock("@/lib/http/header", () => ({
   getCookieHeader: jest.fn().mockResolvedValue("session=current-user"),
 }));
@@ -144,6 +150,30 @@ describe("workspace shell query reuse", () => {
     expect(fetchNonCriticalImportantQueries).toHaveBeenCalledTimes(1);
   });
 
+  it("hydrates authorized Chat capabilities for the signed-in viewer before rendering the shell", async () => {
+    jest
+      .mocked(auth)
+      .mockResolvedValue({ user: { id: "viewer-one" } } as NonNullable<
+        Awaited<ReturnType<typeof auth>>
+      >);
+    await RootLayout({
+      children: null,
+      params: Promise.resolve({ workspaceSlug: "acme" }),
+    });
+
+    expect(
+      queryClient.getQueryData(chatCapabilityKeys.viewer("acme", "viewer-one")),
+    ).toEqual({ enabled: true, attachmentsEnabled: true });
+    expect(get).toHaveBeenCalledWith(
+      "chat/capabilities",
+      expect.objectContaining({
+        workspaceSlug: "acme",
+        cookieHeader: "session=current-user",
+      }),
+      expect.objectContaining({ cache: "no-store", retry: 0 }),
+    );
+  });
+
   it("does not populate or prefetch the shell before scoped access is allowed", async () => {
     jest.mocked(getWorkspaceAccess).mockResolvedValue("sso-required");
 
@@ -156,6 +186,7 @@ describe("workspace shell query reuse", () => {
 
     expect(getQueryClient).not.toHaveBeenCalled();
     expect(fetchNonCriticalImportantQueries).not.toHaveBeenCalled();
+    expect(get).not.toHaveBeenCalled();
     expect(queryClient.getQueryData(workspaceKeys.lists())).toBeUndefined();
   });
 

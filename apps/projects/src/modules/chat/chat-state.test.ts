@@ -25,6 +25,7 @@ const message = (id: string, sequence: number, version = 1): ChatMessage => ({
   editedAt: null,
   deletedAt: null,
   replyCount: 0,
+  unreadReplyCount: 0,
   lastReplyAt: null,
   replyAuthors: [],
   reactions: [],
@@ -110,6 +111,8 @@ describe("chat cursor cache", () => {
       second,
       untouched,
       chatKeys.conversations("workspace"),
+      chatKeys.unread("workspace"),
+      chatKeys.unreadThreads("workspace"),
     ])
       client.setQueryData(key, {});
     const invalidate = jest.spyOn(client, "invalidateQueries");
@@ -123,6 +126,12 @@ describe("chat cursor cache", () => {
     expect(client.getQueryState(first)?.isInvalidated).toBe(true);
     expect(client.getQueryState(second)?.isInvalidated).toBe(true);
     expect(client.getQueryState(untouched)?.isInvalidated).toBe(false);
+    expect(
+      client.getQueryState(chatKeys.unread("workspace"))?.isInvalidated,
+    ).toBe(true);
+    expect(
+      client.getQueryState(chatKeys.unreadThreads("workspace"))?.isInvalidated,
+    ).toBe(true);
     client.clear();
   });
 });

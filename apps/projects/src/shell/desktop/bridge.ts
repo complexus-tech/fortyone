@@ -67,6 +67,9 @@ export type DesktopNotification = DesktopNotificationScope & {
   entityType: string;
   entityId: string;
   commentId?: string;
+  conversationId?: string;
+  threadRootId?: string;
+  silent?: boolean;
 };
 
 export type DesktopPreferences = {
@@ -88,6 +91,7 @@ export type DesktopRestoredSession = DesktopNotificationScope & {
 type DesktopBridge = {
   version: 2;
   commentNotificationLinks?: boolean;
+  chatNotificationLinks?: boolean;
   platform: "macos" | "windows" | "linux";
   vibrancy?: boolean;
   syncChrome: (state: DesktopChromeState) => Promise<void>;

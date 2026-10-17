@@ -33,6 +33,7 @@ export const Timeline = <Item extends { id: string }>({
   isActive = true,
   label = "Message history",
   onVisibleItem,
+  onVisibleItems,
   getItemDate,
   hasOlder = false,
   isFetching = false,
@@ -50,6 +51,7 @@ export const Timeline = <Item extends { id: string }>({
   isActive?: boolean;
   label?: string;
   onVisibleItem?: (item: Item) => void;
+  onVisibleItems?: (items: readonly Item[]) => void;
   getItemDate?: (item: Item) => string;
   hasOlder?: boolean;
   isFetching?: boolean;
@@ -150,9 +152,10 @@ export const Timeline = <Item extends { id: string }>({
     ) {
       setPositionReady(true);
     }
-    if (!onVisibleItem) return;
+    if (!onVisibleItem && !onVisibleItems) return;
     const viewport = scroller.getBoundingClientRect();
     let visible: Item | undefined;
+    const visibleItems: Item[] = [];
     for (const element of scroller.querySelectorAll<HTMLElement>(
       "[data-visible-index]",
     )) {
@@ -162,11 +165,21 @@ export const Timeline = <Item extends { id: string }>({
         Math.min(rect.bottom, viewport.bottom) -
         Math.max(rect.top, viewport.top);
       if (visibleHeight >= Math.min(rect.height, viewport.height) * 0.6) {
-        visible = items[Number(element.dataset.visibleIndex)];
+        visible = items.at(Number(element.dataset.visibleIndex));
+        if (visible) visibleItems.push(visible);
       }
     }
-    if (visible) onVisibleItem(visible);
-  }, [isActive, items, onVisibleItem, positionReady, startAtEnd, targetItemId]);
+    if (visible) onVisibleItem?.(visible);
+    if (visibleItems.length) onVisibleItems?.(visibleItems);
+  }, [
+    isActive,
+    items,
+    onVisibleItem,
+    onVisibleItems,
+    positionReady,
+    startAtEnd,
+    targetItemId,
+  ]);
   const queueVisibilityCheck = useCallback(() => {
     if (visibilityFrame.current !== null)
       cancelAnimationFrame(visibilityFrame.current);

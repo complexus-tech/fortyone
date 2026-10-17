@@ -31,6 +31,7 @@ jest.mock(
     },
 );
 jest.mock("ui", () => ({
+  Skeleton: () => <div />,
   Text: ({ children }: { children: ReactNode }) => <p>{children}</p>,
   Button: ({
     children,
@@ -75,13 +76,23 @@ describe("chat rollout boundary", () => {
     view.rerender(<ChatPage />);
     expect(screen.queryByText("Enabled chat shell")).not.toBeInTheDocument();
   });
-  it("distinguishes loading from an availability failure and offers retry", () => {
+  it("loads quietly without mounting chat, then offers retry if availability fails", () => {
     mockCapabilities.isPending = true;
     const view = render(<ChatPage />);
-    expect(screen.getByText("Checking chat availability…")).toBeInTheDocument();
+    expect(
+      screen.getByRole("status", { name: "Loading chat" }),
+    ).toHaveAttribute("aria-busy", "true");
+    expect(
+      screen.queryByText(/checking chat availability/i),
+    ).not.toBeInTheDocument();
+    expect(mockUseMaya).not.toHaveBeenCalled();
+    expect(screen.queryByText("Enabled chat shell")).not.toBeInTheDocument();
     mockCapabilities.isPending = false;
     mockCapabilities.isError = true;
     view.rerender(<ChatPage />);
+    expect(
+      screen.getByText("Chat availability could not be checked."),
+    ).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(mockCapabilities.refetch).toHaveBeenCalledTimes(1);
   });

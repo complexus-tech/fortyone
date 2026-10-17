@@ -13,6 +13,8 @@ import { getApiUrl } from "@/lib/api-url";
 import { useSession } from "@/lib/auth/client";
 import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
 import { reconcileChatQueries } from "@/modules/chat/realtime";
+import { createChatAlertDelivery } from "@/modules/chat/alerts/delivery";
+import { enableChatSound } from "@/modules/chat/alerts/sound";
 import { applyChatTypingEvent, clearChatTyping } from "@/modules/chat/typing";
 import type { DetailedStory } from "@/modules/story/types";
 import { storyKeys } from "@/modules/stories/constants";
@@ -62,9 +64,19 @@ export const WorkspaceRealtimeConnection = () => {
   });
 
   const handleMessage = useEffectEvent(
-    (event: MessageEvent, workspaceSlug: string, isCurrent: () => boolean) => {
+    (
+      event: MessageEvent,
+      workspaceSlug: string,
+      isCurrent: () => boolean,
+      chatAlerts: ReturnType<typeof createChatAlertDelivery> | null,
+    ) => {
       try {
         const realtimeEvent = parseWorkspaceRealtimeEvent(event.data);
+
+        if (realtimeEvent.kind === "chat-notification") {
+          chatAlerts?.receive(realtimeEvent);
+          return;
+        }
 
         if (realtimeEvent.kind === "chat-typing") {
           if (
@@ -163,6 +175,10 @@ export const WorkspaceRealtimeConnection = () => {
           return;
         }
 
+        // Older workers can still publish a generic chat receipt during rollout.
+        // Chat state comes from chat.updated; never add it to work notifications.
+        if (realtimeEvent.entityType === "chat_message") return;
+
         void queryClient.invalidateQueries({
           queryKey: notificationKeys.all(workspaceSlug),
         });
@@ -191,7 +207,7 @@ export const WorkspaceRealtimeConnection = () => {
     },
   );
 
-  const handleError = useEffectEvent((error: Event) => {
+  const handleError = useEffectEvent((error: unknown) => {
     posthog.captureException(error);
   });
 
@@ -205,9 +221,38 @@ export const WorkspaceRealtimeConnection = () => {
     const cacheWorkspaceSlug = connectionWorkspaceSlug.toLowerCase();
     let shouldReconcileOnOpen = false;
     let active = true;
+    const chatAlerts =
+      connectionAccountId && connectionWorkspaceId
+        ? createChatAlertDelivery(
+            {
+              accountId: connectionAccountId,
+              workspaceId: connectionWorkspaceId,
+              workspaceSlug: cacheWorkspaceSlug,
+            },
+            () => active,
+            (error) => {
+              handleError(error);
+            },
+          )
+        : null;
+    const unlockSound = () => {
+      void enableChatSound()
+        .then((enabled) => {
+          if (enabled) {
+            window.removeEventListener("pointerdown", unlockSound);
+            window.removeEventListener("keydown", unlockSound);
+          }
+        })
+        .catch((error: unknown) => {
+          handleError(error);
+        });
+    };
+    window.addEventListener("pointerdown", unlockSound);
+    window.addEventListener("keydown", unlockSound);
 
     eventSource.onmessage = (event) => {
-      if (active) handleMessage(event, cacheWorkspaceSlug, () => active);
+      if (active)
+        handleMessage(event, cacheWorkspaceSlug, () => active, chatAlerts);
     };
     eventSource.onerror = (error) => {
       shouldReconcileOnOpen = true;
@@ -223,6 +268,9 @@ export const WorkspaceRealtimeConnection = () => {
 
     return () => {
       active = false;
+      chatAlerts?.dispose();
+      window.removeEventListener("pointerdown", unlockSound);
+      window.removeEventListener("keydown", unlockSound);
       eventSource.close();
       if (connectionWorkspaceId) clearChatTyping(connectionWorkspaceId);
     };

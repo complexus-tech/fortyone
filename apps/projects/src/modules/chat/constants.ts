@@ -6,6 +6,10 @@ export const chatKeys = {
     ["chat", workspaceSlug.toLowerCase()] as const,
   conversations: (workspaceSlug: string, search = "") =>
     [...chatKeys.all(workspaceSlug), "conversations", search] as const,
+  unread: (workspaceSlug: string) =>
+    [...chatKeys.all(workspaceSlug), "unread"] as const,
+  unreadThreads: (workspaceSlug: string) =>
+    [...chatKeys.all(workspaceSlug), "unread-threads"] as const,
   conversation: (workspaceSlug: string, conversationId: string) =>
     [...chatKeys.all(workspaceSlug), "conversation", conversationId] as const,
   messages: (

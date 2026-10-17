@@ -69,6 +69,20 @@ type FailurePublisher interface {
 	PublishFailure(context.Context, Run, string) (uuid.UUID, error)
 }
 
+// FailurePublicationPolicy prevents background candidates that were never
+// addressed to the assistant from producing unsolicited failure messages.
+type FailurePublicationPolicy interface {
+	CanPublishFailure(Run, error) bool
+}
+
+// IgnoredRunFinalizer completes durable bookkeeping for a no-response decision.
+// It runs without source authorization after the decision is persisted. It must
+// be idempotent, must not read protected content, and must not invoke tools or
+// publish anything. Revocation cannot undo usage already incurred.
+type IgnoredRunFinalizer interface {
+	FinalizeIgnored(context.Context, Run, Proposal) error
+}
+
 type Store interface {
 	Accept(context.Context, Input) (Run, bool, error)
 	ResolveContinuation(context.Context, ContinuationQuery) (*uuid.UUID, error)
@@ -212,6 +226,12 @@ func (s *Service) Process(ctx context.Context, id uuid.UUID) error {
 		return errors.Join(err, s.deferFailure(cleanupCtx, run, err))
 	}
 	_, canPublish := s.runtime.(FailurePublisher)
+	if policy, ok := s.runtime.(FailurePublicationPolicy); ok {
+		canPublish = canPublish && policy.CanPublishFailure(run, err)
+	}
+	if run.Proposal != nil && run.Proposal.Ignore {
+		canPublish = false
+	}
 	terminal := !retry || (run.RetryAttemptCount >= domain.MaximumAttempts && !run.HasDurableResponse())
 	if canPublish && terminal && run.Outcome == nil && run.ReplyCommentID == nil && !cannotPublishFailure(err) {
 		updated, publishErr := s.store.BeginFailure(cleanupCtx, run, summary)
@@ -237,6 +257,9 @@ func (s *Service) processClaim(ctx context.Context, run *Run) error {
 	if run.FailurePending {
 		return s.publishFailure(ctx, run)
 	}
+	if run.Proposal != nil && run.Proposal.Ignore {
+		return s.completeIgnored(ctx, run)
+	}
 	if err := s.runtime.Authorize(ctx, *run); err != nil {
 		return err
 	}
@@ -250,11 +273,17 @@ func (s *Service) processClaim(ctx context.Context, run *Run) error {
 		if err := proposal.Validate(); err != nil {
 			return err
 		}
+		// Keep the addressing decision for failure policy even if persistence
+		// fails before the durable copy is available to another worker.
+		run.Proposal = &proposal
 		updated, err := s.store.SaveProposal(ctx, *run, proposal)
 		if err != nil {
 			return err
 		}
 		*run = updated
+	}
+	if run.Proposal.Ignore {
+		return s.completeIgnored(ctx, run)
 	}
 	if run.Proposal.RequiresApproval && run.ApprovedAt == nil {
 		return s.publishApproval(ctx, run)
@@ -303,6 +332,21 @@ func (s *Service) processClaim(ctx context.Context, run *Run) error {
 			return err
 		}
 		if err := delivery.Deliver(ctx, *run, *run.Outcome, *run.ReplyCommentID); err != nil {
+			return err
+		}
+	}
+	updated, err := s.store.Complete(ctx, *run)
+	if err == nil {
+		*run = updated
+	}
+	return err
+}
+
+func (s *Service) completeIgnored(ctx context.Context, run *Run) error {
+	// Only durable accounting remains. Recovery must neither reread a revoked
+	// source nor repeat classification, publish replies, or run business tools.
+	if finalizer, ok := s.runtime.(IgnoredRunFinalizer); ok {
+		if err := finalizer.FinalizeIgnored(ctx, *run, *run.Proposal); err != nil {
 			return err
 		}
 	}

@@ -100,12 +100,13 @@ SELECT * FROM public.agent_invocations WHERE id = sqlc.arg(id) AND workspace_id 
 -- name: ListAgentInvocations :many
 SELECT * FROM public.agent_invocations
 WHERE workspace_id = sqlc.arg(workspace_id) AND entity_id = sqlc.arg(entity_id)
+  AND COALESCE(proposal->>'ignore', 'false') <> 'true'
 ORDER BY created_at DESC, id DESC LIMIT 100;
 
 -- name: ListPendingAgentInvocationIDs :many
 SELECT id FROM public.agent_invocations
 WHERE ((status = 'queued' AND available_at <= clock_timestamp()) OR (status = 'running' AND lease_expires_at < clock_timestamp()))
-  AND (surface <> 'chat_message' OR EXISTS (
+  AND (surface <> 'chat_message' OR proposal->>'ignore' = 'true' OR EXISTS (
       SELECT 1 FROM public.workspaces AS workspace
       LEFT JOIN public.workspace_settings AS settings ON settings.workspace_id = workspace.workspace_id
       WHERE workspace.workspace_id = agent_invocations.workspace_id
@@ -119,7 +120,7 @@ UPDATE public.agent_invocations SET status = 'running', lease_token = sqlc.arg(l
     attempt_count = attempt_count + 1, retry_attempt_count = retry_attempt_count + 1,
     version = version + 1, updated_at = clock_timestamp()
 WHERE id = sqlc.arg(id) AND ((status = 'queued' AND available_at <= clock_timestamp()) OR (status = 'running' AND lease_expires_at < clock_timestamp()))
-  AND (surface <> 'chat_message' OR EXISTS (
+  AND (surface <> 'chat_message' OR proposal->>'ignore' = 'true' OR EXISTS (
       SELECT 1 FROM public.workspaces AS workspace
       LEFT JOIN public.workspace_settings AS settings ON settings.workspace_id = workspace.workspace_id
       WHERE workspace.workspace_id = agent_invocations.workspace_id
@@ -159,7 +160,8 @@ RETURNING *;
 -- name: FailAgentInvocation :execrows
 UPDATE public.agent_invocations SET status = CASE
         WHEN CAST(sqlc.arg(retry) AS boolean) AND (retry_attempt_count < CAST(sqlc.arg(maximum_attempts) AS integer)
-            OR outcome IS NOT NULL OR proposal_reply_id IS NOT NULL OR action_started_at IS NOT NULL) THEN 'queued'
+            OR outcome IS NOT NULL OR proposal_reply_id IS NOT NULL OR action_started_at IS NOT NULL
+            OR proposal->>'ignore' = 'true') THEN 'queued'
         ELSE 'failed' END,
     summary = sqlc.arg(summary),
     failure_pending = FALSE,
@@ -180,7 +182,8 @@ UPDATE public.agent_invocations SET
     updated_at = clock_timestamp()
 WHERE id = sqlc.arg(id) AND workspace_id = sqlc.arg(workspace_id) AND requester_id = sqlc.arg(requester_id)
     AND version = sqlc.arg(expected_version)
-    AND ((CAST(sqlc.arg(operation) AS text) = 'cancel' AND status IN ('queued','running','awaiting_approval','needs_input') AND outcome IS NULL AND action_started_at IS NULL)
+    AND ((CAST(sqlc.arg(operation) AS text) = 'cancel' AND status IN ('queued','running','awaiting_approval','needs_input') AND outcome IS NULL AND action_started_at IS NULL
+        AND COALESCE(proposal->>'ignore', 'false') <> 'true')
       OR (CAST(sqlc.arg(operation) AS text) = 'retry' AND status IN ('failed','cancelled'))
       OR (CAST(sqlc.arg(operation) AS text) = 'approve' AND status = 'awaiting_approval'))
 RETURNING *;

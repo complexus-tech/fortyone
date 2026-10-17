@@ -2993,6 +2993,42 @@
         "Feature reads are read-only and scoped to live workspaces. Existing database membership resolution carries the setting into request and SSE authorization.",
         "The scanner address remains separate infrastructure configuration; enabling Chat does not bypass upload scanning."
       ]
+    },
+    {
+      "version": 235,
+      "slug": "chat_unread_counts",
+      "classification": "reversible",
+      "files": {
+        "up": "000235_chat_unread_counts.up.sql",
+        "down": "000235_chat_unread_counts.down.sql"
+      },
+      "compatibility": {
+        "schema": "Adds a cursor-based unread helper and extends conversation/message projections with independent root and reply counts. Allows ordinary message delivery recipient reasons without changing message or read-cursor data.",
+        "api": "Updated API exposes an authoritative workspace unread summary and paginated unread threads with a first-unread-reply destination. Conversation unreadCount now includes both roots and replies.",
+        "worker": "Updated workers publish dedicated chat attention events and recheck chat reads; generic notification receipts remain internal delivery state.",
+        "mixed_versions": "Apply schema first, then deploy API and workers together with the chat-aware client. Older workers do not understand ordinary message recipient reasons, and older clients do not reconcile the new combined unread counts."
+      },
+      "rollout": {
+        "sequence": 84,
+        "mode": "schema-first",
+        "steps": [
+          "Apply migration 000235 after 000234; existing root and thread read cursors remain unchanged.",
+          "Deploy the API and workers together, then publish the client with dedicated Chat counts and attention handling.",
+          "Verify root reads preserve unopened thread counts and general notification totals exclude existing chat delivery receipts."
+        ]
+      },
+      "recovery": {
+        "strategy": "down-migration",
+        "procedure": [
+          "Stop chat producers and workers, and roll back the API/client before running the down migration.",
+          "The down migration restores the previous projection functions before dropping the unread helper and maps ordinary message recipient reasons to the legacy reply reason. Messages, read cursors and delivery receipts are retained."
+        ]
+      },
+      "operational_notes": [
+        "Missing read cursors start at zero, so previously unopened threads become visible as unread rather than being silently marked read during rollout.",
+        "Unread counters exclude own messages and deleted content, retain current membership boundaries, and are independent of paginated conversation loading.",
+        "The unread helper uses existing conversation/thread sequence indexes; no counter backfill or message-history rewrite is required."
+      ]
     }
   ]
 }

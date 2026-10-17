@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { usePostHog } from "posthog-js/react";
 import { useUnreadNotifications } from "@/modules/notifications/hooks/unread";
+import { useChatUnread } from "@/modules/chat/use-chat-unread";
 import type { DesktopNotificationScope } from "./bridge";
 import { getDesktopBridge } from "./bridge";
 import { useDesktop } from "./desktop-provider";
@@ -20,7 +21,12 @@ const NotificationBadge = ({
   workspaceId,
   workspaceSlug,
 }: DesktopNotificationScope) => {
-  const { data: count, isSuccess } = useUnreadNotifications();
+  const { data: workCount, isSuccess } = useUnreadNotifications();
+  const chat = useChatUnread();
+  const count =
+    typeof workCount === "number"
+      ? workCount + (chat.data?.totalUnread ?? 0)
+      : undefined;
   const posthog = usePostHog();
   useEffect(() => {
     const bridge = getDesktopBridge();

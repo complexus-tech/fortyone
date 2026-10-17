@@ -35,6 +35,7 @@ export type ChatMessage = {
   deletedAt: string | null;
   version: number;
   replyCount: number;
+  unreadReplyCount: number;
   lastReplyAt: string | null;
   replyAuthors: ChatPerson[];
   reactions: ChatReaction[];
@@ -56,12 +57,29 @@ export type ChatConversation = {
   members: ChatPerson[];
   memberCount: number;
   unreadCount: number;
+  unreadRootCount: number;
+  unreadReplyCount: number;
   lastReadSequence: number;
   lastMessageAt: string | null;
   lastMessageText: string;
 };
 
 export type ConversationFeed = ChatConversation & { messages: ChatMessage[] };
+export type ChatUnreadSummary = {
+  totalUnread: number;
+  unreadThreads: number;
+  conversations: {
+    conversationId: string;
+    unreadCount: number;
+    unreadRootCount: number;
+    unreadReplyCount: number;
+  }[];
+};
+export type ChatUnreadThread = ChatMessage & {
+  firstUnreadReplyId: string;
+  conversationName: string;
+  conversationKind: ChatConversation["kind"];
+};
 export type ConversationTab = "messages" | "files";
 export type ChatPage<T> = { items: T[]; nextCursor: string | null };
 export type ChatMessagePage = {

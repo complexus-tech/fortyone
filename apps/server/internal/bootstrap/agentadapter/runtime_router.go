@@ -82,6 +82,28 @@ func (r *RuntimeRouter) PublishFailure(ctx context.Context, run agentruns.Run, s
 	}
 	return publisher.PublishFailure(ctx, run, summary)
 }
+
+func (r *RuntimeRouter) CanPublishFailure(run agentruns.Run, err error) bool {
+	target, targetErr := r.target(run)
+	if targetErr != nil {
+		return false
+	}
+	if policy, ok := target.(agentruns.FailurePublicationPolicy); ok {
+		return policy.CanPublishFailure(run, err)
+	}
+	return true
+}
+
+func (r *RuntimeRouter) FinalizeIgnored(ctx context.Context, run agentruns.Run, proposal agentruns.Proposal) error {
+	target, err := r.target(run)
+	if err != nil {
+		return err
+	}
+	if finalizer, ok := target.(agentruns.IgnoredRunFinalizer); ok {
+		return finalizer.FinalizeIgnored(ctx, run, proposal)
+	}
+	return nil
+}
 func (r *RuntimeRouter) Deliver(ctx context.Context, run agentruns.Run, o agentruns.Outcome, id uuid.UUID) error {
 	target, err := r.target(run)
 	if err != nil {

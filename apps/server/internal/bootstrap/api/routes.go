@@ -443,6 +443,7 @@ func (r routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 	chathttp.Routes(chathttp.Config{
 		Log: cfg.Log, SecretKey: cfg.SecretKey, BrowserSessions: browserSessions,
 		WorkspaceResolver: r.workspaceResolver, Service: svcs.chat,
+		ProfileImages: svcs.attachments,
 	}, app)
 	registerChatAttachments(cfg, r.workspaceResolver, browserSessions, svcs, app)
 	registerChatAttachmentThumbnails(cfg, r.workspaceResolver, browserSessions, svcs, app)

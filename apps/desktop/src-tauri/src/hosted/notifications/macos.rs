@@ -210,7 +210,9 @@ fn content(notification: &Notification) -> Retained<UNMutableNotificationContent
     let content = UNMutableNotificationContent::new();
     content.setTitle(&NSString::from_str(&clean_text(&notification.title, 256)));
     content.setBody(&NSString::from_str(&clean_text(&notification.body, 1024)));
-    content.setSound(Some(&UNNotificationSound::defaultSound()));
+    if !notification.silent {
+        content.setSound(Some(&UNNotificationSound::defaultSound()));
+    }
     let payload = NSString::from_str(&activation_payload(notification).to_string());
     let info = NSDictionary::from_slices(&[ns_string!("fortyoneHostedTarget")], &[&*payload]);
     // SAFETY: erasing generic dictionary types preserves NSString property-list
@@ -330,6 +332,15 @@ mod tests {
         notification.entity_type = "story".into();
         notification.workspace_id = "not-a-workspace".into();
         assert!(decode_target(&content(&notification).userInfo()).is_none());
+    }
+
+    #[test]
+    fn chat_sound_respects_the_explicit_silent_preference() {
+        let mut notification = super::super::tests::notification();
+        notification.entity_type = "chat_message".into();
+        assert!(content(&notification).sound().is_some());
+        notification.silent = true;
+        assert!(content(&notification).sound().is_none());
     }
 
     #[tokio::test]

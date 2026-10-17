@@ -16,6 +16,9 @@ type NotificationMessage struct {
 	// IdentityReferences links display snapshots to accounts for targeted erasure.
 	// It is stored with the message but never included in public responses.
 	IdentityReferences map[string]uuid.UUID `json:"identityReferences,omitempty"`
+	// EmailSuppressed retains per-event delivery policy without changing the
+	// account's channel preferences. It never appears in public payloads.
+	EmailSuppressed bool `json:"emailSuppressed,omitempty"`
 }
 
 // StoryScheduleIssueSnapshot identifies the scheduling episode rather than its
@@ -29,6 +32,7 @@ type StoryScheduleIssueSnapshot struct {
 func (message NotificationMessage) Public() NotificationMessage {
 	message.Strategy = nil
 	message.IdentityReferences = nil
+	message.EmailSuppressed = false
 	return message
 }
 

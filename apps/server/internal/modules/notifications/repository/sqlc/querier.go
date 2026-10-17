@@ -48,6 +48,9 @@ type Querier interface {
 	HasActiveRoutineEmailClaim(ctx context.Context, arg HasActiveRoutineEmailClaimParams) (bool, error)
 	HasRoutineEmailGuidance(ctx context.Context, arg HasRoutineEmailGuidanceParams) (bool, error)
 	HasSentRoutineEmailWeek(ctx context.Context, arg HasSentRoutineEmailWeekParams) (bool, error)
+	// Internal chat receipts may be retried after the original transaction. Recheck
+	// current access and independent read boundaries before replaying delivery.
+	IsChatNotificationEligible(ctx context.Context, arg IsChatNotificationEligibleParams) (bool, error)
 	// ListKeyResultNotificationAudience owns the key-result/objective lookup and
 	// recipient selection used by the event consumer. Both the event actor and
 	// every recipient must still have live access to the exact workspace team.

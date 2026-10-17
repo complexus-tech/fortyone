@@ -35,6 +35,7 @@ type Config struct {
 type runResponse struct {
 	ID             uuid.UUID          `json:"id"`
 	SourceID       uuid.UUID          `json:"sourceId"`
+	ThreadRootID   *uuid.UUID         `json:"threadRootId,omitempty"`
 	RequesterID    uuid.UUID          `json:"requesterId"`
 	Status         agentruns.Status   `json:"status"`
 	Summary        string             `json:"summary"`
@@ -53,6 +54,7 @@ func present(run agentruns.Run) runResponse {
 		response.ProposalReview = run.Proposal.Review
 	}
 	if run.Surface == "chat_message" {
+		response.ThreadRootID = &run.ConversationID
 		response.ReplyMessageID = response.ReplyCommentID
 		response.Tasks = presentChatTasks(run)
 	}
@@ -74,6 +76,16 @@ func publishedReplyID(run agentruns.Run) *uuid.UUID {
 		return run.ProposalReplyID
 	}
 	return nil
+}
+
+func presentRuns(runs []agentruns.Run, surface string) []runResponse {
+	result := make([]runResponse, 0, len(runs))
+	for _, run := range runs {
+		if run.Surface == surface && (run.Proposal == nil || !run.Proposal.Ignore) {
+			result = append(result, present(run))
+		}
+	}
+	return result
 }
 
 func Routes(cfg Config, app *web.App) {
@@ -149,16 +161,10 @@ func (h *handler) list(ctx context.Context, w http.ResponseWriter, r *http.Reque
 	if err != nil {
 		return respondError(ctx, w, err)
 	}
-	result := make([]runResponse, 0, len(runs))
-	for _, run := range runs {
-		if run.Surface == h.sourceSurface() {
-			result = append(result, present(run))
-		}
-	}
 	return web.Respond(ctx, w, struct {
 		Enabled bool          `json:"enabled"`
 		Runs    []runResponse `json:"runs"`
-	}{enabled, result}, http.StatusOK)
+	}{enabled, presentRuns(runs, h.sourceSurface())}, http.StatusOK)
 }
 
 func (h *handler) control(ctx context.Context, w http.ResponseWriter, r *http.Request) error {

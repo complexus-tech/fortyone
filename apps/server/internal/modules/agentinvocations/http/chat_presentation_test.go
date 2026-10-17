@@ -30,3 +30,37 @@ func TestChatPresentationExposesOnlyCommittedCurrentTeamTaskCards(t *testing.T) 
 	run.Outcome = nil
 	require.Empty(t, present(run).Tasks)
 }
+
+func TestChatPresentationIncludesDestinationThreadForEverySource(t *testing.T) {
+	t.Parallel()
+	root, reply := uuid.New(), uuid.New()
+	for _, source := range []uuid.UUID{root, reply} {
+		run := agentruns.Run{Surface: "chat_message", SourceID: source, ConversationID: root}
+		response := present(run)
+		require.Equal(t, source, response.SourceID)
+		require.Equal(t, &root, response.ThreadRootID)
+		body, err := json.Marshal(response)
+		require.NoError(t, err)
+		require.Contains(t, string(body), `"threadRootId":"`+root.String()+`"`)
+	}
+	for _, surface := range []string{"story_comment", "document_comment"} {
+		body, err := json.Marshal(present(agentruns.Run{Surface: surface, ConversationID: root}))
+		require.NoError(t, err)
+		require.NotContains(t, string(body), "threadRootId")
+	}
+}
+
+func TestRunListOmitsSilentAddressingDecisionsAndOtherSurfaces(t *testing.T) {
+	t.Parallel()
+	queued, published := uuid.New(), uuid.New()
+	runs := []agentruns.Run{
+		{ID: queued, Surface: "chat_message", Status: agentruns.StatusQueued},
+		{ID: uuid.New(), Surface: "chat_message", Status: agentruns.StatusSucceeded, Proposal: &agentruns.Proposal{Ignore: true}},
+		{ID: published, Surface: "chat_message", Status: agentruns.StatusSucceeded, Proposal: &agentruns.Proposal{Reply: "Here is the answer."}},
+		{ID: uuid.New(), Surface: "story_comment", Status: agentruns.StatusRunning},
+	}
+	response := presentRuns(runs, "chat_message")
+	require.Len(t, response, 2)
+	require.Equal(t, queued, response[0].ID)
+	require.Equal(t, published, response[1].ID)
+}

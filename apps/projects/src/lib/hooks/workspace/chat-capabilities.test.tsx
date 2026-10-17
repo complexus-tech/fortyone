@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { get } from "@/lib/http";
+import { chatCapabilitiesQueryOptions } from "@/lib/queries/workspaces/get-chat-capabilities";
 import { useChatCapabilities } from "./chat-capabilities";
 
 let mockIdentity: string | null = "viewer-one";
@@ -37,6 +38,24 @@ afterEach(() => {
 });
 
 describe("workspace chat availability", () => {
+  it("uses the authorized workspace bootstrap cache immediately without another request", async () => {
+    await client.prefetchQuery(
+      chatCapabilitiesQueryOptions({ workspaceSlug: "acme" }, "viewer-one"),
+    );
+    const navigation = renderHook(useChatCapabilities, { wrapper: Wrapper });
+    const page = renderHook(useChatCapabilities, { wrapper: Wrapper });
+
+    expect(navigation.result.current.enabled).toBe(true);
+    expect(page.result.current.enabled).toBe(true);
+    expect(page.result.current.isPending).toBe(false);
+    expect(get).toHaveBeenCalledTimes(1);
+
+    page.unmount();
+    const reopened = renderHook(useChatCapabilities, { wrapper: Wrapper });
+    expect(reopened.result.current.enabled).toBe(true);
+    expect(get).toHaveBeenCalledTimes(1);
+  });
+
   it("coalesces navigation and page checks and starts with Chat hidden", async () => {
     const first = renderHook(useChatCapabilities, { wrapper: Wrapper });
     const second = renderHook(useChatCapabilities, { wrapper: Wrapper });

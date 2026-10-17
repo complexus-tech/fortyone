@@ -18,6 +18,8 @@ import (
 type Repository interface {
 	WithinUnit(context.Context, func(context.Context) error) error
 	ListConversations(context.Context, domain.ListQuery, uuid.UUID) (domain.ConversationPage, error)
+	Unread(context.Context, domain.ActorScope) (domain.UnreadSummary, error)
+	UnreadThreads(context.Context, domain.UnreadThreadQuery) (domain.UnreadThreadPage, error)
 	GetConversation(context.Context, domain.ActorScope, uuid.UUID, uuid.UUID) (domain.Conversation, error)
 	CreateDirect(context.Context, domain.ActorScope, uuid.UUID, uuid.UUID) (domain.Conversation, error)
 	ListMessages(context.Context, domain.MessageQuery) (domain.MessagePage, error)

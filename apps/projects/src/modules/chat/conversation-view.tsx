@@ -2,14 +2,12 @@
 
 import type { Ref } from "react";
 import { useState } from "react";
-import { ArrowLeftIcon, ChatIcon, LinkIcon } from "icons";
 import { cn } from "lib";
 import { Button, Tabs } from "ui";
-import { PersonAvatar } from "./avatars";
 import type { PreviewDraft } from "./chat-rich-text";
-import { ICON_BUTTON_CLASS } from "./chat-styles";
 import { AudioPlaybackBar } from "./audio-playback-bar";
 import { Composer } from "./composer";
+import { ConversationHeader } from "./conversation-header";
 import {
   ConversationSearchHeader,
   ConversationSearchResults,
@@ -32,6 +30,7 @@ export const ConversationView = ({
   mayaAvatarUrl,
   showConversation,
   hasThread,
+  activeThreadRootId,
   draft,
   onBack,
   onReply,
@@ -54,12 +53,14 @@ export const ConversationView = ({
   onLoadOlder,
   onJumpToLatest,
   onVisibleMessage,
+  onVisibleMessages,
 }: {
   conversation: ConversationFeed;
   headingRef: Ref<HTMLHeadingElement>;
   mayaAvatarUrl?: string | null;
   showConversation: boolean;
   hasThread: boolean;
+  activeThreadRootId?: string | null;
   draft: PreviewDraft;
   onBack: () => void;
   onReply: MessageReplyHandler;
@@ -85,6 +86,7 @@ export const ConversationView = ({
   onLoadOlder?: () => Promise<unknown>;
   onJumpToLatest?: () => void;
   onVisibleMessage?: (message: ChatMessage) => void;
+  onVisibleMessages?: (messages: readonly ChatMessage[]) => void;
 }) => {
   const [search, setSearch] = useState("");
   const { userId, mayaEnabled } = useChatIdentity();
@@ -99,9 +101,6 @@ export const ConversationView = ({
         hasThread && "hidden min-[1400px]:flex",
       )}
     >
-      <h2 className="sr-only" ref={headingRef} tabIndex={-1}>
-        {conversation.name}
-      </h2>
       <Tabs
         className="flex min-h-0 flex-1 flex-col"
         onValueChange={(value) => {
@@ -111,61 +110,12 @@ export const ConversationView = ({
       >
         <ConversationSearchHeader
           leading={
-            <div className="flex min-w-0 items-center justify-between gap-2">
-              <div className="flex min-w-0 items-center gap-2">
-                <Button
-                  aria-label="Back to conversations"
-                  asIcon
-                  className={cn(ICON_BUTTON_CLASS, "lg:hidden")}
-                  color="tertiary"
-                  onClick={onBack}
-                  size="sm"
-                  variant="naked"
-                >
-                  <ArrowLeftIcon className="size-4" />
-                </Button>
-                <Tabs.List
-                  aria-label="Conversation content"
-                  className="mx-0 flex-nowrap md:mx-0"
-                >
-                  <Tabs.Tab
-                    leftIcon={<ChatIcon className="h-[1.1rem] w-auto" />}
-                    value="messages"
-                  >
-                    Messages
-                  </Tabs.Tab>
-                  <Tabs.Tab
-                    leftIcon={<LinkIcon className="h-[1.1rem] w-auto" />}
-                    value="files"
-                  >
-                    Files & links
-                  </Tabs.Tab>
-                </Tabs.List>
-              </div>
-              <div className="flex shrink-0 items-center gap-3">
-                {conversation.kind === "team" ? (
-                  <div
-                    aria-label="Team members"
-                    className="isolate hidden items-center -space-x-1.5 @min-[460px]/conversation:flex"
-                  >
-                    {conversation.members.slice(0, 4).map((person) => (
-                      <span
-                        className="bg-surface ring-surface relative inline-flex rounded-full ring-2"
-                        key={person.id}
-                      >
-                        <PersonAvatar
-                          mayaAvatarUrl={mayaAvatarUrl}
-                          person={person}
-                        />
-                      </span>
-                    ))}
-                    <span className="text-text-muted ml-3 pl-2">
-                      {conversation.memberCount}
-                    </span>
-                  </div>
-                ) : null}
-              </div>
-            </div>
+            <ConversationHeader
+              conversation={conversation}
+              headingRef={headingRef}
+              mayaAvatarUrl={mayaAvatarUrl}
+              onBack={onBack}
+            />
           }
           onActivate={() => {
             onTabChange("messages");
@@ -250,6 +200,7 @@ export const ConversationView = ({
                 key={`timeline:${conversation.id}`}
                 onLoadOlder={onLoadOlder}
                 onVisibleItem={onVisibleMessage}
+                onVisibleItems={onVisibleMessages}
                 paginationError={historyError}
                 renderItem={(message) => (
                   <div
@@ -295,7 +246,7 @@ export const ConversationView = ({
                 onSend={onSend}
               />
               <TypingIndicator
-                active={!hasThread}
+                activeThreadRootId={activeThreadRootId}
                 conversationId={conversation.id}
                 messages={conversation.messages}
               />

@@ -24,6 +24,7 @@ type EventStore interface {
 }
 type UpdatePublisher interface {
 	PublishChatUpdated(context.Context, publisher.ChatUpdate) error
+	PublishChatNotification(context.Context, publisher.ChatNotification) error
 }
 type NotificationCreator interface {
 	Create(context.Context, notifications.NewNotification) (notifications.Notification, error)
@@ -111,7 +112,7 @@ func (d Dispatcher) deliver(ctx context.Context, event chatdomain.Event) error {
 		return nil
 	}
 	// The store resolves notification eligibility against current membership,
-	// deletion state and event type. Team traffic alone does not notify everyone.
+	// deletion state and the recipient's independent conversation/thread reads.
 	targets, err := d.Store.NotificationRecipients(ctx, event)
 	if err != nil {
 		return err
@@ -132,14 +133,19 @@ func (d Dispatcher) deliver(ctx context.Context, event chatdomain.Event) error {
 		case "reply":
 			title, body = "New reply", "There is a new reply in a conversation you are part of."
 		case "dm":
+		case "message":
+			body = "There is a new message in a team conversation."
 		default:
 			continue
 		}
-		_, err := d.Notifications.Create(ctx, notifications.NewNotification{
+		notification, err := d.Notifications.Create(ctx, notifications.NewNotification{
 			DedupeKey: fmt.Sprintf("chat:%s:%s", event.ID, target.UserID), OccurredAt: event.CreatedAt,
 			WorkspaceID: event.WorkspaceID, RecipientID: target.UserID, ActorID: event.ActorID,
 			Type: notifications.NotificationTypeChatMessage, EntityType: notifications.EntityTypeChatMessage, EntityID: event.MessageID,
-			Title: title, Message: notifications.NotificationMessage{Template: body, Variables: map[string]notifications.Variable{}},
+			Title: title, Message: notifications.NotificationMessage{
+				Template: body, Variables: map[string]notifications.Variable{},
+				EmailSuppressed: target.Reason == "message",
+			},
 		})
 		if errors.Is(err, notifications.ErrForbidden) || errors.Is(err, notifications.ErrNotFound) {
 			// A membership revocation or deletion can race the recipient lookup.
@@ -147,6 +153,21 @@ func (d Dispatcher) deliver(ctx context.Context, event chatdomain.Event) error {
 			continue
 		}
 		if err != nil {
+			return err
+		}
+		if notification.ID == uuid.Nil || !notification.InAppEnabled || notification.ReadAt != nil {
+			continue
+		}
+		// Publish even when Create reuses an existing receipt: the earlier attempt
+		// may have persisted successfully but failed before live publication.
+		// Clients deduplicate this stable event/receipt pair.
+		if err := d.Updates.PublishChatNotification(ctx, publisher.ChatNotification{
+			NotificationID: notification.ID, EventID: event.ID,
+			WorkspaceID: event.WorkspaceID, UserID: target.UserID, ActorID: event.ActorID,
+			ConversationID: event.ConversationID, MessageID: event.MessageID, ThreadRootID: event.ThreadRootID,
+			CreatedAt: notification.CreatedAt, OccurredAt: event.CreatedAt,
+			Title: title, Body: body,
+		}); err != nil {
 			return err
 		}
 	}

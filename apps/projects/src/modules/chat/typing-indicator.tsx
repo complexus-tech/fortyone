@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
 import { useChatIdentity } from "./chat-context";
 import { useChatTyping } from "./typing";
@@ -8,12 +9,12 @@ export const TypingIndicator = ({
   conversationId,
   threadRootId,
   messages,
-  active = true,
+  activeThreadRootId,
 }: {
   conversationId: string;
   threadRootId?: string;
   messages: ChatMessage[];
-  active?: boolean;
+  activeThreadRootId?: string | null;
 }) => {
   const { workspace } = useCurrentWorkspace();
   const { userId } = useChatIdentity();
@@ -24,13 +25,31 @@ export const TypingIndicator = ({
   ).filter((person) => person.id !== userId);
   const maya = useChatMayaRuns(conversationId);
   const action = useChatMayaAction(conversationId);
-  const sourceIds = new Set(messages.map((message) => message.id));
-  if (threadRootId) sourceIds.add(threadRootId);
-  const thinking = maya.data?.runs.find(
-    (run) =>
-      (run.status === "queued" || run.status === "running") &&
-      sourceIds.has(run.sourceId),
+  const sourceThreads = useMemo(
+    () =>
+      new Map(
+        messages.map((message) => [
+          message.id,
+          message.threadRootId ?? message.id,
+        ]),
+      ),
+    [messages],
   );
+  const thinking = maya.data?.runs.find((run) => {
+    if (run.status !== "queued" && run.status !== "running") return false;
+    // The API destination survives pagination. The message lookup supports
+    // older API replicas during a rolling deployment without mixing threads.
+    const destination =
+      run.threadRootId ??
+      (run.sourceId === threadRootId
+        ? threadRootId
+        : sourceThreads.get(run.sourceId));
+    if (!destination) return false;
+    if (threadRootId) return destination === threadRootId;
+    // A first ask belongs to the main composer until its reply thread opens.
+    // Follow-ups belong exclusively to their thread, even when it is closed.
+    return run.sourceId === destination && activeThreadRootId !== destination;
+  });
   let text = "";
   if (people.length === 1) text = `${people[0].fullName} is typing…`;
   else if (people.length === 2)
@@ -46,7 +65,7 @@ export const TypingIndicator = ({
       className="text-text-muted flex min-h-7 shrink-0 items-center gap-2 pt-1 pr-5 pb-2 pl-6"
       role="status"
     >
-      {active && text ? (
+      {text ? (
         <>
           <span aria-hidden className="flex gap-0.5">
             <span className="size-1 animate-pulse rounded-full bg-current motion-reduce:animate-none" />

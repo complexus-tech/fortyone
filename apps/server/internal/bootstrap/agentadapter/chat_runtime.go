@@ -18,6 +18,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/platform/auth"
 	"github.com/complexus-tech/projects-api/internal/platform/authorization"
 	"github.com/complexus-tech/projects-api/internal/platform/chatrollout"
+	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/google/uuid"
 )
 
@@ -31,6 +32,7 @@ type ChatRuntime struct {
 	Chats   ChatMessages
 	Shared  *CommentRuntime
 	Tools   ChatMutationTools
+	Log     *logger.Logger
 }
 
 func chatHumanContext(ctx context.Context, run agentruns.Run) (context.Context, chatdomain.ActorScope, error) {
@@ -104,7 +106,13 @@ func (r *ChatRuntime) Authorize(ctx context.Context, run agentruns.Run) error {
 	return nil
 }
 
-func (r *ChatRuntime) Prepare(ctx context.Context, run agentruns.Run) (agentruns.Proposal, error) {
+func (r *ChatRuntime) Prepare(ctx context.Context, run agentruns.Run) (proposal agentruns.Proposal, prepareErr error) {
+	addressedFollowup := false
+	defer func() {
+		if addressedFollowup && prepareErr != nil {
+			prepareErr = &addressedChatFailure{cause: prepareErr}
+		}
+	}()
 	if err := r.requireEnabled(ctx, run.WorkspaceID); err != nil {
 		return agentruns.Proposal{}, err
 	}
@@ -123,23 +131,50 @@ func (r *ChatRuntime) Prepare(ctx context.Context, run agentruns.Run) (agentruns
 	if err != nil {
 		return agentruns.Proposal{}, chatAccessError(err)
 	}
-	limit := messaging.MaximumConversationTurns + 1 // The bounded query includes the current message.
-	if source.ThreadRootID != nil {
-		limit--
-	}
-	history, err := r.Chats.BoundedContext(ctx, chatdomain.ContextQuery{Scope: scope, ConversationID: run.EntityID, ThreadRootID: source.ThreadRootID, BeforeMessageID: &source.ID, Limit: limit})
+	history, err := loadChatHistory(ctx, r.Chats, scope, source)
 	if err != nil {
 		return agentruns.Proposal{}, err
 	}
-	if source.ThreadRootID != nil {
-		root, err := r.Chats.GetMessage(ctx, scope, *source.ThreadRootID)
-		if err != nil {
-			return agentruns.Proposal{}, chatAccessError(err)
-		}
-		history = append([]chatdomain.Message{root}, history...)
+	var payload chatPayload
+	if len(run.Payload) > 0 && json.Unmarshal(run.Payload, &payload) != nil {
+		return agentruns.Proposal{}, agentruns.ErrInvalidInput
+	}
+	if payload.Followup && !chatFollowupCandidate(history, source, r.Shared.MayaID) {
+		return agentruns.Proposal{Ignore: true}, nil
 	}
 	if err := r.Shared.admit(ctx, run); err != nil {
+		if payload.Followup {
+			// Until the addressing decision succeeds, quota/rate limits must not
+			// cause Maya to interrupt a human conversation with an error message.
+			if r.Log != nil {
+				r.Log.Warn(ctx, "Maya chat follow-up admission unavailable; no reply published", "run_id", run.ID)
+			}
+			return agentruns.Proposal{Ignore: true}, nil
+		}
 		return agentruns.Proposal{}, err
+	}
+	turns := chatConversation(history, source, r.Shared.MayaID)
+	classificationUsage := messaging.Usage{}
+	if payload.Followup {
+		classifier, ok := r.Shared.Assistant.(messaging.ChatFollowupClassifier)
+		if !ok {
+			return agentruns.Proposal{Ignore: true}, nil
+		}
+		decision, err := classifier.ClassifyChatFollowup(ctx, messaging.ChatFollowupRequest{
+			WorkspaceID: run.WorkspaceID, UserID: run.RequesterID, SourceScope: chatSourceScope(run),
+			Conversation: turns, Prompt: source.Text, AuthorDisplayName: source.Author.FullName,
+		})
+		classificationUsage = decision.Usage
+		if err != nil || !decision.ShouldRespond {
+			if err != nil && r.Log != nil {
+				r.Log.Warn(ctx, "Maya chat follow-up classification unavailable; no reply published", "run_id", run.ID)
+			}
+			// Ambiguous or unavailable classification must never invoke business
+			// tools or post an unsolicited answer. Save the decision and usage
+			// together before accounting so its retry cannot reclassify or speak.
+			return ignoredChatProposal(run, classificationUsage)
+		}
+		addressedFollowup = true
 	}
 	kind := messaging.RuntimeSurfaceChannel
 	if source.ThreadRootID != nil {
@@ -147,18 +182,18 @@ func (r *ChatRuntime) Prepare(ctx context.Context, run agentruns.Run) (agentruns
 	}
 	runtime, err := r.Shared.Context.Load(ctx, run.WorkspaceID, run.RequesterID, []uuid.UUID{run.TeamID}, messaging.RuntimeSurfaceContext{Provider: "FortyOne", Kind: kind, Location: conversation.Name + " chat"}, time.Now())
 	if err != nil {
-		return agentruns.Proposal{}, err
+		return agentruns.Proposal{}, errors.Join(err, r.recordUsage(ctx, run, classificationUsage))
 	}
 	response, responseErr := r.Shared.Assistant.Respond(ctx, messaging.Request{
 		WorkspaceID: run.WorkspaceID, UserID: run.RequesterID, AllowedTeamIDs: []uuid.UUID{run.TeamID}, SharedTeamIDs: []uuid.UUID{run.TeamID},
 		RuntimeContext: runtime, AllowMutations: true, WebsiteURL: r.Shared.WebsiteURL, SourceURL: r.sourceURL(runtime.Workspace.Slug, run),
-		SourceScope: chatSourceScope(run), Conversation: chatConversation(history, source, r.Shared.MayaID), Prompt: source.Text,
+		SourceScope: chatSourceScope(run), Conversation: turns, Prompt: source.Text,
 	})
-	if r.Shared.Usage != nil {
-		_, usageErr := r.Shared.Usage.Record(ctx, messagingrepository.DailyUsageRecordInput{AgentInvocationID: run.ID, WorkspaceID: run.WorkspaceID, Provider: "native", ExternalWorkspaceID: run.WorkspaceID.String(), ExternalEventID: run.ID.String(), AttemptCount: int(run.AttemptCount), Usage: response.Usage}, r.Shared.DailyTokenLimit)
-		if usageErr != nil {
-			return agentruns.Proposal{}, errors.Join(responseErr, usageErr)
-		}
+	response.Usage.InputTokens += classificationUsage.InputTokens
+	response.Usage.OutputTokens += classificationUsage.OutputTokens
+	response.Usage.TotalTokens += classificationUsage.TotalTokens
+	if usageErr := r.recordUsage(ctx, run, response.Usage); usageErr != nil {
+		return agentruns.Proposal{}, errors.Join(responseErr, usageErr)
 	}
 	if responseErr != nil {
 		return agentruns.Proposal{}, responseErr
@@ -175,6 +210,14 @@ func (r *ChatRuntime) Prepare(ctx context.Context, run agentruns.Run) (agentruns
 		return agentruns.Proposal{}, err
 	}
 	return agentruns.Proposal{Summary: "Review the proposed tasks", Review: inspection.Review, Action: action, RequiresApproval: true, Reply: "I’ve prepared these tasks for your review. Approve the proposal to create them."}, nil
+}
+
+func (r *ChatRuntime) recordUsage(ctx context.Context, run agentruns.Run, usage messaging.Usage) error {
+	if r.Shared.Usage == nil {
+		return nil
+	}
+	_, err := r.Shared.Usage.Record(ctx, messagingrepository.DailyUsageRecordInput{AgentInvocationID: run.ID, WorkspaceID: run.WorkspaceID, Provider: "native", ExternalWorkspaceID: run.WorkspaceID.String(), ExternalEventID: run.ID.String(), AttemptCount: int(run.AttemptCount), Usage: usage}, r.Shared.DailyTokenLimit)
+	return err
 }
 
 func (r *ChatRuntime) Apply(ctx context.Context, run agentruns.Run, proposal agentruns.Proposal) (agentruns.Outcome, error) {

@@ -550,6 +550,40 @@ func (q *Queries) GetNotificationReceiptInboxRow(ctx context.Context, arg GetNot
 	return i, err
 }
 
+const isChatNotificationEligible = `-- name: IsChatNotificationEligible :one
+SELECT EXISTS (
+    SELECT 1 FROM public.chat_conversation_messages AS message
+    LEFT JOIN public.chat_conversation_reads AS conversation_read
+      ON conversation_read.conversation_id = message.conversation_id
+     AND conversation_read.user_id = CAST($1 AS uuid)
+    LEFT JOIN public.chat_thread_reads AS thread_read
+      ON thread_read.thread_root_id = message.thread_root_id
+     AND thread_read.user_id = CAST($1 AS uuid)
+    WHERE message.id = CAST($2 AS uuid)
+      AND message.workspace_id = CAST($3 AS uuid)
+      AND message.author_id <> CAST($1 AS uuid)
+      AND public.can_read_chat_message(message.workspace_id, CAST($1 AS uuid), message.id)
+      AND message.sequence > CASE WHEN message.thread_root_id IS NULL
+          THEN COALESCE(conversation_read.last_read_sequence, 0)
+          ELSE COALESCE(thread_read.last_read_sequence, 0) END
+) AS eligible
+`
+
+type IsChatNotificationEligibleParams struct {
+	RecipientID uuid.UUID
+	MessageID   uuid.UUID
+	WorkspaceID uuid.UUID
+}
+
+// Internal chat receipts may be retried after the original transaction. Recheck
+// current access and independent read boundaries before replaying delivery.
+func (q *Queries) IsChatNotificationEligible(ctx context.Context, arg IsChatNotificationEligibleParams) (bool, error) {
+	row := q.db.QueryRow(ctx, isChatNotificationEligible, arg.RecipientID, arg.MessageID, arg.WorkspaceID)
+	var eligible bool
+	err := row.Scan(&eligible)
+	return eligible, err
+}
+
 const lockNotificationEvent = `-- name: LockNotificationEvent :exec
 SELECT pg_advisory_xact_lock(hashtextextended(CAST($1 AS text), 212))
 `

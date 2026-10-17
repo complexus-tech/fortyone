@@ -47,6 +47,17 @@ func (repository *Repository) Create(ctx context.Context, notification notificat
 	if err := queries.LockNotificationEvent(ctx, notificationssql.LockNotificationEventParams{DedupeKey: dedupeKey}); err != nil {
 		return notificationsdomain.Notification{}, false, fmt.Errorf("lock notification event: %w", err)
 	}
+	if notification.EntityType == notificationsdomain.EntityTypeChatMessage {
+		eligible, err := queries.IsChatNotificationEligible(ctx, notificationssql.IsChatNotificationEligibleParams{
+			WorkspaceID: notification.WorkspaceID, RecipientID: notification.RecipientID, MessageID: notification.EntityID,
+		})
+		if err != nil {
+			return notificationsdomain.Notification{}, false, fmt.Errorf("check chat notification eligibility: %w", err)
+		}
+		if !eligible {
+			return notificationsdomain.Notification{}, false, notificationsdomain.ErrForbidden
+		}
+	}
 	receipt, err := queries.GetNotificationEventReceipt(ctx, notificationssql.GetNotificationEventReceiptParams{DedupeKey: dedupeKey, Payload: payload})
 	if err == nil {
 		if receipt.RecipientID != notification.RecipientID || receipt.WorkspaceID != notification.WorkspaceID {

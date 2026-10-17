@@ -59,10 +59,13 @@ func TestNotificationMessagePublicRemovesAllInternalSnapshots(t *testing.T) {
 		Template:           "Internal snapshot",
 		Strategy:           &StrategyNotificationSnapshot{Version: 1},
 		IdentityReferences: map[string]uuid.UUID{"assignee": uuid.New()},
+		EmailSuppressed:    true,
 	}
 	public := message.Public()
 	require.Nil(t, public.Strategy)
 	require.Nil(t, public.IdentityReferences)
+	require.False(t, public.EmailSuppressed)
+	require.True(t, message.EmailSuppressed)
 	require.NotNil(t, message.Strategy)
 	require.NotEmpty(t, message.IdentityReferences)
 }

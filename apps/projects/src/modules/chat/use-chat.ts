@@ -5,9 +5,10 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { useWorkspacePath } from "@/hooks/use-workspace-path";
+import { useSession } from "@/lib/auth/client";
 import type { ChatDraft } from "./chat-rich-text";
 import { EMPTY_PREVIEW_DRAFT } from "./chat-rich-text";
-import type { ChatMessage, ConversationTab } from "./types";
+import type { ChatMessage, ChatUnreadThread, ConversationTab } from "./types";
 import * as api from "./api";
 import { chatKeys } from "./constants";
 import { flattenMessages, updateCachedMessage } from "./cache";
@@ -20,6 +21,7 @@ import {
 } from "./queries";
 import { reconcileChatQueries } from "./realtime";
 import { mergeChatDrafts } from "./merge-chat-drafts";
+import { recordChatMessageVisible } from "./alerts/active-view";
 
 const NO_MESSAGES: ChatMessage[] = [];
 const NEW_MESSAGE_DRAFT_KEY = "new-message";
@@ -29,12 +31,16 @@ const notification = (error: unknown, title: string) =>
   });
 
 export const useChat = () => {
-  const { workspaceSlug } = useWorkspacePath();
+  const { workspaceSlug, withWorkspace } = useWorkspacePath();
+  const { data: session } = useSession();
+  const accountId = session?.user.id;
+  const chatPath = withWorkspace("/chat");
   const router = useRouter();
   const searchParams = useSearchParams();
   const client = useQueryClient();
   const requestedConversation = searchParams.get("conversation") ?? "";
   const requestedNewMessage = searchParams.get("new") === "1";
+  const requestedThread = searchParams.get("thread");
   const requestedMessage = requestedNewMessage
     ? null
     : searchParams.get("message");
@@ -151,11 +157,15 @@ export const useChat = () => {
     setActiveTab("messages");
     setAnchor(message.threadRootId ?? message.id);
     setTargetMessageId(message.threadRootId ?? message.id);
-    setThreadId(message.threadRootId);
+    setThreadId(
+      message.threadRootId ??
+        (requestedThread === message.id ? message.id : null),
+    );
     setThreadTargetId(message.threadRootId ? message.id : null);
   }, [
     requestedConversation,
     requestedMessage,
+    requestedThread,
     requestedNewMessage,
     linkedId,
     linkedRootId,
@@ -163,11 +173,10 @@ export const useChat = () => {
   useEffect(() => {
     if (!linkedMessage.error || !requestedMessage) return;
     notification(linkedMessage.error, "This message is no longer available");
-    router.replace(
-      `/${workspaceSlug}/chat?conversation=${encodeURIComponent(activeId)}`,
-      { scroll: false },
-    );
-  }, [activeId, linkedMessage.error, requestedMessage, router, workspaceSlug]);
+    router.replace(`${chatPath}?conversation=${encodeURIComponent(activeId)}`, {
+      scroll: false,
+    });
+  }, [activeId, chatPath, linkedMessage.error, requestedMessage, router]);
   useEffect(() => {
     if (!pendingFocus.current) return;
     if (pendingFocus.current === "thread" && thread)
@@ -194,12 +203,11 @@ export const useChat = () => {
       setShowConversation(true);
       if (window.matchMedia("(max-width: 1023px)").matches)
         pendingFocus.current = "conversation";
-      router.replace(
-        `/${workspaceSlug}/chat?conversation=${encodeURIComponent(id)}`,
-        { scroll: false },
-      );
+      router.replace(`${chatPath}?conversation=${encodeURIComponent(id)}`, {
+        scroll: false,
+      });
     },
-    [router, workspaceSlug],
+    [chatPath, router],
   );
   const startNewMessage = useCallback(() => {
     navigationVersion.current += 1;
@@ -212,8 +220,8 @@ export const useChat = () => {
     setTargetMessageId(null);
     setAnchor(null);
     pendingFocus.current = null;
-    router.replace(`/${workspaceSlug}/chat?new=1`, { scroll: false });
-  }, [router, workspaceSlug]);
+    router.replace(`${chatPath}?new=1`, { scroll: false });
+  }, [chatPath, router]);
   const chooseNewMessageRecipient = useCallback(
     (id: string) => {
       if (!composing.current) return;
@@ -255,7 +263,39 @@ export const useChat = () => {
       setTargetMessageId(rootId);
       if (!messages.some((message) => message.id === rootId)) setAnchor(rootId);
     }
-  }, [messages, threadId]);
+    if (requestedThread) {
+      const params = new URLSearchParams({ conversation: activeId });
+      if (rootId) params.set("message", rootId);
+      router.replace(`${chatPath}?${params.toString()}`, { scroll: false });
+    }
+  }, [activeId, chatPath, messages, requestedThread, router, threadId]);
+  const openUnreadThread = useCallback(
+    (message: ChatUnreadThread, trigger: HTMLButtonElement) => {
+      navigationVersion.current += 1;
+      composing.current = false;
+      threadTrigger.current = trigger;
+      pendingFocus.current = "thread";
+      client.setQueryData(
+        [...chatKeys.all(workspaceSlug), "message", message.id],
+        message,
+      );
+      setIsComposing(false);
+      setSelectedId(message.conversationId);
+      setActiveTab("messages");
+      setAnchor(message.id);
+      setTargetMessageId(message.id);
+      setThreadId(message.id);
+      setThreadTargetId(message.firstUnreadReplyId);
+      setShowConversation(true);
+      const params = new URLSearchParams({
+        conversation: message.conversationId,
+        message: message.firstUnreadReplyId,
+        thread: message.id,
+      });
+      router.replace(`${chatPath}?${params.toString()}`, { scroll: false });
+    },
+    [chatPath, client, router, workspaceSlug],
+  );
   const viewMessage = useCallback(
     async (messageId: string) => {
       const requestVersion = ++navigationVersion.current;
@@ -271,7 +311,7 @@ export const useChat = () => {
         setThreadId(message.threadRootId);
         setThreadTargetId(message.threadRootId ? message.id : null);
         router.replace(
-          `/${workspaceSlug}/chat?conversation=${encodeURIComponent(message.conversationId)}&message=${encodeURIComponent(message.id)}`,
+          `${chatPath}?conversation=${encodeURIComponent(message.conversationId)}&message=${encodeURIComponent(message.id)}`,
           { scroll: false },
         );
       } catch (error) {
@@ -279,7 +319,7 @@ export const useChat = () => {
         notification(error, "Could not open this message");
       }
     },
-    [router, workspaceSlug],
+    [chatPath, router, workspaceSlug],
   );
   const updateDraft = useCallback((key: string, draft: ChatDraft) => {
     setDrafts((current) => ({ ...current, [key]: draft }));
@@ -437,6 +477,16 @@ export const useChat = () => {
   );
 
   const readTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+  const recordVisibleMessages = useCallback(
+    (visible: readonly ChatMessage[]) => {
+      if (document.visibilityState !== "visible" || !document.hasFocus())
+        return;
+      for (const message of visible) {
+        recordChatMessageVisible(accountId, workspaceSlug, message);
+      }
+    },
+    [accountId, workspaceSlug],
+  );
   const readSequences = useRef(new Map<string, number>());
   useEffect(() => {
     const timers = readTimers.current;
@@ -449,6 +499,8 @@ export const useChat = () => {
     (message: ChatMessage) => {
       if (document.visibilityState !== "visible" || !document.hasFocus())
         return;
+      if (accountId)
+        recordChatMessageVisible(accountId, workspaceSlug, message);
       const key = `${message.conversationId}:${message.threadRootId ?? "root"}`;
       const seen =
         readSequences.current.get(key) ??
@@ -472,9 +524,11 @@ export const useChat = () => {
               message.threadRootId ?? undefined,
             )
             .then(() =>
-              client.invalidateQueries({
-                queryKey: chatKeys.conversations(workspaceSlug),
-              }),
+              reconcileChatQueries(
+                client,
+                workspaceSlug,
+                message.conversationId,
+              ),
             )
             .catch((error: unknown) => {
               readSequences.current.delete(key);
@@ -483,10 +537,12 @@ export const useChat = () => {
         }, 500),
       );
     },
-    [client, conversation?.lastReadSequence, workspaceSlug],
+    [accountId, client, conversation?.lastReadSequence, workspaceSlug],
   );
 
   return {
+    openUnreadThread,
+    recordVisibleMessages,
     isComposing,
     startNewMessage,
     chooseNewMessageRecipient,
@@ -539,7 +595,7 @@ export const useChat = () => {
       if (composing.current) {
         composing.current = false;
         setIsComposing(false);
-        router.replace(`/${workspaceSlug}/chat`, { scroll: false });
+        router.replace(chatPath, { scroll: false });
       }
       setShowConversation(false);
     },

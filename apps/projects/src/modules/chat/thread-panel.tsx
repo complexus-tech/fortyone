@@ -12,6 +12,7 @@ import { useChatIdentity } from "./chat-context";
 import { TypingIndicator } from "./typing-indicator";
 import { Timeline } from "./timeline";
 import { AudioPlaybackBar } from "./audio-playback-bar";
+import { ChatUnreadBadge } from "./unread-badge";
 
 export const ThreadPanel = ({
   thread,
@@ -35,6 +36,7 @@ export const ThreadPanel = ({
   targetMessageId,
   scrollToMessageId,
   onVisibleMessage,
+  onVisibleMessages,
   error,
   onRetry,
 }: {
@@ -62,6 +64,7 @@ export const ThreadPanel = ({
   targetMessageId?: string | null;
   scrollToMessageId?: string | null;
   onVisibleMessage?: (message: ChatMessage) => void;
+  onVisibleMessages?: (messages: readonly ChatMessage[]) => void;
   error?: Error | null;
   onRetry?: () => void;
 }) => {
@@ -75,6 +78,10 @@ export const ThreadPanel = ({
       <header className="border-border flex h-16 shrink-0 items-center justify-between border-b-[0.5px] px-5">
         <div className="flex items-center gap-2.5">
           <h2 className="text-base font-semibold">Thread</h2>
+          <ChatUnreadBadge
+            count={thread.unreadReplyCount}
+            label="unread replies"
+          />
         </div>
         <div className="flex items-center gap-1">
           <Button
@@ -144,6 +151,7 @@ export const ThreadPanel = ({
         label="Thread message history"
         onLoadOlder={onLoadOlder}
         onVisibleItem={onVisibleMessage}
+        onVisibleItems={onVisibleMessages}
         paginationError={error}
         renderItem={(message) => (
           <MessageRow

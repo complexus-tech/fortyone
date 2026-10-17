@@ -35,21 +35,31 @@ type ChatMessageCreator struct {
 
 type chatPayload struct {
 	WorkspaceSlug string `json:"workspaceSlug"`
+	Followup      bool   `json:"followup,omitempty"`
 }
 
 // MessageCreated is called inside Chat's source-message transaction. The run is
 // the durable dispatch record, so a queue outage cannot lose an accepted ask.
 func (c *ChatMessageCreator) MessageCreated(ctx context.Context, input chatdomain.CreateMessageCommand, source chatdomain.Message) error {
-	if len(input.AgentMentions) == 0 {
+	explicit := len(input.AgentMentions) > 0
+	if !explicit && (source.ThreadRootID == nil || c.MayaID == uuid.Nil) {
 		return nil
 	}
 	if input.Scope.Actor.Kind != auth.PrincipalHumanUser {
+		if !explicit {
+			return nil
+		}
 		return chatdomain.ErrForbidden
 	}
-	if err := validateChatMayaMention(source.RichContent, input.AgentMentions, c.MayaID); err != nil {
-		return errors.Join(chatdomain.ErrInvalid, err)
+	if explicit {
+		if err := validateChatMayaMention(source.RichContent, input.AgentMentions, c.MayaID); err != nil {
+			return errors.Join(chatdomain.ErrInvalid, err)
+		}
 	}
 	if c.Chats == nil || c.Runs == nil {
+		if !explicit {
+			return nil
+		}
 		return agentruns.ErrUnavailable
 	}
 	if _, joined := database.UnitTransaction(ctx); !joined {
@@ -60,14 +70,26 @@ func (c *ChatMessageCreator) MessageCreated(ctx context.Context, input chatdomai
 		return err
 	}
 	if conversation.Kind != "team" || conversation.TeamID == nil || *conversation.TeamID == uuid.Nil {
+		if !explicit {
+			return nil
+		}
 		return chatdomain.ErrForbidden
+	}
+	if !explicit {
+		history, err := loadChatHistory(ctx, c.Chats, input.Scope, source)
+		if err != nil {
+			return err
+		}
+		if !chatFollowupCandidate(history, source, c.MayaID) {
+			return nil
+		}
 	}
 	rootID := source.ID
 	if source.ThreadRootID != nil {
 		rootID = *source.ThreadRootID
 	}
 	workspace, _ := mid.GetWorkspace(ctx)
-	payload, err := json.Marshal(chatPayload{WorkspaceSlug: workspace.Slug})
+	payload, err := json.Marshal(chatPayload{WorkspaceSlug: workspace.Slug, Followup: !explicit})
 	if err != nil {
 		return err
 	}

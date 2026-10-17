@@ -99,6 +99,7 @@ The machine-readable source of truth is [`internal/migrations/manifest.json`](..
 | `000232` | `maya_reply_seen_notifications` | `forward-only` | `schema-first` | Updated API records scoped comment visibility; older clients receive normal delayed reply notifications. | Updated worker defers Maya comment replies for five seconds and recovers decisions from PostgreSQL. Explicit mentions remain immediate. |
 | `000233` | `attachment_thumbnails` | `reversible` | `schema-first` | Thumbnail API authorizes the parent resource before serving or conditionally validating derivatives. | Updated workers require pdftoppm (poppler-utils); the worker image installs it. |
 | `000234` | `workspace_chat_enabled` | `forward-only` | `schema-first` | Updated API exposes chatEnabled through the existing admin-only workspace settings update and reads live feature state; obsolete chat rollout environment variables are removed. | Updated workers read database feature state and preserve disabled-workspace pending work. |
+| `000235` | `chat_unread_counts` | `reversible` | `schema-first` | Updated API exposes an authoritative workspace unread summary and paginated unread threads with a first-unread-reply destination. Conversation unreadCount now includes both roots and replies. | Updated workers publish dedicated chat attention events and recheck chat reads; generic notification receipts remain internal delivery state. |
 
 ## `000152_harden_verification_tokens`
 
@@ -2333,6 +2334,33 @@ Operational notes:
 - The constant column default is metadata-only on supported PostgreSQL; missing settings initialization scans workspaces, not message history.
 - Feature reads are read-only and scoped to live workspaces. Existing database membership resolution carries the setting into request and SSE authorization.
 - The scanner address remains separate infrastructure configuration; enabling Chat does not bypass upload scanning.
+
+## `000235_chat_unread_counts`
+
+- **Classification:** `reversible`
+- **Files:** `000235_chat_unread_counts.up.sql`, `000235_chat_unread_counts.down.sql`
+- **Schema:** Adds a cursor-based unread helper and extends conversation/message projections with independent root and reply counts. Allows ordinary message delivery recipient reasons without changing message or read-cursor data.
+- **API:** Updated API exposes an authoritative workspace unread summary and paginated unread threads with a first-unread-reply destination. Conversation unreadCount now includes both roots and replies.
+- **Worker:** Updated workers publish dedicated chat attention events and recheck chat reads; generic notification receipts remain internal delivery state.
+- **Mixed versions:** Apply schema first, then deploy API and workers together with the chat-aware client. Older workers do not understand ordinary message recipient reasons, and older clients do not reconcile the new combined unread counts.
+- **Rollout mode:** `schema-first`
+
+Rollout:
+
+1. Apply migration 000235 after 000234; existing root and thread read cursors remain unchanged.
+2. Deploy the API and workers together, then publish the client with dedicated Chat counts and attention handling.
+3. Verify root reads preserve unopened thread counts and general notification totals exclude existing chat delivery receipts.
+
+Recovery (`down-migration`):
+
+1. Stop chat producers and workers, and roll back the API/client before running the down migration.
+2. The down migration restores the previous projection functions before dropping the unread helper and maps ordinary message recipient reasons to the legacy reply reason. Messages, read cursors and delivery receipts are retained.
+
+Operational notes:
+
+- Missing read cursors start at zero, so previously unopened threads become visible as unread rather than being silently marked read during rollout.
+- Unread counters exclude own messages and deleted content, retain current membership boundaries, and are independent of paginated conversation loading.
+- The unread helper uses existing conversation/thread sequence indexes; no counter backfill or message-history rewrite is required.
 
 ## Adding the next migration
 

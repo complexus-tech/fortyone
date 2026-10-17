@@ -18,11 +18,13 @@ type Config struct {
 	BrowserSessions   mid.SessionResolver
 	WorkspaceResolver mid.WorkspaceResolver
 	Service           *chatservice.Service
+	ProfileImages     ProfileImageResolver
 }
 
 type handlers struct {
-	service *chatservice.Service
-	log     *logger.Logger
+	service       *chatservice.Service
+	log           *logger.Logger
+	profileImages ProfileImageResolver
 }
 
 type endpoint func(context.Context, http.ResponseWriter, *http.Request, domain.ActorScope) error
@@ -42,7 +44,7 @@ func scoped(handler endpoint) web.Handler {
 }
 
 func Routes(cfg Config, app *web.App) {
-	h := &handlers{service: cfg.Service, log: cfg.Log}
+	h := &handlers{service: cfg.Service, log: cfg.Log, profileImages: cfg.ProfileImages}
 	auth := mid.Auth(cfg.Log, cfg.SecretKey, cfg.BrowserSessions)
 	workspace := mid.Workspace(cfg.Log, cfg.WorkspaceResolver)
 	rollout := mid.RequireChatEnabled()
@@ -56,6 +58,8 @@ func Routes(cfg Config, app *web.App) {
 	}), auth, workspace)
 	read := mid.RequireScopes(platformauth.ScopeChatRead)
 	write := mid.RequireScopes(platformauth.ScopeChatWrite)
+	app.Get("/workspaces/{workspaceSlug}/chat/unread", scoped(h.unread), auth, read, workspace, rollout)
+	app.Get("/workspaces/{workspaceSlug}/chat/threads/unread", scoped(h.unreadThreads), auth, read, workspace, rollout)
 	app.Get("/workspaces/{workspaceSlug}/chat/conversations", scoped(h.listConversations), auth, read, workspace, rollout)
 	app.Post("/workspaces/{workspaceSlug}/chat/conversations/direct", scoped(h.createDirect), auth, write, workspace, rollout)
 	app.Get("/workspaces/{workspaceSlug}/chat/conversations/{id}", scoped(h.getConversation), auth, read, workspace, rollout)

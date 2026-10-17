@@ -3,18 +3,30 @@ import { randomUUID } from "node:crypto";
 import type { ReactNode } from "react";
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import type { ChatConversation, ChatMessage, ChatMessagePage } from "./types";
+import type {
+  ChatConversation,
+  ChatMessage,
+  ChatMessagePage,
+  ChatUnreadThread,
+} from "./types";
 import { useChat } from "./use-chat";
 import * as api from "./api";
+import { reconcileChatQueries } from "./realtime";
+import { recordChatMessageVisible } from "./alerts/active-view";
 
 const params = new URLSearchParams();
 const replace = jest.fn();
+let mockSubdomain = false;
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ replace }),
   useSearchParams: () => params,
 }));
 jest.mock("@/hooks/use-workspace-path", () => ({
-  useWorkspacePath: () => ({ workspaceSlug: "workspace" }),
+  useWorkspacePath: () => ({
+    workspaceSlug: "workspace",
+    withWorkspace: (path: string) =>
+      mockSubdomain ? path : `/workspace${path}`,
+  }),
 }));
 jest.mock("@/lib/auth/client", () => ({
   useSession: () => ({ data: { user: { id: "me" } } }),
@@ -23,6 +35,9 @@ jest.mock("sonner", () => ({ toast: { error: jest.fn() } }));
 jest.mock("./api");
 jest.mock("./realtime", () => ({
   reconcileChatQueries: jest.fn().mockResolvedValue(undefined),
+}));
+jest.mock("./alerts/active-view", () => ({
+  recordChatMessageVisible: jest.fn(),
 }));
 const mocked = jest.mocked(api);
 const person = {
@@ -41,6 +56,8 @@ const room: ChatConversation = {
   members: [person],
   memberCount: 1,
   unreadCount: 0,
+  unreadRootCount: 0,
+  unreadReplyCount: 0,
   lastReadSequence: 0,
   lastMessageAt: null,
   lastMessageText: "",
@@ -66,6 +83,7 @@ const message: ChatMessage = {
   taskRefs: [],
   reactions: [],
   replyCount: 0,
+  unreadReplyCount: 0,
   replyAuthors: [],
   lastReplyAt: null,
 };
@@ -90,6 +108,7 @@ const wrapper = ({ children }: { children: ReactNode }) => (
   <QueryClientProvider client={client}>{children}</QueryClientProvider>
 );
 beforeEach(() => {
+  mockSubdomain = false;
   Object.defineProperty(window, "matchMedia", {
     configurable: true,
     value: jest.fn().mockReturnValue({ matches: false }),
@@ -107,6 +126,7 @@ beforeEach(() => {
   params.delete("conversation");
   params.delete("message");
   params.delete("new");
+  params.delete("thread");
   mocked.getConversations.mockResolvedValue({
     items: [room],
     nextCursor: null,
@@ -130,6 +150,40 @@ afterEach(() => {
 });
 
 describe("live chat state", () => {
+  it("keeps team, direct-message, new-message, and deep-link navigation on clean subdomain URLs", async () => {
+    mockSubdomain = true;
+    const { result } = renderHook(useChat, { wrapper });
+    await waitFor(() => {
+      expect(result.current.conversation?.id).toBe("team");
+    });
+
+    for (const conversationId of ["team", "direct-message"]) {
+      act(() => {
+        result.current.selectConversation(conversationId);
+      });
+      expect(replace).toHaveBeenLastCalledWith(
+        `/chat?conversation=${conversationId}`,
+        { scroll: false },
+      );
+    }
+    act(() => {
+      result.current.startNewMessage();
+    });
+    expect(replace).toHaveBeenLastCalledWith("/chat?new=1", { scroll: false });
+    act(() => {
+      result.current.showList();
+    });
+    expect(replace).toHaveBeenLastCalledWith("/chat", { scroll: false });
+
+    await act(async () => {
+      await result.current.viewMessage("root");
+    });
+    expect(replace).toHaveBeenLastCalledWith(
+      "/chat?conversation=team&message=root",
+      { scroll: false },
+    );
+  });
+
   it("opens the new-message route without loading a default conversation", async () => {
     params.set("new", "1");
     const { result } = renderHook(useChat, { wrapper });
@@ -422,6 +476,7 @@ describe("live chat state", () => {
       result.current.markVisible(message);
     });
     expect(mocked.markRead).not.toHaveBeenCalled();
+    expect(recordChatMessageVisible).not.toHaveBeenCalled();
     focused.mockReturnValue(true);
     act(() => {
       result.current.markVisible(message);
@@ -434,6 +489,87 @@ describe("live chat state", () => {
         undefined,
       );
     });
+    focused.mockRestore();
+    expect(recordChatMessageVisible).toHaveBeenCalledWith(
+      "me",
+      "workspace",
+      message,
+    );
+    expect(reconcileChatQueries).toHaveBeenCalledWith(
+      client,
+      "workspace",
+      "team",
+    );
+  });
+
+  it("opens unread replies in an old thread outside the loaded conversation page", async () => {
+    const { result, rerender } = renderHook(useChat, { wrapper });
+    await waitFor(() => {
+      expect(result.current.conversation?.id).toBe("team");
+    });
+    const olderRoot: ChatUnreadThread = {
+      ...message,
+      id: "old-root",
+      conversationId: "old-team",
+      unreadReplyCount: 100,
+      conversationName: "Old team",
+      conversationKind: "team",
+      firstUnreadReplyId: "first-unread",
+    };
+    mocked.getMessage.mockResolvedValue({
+      ...olderRoot,
+      id: "first-unread",
+      threadRootId: "old-root",
+      sequence: 800,
+    });
+    const trigger = document.createElement("button");
+    act(() => {
+      result.current.openUnreadThread(olderRoot, trigger);
+    });
+    expect(replace).toHaveBeenLastCalledWith(
+      "/workspace/chat?conversation=old-team&message=first-unread&thread=old-root",
+      { scroll: false },
+    );
+    params.set("conversation", "old-team");
+    params.set("message", "first-unread");
+    params.set("thread", "old-root");
+    rerender();
+    await waitFor(() => {
+      expect(result.current.thread?.id).toBe("old-root");
+    });
+    expect(result.current.activeId).toBe("old-team");
+    expect(result.current.threadTargetId).toBe("first-unread");
+    expect(mocked.getReplies).toHaveBeenCalledWith(
+      { workspaceSlug: "workspace" },
+      "old-root",
+      { around: "first-unread" },
+      expect.any(AbortSignal),
+    );
+    expect(mocked.markRead).not.toHaveBeenCalled();
+  });
+
+  it("records all visible incoming messages without changing read cursors or acknowledging background content", async () => {
+    const focused = jest.spyOn(document, "hasFocus").mockReturnValue(false);
+    const { result } = renderHook(useChat, { wrapper });
+    await waitFor(() => {
+      expect(result.current.conversation?.id).toBe("team");
+    });
+    const incoming = [message, { ...message, id: "second", sequence: 2 }];
+    act(() => {
+      result.current.recordVisibleMessages(incoming);
+    });
+    expect(recordChatMessageVisible).not.toHaveBeenCalled();
+    focused.mockReturnValue(true);
+    act(() => {
+      result.current.recordVisibleMessages(incoming);
+    });
+    expect(recordChatMessageVisible).toHaveBeenCalledTimes(2);
+    expect(recordChatMessageVisible).toHaveBeenLastCalledWith(
+      "me",
+      "workspace",
+      incoming[1],
+    );
+    expect(mocked.markRead).not.toHaveBeenCalled();
     focused.mockRestore();
   });
 });

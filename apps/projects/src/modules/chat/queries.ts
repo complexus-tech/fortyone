@@ -33,6 +33,20 @@ export const useChatConversations = (search = "") => {
   });
 };
 
+export const useUnreadThreads = (enabled: boolean) => {
+  const { workspaceSlug } = useWorkspacePath();
+  const { data: session } = useSession();
+  return useInfiniteQuery({
+    queryKey: [...chatKeys.unreadThreads(workspaceSlug), session?.user.id],
+    queryFn: ({ pageParam, signal }) =>
+      api.getUnreadThreads({ workspaceSlug }, pageParam, signal),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (page) => page.nextCursor ?? undefined,
+    enabled: Boolean(session && enabled),
+    staleTime: 15_000,
+  });
+};
+
 export const useChatConversation = (conversationId: string) => {
   const { workspaceSlug } = useWorkspacePath();
   return useQuery({

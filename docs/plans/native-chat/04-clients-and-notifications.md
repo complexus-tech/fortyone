@@ -123,7 +123,7 @@ Reconcile on foreground, reconnect, conversation open, ambiguous command and gat
 
 ## 6. Read state, attention and cross-device behaviour
 
-Keep unread content, attention and manual saved/unread intent separate. Team messages normally create an unread indicator; DMs, direct mentions, followed-thread replies and requested Maya results create attention. An unfollowed thread may show reply activity without notifying every team member. Own messages, typing, reactions and run progress do not add attention.
+Chat owns all messaging activity. The Chat navigation badge counts unread top-level messages plus unread replies, with each message counted once. Conversation badges show their share of that total, and a Threads entry lists roots with unread replies, including older roots outside the loaded timeline. Own and deleted messages do not count. Typing, edits, reactions and run progress never create message alerts.
 
 Advance a read boundary only while the relevant surface is foreground, focused and actually rendered, through a continuously viewed range from its known boundary. Historical search jumps and virtualised gaps do not prove the intervening messages were seen. Provide an explicit mark-through/mark-all action when the person wants that behaviour. Bound acknowledgements by server-known sequences and merge monotonically; an old device cannot move normal read state backwards.
 
@@ -131,28 +131,28 @@ Manual mark-unread is a separate durable marker with explicit resolution rules. 
 
 Resolving a notification link does not itself mark the content read. After the target is rendered and viewed, acknowledge its attention version. Advance root/thread read position only if the viewed range is contiguous with its existing boundary; an out-of-order target must not clear an intervening unread gap. Versioned attention acknowledgements cannot clear later events. Catch-up remains watermark-based unless sparse viewed exceptions are deliberately added. Updates propagate to other devices; periodically reconcile badges from server aggregates. Already displayed OS notifications may not disappear immediately.
 
-Use the same durable attention identity in Chat and Inbox. The Chat badge can show attention plus a subtle ordinary-unread dot; the app badge aggregates unique work/chat attention, without counting a chat event twice. Define account-level aggregation across accessible workspaces. The current active-workspace SSE and desktop badge cannot provide that by inference. Add a scoped account attention feed/endpoint carrying minimal counts and safe targets, or explicitly document active-workspace-only behaviour during the pilot.
+Chat activity never appears in the general Notifications list or its unread count. Internal notification receipts may still provide deduplication and compatibility for old notification links. Chat sends a separate recipient-scoped `chat.notification` event; the native app badge combines the work notification count and chat unread-message count. The current SSE subscription and badges cover the active workspace while the app is running. Account-wide aggregation and delivery after quitting remain separate work.
 
 ## 7. Notification policy and preferences
 
-Default policy must favour useful interruptions. Do not inherit the current notification backend's generally enabled defaults for every team message. Align the existing web/mobile/server preference contracts: the backend supports push while the inspected web notification types only describe email and in-app channels.
+The approved default is alerts for all incoming messages in accessible, unmuted conversations, with sound. Desktop/browser permission remains explicit. Chat settings provide device-local banner and sound controls, conversation mute, quiet hours and sound preview. Mute and quiet hours suppress interruptions without changing unread counts. Mobile delivery retains its existing push preference contract; these device-local settings do not change another device's preferences.
 
 | Event                          | Chat state       | Inbox attention                   | Desktop/mobile interruption              | Email default                 |
 | ------------------------------ | ---------------- | --------------------------------- | ---------------------------------------- | ----------------------------- |
-| Ordinary team root message     | Unread           | No                                | No                                       | No                            |
-| Direct human mention           | Unread           | Yes                               | If unattended and allowed                | No; optional coalesced digest |
-| Human DM                       | Unread           | Yes                               | If unattended and allowed                | No; optional digest           |
-| Followed thread reply          | Thread unread    | Yes                               | If unattended and allowed                | No; optional digest           |
-| Maya requested answer/result   | Thread unread    | Current invocation requester only | Completion if requester left             | No                            |
+| Ordinary team root message     | Unread           | No                                | If unattended and allowed                | No                            |
+| Direct human mention           | Unread           | No                                | If unattended and allowed                | Existing email preference     |
+| Human DM                       | Unread           | No                                | If unattended and allowed                | Existing email preference     |
+| Thread reply                   | Thread unread    | No                                | If unattended and allowed                | Existing email preference     |
+| Maya published answer/result   | Thread unread    | No                                | Published message policy                 | Existing email preference     |
 | Maya creates/assigns work      | Result card      | Existing affected-user work rules | Aggregate overlapping result/work alerts | Existing work cadence         |
-| Reaction, edit, deletion       | Update content   | No, except a new direct mention   | No repeat alert                          | No                            |
+| Reaction, edit, deletion       | Update content   | No                                | No repeat alert                          | No                            |
 | Typing, presence, run progress | Ephemeral update | No                                | No                                       | No                            |
 
-Conversation policy is `all`, `mentions-and-replies`, or `off`, with thread override, snooze and account-level channel settings. `off` suppresses external alerts and new attention for that conversation; retained history remains readable and muted unread is visible locally without contributing to the global attention badge. State this behaviour in settings. Quiet hours defer interruptions while retaining attention; they do not mark content read.
+The initial conversation policy is all messages or muted. Muted unread remains in the Chat and conversation totals. Quiet hours suppress delivery during the selected device-local time window; exiting quiet hours does not replay old sounds. Mentions-only modes, per-thread overrides, snooze and synchronized account-level preferences remain follow-on capabilities.
 
 Compute recipient eligibility from trusted membership, mention and thread-subscription records. Exclude the actor, inactive accounts and unavailable content. Apply preferences, quiet hours and suppression, then create durable delivery intent keyed by source event and recipient. Before every delayed send/retry, recheck current access, content version and preferences. Removing access or deleting content cancels undelivered disclosures.
 
-Proposed initial interruption grace is five seconds, configurable and measured during pilot. Suppress if the exact conversation/thread is being viewed and acknowledged. An expiring active-view lease can delay a mobile alert briefly, but stale “online” status must not suppress delivery indefinitely. After the grace, if no read acknowledgement and no valid focused-view lease exists, deliver according to policy. Browser and native presentation of the same event must not both sound.
+The client groups live events in a short conversation burst before presentation. Suppress the banner for message IDs actually seen in a focused timeline, while allowing a subtle receive sound. Never infer visibility merely from the selected conversation. Read cursors are rechecked before backend delivery, and recent viewed-message evidence is shared across browser tabs. Native and browser presentation use one delivery branch, with transactional receipts and sound ownership to prevent duplicate interruptions.
 
 Group bursts by conversation and recipient while preserving individual actionable targets in-app. Maya progress never notifies. A completed creation run and resulting assignment events use a shared correlation ID to present one coherent alert where audiences overlap. This is presentation/delivery aggregation, not deletion of audit events. Reconnection/replay rebuilds state without emitting old interruptions.
 
