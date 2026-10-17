@@ -10,15 +10,15 @@ contract, not a self-hosting distribution path.
 Every release uses the triggering Git commit SHA for both images. Pull-request
 checks are the merge gate; the release does not repeat them after merge:
 
-1. build the API and worker targets through one shared Docker builder;
-2. scan both runtime images;
-3. publish `fortyoneapp/server:<commit-sha>` and
-   `fortyoneapp/worker:<commit-sha>` to Docker Hub;
-4. run the candidate API image once with `-check-schema` and require success;
-5. submit the API rollout, wait for stability, and verify the candidate image;
-6. submit the worker rollout, wait for stability, and verify its candidate image.
+1. build and publish `fortyoneapp/server:<commit-sha>` and
+   `fortyoneapp/worker:<commit-sha>` through one shared Docker builder;
+2. scan both published runtime images;
+3. submit the API rollout without waiting for service stability;
+4. submit the worker rollout and wait for worker service stability.
 
-The workflow does not run production database migrations. Weekly assurance
+The workflow does not launch a standalone schema task, invoke the release helper,
+or verify that either service is running the candidate image. It does not run
+production database migrations. Weekly assurance
 applies the migration chain to disposable PostgreSQL, vets SQLC against that
 schema, and runs the tagged database and Redis suite without changing
 production data.
@@ -47,30 +47,14 @@ The referenced Docker Hub repositories, ECS services, task definitions, and
 container names must already exist. The workflow never publishes a `latest`
 tag; task definitions receive the exact commit-tagged image.
 
-The GitHub deployment identity also needs the schema helper's permissions:
-`ecs:DescribeServices`, `ecs:DescribeTaskDefinition`,
-`ecs:RegisterTaskDefinition`, `ecs:RunTask`, `ecs:DescribeTasks`, `ecs:StopTask`,
-and `ecs:DeregisterTaskDefinition`, with `iam:PassRole` for the API task and
-execution roles. These permissions belong to the identity used by GitHub Actions,
-not to the container's task role. Keep the existing service deployment permissions.
-
-The helper registers a temporary family named `<server-family>-schema` (the base
-family is truncated to 240 characters). Scope `RunTask` to this family and the
-intended cluster. Review each action's supported resources in the
-[AWS ECS authorization reference](https://docs.aws.amazon.com/service-authorization/latest/reference/list_ecs.html):
-`DeregisterTaskDefinition` does not support task-definition resource scoping and
-requires `Resource: "*"` for that specific action. A grant limited to the normal
-server task-definition ARN does not authorize the entire preflight. This
-repository does not configure or change the deployment identity's IAM policy.
+Normal deployments use the existing service deployment permissions. The workflow
+does not require the standalone-task or cleanup permissions used by the optional
+operator helper below. This repository does not configure or change the deployment
+identity's IAM policy.
 
 ## Failure and recovery
 
 - **Build or scan fails:** no service changes.
-- **Schema check or cleanup fails:** neither service is deployed. Read the
-  original `Release stopped` error and each separate `Schema cleanup failed`
-  diagnostic. Cleanup errors cannot replace the original launch/check failure,
-  and cleanup failure alone still blocks release. Inspect the temporary task and
-  revision before retrying if stopping or deregistration failed.
 - **API rollout submission fails:** the worker is not deployed. Repair the API
   release or restore a schema-compatible task definition.
 - **Worker rollout submission fails:** the API rollout has already been
@@ -79,9 +63,42 @@ repository does not configure or change the deployment identity's IAM policy.
 
 Superseded image builds are cancelled so only the latest commit reaches the
 deployment queue. The consolidated deployment job is never cancelled while it
-is submitting the ordered API and worker rollouts. A successful workflow requires
-both services to be stable on their candidate images; a rollback to an older
-image does not pass verification.
+is submitting the ordered API and worker rollouts. A successful workflow means
+the API rollout was submitted and the worker stability wait completed. It does not
+prove that the API stabilized or that either candidate image remained active after
+an automatic rollback. Inspect those outcomes through the existing ECS operations
+process.
+
+## Optional operator tooling
+
+`.github/scripts/ecs_release.py` is available for explicitly chosen manual schema
+checks, reviewed migrations, and candidate-image verification. The normal release
+workflow does not call it. See the
+[reviewed migration procedure](../../../../docs/chat-release-readiness.md#reviewed-migration-procedure)
+for one optional way to run a migration; existing reviewed operator procedures
+remain valid.
+
+Running the helper's schema commands requires its own operator identity permissions:
+`ecs:DescribeServices`, `ecs:DescribeTaskDefinition`,
+`ecs:RegisterTaskDefinition`, `ecs:RunTask`, `ecs:DescribeTasks`, `ecs:StopTask`,
+and `ecs:DeregisterTaskDefinition`, with `iam:PassRole` for the API task and
+execution roles. These are permissions of the identity invoking the helper, not
+the container's task role. They are not additional requirements for ordinary
+GitHub deployments.
+
+The helper registers a temporary family named `<server-family>-schema` (the base
+family is truncated to 240 characters). Scope `RunTask` to this family and the
+intended cluster. Review each action's supported resources in the
+[AWS ECS authorization reference](https://docs.aws.amazon.com/service-authorization/latest/reference/list_ecs.html):
+`DeregisterTaskDefinition` does not support task-definition resource scoping and
+requires `Resource: "*"` for that specific action. A grant limited to the normal
+server task-definition ARN does not authorize every helper operation.
+
+If a manual helper command fails, read the original `Release stopped` error and
+each separate `Schema cleanup failed` diagnostic. Cleanup errors cannot replace
+the original launch/check failure, and cleanup failure alone still makes the
+command fail. Inspect the temporary task and revision before retrying if stopping
+or deregistration failed. The helper does not deploy either service.
 
 AWS CLI exit `254` means the service returned an error; it does not identify
 the cause. The helper reports the AWS error code when available, such as

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Run an isolated schema command, or verify a completed ECS release.
 
-The normal release uses check-schema only. Applying migrations requires the
-separate explicit operator flag and never updates either ECS service.
+This is optional operator tooling; the normal release workflow does not call it.
+Applying migrations requires the explicit review flag and never updates either ECS service.
 """
 
 import argparse

@@ -308,19 +308,25 @@ class ReleaseTests(unittest.TestCase):
             with self.subTest(field=field), self.assertRaises(release.ReleaseError):
                 release.verify_release(self.args, ecs)
 
-    def test_workflow_checks_schema_before_api_and_waits_for_both_services(self):
+    def test_workflow_deploys_existing_services_without_schema_tasks(self):
         workflow = (Path(__file__).parents[1] / "workflows/ecs-fargate-release.yml").read_text()
         deploy = workflow.split("\n  deploy:\n", 1)[1]
         positions = [deploy.index(name) for name in (
-            "name: Verify candidate database schema", "name: Submit server rollout",
-            "name: Verify server candidate is healthy", "name: Submit worker rollout",
-            "name: Verify worker candidate is healthy",
+            "name: Render server task definition", "name: Submit server rollout",
+            "name: Render worker task definition", "name: Submit worker rollout",
         )]
         self.assertEqual(positions, sorted(positions))
-        self.assertEqual(deploy.count("wait-for-service-stability: true"), 2)
-        self.assertIn("ecs_release.py check-schema", deploy)
-        self.assertNotIn("ecs_release.py migrate", deploy)
-        self.assertNotIn("execute-reviewed-migrations", deploy)
+        server_rollout = deploy.split("name: Submit server rollout", 1)[1].split("name: Download worker task definition", 1)[0]
+        worker_rollout = deploy.split("name: Submit worker rollout", 1)[1]
+        self.assertIn("wait-for-service-stability: false", server_rollout)
+        self.assertIn("wait-for-service-stability: true", worker_rollout)
+        for removed in (
+            "ecs_release.py", "check-schema", "execute-reviewed-migrations",
+            "aws ecs run-task", "aws ecs stop-task", "aws ecs deregister-task-definition",
+            "name: Verify server candidate is healthy", "name: Verify worker candidate is healthy",
+        ):
+            with self.subTest(removed=removed):
+                self.assertNotIn(removed, workflow)
 
 
 if __name__ == "__main__":

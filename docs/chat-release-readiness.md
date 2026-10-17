@@ -11,32 +11,46 @@ Production migrations remain an explicitly reviewed operator procedure. A push t
 images and retains the existing mandatory runtime vulnerability gate unchanged.
 It then:
 
-1. Starts the candidate API image once with `-check-schema`, using the API service's
-   private network configuration, task role, execution role, and environment.
-2. Requires a clean migration version that exactly matches the candidate's embedded
-   migration head. This command executes a read-only transaction. It cannot create
-   a migration table, apply SQL, repair a dirty migration, or advance a version.
-3. Deploys the API and waits for service stability. It additionally verifies the
-   intended image is active, so an automatic ECS rollback cannot count as success.
-4. Deploys the worker only after that API verification passes, waits for worker
-   stability, and verifies the intended worker image in the same way.
-5. Leaves the web promotion to the existing Vercel project. Promote the Messages
-   frontend only after schema, API, and worker checks succeed.
+1. Submits the API rollout without waiting for service stability.
+2. Submits the worker rollout and waits for worker service stability.
+3. Leaves web promotion to the existing Vercel project. Before promoting Messages,
+   operators verify schema compatibility and the health of the intended API and
+   worker images through their existing release procedure.
 
-Schema task completion has a five-minute polling budget, with separately bounded
+The normal workflow does not launch a standalone schema task or invoke
+`.github/scripts/ecs_release.py` for schema or candidate-image verification. It
+uses the existing deployment permissions; no standalone-task or cleanup
+permissions are required for ordinary releases. Successful workflow completion
+does not prove API stability or detect a rollback to an older image. See the
+[ECS release contract](../apps/server/docs/operations/ecs-release.md) for the
+workflow's exact scope.
+
+## Optional ECS operator tooling
+
+The Python helper remains available for manually chosen schema checks and reviewed
+migrations. It is not required by the normal release workflow and does not replace
+an existing reviewed operator procedure. A manual `check-schema` invocation starts
+the candidate API image once using the API service's private network configuration,
+task role, execution role, and environment. It requires a clean migration version
+that exactly matches the candidate's embedded migration head. The check executes
+a read-only transaction; it cannot create a migration table, apply SQL, repair a
+dirty migration, or advance a version.
+
+The helper's default task polling budget is five minutes, with separately bounded
 AWS calls and a 30-second database check. Its HTTP health check is removed because
-this command does not start an HTTP
-server. The helper stops its own task on timeout/cancellation and deregisters its
-temporary task-definition revision. It never changes an ECS service or desired
-count. A missing permission, unstarted task, missing/nonzero exit status, unknown
-schema, dirty migration, older schema, or newer schema blocks release.
+the schema command does not start an HTTP server. The helper stops its own task on
+timeout/cancellation and deregisters its temporary task-definition revision. It
+never changes an ECS service or desired count. A failed check or cleanup makes the
+manual command fail; the normal deployment workflow does not invoke this gate.
 
-The deploy identity needs scoped ECS `DescribeServices`, `DescribeTaskDefinition`,
-`RegisterTaskDefinition`, `RunTask`, `DescribeTasks`, `StopTask`, and
-`DeregisterTaskDefinition`, plus the existing `iam:PassRole` permissions for the API
-task/execution roles. This change does not grant or broaden IAM permissions. The
-new task uses on-demand Fargate, not a spot capacity provider. Confirm private
-subnets can reach PostgreSQL, image storage, secrets, and logging services.
+An operator choosing this helper needs ECS `DescribeServices`,
+`DescribeTaskDefinition`, `RegisterTaskDefinition`, `RunTask`, `DescribeTasks`,
+`StopTask`, and `DeregisterTaskDefinition`, plus `iam:PassRole` for the API task and
+execution roles. These permissions belong to the identity running the helper and
+are separate from the requirements for ordinary deployment. Review the helper's
+[resource scope requirements](../apps/server/docs/operations/ecs-release.md#optional-operator-tooling)
+before using it. Its task uses on-demand Fargate. Confirm private subnets can reach
+PostgreSQL, image storage, secrets, and logging services.
 
 ## Reviewed migration procedure
 
@@ -53,7 +67,9 @@ schema-first rollout. Verify the actual pending range: a production database beh
 specific procedure. The candidate binary determines the required version; this
 document does not substitute for inspecting the current migration head.
 
-The reviewed one-off helper can apply migrations without deploying either service.
+The optional one-off helper below can apply reviewed migrations without deploying
+either service. Use it only when it is the chosen operator procedure and its
+permissions and network access have been prepared.
 Use the same commit-tagged API image that passed the existing image gate. Prepare a
 private copy of the current API task definition and replace **only** the named API
 container's image with that candidate image. The file contains environment settings
@@ -93,11 +109,11 @@ python3 .github/scripts/ecs_release.py check-schema \
 Delete the local candidate JSON after recording the task ARN and reviewed outcome.
 The helper's task ARN points to CloudWatch logs for diagnosis. If a network failure
 makes task launch or stop uncertain, inspect ECS before retrying a migration. Do
-not start a second migrator blindly. A failed migration blocks both service
-rollouts; repair forward under the migration contract. Disabling Messages is the
+not start a second migrator blindly. Do not deploy either service after a failed
+migration; repair forward under the migration contract. Disabling Messages is the
 first feature rollback action; preserve conversations, originals, and queued work.
 An older application image against a newer schema requires explicit compatibility
-review, so the read-only preflight deliberately rejects that mismatch.
+review, so the helper's read-only check deliberately rejects that mismatch.
 
 ## Web and worker packaging
 
