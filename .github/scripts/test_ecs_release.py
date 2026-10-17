@@ -1,9 +1,13 @@
 import argparse
 import copy
+import io
 import json
+import subprocess
 import tempfile
 import unittest
+from contextlib import redirect_stderr
 from pathlib import Path
+from unittest.mock import patch
 
 import ecs_release as release
 
@@ -32,9 +36,12 @@ class FakeECS:
         self.running = running
         self.launch_failure = False
         self.image = "server:commit"
+        self.errors = {}
 
     def __call__(self, operation, request):
         self.calls.append((operation, request))
+        if operation in self.errors:
+            raise self.errors[operation]
         if operation == "describe-services":
             return {"services": [self.service]}
         if operation == "register-task-definition":
@@ -109,15 +116,162 @@ class ReleaseTests(unittest.TestCase):
 
     def test_stop_failure_still_deregisters_revision_and_blocks_release(self):
         ecs = FakeECS(running=True)
-        def fail_stop(operation, request):
-            result = ecs(operation, request)
-            if operation == "stop-task":
-                raise release.ReleaseError("Stop request failed")
-            return result
+        ecs.errors["stop-task"] = release.ReleaseError("Stop request failed")
         ticks = iter([0, 0, 61])
-        with self.assertRaisesRegex(release.ReleaseError, "Stop request failed"):
-            release.run_schema(self.args, fail_stop, clock=lambda: next(ticks), sleep=lambda _: None)
+        stderr = io.StringIO()
+        with redirect_stderr(stderr), self.assertRaisesRegex(release.ReleaseError, "timed out"):
+            release.run_schema(self.args, ecs, clock=lambda: next(ticks), sleep=lambda _: None)
+        self.assertIn("Schema cleanup failed: Stop request failed", stderr.getvalue())
         self.assertEqual([name for name, _ in ecs.calls][-2:], ["stop-task", "deregister-task-definition"])
+
+    def test_launch_error_is_preserved_when_revision_cleanup_fails(self):
+        ecs = FakeECS()
+        primary = release.ReleaseError("Run task request failed")
+        ecs.errors = {
+            "run-task": primary,
+            "deregister-task-definition": release.ReleaseError("Deregister request failed"),
+        }
+        stderr = io.StringIO()
+        with redirect_stderr(stderr), self.assertRaises(release.ReleaseError) as raised:
+            release.run_schema(self.args, ecs)
+        self.assertIs(raised.exception, primary)
+        self.assertIn("Schema cleanup failed: Deregister request failed", stderr.getvalue())
+        self.assertEqual(ecs.calls[-1][0], "deregister-task-definition")
+        self.assertNotIn("stop-task", [name for name, _ in ecs.calls])
+
+    def test_nonzero_exit_is_preserved_when_revision_cleanup_fails(self):
+        ecs = FakeECS(exit_code=1)
+        ecs.errors["deregister-task-definition"] = release.ReleaseError("Deregister request failed")
+        stderr = io.StringIO()
+        with redirect_stderr(stderr), self.assertRaisesRegex(release.ReleaseError, "Schema check-schema failed"):
+            release.run_schema(self.args, ecs)
+        self.assertIn("Schema cleanup failed: Deregister request failed", stderr.getvalue())
+        self.assertNotIn("stop-task", [name for name, _ in ecs.calls])
+
+    def test_cancellation_is_preserved_when_both_cleanup_requests_fail(self):
+        ecs = FakeECS(running=True)
+        ecs.errors = {
+            "stop-task": release.ReleaseError("Stop request failed"),
+            "deregister-task-definition": release.ReleaseError("Deregister request failed"),
+        }
+        primary = KeyboardInterrupt()
+        def cancel(_):
+            raise primary
+        stderr = io.StringIO()
+        with redirect_stderr(stderr), self.assertRaises(KeyboardInterrupt) as raised:
+            release.run_schema(self.args, ecs, sleep=cancel)
+        self.assertIs(raised.exception, primary)
+        self.assertIn("Schema cleanup failed: Stop request failed", stderr.getvalue())
+        self.assertIn("Schema cleanup failed: Deregister request failed", stderr.getvalue())
+        self.assertEqual([name for name, _ in ecs.calls][-2:], ["stop-task", "deregister-task-definition"])
+
+    def test_aws_timeout_is_preserved_when_both_cleanup_requests_fail(self):
+        ecs = FakeECS(running=True)
+        primary = subprocess.TimeoutExpired(cmd=["aws", "ecs", "describe-tasks"], timeout=70)
+        ecs.errors = {
+            "describe-tasks": primary,
+            "stop-task": release.ReleaseError("Stop request failed"),
+            "deregister-task-definition": release.ReleaseError("Deregister request failed"),
+        }
+        stderr = io.StringIO()
+        with redirect_stderr(stderr), self.assertRaises(subprocess.TimeoutExpired) as raised:
+            release.run_schema(self.args, ecs)
+        self.assertIs(raised.exception, primary)
+        self.assertIn("Schema cleanup failed: Stop request failed", stderr.getvalue())
+        self.assertIn("Schema cleanup failed: Deregister request failed", stderr.getvalue())
+        self.assertEqual([name for name, _ in ecs.calls][-2:], ["stop-task", "deregister-task-definition"])
+
+    def test_cancellation_during_stop_still_deregisters_and_preserves_timeout(self):
+        ecs = FakeECS(running=True)
+        ecs.errors["stop-task"] = KeyboardInterrupt()
+        ticks = iter([0, 0, 61])
+        stderr = io.StringIO()
+        with redirect_stderr(stderr), self.assertRaises(BaseException) as raised:
+            release.run_schema(self.args, ecs, clock=lambda: next(ticks), sleep=lambda _: None)
+        self.assertIsInstance(raised.exception, release.ReleaseError)
+        self.assertRegex(str(raised.exception), "timed out")
+        self.assertIn("Schema cleanup failed:", stderr.getvalue())
+        self.assertIn("stop-task", stderr.getvalue())
+        self.assertIn("KeyboardInterrupt", stderr.getvalue())
+        self.assertEqual([name for name, _ in ecs.calls][-2:], ["stop-task", "deregister-task-definition"])
+
+    def test_unexpected_stop_error_still_deregisters_and_preserves_timeout(self):
+        ecs = FakeECS(running=True)
+        ecs.errors["stop-task"] = OSError("sensitive-operating-system-detail")
+        ticks = iter([0, 0, 61])
+        stderr = io.StringIO()
+        with redirect_stderr(stderr), self.assertRaisesRegex(release.ReleaseError, "timed out"):
+            release.run_schema(self.args, ecs, clock=lambda: next(ticks), sleep=lambda _: None)
+        self.assertIn("Schema cleanup failed:", stderr.getvalue())
+        self.assertIn("stop-task", stderr.getvalue())
+        self.assertIn("OSError", stderr.getvalue())
+        self.assertNotIn("sensitive-operating-system-detail", stderr.getvalue())
+        self.assertEqual([name for name, _ in ecs.calls][-2:], ["stop-task", "deregister-task-definition"])
+
+    def test_successful_schema_still_blocks_release_when_cleanup_fails(self):
+        ecs = FakeECS()
+        ecs.errors["deregister-task-definition"] = release.ReleaseError("Deregister request failed")
+        with redirect_stderr(io.StringIO()), self.assertRaisesRegex(release.ReleaseError, "Deregister request failed"):
+            release.run_schema(self.args, ecs)
+        self.assertNotIn("update-service", [name for name, _ in ecs.calls])
+
+    def test_cleanup_failure_is_not_suppressed_by_callers_active_exception(self):
+        ecs = FakeECS()
+        cleanup_error = release.ReleaseError("Deregister request failed")
+        ecs.errors["deregister-task-definition"] = cleanup_error
+        try:
+            raise ValueError("Caller is handling an unrelated error")
+        except ValueError:
+            with redirect_stderr(io.StringIO()), self.assertRaises(release.ReleaseError) as raised:
+                release.run_schema(self.args, ecs)
+        self.assertIs(raised.exception, cleanup_error)
+
+    def test_aws_permission_errors_expose_only_code_and_action_hints(self):
+        cases = (
+            ("deregister-task-definition", "AccessDeniedException", "DeregisterTaskDefinition"),
+            ("run-task", "AccessDenied", "RunTask"),
+            ("register-task-definition", "UnauthorizedOperation", "RegisterTaskDefinition"),
+        )
+        for operation, code, action in cases:
+            with self.subTest(operation=operation, code=code):
+                result = subprocess.CompletedProcess(
+                    args=[], returncode=254, stdout="",
+                    stderr=f"An error occurred ({code}) when calling the {action} operation: sensitive-error-detail\nsecret-value",
+                )
+                with patch.object(release.subprocess, "run", return_value=result), self.assertRaises(release.ReleaseError) as raised:
+                    release.aws(operation, {"environment": [{"name": "SECRET", "value": "request-secret"}]})
+                message = str(raised.exception)
+                self.assertIn(code, message)
+                self.assertIn(f"ecs:{action}", message)
+                if operation in ("run-task", "register-task-definition"):
+                    self.assertIn("iam:PassRole", message)
+                else:
+                    self.assertNotIn("iam:PassRole", message)
+                for sensitive in ("sensitive-error-detail", "secret-value", "request-secret"):
+                    self.assertNotIn(sensitive, message)
+
+    def test_aws_nonpermission_error_preserves_safe_code_without_raw_stderr(self):
+        result = subprocess.CompletedProcess(
+            args=[], returncode=254, stdout="",
+            stderr="An error occurred (ClientException) when calling the RunTask operation: secret-value",
+        )
+        with patch.object(release.subprocess, "run", return_value=result), self.assertRaises(release.ReleaseError) as raised:
+            release.aws("run-task", {})
+        self.assertIn("ClientException", str(raised.exception))
+        self.assertNotIn("secret-value", str(raised.exception))
+
+    def test_aws_unrecognized_error_does_not_echo_stderr(self):
+        for stderr in (
+            "Invalid configuration: request-secret",
+            "An error occurred (secret=request-secret) when calling the RunTask operation: secret-value",
+        ):
+            with self.subTest(stderr=stderr):
+                result = subprocess.CompletedProcess(args=[], returncode=254, stdout="", stderr=stderr)
+                with patch.object(release.subprocess, "run", return_value=result), self.assertRaises(release.ReleaseError) as raised:
+                    release.aws("run-task", {})
+                self.assertIn("exit 254", str(raised.exception))
+                self.assertNotIn("request-secret", str(raised.exception))
+                self.assertNotIn("secret-value", str(raised.exception))
 
     def test_manual_migration_requires_explicit_review_flag_before_aws(self):
         self.args.operation = "migrate"

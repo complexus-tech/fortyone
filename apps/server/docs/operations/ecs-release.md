@@ -14,8 +14,9 @@ checks are the merge gate; the release does not repeat them after merge:
 2. scan both runtime images;
 3. publish `fortyoneapp/server:<commit-sha>` and
    `fortyoneapp/worker:<commit-sha>` to Docker Hub;
-4. submit the API task definition rollout;
-5. submit the worker task definition rollout.
+4. run the candidate API image once with `-check-schema` and require success;
+5. submit the API rollout, wait for stability, and verify the candidate image;
+6. submit the worker rollout, wait for stability, and verify its candidate image.
 
 The workflow does not run production database migrations. Weekly assurance
 applies the migration chain to disposable PostgreSQL, vets SQLC against that
@@ -46,9 +47,30 @@ The referenced Docker Hub repositories, ECS services, task definitions, and
 container names must already exist. The workflow never publishes a `latest`
 tag; task definitions receive the exact commit-tagged image.
 
+The GitHub deployment identity also needs the schema helper's permissions:
+`ecs:DescribeServices`, `ecs:DescribeTaskDefinition`,
+`ecs:RegisterTaskDefinition`, `ecs:RunTask`, `ecs:DescribeTasks`, `ecs:StopTask`,
+and `ecs:DeregisterTaskDefinition`, with `iam:PassRole` for the API task and
+execution roles. These permissions belong to the identity used by GitHub Actions,
+not to the container's task role. Keep the existing service deployment permissions.
+
+The helper registers a temporary family named `<server-family>-schema` (the base
+family is truncated to 240 characters). Scope `RunTask` to this family and the
+intended cluster. Review each action's supported resources in the
+[AWS ECS authorization reference](https://docs.aws.amazon.com/service-authorization/latest/reference/list_ecs.html):
+`DeregisterTaskDefinition` does not support task-definition resource scoping and
+requires `Resource: "*"` for that specific action. A grant limited to the normal
+server task-definition ARN does not authorize the entire preflight. This
+repository does not configure or change the deployment identity's IAM policy.
+
 ## Failure and recovery
 
 - **Build or scan fails:** no service changes.
+- **Schema check or cleanup fails:** neither service is deployed. Read the
+  original `Release stopped` error and each separate `Schema cleanup failed`
+  diagnostic. Cleanup errors cannot replace the original launch/check failure,
+  and cleanup failure alone still blocks release. Inspect the temporary task and
+  revision before retrying if stopping or deregistration failed.
 - **API rollout submission fails:** the worker is not deployed. Repair the API
   release or restore a schema-compatible task definition.
 - **Worker rollout submission fails:** the API rollout has already been
@@ -57,9 +79,19 @@ tag; task definitions receive the exact commit-tagged image.
 
 Superseded image builds are cancelled so only the latest commit reaches the
 deployment queue. The consolidated deployment job is never cancelled while it
-is submitting the ordered API and worker rollouts. A successful workflow means
-ECS accepted both rollouts; service stability and automatic rollback remain ECS
-operational responsibilities.
+is submitting the ordered API and worker rollouts. A successful workflow requires
+both services to be stable on their candidate images; a rollback to an older
+image does not pass verification.
+
+AWS CLI exit `254` means the service returned an error; it does not identify
+the cause. The helper reports the AWS error code when available, such as
+`AccessDeniedException`, and supplies the relevant IAM action for access errors.
+It deliberately excludes raw AWS error messages because they can contain task
+environment values. Use CloudTrail for the corresponding operation, timestamp,
+and deployment identity to inspect the underlying rejection privately. See
+[AWS CLI return codes](https://docs.aws.amazon.com/cli/latest/userguide/cli-usage-returncodes.html).
+For an access denial, review the indicated action, `iam:PassRole` where needed,
+resource scope, permissions boundaries, and organization policies before retrying.
 
 ## Verification
 

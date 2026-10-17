@@ -9,8 +9,10 @@ import argparse
 import copy
 import hashlib
 import json
+import re
 import signal
 import subprocess
+import sys
 import tempfile
 import time
 from pathlib import Path
@@ -33,7 +35,21 @@ def aws(operation, request):
             capture_output=True, text=True, timeout=70, check=False,
         )
     if result.returncode:
-        raise ReleaseError(f"ECS {operation} failed (exit {result.returncode}); inspect AWS access/configuration")
+        # AWS messages can echo request values. Expose only the structured error
+        # code, never raw stderr or the task definition's environment settings.
+        match = re.search(
+            r"An error occurred \(([A-Za-z][A-Za-z0-9]{0,127})\) when calling the [A-Za-z]+ operation:",
+            result.stderr or "",
+        )
+        code = match.group(1) if match else None
+        detail = f"{code}, exit {result.returncode}" if code else f"exit {result.returncode}"
+        guidance = "inspect AWS access/configuration"
+        if code in ("AccessDenied", "AccessDeniedException", "UnauthorizedOperation"):
+            action = "".join(part.title() for part in operation.split("-"))
+            guidance = f"check the release identity's ecs:{action} permission"
+            if operation in ("run-task", "register-task-definition"):
+                guidance += " and iam:PassRole for the task and execution roles"
+        raise ReleaseError(f"ECS {operation} failed ({detail}); {guidance}")
     return json.loads(result.stdout or "{}")
 
 
@@ -84,6 +100,7 @@ def run_schema(args, call=aws, clock=time.monotonic, sleep=time.sleep):
     definition_arn = registered["taskDefinition"]["taskDefinitionArn"]
     task_arn = None
     stopped = False
+    primary_failed = False
     try:
         request = {
             "cluster": args.cluster, "taskDefinition": definition_arn, "count": 1,
@@ -115,14 +132,34 @@ def run_schema(args, call=aws, clock=time.monotonic, sleep=time.sleep):
                 return
             sleep(5)
         raise ReleaseError("Schema task timed out; release is blocked")
+    except BaseException:
+        # Track this operation's failure, including cancellation, and re-raise it
+        # unchanged after cleanup. An exception handled by our caller is unrelated.
+        primary_failed = True
+        raise
     finally:
-        try:
-            if task_arn and not stopped:
-                call("stop-task", {"cluster": args.cluster, "task": task_arn, "reason": "Release schema command failed or was cancelled"})
-        finally:
-            # Even a failed stop request must not skip revision cleanup. A stop
-            # failure still propagates, so an uncertain task never permits release.
-            call("deregister-task-definition", {"taskDefinition": definition_arn})
+        # Preserve the launch/check/cancellation error already propagating.
+        # Cleanup must still attempt both requests and must never permit release
+        # when it is the only failure.
+        cleanup_errors = []
+        cleanup_requests = []
+        if task_arn and not stopped:
+            cleanup_requests.append(("stop-task", {
+                "cluster": args.cluster, "task": task_arn,
+                "reason": "Release schema command failed or was cancelled",
+            }))
+        cleanup_requests.append(("deregister-task-definition", {"taskDefinition": definition_arn}))
+        for operation, request in cleanup_requests:
+            try:
+                call(operation, request)
+            except BaseException as error:
+                # Even cancellation during stop-task must attempt deregistration.
+                # Unexpected errors may contain response data, so log their type.
+                cleanup_errors.append(error)
+                detail = str(error) if isinstance(error, (ReleaseError, subprocess.TimeoutExpired)) else f"{operation}: {type(error).__name__}"
+                print(f"Schema cleanup failed: {detail}", file=sys.stderr, flush=True)
+        if cleanup_errors and not primary_failed:
+            raise cleanup_errors[0]
 
 
 def verify_release(args, call=aws):
