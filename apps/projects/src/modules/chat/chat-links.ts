@@ -49,7 +49,8 @@ const codeRanges = (text: string): TextRange[] => {
     if (ranges.some((range) => start >= range.start && start < range.end))
       continue;
     const marker = inline[0];
-    const closing = new RegExp(`(?<!\x60)${marker}(?!\x60)`, "g");
+    // eslint-disable-next-line prefer-template -- SWC emits unescaped backticks when minifying this pattern in a template literal.
+    const closing = new RegExp("(?<!`)" + marker + "(?!`)", "g");
     closing.lastIndex = ticks.lastIndex;
     const match = closing.exec(text);
     if (!match) continue;

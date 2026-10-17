@@ -133,6 +133,13 @@ describe("chat links", () => {
     expect(findChatLinks("~~~\nhttps://unfinished.example")).toEqual([]);
     expect(findChatLinks("``code ` https://nested.example``")).toEqual([]);
   });
+  it("keeps links inside code until a matching backtick run closes it", () => {
+    expect(
+      findChatLinks(
+        "`https://hidden.example `` https://still-hidden.example` https://visible.example",
+      ).map((link) => link.href),
+    ).toEqual(["https://visible.example/"]);
+  });
   it("allows only safe explicit protocols", () => {
     for (const value of [
       "javascript:alert(1)",
