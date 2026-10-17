@@ -2,6 +2,7 @@
 
 import { fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
+import type * as UI from "ui";
 import { walkthroughTargets } from "@/shared/walkthrough/targets";
 import { Navigation } from "./navigation";
 
@@ -91,6 +92,7 @@ jest.mock("ui", () => {
   );
 
   return {
+    Badge: jest.requireActual<typeof UI>("ui").Badge,
     Box: ({ children }: { children: ReactNode }) => <div>{children}</div>,
     Collapsible,
     Flex: ({ children }: { children: ReactNode }) => <div>{children}</div>,

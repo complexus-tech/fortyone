@@ -3,7 +3,8 @@
 import { useId, useState } from "react";
 import { ChevronRightIcon } from "icons";
 import { cn } from "lib";
-import { Button, Text } from "ui";
+import { Avatar, Button, Text } from "ui";
+import { MayaAvatar } from "@/components/ui/maya-avatar";
 import { useUnreadThreads } from "./queries";
 import { ChatUnreadBadge } from "./unread-badge";
 import type { ChatUnreadThread } from "./types";
@@ -23,7 +24,7 @@ export const UnreadThreads = ({
   const threads = query.data?.pages.flatMap((page) => page.items) ?? [];
 
   return (
-    <section className="mb-4">
+    <section className="mb-4 text-base">
       <h2>
         <button
           aria-controls={listId}
@@ -50,12 +51,12 @@ export const UnreadThreads = ({
           />
         </button>
       </h2>
-      <div hidden={!expanded} id={listId}>
+      <div className="divide-border divide-y" hidden={!expanded} id={listId}>
         {threads.map((thread) => (
           <button
             aria-current={activeThreadId === thread.id ? "page" : undefined}
             className={cn(
-              "hover:bg-surface-muted focus-visible:ring-primary/40 mx-1 flex w-[calc(100%-0.5rem)] flex-col gap-1 rounded-lg py-3 pr-3 pl-10 text-left outline-none focus-visible:ring-2",
+              "hover:bg-surface-muted focus-visible:ring-primary/40 flex w-full items-start gap-3 px-3 py-4 text-left outline-none focus-visible:ring-2",
               activeThreadId === thread.id && "bg-primary/5",
             )}
             key={thread.id}
@@ -64,23 +65,40 @@ export const UnreadThreads = ({
             }}
             type="button"
           >
-            <span className="flex w-full items-center gap-2">
-              <span className="text-text-muted truncate text-xs">
-                {thread.conversationName}
+            <span aria-hidden="true" className="shrink-0 pt-0.5">
+              {thread.author.isSystem ? (
+                <MayaAvatar size="md" src={thread.author.avatarUrl} />
+              ) : (
+                <Avatar
+                  name={thread.author.fullName}
+                  rounded="md"
+                  size="md"
+                  src={thread.author.avatarUrl}
+                />
+              )}
+            </span>
+            <span className="flex min-w-0 flex-1 flex-col gap-1.5">
+              <span className="flex items-start gap-2">
+                <span className="min-w-0 flex-1 font-semibold [overflow-wrap:anywhere]">
+                  {thread.author.fullName}
+                </span>
+                <ChatUnreadBadge
+                  count={thread.unreadReplyCount}
+                  label="unread replies"
+                />
               </span>
-              <ChatUnreadBadge
-                className="ml-auto"
-                count={thread.unreadReplyCount}
-                label="unread replies"
-              />
-            </span>
-            <span className="line-clamp-2 text-sm leading-5">
-              {thread.deletedAt
-                ? "Deleted message"
-                : thread.text || "Shared an attachment"}
-            </span>
-            <span className="text-text-muted truncate text-xs">
-              {thread.author.fullName}
+              <span className="line-clamp-2 font-normal [overflow-wrap:anywhere]">
+                {thread.deletedAt
+                  ? "Deleted message"
+                  : thread.text || "Shared an attachment"}
+              </span>
+              <span className="text-text-muted font-normal [overflow-wrap:anywhere]">
+                Thread in{" "}
+                <span className="font-medium">
+                  {thread.conversationKind === "team" ? "# " : ""}
+                  {thread.conversationName}
+                </span>
+              </span>
             </span>
           </button>
         ))}

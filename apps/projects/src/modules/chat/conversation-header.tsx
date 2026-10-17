@@ -48,12 +48,10 @@ export const ConversationHeader = ({
         >
           {conversation.name}
         </h2>
-      </div>
-      <div className="flex shrink-0 items-center gap-4">
         {conversation.kind === "team" ? (
           <div
             aria-label="Team members"
-            className="isolate hidden items-center -space-x-1.5 @min-[700px]/conversation:flex"
+            className="isolate hidden shrink-0 items-center -space-x-1.5 @min-[700px]/conversation:flex"
           >
             {conversation.members.slice(0, 4).map((person) => (
               <span
@@ -68,6 +66,8 @@ export const ConversationHeader = ({
             </span>
           </div>
         ) : null}
+      </div>
+      <div className="flex shrink-0 items-center gap-4">
         <Tabs.List
           aria-label="Conversation content"
           className="mx-0 flex-nowrap md:mx-0"

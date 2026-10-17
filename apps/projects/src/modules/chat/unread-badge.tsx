@@ -1,4 +1,5 @@
 import { cn } from "lib";
+import { Badge } from "ui";
 
 export const ChatUnreadBadge = ({
   count,
@@ -12,15 +13,14 @@ export const ChatUnreadBadge = ({
   if (count <= 0) return null;
 
   return (
-    <span
+    <Badge
       aria-label={`${count.toLocaleString()} ${label}`}
-      className={cn(
-        "bg-primary/10 text-primary inline-flex min-w-5 shrink-0 items-center justify-center rounded-full px-1.5 py-0.5 text-xs leading-4 font-semibold tabular-nums",
-        className,
-      )}
+      className={cn("shrink-0 tabular-nums", className)}
+      rounded="full"
+      size="sm"
       title={`${count.toLocaleString()} ${label}`}
     >
       <span aria-hidden="true">{count > 999 ? "999+" : count}</span>
-    </span>
+    </Badge>
   );
 };

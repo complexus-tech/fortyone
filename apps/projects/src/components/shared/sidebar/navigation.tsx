@@ -220,7 +220,7 @@ export const Navigation = ({
             {icon}
             {isCollapsed && unreadCount ? (
               <ChatUnreadBadge
-                className="bg-primary absolute -top-2 -right-4 text-[10px] text-white"
+                className="absolute -top-2 left-full ml-0.5"
                 count={unreadCount}
               />
             ) : null}

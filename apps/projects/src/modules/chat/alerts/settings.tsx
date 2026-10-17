@@ -134,14 +134,14 @@ const ChatAlertControls = () => {
     <div className="space-y-4">
       <div>
         <Text fontWeight="medium">Chat notifications</Text>
-        <Text className="mt-1 text-sm" color="muted">
+        <Text className="mt-1 text-base" color="muted">
           New messages in this workspace. These settings apply on this device;
           unread counts always stay visible.
         </Text>
       </div>
       {rows.map((row) => (
         <div className="flex items-center justify-between gap-4" key={row.key}>
-          <Text className="text-sm" id={`${id}-${row.key}`}>
+          <Text className="text-base" id={`${id}-${row.key}`}>
             {row.title}
           </Text>
           <Switch
@@ -154,7 +154,7 @@ const ChatAlertControls = () => {
       ))}
       {conversationId ? (
         <div className="flex items-center justify-between gap-4">
-          <Text className="text-sm" id={`${id}-mute`}>
+          <Text className="text-base" id={`${id}-mute`}>
             Mute this conversation
           </Text>
           <Switch
@@ -176,7 +176,7 @@ const ChatAlertControls = () => {
       ) : null}
       {preferences.quietHours ? (
         <div className="grid grid-cols-2 gap-3">
-          <label className="space-y-1 text-sm" htmlFor={`${id}-start`}>
+          <label className="space-y-1 text-base" htmlFor={`${id}-start`}>
             From
             <Input
               id={`${id}-start`}
@@ -188,7 +188,7 @@ const ChatAlertControls = () => {
               value={preferences.quietStart}
             />
           </label>
-          <label className="space-y-1 text-sm" htmlFor={`${id}-end`}>
+          <label className="space-y-1 text-base" htmlFor={`${id}-end`}>
             Until
             <Input
               id={`${id}-end`}
@@ -200,7 +200,7 @@ const ChatAlertControls = () => {
               value={preferences.quietEnd}
             />
           </label>
-          <Text className="col-span-2 text-xs" color="muted">
+          <Text className="col-span-2 text-base" color="muted">
             Uses this device’s local time.
           </Text>
         </div>
@@ -223,17 +223,17 @@ const ChatAlertControls = () => {
         Preview sound
       </Button>
       {bridge && !bridge.chatNotificationLinks ? (
-        <Text className="text-xs" color="muted">
+        <Text className="text-base" color="muted">
           Update the desktop app for direct chat links and silent banners.
         </Text>
       ) : null}
       {pending ? (
-        <Text className="text-sm" color="muted" role="status">
+        <Text className="text-base" color="muted" role="status">
           Saving…
         </Text>
       ) : null}
       {error ? (
-        <Text className="text-sm" role="alert">
+        <Text className="text-base" role="alert">
           {error}
         </Text>
       ) : null}
@@ -260,7 +260,7 @@ export const ChatNotificationSettings = () => (
     </Tooltip>
     <Popover.Content
       align="end"
-      className="max-h-[80dvh] w-80 overflow-y-auto p-4"
+      className="max-h-[80dvh] w-[360px] max-w-[calc(100vw-24px)] overflow-y-auto p-4 text-base"
     >
       <ChatAlertControls />
     </Popover.Content>

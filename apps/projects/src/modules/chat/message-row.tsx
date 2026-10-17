@@ -198,7 +198,7 @@ export const MessageRow = ({
       <div className="flex w-full max-w-[max(56rem,92%)] min-w-0 gap-2.5">
         <PersonAvatar mayaAvatarUrl={mayaAvatarUrl} person={message.author} />
         <div className="min-w-0 flex-1">
-          <div className="flex items-baseline gap-2">
+          <div className="flex flex-wrap items-baseline gap-x-2">
             <span className="text-base leading-6 font-bold">
               {message.author.fullName}
             </span>

@@ -99,78 +99,87 @@ export const NotificationCard = ({
           >
             <Box
               className={cn(
-                "border-border block min-w-0 cursor-pointer overflow-hidden border-b-[0.5px] px-5 py-[0.655rem] transition md:px-4",
+                "border-border block min-w-0 cursor-pointer overflow-hidden border-b-[0.5px] px-5 py-4 text-base leading-normal transition md:px-4",
                 {
                   "bg-primary/5 hover:bg-primary/5": isActive,
                   "hover:bg-surface-muted": !isActive,
                 },
               )}
             >
-              <Flex align="center" className="mb-2" gap={2} justify="between">
-                <Flex align="center" className="min-w-0 flex-1" gap={2}>
-                  {isUnread ? <ListItemAttentionDot /> : null}
-                  <Text
-                    className="min-w-0 flex-1 truncate font-medium"
-                    color={isUnread ? undefined : "muted"}
+              <Flex align="start" gap={3}>
+                {mayaActor ? (
+                  <MayaAvatar
+                    className="size-8 shrink-0 text-base leading-none"
+                    name={mayaActor.fullName}
+                    size="md"
+                    src={mayaActor.avatarUrl}
+                  />
+                ) : (
+                  <Avatar
+                    className="size-8 shrink-0 text-base leading-none"
+                    name={actor?.fullName || actor?.username}
+                    size="md"
+                    src={actor?.avatarUrl}
+                  />
+                )}
+                <Box className="min-w-0 flex-1">
+                  <Flex
+                    align="center"
+                    className="mb-1 flex-wrap gap-x-3 gap-y-1"
+                    justify="between"
                   >
-                    {title}
-                  </Text>
-                </Flex>
-                <Text className="shrink-0 text-[0.95rem]" color="muted">
-                  <TimeAgo timestamp={createdAt} />
-                </Text>
-              </Flex>
-              <Flex align="center" gap={3} justify="between">
-                <Flex align="center" className="min-w-0 flex-1" gap={2}>
-                  {mayaActor ? (
-                    <MayaAvatar
-                      className="shrink-0"
-                      name={mayaActor.fullName}
-                      size="xs"
-                      src={mayaActor.avatarUrl}
-                    />
-                  ) : (
-                    <Avatar
-                      className="shrink-0"
-                      name={actor?.fullName || actor?.username}
-                      size="xs"
-                      src={actor?.avatarUrl}
-                    />
-                  )}
-
-                  <Tooltip
-                    className="max-h-[min(24rem,80vh)] max-w-[min(24rem,calc(100vw-2rem))] overflow-y-auto [overflow-wrap:anywhere]"
-                    title={
-                      <span className="whitespace-pre-wrap">
-                        {messageContent}
-                      </span>
-                    }
-                  >
-                    <Text className="min-w-0 flex-1 truncate" color="muted">
-                      <span>{messageContent}</span>
+                    <Flex align="center" className="min-w-0" gap={2}>
+                      {isUnread ? <ListItemAttentionDot /> : null}
+                      <Text
+                        className="min-w-0 [overflow-wrap:anywhere]"
+                        color={isUnread ? undefined : "muted"}
+                        fontWeight="semibold"
+                      >
+                        {title}
+                      </Text>
+                    </Flex>
+                    <Text className="shrink-0" color="muted">
+                      <TimeAgo timestamp={createdAt} />
                     </Text>
-                  </Tooltip>
-                </Flex>
-                {type === "story_update" && (
-                  <>
-                    {text.toLowerCase().includes("deadline") && (
-                      <CalendarIcon className="shrink-0" />
+                  </Flex>
+                  <Flex align="start" gap={3} justify="between">
+                    <Tooltip
+                      className="max-h-[min(24rem,80vh)] max-w-[min(24rem,calc(100vw-2rem))] overflow-y-auto text-base leading-normal [overflow-wrap:anywhere]"
+                      title={
+                        <span className="whitespace-pre-wrap">
+                          {messageContent}
+                        </span>
+                      }
+                    >
+                      <Text
+                        className="line-clamp-2 min-w-0 flex-1 [overflow-wrap:anywhere]"
+                        color="muted"
+                      >
+                        <span>{messageContent}</span>
+                      </Text>
+                    </Tooltip>
+                    {type === "story_update" && (
+                      <>
+                        {text.toLowerCase().includes("deadline") && (
+                          <CalendarIcon className="shrink-0" />
+                        )}
+                        {text.toLowerCase().includes("status") && (
+                          <StoryStatusIcon className="shrink-0" />
+                        )}
+                        {text.toLowerCase().includes("priority") && (
+                          <PriorityIcon
+                            className="text-foreground shrink-0"
+                            priority="High"
+                          />
+                        )}
+                      </>
                     )}
-                    {text.toLowerCase().includes("status") && (
-                      <StoryStatusIcon className="shrink-0" />
+                    {type === "story_comment" && (
+                      <CommentIcon className="shrink-0" />
                     )}
-                    {text.toLowerCase().includes("priority") && (
-                      <PriorityIcon
-                        className="text-foreground shrink-0"
-                        priority="High"
-                      />
-                    )}
-                  </>
-                )}
-                {type === "story_comment" && (
-                  <CommentIcon className="shrink-0" />
-                )}
-                {type === "mention" && <AtIcon className="shrink-0" />}
+                    {type === "mention" && <AtIcon className="shrink-0" />}
+                  </Flex>
+                </Box>
               </Flex>
             </Box>
           </Link>
