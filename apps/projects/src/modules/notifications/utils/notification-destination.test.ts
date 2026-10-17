@@ -8,6 +8,22 @@ import {
 } from "./notification-destination";
 
 describe("notification destinations", () => {
+  it.each(["story", "document"] as const)(
+    "opens a %s notification whose variables are null",
+    (entityType) => {
+      const path = getNotificationDetailsPath({
+        entityId: "entity-1",
+        entityType,
+        notificationId: "notification-1",
+        message: { template: "Updated", variables: null },
+      });
+
+      expect(path).toBe(
+        `/notifications/notification-1?entityId=entity-1&entityType=${entityType}`,
+      );
+    },
+  );
+
   it("opens a document notification at its specific discussion", () => {
     const threadId = "55555555-5555-4555-8555-555555555555";
     const path = getNotificationDetailsPath({

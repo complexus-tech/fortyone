@@ -4,7 +4,7 @@ import type { Ref } from "react";
 import { CloseIcon } from "icons";
 import { Button } from "ui";
 import type { PreviewDraft } from "./chat-rich-text";
-import { ICON_BUTTON_CLASS } from "./chat-styles";
+import { CHAT_SIDE_PANEL_CLASS, ICON_BUTTON_CLASS } from "./chat-styles";
 import { Composer } from "./composer";
 import { MessageRow } from "./message-row";
 import type { ChatMessage } from "./types";
@@ -27,6 +27,7 @@ export const ThreadPanel = ({
   onToggleReaction,
   onEditMessage,
   onDeleteMessage,
+  onMarkUnread,
   onRetryMessage,
   hasOlder = false,
   hasNewer = false,
@@ -55,6 +56,7 @@ export const ThreadPanel = ({
     draft: PreviewDraft,
   ) => void | Promise<void>;
   onDeleteMessage: (messageId: string) => void | Promise<void>;
+  onMarkUnread?: (message: ChatMessage) => void;
   onRetryMessage?: (messageId: string) => void;
   hasOlder?: boolean;
   hasNewer?: boolean;
@@ -71,10 +73,7 @@ export const ThreadPanel = ({
   const latestReply = replies.at(-1);
   const { userId } = useChatIdentity();
   return (
-    <aside
-      aria-label="Thread"
-      className="border-border bg-surface flex min-w-0 flex-1 flex-col border-l-[0.5px] min-[1400px]:w-[360px] min-[1400px]:flex-none 2xl:w-[400px]"
-    >
+    <aside aria-label="Thread" className={CHAT_SIDE_PANEL_CLASS}>
       <header className="border-border flex h-16 shrink-0 items-center justify-between border-b-[0.5px] px-5">
         <div className="flex items-center gap-2.5">
           <h2 className="text-base font-semibold">Thread</h2>
@@ -115,6 +114,7 @@ export const ThreadPanel = ({
                 message={thread}
                 onDeleteMessage={onDeleteMessage}
                 onEditMessage={onEditMessage}
+                onMarkUnread={onMarkUnread}
                 onRetryMessage={onRetryMessage}
                 onToggleReaction={onToggleReaction}
               />
@@ -161,6 +161,7 @@ export const ThreadPanel = ({
             message={message}
             onDeleteMessage={onDeleteMessage}
             onEditMessage={onEditMessage}
+            onMarkUnread={onMarkUnread}
             onRetryMessage={onRetryMessage}
             onToggleReaction={onToggleReaction}
           />

@@ -35,3 +35,10 @@ type UnreadThreadQuery struct {
 	Cursor         string
 	Limit          int
 }
+
+// ThreadReadTarget fixes a thread's read boundary before a bulk mutation starts.
+type ThreadReadTarget struct {
+	ConversationID   uuid.UUID
+	ThreadRootID     uuid.UUID
+	ThroughMessageID uuid.UUID
+}

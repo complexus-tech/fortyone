@@ -2,13 +2,19 @@
 
 import { useId, useRef, useState } from "react";
 import {
+  CopyIcon,
   DeleteIcon,
   EditIcon,
+  EmailIcon,
+  LinkIcon,
   MessageReplyIcon,
   MoreHorizontalIcon,
 } from "icons";
 import { cn } from "lib";
 import { Input, Menu, Popover, Tooltip } from "ui";
+import { toast } from "sonner";
+import { useCopyToClipboard } from "@/hooks/clipboard";
+import { useWorkspacePath } from "@/hooks/use-workspace-path";
 import {
   COMMENT_REACTION_GROUPS,
   COMMENT_REACTIONS,
@@ -16,6 +22,7 @@ import {
 import type { MessageReplyHandler } from "./message-row";
 import type { ChatMessage, ChatReaction } from "./types";
 import { useChatIdentity } from "./chat-context";
+import { getChatMessageLink } from "./message-permalink";
 
 const QUICK_REACTIONS = [
   { emoji: "✅", label: "Done" },
@@ -148,14 +155,18 @@ export const MessageActions = ({
   onToggleReaction,
   onEdit,
   onDelete,
+  onMarkUnread,
 }: {
   message: ChatMessage;
   onReply?: MessageReplyHandler;
   onToggleReaction: (messageId: string, emoji: string) => void;
   onEdit: () => void;
   onDelete: () => void;
+  onMarkUnread?: (message: ChatMessage) => void;
 }) => {
   const { userId } = useChatIdentity();
+  const { withWorkspace } = useWorkspacePath();
+  const [, copyText] = useCopyToClipboard();
   const [expanded, setExpanded] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -165,13 +176,25 @@ export const MessageActions = ({
   const selected = new Set(
     reactions.filter(({ reacted }) => reacted).map(({ emoji }) => emoji),
   );
+  const copyMessage = async (link: boolean) => {
+    const value = link
+      ? getChatMessageLink(
+          message,
+          withWorkspace("/chat"),
+          window.location.origin,
+        )
+      : message.text;
+    const copied = await copyText(value);
+    if (copied) toast.success(link ? "Message link copied" : "Message copied");
+    else toast.error("Could not copy. Please try again.");
+  };
 
   return (
     <div className="absolute -top-3 right-5 z-10 flex items-center gap-1">
       <div
         aria-label={`Actions for ${message.author.fullName}'s message`}
         className={cn(
-          "bg-surface/95 dark:bg-background/95 border-border/70 pointer-events-none flex items-center gap-0.5 rounded-xl border-[0.5px] px-1.5 py-0.5 opacity-0 shadow-md backdrop-blur-md group-focus-within:pointer-events-auto group-focus-within:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100",
+          "bg-surface/85 dark:bg-background/85 border-border/70 pointer-events-none flex items-center gap-0.5 rounded-xl border-[0.5px] p-1.5 opacity-0 shadow-md backdrop-blur-md group-focus-within:pointer-events-auto group-focus-within:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100",
           (expanded || pickerOpen || menuOpen) &&
             "pointer-events-auto opacity-100",
         )}
@@ -226,52 +249,84 @@ export const MessageActions = ({
             </button>
           </Tooltip>
         ) : null}
-        {message.author.id === userId ? (
-          <Menu onOpenChange={setMenuOpen} open={menuOpen}>
-            <Tooltip title="More actions">
-              <Menu.Button>
-                <button
-                  aria-label="More message actions"
-                  className={ACTION_CLASS}
-                  data-message-menu-trigger
-                  type="button"
-                >
-                  <MoreHorizontalIcon className="size-[18px]" />
-                </button>
-              </Menu.Button>
-            </Tooltip>
-            <Menu.Items
-              align="end"
-              className="min-w-40"
-              onCloseAutoFocus={(event) => {
-                if (actionSelected.current) {
-                  event.preventDefault();
-                  actionSelected.current = false;
-                }
-              }}
-            >
-              <Menu.Group>
+        <Menu onOpenChange={setMenuOpen} open={menuOpen}>
+          <Tooltip title="More actions">
+            <Menu.Button>
+              <button
+                aria-label="More message actions"
+                className={ACTION_CLASS}
+                data-message-menu-trigger
+                type="button"
+              >
+                <MoreHorizontalIcon className="size-[18px]" />
+              </button>
+            </Menu.Button>
+          </Tooltip>
+          <Menu.Items
+            align="end"
+            className="min-w-48"
+            onCloseAutoFocus={(event) => {
+              if (actionSelected.current) {
+                event.preventDefault();
+                actionSelected.current = false;
+              }
+            }}
+          >
+            <Menu.Group>
+              <Menu.Item
+                disabled={!message.text.trim()}
+                onSelect={() => {
+                  void copyMessage(false);
+                }}
+              >
+                <CopyIcon className="size-4" /> Copy message
+              </Menu.Item>
+              <Menu.Item
+                onSelect={() => {
+                  void copyMessage(true);
+                }}
+              >
+                <LinkIcon className="size-4" /> Copy message link
+              </Menu.Item>
+              {onMarkUnread &&
+              message.author.id !== userId &&
+              !message.deletedAt &&
+              !message.deliveryStatus ? (
                 <Menu.Item
                   onSelect={() => {
-                    actionSelected.current = true;
-                    onEdit();
+                    onMarkUnread(message);
                   }}
                 >
-                  <EditIcon className="size-4" /> Edit message
+                  <EmailIcon className="size-4" /> Mark unread
                 </Menu.Item>
-                <Menu.Item
-                  className="text-danger"
-                  onSelect={() => {
-                    actionSelected.current = true;
-                    onDelete();
-                  }}
-                >
-                  <DeleteIcon className="size-4" /> Delete message
-                </Menu.Item>
-              </Menu.Group>
-            </Menu.Items>
-          </Menu>
-        ) : null}
+              ) : null}
+            </Menu.Group>
+            {message.author.id === userId ? (
+              <>
+                <Menu.Separator />
+                <Menu.Group>
+                  <Menu.Item
+                    onSelect={() => {
+                      actionSelected.current = true;
+                      onEdit();
+                    }}
+                  >
+                    <EditIcon className="size-4" /> Edit message
+                  </Menu.Item>
+                  <Menu.Item
+                    className="text-danger"
+                    onSelect={() => {
+                      actionSelected.current = true;
+                      onDelete();
+                    }}
+                  >
+                    <DeleteIcon className="size-4" /> Delete message
+                  </Menu.Item>
+                </Menu.Group>
+              </>
+            ) : null}
+          </Menu.Items>
+        </Menu>
       </div>
       <button
         aria-controls={toolbarId}

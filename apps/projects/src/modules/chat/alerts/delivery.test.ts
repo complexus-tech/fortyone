@@ -56,6 +56,16 @@ const message = (
   body: `Message ${id}`,
   ...change,
 });
+const reaction = (
+  id = "reaction-one",
+  change: Partial<ChatNotificationEvent> = {},
+): ChatNotificationEvent =>
+  message(id, {
+    messageId: "authors-message",
+    actorId: "reactor",
+    body: "Sarah reacted 🙌🏽 to your message: Ready for review",
+    ...change,
+  });
 const browserNotification = jest.fn();
 const originalNotification = Object.getOwnPropertyDescriptor(
   globalThis,
@@ -347,4 +357,116 @@ it("preserves the exact thread/message destination", () => {
   ).toBe(
     "/engineering/chat?conversation=conversation&message=message&thread=thread",
   );
+});
+
+describe("reaction notifications", () => {
+  it("delivers the reaction to the author with its exact thread destination", async () => {
+    const bridge = native();
+    const event = reaction("reply-reaction", { threadRootId: "thread-root" });
+    makeDelivery().receive(event);
+
+    await jest.advanceTimersByTimeAsync(800);
+
+    expect(bridge.deliverNotification).toHaveBeenCalledTimes(1);
+    expect(bridge.deliverNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        accountId: scope.accountId,
+        notificationId: "receipt-reply-reaction",
+        entityType: "chat_message",
+        entityId: "authors-message",
+        conversationId: "conversation",
+        threadRootId: "thread-root",
+        title: "Product",
+        body: event.body,
+      }),
+    );
+    expect(chatNotificationPath(event, scope.workspaceSlug)).toBe(
+      "/engineering/chat?conversation=conversation&message=authors-message&thread=thread-root",
+    );
+  });
+
+  it.each(["muted", "quiet", "self"] as const)(
+    "suppresses %s reactions before consuming an alert receipt",
+    async (reason) => {
+      if (reason === "muted") {
+        jest.mocked(readChatAlertPreferences).mockReturnValue({
+          ...DEFAULT_CHAT_ALERT_PREFERENCES,
+          mutedConversations: ["conversation"],
+        });
+      } else if (reason === "quiet") {
+        jest.mocked(isChatQuietTime).mockReturnValue(true);
+      }
+      makeDelivery().receive(
+        reaction("suppressed", {
+          actorId: reason === "self" ? scope.accountId : "reactor",
+        }),
+      );
+
+      await jest.advanceTimersByTimeAsync(800);
+
+      expect(browserNotification).not.toHaveBeenCalled();
+      expect(playChatSound).not.toHaveBeenCalled();
+      expect(update).not.toHaveBeenCalled();
+    },
+  );
+
+  it("deduplicates reaction retries across tabs without consuming later reactions on the same message", async () => {
+    const firstTab = makeDelivery();
+    const secondTab = makeDelivery();
+    firstTab.receive(reaction());
+    secondTab.receive(reaction());
+    await jest.advanceTimersByTimeAsync(800);
+
+    expect(browserNotification).toHaveBeenCalledTimes(1);
+    expect(browserNotification).toHaveBeenCalledWith(
+      "Product",
+      expect.objectContaining({ body: reaction().body, silent: true }),
+    );
+    expect(playChatSound).toHaveBeenCalledTimes(1);
+
+    await jest.advanceTimersByTimeAsync(4_000);
+    secondTab.receive(reaction());
+    await jest.advanceTimersByTimeAsync(800);
+    expect(browserNotification).toHaveBeenCalledTimes(1);
+    expect(playChatSound).toHaveBeenCalledTimes(1);
+
+    secondTab.receive(
+      reaction("reaction-two", {
+        actorId: "another-reactor",
+        body: "Alex reacted ✅ to your message: Ready for review",
+        occurredAt: new Date().toISOString(),
+      }),
+    );
+    await jest.advanceTimersByTimeAsync(800);
+    expect(browserNotification).toHaveBeenCalledTimes(2);
+    expect(browserNotification).toHaveBeenLastCalledWith(
+      "Product",
+      expect.objectContaining({
+        body: "Alex reacted ✅ to your message: Ready for review",
+      }),
+    );
+    expect(playChatSound).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps reaction wording when coalescing a burst", async () => {
+    const bridge = native();
+    const delivery = makeDelivery();
+    delivery.receive(reaction("first"));
+    const latest = reaction("latest", {
+      actorId: "another-reactor",
+      body: "Alex reacted 👀 to your message: Ready for review",
+      occurredAt: new Date(now.getTime() + 100).toISOString(),
+    });
+    delivery.receive(latest);
+
+    await jest.advanceTimersByTimeAsync(800);
+
+    expect(bridge.deliverNotification).toHaveBeenCalledTimes(1);
+    expect(bridge.deliverNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        notificationId: latest.notificationId,
+        body: latest.body,
+      }),
+    );
+  });
 });

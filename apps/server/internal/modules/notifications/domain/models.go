@@ -13,12 +13,21 @@ type NotificationMessage struct {
 	Variables     map[string]Variable           `json:"variables"`
 	Strategy      *StrategyNotificationSnapshot `json:"strategy,omitempty"`
 	ScheduleIssue *StoryScheduleIssueSnapshot   `json:"scheduleIssue,omitempty"`
+	// ChatReaction keeps a durable source identity for permission-aware delivery.
+	// It is never included in public responses.
+	ChatReaction *ChatReaction `json:"chatReaction,omitempty"`
 	// IdentityReferences links display snapshots to accounts for targeted erasure.
 	// It is stored with the message but never included in public responses.
 	IdentityReferences map[string]uuid.UUID `json:"identityReferences,omitempty"`
 	// EmailSuppressed retains per-event delivery policy without changing the
 	// account's channel preferences. It never appears in public payloads.
 	EmailSuppressed bool `json:"emailSuppressed,omitempty"`
+}
+
+// ChatReaction identifies the added reaction, independently of mutable message copy.
+type ChatReaction struct {
+	EventID uuid.UUID `json:"eventId"`
+	Emoji   string    `json:"emoji"`
 }
 
 // StoryScheduleIssueSnapshot identifies the scheduling episode rather than its
@@ -31,6 +40,7 @@ type StoryScheduleIssueSnapshot struct {
 
 func (message NotificationMessage) Public() NotificationMessage {
 	message.Strategy = nil
+	message.ChatReaction = nil
 	message.IdentityReferences = nil
 	message.EmailSuppressed = false
 	return message
@@ -177,6 +187,12 @@ func (notification NewNotification) Validate() error {
 	}
 	if strings.TrimSpace(notification.Title) == "" {
 		return fmt.Errorf("%w: notification title is required", ErrInvalid)
+	}
+	if reaction := notification.Message.ChatReaction; reaction != nil {
+		if notification.Type != NotificationTypeChatMessage || notification.EntityType != EntityTypeChatMessage ||
+			reaction.EventID == uuid.Nil || strings.TrimSpace(reaction.Emoji) == "" {
+			return fmt.Errorf("%w: chat reaction must identify its source event and emoji", ErrInvalid)
+		}
 	}
 	if issue := notification.Message.ScheduleIssue; issue != nil {
 		if notification.Type != NotificationTypeStoryUpdate || notification.EntityType != EntityTypeStory ||

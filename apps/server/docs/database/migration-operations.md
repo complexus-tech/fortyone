@@ -101,6 +101,7 @@ The machine-readable source of truth is [`internal/migrations/manifest.json`](..
 | `000234` | `workspace_chat_enabled` | `forward-only` | `schema-first` | Updated API exposes chatEnabled through the existing admin-only workspace settings update and reads live feature state; obsolete chat rollout environment variables are removed. | Updated workers read database feature state and preserve disabled-workspace pending work. |
 | `000235` | `chat_unread_counts` | `reversible` | `schema-first` | Updated API exposes an authoritative workspace unread summary and paginated unread threads with a first-unread-reply destination. Conversation unreadCount now includes both roots and replies. | Updated workers publish dedicated chat attention events and recheck chat reads; generic notification receipts remain internal delivery state. |
 | `000236` | `chat_reaction_users` | `reversible` | `schema-first` | Updated API returns users on chat reactions for per-person hover tooltips. | No worker changes are required for reaction metadata. |
+| `000237` | `chat_reaction_notifications` | `reversible` | `schema-first` | Updated API snapshots a reaction addition and recipient in the existing message mutation transaction; removals still publish reaction.updated without notification intent. | Updated workers notify the message author through existing chat notification preferences and SSE after rechecking both users and the exact live reaction occurrence. |
 
 ## `000152_harden_verification_tokens`
 
@@ -2388,6 +2389,33 @@ Operational notes:
 
 - Users are resolved through the existing reaction primary key and user identity join, ordered by display name and ID.
 - Existing message access checks protect reaction metadata, and deleted messages expose no reactions.
+
+## `000237_chat_reaction_notifications`
+
+- **Classification:** `reversible`
+- **Files:** `000237_chat_reaction_notifications.up.sql`, `000237_chat_reaction_notifications.down.sql`
+- **Schema:** Adds nullable reaction emoji intent to chat outbox events and allows author-only reaction recipient reasons. Existing reactions, messages and events are unchanged.
+- **API:** Updated API snapshots a reaction addition and recipient in the existing message mutation transaction; removals still publish reaction.updated without notification intent.
+- **Worker:** Updated workers notify the message author through existing chat notification preferences and SSE after rechecking both users and the exact live reaction occurrence.
+- **Mixed versions:** Apply schema first, then deploy API and workers together. Older API events have no reaction intent. Older workers publish reaction SSE but can consume new reaction events without creating notifications, so avoid prolonged mixed-worker operation.
+- **Rollout mode:** `schema-first`
+
+Rollout:
+
+1. Apply migration 000237 after 000236.
+2. Deploy API and workers together with reaction notification support.
+3. Verify another member receives one notification for an added reaction; self-reactions, removals and duplicate requests produce none.
+
+Recovery (`down-migration`):
+
+1. Stop chat producers and workers and roll back API and worker code before applying the down migration.
+2. The down migration removes only reaction recipient intent and the snapshot column; messages, reactions, realtime events and existing notifications remain intact.
+
+Operational notes:
+
+- Old outbox events remain null and cannot create retroactive reaction notifications.
+- Reaction recipient eligibility does not depend on message read cursors; author and actor membership, message visibility, and the current reaction occurrence are rechecked.
+- No new environment variables, infrastructure service or notification preference is required.
 
 ## Adding the next migration
 

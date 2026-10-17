@@ -3064,6 +3064,42 @@
         "Users are resolved through the existing reaction primary key and user identity join, ordered by display name and ID.",
         "Existing message access checks protect reaction metadata, and deleted messages expose no reactions."
       ]
+    },
+    {
+      "version": 237,
+      "slug": "chat_reaction_notifications",
+      "classification": "reversible",
+      "files": {
+        "up": "000237_chat_reaction_notifications.up.sql",
+        "down": "000237_chat_reaction_notifications.down.sql"
+      },
+      "compatibility": {
+        "schema": "Adds nullable reaction emoji intent to chat outbox events and allows author-only reaction recipient reasons. Existing reactions, messages and events are unchanged.",
+        "api": "Updated API snapshots a reaction addition and recipient in the existing message mutation transaction; removals still publish reaction.updated without notification intent.",
+        "worker": "Updated workers notify the message author through existing chat notification preferences and SSE after rechecking both users and the exact live reaction occurrence.",
+        "mixed_versions": "Apply schema first, then deploy API and workers together. Older API events have no reaction intent. Older workers publish reaction SSE but can consume new reaction events without creating notifications, so avoid prolonged mixed-worker operation."
+      },
+      "rollout": {
+        "sequence": 86,
+        "mode": "schema-first",
+        "steps": [
+          "Apply migration 000237 after 000236.",
+          "Deploy API and workers together with reaction notification support.",
+          "Verify another member receives one notification for an added reaction; self-reactions, removals and duplicate requests produce none."
+        ]
+      },
+      "recovery": {
+        "strategy": "down-migration",
+        "procedure": [
+          "Stop chat producers and workers and roll back API and worker code before applying the down migration.",
+          "The down migration removes only reaction recipient intent and the snapshot column; messages, reactions, realtime events and existing notifications remain intact."
+        ]
+      },
+      "operational_notes": [
+        "Old outbox events remain null and cannot create retroactive reaction notifications.",
+        "Reaction recipient eligibility does not depend on message read cursors; author and actor membership, message visibility, and the current reaction occurrence are rechecked.",
+        "No new environment variables, infrastructure service or notification preference is required."
+      ]
     }
   ]
 }

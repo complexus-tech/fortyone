@@ -2,27 +2,27 @@
 
 import { useEffect, useId, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { SettingsIcon } from "icons";
-import { Button, Input, Popover, Switch, Text, Tooltip } from "ui";
+import { Box, Button, Flex, Input, Switch, Text } from "ui";
+import { SectionHeader } from "@/components/ui/section-header";
 import { useWorkspacePath } from "@/hooks/use-workspace-path";
+import { useSession } from "@/lib/auth/client";
 import { getDesktopBridge } from "@/shell/desktop/bridge";
-import { useChatIdentity } from "../chat-context";
-import { ICON_BUTTON_CLASS } from "../chat-styles";
 import type { ChatAlertPreferences } from "./preferences";
-import {
-  CHAT_ALERT_PREFERENCES_CHANGED,
-  readChatAlertPreferences,
-  saveChatAlertPreferences,
-} from "./preferences";
 import { enableChatSound, playChatSound } from "./sound";
+import { useChatAlertPreferences } from "./use-alert-preferences";
 
-const ChatAlertControls = () => {
-  const { userId, conversationId } = useChatIdentity();
-  const { workspaceSlug } = useWorkspacePath();
+const ChatAlertControls = ({
+  userId,
+  workspaceSlug,
+}: {
+  userId: string;
+  workspaceSlug: string;
+}) => {
   const queryClient = useQueryClient();
   const id = useId();
-  const [preferences, setPreferences] = useState(() =>
-    readChatAlertPreferences(userId, workspaceSlug),
+  const { preferences, updatePreferences } = useChatAlertPreferences(
+    userId,
+    workspaceSlug,
   );
   const [desktopAllowed, setDesktopAllowed] = useState(false);
   const [pending, setPending] = useState(false);
@@ -31,11 +31,6 @@ const ChatAlertControls = () => {
 
   useEffect(() => {
     let active = true;
-    const refresh = () => {
-      setPreferences(readChatAlertPreferences(userId, workspaceSlug));
-    };
-    window.addEventListener("storage", refresh);
-    window.addEventListener(CHAT_ALERT_PREFERENCES_CHANGED, refresh);
     if (bridge?.getPreferences) {
       void bridge
         .getPreferences()
@@ -58,10 +53,8 @@ const ChatAlertControls = () => {
     }
     return () => {
       active = false;
-      window.removeEventListener("storage", refresh);
-      window.removeEventListener(CHAT_ALERT_PREFERENCES_CHANGED, refresh);
     };
-  }, [bridge, userId, workspaceSlug]);
+  }, [bridge]);
 
   const change = async (patch: Partial<ChatAlertPreferences>) => {
     setPending(true);
@@ -95,12 +88,7 @@ const ChatAlertControls = () => {
       if (patch.sound && !(await enableChatSound())) {
         throw new Error("Sound is unavailable in this browser.");
       }
-      const next = {
-        ...readChatAlertPreferences(userId, workspaceSlug),
-        ...patch,
-      };
-      saveChatAlertPreferences(userId, workspaceSlug, next);
-      setPreferences(next);
+      updatePreferences(patch);
     } catch (cause) {
       setError(
         cause instanceof Error
@@ -116,69 +104,51 @@ const ChatAlertControls = () => {
     {
       key: "desktop" as const,
       title: "Desktop notifications",
+      description: "Show desktop banners for new messages in this workspace.",
       checked: preferences.desktop && desktopAllowed,
     },
     {
       key: "sound" as const,
       title: "Message sounds",
+      description: "Play a sound when a new chat message arrives.",
       checked: preferences.sound,
     },
     {
       key: "quietHours" as const,
       title: "Quiet hours",
+      description: "Pause chat banners and sounds during a set time.",
       checked: preferences.quietHours,
     },
   ];
 
   return (
-    <div className="space-y-4">
-      <div>
-        <Text fontWeight="medium">Chat notifications</Text>
-        <Text className="mt-1 text-base" color="muted">
-          New messages in this workspace. These settings apply on this device;
-          unread counts always stay visible.
-        </Text>
-      </div>
+    <Flex direction="column" gap={6}>
       {rows.map((row) => (
-        <div className="flex items-center justify-between gap-4" key={row.key}>
-          <Text className="text-base" id={`${id}-${row.key}`}>
-            {row.title}
-          </Text>
+        <Flex align="center" gap={4} justify="between" key={row.key}>
+          <Box>
+            <Text className="font-medium" id={`${id}-${row.key}`}>
+              {row.title}
+            </Text>
+            <Text color="muted" id={`${id}-${row.key}-description`}>
+              {row.description}
+            </Text>
+          </Box>
           <Switch
+            aria-describedby={`${id}-${row.key}-description`}
             aria-labelledby={`${id}-${row.key}`}
             checked={row.checked}
+            className="shrink-0"
             disabled={pending}
             onCheckedChange={(checked) => void change({ [row.key]: checked })}
           />
-        </div>
+        </Flex>
       ))}
-      {conversationId ? (
-        <div className="flex items-center justify-between gap-4">
-          <Text className="text-base" id={`${id}-mute`}>
-            Mute this conversation
-          </Text>
-          <Switch
-            aria-labelledby={`${id}-mute`}
-            checked={preferences.mutedConversations.includes(conversationId)}
-            disabled={pending}
-            onCheckedChange={(checked) => {
-              const muted = preferences.mutedConversations.filter(
-                (value) => value !== conversationId,
-              );
-              void change({
-                mutedConversations: checked
-                  ? [...muted, conversationId]
-                  : muted,
-              });
-            }}
-          />
-        </div>
-      ) : null}
       {preferences.quietHours ? (
-        <div className="grid grid-cols-2 gap-3">
-          <label className="space-y-1 text-base" htmlFor={`${id}-start`}>
+        <Box className="grid max-w-md grid-cols-2 gap-3">
+          <label className="space-y-1" htmlFor={`${id}-start`}>
             From
             <Input
+              disabled={pending}
               id={`${id}-start`}
               onChange={(event) => {
                 if (event.target.value)
@@ -188,9 +158,10 @@ const ChatAlertControls = () => {
               value={preferences.quietStart}
             />
           </label>
-          <label className="space-y-1 text-base" htmlFor={`${id}-end`}>
+          <label className="space-y-1" htmlFor={`${id}-end`}>
             Until
             <Input
+              disabled={pending}
               id={`${id}-end`}
               onChange={(event) => {
                 if (event.target.value)
@@ -200,12 +171,13 @@ const ChatAlertControls = () => {
               value={preferences.quietEnd}
             />
           </label>
-          <Text className="col-span-2 text-base" color="muted">
+          <Text className="col-span-2" color="muted">
             Uses this device’s local time.
           </Text>
-        </div>
+        </Box>
       ) : null}
       <Button
+        className="self-start"
         disabled={!preferences.sound || pending}
         onClick={() => {
           void enableChatSound()
@@ -222,47 +194,46 @@ const ChatAlertControls = () => {
       >
         Preview sound
       </Button>
+      <Text color="muted">
+        These settings apply on this device. Unread counts stay visible.
+      </Text>
       {bridge && !bridge.chatNotificationLinks ? (
-        <Text className="text-base" color="muted">
+        <Text color="muted">
           Update the desktop app for direct chat links and silent banners.
         </Text>
       ) : null}
       {pending ? (
-        <Text className="text-base" color="muted" role="status">
+        <Text color="muted" role="status">
           Saving…
         </Text>
       ) : null}
-      {error ? (
-        <Text className="text-base" role="alert">
-          {error}
-        </Text>
-      ) : null}
-    </div>
+      {error ? <Text role="alert">{error}</Text> : null}
+    </Flex>
   );
 };
 
-export const ChatNotificationSettings = () => (
-  <Popover>
-    <Tooltip title="Chat notification settings">
-      <Popover.Trigger asChild>
-        <Button
-          aria-label="Chat notification settings"
-          asIcon
-          className={ICON_BUTTON_CLASS}
-          color="tertiary"
-          size="sm"
-          type="button"
-          variant="naked"
-        >
-          <SettingsIcon className="size-4" />
-        </Button>
-      </Popover.Trigger>
-    </Tooltip>
-    <Popover.Content
-      align="end"
-      className="max-h-[80dvh] w-[360px] max-w-[calc(100vw-24px)] overflow-y-auto p-4 text-base"
-    >
-      <ChatAlertControls />
-    </Popover.Content>
-  </Popover>
-);
+export const ChatNotificationSettings = () => {
+  const { data: session } = useSession();
+  const { workspaceSlug } = useWorkspacePath();
+  const userId = session?.user.id;
+
+  return (
+    <Box className="border-border bg-surface rounded-2xl border">
+      <SectionHeader
+        description="Choose how new chat messages notify you in this workspace."
+        title="Chat Notifications"
+      />
+      <Box className="p-6">
+        {userId && workspaceSlug ? (
+          <ChatAlertControls
+            key={`${userId}:${workspaceSlug.toLowerCase()}`}
+            userId={userId}
+            workspaceSlug={workspaceSlug}
+          />
+        ) : (
+          <Text color="muted">Sign in to manage chat notifications.</Text>
+        )}
+      </Box>
+    </Box>
+  );
+};

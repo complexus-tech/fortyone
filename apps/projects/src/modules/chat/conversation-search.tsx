@@ -8,7 +8,7 @@ import { ExpandableSearchHeader } from "@/components/shared/expandable-search-he
 import type { PreviewDraft } from "./chat-rich-text";
 import type { MessageReplyHandler } from "./message-row";
 import { MessageRow } from "./message-row";
-import type { ChatConversation } from "./types";
+import type { ChatConversation, ChatMessage } from "./types";
 import { useChatSearch } from "./queries";
 import { Timeline } from "./timeline";
 
@@ -96,6 +96,7 @@ export const ConversationSearchResults = ({
   onToggleReaction,
   onEditMessage,
   onDeleteMessage,
+  onMarkUnread,
 }: {
   conversation: ChatConversation;
   query: string;
@@ -109,6 +110,7 @@ export const ConversationSearchResults = ({
     draft: PreviewDraft,
   ) => void | Promise<void>;
   onDeleteMessage: (messageId: string) => void | Promise<void>;
+  onMarkUnread?: (message: ChatMessage) => void;
 }) => {
   const results = useChatSearch(conversation.id, query);
   const matches = results.data?.pages.flatMap((page) => page.items) ?? [];
@@ -179,6 +181,7 @@ export const ConversationSearchResults = ({
             message={message}
             onDeleteMessage={onDeleteMessage}
             onEditMessage={onEditMessage}
+            onMarkUnread={onMarkUnread}
             onOpenResources={onOpenResources}
             onReply={(item, trigger) => {
               onReply(item, trigger);

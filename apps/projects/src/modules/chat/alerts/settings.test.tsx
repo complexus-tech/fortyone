@@ -29,6 +29,8 @@ const mockNative = {
   updatePreferences: jest.fn().mockResolvedValue({ notifications: true }),
 };
 let mockBridge: typeof mockNative | null = mockNative;
+let mockUserId: string | null = "me";
+let mockWorkspaceSlug = "Acme";
 const mockBrowserPermission = jest.fn();
 const clients: QueryClient[] = [];
 const renderSettings = () => {
@@ -50,26 +52,38 @@ jest.mock("@/shell/desktop/bridge", () => ({
   getDesktopBridge: () => mockBridge,
 }));
 jest.mock("@/hooks/use-workspace-path", () => ({
-  useWorkspacePath: () => ({ workspaceSlug: "Acme" }),
+  useWorkspacePath: () => ({ workspaceSlug: mockWorkspaceSlug }),
 }));
-jest.mock("../chat-context", () => ({
-  useChatIdentity: () => ({ userId: "me", conversationId: "current-room" }),
+jest.mock("@/lib/auth/client", () => ({
+  useSession: () => ({
+    data: mockUserId ? { user: { id: mockUserId } } : null,
+  }),
+}));
+jest.mock("@/components/ui/section-header", () => ({
+  SectionHeader: ({
+    title,
+    description,
+  }: {
+    title: string;
+    description: string;
+  }) => (
+    <header>
+      <h2>{title}</h2>
+      <p>{description}</p>
+    </header>
+  ),
 }));
 jest.mock("./sound", () => ({
   enableChatSound: jest.fn(),
   playChatSound: jest.fn(),
 }));
-jest.mock("icons", () => ({ SettingsIcon: () => null }));
 jest.mock("ui", () => {
   const Container = ({ children }: { children: ReactNode }) => (
     <div>{children}</div>
   );
   return {
-    Popover: Object.assign(Container, {
-      Trigger: Container,
-      Content: Container,
-    }),
-    Tooltip: Container,
+    Box: Container,
+    Flex: Container,
     Button: ({
       children,
       onClick,
@@ -126,6 +140,8 @@ const seed = (patch = {}) => {
 
 beforeEach(() => {
   mockBridge = mockNative;
+  mockUserId = "me";
+  mockWorkspaceSlug = "Acme";
   localStorage.clear();
   mockNative.getPreferences.mockResolvedValue({ notifications: false });
   mockNative.requestNotificationPermission.mockResolvedValue("granted");
@@ -237,7 +253,7 @@ describe("ChatNotificationSettings", () => {
     expect(mockNative.updatePreferences).not.toHaveBeenCalled();
   });
 
-  it("changes sound and conversation mute without altering other preferences or unread caches", async () => {
+  it("changes sound without altering conversation mutes, other preferences, or unread caches", async () => {
     seed({
       sound: false,
       mutedConversations: ["other-room"],
@@ -269,20 +285,16 @@ describe("ChatNotificationSettings", () => {
       expect(readChatAlertPreferences("me", "Acme").sound).toBe(true);
     });
     expect(enableChatSound).toHaveBeenCalledTimes(1);
-    fireEvent.click(
-      screen.getByRole("switch", { name: "Mute this conversation" }),
-    );
-    await waitFor(() => {
-      expect(readChatAlertPreferences("me", "Acme").mutedConversations).toEqual(
-        ["other-room", "current-room"],
-      );
-    });
+    expect(
+      screen.queryByRole("switch", { name: "Mute this conversation" }),
+    ).not.toBeInTheDocument();
     expect(readChatAlertPreferences("me", "Acme")).toMatchObject({
       desktop: false,
       sound: true,
       quietHours: true,
       quietStart: "21:30",
       quietEnd: "07:15",
+      mutedConversations: ["other-room"],
     });
     expect(localStorage.getItem(chatAlertPreferencesKey("other", "Acme"))).toBe(
       unrelated,
@@ -295,6 +307,74 @@ describe("ChatNotificationSettings", () => {
       false,
     );
     client.clear();
+  });
+
+  it("saves quiet hours and their times for the current workspace", async () => {
+    seed();
+    renderSettings();
+
+    fireEvent.click(screen.getByRole("switch", { name: "Quiet hours" }));
+    expect(await screen.findByLabelText("From")).toHaveValue("22:00");
+    fireEvent.change(screen.getByLabelText("From"), {
+      target: { value: "21:30" },
+    });
+    fireEvent.change(screen.getByLabelText("Until"), {
+      target: { value: "07:15" },
+    });
+
+    expect(readChatAlertPreferences("me", "Acme")).toMatchObject({
+      quietHours: true,
+      quietStart: "21:30",
+      quietEnd: "07:15",
+    });
+  });
+
+  it("loads and updates the authenticated account and workspace after navigation", async () => {
+    mockBridge = null;
+    seed({ sound: false });
+    saveChatAlertPreferences("other", "Design", {
+      ...DEFAULT_CHAT_ALERT_PREFERENCES,
+      sound: true,
+    });
+    const client = new QueryClient();
+    clients.push(client);
+    const view = render(
+      <QueryClientProvider client={client}>
+        <ChatNotificationSettings />
+      </QueryClientProvider>,
+    );
+    expect(
+      screen.getByRole("switch", { name: "Message sounds" }),
+    ).not.toBeChecked();
+
+    mockUserId = "other";
+    mockWorkspaceSlug = "Design";
+    view.rerender(
+      <QueryClientProvider client={client}>
+        <ChatNotificationSettings />
+      </QueryClientProvider>,
+    );
+    expect(
+      screen.getByRole("switch", { name: "Message sounds" }),
+    ).toBeChecked();
+    fireEvent.click(screen.getByRole("switch", { name: "Message sounds" }));
+
+    await waitFor(() => {
+      expect(readChatAlertPreferences("other", "Design").sound).toBe(false);
+    });
+    expect(readChatAlertPreferences("me", "Acme").sound).toBe(false);
+    expect(
+      localStorage.getItem(chatAlertPreferencesKey("other", "Acme")),
+    ).toBeNull();
+  });
+
+  it("does not expose editable preferences without an authenticated account", () => {
+    mockUserId = null;
+    renderSettings();
+
+    expect(screen.queryByRole("switch")).not.toBeInTheDocument();
+    expect(localStorage.length).toBe(0);
+    expect(mockNative.getPreferences).not.toHaveBeenCalled();
   });
 
   it("does not save an enabled sound preference when browser audio cannot be unlocked", async () => {

@@ -29,6 +29,23 @@ func (r *Repository) Unread(ctx context.Context, scope domain.ActorScope) (domai
 	return result, nil
 }
 
+func (r *Repository) UnreadThreadReadTargets(ctx context.Context, scope domain.ActorScope) ([]domain.ThreadReadTarget, error) {
+	rows, err := r.query(ctx).ListUnreadChatThreadReadTargets(ctx, chatsql.ListUnreadChatThreadReadTargetsParams{
+		WorkspaceID: scope.WorkspaceID, UserID: scope.Actor.PrincipalID,
+		Unrestricted: scope.Actor.TeamAccess.IsUnrestricted(), TeamIds: scope.Actor.TeamAccess.RestrictedTeamIDs(),
+	})
+	if err != nil {
+		return nil, err
+	}
+	targets := make([]domain.ThreadReadTarget, 0, len(rows))
+	for _, row := range rows {
+		targets = append(targets, domain.ThreadReadTarget{
+			ConversationID: row.ConversationID, ThreadRootID: row.ThreadRootID, ThroughMessageID: row.ThroughMessageID,
+		})
+	}
+	return targets, nil
+}
+
 func (r *Repository) UnreadThreads(ctx context.Context, query domain.UnreadThreadQuery) (domain.UnreadThreadPage, error) {
 	result := domain.UnreadThreadPage{Items: []domain.UnreadThread{}}
 	if query.ConversationID != nil {

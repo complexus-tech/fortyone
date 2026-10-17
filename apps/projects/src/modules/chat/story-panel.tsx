@@ -6,6 +6,7 @@ import { useNativeLink } from "@/components/ui/link-preview/native-query";
 import type { NativeLinkTarget } from "@/components/ui/link-preview/native-target";
 import { useNativePreviewTerminology } from "@/components/ui/link-preview/native-terminology";
 import { StoryCloseButton } from "@/modules/story/components/story-close-button";
+import { CHAT_SIDE_PANEL_CLASS } from "./chat-styles";
 
 const StoryPage = lazy(() =>
   import("@/modules/story").then((module) => ({ default: module.StoryPage })),
@@ -62,7 +63,7 @@ export const ChatStoryPanel = ({
   return (
     <aside
       aria-label={`${label} details`}
-      className="border-border bg-surface flex min-w-0 flex-1 flex-col border-l-[0.5px] xl:w-[400px] xl:flex-none 2xl:w-[440px]"
+      className={CHAT_SIDE_PANEL_CLASS}
       ref={panelRef}
       tabIndex={-1}
     >

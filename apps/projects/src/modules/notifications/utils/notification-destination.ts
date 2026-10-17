@@ -17,7 +17,7 @@ const COMMENT_ID_PATTERN =
 export const getNotificationCommentId = (
   message: AppNotification["message"] | undefined,
 ) => {
-  const value = message?.variables.commentId?.value;
+  const value = message?.variables?.commentId?.value;
   return value &&
     COMMENT_ID_PATTERN.test(value) &&
     value !== "00000000-0000-0000-0000-000000000000"
@@ -54,7 +54,8 @@ export const getNotificationDetailsPath = ({
     searchParams.set("comment", commentId);
   if (entityType === "document") {
     const threadId =
-      message?.variables.thread_id?.value ?? message?.variables.threadId?.value;
+      message?.variables?.thread_id?.value ??
+      message?.variables?.threadId?.value;
     if (threadId && COMMENT_ID_PATTERN.test(threadId))
       searchParams.set("thread", threadId);
   }

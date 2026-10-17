@@ -53,7 +53,7 @@ func (r *Repository) RecipientIDs(ctx context.Context, workspaceID, conversation
 }
 
 func (r *Repository) NotificationRecipients(ctx context.Context, event domain.Event) ([]domain.NotificationRecipient, error) {
-	if event.Type != "message.created" {
+	if event.Type != "message.created" && event.Type != "reaction.updated" {
 		return []domain.NotificationRecipient{}, nil
 	}
 	rows, err := r.query(ctx).NotificationRecipients(ctx, chatsql.NotificationRecipientsParams{WorkspaceID: event.WorkspaceID, EventID: event.ID})

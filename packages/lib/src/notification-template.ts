@@ -14,16 +14,19 @@ export const renderNotificationTemplate = ({
   template,
   variables,
 }: NotificationMessage): { segments: TemplateSegment[]; text: string } => {
+  // Parse stored markup before substitution so literal variable values are never
+  // interpreted as HTML or decoded a second time.
+  const plainTemplate = htmlToPlainText(template);
   const segments: TemplateSegment[] = [];
   const variablePattern = /\{\w+\}/g;
   let cursor = 0;
-  let match = variablePattern.exec(template);
+  let match = variablePattern.exec(plainTemplate);
 
   while (match) {
     if (match.index > cursor) {
       segments.push({
         kind: "text",
-        value: template.slice(cursor, match.index),
+        value: plainTemplate.slice(cursor, match.index),
       });
     }
     const token = match[0];
@@ -47,10 +50,10 @@ export const renderNotificationTemplate = ({
       segments.push({ kind: "text", value: token });
     }
     cursor = match.index + token.length;
-    match = variablePattern.exec(template);
+    match = variablePattern.exec(plainTemplate);
   }
-  if (cursor < template.length) {
-    segments.push({ kind: "text", value: template.slice(cursor) });
+  if (cursor < plainTemplate.length) {
+    segments.push({ kind: "text", value: plainTemplate.slice(cursor) });
   }
   return { segments, text: segments.map(({ value }) => value).join("") };
 };

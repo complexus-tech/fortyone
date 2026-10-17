@@ -31,3 +31,8 @@ func (h *handlers) unreadThreads(ctx context.Context, w http.ResponseWriter, r *
 	value, err := h.service.UnreadThreads(ctx, query)
 	return h.respond(ctx, w, value, err, http.StatusOK)
 }
+
+func (h *handlers) markAllThreadsRead(ctx context.Context, w http.ResponseWriter, _ *http.Request, scope domain.ActorScope) error {
+	err := h.service.MarkAllThreadsRead(ctx, scope)
+	return h.respond(ctx, w, nil, err, http.StatusNoContent)
+}

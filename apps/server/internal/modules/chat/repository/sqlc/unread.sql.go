@@ -73,6 +73,63 @@ func (q *Queries) ChatUnreadSummary(ctx context.Context, arg ChatUnreadSummaryPa
 	return items, nil
 }
 
+const listUnreadChatThreadReadTargets = `-- name: ListUnreadChatThreadReadTargets :many
+WITH unread_threads AS (
+    SELECT c.id AS conversation_id, unread.thread_root_id, max(unread.sequence) AS last_unread_sequence
+    FROM public.chat_conversations c
+    CROSS JOIN LATERAL public.chat_unread_messages(c.id, $1) AS unread(message_id, thread_root_id, created_at, sequence)
+    WHERE c.workspace_id = $2
+      AND public.can_read_chat_conversation(c.workspace_id, $1, c.id)
+      AND (CAST($3 AS boolean) OR c.team_id = ANY(CAST($4 AS uuid[])))
+      AND unread.thread_root_id IS NOT NULL
+    GROUP BY c.id, unread.thread_root_id
+)
+SELECT root.conversation_id, root.id AS thread_root_id, reply.id AS through_message_id
+FROM unread_threads unread
+JOIN public.chat_conversation_messages root ON root.id = unread.thread_root_id
+JOIN public.chat_conversation_messages reply
+    ON reply.conversation_id = unread.conversation_id AND reply.sequence = unread.last_unread_sequence
+ORDER BY root.conversation_id, root.id
+`
+
+type ListUnreadChatThreadReadTargetsParams struct {
+	UserID       uuid.UUID
+	WorkspaceID  uuid.UUID
+	Unrestricted bool
+	TeamIds      []uuid.UUID
+}
+
+type ListUnreadChatThreadReadTargetsRow struct {
+	ConversationID   uuid.UUID
+	ThreadRootID     uuid.UUID
+	ThroughMessageID uuid.UUID
+}
+
+func (q *Queries) ListUnreadChatThreadReadTargets(ctx context.Context, arg ListUnreadChatThreadReadTargetsParams) ([]ListUnreadChatThreadReadTargetsRow, error) {
+	rows, err := q.db.Query(ctx, listUnreadChatThreadReadTargets,
+		arg.UserID,
+		arg.WorkspaceID,
+		arg.Unrestricted,
+		arg.TeamIds,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListUnreadChatThreadReadTargetsRow{}
+	for rows.Next() {
+		var i ListUnreadChatThreadReadTargetsRow
+		if err := rows.Scan(&i.ConversationID, &i.ThreadRootID, &i.ThroughMessageID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listUnreadChatThreads = `-- name: ListUnreadChatThreads :many
 WITH unread_threads AS (
     SELECT unread.thread_root_id, max(unread.created_at) AS activity_at,

@@ -399,7 +399,9 @@ SELECT pg_advisory_xact_lock(hashtextextended(
 
 -- name: GetNotificationEventReceipt :one
 SELECT notification_id, recipient_id, workspace_id, actor_id, entity_id, notification_type, entity_type,
-       payload = CAST(sqlc.arg(payload) AS jsonb) AS matches_payload
+       payload = CAST(sqlc.arg(payload) AS jsonb) AS matches_payload,
+       (payload -> 5 -> 'chatReaction') IS NOT DISTINCT FROM
+           (CAST(sqlc.arg(payload) AS jsonb) -> 5 -> 'chatReaction') AS matches_chat_reaction
 FROM public.notification_event_receipts
 WHERE dedupe_key = CAST(sqlc.arg(dedupe_key) AS text);
 
@@ -441,4 +443,30 @@ SELECT EXISTS (
       AND message.sequence > CASE WHEN message.thread_root_id IS NULL
           THEN COALESCE(conversation_read.last_read_sequence, 0)
           ELSE COALESCE(thread_read.last_read_sequence, 0) END
+) AS eligible;
+
+-- Reactions notify the author independently of whether the original message was
+-- read. The persisted event and recipient prevent callers from turning a normal
+-- chat receipt into an author alert or replaying a removed reaction.
+-- name: IsChatReactionNotificationEligible :one
+SELECT EXISTS (
+    SELECT 1 FROM public.chat_outbox AS event
+    JOIN public.chat_outbox_recipients AS recipient
+      ON recipient.event_id = event.id AND recipient.reason = 'reaction'
+    JOIN public.chat_conversation_messages AS message
+      ON message.id = event.message_id AND message.workspace_id = event.workspace_id
+    JOIN public.chat_message_reactions AS reaction
+      ON reaction.message_id = message.id AND reaction.user_id = event.actor_id
+     AND reaction.emoji = event.reaction_emoji AND reaction.created_at = event.created_at
+    WHERE event.id = CAST(sqlc.arg(event_id) AS uuid)
+      AND event.workspace_id = CAST(sqlc.arg(workspace_id) AS uuid)
+      AND event.message_id = CAST(sqlc.arg(message_id) AS uuid)
+      AND event.actor_id = CAST(sqlc.arg(actor_id) AS uuid)
+      AND event.reaction_emoji = CAST(sqlc.arg(emoji) AS text)
+      AND event.event_type = 'reaction.updated'
+      AND recipient.user_id = CAST(sqlc.arg(recipient_id) AS uuid)
+      AND recipient.user_id = message.author_id
+      AND recipient.user_id <> event.actor_id
+      AND public.can_read_chat_message(message.workspace_id, recipient.user_id, message.id)
+      AND public.can_read_chat_message(message.workspace_id, event.actor_id, message.id)
 ) AS eligible;

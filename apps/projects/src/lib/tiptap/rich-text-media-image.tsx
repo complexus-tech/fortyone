@@ -98,7 +98,7 @@ const ImageAlignmentControls = ({
       }}
       type="button"
     >
-      <DeleteIcon className="size-4" />
+      <DeleteIcon className="text-danger size-4" />
     </button>
   </div>
 );

@@ -27,6 +27,10 @@ func TestNotificationCopyIdentifiesSourceAndActualMessage(t *testing.T) {
 		{"file", chat.NotificationContent{AuthorName: "Sarah", Attachments: []chat.Attachment{{FileName: "Launch plan.pdf"}}}, "Sarah", "Shared Launch plan.pdf"},
 		{"files", chat.NotificationContent{AuthorName: "Sarah", Attachments: []chat.Attachment{{}, {}}}, "Sarah", "Sent 2 attachments"},
 		{"caption", chat.NotificationContent{AuthorName: "Sarah", Text: "Here is the design", Attachments: []chat.Attachment{{FileName: "design.png"}}}, "Sarah", "Here is the design"},
+		{"direct reaction", chat.NotificationContent{ConversationKind: "dm", AuthorName: "Joseph", ActorName: "Sarah", ReactionEmoji: "👍", Text: "Ready to ship"}, "Sarah", "Sarah reacted 👍 to your message: Ready to ship"},
+		{"team reaction", chat.NotificationContent{ConversationKind: "team", ConversationName: "Product", AuthorName: "Joseph", ActorName: "Sarah", ReactionEmoji: "🙌🏾", Text: "Ready to ship"}, "Product", "Sarah reacted 🙌🏾 to your message: Ready to ship"},
+		{"attachment reaction", chat.NotificationContent{ConversationKind: "dm", ActorName: "Sarah", ReactionEmoji: "✅", Attachments: []chat.Attachment{{FileName: "design.png"}}}, "Sarah", "Sarah reacted ✅ to your message"},
+		{"missing reactor", chat.NotificationContent{ReactionEmoji: "👀", Text: "Launch"}, "Someone", "Someone reacted 👀 to your message: Launch"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			title, body := notificationCopy(test.content)

@@ -86,6 +86,14 @@ export type ChatUnreadThread = ChatMessage & {
   conversationName: string;
   conversationKind: ChatConversation["kind"];
 };
+export type ChatMarkUnreadResult = {
+  conversationId: string;
+  threadRootId: string | null;
+  lastReadSequence: number;
+  unreadCount: number;
+  firstUnreadReplyId: string | null;
+  summary: ChatUnreadSummary;
+};
 export type ConversationTab = "messages" | "files";
 export type ChatPage<T> = { items: T[]; nextCursor: string | null };
 export type ChatMessagePage = {

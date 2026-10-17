@@ -44,6 +44,7 @@ export const ConversationView = ({
   onToggleReaction,
   onEditMessage,
   onDeleteMessage,
+  onMarkUnread,
   onRetryMessage,
   hasOlder = false,
   hasNewer = false,
@@ -77,6 +78,7 @@ export const ConversationView = ({
     draft: PreviewDraft,
   ) => void | Promise<void>;
   onDeleteMessage: (messageId: string) => void | Promise<void>;
+  onMarkUnread?: (message: ChatMessage) => void;
   onRetryMessage?: (messageId: string) => void;
   hasOlder?: boolean;
   hasNewer?: boolean;
@@ -138,6 +140,7 @@ export const ConversationView = ({
               mayaAvatarUrl={mayaAvatarUrl}
               onDeleteMessage={onDeleteMessage}
               onEditMessage={onEditMessage}
+              onMarkUnread={onMarkUnread}
               onOpenResources={() => {
                 setSearch("");
                 onTabChange("files");
@@ -216,6 +219,7 @@ export const ConversationView = ({
                       message={message}
                       onDeleteMessage={onDeleteMessage}
                       onEditMessage={onEditMessage}
+                      onMarkUnread={onMarkUnread}
                       onOpenResources={() => {
                         onTabChange("files");
                       }}

@@ -39,6 +39,7 @@ WITH notification_scope AS (
         notification.notification_id,
 		notification.created_at,
         notification.recipient_id,
+        notification.actor_id,
         notification.workspace_id,
         notification.entity_type,
         notification.entity_id,
@@ -103,7 +104,7 @@ WITH notification_scope AS (
           TRUE
       ) = TRUE
 ), visible_notification AS (
-    SELECT scope.notification_id, scope.created_at, scope.recipient_id, scope.workspace_id, scope.entity_type, scope.entity_id, scope.title, scope.message, scope.workspace_slug, scope.role
+    SELECT scope.notification_id, scope.created_at, scope.recipient_id, scope.actor_id, scope.workspace_id, scope.entity_type, scope.entity_id, scope.title, scope.message, scope.workspace_slug, scope.role
     FROM notification_scope AS scope
     WHERE
         (
@@ -195,10 +196,36 @@ WITH notification_scope AS (
                 LEFT JOIN public.chat_thread_reads AS thread_read
                   ON thread_read.thread_root_id = message.thread_root_id
                  AND thread_read.user_id = scope.recipient_id
-                WHERE message.id = scope.entity_id AND message.author_id <> scope.recipient_id
-                  AND message.sequence > CASE WHEN message.thread_root_id IS NULL
-                      THEN COALESCE(conversation_read.last_read_sequence, 0)
-                      ELSE COALESCE(thread_read.last_read_sequence, 0) END
+                WHERE message.id = scope.entity_id AND message.workspace_id = scope.workspace_id
+                  AND (
+                      (
+                          scope.message -> 'chatReaction' IS NULL
+                          AND message.author_id <> scope.recipient_id
+                          AND message.sequence > CASE WHEN message.thread_root_id IS NULL
+                              THEN COALESCE(conversation_read.last_read_sequence, 0)
+                              ELSE COALESCE(thread_read.last_read_sequence, 0) END
+                      )
+                      OR (
+                          message.author_id = scope.recipient_id
+                          AND scope.actor_id <> scope.recipient_id
+                          AND public.can_read_chat_message(scope.workspace_id, scope.actor_id, message.id)
+                          AND EXISTS (
+                              SELECT 1 FROM public.chat_outbox AS event
+                              JOIN public.chat_outbox_recipients AS recipient
+                                ON recipient.event_id = event.id AND recipient.user_id = scope.recipient_id
+                               AND recipient.reason = 'reaction'
+                              JOIN public.chat_message_reactions AS reaction
+                                ON reaction.message_id = event.message_id AND reaction.user_id = event.actor_id
+                               AND reaction.emoji = event.reaction_emoji AND reaction.created_at = event.created_at
+                              WHERE event.id = CAST(scope.message -> 'chatReaction' ->> 'eventId' AS uuid)
+                                AND event.workspace_id = scope.workspace_id
+                                AND event.message_id = message.id
+                                AND event.actor_id = scope.actor_id
+                                AND event.event_type = 'reaction.updated'
+                                AND event.reaction_emoji = scope.message -> 'chatReaction' ->> 'emoji'
+                          )
+                      )
+                  )
             )
         )
           OR (CAST(scope.entity_type AS text) = 'document' AND public.can_read_document(scope.workspace_id,scope.recipient_id,scope.entity_id))

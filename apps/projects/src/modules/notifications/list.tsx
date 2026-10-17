@@ -2,13 +2,16 @@
 import { useEffect } from "react";
 import { parseAsString, useQueryState } from "nuqs";
 import { useIntersectionObserver } from "react-intersection-observer-hook";
-import { Box, Flex, Skeleton, Text } from "ui";
+import { Box, Button, Flex, Text } from "ui";
 import { NotificationCard } from "@/modules/notifications/card";
 import { NotificationsEmptyIllustration } from "@/components/ui/illustrations/empty-state-illustrations";
 import { useTerminology } from "@/hooks";
 import { NotificationsHeader } from "./header";
 import { useNotificationsInfinite } from "./hooks/notifications";
-import { NotificationsSkeleton } from "./notifications-skeleton";
+import {
+  NotificationCardSkeleton,
+  NotificationsSkeleton,
+} from "./notifications-skeleton";
 
 export const ListNotifications = () => {
   const { getTermDisplay } = useTerminology();
@@ -16,8 +19,17 @@ export const ListNotifications = () => {
     "search",
     parseAsString.withDefault(""),
   );
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isPending } =
-    useNotificationsInfinite(search);
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isError,
+    isFetchNextPageError,
+    isFetching,
+    isFetchingNextPage,
+    isPending,
+    refetch,
+  } = useNotificationsInfinite(search);
   const notifications = data?.pages.flatMap((page) => page.notifications) ?? [];
   const [triggerRef, { entry }] = useIntersectionObserver({
     threshold: 0,
@@ -25,10 +37,10 @@ export const ListNotifications = () => {
   });
 
   useEffect(() => {
-    if (entry?.isIntersecting && hasNextPage && !isFetchingNextPage) {
-      fetchNextPage();
+    if (entry?.isIntersecting && hasNextPage && !isFetching && !isError) {
+      void fetchNextPage();
     }
-  }, [entry?.isIntersecting, fetchNextPage, hasNextPage, isFetchingNextPage]);
+  }, [entry?.isIntersecting, fetchNextPage, hasNextPage, isError, isFetching]);
 
   if (isPending) return <NotificationsSkeleton />;
   return (
@@ -43,30 +55,48 @@ export const ListNotifications = () => {
         {notifications.map((notification) => (
           <NotificationCard key={notification.id} {...notification} />
         ))}
-        {hasNextPage ? <div className="h-4 w-full" ref={triggerRef} /> : null}
+        {hasNextPage && !isError ? (
+          <div className="h-4 w-full" ref={triggerRef} />
+        ) : null}
         {isFetchingNextPage ? (
           <Box>
             {Array.from({ length: 3 }).map((_, index) => (
-              <Flex
-                align="start"
-                className="border-border/70 border-b px-4 py-4"
-                gap={3}
-                key={index}
-              >
-                <Skeleton className="size-8 shrink-0 rounded-full" />
-                <Flex className="min-w-0 flex-1" direction="column" gap={2}>
-                  <Flex align="center" gap={3} justify="between">
-                    <Skeleton className="h-5 w-3/5" />
-                    <Skeleton className="h-5 w-14" />
-                  </Flex>
-                  <Skeleton className="h-5 w-full" />
-                  <Skeleton className="h-5 w-2/3" />
-                </Flex>
-              </Flex>
+              <NotificationCardSkeleton key={index} />
             ))}
           </Box>
         ) : null}
-        {notifications.length === 0 && (
+        {isError ? (
+          <Flex
+            align="center"
+            className={notifications.length ? "px-6 py-8" : "h-full px-6"}
+            direction="column"
+            gap={3}
+            justify="center"
+            role="alert"
+          >
+            <Text align="center" color="muted">
+              {isFetchNextPageError
+                ? "Couldn't load more notifications."
+                : "Couldn't load notifications."}
+            </Text>
+            <Button
+              color="tertiary"
+              disabled={isFetching}
+              onClick={() => {
+                if (isFetchNextPageError) {
+                  void fetchNextPage();
+                } else {
+                  void refetch();
+                }
+              }}
+              size="sm"
+              variant="outline"
+            >
+              {isFetching ? "Retrying..." : "Try again"}
+            </Button>
+          </Flex>
+        ) : null}
+        {!isError && notifications.length === 0 && (
           <Flex align="center" className="h-full px-6" justify="center">
             <Box className="flex flex-col items-center">
               <NotificationsEmptyIllustration className="mb-5 w-52" />

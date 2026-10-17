@@ -13,16 +13,12 @@ export const NotificationMessageContent = ({
   segments,
   storyTerm,
 }: NotificationMessageContentProps) => {
-  let replacedStoryTerm = false;
-
   return segments.map((segment, index) => {
+    // Only localize producer-owned copy; names, titles, and comments are data.
     const value =
-      replacedStoryTerm || !segment.value.includes("story")
-        ? segment.value
-        : segment.value.replace("story", () => {
-            replacedStoryTerm = true;
-            return storyTerm;
-          });
+      segment.kind === "text"
+        ? segment.value.replace(/\bstory\b/g, () => storyTerm)
+        : segment.value;
     const key = `${segment.kind}-${"key" in segment ? segment.key : "text"}-${index}`;
 
     if (segment.kind === "variable" && segment.emphasized) {

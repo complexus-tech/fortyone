@@ -54,6 +54,7 @@ export const ChatShell = ({
     hasNewer,
     jumpToLatest,
     markVisible,
+    markUnread,
     recordVisibleMessages,
     openThread,
     openUnreadThread,
@@ -246,6 +247,7 @@ export const ChatShell = ({
                       onLoadOlder={() =>
                         history.fetchPreviousPage({ cancelRefetch: false })
                       }
+                      onMarkUnread={markUnread}
                       onReply={(message, trigger) => {
                         setOpenedStory(null);
                         openThread(message, trigger);
@@ -312,6 +314,7 @@ export const ChatShell = ({
                       onLoadOlder={() =>
                         repliesQuery.fetchPreviousPage({ cancelRefetch: false })
                       }
+                      onMarkUnread={markUnread}
                       onRetry={() => {
                         void repliesQuery.refetch();
                       }}

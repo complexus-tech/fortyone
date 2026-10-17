@@ -32,10 +32,8 @@ const DraftProbe = ({
   scope?: MessageDraftScope;
   onRender?: () => void;
 }) => {
-  const { draft, setDraft, clearMessageDrafts } = useMessageEditDraft(
-    messageId,
-    scope,
-  );
+  const { draft, setDraft, restoreDraft, clearMessageDrafts } =
+    useMessageEditDraft(messageId, scope);
   onRender?.();
 
   return (
@@ -73,11 +71,37 @@ const DraftProbe = ({
       <button onClick={clearMessageDrafts} type="button">
         Finish message
       </button>
+      <button
+        onClick={() => {
+          restoreDraft(richDraft("Failed edit"));
+        }}
+        type="button"
+      >
+        Restore failed edit
+      </button>
     </div>
   );
 };
 
 describe("virtualized message edit drafts", () => {
+  it("restores failed saves without overwriting a newer draft", () => {
+    render(
+      <MessageEditDraftProvider>
+        <DraftProbe label="row" />
+      </MessageEditDraftProvider>,
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Restore failed edit" }),
+    );
+    expect(screen.getByRole("textbox")).toHaveValue("Failed edit");
+    fireEvent.change(screen.getByRole("textbox"), {
+      target: { value: "Newer draft" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Restore failed edit" }),
+    );
+    expect(screen.getByRole("textbox")).toHaveValue("Newer draft");
+  });
   it("restores unsaved text and formatting after the row unmounts", () => {
     const fixture = (visible: boolean) => (
       <MessageEditDraftProvider>

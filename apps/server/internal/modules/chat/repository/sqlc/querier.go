@@ -30,6 +30,7 @@ type Querier interface {
 	ExpireAudioTranscriptions(ctx context.Context) error
 	FailAudioTranscription(ctx context.Context, arg FailAudioTranscriptionParams) (int64, error)
 	FindMessageCreation(ctx context.Context, arg FindMessageCreationParams) (FindMessageCreationRow, error)
+	FirstUnreadThreadReply(ctx context.Context, arg FirstUnreadThreadReplyParams) (uuid.UUID, error)
 	GetAudioTranscription(ctx context.Context, arg GetAudioTranscriptionParams) (GetAudioTranscriptionRow, error)
 	GetConversation(ctx context.Context, arg GetConversationParams) ([]byte, error)
 	GetConversationRead(ctx context.Context, arg GetConversationReadParams) (int64, error)
@@ -40,18 +41,24 @@ type Querier interface {
 	InsertMessage(ctx context.Context, arg InsertMessageParams) (uuid.UUID, error)
 	InsertMessageLink(ctx context.Context, arg InsertMessageLinkParams) error
 	InsertMessageMention(ctx context.Context, arg InsertMessageMentionParams) (int64, error)
+	// The reaction and event share transaction-stable now(). Eligibility compares
+	// that timestamp so a later remove/re-add cannot revive an older add event.
+	InsertReactionEvent(ctx context.Context, arg InsertReactionEventParams) error
 	LinkPendingAttachment(ctx context.Context, arg LinkPendingAttachmentParams) (int64, error)
 	ListConversationMembers(ctx context.Context, arg ListConversationMembersParams) ([][]byte, error)
 	ListConversations(ctx context.Context, arg ListConversationsParams) ([]ListConversationsRow, error)
 	ListReplyMessages(ctx context.Context, arg ListReplyMessagesParams) ([]ListReplyMessagesRow, error)
 	ListResources(ctx context.Context, arg ListResourcesParams) ([]ListResourcesRow, error)
 	ListRootMessages(ctx context.Context, arg ListRootMessagesParams) ([]ListRootMessagesRow, error)
+	ListUnreadChatThreadReadTargets(ctx context.Context, arg ListUnreadChatThreadReadTargetsParams) ([]ListUnreadChatThreadReadTargetsRow, error)
 	ListUnreadChatThreads(ctx context.Context, arg ListUnreadChatThreadsParams) ([]ListUnreadChatThreadsRow, error)
 	LockChatWorkspace(ctx context.Context, arg LockChatWorkspaceParams) (uuid.UUID, error)
 	LockConversation(ctx context.Context, arg LockConversationParams) (LockConversationRow, error)
 	LockTranscriptionAudio(ctx context.Context, arg LockTranscriptionAudioParams) (uuid.UUID, error)
 	MarkConversationRead(ctx context.Context, arg MarkConversationReadParams) (int64, error)
+	MarkConversationUnread(ctx context.Context, arg MarkConversationUnreadParams) (int64, error)
 	MarkThreadRead(ctx context.Context, arg MarkThreadReadParams) (int64, error)
+	MarkThreadUnread(ctx context.Context, arg MarkThreadUnreadParams) (int64, error)
 	NotificationContent(ctx context.Context, arg NotificationContentParams) ([]byte, error)
 	NotificationRecipients(ctx context.Context, arg NotificationRecipientsParams) ([]NotificationRecipientsRow, error)
 	ReadRecipientIDs(ctx context.Context, arg ReadRecipientIDsParams) ([]uuid.UUID, error)

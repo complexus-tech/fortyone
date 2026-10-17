@@ -14,12 +14,12 @@ export function ChatMayaStatus({
 }) {
   const { data } = useChatMayaRuns(conversationId);
   const { data: session } = useSession();
-  const action = useChatMayaAction(conversationId);
   const run = data?.runs.find(
     (candidate) =>
       candidate.sourceId === sourceMessageId ||
       candidate.replyMessageId === sourceMessageId,
   );
+  const action = useChatMayaAction(conversationId, run?.id);
   if (!run) return null;
   const source = run.sourceId === sourceMessageId;
   const working = run.status === "queued" || run.status === "running";
@@ -43,28 +43,31 @@ export function ChatMayaStatus({
         <div className="mt-2 flex gap-2">
           {awaiting ? (
             <Button
+              aria-busy={action.pendingAction === "approve"}
               disabled={action.isPending}
               onClick={() => {
                 action.mutate({ run, action: "approve" });
               }}
               size="sm"
             >
-              Approve
+              {action.pendingAction === "approve" ? "Approving…" : "Approve"}
             </Button>
           ) : null}
           {failed ? (
             <Button
+              aria-busy={action.pendingAction === "retry"}
               disabled={action.isPending}
               onClick={() => {
                 action.mutate({ run, action: "retry" });
               }}
               size="sm"
             >
-              Retry
+              {action.pendingAction === "retry" ? "Retrying…" : "Retry"}
             </Button>
           ) : null}
           {awaiting ? (
             <Button
+              aria-busy={action.pendingAction === "cancel"}
               color="tertiary"
               disabled={action.isPending}
               onClick={() => {
@@ -73,7 +76,7 @@ export function ChatMayaStatus({
               size="sm"
               variant="naked"
             >
-              Cancel
+              {action.pendingAction === "cancel" ? "Cancelling…" : "Cancel"}
             </Button>
           ) : null}
         </div>

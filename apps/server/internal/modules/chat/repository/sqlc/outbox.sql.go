@@ -128,11 +128,46 @@ func (q *Queries) InsertEvent(ctx context.Context, arg InsertEventParams) error 
 	return err
 }
 
+const insertReactionEvent = `-- name: InsertReactionEvent :exec
+WITH event AS (
+    INSERT INTO public.chat_outbox(event_type,workspace_id,conversation_id,message_id,actor_id,thread_root_id,sequence,version,reaction_emoji)
+    SELECT 'reaction.updated',m.workspace_id,m.conversation_id,m.id,CAST($1 AS uuid),m.thread_root_id,m.sequence,m.version,CAST($2 AS text)
+    FROM public.chat_conversation_messages m WHERE m.id=$3 AND m.workspace_id=$4
+    RETURNING id,message_id,actor_id,reaction_emoji
+)
+INSERT INTO public.chat_outbox_recipients(event_id,user_id,reason)
+SELECT event.id,message.author_id,'reaction'
+FROM event JOIN public.chat_conversation_messages message ON message.id=event.message_id
+WHERE event.reaction_emoji IS NOT NULL AND event.actor_id<>message.author_id
+AND public.can_read_chat_message(message.workspace_id,message.author_id,message.id)
+`
+
+type InsertReactionEventParams struct {
+	ActorID       uuid.UUID
+	ReactionEmoji *string
+	MessageID     uuid.UUID
+	WorkspaceID   uuid.UUID
+}
+
+// The reaction and event share transaction-stable now(). Eligibility compares
+// that timestamp so a later remove/re-add cannot revive an older add event.
+func (q *Queries) InsertReactionEvent(ctx context.Context, arg InsertReactionEventParams) error {
+	_, err := q.db.Exec(ctx, insertReactionEvent,
+		arg.ActorID,
+		arg.ReactionEmoji,
+		arg.MessageID,
+		arg.WorkspaceID,
+	)
+	return err
+}
+
 const notificationContent = `-- name: NotificationContent :one
 SELECT jsonb_build_object(
     'conversationKind', conversation.kind,
     'conversationName', COALESCE(team.name, ''),
     'authorName', COALESCE(NULLIF(author.full_name, ''), author.username),
+    'actorName', COALESCE(NULLIF(actor.full_name, ''), actor.username),
+    'reactionEmoji', COALESCE(event.reaction_emoji, ''),
     'text', message.text,
     'richContent', message.rich_content,
     'attachments', COALESCE((
@@ -148,12 +183,23 @@ FROM public.chat_outbox event
 JOIN public.chat_conversation_messages message ON message.id=event.message_id AND message.workspace_id=event.workspace_id
 JOIN public.chat_conversations conversation ON conversation.id=message.conversation_id
 JOIN public.users author ON author.user_id=message.author_id
+JOIN public.users actor ON actor.user_id=event.actor_id
 LEFT JOIN public.teams team ON team.team_id=conversation.team_id
-WHERE event.id=$1 AND event.workspace_id=$2 AND event.event_type='message.created'
+WHERE event.id=$1 AND event.workspace_id=$2
 AND message.deleted_at IS NULL
 AND EXISTS (
     SELECT 1 FROM public.chat_outbox_recipients recipient
     WHERE recipient.event_id=event.id AND public.can_read_chat_message(event.workspace_id,recipient.user_id,message.id)
+    AND (
+        event.event_type='message.created'
+        OR
+        (event.event_type='reaction.updated' AND event.reaction_emoji IS NOT NULL AND recipient.reason='reaction'
+         AND recipient.user_id=message.author_id AND recipient.user_id<>event.actor_id
+         AND public.can_read_chat_message(event.workspace_id,event.actor_id,event.message_id)
+         AND EXISTS (SELECT 1 FROM public.chat_message_reactions reaction
+             WHERE reaction.message_id=event.message_id AND reaction.user_id=event.actor_id AND reaction.emoji=event.reaction_emoji
+             AND reaction.created_at=event.created_at))
+    )
 )
 `
 
@@ -175,10 +221,19 @@ FROM public.chat_outbox_recipients recipient JOIN public.chat_outbox event ON ev
 JOIN public.chat_conversation_messages message ON message.id=event.message_id
 LEFT JOIN public.chat_conversation_reads conversation_read ON conversation_read.conversation_id=message.conversation_id AND conversation_read.user_id=recipient.user_id
 LEFT JOIN public.chat_thread_reads thread_read ON thread_read.thread_root_id=message.thread_root_id AND thread_read.user_id=recipient.user_id
-WHERE event.id=$1 AND event.workspace_id=$2 AND event.event_type='message.created'
-AND recipient.user_id<>message.author_id
+WHERE event.id=$1 AND event.workspace_id=$2
 AND public.can_read_chat_message(event.workspace_id,recipient.user_id,event.message_id)
-AND message.sequence>CASE WHEN message.thread_root_id IS NULL THEN COALESCE(conversation_read.last_read_sequence,0) ELSE COALESCE(thread_read.last_read_sequence,0) END
+AND (
+    (event.event_type='message.created' AND recipient.user_id<>message.author_id
+     AND message.sequence>CASE WHEN message.thread_root_id IS NULL THEN COALESCE(conversation_read.last_read_sequence,0) ELSE COALESCE(thread_read.last_read_sequence,0) END)
+    OR
+    (event.event_type='reaction.updated' AND event.reaction_emoji IS NOT NULL AND recipient.reason='reaction'
+     AND recipient.user_id=message.author_id AND recipient.user_id<>event.actor_id
+     AND public.can_read_chat_message(event.workspace_id,event.actor_id,event.message_id)
+     AND EXISTS (SELECT 1 FROM public.chat_message_reactions reaction
+         WHERE reaction.message_id=event.message_id AND reaction.user_id=event.actor_id AND reaction.emoji=event.reaction_emoji
+         AND reaction.created_at=event.created_at))
+)
 ORDER BY recipient.user_id
 `
 

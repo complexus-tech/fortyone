@@ -105,7 +105,7 @@ const Item = forwardRef<
 >(({ children, className, active, ...rest }, ref) => (
   <DropdownMenu.Item
     className={cn(
-      "flex w-full cursor-pointer select-none items-center gap-1.5 rounded-md px-2 py-2 outline-none hover:bg-accent focus:bg-accent data-disabled:pointer-events-none data-disabled:cursor-not-allowed data-disabled:opacity-50",
+      "flex w-full cursor-pointer select-none items-center gap-1.5 rounded-md px-2 py-2 outline-none hover:bg-accent focus:bg-accent data-disabled:pointer-events-none data-disabled:cursor-not-allowed data-disabled:opacity-50 [&.text-danger_svg]:text-current",
       {
         "bg-accent": active,
       },

@@ -4,7 +4,7 @@ import { useWorkspacePath } from "@/hooks";
 import { notificationKeys } from "@/constants/keys";
 import {
   getNotifications,
-  getNotificationsPage,
+  getNotificationsPageStrict,
 } from "../queries/get-notifications";
 
 export const useNotifications = () => {
@@ -27,7 +27,7 @@ export const useNotificationsInfinite = (search = "") => {
       "infinite",
     ] as const,
     queryFn: ({ pageParam }) =>
-      getNotificationsPage(
+      getNotificationsPageStrict(
         { session: session!, workspaceSlug },
         pageParam,
         25,

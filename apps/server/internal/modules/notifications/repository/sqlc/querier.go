@@ -51,6 +51,10 @@ type Querier interface {
 	// Internal chat receipts may be retried after the original transaction. Recheck
 	// current access and independent read boundaries before replaying delivery.
 	IsChatNotificationEligible(ctx context.Context, arg IsChatNotificationEligibleParams) (bool, error)
+	// Reactions notify the author independently of whether the original message was
+	// read. The persisted event and recipient prevent callers from turning a normal
+	// chat receipt into an author alert or replaying a removed reaction.
+	IsChatReactionNotificationEligible(ctx context.Context, arg IsChatReactionNotificationEligibleParams) (bool, error)
 	// ListKeyResultNotificationAudience owns the key-result/objective lookup and
 	// recipient selection used by the event consumer. Both the event actor and
 	// every recipient must still have live access to the exact workspace team.

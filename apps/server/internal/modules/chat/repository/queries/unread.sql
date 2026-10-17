@@ -12,6 +12,24 @@ WHERE c.workspace_id = sqlc.arg(workspace_id)
 GROUP BY c.id
 ORDER BY c.id;
 
+-- name: ListUnreadChatThreadReadTargets :many
+WITH unread_threads AS (
+    SELECT c.id AS conversation_id, unread.thread_root_id, max(unread.sequence) AS last_unread_sequence
+    FROM public.chat_conversations c
+    CROSS JOIN LATERAL public.chat_unread_messages(c.id, sqlc.arg(user_id)) AS unread(message_id, thread_root_id, created_at, sequence)
+    WHERE c.workspace_id = sqlc.arg(workspace_id)
+      AND public.can_read_chat_conversation(c.workspace_id, sqlc.arg(user_id), c.id)
+      AND (CAST(sqlc.arg(unrestricted) AS boolean) OR c.team_id = ANY(CAST(sqlc.arg(team_ids) AS uuid[])))
+      AND unread.thread_root_id IS NOT NULL
+    GROUP BY c.id, unread.thread_root_id
+)
+SELECT root.conversation_id, root.id AS thread_root_id, reply.id AS through_message_id
+FROM unread_threads unread
+JOIN public.chat_conversation_messages root ON root.id = unread.thread_root_id
+JOIN public.chat_conversation_messages reply
+    ON reply.conversation_id = unread.conversation_id AND reply.sequence = unread.last_unread_sequence
+ORDER BY root.conversation_id, root.id;
+
 -- name: ListUnreadChatThreads :many
 WITH unread_threads AS (
     SELECT unread.thread_root_id, max(unread.created_at) AS activity_at,

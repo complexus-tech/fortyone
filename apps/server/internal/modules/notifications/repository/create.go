@@ -48,9 +48,17 @@ func (repository *Repository) Create(ctx context.Context, notification notificat
 		return notificationsdomain.Notification{}, false, fmt.Errorf("lock notification event: %w", err)
 	}
 	if notification.EntityType == notificationsdomain.EntityTypeChatMessage {
-		eligible, err := queries.IsChatNotificationEligible(ctx, notificationssql.IsChatNotificationEligibleParams{
-			WorkspaceID: notification.WorkspaceID, RecipientID: notification.RecipientID, MessageID: notification.EntityID,
-		})
+		var eligible bool
+		if reaction := notification.Message.ChatReaction; reaction != nil {
+			eligible, err = queries.IsChatReactionNotificationEligible(ctx, notificationssql.IsChatReactionNotificationEligibleParams{
+				WorkspaceID: notification.WorkspaceID, RecipientID: notification.RecipientID, MessageID: notification.EntityID,
+				ActorID: notification.ActorID, EventID: reaction.EventID, Emoji: reaction.Emoji,
+			})
+		} else {
+			eligible, err = queries.IsChatNotificationEligible(ctx, notificationssql.IsChatNotificationEligibleParams{
+				WorkspaceID: notification.WorkspaceID, RecipientID: notification.RecipientID, MessageID: notification.EntityID,
+			})
+		}
 		if err != nil {
 			return notificationsdomain.Notification{}, false, fmt.Errorf("check chat notification eligibility: %w", err)
 		}
@@ -69,7 +77,7 @@ func (repository *Repository) Create(ctx context.Context, notification notificat
 		sameChatEvent := notification.EntityType == notificationsdomain.EntityTypeChatMessage &&
 			string(receipt.EntityType) == string(notification.EntityType) &&
 			string(receipt.NotificationType) == string(notification.Type) &&
-			receipt.EntityID == notification.EntityID && receipt.ActorID == notification.ActorID
+			receipt.EntityID == notification.EntityID && receipt.ActorID == notification.ActorID && receipt.MatchesChatReaction
 		if !receipt.MatchesPayload && !sameChatEvent {
 			return notificationsdomain.Notification{}, false, fmt.Errorf("replay notification event: %w", notificationsdomain.ErrConflict)
 		}

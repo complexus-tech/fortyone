@@ -37,7 +37,7 @@ export type AppNotification = {
         value: string;
         type?: string;
       }
-    >;
+    > | null;
   };
   createdAt: string;
   readAt: string | null;

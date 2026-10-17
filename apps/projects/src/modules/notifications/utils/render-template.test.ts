@@ -78,6 +78,47 @@ describe("renderTemplate", () => {
     expect(result.text).not.toMatch(/target=|href=|<\/?[pa]>/);
   });
 
+  it("extracts readable text from HTML stored directly in a template", () => {
+    const result = renderTemplate({
+      template:
+        '<p><strong>{actor}</strong> left a comment:</p><p>Review &amp; ship <a href="https://example.com">the update</a></p><script>{secret}</script>',
+      variables: {
+        actor: { value: "hector", type: "actor" },
+        secret: { value: "hidden content" },
+      },
+    });
+
+    expect(result).toEqual({
+      segments: [
+        {
+          emphasized: true,
+          key: "actor",
+          kind: "variable",
+          value: "hector",
+        },
+        { kind: "text", value: " left a comment: Review & ship the update" },
+      ],
+      text: "hector left a comment: Review & ship the update",
+    });
+  });
+
+  it("parses template markup without reinterpreting literal variable values", () => {
+    const result = renderTemplate({
+      template: "<p>{actor} replied:</p><div>{content}</div>",
+      variables: {
+        actor: { value: "<lead> &amp;", type: "actor" },
+        content: {
+          value: "Use <example> &amp; {actor} literally",
+          type: "plain_text",
+        },
+      },
+    });
+
+    expect(result.text).toBe(
+      "<lead> &amp; replied: Use <example> &amp; {actor} literally",
+    );
+  });
+
   it("preserves newly normalized literal text without decoding it again", () => {
     const result = renderTemplate({
       template: "{actor} replied: {content}",

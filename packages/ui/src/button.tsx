@@ -19,7 +19,8 @@ export const buttonVariants = cva(
       rounded: radiusVariants,
       color: {
         primary: "border-primary-solid bg-primary-solid",
-        danger: "text-danger border-danger bg-danger ring-danger",
+        danger:
+          "text-danger border-danger bg-danger ring-danger [&_svg]:!text-current",
         info: "text-info border-info bg-info ring-info",
         warning: "text-warning border-warning bg-warning ring-warning",
         tertiary:

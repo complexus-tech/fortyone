@@ -158,6 +158,94 @@ afterEach(() => {
 });
 
 describe("live chat state", () => {
+  it("shows reactions immediately in a thread and rolls them back on failure", async () => {
+    const reply = {
+      ...message,
+      id: "reply",
+      threadRootId: message.id,
+      sequence: 2,
+    };
+    mocked.getReplies.mockResolvedValue({ ...page, items: [reply] });
+    const request = deferred<Awaited<ReturnType<typeof api.setReaction>>>();
+    mocked.setReaction.mockReturnValue(request.promise);
+    const { result } = renderHook(useChat, { wrapper });
+    await waitFor(() => {
+      expect(result.current.conversation?.messages).toHaveLength(1);
+    });
+    act(() => {
+      result.current.openThread(message, document.createElement("button"));
+    });
+    await waitFor(() => {
+      expect(result.current.replies).toHaveLength(1);
+    });
+    let delivery!: Promise<void>;
+    act(() => {
+      delivery = result.current.toggleReaction("reply", "👍");
+    });
+    await waitFor(() => {
+      expect(result.current.replies[0].reactions).toMatchObject([
+        { emoji: "👍", reacted: true, count: 1 },
+      ]);
+    });
+    expect(mocked.setReaction).toHaveBeenCalledWith(
+      { workspaceSlug: "workspace" },
+      "reply",
+      "👍",
+      true,
+    );
+    await act(async () => {
+      request.reject(new Error("Offline"));
+      await delivery;
+    });
+    await waitFor(() => {
+      expect(result.current.replies[0].reactions).toEqual([]);
+    });
+    expect(toast.error).toHaveBeenCalledWith(
+      "Could not update this reaction",
+      expect.anything(),
+    );
+  });
+
+  it.each(["edit", "delete"] as const)(
+    "optimistically renders a message %s and restores it on failure",
+    async (action) => {
+      const request = deferred<never>();
+      if (action === "edit")
+        mocked.editMessage.mockReturnValue(request.promise);
+      else mocked.deleteMessage.mockReturnValue(request.promise);
+      const { result } = renderHook(useChat, { wrapper });
+      await waitFor(() => {
+        expect(result.current.conversation?.messages).toHaveLength(1);
+      });
+      let delivery!: Promise<unknown>;
+      act(() => {
+        delivery = (
+          action === "edit"
+            ? result.current.editMessage("root", {
+                text: "Updated immediately",
+                content: null,
+              })
+            : result.current.deleteMessage("root")
+        ).catch((error: unknown) => error);
+      });
+      await waitFor(() => {
+        expect(result.current.conversation?.messages[0].text).toBe(
+          action === "edit" ? "Updated immediately" : "",
+        );
+      });
+      await act(async () => {
+        request.reject(new Error("Offline"));
+        await delivery;
+      });
+      await waitFor(() => {
+        expect(result.current.conversation?.messages[0]).toMatchObject({
+          text: "Hello",
+          deletedAt: null,
+        });
+      });
+    },
+  );
+
   it("keeps team, direct-message, new-message, and deep-link navigation on clean subdomain URLs", async () => {
     mockSubdomain = true;
     const { result } = renderHook(useChat, { wrapper });

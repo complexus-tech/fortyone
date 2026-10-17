@@ -92,6 +92,16 @@ export const useMessageEditDraft = (
   const clearMessageDrafts = useCallback(() => {
     store.clearMessage(messageId);
   }, [messageId, store]);
+  const restoreDraft = useCallback(
+    (value: PreviewDraft) => {
+      // A virtualized row may remount and start a newer draft before an earlier
+      // request fails. Keep that work instead of restoring over it.
+      if (store.get(key)) return false;
+      store.set(key, value);
+      return true;
+    },
+    [key, store],
+  );
 
-  return { draft, setDraft, clearMessageDrafts };
+  return { draft, setDraft, restoreDraft, clearMessageDrafts };
 };

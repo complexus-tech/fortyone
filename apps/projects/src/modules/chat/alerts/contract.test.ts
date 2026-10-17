@@ -29,6 +29,22 @@ describe("chat notification contract", () => {
     });
   });
 
+  it("accepts reaction copy through the existing chat notification contract", () => {
+    const reaction = {
+      ...chatEvent,
+      threadRootId: "10000000-0000-4000-8000-000000000008",
+      title: "Product",
+      body: "Sarah reacted 🙌🏽 to your message: Ready for review",
+    };
+
+    expect(parseChatNotification(reaction)).toEqual({
+      ...Object.fromEntries(
+        Object.entries(reaction).filter(([key]) => key !== "type"),
+      ),
+      kind: "chat-notification",
+    });
+  });
+
   it.each([
     { actorId: "missing" },
     { conversationId: "https://outside.test" },

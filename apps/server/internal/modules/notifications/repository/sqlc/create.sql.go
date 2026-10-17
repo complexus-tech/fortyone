@@ -471,7 +471,9 @@ func (q *Queries) CreateNotification(ctx context.Context, arg CreateNotification
 
 const getNotificationEventReceipt = `-- name: GetNotificationEventReceipt :one
 SELECT notification_id, recipient_id, workspace_id, actor_id, entity_id, notification_type, entity_type,
-       payload = CAST($1 AS jsonb) AS matches_payload
+       payload = CAST($1 AS jsonb) AS matches_payload,
+       (payload -> 5 -> 'chatReaction') IS NOT DISTINCT FROM
+           (CAST($1 AS jsonb) -> 5 -> 'chatReaction') AS matches_chat_reaction
 FROM public.notification_event_receipts
 WHERE dedupe_key = CAST($2 AS text)
 `
@@ -482,14 +484,15 @@ type GetNotificationEventReceiptParams struct {
 }
 
 type GetNotificationEventReceiptRow struct {
-	NotificationID   *uuid.UUID
-	RecipientID      uuid.UUID
-	WorkspaceID      uuid.UUID
-	ActorID          uuid.UUID
-	EntityID         uuid.UUID
-	NotificationType NotificationType
-	EntityType       EntityType
-	MatchesPayload   bool
+	NotificationID      *uuid.UUID
+	RecipientID         uuid.UUID
+	WorkspaceID         uuid.UUID
+	ActorID             uuid.UUID
+	EntityID            uuid.UUID
+	NotificationType    NotificationType
+	EntityType          EntityType
+	MatchesPayload      bool
+	MatchesChatReaction bool
 }
 
 func (q *Queries) GetNotificationEventReceipt(ctx context.Context, arg GetNotificationEventReceiptParams) (GetNotificationEventReceiptRow, error) {
@@ -504,6 +507,7 @@ func (q *Queries) GetNotificationEventReceipt(ctx context.Context, arg GetNotifi
 		&i.NotificationType,
 		&i.EntityType,
 		&i.MatchesPayload,
+		&i.MatchesChatReaction,
 	)
 	return i, err
 }
@@ -587,6 +591,56 @@ type IsChatNotificationEligibleParams struct {
 // current access and independent read boundaries before replaying delivery.
 func (q *Queries) IsChatNotificationEligible(ctx context.Context, arg IsChatNotificationEligibleParams) (bool, error) {
 	row := q.db.QueryRow(ctx, isChatNotificationEligible, arg.RecipientID, arg.MessageID, arg.WorkspaceID)
+	var eligible bool
+	err := row.Scan(&eligible)
+	return eligible, err
+}
+
+const isChatReactionNotificationEligible = `-- name: IsChatReactionNotificationEligible :one
+SELECT EXISTS (
+    SELECT 1 FROM public.chat_outbox AS event
+    JOIN public.chat_outbox_recipients AS recipient
+      ON recipient.event_id = event.id AND recipient.reason = 'reaction'
+    JOIN public.chat_conversation_messages AS message
+      ON message.id = event.message_id AND message.workspace_id = event.workspace_id
+    JOIN public.chat_message_reactions AS reaction
+      ON reaction.message_id = message.id AND reaction.user_id = event.actor_id
+     AND reaction.emoji = event.reaction_emoji AND reaction.created_at = event.created_at
+    WHERE event.id = CAST($1 AS uuid)
+      AND event.workspace_id = CAST($2 AS uuid)
+      AND event.message_id = CAST($3 AS uuid)
+      AND event.actor_id = CAST($4 AS uuid)
+      AND event.reaction_emoji = CAST($5 AS text)
+      AND event.event_type = 'reaction.updated'
+      AND recipient.user_id = CAST($6 AS uuid)
+      AND recipient.user_id = message.author_id
+      AND recipient.user_id <> event.actor_id
+      AND public.can_read_chat_message(message.workspace_id, recipient.user_id, message.id)
+      AND public.can_read_chat_message(message.workspace_id, event.actor_id, message.id)
+) AS eligible
+`
+
+type IsChatReactionNotificationEligibleParams struct {
+	EventID     uuid.UUID
+	WorkspaceID uuid.UUID
+	MessageID   uuid.UUID
+	ActorID     uuid.UUID
+	Emoji       string
+	RecipientID uuid.UUID
+}
+
+// Reactions notify the author independently of whether the original message was
+// read. The persisted event and recipient prevent callers from turning a normal
+// chat receipt into an author alert or replaying a removed reaction.
+func (q *Queries) IsChatReactionNotificationEligible(ctx context.Context, arg IsChatReactionNotificationEligibleParams) (bool, error) {
+	row := q.db.QueryRow(ctx, isChatReactionNotificationEligible,
+		arg.EventID,
+		arg.WorkspaceID,
+		arg.MessageID,
+		arg.ActorID,
+		arg.Emoji,
+		arg.RecipientID,
+	)
 	var eligible bool
 	err := row.Scan(&eligible)
 	return eligible, err

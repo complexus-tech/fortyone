@@ -140,19 +140,27 @@ func (d Dispatcher) deliver(ctx context.Context, event chatdomain.Event) error {
 		seen[target.UserID] = struct{}{}
 		switch target.Reason {
 		case "mention", "reply", "dm", "message":
+		case "reaction":
+			if event.Type != "reaction.updated" || content.ReactionEmoji == "" {
+				continue
+			}
 		default:
 			continue
+		}
+		message := notifications.NotificationMessage{
+			Template: "{message}", Variables: map[string]notifications.Variable{
+				"message": {Value: body, Type: "plain_text"},
+			},
+			EmailSuppressed: target.Reason == "message" || target.Reason == "reaction",
+		}
+		if target.Reason == "reaction" {
+			message.ChatReaction = &notifications.ChatReaction{EventID: event.ID, Emoji: content.ReactionEmoji}
 		}
 		notification, err := d.Notifications.Create(ctx, notifications.NewNotification{
 			DedupeKey: fmt.Sprintf("chat:%s:%s", event.ID, target.UserID), OccurredAt: event.CreatedAt,
 			WorkspaceID: event.WorkspaceID, RecipientID: target.UserID, ActorID: event.ActorID,
 			Type: notifications.NotificationTypeChatMessage, EntityType: notifications.EntityTypeChatMessage, EntityID: event.MessageID,
-			Title: title, Message: notifications.NotificationMessage{
-				Template: "{message}", Variables: map[string]notifications.Variable{
-					"message": {Value: body, Type: "plain_text"},
-				},
-				EmailSuppressed: target.Reason == "message",
-			},
+			Title: title, Message: message,
 		})
 		if errors.Is(err, notifications.ErrForbidden) || errors.Is(err, notifications.ErrNotFound) {
 			// A membership revocation or deletion can race the recipient lookup.

@@ -4,6 +4,31 @@ import { NotificationMessageContent } from "./notification-message-content";
 import { renderTemplate } from "./utils/render-template";
 
 describe("NotificationMessageContent", () => {
+  it("localizes only whole words in the template without changing notification data", () => {
+    const rendered = renderTemplate({
+      template: "{actor} updated the story history: {content}. View the story.",
+      variables: {
+        actor: { value: "storyteller", type: "actor" },
+        content: {
+          value: "The story of our history page",
+          type: "plain_text",
+        },
+      },
+    });
+    const view = render(
+      <div data-testid="message">
+        <NotificationMessageContent
+          segments={rendered.segments}
+          storyTerm="work item"
+        />
+      </div>,
+    );
+
+    expect(view.getByTestId("message")).toHaveTextContent(
+      "storyteller updated the work item history: The story of our history page. View the work item.",
+    );
+  });
+
   it("renders untrusted template values as inert text", () => {
     const actor = '<img src=x onerror="actor()">';
     const content =

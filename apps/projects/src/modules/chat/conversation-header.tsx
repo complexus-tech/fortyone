@@ -5,6 +5,7 @@ import { Button, Tabs } from "ui";
 import { ConversationMark, PersonAvatar } from "./avatars";
 import { useChatIdentity } from "./chat-context";
 import { ICON_BUTTON_CLASS } from "./chat-styles";
+import { ConversationMembersPopover } from "./conversation-members-popover";
 import type { ConversationFeed } from "./types";
 
 export const ConversationHeader = ({
@@ -49,22 +50,11 @@ export const ConversationHeader = ({
           {conversation.name}
         </h2>
         {conversation.kind === "team" ? (
-          <div
-            aria-label="Team members"
-            className="isolate hidden shrink-0 items-center -space-x-1.5 @min-[700px]/conversation:flex"
-          >
-            {conversation.members.slice(0, 4).map((person) => (
-              <span
-                className="bg-surface ring-surface relative inline-flex rounded-full ring-2"
-                key={person.id}
-              >
-                <PersonAvatar mayaAvatarUrl={mayaAvatarUrl} person={person} />
-              </span>
-            ))}
-            <span className="text-text-muted ml-3 pl-2">
-              {conversation.memberCount}
-            </span>
-          </div>
+          <ConversationMembersPopover
+            conversation={conversation}
+            key={conversation.id}
+            mayaAvatarUrl={mayaAvatarUrl}
+          />
         ) : null}
       </div>
       <div className="flex shrink-0 items-center gap-4">

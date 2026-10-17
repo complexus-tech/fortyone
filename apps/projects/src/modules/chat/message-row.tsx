@@ -135,6 +135,7 @@ export const MessageRow = ({
   onToggleReaction,
   onEditMessage,
   onDeleteMessage,
+  onMarkUnread,
   onRetryMessage,
   draftScope = "conversation",
 }: {
@@ -148,12 +149,14 @@ export const MessageRow = ({
     draft: PreviewDraft,
   ) => void | Promise<void>;
   onDeleteMessage: (messageId: string) => void | Promise<void>;
+  onMarkUnread?: (message: ChatMessage) => void;
   draftScope?: MessageDraftScope;
   onRetryMessage?: (messageId: string) => void;
 }) => {
   const {
     draft: editDraft,
     setDraft: setEditDraft,
+    restoreDraft: restoreEditDraft,
     clearMessageDrafts,
   } = useMessageEditDraft(message.id, draftScope);
   const [focusEditor, setFocusEditor] = useState(false);
@@ -199,15 +202,13 @@ export const MessageRow = ({
             onCancel={closeEditor}
             onDraftChange={setEditDraft}
             onSave={() => {
-              if (!editDraft) return;
+              if (!editDraft || isSaving) return;
+              const submitted = editDraft;
               setIsSaving(true);
-              void Promise.resolve(onEditMessage(message.id, editDraft))
-                .then(() => {
-                  clearMessageDrafts();
-                  closeEditor();
-                })
+              closeEditor();
+              void Promise.resolve(onEditMessage(message.id, submitted))
                 .catch(() => {
-                  /* The mutation exposes the error and keeps this draft. */
+                  if (restoreEditDraft(submitted)) setFocusEditor(true);
                 })
                 .finally(() => {
                   setIsSaving(false);
@@ -283,7 +284,11 @@ export const MessageRow = ({
           ) : null}
         </div>
       </div>
-      {!message.deliveryStatus && !message.deletedAt && !editDraft ? (
+      {!message.deliveryStatus &&
+      !message.deletedAt &&
+      !editDraft &&
+      !isSaving &&
+      !isDeleting ? (
         <MessageActions
           message={message}
           onDelete={() => {
@@ -300,6 +305,7 @@ export const MessageRow = ({
               });
             }
           }}
+          onMarkUnread={onMarkUnread}
           onReply={onReply}
           onToggleReaction={onToggleReaction}
         />
@@ -312,14 +318,15 @@ export const MessageRow = ({
             restoreActionsFocus();
           }}
           onDelete={() => {
+            if (isDeleting) return;
             setIsDeleting(true);
+            setDeleteOpen(false);
             void Promise.resolve(onDeleteMessage(message.id))
               .then(() => {
-                setDeleteOpen(false);
                 clearMessageDrafts();
               })
               .catch(() => {
-                /* The mutation displays the error; keep confirmation open. */
+                setDeleteOpen(true);
               })
               .finally(() => {
                 setIsDeleting(false);

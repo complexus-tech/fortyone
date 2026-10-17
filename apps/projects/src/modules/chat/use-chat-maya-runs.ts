@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useMutationState,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useWorkspacePath } from "@/hooks/use-workspace-path";
 import { useSession } from "@/lib/auth/client";
@@ -39,6 +44,8 @@ export type ChatMayaRun = {
   }[];
 };
 type ChatMayaRuns = { enabled: boolean; runs: ChatMayaRun[] };
+type MayaAction = "approve" | "cancel" | "retry";
+type MayaActionInput = { run: ChatMayaRun; action: MayaAction };
 const active = (run: ChatMayaRun) =>
   run.status === "queued" || run.status === "running";
 
@@ -90,18 +97,19 @@ export function useChatMayaRuns(
   return query;
 }
 
-export function useChatMayaAction(conversationId: string) {
+export function useChatMayaAction(conversationId: string, runId?: string) {
   const { workspaceSlug } = useWorkspacePath();
   const { data: session } = useSession();
   const client = useQueryClient();
-  return useMutation({
-    mutationFn: async ({
-      run,
-      action,
-    }: {
-      run: ChatMayaRun;
-      action: "approve" | "cancel" | "retry";
-    }) => {
+  const queryKey = chatKeys.mayaRuns(workspaceSlug, conversationId);
+  const mutationKey = [...queryKey, "action", session?.user.id, runId];
+  const pending = useMutationState({
+    filters: { mutationKey, exact: true, status: "pending" },
+    select: (mutation) => (mutation.state.variables as MayaActionInput).action,
+  });
+  const mutation = useMutation({
+    mutationKey,
+    mutationFn: async ({ run, action }: MayaActionInput) => {
       const response = await post<
         { version: number },
         ApiResponse<ChatMayaRun>
@@ -114,13 +122,37 @@ export function useChatMayaAction(conversationId: string) {
       if (!response.data) throw new Error("Could not update Maya’s request");
       return response.data;
     },
+    onMutate: () => client.cancelQueries({ queryKey, exact: true }),
+    onSuccess: async (updated) => {
+      await client.cancelQueries({ queryKey, exact: true }, { revert: false });
+      client.setQueryData<ChatMayaRuns>(queryKey, (current) =>
+        current
+          ? {
+              ...current,
+              runs: current.runs.map((run) =>
+                run.id === updated.id && run.version <= updated.version
+                  ? updated
+                  : run,
+              ),
+            }
+          : current,
+      );
+    },
     onError: (error) =>
       toast.error("Could not update Maya’s request", {
         description: error.message,
       }),
-    onSettled: () =>
-      client.invalidateQueries({
-        queryKey: chatKeys.mayaRuns(workspaceSlug, conversationId),
-      }),
+    onSettled: () => client.invalidateQueries({ queryKey, exact: true }),
   });
+  const pendingAction = pending.at(0);
+  return {
+    isPending: pendingAction !== undefined,
+    pendingAction,
+    mutate: (input: MayaActionInput) => {
+      // Main-message and thread copies share one request. This synchronous
+      // cache check also guards clicks before React has rendered the busy state.
+      if (client.isMutating({ mutationKey, exact: true }) > 0) return;
+      mutation.mutate(input);
+    },
+  };
 }

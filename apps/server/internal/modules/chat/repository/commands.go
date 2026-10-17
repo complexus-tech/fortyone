@@ -198,7 +198,13 @@ func (r *Repository) SetReaction(ctx context.Context, scope domain.ActorScope, i
 		return domain.Message{}, err
 	}
 	if affected > 0 {
-		if err = r.event(ctx, scope, id, scope.Actor.PrincipalID, "reaction.updated"); err != nil {
+		var addedEmoji *string
+		if active {
+			addedEmoji = &emoji
+		}
+		if err = r.query(ctx).InsertReactionEvent(ctx, chatsql.InsertReactionEventParams{
+			WorkspaceID: scope.WorkspaceID, MessageID: id, ActorID: scope.Actor.PrincipalID, ReactionEmoji: addedEmoji,
+		}); err != nil {
 			return domain.Message{}, err
 		}
 	}

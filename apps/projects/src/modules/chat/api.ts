@@ -9,6 +9,7 @@ import type {
   ChatMessage,
   ChatMessageInput,
   ChatMessagePage,
+  ChatMarkUnreadResult,
   ChatPage,
   ChatPerson,
   ChatResource,
@@ -130,6 +131,14 @@ const unreadThreadSchema = z.intersection(
     conversationKind: z.enum(["team", "dm"]),
   }),
 );
+const markUnreadSchema = z.object({
+  conversationId: z.string(),
+  threadRootId: z.string().nullable().default(null),
+  lastReadSequence: z.number().int().nonnegative(),
+  unreadCount: z.number().int().nonnegative(),
+  firstUnreadReplyId: z.string().nullable().default(null),
+  summary: unreadSummarySchema,
+});
 const messagePageSchema = z.object({
   items: z.array(messageSchema),
   olderCursor: z.string().nullable(),
@@ -325,6 +334,22 @@ export const markRead = (
     { throughMessageId, threadRootId },
     ctx,
     { retry: 0 },
+  );
+export const markAllThreadsRead = async (ctx: WorkspaceCtx): Promise<void> => {
+  await post(`${base}/threads/read`, {}, ctx, { retry: 0 });
+};
+export const markUnread = (
+  ctx: WorkspaceCtx,
+  conversationId: string,
+  fromMessageId: string,
+  threadRootId?: string,
+): Promise<ChatMarkUnreadResult> =>
+  post(
+    `${base}/conversations/${conversationId}/unread`,
+    { fromMessageId, threadRootId },
+    ctx,
+    { retry: 0 },
+    decode(markUnreadSchema),
   );
 export const searchMessages = (
   ctx: WorkspaceCtx,

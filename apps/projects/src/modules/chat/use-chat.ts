@@ -11,7 +11,7 @@ import { EMPTY_PREVIEW_DRAFT } from "./chat-rich-text";
 import type { ChatMessage, ChatUnreadThread, ConversationTab } from "./types";
 import * as api from "./api";
 import { chatKeys } from "./constants";
-import { flattenMessages, updateCachedMessage } from "./cache";
+import { flattenMessages, getCachedMessage } from "./cache";
 import { getMessageInput } from "./message-input";
 import {
   useChatConversation,
@@ -21,8 +21,16 @@ import {
 } from "./queries";
 import { reconcileChatQueries } from "./realtime";
 import { mergeChatDrafts } from "./merge-chat-drafts";
-import { recordChatMessageVisible } from "./alerts/active-view";
+import { useChatReadState } from "./use-chat-read-state";
 import { mergeOutgoingMessages, useMessageOutbox } from "./use-message-outbox";
+import { withOptimisticReplySummary } from "./optimistic-reply-summaries";
+import { extractMessageLinks } from "./chat-links";
+import {
+  commitMessageReaction,
+  deletedMessage,
+  mutateMessageOptimistically,
+  setMessageReaction,
+} from "./optimistic-messages";
 
 const NO_MESSAGES: ChatMessage[] = [];
 const NEW_MESSAGE_DRAFT_KEY = "new-message";
@@ -30,11 +38,20 @@ const notification = (error: unknown, title: string) =>
   toast.error(title, {
     description: error instanceof Error ? error.message : "Please try again.",
   });
+const refreshAfterMutation = (
+  client: ReturnType<typeof useQueryClient>,
+  workspaceSlug: string,
+  conversationId: string,
+) => {
+  void reconcileChatQueries(client, workspaceSlug, conversationId).catch(
+    (error: unknown) =>
+      notification(error, "Changes saved. Could not refresh the conversation."),
+  );
+};
 
 export const useChat = () => {
   const { workspaceSlug, withWorkspace } = useWorkspacePath();
   const { data: session } = useSession();
-  const accountId = session?.user.id;
   const chatPath = withWorkspace("/chat");
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -129,13 +146,16 @@ export const useChat = () => {
           (message) =>
             message.conversationId === activeId && !message.threadRootId,
         ),
-      ),
+      ).map((message) => withOptimisticReplySummary(message, outgoing)),
     [activeId, loadedMessages, outgoing],
   );
   const linkedMessage = useChatMessage(requestedMessage);
   const selectedThread = useChatMessage(threadId);
   const thread =
-    messages.find((message) => message.id === threadId) ?? selectedThread.data;
+    messages.find((message) => message.id === threadId) ??
+    (selectedThread.data
+      ? withOptimisticReplySummary(selectedThread.data, outgoing)
+      : undefined);
   const repliesQuery = useChatMessages(
     threadId ? activeId : "",
     threadTargetId,
@@ -407,132 +427,130 @@ export const useChat = () => {
     async (messageId: string, draft: ChatDraft) => {
       try {
         const original =
+          getCachedMessage(client, workspaceSlug, messageId) ??
           messages.find((item) => item.id === messageId) ??
           replies.find((item) => item.id === messageId) ??
           (await api.getMessage({ workspaceSlug }, messageId));
-        const updated = await api.editMessage({ workspaceSlug }, messageId, {
-          ...getMessageInput(draft),
-          version: draft.baseVersion ?? original.version,
+        const input = getMessageInput(draft);
+        const editedAt = new Date().toISOString();
+        await mutateMessageOptimistically(client, workspaceSlug, original, {
+          apply: (current) =>
+            current.deletedAt
+              ? current
+              : {
+                  ...current,
+                  ...input,
+                  editedAt,
+                  attachments: draft.attachments ?? [],
+                  links: extractMessageLinks(input.text, input.richContent),
+                },
+          execute: () =>
+            api.editMessage({ workspaceSlug }, messageId, {
+              ...input,
+              version: draft.baseVersion ?? original.version,
+            }),
+          commit: (current, response) => ({
+            ...current,
+            ...input,
+            text: response.text,
+            richContent: response.richContent,
+            editedAt: response.editedAt,
+            version: response.version,
+            attachments: response.attachments,
+            links: response.links,
+          }),
         });
-        updateCachedMessage(client, workspaceSlug, updated);
-        await reconcileChatQueries(client, workspaceSlug, activeId);
+        refreshAfterMutation(client, workspaceSlug, original.conversationId);
       } catch (error) {
         notification(error, "Could not save your changes");
         throw error;
       }
     },
-    [activeId, client, messages, replies, workspaceSlug],
+    [client, messages, replies, workspaceSlug],
   );
   const deleteMessage = useCallback(
     async (messageId: string) => {
       try {
         const original =
+          getCachedMessage(client, workspaceSlug, messageId) ??
           messages.find((item) => item.id === messageId) ??
           replies.find((item) => item.id === messageId) ??
           (await api.getMessage({ workspaceSlug }, messageId));
-        await api.deleteMessage({ workspaceSlug }, messageId, original.version);
+        const deletedAt = new Date().toISOString();
+        await mutateMessageOptimistically(client, workspaceSlug, original, {
+          apply: (current) => deletedMessage(current, deletedAt),
+          execute: async (current) => {
+            const response = await api.deleteMessage(
+              { workspaceSlug },
+              messageId,
+              current.version,
+            );
+            return {
+              ...deletedMessage(current, response.deletedAt),
+              version: response.version,
+            };
+          },
+          commit: (current, response) => ({
+            ...deletedMessage(current, response.deletedAt!),
+            version: response.version,
+          }),
+        });
         if (threadId === messageId && !original.replyCount) closeThread();
-        await reconcileChatQueries(client, workspaceSlug, activeId);
+        refreshAfterMutation(client, workspaceSlug, original.conversationId);
       } catch (error) {
         notification(error, "Could not delete this message");
         throw error;
       }
     },
-    [activeId, client, closeThread, messages, replies, threadId, workspaceSlug],
+    [client, closeThread, messages, replies, threadId, workspaceSlug],
   );
   const toggleReaction = useCallback(
     async (messageId: string, emoji: string) => {
       try {
         const message =
+          getCachedMessage(client, workspaceSlug, messageId) ??
           messages.find((item) => item.id === messageId) ??
           replies.find((item) => item.id === messageId) ??
           (await api.getMessage({ workspaceSlug }, messageId));
         const selected = !message.reactions.some(
           (reaction) => reaction.emoji === emoji && reaction.reacted,
         );
-        const updated = await api.setReaction(
-          { workspaceSlug },
-          messageId,
-          emoji,
-          selected,
-        );
-        updateCachedMessage(client, workspaceSlug, updated);
-        await reconcileChatQueries(client, workspaceSlug, activeId);
+        if (!session?.user || message.deletedAt) return;
+        const person = {
+          id: session.user.id,
+          fullName: session.user.name || "You",
+          avatarUrl: session.user.image ?? null,
+          isSystem: false,
+        };
+        await mutateMessageOptimistically(client, workspaceSlug, message, {
+          apply: (current) =>
+            setMessageReaction(current, emoji, selected, person),
+          execute: () =>
+            api.setReaction({ workspaceSlug }, messageId, emoji, selected),
+          commit: (current, response, refreshed) =>
+            commitMessageReaction(
+              current,
+              response,
+              emoji,
+              selected,
+              person,
+              refreshed,
+            ),
+        });
+        refreshAfterMutation(client, workspaceSlug, message.conversationId);
       } catch (error) {
         notification(error, "Could not update this reaction");
       }
     },
-    [activeId, client, messages, replies, workspaceSlug],
+    [client, messages, replies, session, workspaceSlug],
   );
 
-  const readTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
-  const recordVisibleMessages = useCallback(
-    (visible: readonly ChatMessage[]) => {
-      if (document.visibilityState !== "visible" || !document.hasFocus())
-        return;
-      for (const message of visible) {
-        if (message.deliveryStatus) continue;
-        recordChatMessageVisible(accountId, workspaceSlug, message);
-      }
-    },
-    [accountId, workspaceSlug],
-  );
-  const readSequences = useRef(new Map<string, number>());
-  useEffect(() => {
-    const timers = readTimers.current;
-    return () => {
-      timers.forEach(clearTimeout);
-      timers.clear();
-    };
-  }, []);
-  const markVisible = useCallback(
-    (message: ChatMessage) => {
-      if (
-        message.deliveryStatus ||
-        document.visibilityState !== "visible" ||
-        !document.hasFocus()
-      )
-        return;
-      if (accountId)
-        recordChatMessageVisible(accountId, workspaceSlug, message);
-      const key = `${message.conversationId}:${message.threadRootId ?? "root"}`;
-      const seen =
-        readSequences.current.get(key) ??
-        (message.threadRootId ? 0 : conversation?.lastReadSequence ?? 0);
-      if (message.sequence <= seen) return;
-      readSequences.current.set(key, message.sequence);
-      clearTimeout(readTimers.current.get(key));
-      readTimers.current.set(
-        key,
-        setTimeout(() => {
-          readTimers.current.delete(key);
-          if (document.visibilityState !== "visible" || !document.hasFocus()) {
-            readSequences.current.delete(key);
-            return;
-          }
-          void api
-            .markRead(
-              { workspaceSlug },
-              message.conversationId,
-              message.id,
-              message.threadRootId ?? undefined,
-            )
-            .then(() =>
-              reconcileChatQueries(
-                client,
-                workspaceSlug,
-                message.conversationId,
-              ),
-            )
-            .catch((error: unknown) => {
-              readSequences.current.delete(key);
-              notification(error, "Could not update the read status");
-            });
-        }, 500),
-      );
-    },
-    [accountId, client, conversation?.lastReadSequence, workspaceSlug],
-  );
+  const { markUnread, markVisible, recordVisibleMessages } = useChatReadState({
+    conversationId: activeId,
+    threadRootId: threadId,
+    lastReadSequence: conversation?.lastReadSequence,
+    enabled: !isComposing && activeTab === "messages",
+  });
 
   return {
     openUnreadThread,
@@ -578,6 +596,7 @@ export const useChat = () => {
     deleteMessage,
     toggleReaction,
     markVisible,
+    markUnread,
     jumpToLatest,
     selectTab: (tab: ConversationTab) => {
       setActiveTab(tab);

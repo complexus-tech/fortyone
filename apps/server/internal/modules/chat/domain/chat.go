@@ -260,6 +260,8 @@ type NotificationContent struct {
 	ConversationKind string          `json:"conversationKind"`
 	ConversationName string          `json:"conversationName"`
 	AuthorName       string          `json:"authorName"`
+	ActorName        string          `json:"actorName"`
+	ReactionEmoji    string          `json:"reactionEmoji"`
 	Text             string          `json:"text"`
 	RichContent      json.RawMessage `json:"richContent"`
 	Attachments      []Attachment    `json:"attachments"`

@@ -11,6 +11,9 @@ import (
 
 func notificationCopy(content chat.NotificationContent) (string, string) {
 	author := strings.Join(strings.Fields(content.AuthorName), " ")
+	if content.ReactionEmoji != "" {
+		author = strings.Join(strings.Fields(content.ActorName), " ")
+	}
 	if author == "" {
 		author = "Someone"
 	}
@@ -23,6 +26,13 @@ func notificationCopy(content chat.NotificationContent) (string, string) {
 	}
 
 	body := messagePreview(content.Text, content.RichContent)
+	if content.ReactionEmoji != "" {
+		prefix := author + " reacted " + content.ReactionEmoji + " to your message"
+		if body != "" {
+			prefix += ": " + body
+		}
+		return notificationText(title, 256), notificationText(prefix, 1024)
+	}
 	if body == "" {
 		switch len(content.Attachments) {
 		case 0:
