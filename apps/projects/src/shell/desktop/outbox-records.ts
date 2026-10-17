@@ -44,30 +44,38 @@ export function remapResource(
   value: unknown,
   from: string,
   to: string,
+  options: { preferCanonical?: boolean } = {},
 ): unknown {
   if (from === to) return value;
   if (Array.isArray(value)) {
-    const mapped = value.map((item) => remapResource(item, from, to));
     const result: unknown[] = [];
-    const resources = new Map<string, number>();
-    for (const item of mapped) {
+    let target: { index: number; canonical: boolean } | undefined;
+    for (const original of value) {
+      const item = remapResource(original, from, to, options);
       if (!isRecord(item) || item.id !== to) {
         result.push(item);
         continue;
       }
-      const index = resources.get(to);
-      if (index === undefined) {
-        resources.set(to, result.length);
+      const canonical = isRecord(original) && original.id === to;
+      if (!target) {
+        target = { index: result.length, canonical };
         result.push(item);
         continue;
       }
-      const previous = result[index] as Record<string, unknown>;
+      const previous = result[target.index] as Record<string, unknown>;
       const newer =
         Date.parse(String(item.updatedAt)) >=
         Date.parse(String(previous.updatedAt));
-      result[index] = newer
+      // A fetched comment owns its current thread, including an empty thread
+      // after deletion. Never union a provisional comment's stale replies.
+      const useIncoming =
+        options.preferCanonical && canonical !== target.canonical
+          ? canonical
+          : newer;
+      result[target.index] = useIncoming
         ? { ...previous, ...item }
         : { ...item, ...previous };
+      target.canonical ||= canonical;
     }
     return result;
   }
@@ -77,7 +85,7 @@ export function remapResource(
       key,
       ["id", "storyId", "parentId", "resourceId"].includes(key) && item === from
         ? to
-        : remapResource(item, from, to),
+        : remapResource(item, from, to, options),
     ]),
   );
   if (Array.isArray(value.stories) && Array.isArray(result.stories)) {

@@ -1,4 +1,5 @@
 import { Button, Flex, Text } from "ui";
+import { isCommentUnavailableError } from "../lib/comment-errors";
 
 type RetryableQuery = {
   isError: boolean;
@@ -10,7 +11,11 @@ export const CommentFeedNotices = ({
   detailsQuery,
   commentsQuery,
 }: {
-  targetQuery?: { isPending: boolean; isError: boolean };
+  targetQuery?: RetryableQuery & {
+    isPending: boolean;
+    isFetching?: boolean;
+    error?: unknown;
+  };
   detailsQuery: RetryableQuery;
   commentsQuery: RetryableQuery;
 }) => (
@@ -20,10 +25,26 @@ export const CommentFeedNotices = ({
         Finding comment…
       </Text>
     ) : null}
-    {targetQuery?.isError ? (
+    {targetQuery?.isError && isCommentUnavailableError(targetQuery.error) ? (
       <Text className="mb-3 ml-10 text-sm" color="muted">
         This comment is no longer available or you do not have access.
       </Text>
+    ) : null}
+    {targetQuery?.isError && !isCommentUnavailableError(targetQuery.error) ? (
+      <Flex align="center" className="mb-3 ml-10" gap={2}>
+        <Text color="muted">Could not refresh this comment.</Text>
+        <Button
+          color="tertiary"
+          disabled={targetQuery.isFetching}
+          onClick={() => {
+            void targetQuery.refetch();
+          }}
+          size="sm"
+          variant="naked"
+        >
+          {targetQuery.isFetching ? "Retrying…" : "Retry"}
+        </Button>
+      </Flex>
     ) : null}
     {detailsQuery.isError ? (
       <Flex align="center" className="mb-3 ml-10" gap={2}>

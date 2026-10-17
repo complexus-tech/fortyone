@@ -119,6 +119,26 @@ func TestCommentInvocationCommitsAtomicallyAndSurvivesQueueOutage(t *testing.T) 
 	reply, err := storyService.GetComment(ctx, *clarification.ReplyCommentID, story, workspace)
 	require.NoError(t, err)
 	require.Equal(t, maya, reply.UserID)
+	assertVisibleReply := func(expectedReplies int) {
+		t.Helper()
+		// The UI consumes list/thread reads, not GetComment. Re-fetching either
+		// surface must retain a published system reply even though Maya does not
+		// have human workspace/team membership.
+		for range 2 {
+			visible, more, err := storyService.GetComments(ctx, story, workspace, 1, 20)
+			require.NoError(t, err)
+			require.False(t, more)
+			require.Len(t, visible, 1)
+			require.Equal(t, creationID, visible[0].ID)
+			require.Len(t, visible[0].SubComments, expectedReplies)
+			require.Equal(t, reply.ID, visible[0].SubComments[0].ID)
+			require.Equal(t, reply.Comment, visible[0].SubComments[0].Comment)
+			thread, err := storyService.GetCommentThread(ctx, reply.ID, story, workspace)
+			require.NoError(t, err)
+			require.Equal(t, visible[0], thread)
+		}
+	}
+	assertVisibleReply(1)
 	answerID := uuid.New()
 	answerActor, err := auth.NewHumanActor(mentioned).WithWorkspace(workspace)
 	require.NoError(t, err)
@@ -129,6 +149,7 @@ func TestCommentInvocationCommitsAtomicallyAndSurvivesQueueOutage(t *testing.T) 
 	require.NoError(t, err)
 	_, err = storyService.CreateComment(answerCtx, workspace, answer)
 	require.NoError(t, err)
+	assertVisibleReply(2)
 	continued, err := runs.Get(ctx, workspace, clarification.ID)
 	require.NoError(t, err)
 	require.Equal(t, agentruns.StatusSucceeded, continued.Status)

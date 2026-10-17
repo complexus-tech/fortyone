@@ -35,7 +35,13 @@ jest.mock("./story-comments", () => ({
 jest.mock("./comment-collaboration", () => ({
   useStoryCommentState: () => ({ data: mockState }),
   useCommentThread: jest.fn((_storyId: string, commentId: string | null) =>
-    commentId ? { data: mockThread, isError: mockThreadError } : {},
+    commentId
+      ? {
+          data: mockThread,
+          isError: mockThreadError,
+          error: mockThreadError ? { status: 404 } : null,
+        }
+      : {},
   ),
 }));
 jest.mock("./comment-read-tracking", () => ({

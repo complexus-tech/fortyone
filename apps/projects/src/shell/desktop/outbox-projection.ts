@@ -92,19 +92,23 @@ export function reconcileDesktopOutbox(
       acknowledgeAttachment(client, scope, ack);
       continue;
     }
+    const fields: Record<string, unknown> = {
+      ...ack.resource,
+      id: ack.resourceId,
+      desktopPending: false,
+      desktopCreated: false,
+    };
+    if (ack.kind === "comment.create") {
+      // A creation receipt owns the comment, not the current thread or author
+      // profile. Replies and profile changes do not advance its updatedAt.
+      delete fields.subComments;
+      delete fields.user;
+    }
     for (const [key, data] of queries()) {
-      const mapped = remapResource(data, ack.provisionalId, ack.resourceId);
-      const updated = patchResource(
-        mapped,
-        ack.resourceId,
-        {
-          ...ack.resource,
-          id: ack.resourceId,
-          desktopPending: false,
-          desktopCreated: false,
-        },
-        true,
-      );
+      const mapped = remapResource(data, ack.provisionalId, ack.resourceId, {
+        preferCanonical: ack.kind === "comment.create",
+      });
+      const updated = patchResource(mapped, ack.resourceId, fields, true);
       setChanged(client, key, updated);
       if (
         ack.kind === "story.create" &&
@@ -123,17 +127,7 @@ export function reconcileDesktopOutbox(
           setChanged(
             client,
             destinationKey,
-            patchResource(
-              current,
-              ack.resourceId,
-              {
-                ...ack.resource,
-                id: ack.resourceId,
-                desktopPending: false,
-                desktopCreated: false,
-              },
-              true,
-            ),
+            patchResource(current, ack.resourceId, fields, true),
           );
       }
     }

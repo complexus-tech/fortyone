@@ -3,6 +3,7 @@ import { useSearchParams } from "next/navigation";
 import { useSession } from "@/lib/auth/client";
 import { isStoryUuid } from "@/shared/routing/story";
 import { normalizeCommentThreads } from "../lib/comment-tree";
+import { isCommentUnavailableError } from "../lib/comment-errors";
 import {
   findCommentThread,
   flattenComments,
@@ -51,7 +52,9 @@ export const useCommentFeed = (storyId: string) => {
     ? findCommentThread(loadedComments, targetId)
     : undefined;
   const threadQuery = useCommentThread(storyId, loadedTarget ? null : targetId);
-  const linkedThread = !threadQuery.isError ? threadQuery.data : undefined;
+  const linkedThread = isCommentUnavailableError(threadQuery.error)
+    ? undefined
+    : threadQuery.data;
   const comments = useMemo(() => {
     let threads = loadedComments;
     if (linkedThread) {

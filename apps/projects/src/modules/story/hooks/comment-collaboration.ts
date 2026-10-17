@@ -8,6 +8,8 @@ import { toast } from "sonner";
 import { useWorkspacePath } from "@/hooks/use-workspace-path";
 import { storyKeys } from "@/shared/story/cache-keys";
 import { commentMutationKey } from "@/shared/story/comment-cache";
+import type { Comment } from "@/types/comment";
+import { isCommentUnavailableError } from "../lib/comment-errors";
 import {
   getCommentState,
   getCommentThread,
@@ -53,15 +55,32 @@ export const useStoryCommentState = (storyId: string) => {
 
 export const useCommentThread = (storyId: string, commentId: string | null) => {
   const { workspaceSlug } = useWorkspacePath();
+  const queryClient = useQueryClient();
+  const queryKey = storyKeys.commentThread(
+    workspaceSlug,
+    storyId,
+    commentId ?? "",
+  );
   const pendingChanges = useIsMutating({
     mutationKey: commentMutationKey(workspaceSlug),
     predicate: (mutation) =>
       (mutation.state.variables as { storyId?: string } | undefined)
         ?.storyId === storyId,
   });
-  return useQuery({
-    queryKey: storyKeys.commentThread(workspaceSlug, storyId, commentId ?? ""),
-    queryFn: () => getCommentThread(storyId, commentId!, { workspaceSlug }),
+  return useQuery<Comment | null>({
+    queryKey,
+    queryFn: async () => {
+      try {
+        return await getCommentThread(storyId, commentId!, { workspaceSlug });
+      } catch (error) {
+        if (isCommentUnavailableError(error)) {
+          // A later network failure must not restore content after access was
+          // revoked or the comment was deleted. Only a successful read can.
+          queryClient.setQueryData<Comment | null>(queryKey, null);
+        }
+        throw error;
+      }
+    },
     enabled: Boolean(commentId) && !pendingChanges,
     retry: false,
     refetchInterval: pendingChanges ? false : 30_000,

@@ -11,14 +11,19 @@ describe("comment feed notices", () => {
     rerender(
       <CommentFeedNotices
         {...props}
-        targetQuery={{ isPending: true, isError: false }}
+        targetQuery={{ isPending: true, isError: false, refetch: jest.fn() }}
       />,
     );
     expect(screen.getByText("Finding comment…")).toBeVisible();
     rerender(
       <CommentFeedNotices
         {...props}
-        targetQuery={{ isPending: false, isError: true }}
+        targetQuery={{
+          isPending: false,
+          isError: true,
+          error: { status: 404 },
+          refetch: jest.fn(),
+        }}
       />,
     );
     expect(screen.queryByText("Finding comment…")).not.toBeInTheDocument();
@@ -52,5 +57,41 @@ describe("comment feed notices", () => {
     fireEvent.click(within(comments).getByRole("button", { name: "Retry" }));
     expect(commentsQuery.refetch).toHaveBeenCalledTimes(1);
     expect(detailsQuery.refetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("offers a targeted retry for a temporary linked-comment failure", () => {
+    const query = { isError: false, refetch: jest.fn() };
+    const targetQuery = {
+      isError: true,
+      isPending: false,
+      error: new TypeError("Failed to fetch"),
+      refetch: jest.fn(),
+      isFetching: false,
+    };
+    const { rerender } = render(
+      <CommentFeedNotices
+        commentsQuery={query}
+        detailsQuery={query}
+        targetQuery={targetQuery}
+      />,
+    );
+    expect(screen.getByText("Could not refresh this comment.")).toBeVisible();
+    expect(
+      screen.queryByText(
+        "This comment is no longer available or you do not have access.",
+      ),
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    expect(targetQuery.refetch).toHaveBeenCalledTimes(1);
+    expect(query.refetch).not.toHaveBeenCalled();
+
+    rerender(
+      <CommentFeedNotices
+        commentsQuery={query}
+        detailsQuery={query}
+        targetQuery={{ ...targetQuery, isFetching: true }}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Retrying…" })).toBeDisabled();
   });
 });
