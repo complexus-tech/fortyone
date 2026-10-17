@@ -109,6 +109,48 @@ test("human typing stays below its own composer while both panes are open", () =
   ).not.toBeInTheDocument();
 });
 
+test.each([
+  [["Sarah"], "Sarah is typing…"],
+  [["Sarah", "Joseph"], "Joseph and Sarah are typing…"],
+  [["Sarah", "Joseph", "Hector"], "Several people are typing…"],
+  [["Sarah", "Joseph", "Hector", "Daria"], "Several people are typing…"],
+])("summarizes typing for %j", (names, expected) => {
+  render(<Indicators />);
+  act(() => {
+    for (const fullName of names) {
+      applyChatTypingEvent({
+        workspaceId: "workspace",
+        conversationId: "room",
+        actorId: fullName,
+        fullName,
+        threadRootId: null,
+        isTyping: true,
+        expiresAt: new Date(Date.now() + 6_000).toISOString(),
+      });
+    }
+  });
+  expect(screen.getByRole("status").textContent).toBe(expected);
+});
+
+test("human and Maya presence share one trailing ellipsis", () => {
+  mockRuns = [run({ requesterId: "someone-else" })];
+  render(<Indicators />);
+  act(() => {
+    applyChatTypingEvent({
+      workspaceId: "workspace",
+      conversationId: "room",
+      actorId: "sarah",
+      fullName: "Sarah",
+      threadRootId: null,
+      isTyping: true,
+      expiresAt: new Date(Date.now() + 6_000).toISOString(),
+    });
+  });
+  expect(screen.getByRole("status").textContent).toBe(
+    "Sarah is typing · Maya is thinking…",
+  );
+});
+
 test("the first Maya ask moves from the main composer to its opened thread exactly once", () => {
   mockRuns = [run()];
   const view = render(<Indicators />);

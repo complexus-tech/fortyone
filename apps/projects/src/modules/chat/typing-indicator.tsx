@@ -51,13 +51,11 @@ export const TypingIndicator = ({
     return run.sourceId === destination && activeThreadRootId !== destination;
   });
   let text = "";
-  if (people.length === 1) text = `${people[0].fullName} is typing…`;
+  if (people.length === 1) text = `${people[0].fullName} is typing`;
   else if (people.length === 2)
-    text = `${people[0].fullName} and ${people[1].fullName} are typing…`;
-  else if (people.length > 2)
-    text = `${people[0].fullName}, ${people[1].fullName} and ${people.length - 2} others are typing…`;
-  if (thinking)
-    text = text ? `${text} · Maya is thinking…` : "Maya is thinking…";
+    text = `${people[0].fullName} and ${people[1].fullName} are typing`;
+  else if (people.length > 2) text = "Several people are typing";
+  if (thinking) text = text ? `${text} · Maya is thinking` : "Maya is thinking";
   return (
     <div
       aria-atomic="true"
@@ -67,12 +65,7 @@ export const TypingIndicator = ({
     >
       {text ? (
         <>
-          <span aria-hidden className="flex gap-0.5">
-            <span className="size-1 animate-pulse rounded-full bg-current motion-reduce:animate-none" />
-            <span className="size-1 animate-pulse rounded-full bg-current [animation-delay:150ms] motion-reduce:animate-none" />
-            <span className="size-1 animate-pulse rounded-full bg-current [animation-delay:300ms] motion-reduce:animate-none" />
-          </span>
-          <span className="truncate">{text}</span>
+          <span className="truncate">{text}…</span>
           {thinking?.requesterId === userId ? (
             <button
               className="text-text-muted hover:text-foreground ml-auto shrink-0 rounded px-1 underline underline-offset-2"
